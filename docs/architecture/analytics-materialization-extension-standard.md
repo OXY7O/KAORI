@@ -31,10 +31,10 @@ Domain capability → instance/asset binding (source provider stays authoritativ
 | Queue | `analytics-batch` | `analytics-batch` | `analytics-batch` |
 | Heavy forecast | `analytics.forecast.materialize` | `object_storage.forecast.materialize` | do not fabricate unsupported history/forecast |
 | Snapshot | `AnalyticsSnapshot` keyed by dataset + canonical params | `ObjectStorageAnalyticsSnapshot` keyed by system + range | `RegistryAnalyticsSnapshot` currently written as `current` |
-| History | range-based worker dataset | range-based operational and forecast worker datasets | **gap**: instant samples + prior snapshot delta only |
+| History | range-based worker dataset | range-based operational and forecast worker datasets | bounded worker `query_range` datasets by selected interval (#1108; UAT pending) |
 | UI progress | requested-HTMX section tracker; separate JobExecution | shared Controls/readiness and worker progress | shared section tracker and Controls/readiness |
 
-The Registry gap is governed by [#1108](https://github.com/OXY7O/KAORI/issues/1108), not disguised by the common UI. Its `snapshot_window` selector currently tests the **age of the latest materialized snapshot**, not how far back Prometheus/Thanos was queried. Never present this as measured time-series history until worker range materialization is implemented and validated.
+The Registry historical-range implementation under [#1108](https://github.com/OXY7O/KAORI/issues/1108) now issues bounded `MetricsConsumer.query_range` worker requests for `1h` through `60d`, normalizes source intervals/retention/capability gaps, and persists separate `time_range` snapshots. The legacy `current` path keeps instant Metrics Source measurements. **Runtime verification remains required**: the source's effective retention, series coverage, worker timeout and visual UAT must be proven before human acceptance; an unavailable range is never synthesized from the age of an instant snapshot.
 
 ## Canonical cross-domain Analytics presentation (#1122)
 
@@ -65,8 +65,9 @@ System/Time Range/History Window/Alert Source controls to `selector`
 and retains committed Metrics Source, Inventory and Forecast provenance.
 Registry delegates provider and time-range controls to `selector` without
 importing any Kubernetes-owned template. Normal seven options come from
-`get_allowed_time_ranges`; the Registry `current` bookmark remains an
-explicit **snapshot-age** selector and is not historical source telemetry.
+`get_allowed_time_ranges`; each Registry historical selection corresponds to a
+separate measured worker dataset and source interval. The `current` bookmark
+is explicitly instant Metrics Source evidence, not a historical range.
 
 For a **new provider in an existing domain**, register the provider adapter,
 qualify its capabilities, and supply the same normalized context/options;

@@ -48,3 +48,53 @@ def test_missing_expiry_is_not_current(monkeypatch):
         generated_at=now, expires_at=None,
     )
     assert _analytics_snapshot_view(SimpleNamespace(id=11), legacy)['is_current'] is False
+
+
+def test_all_instant_metric_query_failures_are_unavailable(monkeypatch):
+    from app.artifact_registry import analytics
+
+    class Consumer:
+        config = SimpleNamespace(name='Metrics')
+        binding = SimpleNamespace(id=1)
+
+        def query(self, _expression):
+            return {'status': 'success', 'data': {'resultType': 'vector', 'result': 'invalid'}}
+
+    monkeypatch.setattr(analytics.MetricsConsumer, 'for_asset', lambda **_kw: Consumer())
+    observed = analytics._metrics_evidence(SimpleNamespace(id=2, name='registry'))
+    assert observed['status'] == 'unavailable'
+    assert len(observed['capability_gaps']) == 11
+
+
+def test_some_instant_metrics_succeed_while_others_fail_is_partial(monkeypatch):
+    from app.artifact_registry import analytics
+
+    class Consumer:
+        config = SimpleNamespace(name='Metrics')
+        binding = SimpleNamespace(id=1)
+
+        def __init__(self):
+            self.calls = 0
+
+        def query(self, _expression):
+            self.calls += 1
+            if self.calls == 1:
+                return {'status': 'success', 'data': {'resultType': 'vector', 'result': []}}
+            return {'status': 'failure', 'data': None}
+
+    monkeypatch.setattr(analytics.MetricsConsumer, 'for_asset', lambda **_kw: Consumer())
+    observed = analytics._metrics_evidence(SimpleNamespace(id=2, name='registry'))
+    assert observed['status'] == 'partial'
+    assert len(observed['capability_gaps']) == 10
+
+
+def test_malformed_connected_alertmanager_payload_cannot_be_ready(monkeypatch):
+    from app.artifact_registry import analytics
+
+    monkeypatch.setattr(
+        analytics, 'list_alerts_for_scope',
+        lambda **_kw: {'connected': True, 'alerts': {'not': 'a list'}},
+    )
+    observed = analytics._alert_evidence(SimpleNamespace(id=2, name='registry'))
+    assert observed['status'] == 'unavailable'
+    assert observed['rows'] == []

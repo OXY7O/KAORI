@@ -108,6 +108,29 @@ def test_registry_analytics_materializes_operational_harbor_metric_profile() -> 
     assert "scope_type='registry_instance'" in analytics
 
 
+def test_registry_historical_snapshots_use_measured_source_range_and_scope() -> None:
+    history = (ROOT / 'app/artifact_registry/analytics_history.py').read_text()
+    analytics = (ROOT / 'app/artifact_registry/analytics.py').read_text()
+    adapter = (ROOT / 'app/artifact_registry/analytics_job_adapter.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    common = (ROOT / 'app/artifact_registry/presentation_common.py').read_text()
+
+    assert 'consumer.query_range(' in history
+    assert "'60d': timedelta(days=60)" in history
+    assert 'MAX_HISTORY_POINTS = 240' in history
+    assert 'MAX_HISTORY_SERIES = 250' in history
+    assert "snapshot.time_range = time_range" in analytics
+    assert "'history': history" not in presentation
+    assert "time_range=normalize_registry_analytics_window(snapshot_window)" in presentation
+    assert "RegistryAnalyticsSnapshot.time_range == normalized_window" in adapter
+    assert "RegistryAnalyticsSnapshot.time_range == 'current'" in common
+    assert "parameters={'snapshot_window': window}" in routes
+    assert "scope_key=f'all:{time_range}'" in adapter
+    assert 'artifact_growth_per_day' in history
+    assert 'size_growth_bytes_per_day' in history
+
+
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
@@ -200,7 +223,7 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'All Registries' in registry
     assert 'analytics.time_range_options' in registry
     assert "'time_range_options': get_allowed_time_ranges()" in presenter
-    assert "legacy_label='Latest Snapshot (Any Age)'" in registry
+    assert "legacy_label='Current (Instant)'" in registry
     assert 'Registry Source Status' in registry
     assert 'icon=none' in registry
     assert "'bg-status-normal'" in common
@@ -308,9 +331,11 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
     assert 'Configure Collection' not in registry
 
 
-def test_registry_analytics_scope_and_committed_snapshot_window_are_real_filters() -> None:
-    from datetime import UTC, datetime, timedelta
+def test_registry_analytics_scope_and_committed_measured_range_are_real_filters() -> None:
     from types import SimpleNamespace
+
+    import pytest
+    from werkzeug.exceptions import NotFound
 
     from app.artifact_registry.analytics_job_adapter import (
         analytics_snapshot_matches_window,
@@ -318,54 +343,25 @@ def test_registry_analytics_scope_and_committed_snapshot_window_are_real_filters
     )
     from app.artifact_registry.presentation_analytics import _registry_analytics_scope
 
-    now = datetime(2026, 10, 10, 12, tzinfo=UTC)
     identities = [SimpleNamespace(id=4), SimpleNamespace(id=9)]
     assert _registry_analytics_scope(4, identities) == 4
     assert _registry_analytics_scope(9, identities) == 9
-    assert _registry_analytics_scope(999, identities) is None
+    with pytest.raises(NotFound):
+        _registry_analytics_scope(999, identities)
     assert _registry_analytics_scope(None, identities) is None
 
-    recent = SimpleNamespace(generated_at=now - timedelta(hours=12))
-    older = SimpleNamespace(generated_at=now - timedelta(days=5))
-    stale = SimpleNamespace(generated_at=now - timedelta(days=35))
     assert normalize_registry_analytics_window('bogus') == '24h'
-    assert normalize_registry_analytics_window('7d') == '7d'
     assert normalize_registry_analytics_window('current') == 'current'
-    for value, offset in (
-        ('1h', timedelta(hours=1)),
-        ('6h', timedelta(hours=6)),
-        ('12h', timedelta(hours=12)),
-        ('24h', timedelta(hours=24)),
-        ('7d', timedelta(days=7)),
-        ('30d', timedelta(days=30)),
-        ('60d', timedelta(days=60)),
-    ):
-        assert analytics_snapshot_matches_window(
-            SimpleNamespace(generated_at=now - offset + timedelta(minutes=1)),
-            value,
-            now=now,
-        )
-        assert not analytics_snapshot_matches_window(
-            SimpleNamespace(generated_at=now - offset - timedelta(minutes=1)),
-            value,
-            now=now,
-        )
-    assert analytics_snapshot_matches_window(stale, 'current', now=now)
-    assert not analytics_snapshot_matches_window(stale, '24h', now=now)
-    assert analytics_snapshot_matches_window(recent, '24h', now=now)
-    assert not analytics_snapshot_matches_window(older, '24h', now=now)
-    assert analytics_snapshot_matches_window(older, '7d', now=now)
-    assert not analytics_snapshot_matches_window(stale, '30d', now=now)
-    assert analytics_snapshot_matches_window(
-        SimpleNamespace(generated_at=(now - timedelta(days=2)).replace(tzinfo=None)),
-        '7d',
-        now=now,
-    )
-    readiness_source = (
-        ROOT / 'app/artifact_registry/analytics_job_adapter.py'
-    ).read_text()
-    assert 'No Snapshots in Window' in readiness_source
-    assert 'has_older_evidence' in readiness_source
+    for value in ('1h', '6h', '12h', '24h', '7d', '30d', '60d'):
+        assert normalize_registry_analytics_window(value) == value
+        assert analytics_snapshot_matches_window(SimpleNamespace(time_range=value), value)
+        assert not analytics_snapshot_matches_window(SimpleNamespace(time_range='current'), value)
+    assert analytics_snapshot_matches_window(SimpleNamespace(time_range='current'), 'current')
+
+    readiness_source = (ROOT / 'app/artifact_registry/analytics_job_adapter.py').read_text()
+    assert 'Historical Materialization Required' in readiness_source
+    assert "RegistryAnalyticsSnapshot.time_range == normalized_window" in readiness_source
+
 
 
 def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts() -> None:
@@ -385,7 +381,8 @@ def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts()
     assert "'alert_search': request.args.get('alert_q', '', type=str)" in routes
     assert "'alert_page': request.args.get('alert_page', 1, type=int) or 1" in routes
     assert "snapshot_window=window, **alert_params" in routes
-    assert "should_request_registry_analytics_materialization(build_registry_analytics_readiness())" in routes
+    assert "should_request_registry_analytics_materialization(" in routes
+    assert "build_registry_analytics_readiness(provider_id=provider_id, snapshot_window=window)" in routes
     assert "'provider_id', 'snapshot_window', 'alert_q'" in routes
     assert "selected_provider_id = _registry_analytics_scope(provider_id, identities)" in presentation
     assert "bundle = _collect_analytics_rows(identities, snapshot_window=selected_window)" in presentation

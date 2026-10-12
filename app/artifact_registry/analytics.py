@@ -5,6 +5,10 @@ from typing import Any
 
 from sqlalchemy import func, select
 
+from app.artifact_registry.analytics_history import (
+    REGISTRY_HISTORY_WINDOWS,
+    collect_registry_metric_history,
+)
 from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.extensions.db import db
 from app.integrations.observability.alert_source.providers.alertmanager.application.consumer import (
@@ -288,6 +292,17 @@ def _alert_evidence(identity: IntegrationInstance) -> dict[str, Any]:
     )
 
     if alertmanager.get('connected'):
+        raw_alerts = alertmanager.get('alerts')
+        if not isinstance(raw_alerts, list) or any(not isinstance(item, dict) for item in raw_alerts):
+            return {
+                'status': 'unavailable',
+                'resolved_source': 'alertmanager',
+                'source_label': 'Unavailable',
+                'fallback_used': False,
+                'detail': 'Alertmanager returned malformed successful alert evidence.',
+                'rows': [],
+                'source_errors': ['Malformed Alertmanager alert record list.'],
+            }
         return {
             'status': 'ready',
             'resolved_source': 'alertmanager',
@@ -317,6 +332,17 @@ def _alert_evidence(identity: IntegrationInstance) -> dict[str, Any]:
             'source_errors': [alertmanager_error, str(exc)],
         }
 
+    if not _valid_instant_vector(metrics_payload):
+        return {
+            'status': 'unavailable',
+            'resolved_source': 'metrics_source',
+            'source_label': 'Unavailable',
+            'fallback_used': True,
+            'detail': 'Metrics Source fallback returned malformed active-alert evidence.',
+            'rows': [],
+            'source_errors': [alertmanager_error, 'Invalid active-alert Metrics Source response.'],
+        }
+
     return {
         'status': 'ready',
         'resolved_source': 'metrics_source',
@@ -335,6 +361,7 @@ def _previous_snapshot(identity_id: int) -> RegistryAnalyticsSnapshot | None:
     return (
         RegistryAnalyticsSnapshot.query.filter_by(
             integration_instance_id=identity_id,
+            time_range='current',
             status='ready',
         )
         .order_by(RegistryAnalyticsSnapshot.generated_at.desc(), RegistryAnalyticsSnapshot.id.desc())
@@ -478,6 +505,7 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
     inventory_state = db.session.get(RegistryCollectionState, identity_id)
     governance_state = db.session.get(RegistryGovernanceState, identity_id)
     latest_binding = bindings.with_entities(func.max(RegistryWorkloadBinding.observed_at)).scalar()
+    latest_scan = artifacts.with_entities(func.max(RegistryArtifact.scan_completed_at)).scalar()
     return {
         'inventory': inventory, 'security': security, 'runtime': runtime,
         'governance': governance_counts,
@@ -495,6 +523,7 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
             ),
             'governance_status': governance_state.status if governance_state else 'not_collected',
             'runtime_observed_at': latest_binding.isoformat() if latest_binding else None,
+            'security_latest_scan_at': latest_scan.isoformat() if latest_scan else None,
             'security_assessed_count': counts['scanned_artifacts'],
         },
     }
@@ -511,8 +540,10 @@ def _growth_payload(
         previous.payload_json.get('inventory') if previous and isinstance(previous.payload_json, dict) else {}
     )
     elapsed_days = _days_between(previous, generated_at)
-    artifact_delta = artifact_count - int((previous_inventory or {}).get('artifacts') or artifact_count)
-    size_delta = total_size - int((previous_inventory or {}).get('total_size_bytes') or total_size)
+    old_artifacts = (previous_inventory or {}).get('artifacts')
+    old_size = (previous_inventory or {}).get('total_size_bytes')
+    artifact_delta = artifact_count - int(old_artifacts) if old_artifacts is not None else 0
+    size_delta = total_size - int(old_size) if old_size is not None else 0
     return (
         {
             'elapsed_days': elapsed_days,
@@ -567,6 +598,7 @@ def materialize_registry_analytics(
     identity: IntegrationInstance,
     *,
     job_execution_id: int | None = None,
+    time_range: str = 'current',
     freshness_minutes: int = 15,
     stale_grace_minutes: int = 1440,
 ) -> RegistryAnalyticsSnapshot:
@@ -579,6 +611,8 @@ def materialize_registry_analytics(
     ):
         raise ValueError('Registry analytics requires an active and enabled Registry source.')
 
+    if time_range != 'current' and time_range not in REGISTRY_HISTORY_WINDOWS:
+        raise ValueError('Unrecognized Registry history interval.')
     generated_at = datetime.now(UTC)
     previous = _previous_snapshot(identity.id)
     domain = _registry_bounded_state(identity.id, generated_at)
@@ -590,9 +624,22 @@ def materialize_registry_analytics(
         artifact_count=int(inventory['artifacts']),
         total_size=total_size,
     )
-    metrics = _metrics_evidence(identity)
+    if time_range == 'current':
+        metrics = _metrics_evidence(identity)
+        history: dict[str, Any] | None = None
+        prior_usage = _previous_project_usage(previous)
+    else:
+        history, metrics, measured_growth = collect_registry_metric_history(
+            identity, time_range, now=generated_at
+        )
+        growth = measured_growth
+        elapsed_days = measured_growth['elapsed_days']
+        prior_usage = {
+            project: point['first']
+            for project, point in history.get('series', {}).get('project_usage_bytes', {}).items()
+        }
     alerts = _alert_evidence(identity)
-    project_forecasts = _project_forecasts(metrics, _previous_project_usage(previous), elapsed_days)
+    project_forecasts = _project_forecasts(metrics, prior_usage, elapsed_days)
     payload = {
         **domain,
         'growth': growth,
@@ -600,6 +647,8 @@ def materialize_registry_analytics(
         'metrics': metrics,
         'alerts': alerts,
     }
+    if history is not None:
+        payload['history'] = history
     # An Inventory refresh racing with materialization must not bless the
     # earlier generation as current. Preserve the previously committed snapshot.
     inventory_state = db.session.get(RegistryCollectionState, int(identity.id))
@@ -613,10 +662,22 @@ def materialize_registry_analytics(
         raise RuntimeError('Registry inventory generation changed during Analytics materialization.')
     if current_generation is None:
         raise RuntimeError('Registry Inventory has no usable committed generation for Analytics.')
+    db.session.refresh(identity, attribute_names=['enabled', 'lifecycle_status'])
+    if not identity.enabled or identity.lifecycle_status != 'active':
+        raise RuntimeError('Registry source was disabled during Analytics materialization.')
+    current_governance = db.session.get(RegistryGovernanceState, int(identity.id))
+    if current_governance is not None:
+        db.session.refresh(current_governance, attribute_names=['last_committed_at'])
+    governance_generation = (
+        current_governance.last_committed_at.isoformat()
+        if current_governance and current_governance.last_committed_at else None
+    )
+    if governance_generation != domain['evidence']['governance_committed_at']:
+        raise RuntimeError('Registry Governance changed during Analytics materialization.')
 
     snapshot = RegistryAnalyticsSnapshot()
     snapshot.integration_instance_id = identity.id
-    snapshot.time_range = 'current'
+    snapshot.time_range = time_range
     snapshot.payload_json = payload
     snapshot.status = 'ready'
     snapshot.generated_at = generated_at

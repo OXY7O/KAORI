@@ -37,8 +37,8 @@
                 {{ page_hero.context_card('Artifact Registry analytics',
                                 'Fast Shell · Committed Evidence',
                                 'Materialization',
-                                'Ready' if analytics.snapshot_count else 'Required',
-                                'normal' if analytics.snapshot_count else 'warning',
+                                analytics.data_readiness.label,
+                                analytics.data_readiness.tone,
                                 [
                                 ('database-backup', 'Snapshots', analytics.snapshot_count ~ '/' ~ analytics.provider_count, 'Materialized Registry analytics evidence'),
                                 ('layout-dashboard', 'Workspace', analytics.page_title, 'Lazy-loaded bounded analytics section')

@@ -152,13 +152,31 @@ Security findings count only successful normalized scans. Governance configured
 and explicitly `not_configured` are independent from unsupported/unavailable/
 not-collected projects.
 
-The worker records committed Inventory and Governance generations plus runtime
-observation provenance in the snapshot's `evidence` payload, and rejects
-Inventory generation changes during a collection attempt. Read-model freshness
-compares committed inputs to source state and presents `Inputs Changed` or
-`Partial Evidence`, not clean Current. Historical or missing generation
+The worker records committed Inventory and Governance generations,
+latest Security scan-completion timestamp, and Registry-runtime binding
+observation timestamp in each snapshot's `evidence` payload. It rejects
+Inventory/Governance generation changes and provider deactivation during a
+collection attempt. Read-model freshness compares those committed inputs to
+current KAORI state using scoped SQL aggregations and presents `Inputs Changed`
+or `Partial Evidence`, not clean Current. Historical or missing generation
 markers are *not* proof of readiness. The external provider remains
 authoritative and normal page loads do not query provider APIs.
+
+### Measured Registry historical Analytics datasets (#1108)
+
+The registered `artifact_registry.analytics.materialize` job accepts a validated
+`snapshot_window`. Scheduled jobs retain legacy `current` instant semantics;
+on-demand historical views collect bounded `MetricsConsumer.query_range`
+evidence per Registry integration instance and selected interval. The seven
+shared windows (`1h, 6h, 12h, 24h, 7d, 30d, 60d`) are measured source
+ranges, not age filters over one `current` snapshot. Workers cap each query
+to 250 series and 240 samples/series, fail closed on malformed payloads,
+missing range coverage, unsupported capabilities, and insufficient retention,
+and record per-query capability gaps. Range datasets are keyed by
+`RegistryAnalyticsSnapshot.time_range`; Operational Dashboard continues
+to use `current` only. Normal user requests read committed datasets; source
+queries remain worker-only. Provider retention/time-series and UAT remain
+explicit acceptance requirements.
 
 ### Analytics snapshot and worker-failure semantics (#1464)
 
