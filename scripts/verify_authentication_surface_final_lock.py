@@ -158,7 +158,7 @@ def main() -> int:
         require(required in setup, f'Setup Required release workspace contract missing: {required}', errors)
 
     require(
-        'class="text-xl font-semibold leading-7 text-content-primary"' in setup,
+        'class="text-lg font-semibold leading-6 text-content-primary"' in setup,
         'Setup Required command-first title hierarchy drifted',
         errors,
     )
@@ -177,14 +177,22 @@ def main() -> int:
     )
     require(
         'data-kaori-setup-canvas="light"' in setup
-        and 'max-w-6xl rounded-2xl border border-outline-subtle bg-surface-card' in setup,
-        'Setup Required 100-percent-zoom white workspace canvas drifted',
+        and 'max-w-4xl rounded-xl border border-outline-subtle bg-surface-card' in setup,
+        'Setup Required compact 100-percent-zoom canvas drifted',
         errors,
     )
     require(
         'PostgreSQL is ready. Run setup to enable sign-in and background jobs.' in setup
         and 'Keep INTEGRATION_CREDENTIAL_KEY unchanged.' in setup,
         'Setup Required concise operator copy drifted',
+        errors,
+    )
+    require(
+        'bg-surface-page px-3 py-3 sm:px-4 sm:py-4' in setup
+        and 'max-w-4xl' in setup
+        and 'copy_label=\'Copy Command\', compact=true' in setup
+        and 'mt-4" data-kaori-setup-advanced' in setup,
+        'Setup Required compact spacing/terminal density drifted',
         errors,
     )
     require('Readiness Summary' not in setup, 'Setup Required must not duplicate readiness in a summary panel', errors)
