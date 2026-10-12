@@ -538,13 +538,17 @@ def analytics_materialization_resolve() -> ResponseReturnValue:
     analytics = build_analytics_shell(
         active_tab=section, provider_id=provider_id, snapshot_window=window, **alert_params
     )
-    # The canonical worker materializes the entire fleet regardless of the viewer's filter.
-    if should_request_registry_analytics_materialization(build_registry_analytics_readiness()):
+    # Collect the selected source-history interval in the canonical worker;
+    # the request handler never calls Prometheus/Thanos or Harbor directly.
+    if should_request_registry_analytics_materialization(
+        build_registry_analytics_readiness(provider_id=provider_id, snapshot_window=window)
+    ):
         try:
             result = dispatch_registered_job(
                 job_key='artifact_registry.analytics.materialize',
                 trigger_type='on_demand',
                 requested_by_user_id=None,
+                parameters={'snapshot_window': window},
             )
         except (
             JobWorkerUnavailable,
