@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 from urllib.error import HTTPError
 from urllib.request import Request
 
@@ -80,7 +80,7 @@ def test_ntfy_publish_with_trusted_ca_bearer_headers_and_priority(monkeypatch: p
     monkeypatch.setenv('NOTIFICATION_NTFY_ALLOWED_ORIGINS', 'https://notify.example.test')
     monkeypatch.setenv('NOTIFICATION_NTFY_CA_BUNDLE', '/approved/ca.pem')
     opener = Mock()
-    response = Mock()
+    response = MagicMock()
     response.status = 200
     response.read.return_value = json.dumps({'id': 'msg-007'}).encode()
     response.__enter__ = Mock(return_value=response)
