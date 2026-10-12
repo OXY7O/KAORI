@@ -85,6 +85,16 @@ def test_governance_sync_uses_registered_jobexecution_boundary() -> None:
 
 
 
+def test_governance_latest_failed_refresh_never_looks_current() -> None:
+    presenter = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
+    builder = presenter.split('def build_governance(', 1)[1]
+    assert "if sync_state['label'] == 'Sync Failed':" in builder
+    assert "'status': 'Refresh Failed' if summary['ready_count'] else 'Collection Failed'" in builder
+    assert "'exceptions_label': 'Latest Sync Failed'" in builder
+    assert "'snapshot_context': snapshot_context" in builder
+    assert "'posture': posture" in builder
+
+
 def test_read_only_governance_sync_poll_preserves_mutating_sync_permission() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     sync = routes.split("def governance_sync() -> ResponseReturnValue:", 1)[0]
