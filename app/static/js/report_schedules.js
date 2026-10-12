@@ -20,6 +20,8 @@
         const scopeByType = parseConfig(workspace.dataset.scheduleScopeByType)
         const domainByType = parseConfig(workspace.dataset.scheduleDomainByType)
         const scheduleNamespacesByCluster = parseConfig(workspace.dataset.scheduleNamespacesByCluster)
+        const namespaceOptionsUrl = workspace.dataset.scheduleNamespaceOptionsUrl || ''
+        const namespaceRequests = new Set()
 
         workspace.querySelectorAll('[data-schedule-form]').forEach((form) => {
             if (form.dataset.initialized === 'true') return
@@ -45,14 +47,15 @@
 
                 const selectedCluster = clusterSelect?.value || ''
                 const previousNamespace = namespaceSelect.value || ''
-                const options = Array.isArray(scheduleNamespacesByCluster[selectedCluster])
+                const loaded = Object.prototype.hasOwnProperty.call(scheduleNamespacesByCluster, selectedCluster)
+                const options = loaded && Array.isArray(scheduleNamespacesByCluster[selectedCluster])
                     ? scheduleNamespacesByCluster[selectedCluster]
                     : []
 
                 namespaceSelect.replaceChildren()
                 const allOption = document.createElement('option')
                 allOption.value = ''
-                allOption.textContent = 'All Namespaces'
+                allOption.textContent = loaded ? 'All Namespaces' : 'Loading namespaces…'
                 namespaceSelect.appendChild(allOption)
 
                 options.forEach((namespace) => {
@@ -63,7 +66,31 @@
                 })
 
                 namespaceSelect.value = options.includes(previousNamespace) ? previousNamespace : ''
-                namespaceSelect.disabled = !selectedCluster
+                namespaceSelect.disabled = !selectedCluster || !loaded
+                if (!selectedCluster || loaded || !namespaceOptionsUrl || namespaceRequests.has(selectedCluster)) return
+
+                namespaceRequests.add(selectedCluster)
+                fetch(namespaceOptionsUrl + '?cluster_id=' + encodeURIComponent(selectedCluster), {
+                    credentials: 'same-origin',
+                })
+                    .then((response) => {
+                        if (!response.ok) throw new Error('Namespace options unavailable')
+                        return response.json()
+                    })
+                    .then((payload) => {
+                        if (payload.cluster_id !== selectedCluster || !Array.isArray(payload.namespaces)) {
+                            throw new Error('Invalid namespace response')
+                        }
+                        scheduleNamespacesByCluster[selectedCluster] = payload.namespaces
+                        if (clusterSelect?.value === selectedCluster) syncNamespaceOptions()
+                    })
+                    .catch(() => {
+                        if (clusterSelect?.value === selectedCluster) {
+                            namespaceSelect.options[0].textContent = 'Unable to load namespaces'
+                            namespaceSelect.title = 'Select the cluster again to retry namespace loading.'
+                        }
+                    })
+                    .finally(() => namespaceRequests.delete(selectedCluster))
             }
 
             const syncTiming = () => {
