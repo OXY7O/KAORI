@@ -307,7 +307,7 @@ def _registry_capacity_posture(project_forecasts: list[dict[str, Any]]) -> dict[
         ),
         'Low': (
             'Committed quota evidence currently shows usable project headroom.',
-            'Project quota forecasts remain outside warning thresholds.',
+            'Project quota forecasts remain outside warning thresholds, with sufficient headroom.',
             'Continue worker materialization and review growth after major publication changes.',
         ),
         'Unknown': (
