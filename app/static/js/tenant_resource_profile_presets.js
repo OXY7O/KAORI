@@ -301,10 +301,15 @@
             return contract[source]?.[key] ?? null
         }
 
-        const displayValue = (source, value) => {
+        const displayValue = (source, key, value) => {
             if (value === null || value === undefined || value === '') {
-                return source === 'limits' || (source === 'quota' && value === null)
-                    ? 'Not declared' : 'Unbounded'
+                const boundedQuotaKeys = [
+                    'requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory',
+                    'pods', 'requests.storage',
+                ]
+                return source === 'storage_policy'
+                    || (source === 'quota' && boundedQuotaKeys.includes(key))
+                    ? 'Unbounded' : 'Not declared'
             }
             return String(value)
         }
@@ -406,8 +411,8 @@
                 const beforeCell = row.querySelector('[data-tenant-allocation-diff-current]')
                 const afterCell = row.querySelector('[data-tenant-allocation-diff-proposed]')
                 const directionCell = row.querySelector('[data-tenant-allocation-diff-direction]')
-                if (beforeCell) beforeCell.textContent = current ? displayValue(source, before) : '—'
-                if (afterCell) afterCell.textContent = proposed ? displayValue(source, after) : '—'
+                if (beforeCell) beforeCell.textContent = current ? displayValue(source, key, before) : '—'
+                if (afterCell) afterCell.textContent = proposed ? displayValue(source, key, after) : '—'
                 if (directionCell) directionCell.textContent = direction || (current && proposed ? 'Unchanged' : '—')
                 row.classList.toggle('bg-kaori-soft/50', mode === 'full' && !!direction)
                 if (mode === 'changes' && direction) {
