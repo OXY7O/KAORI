@@ -324,6 +324,19 @@ preset governance disclosures, long descriptions, keyboard/focus, dark/light,
 and Native/Capsule rollout eligibility. This candidate is **not** CI/CD or
 Full Admission approval; maintain the existing HOLD.
 
+**Adopted Native Cutover presentation (#1669):** Retain the original
+provider-observed authority, explicit supported/blocked selectors and
+`cutover_namespace_allocation_route`. The read-only preflight now uses the
+approved Allocation Change layout: two quiet **Observed Baseline / Proposed
+Governed Contract** panels with frozen-versus-versioned ResourceQuota
+Requests/Limits, Pods, logical storage and per-PVC bounds, followed by three
+prioritized **Change Highlights** and the total count of other committed
+dimensions. This presentation never creates governance ownership or writes
+Kubernetes resources by itself; the original capacity, UID/resourceVersion,
+ownership and read-back checks remain mandatory before **KAORI Managed**.
+Preset definitions stay locked, Custom profiles reusable, and the explicit
+adopted baseline remains an option.
+
 ## Managed adoption and legacy allocation governance cutover
 
 #777 supersedes evidence-only onboarding for new managed adoptions. The explicit human **Adopt & Manage** submission is the governance boundary: live state is re-read, capacity/authority checks run, equivalent provider values are written only through the admitted authority, and read-back must succeed before KAORI commits managed allocation control.
