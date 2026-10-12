@@ -42,37 +42,33 @@ Do not create or use a host `.venv`; the supported Python runtime is inside the 
 
 ### 3. Initialize or upgrade the database
 
-For a fresh development database:
+For a **fresh** development database, start Flask with F5, view the existing
+**Database Setup Required**, and run the copied command from a **WSL host**
+terminal at the repository root:
 
 ```bash
-bash scripts/init_db.sh --bootstrap-admin
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
 ```
 
-For an existing development database after pulling migrations:
+For an existing development database after pulling new Alembic migrations:
 
 ```bash
-flask --app run:app db upgrade
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml \
+  run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only
 ```
 
-On a fresh or migration-behind development database, the workspace remains usable while Celery workers and Beat wait for the exact current Alembic migration head. They do not dispatch or consume scheduled KAORI work before schema readiness and they do not run migrations themselves. After the migration step completes, the background services continue automatically without a manual restart.
+The application `DATABASE_URL` belongs only to `kaori_runtime`, not a DBA
+or migration role. The host initializer provisions segregated PostgreSQL
+credentials under `~/.config/kaori/devcontainer/`; they are not in `.env`.
+On a fresh or migration-behind development database, the workspace remains usable while Celery workers and Beat wait for the exact current Alembic migration head. They do not dispatch or consume scheduled KAORI work before schema readiness and they do not run migrations themselves. After migrations, grants, and first-admin admission pass, the background services continue automatically without a manual restart.
 
-### 3a. Existing DevContainer database: PostgreSQL runtime privilege split
+### 3a. Existing DevContainer databases and the historical role cutover
 
-If Capsule G1 restart reports `PostgreSQL Capsule ledger role, trigger or
-WAL durability is not admitted`, first verify which PostgreSQL role
-Flask actually uses. An owner/superuser DevContainer database connection
-does not satisfy the write-once ledger role boundary even when triggers
-and WAL settings are valid.
-
-Use the [existing-database DevContainer PostgreSQL role runbook](operations/devcontainer-postgres-runtime-role.md) before changing
-`DATABASE_URL`. It retains the current `kaori` database, existing tables,
-and data; creates one restricted `kaori_runtime` login; and explains
-interactive credential setup, PostgreSQL permissions, backup, the opt-in
-`KAORI_DEV_RUNTIME_DATABASE_URL` for **all** workers/Beat, owner-only
-migrations, read-only verification and rollback. Do not repair this by
-revoking rights from the owner, weakening the ledger triggers or
-resetting any volume.
-
+For **new** PostgreSQL volumes use [the approved three-role fresh setup](operations/devcontainer-postgres-first-run.md).
+For older owner-initialized clusters, the [historical #1405 data-preserving cutover](operations/devcontainer-postgres-runtime-role.md) remains a distinct process.
+The old `KAORI_DEV_RUNTIME_DATABASE_URL` switch has been retired from
+active DevContainer Compose. Never destroy stored data to fix role grants;
+request a reviewed migration/back-up workstream.
 ### 4. Build or watch frontend assets
 
 For active UI development, VS Code runs the `KAORI: Watch Tailwind CSS` background task automatically on folder open after the Dev Container lifecycle completes. Trust the workspace and choose **Allow Automatic Tasks** when prompted. If auto tasks are disabled, use **Terminal → Run Task → KAORI: Watch Tailwind CSS**, or run manually:
