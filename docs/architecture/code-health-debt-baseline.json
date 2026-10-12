@@ -98,7 +98,7 @@
     "app/kubernetes/analytics/utilization/service.py": 1103,
     "app/reports/generated/service.py": 1665,
     "app/reports/overview/service.py": 1026,
-    "app/reports/schedules/service.py": 909,
+    "app/reports/schedules/service.py": 908,
     "app/reports/storage/service.py": 949,
     "app/kubernetes/tenant/access_service.py": 967,
     "app/kubernetes/tenant/credential_service.py": 863,
