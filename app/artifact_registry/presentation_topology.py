@@ -171,12 +171,17 @@ def build_dependency_topology(
             str(artifact_pk), cluster_key, binding.namespace,
             workload_type, workload_name,
         )
-        workload_keys.add(workload_key)
-        workload_node = add_node(
-            'workload', workload_key, workload_name,
-            subtitle=workload_type,
+        workload_node = None
+        if binding.workload_name:
+            workload_keys.add(workload_key)
+            workload_node = add_node(
+                'workload', workload_key, workload_name,
+                subtitle=workload_type,
+            )
+        pod_key = (
+            str(artifact_pk), cluster_key, binding.namespace,
+            'pod', binding.pod_name,
         )
-        pod_key = (*workload_key, binding.pod_name)
         pod_keys.add(pod_key)
         pod_node = add_node(
             'pod', pod_key, binding.pod_name,
@@ -194,12 +199,18 @@ def build_dependency_topology(
         ] or [{'name': binding.container_name or 'Container', 'kind': 'container'}]
         confidence = 'strong' if binding.match_type == 'digest' else 'medium'
         match = _runtime_match_state(binding.match_type, binding.confidence)
-        for source, target, relationship in (
+        relationships = [
             (artifact_node, cluster_node, 'runtime_usage'),
             (cluster_node, namespace_node, 'contains'),
-            (namespace_node, workload_node, 'contains'),
-            (workload_node, pod_node, 'owns'),
-        ):
+        ]
+        if workload_node is not None:
+            relationships.extend([
+                (namespace_node, workload_node, 'contains'),
+                (workload_node, pod_node, 'owns'),
+            ])
+        else:
+            relationships.append((namespace_node, pod_node, 'contains'))
+        for source, target, relationship in relationships:
             edge_key = add_edge(source, target, relationship)
             if relationship == 'runtime_usage':
                 confidence_by_edge[edge_key].add(confidence)
