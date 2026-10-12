@@ -42,36 +42,32 @@ Do not create or use a host `.venv`; the supported Python runtime is inside the 
 
 ### 3. Initialize or upgrade the database
 
-For a fresh development database:
+Normal Flask/worker sessions use only the **non-owner** `DATABASE_URL`.
+`POSTGRES_*` supplies the PostgreSQL bootstrap owner; a schema migration
+or RBAC/admin seed must be explicitly run as that owner. The existing
+`scripts/init_db.sh` requires temporary `KAORI_DB_MIGRATION_URL`
+(owner connection) rather than trying to run DDL with the app runtime.
+**Do not store `KAORI_DB_MIGRATION_URL` in `.env`.** Do not invoke
+`flask db upgrade` from a runtime-only VS Code terminal without
+an explicit owner migration context.
 
-```bash
-bash scripts/init_db.sh --bootstrap-admin
-```
+For a fresh, disposable DevContainer PostgreSQL database, follow the
+[scoped fresh-bootstrap runbook](operations/devcontainer-postgres-fresh-bootstrap.md):
+DB-only volume confirmation/reset → Alembic and admin/RBAC with owner →
+`kaori_runtime` provisioning and login → restricted app/workers/Beat.
 
-For an existing development database after pulling migrations:
+For an existing database with records, use the
+[data-preserving runtime-role runbook](operations/devcontainer-postgres-runtime-role.md).
+Never delete the database in this existing-data procedure.
+After approved migrations, the owner must refresh restricted role grants
+before starting workers; the immutable ledger trigger/ACL checks remain
+authoritative.
 
-```bash
-flask --app run:app db upgrade
-```
-
-On a fresh or migration-behind development database, the workspace remains usable while Celery workers and Beat wait for the exact current Alembic migration head. They do not dispatch or consume scheduled KAORI work before schema readiness and they do not run migrations themselves. After the migration step completes, the background services continue automatically without a manual restart.
-
-### 3a. Existing DevContainer database: PostgreSQL runtime privilege split
-
-If Capsule G1 restart reports `PostgreSQL Capsule ledger role, trigger or
-WAL durability is not admitted`, first verify which PostgreSQL role
-Flask actually uses. An owner/superuser DevContainer database connection
-does not satisfy the write-once ledger role boundary even when triggers
-and WAL settings are valid.
-
-Use the [existing-database DevContainer PostgreSQL role runbook](operations/devcontainer-postgres-runtime-role.md) before changing
-`DATABASE_URL`. It retains the current `kaori` database, existing tables,
-and data; creates one restricted `kaori_runtime` login; and explains
-interactive credential setup, PostgreSQL permissions, backup, the opt-in
-`KAORI_DEV_RUNTIME_DATABASE_URL` for **all** workers/Beat, owner-only
-migrations, read-only verification and rollback. Do not repair this by
-revoking rights from the owner, weakening the ledger triggers or
-resetting any volume.
+On a fresh or migration-behind development database, workers and Beat
+wait for the exact current Alembic migration head. A fresh bootstrap
+must finish role/login provisioning and consider old Redis job state
+before workers/Beat are resumed. `WAIT_FOR_SCHEMA` is not a substitute
+for runtime role security.
 
 ### 4. Build or watch frontend assets
 
