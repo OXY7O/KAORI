@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.extensions.db import db
@@ -37,6 +37,8 @@ from app.intelligence.rule_exceptions import active_rule_exceptions, matching_ru
 from app.intelligence.service import get_active_recommendation_findings
 from app.models.alert_ops import AlertCase, RecommendationAlertState, RuleException
 from app.models.cluster import Cluster
+from app.models.inventory import ClusterInventory
+from app.models.registry import RegistryCollectionState
 from app.models.integration import IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 
@@ -741,10 +743,20 @@ def _source_evidence_posture(
     signal = str(signal_source or '').strip().lower()
     if not normalized_asset:
         return True, ''
+    # A missing recommendation can imply recovery only after a successful,
+    # recent committed observation for the exact source asset. A connected
+    # provider or a live binding alone cannot establish source recovery.
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
     if normalized_domain == 'kubernetes':
         asset = db.session.get(Cluster, normalized_asset)
         if asset is None:
             return False, 'source_deleted'
+        observed = ClusterInventory.query.filter(
+            ClusterInventory.cluster_id == normalized_asset,
+            ClusterInventory.collected_at >= cutoff,
+        ).first()
+        if observed is None:
+            return False, 'source_unavailable'
         if signal == 'alertmanager':
             return _binding_posture('alert_source', 'kubernetes_cluster', normalized_asset)
         if signal in {'metrics_source', 'prometheus'}:
@@ -761,6 +773,8 @@ def _source_evidence_posture(
         asset = db.session.get(ObjectStorageSystem, normalized_asset)
         if asset is None:
             return False, 'source_deleted'
+        if asset.inventory_observed_at is None or _as_utc(asset.inventory_observed_at) < cutoff:
+            return False, 'source_unavailable'
         if signal in {'metrics_source', 'prometheus'}:
             return _binding_posture('metrics_source', 'object_storage_system', normalized_asset)
         if signal == 'alertmanager':
@@ -776,6 +790,14 @@ def _source_evidence_posture(
         if not identity.enabled or str(identity.lifecycle_status or '').lower() != 'active':
             return False, 'source_unavailable'
         if str(identity.readiness_status or '').lower() == 'blocked':
+            return False, 'source_unavailable'
+        collection = db.session.get(RegistryCollectionState, identity.id)
+        if (
+            collection is None
+            or collection.status != 'ready'
+            or collection.last_committed_at is None
+            or _as_utc(collection.last_committed_at) < cutoff
+        ):
             return False, 'source_unavailable'
         return True, ''
     return True, ''
