@@ -150,3 +150,55 @@ def test_capsule_quota_cutover_comparisons_preserve_distinct_provider_authoritie
     assert 'state ? state.desired_quota || {} : null' in script
     assert 'tenantSelect?.addEventListener(\'change\', render)' in script
     assert 'profileSelect?.addEventListener(\'change\', render)' in script
+
+
+def test_capsule_tenant_quota_comparison_panels_have_symmetric_metadata_slots() -> None:
+    from jinja2 import Environment
+
+    template = (ROOT / 'app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html').read_text(
+        encoding='utf-8'
+    )
+    script = (ROOT / 'app/static/js/tenant_resource_profile_presets.js').read_text(
+        encoding='utf-8'
+    )
+    native = (ROOT / 'app/templates/kubernetes/tenant/partials/_allocation_cutover.html').read_text(
+        encoding='utf-8'
+    )
+    Environment(autoescape=True).parse(template)
+
+    # Both Capsule form comparisons use one Current/Proposed anatomy, rather
+    # than separate markup with different header counts or quota baselines.
+    assert template.count("{% for side, title, caption in [") == 2
+    assert template.count('class="flex min-h-[8rem] flex-col"') == 2
+    assert template.count('class="min-h-5 break-words text-sm font-semibold text-content-primary"') == 4
+    assert template.count('class="min-h-5 break-words text-xs text-content-muted"') == 4
+    assert template.count('data-tenant-quota-metric-side="{{ side }}"') == 2
+    assert template.count('data-tenant-quota-metric-key="{{ key }}"') == 2
+    assert template.count('Tenant.spec.resourceQuotas · Requests &amp; Limits') == 2
+    assert 'data-tenant-quota-current-source' in template
+    assert 'data-tenant-quota-current-scope' in template
+    assert 'data-tenant-quota-proposed-profile' in template
+    assert 'data-tenant-quota-proposed-summary' in template
+    assert 'data-tenant-quota-managed-current' in template
+    assert 'data-tenant-quota-managed-summary' in template
+    assert 'data-tenant-quota-managed-proposed-profile' in template
+    assert 'data-tenant-quota-managed-proposed-summary' in template
+
+    # Preserve both authoritative Capsule actions and bounded eligibility.
+    assert "url_for('tenant.cutover_capsule_tenant_quota_route')" in template
+    assert "url_for('tenant.change_capsule_tenant_quota_route')" in template
+    assert template.count('name="csrf_token"') == 2
+    assert 'not can_manage or not capsule_tenant_quota_cutover_supported or not profiles' in template
+    assert 'not can_manage or not capsule_tenant_quota_managed or not profiles' in template
+
+    # Changing either select updates both the profile and its summary;
+    # missing selections retain the same explicit dash placeholder.
+    assert "const proposedSummary = form.querySelector('[data-tenant-quota-managed-proposed-summary]')" in script
+    assert "if (proposedSummary) proposedSummary.textContent = proposed ? quotaSummary(proposed.quota) : '—'" in script
+    assert "if (summary) summary.textContent = state ? quotaSummary(state.desired_quota) : '—'" in script
+    assert "tenantSelect?.addEventListener('change', render)" in script
+    assert "profileSelect?.addEventListener('change', render)" in script
+
+    # The cutover warning remains fail-closed, merely shorter.
+    assert 'Allocation stays unchanged until admission, ownership checks, mutation, and read-back succeed.' in native
+    assert 'No allocation authority changes until capacity admission' not in native
