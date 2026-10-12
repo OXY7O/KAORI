@@ -437,7 +437,9 @@ def _analytics_provider_id() -> int | None:
     value = request.args.get('provider_id')
     if value is None or value == '':
         return None
-    if not value.isdecimal() or int(value) <= 0:
+    if not value.isascii() or not value.isdecimal() or len(value) > 18:
+        abort(404)
+    if int(value) <= 0:
         abort(404)
     return int(value)
 
