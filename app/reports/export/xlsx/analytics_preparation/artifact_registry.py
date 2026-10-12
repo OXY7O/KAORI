@@ -93,10 +93,10 @@ def prepare_artifact_registry(
 
     alerts = [
         {
-            'name': first(item, 'name', default='KAORI Alert Case'),
+            'name': first(item, 'title', 'name', default='KAORI Alert Case'),
             'severity': first(item, 'severity', default='Info'),
             'state': first(item, 'state', default='Active'),
-            'summary': first(item, 'summary', default='Not Available'),
+            'summary': first(item, 'description', 'summary', default='Not Available'),
         }
         for item in sequence(payload.get('alerts'))
     ]
