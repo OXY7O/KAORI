@@ -107,6 +107,18 @@ Authentication responsiveness follows the canonical KAORI viewport matrix (1440Ã
 
 When PostgreSQL is reachable but the KAORI schema is missing, `access/authentication/setup_required.html` renders the release-aligned initialization workspace. The surface stays read-only: it explains the encryption boundary, presents the canonical bootstrap sequence, exposes missing schema evidence, and returns the operator to the normal login readiness check.
 
+In a fresh `kaori-dev` database with canonical non-owner `DATABASE_URL`,
+the initial **Initialization Required** view requires a connectable
+`kaori_runtime` role **before schema migration**. If that role does not
+yet exist, the same 503 template safely reports **Database Unavailable**
+instead. This is not an interactive installer. The developer may use
+the [scoped fresh bootstrap runbook](../../../docs/operations/devcontainer-postgres-fresh-bootstrap.md)
+to provision the restricted login for a first-run UI screenshot,
+then stop Flask, migrate/seed as the PostgreSQL owner using **transient**
+`KAORI_DB_MIGRATION_URL`, refresh restricted-role grants, and resume runtime.
+The setup workspace must not suggest unqualified `flask db upgrade` under
+the non-owner application URL or store the privileged URL in `.env`.
+
 Executable bootstrap and recovery instructions must use `components/terminal_command.html`. Copy behavior is owned by the shared `app/static/js/clipboard.js` runtime; authentication templates must not add inline clipboard handlers or page-local terminal chrome. The authenticated and unauthenticated layouts both load this runtime so the command component has one cross-shell interaction contract.
 
 ## Security Invariants
