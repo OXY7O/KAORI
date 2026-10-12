@@ -167,6 +167,15 @@ def firing_routes(case: AlertCase) -> list[FiringRoute]:
             )
         return routes
 
+    # Channel defaults apply only when no explicit governed policy owns this
+    # domain. A configured rule that does not match severity/matchers must not
+    # silently widen to an ungoverned broadcast.
+    governed = AlertRoutingPolicy.query.filter(
+        AlertRoutingPolicy.domains_json.is_not(None)
+    ).all()
+    if any(case.domain in (policy.domains_json or []) for policy in governed):
+        return []
+
     repeat = _DEFAULT_REPEAT_BY_SEVERITY.get(case.severity, 60)
     channels = NotificationChannel.query.filter_by(enabled=True).order_by(NotificationChannel.id.asc()).all()
     return [
@@ -194,7 +203,10 @@ def policy_allows_resolved(case: AlertCase, channel_id: int) -> bool:
         return False
     policies = matching_routing_policies(case)
     if not policies:
-        return True
+        # Default delivery is valid only where no matching domain policy was
+        # ever configured; do not retroactively authorize resolved delivery.
+        governed = AlertRoutingPolicy.query.all()
+        return not any(case.domain in (policy.domains_json or []) for policy in governed)
     return any(policy.send_resolved and channel_id in (policy.channel_ids_json or []) for policy in policies)
 
 
