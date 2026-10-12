@@ -4,11 +4,10 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, overload
 
 from sqlalchemy import func, or_
-
-from app.extensions.db import db
 from werkzeug.exceptions import NotFound
 
 from app.common.pagination import paginate_sequence
+from app.extensions.db import db
 from app.dashboards.common.operational import normalize_operational_tab
 from app.definitions.loader import load_definition_document
 from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
