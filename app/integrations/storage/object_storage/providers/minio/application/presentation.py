@@ -311,7 +311,7 @@ def build_detail_context(
 
     inventory_observed_at = instance.object_storage_system.inventory_observed_at
     source_metadata = instance.integration_instance.metadata_json or {}
-    source_changed = (
+    source_changed = inventory_observed_at is not None and (
         int(source_metadata.get('object_storage_connection_generation') or 0)
         != int(source_metadata.get('object_storage_inventory_generation') or 0)
     )

@@ -372,7 +372,7 @@ def _system_row(
             'compatibility_profile_label': _compatibility_profile_display(
                 connection.compatibility_profile if connection is not None else None
             ),
-            **_SYSTEM_SNAPSHOT_SOURCE,
+            **(_SYSTEM_SNAPSHOT_SOURCE if not row.get('inventory_source_changed') else {}),
         }
     )
     return row

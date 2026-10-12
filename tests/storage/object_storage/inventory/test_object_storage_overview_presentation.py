@@ -194,3 +194,44 @@ def test_inventory_overview_aggregates_without_loading_entire_bucket_collection(
     assert 'ObjectStorageBucket.query.all()' not in overview
     assert '_system_query().all()' not in overview
     assert '_system_row(' not in overview
+
+
+def test_storage_inventory_system_row_qualifies_source_changed_evidence() -> None:
+    from types import SimpleNamespace
+
+    from app.storage.object_storage.inventory.presentation import _system_row
+
+    observed = datetime.now(UTC)
+    system = SimpleNamespace(
+        id='system-1', name='System One', description=None, environment='uat',
+        status='unknown', buckets=[SimpleNamespace(name='prior-bucket')],
+        inventory_observed_at=observed,
+    )
+    connection = SimpleNamespace(
+        id=7, declared_release=None, endpoint='https://s3.example.invalid',
+        region='us-east-1', addressing_style='path', compatibility_profile=None,
+        readiness_status='validation_required', last_validated_at=None, last_checked_at=None,
+    )
+    metadata = {'object_storage_connection_generation': 2, 'object_storage_inventory_generation': 1}
+    owner = SimpleNamespace(
+        identity=SimpleNamespace(metadata_json=metadata), record=connection,
+        provider_key='minio', provider=SimpleNamespace(label='MinIO'),
+    )
+    row = _system_row(system, owner=owner, owner_resolved=True)
+    assert row['inventory_source_changed'] is True
+    assert row['sync_status_label'] == 'Source Changed'
+    assert row['sync_status_tone'] == 'warning'
+    assert row['snapshot_source'] == 'Last-Known Snapshot'
+    assert row['guidance']['title'] == 'Revalidate Storage Source'
+    assert row['bucket_count'] == 1  # Historical count, not a new-source zero.
+
+    owner.identity.metadata_json['object_storage_inventory_generation'] = 2
+    current = _system_row(system, owner=owner, owner_resolved=True)
+    assert current['inventory_source_changed'] is False
+    assert current['snapshot_source'] == 'Committed Snapshot'
+
+    system.inventory_observed_at = None
+    owner.identity.metadata_json['object_storage_connection_generation'] = 3
+    absent = _system_row(system, owner=owner, owner_resolved=True)
+    assert absent['inventory_source_changed'] is False
+    assert absent['sync_status_label'] == 'Not Collected'

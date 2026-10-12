@@ -101,6 +101,18 @@ def _snapshot_status(value: datetime | None) -> tuple[str, str]:
 
 def _inventory_signals(row: dict[str, Any]) -> list[dict[str, str]]:
     signals: list[dict[str, str]] = []
+    if row.get('inventory_source_changed'):
+        signals.append(
+            {
+                'label': 'Source Changed',
+                'tone': 'warning',
+                'icon': 'refresh-cw',
+                'description': (
+                    'The retained bucket snapshot belongs to a previous storage connection generation. '
+                    'Revalidate the source, then run Object Storage Inventory Sync.'
+                ),
+            }
+        )
     if row['status_tone'] in {'critical', 'warning', 'unknown'}:
         signals.append(
             {
@@ -135,6 +147,13 @@ def _inventory_signals(row: dict[str, Any]) -> list[dict[str, str]]:
 
 def _inventory_guidance(row: dict[str, Any], signals: list[dict[str, str]]) -> dict[str, str]:
     labels = {signal['label'] for signal in signals}
+    if 'Source Changed' in labels:
+        return {
+            'title': 'Revalidate Storage Source',
+            'description': 'Run provider Full Validation and Object Storage Inventory Sync before treating retained inventory as current.',
+            'icon': 'refresh-cw',
+            'tone': 'warning',
+        }
     if 'Provider Attention' in labels:
         return {
             'title': 'Review Provider Readiness',
@@ -179,7 +198,16 @@ def _system_row(
     status_label, status_tone = _status(system.status)
     buckets = list(system.buckets or ())
     latest_observed_at = system.inventory_observed_at
-    sync_status_label, sync_status_tone = _snapshot_status(latest_observed_at)
+    metadata = (owner.identity.metadata_json or {}) if owner is not None else {}
+    source_changed = latest_observed_at is not None and (
+        int(metadata.get('object_storage_connection_generation') or 0)
+        != int(metadata.get('object_storage_inventory_generation') or 0)
+    )
+    sync_status_label, sync_status_tone = (
+        ('Source Changed', 'warning')
+        if source_changed and latest_observed_at is not None
+        else _snapshot_status(latest_observed_at)
+    )
     row: dict[str, Any] = {
         'id': system.id,
         'name': system.name,
@@ -219,7 +247,8 @@ def _system_row(
         'last_inventory_at': latest_observed_at,
         'sync_status_label': sync_status_label,
         'sync_status_tone': sync_status_tone,
-        'snapshot_source': 'Committed Snapshot',
+        'inventory_source_changed': source_changed,
+        'snapshot_source': 'Last-Known Snapshot' if source_changed else 'Committed Snapshot',
         'freshness_window_hours': OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS,
         'last_validated_at': connection.last_validated_at if connection is not None else None,
         'last_checked_at': connection.last_checked_at if connection is not None else None,
