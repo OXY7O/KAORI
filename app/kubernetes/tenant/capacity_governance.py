@@ -700,10 +700,11 @@ def _enforce_allocation_preflight(
     if limit_mode == 'enforce' and (positive_change or limit_positive):
         limit_evidence['enforced'] = True
         if request.proposed_limits is None:
-            pure = replace(
-                pure, allowed=False, decision='block', state='Unknown',
-                reason='Limit Exposure proposal is missing; operator Enforce mode fails closed.',
-            )
+            if pure.allowed:
+                pure = replace(
+                    pure, allowed=False, decision='block', state='Unknown',
+                    reason='Limit Exposure proposal is missing; operator Enforce mode fails closed.',
+                )
         else:
             if request.limit_committed_state is not None:
                 limit_before, _, unknown_limit_sources = request.limit_committed_state
@@ -744,7 +745,7 @@ def _enforce_allocation_preflight(
                 unknown_sources=unknown_limit_sources,
             )
             limit_evidence['assessment'] = report
-            if report['state'] in {'Unknown', 'Overcommitted'}:
+            if pure.allowed and report['state'] in {'Unknown', 'Overcommitted'}:
                 pure = replace(
                     pure, allowed=False, decision='block', state=report['state'],
                     reason=f"Limit Exposure admission blocked: {report['reason']}",
