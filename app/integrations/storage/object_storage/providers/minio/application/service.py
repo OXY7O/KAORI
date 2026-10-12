@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
@@ -108,6 +109,28 @@ def update_minio_instance(instance: MinioInstance, values: MinioRegistrationInpu
     if duplicate_asset is not None:
         raise ValueError('An object-storage asset with this name already exists.')
 
+    # Inventory Sync locks this same asset for its provider read and atomic commit.
+    # Serialize configuration mutation with that lock so no in-flight inventory
+    # can be committed under a different connection identity.
+    db.session.execute(
+        select(ObjectStorageSystem.id)
+        .where(ObjectStorageSystem.id == instance.object_storage_system_id)
+        .with_for_update()
+    ).scalar_one()
+    db.session.refresh(instance)
+    db.session.refresh(instance.integration_instance)
+
+    source_changed = any(
+        (
+            instance.endpoint != values.endpoint,
+            instance.access_key != values.access_key,
+            str(instance.secret_key) != values.secret_key,
+            instance.region != values.region,
+            instance.addressing_style != values.addressing_style,
+            instance.verify_ssl != values.verify_ssl,
+            instance.declared_release != values.declared_release,
+        )
+    )
     connection_changed = any(
         (
             instance.endpoint != values.endpoint,
@@ -160,8 +183,13 @@ def update_minio_instance(instance: MinioInstance, values: MinioRegistrationInpu
         asset.status = 'unknown'
         asset.last_check = None
 
+    metadata = dict(canonical.metadata_json or {})
+    if source_changed:
+        metadata['object_storage_connection_generation'] = int(
+            metadata.get('object_storage_connection_generation') or 0
+        ) + 1
     canonical.metadata_json = {
-        **(canonical.metadata_json or {}),
+        **metadata,
         'asset_type': OBJECT_STORAGE_SYSTEM_SCOPE,
         'asset_key': asset.id,
         'endpoint_product': 'minio',
