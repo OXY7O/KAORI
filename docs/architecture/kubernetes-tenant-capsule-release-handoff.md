@@ -373,6 +373,53 @@ conditional PATCH, authoritative complete post-mutation read-back and
 manual partial recovery remain outstanding. No tests, CI/CD or actual
 provider operations were executed for this source slice.
 
+## Expired acknowledged Capsule G1 review — governed zero-attempt restart (#1228)
+
+Local DevContainer screenshots show that `kaori-demo` still displayed
+`Independent Review Recorded / Transfer Pending` for an old plan,
+while Capsule Platform Admin consent returned
+`Current independently approved exact Capsule Release plan is required.`.
+The backend correctly requires **both** original `requested_at` and
+`approved_at` to remain within the existing 900-second window.
+The Registry previously projected `acknowledged` indefinitely, because
+that label describes historical review, not **current acceptance authority**.
+Unlike Native, Capsule had no source-wired requester restart path for
+an *expired acknowledged* plan; it could become operationally stuck even
+without any provider PATCH.
+
+New `capsule_handoff_restart.py` is a strictly **no-provider-mutation**
+restart. It requires the original requester, exact immutable plan hash
+and independent reviewer receipt, expired trustworthy timestamps,
+Ready/adopted/Capsule authority and generation, a **fresh complete G0**
+provider preflight and normal G1 blocker policy. It demands the installed
+PostgreSQL immutable Capsule START ledger (full trigger, restricted DB
+role and WAL guards) and **no START rows for this Tenant**; all legacy
+execution, actual Release and handback AuditEvent targets must also be
+empty. The ledger/execution checks are repeated after taking the Tenant
+row lock. Missing schema, privileged/mutable/unreadable ledger, any
+partial/unknown START, or changed provider object identity causes
+**FAIL/recovery**, never fresh consent or retry.
+
+On positive zero-attempt evidence only, restart records a distinct
+fresh SHA with current object-scoped fingerprint and preflight, retaining
+the successor and change record but **never** carrying old independent
+approval, Platform Admin consent, preview or execution authority to the
+new plan. A separate approver and X.509 Platform Admin must consent
+again. No quota/limit/RoleBinding/Namespace PATCH is executed.
+
+The existing Violet/HTMX Tenant Release UI now distinguishes
+`Capsule Approval Expired` from historical review, hides the stale
+acceptance form, and provides a requester-only explicit
+`Restart Expired Capsule Plan` action. A non-requester is directed back
+to the original requester. The service is still authoritative and rejects
+unsuitable attempts regardless of UI state or forged form values.
+
+This change is source-only and **not runtime PASS**. Tests/CI/CD and
+PostgreSQL guard installation are held. Operators must first refresh
+the `External Capsule Access Inspection` if its evidence has expired;
+otherwise G0 will correctly refuse the new plan. See G0–G6 gate baseline
+for independent G2 provider dry-run, START and G4/G5 acceptance.
+
 ## G1 independent-review drift diagnostics — #1228 DevContainer feedback
 
 The local `kaori-demo` Release wizard successfully prepared the SHA-bound
