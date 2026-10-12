@@ -115,9 +115,8 @@ def test_cluster_breakdown_uses_existing_metadata_badge_without_health_claim() -
     assert "table_label.metadata_label(badge, none, false, badge_size)" in shared
     assert "Cluster name, version, connection." in cluster
     assert "Collection, source, freshness." in cluster
-    assert 'whitespace-nowrap' not in cluster.split(
-        "{% call detail.inventory_section('Cluster Identity'", 1
-    )[1].split("{% endcall %}", 1)[0].split("description=", 1)[0]
+    assert 'data-kaori-inventory-section-description' in shared
+    assert 'break-words text-xs leading-5' in shared
 
 def test_namespace_detail_context_is_compact_and_uid_has_no_clipboard_control() -> None:
     from jinja2 import Environment, FileSystemLoader
