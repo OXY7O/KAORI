@@ -100,12 +100,28 @@ def recommendation_row(finding: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _tenant_findings() -> list[dict[str, Any]]:
+def _tenant_findings(
+    cluster_id: str,
+    *,
+    namespace: str | None = None,
+    tenant_ids: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Publish only findings belonging to this report's canonical asset scope."""
     rows: list[dict[str, Any]] = []
-    for finding in get_active_recommendation_findings(domain='kubernetes'):
+    for finding in get_active_recommendation_findings(domain='kubernetes', asset_key=cluster_id):
         rule_key = str(finding.get('rule_key') or '')
-        if rule_key.startswith('kubernetes.tenant.'):
-            rows.append(recommendation_row(finding))
+        if not rule_key.startswith('kubernetes.tenant.'):
+            continue
+        row = recommendation_row(finding)
+        if namespace:
+            # Only structured committed scope identities can establish membership.
+            if row['namespace'] and row['namespace'] != namespace:
+                continue
+            if row['tenant_id'] and row['tenant_id'] not in (tenant_ids or set()):
+                continue
+            if not row['namespace'] and not row['tenant_id']:
+                continue
+        rows.append(row)
     return rows
 
 
@@ -523,7 +539,7 @@ def get_report_tenant_governance_payload(report: Report) -> dict[str, Any]:
     tenant_by_id = {row.id: row for row in tenants}
     environment_by_id = {row.id: row for row in environments}
     namespace_by_id = {row.id: row for row in namespaces}
-    findings = _tenant_findings()
+    findings = _tenant_findings(cluster_id, namespace=report.namespace, tenant_ids=set(tenant_ids))
 
     all_rows = [
         *tenants,
