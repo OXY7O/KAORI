@@ -65,6 +65,7 @@ class KubernetesRuntimeAdapter:
         return KubernetesClient(
             connection.kubeconfig,
             verify_ssl=bool(connection.verify_ssl),
+            allow_weak_tls=bool(connection.allow_weak_tls),
         )
 
     def execute(self, operation: str, instance: KubernetesConnection | Any, **kwargs: Any):
