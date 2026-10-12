@@ -14,6 +14,7 @@ from app.reports.storage.service import (
     clear_report_storage_status_cache,
     get_configured_storage_backend_name,
     refresh_report_storage_readiness,
+    scan_report_storage_integrity,
     verify_active_report_storage,
 )
 from app.reports.storage.state import get_storage_config_fingerprint
@@ -263,3 +264,75 @@ def verify_report_storage_task(
         evidence={'verified': True},
     )
     return {'status': 'healthy', **summary}
+
+
+@shared_task(
+    bind=True,
+    name='app.reports.storage.tasks.scan_report_storage_integrity_task',
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def scan_report_storage_integrity_task(
+    self,
+    *,
+    backend_name: str,
+    config_fingerprint: str,
+    requested_by_user_id: int | None,
+    job_execution_id: int | None = None,
+) -> dict[str, Any]:
+    """Check a bounded retained-reference cohort exclusively in the worker."""
+    lifecycle = JobExecutionContext(str(self.request.id), job_execution_id)
+    lifecycle.start(
+        message='Preparing report artifact integrity scan.',
+        total=2, percent=10, stage='Preparing Scan', target=backend_name.upper(),
+    )
+    if (
+        backend_name != get_configured_storage_backend_name()
+        or config_fingerprint != get_storage_config_fingerprint(backend_name)
+    ):
+        reason = 'Storage configuration changed. Restart the scan for the active backend.'
+        lifecycle.fail(reason, error_code='report_storage_integrity_configuration_changed')
+        raise ReportStorageConfigurationChanged(reason)
+    try:
+        lifecycle.checkpoint(
+            current=1, total=2, percent=50, stage='Checking References',
+            target=backend_name.upper(),
+            message='Checking up to 500 committed report artifact references.',
+        )
+        result = scan_report_storage_integrity(max_items=500)
+        lifecycle.succeed(
+            result_type='report_storage_integrity',
+            result_reference=backend_name,
+            result_summary=result,
+        )
+        if requested_by_user_id is not None:
+            record_operational_activity(
+                user_id=requested_by_user_id,
+                event_type='report_storage_integrity_scan_completed',
+                status='success' if result.get('is_healthy') else 'info',
+                title='Report Artifact Integrity Scan Completed',
+                message='Review the bounded sample, exceptions, and coverage in Reports Storage.',
+                action_url='/reports/storage?workspace=integrity',
+                action_label='View results',
+                action_icon='scan-search',
+                metadata={'job_execution_id': job_execution_id, 'checked_count': result.get('checked_count')},
+                queue_feedback=False,
+            )
+        return {'status': 'completed', 'checked_count': result.get('checked_count')}
+    except Exception:
+        logger.exception('Report storage integrity worker scan failed.')
+        lifecycle.fail('Worker could not complete reference integrity scanning.', error_code='report_storage_integrity_failed')
+        if requested_by_user_id is not None:
+            record_operational_activity(
+                user_id=requested_by_user_id,
+                event_type='report_storage_integrity_scan_failed',
+                status='error',
+                title='Report Artifact Integrity Scan Failed',
+                message='The worker could not complete the read-only artifact checks.',
+                action_url='/reports/storage?workspace=integrity',
+                action_label='View storage',
+                action_icon='scan-search',
+                metadata={'job_execution_id': job_execution_id},
+                queue_feedback=False,
+            )
+        raise
