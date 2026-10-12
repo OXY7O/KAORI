@@ -178,3 +178,7 @@ Invalid custom-template create/edit submissions render the same existing native 
 ### Report Templates generation permission (#1564)
 
 The Templates management workspace owns draft/active lifecycle and system/custom duplication. A Template manager may open Generate only if they independently have `reports.generate`; draft templates remain unavailable regardless of RBAC. The Generate route remains authoritative for admission and scope validation.
+
+### Report Templates bounded registry query (#1563)
+
+System templates remain definition-owned and first in the mixed registry. Custom template filtering, counting, and retrieval are database-side: shared KAORI pagination selects at most the current page size (default five) and a grouped type/status query supplies all-estate KPI counts without materializing the full custom estate. Search uses committed template metadata and catalog labels, not provider-live calls. No custom pagination abstraction is introduced.

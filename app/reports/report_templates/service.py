@@ -58,12 +58,28 @@ def get_report_templates_payload(
     args: MultiDict[str, str] | None = None,
 ) -> dict[str, Any]:
     selected_filters = get_selected_filters(args)
-    all_templates = get_all_template_items()
-    filtered_templates = [
-        template for template in all_templates if template_matches_filters(template, selected_filters)
-    ]
-    pagination = build_templates_pagination(args, selected_filters, len(filtered_templates))
-    templates = filtered_templates[pagination['offset'] : pagination['offset'] + pagination['per_page']]
+    system_items = [build_system_template_item(item) for item in SYSTEM_TEMPLATE_ITEMS]
+    filtered_system = [item for item in system_items if template_matches_filters(item, selected_filters)]
+    custom_statement = get_custom_template_filtered_query(selected_filters)
+    custom_count = int(
+        db.session.scalar(select(func.count()).select_from(custom_statement.order_by(None).subquery())) or 0
+    )
+    total = len(filtered_system) + custom_count
+    pagination = build_templates_pagination(args, selected_filters, total)
+    offset, size = pagination['offset'], pagination['per_page']
+    page_system = filtered_system[offset : offset + size]
+    remaining = size - len(page_system)
+    custom_offset = max(0, offset - len(filtered_system))
+    page_custom = (
+        db.session.scalars(
+            custom_statement.order_by(ReportTemplate.updated_at.desc(), ReportTemplate.name.asc(), ReportTemplate.id)
+            .offset(custom_offset)
+            .limit(remaining)
+        ).all()
+        if remaining > 0 and custom_offset < custom_count
+        else []
+    )
+    templates = page_system + [build_custom_template_item(item) for item in page_custom]
     registry_return_url = build_template_registry_url(selected_filters, pagination)
     for template in templates:
         if template['source'] == 'custom':
@@ -71,12 +87,14 @@ def get_report_templates_payload(
                 selected_filters, pagination, edit_template_id=int(template['database_id'])
             )
     edit_template = get_edit_template_context(args) if args is not None else None
+    # Aggregated weighting preserves all-estate KPIs without reading every custom row.
+    summary_items = system_items + get_custom_template_aggregate_items()
 
     return {
         'page_title': 'Report Templates',
         'page_subtitle': ('Manage report templates for Analytics and Inventory output formats.'),
-        'summary_cards': get_summary_cards(all_templates),
-        'posture': get_template_posture(all_templates),
+        'summary_cards': get_summary_cards(summary_items),
+        'posture': get_template_posture(summary_items),
         'filter_options': get_filter_options(),
         'selected_filters': selected_filters,
         'active_filter_count': count_active_filters(selected_filters),
@@ -97,6 +115,72 @@ def get_report_templates_payload(
         },
         'report_family_by_report_type': {str(option['value']): str(option['family']) for option in REPORT_TYPE_OPTIONS},
     }
+
+
+def get_custom_template_aggregate_items() -> list[dict[str, Any]]:
+    """One grouped query carries counts without loading custom template entities."""
+    rows = db.session.execute(
+        select(ReportTemplate.report_type, ReportTemplate.status, func.count(ReportTemplate.id)).group_by(
+            ReportTemplate.report_type, ReportTemplate.status
+        )
+    ).all()
+    return [
+        {
+            'ownership': 'custom',
+            'status': status,
+            'family': get_report_family(report_type) if report_type in get_allowed_report_types() else 'unknown',
+            '_weight': int(count),
+        }
+        for report_type, status, count in rows
+    ]
+
+
+def get_custom_template_filtered_query(filters: dict[str, str]):
+    """Compose SQL-side registry search; only the current page is materialized."""
+    query = select(ReportTemplate)
+    if filters['domain']:
+        query = query.where(ReportTemplate.report_domain == filters['domain'])
+    if filters['family']:
+        family_types = [spec.value for spec in REPORT_TYPE_SPECS if spec.family == filters['family']]
+        query = query.where(ReportTemplate.report_type.in_(family_types))
+    if filters['report_type']:
+        query = query.where(ReportTemplate.report_type == filters['report_type'])
+    if filters['ownership'] == 'system' or filters['status'] == 'system':
+        query = query.where(ReportTemplate.id == -1)
+    if filters['status'] in {'active', 'draft'}:
+        query = query.where(ReportTemplate.status == filters['status'])
+    if filters['output_format']:
+        query = query.where(func.lower(ReportTemplate.output_format) == filters['output_format'])
+    if filters['search']:
+        term = filters['search'].strip().lower()
+        escaped = term.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        pattern = f'%{escaped}%'
+        matching_report_types = [
+            spec.value for spec in REPORT_TYPE_SPECS
+            if term in spec.label.lower() or term in spec.family.lower()
+        ]
+        matching_domains = [
+            domain for domain, label in REPORT_DOMAIN_LABELS.items()
+            if term in label.lower()
+        ]
+        matching_sections = [
+            str(item['value']) for item in SECTION_OPTIONS
+            if term in str(item['label']).lower()
+        ]
+        section_text = func.lower(cast(ReportTemplate.sections, db.String))
+        predicates = [
+            func.lower(ReportTemplate.name).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.description).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.created_by_display_name_snapshot).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.created_by_username_snapshot).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.report_type).like(pattern, escape='\\'),
+            section_text.like(pattern, escape='\\'),
+            ReportTemplate.report_type.in_(matching_report_types),
+            ReportTemplate.report_domain.in_(matching_domains),
+        ]
+        predicates.extend(section_text.like(f'%{section}%') for section in matching_sections)
+        query = query.where(or_(*predicates))
+    return query
 
 
 def get_all_template_items() -> list[dict[str, Any]]:
@@ -479,10 +563,11 @@ def apply_template_owner_snapshot(template: ReportTemplate, user_id: int | None)
 
 
 def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
-    system_templates = sum(1 for template in templates if template['ownership'] == 'system')
-    custom_templates = sum(1 for template in templates if template['ownership'] == 'custom')
+    system_templates = sum(int(template.get('_weight', 1)) for template in templates if template['ownership'] == 'system')
+    custom_templates = sum(int(template.get('_weight', 1)) for template in templates if template['ownership'] == 'custom')
     active_custom_templates = sum(
-        1 for template in templates if template['ownership'] == 'custom' and template['status'] == 'active'
+        int(template.get('_weight', 1))
+        for template in templates if template['ownership'] == 'custom' and template['status'] == 'active'
     )
     return [
         {
@@ -508,7 +593,7 @@ def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
         },
         {
             'label': 'Total Templates',
-            'value': str(len(templates)),
+            'value': str(system_templates + custom_templates),
             'caption': 'System and custom definitions',
             'icon': 'layout-template',
             'tone': 'info',
@@ -517,14 +602,16 @@ def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
 
 
 def get_template_posture(templates: list[dict[str, Any]]) -> dict[str, Any]:
-    analytics_count = sum(1 for item in templates if item.get('family') == REPORT_FAMILY_ANALYTICS)
-    inventory_count = sum(1 for item in templates if item.get('family') == REPORT_FAMILY_INVENTORY)
-    system_count = sum(1 for item in templates if item.get('ownership') == 'system')
-    custom_count = sum(1 for item in templates if item.get('ownership') == 'custom')
+    analytics_count = sum(int(item.get('_weight', 1)) for item in templates if item.get('family') == REPORT_FAMILY_ANALYTICS)
+    inventory_count = sum(int(item.get('_weight', 1)) for item in templates if item.get('family') == REPORT_FAMILY_INVENTORY)
+    system_count = sum(int(item.get('_weight', 1)) for item in templates if item.get('ownership') == 'system')
+    custom_count = sum(int(item.get('_weight', 1)) for item in templates if item.get('ownership') == 'custom')
     active_custom_count = sum(
-        1 for item in templates if item.get('ownership') == 'custom' and item.get('status') == 'active'
+        int(item.get('_weight', 1)) for item in templates if item.get('ownership') == 'custom' and item.get('status') == 'active'
     )
-    draft_count = sum(1 for item in templates if item.get('ownership') == 'custom' and item.get('status') == 'draft')
+    draft_count = sum(
+        int(item.get('_weight', 1)) for item in templates if item.get('ownership') == 'custom' and item.get('status') == 'draft'
+    )
     catalog_count = len(REPORT_TYPE_SPECS)
     catalog_analytics_count = sum(1 for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_ANALYTICS)
     catalog_inventory_count = sum(1 for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_INVENTORY)
