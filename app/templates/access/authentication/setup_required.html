@@ -7,7 +7,7 @@
 {% import "components/view_more_content.html" as view_more_content %}
 {% block title %}Database Setup Required · KAORI{% endblock title %}
 {% block content %}
-    {% set devcontainer_setup = config.get('DEBUG', false) and not config.get('TESTING', false) %}
+    {% set devcontainer_setup = config.get('APP_ENV') == 'development' and not config.get('TESTING', false) %}
     {% if devcontainer_setup %}
         {% set bootstrap_command = "docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap" %}
         {% set manual_bootstrap_commands -%}
