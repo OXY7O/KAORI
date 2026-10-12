@@ -96,6 +96,11 @@
         const opener = target.closest(openSelector)
         if (opener) {
             event.preventDefault()
+            // Opt-in native dialog transition keeps only one top-layer dialog
+            // active while the browser owns focus containment and restoration.
+            const current = opener.closest(dialogSelector)
+            if (opener.matches('[data-kaori-dialog-transition]') && current instanceof HTMLDialogElement && current.open)
+                current.close()
             openDialog(opener)
             return
         }
