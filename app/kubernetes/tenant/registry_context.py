@@ -1171,6 +1171,7 @@ def get_namespace_registry_context(
         'namespace_allocation_advanced_preflight': _allocation_advanced_preflight_state(
             namespace_allocation_options, profile_options
         ),
+        'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS,
         'namespace_allocation_profiles': {
             str(profile.id): {
                 'quota': profile.quota_hard_json or {},
