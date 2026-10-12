@@ -527,6 +527,51 @@ def test_storage_budget_ui_accepts_numeric_gib_and_persists_canonical_quantity()
     assert _quantity_gib_text('2048Gi') == '2048'
 
 
+def test_capacity_policy_post_persists_explicit_gib_and_preserves_optional_blank(monkeypatch) -> None:
+    policy = SimpleNamespace(tenant_storage_budget=None)
+    commits = []
+
+    class FakeSession:
+        def get(self, model, cluster_id):
+            return SimpleNamespace(id=cluster_id)
+
+        def flush(self):
+            pass
+
+        def commit(self):
+            commits.append(policy.tenant_storage_budget)
+
+    session = FakeSession()
+    monkeypatch.setattr(capacity_governance, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(
+        capacity_governance,
+        'TenantCapacityPolicy',
+        SimpleNamespace(query=SimpleNamespace(
+            filter_by=lambda **kwargs: SimpleNamespace(first=lambda: policy),
+        )),
+    )
+
+    form = {
+        'capacity_cluster_id': 'cluster-1',
+        'platform_reserve_cpu': '1',
+        'platform_reserve_memory': '1Gi',
+        'platform_reserve_pods': '1',
+        'safety_headroom_percent': '10',
+        'unmanaged_commitment_cpu': '0',
+        'unmanaged_commitment_memory': '0',
+        'unmanaged_commitment_pods': '0',
+        'tenant_storage_budget_gib': '2048',
+    }
+    saved = capacity_governance.upsert_capacity_policy_committed(form)
+    assert saved.tenant_storage_budget == '2048Gi'
+    assert capacity_governance._policy_json(saved)['tenant_storage_budget_gib'] == '2048'
+
+    # Empty is an explicitly optional, ungoverned policy input; no default.
+    capacity_governance.upsert_capacity_policy_committed({**form, 'tenant_storage_budget_gib': ''})
+    assert policy.tenant_storage_budget is None
+    assert commits == ['2048Gi', None]
+
+
 def test_logical_storage_budget_remains_available_without_compute_capacity_snapshot() -> None:
     gib = Decimal(1024**3)
     policy = SimpleNamespace(tenant_storage_budget='2048Gi')
