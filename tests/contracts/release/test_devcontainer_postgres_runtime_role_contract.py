@@ -190,3 +190,38 @@ def test_workers_and_beat_wait_for_runtime_immutable_ledger_admission() -> None:
     assert "'public.capsule_handoff_ledger_events', 'UPDATE'" in waiter
     assert "NOT has_table_privilege(current_user, 'public.alembic_version', 'UPDATE')" in waiter
     assert 'if current_heads == expected_heads:' in waiter
+
+
+def test_devcontainer_app_environment_template_documents_real_three_file_ownership() -> None:
+    example = EXAMPLE.read_text()
+    verifier = (ROOT / 'scripts/verify_environment_contract.py').read_text()
+    operations = (ROOT / 'docs/operations/devcontainer-postgres-first-run.md').read_text()
+    env_guide = (ROOT / 'docs/deployment/ENVIRONMENT_CONFIGURATION.md').read_text()
+    host = (ROOT / '.devcontainer/prepare-postgres-env.py').read_text()
+
+    entries = {
+        line.split('=', 1)[0] for line in example.splitlines()
+        if line and not line.lstrip().startswith('#') and '=' in line
+    }
+    assert {'APP_ENV', 'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PORT', 'DATABASE_URL'} <= entries
+    assert 'POSTGRES_USER=postgres' in example
+    assert 'DATABASE_URL=postgresql://kaori_runtime:' in example
+    for elevated in (
+        'POSTGRES_PASSWORD', 'KAORI_MIGRATOR_PASSWORD',
+        'KAORI_RUNTIME_PASSWORD', 'KAORI_DB_MIGRATION_URL',
+        'PGPASSWORD', 'POSTGRES_PASSWORD_FILE',
+        'KAORI_DEV_RUNTIME_DATABASE_URL',
+    ):
+        assert elevated not in entries
+    assert "DEVCONTAINER_BOOTSTRAP_SECRET_KEYS = {'POSTGRES_PASSWORD'}" in verifier
+    assert 'leaking_bootstrap' in verifier
+
+    assert 'postgres-bootstrap.env' in env_guide
+    assert 'postgres-migrate.env' in env_guide
+    assert 'POSTGRES_PASSWORD' in operations
+    assert 'KAORI_RUNTIME_PASSWORD' in operations
+    assert 'KAORI_MIGRATOR_PASSWORD' in operations
+    assert "drop_value(source, 'POSTGRES_PASSWORD')" in host
+    assert "drop_value(source, 'KAORI_DEV_RUNTIME_DATABASE_URL')" in host
+    assert "values.get('APP_ENV', 'development') != 'development'" in host
+    assert "'KAORI_MIGRATOR_PASSWORD', 'KAORI_RUNTIME_PASSWORD'" in host
