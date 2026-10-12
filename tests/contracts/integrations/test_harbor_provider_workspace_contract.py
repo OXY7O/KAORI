@@ -420,3 +420,17 @@ def test_harbor_inventory_lifecycle_keeps_artifact_registry_as_detail_owner() ->
     assert 'client.' not in inventory
     assert 'list_projects' not in presentation
     assert 'list_repositories' not in presentation
+
+
+def test_harbor_index_uses_batch_fleet_readiness_with_visible_detail_resolution() -> None:
+    source = read('app/integrations/registry/providers/harbor/application/presentation.py')
+    assert 'ready_metric_ids = registry_metrics_ready_provider_ids(identities)' in source
+    assert 'binding_counts: dict[str, int] = {}' in source
+    assert "IntegrationBinding.asset_key.in_([str(identity_id) for identity_id in identity_ids])" in source
+    assert "for row in coverage_page_rows:" in source
+    assert "registry_metrics_readiness(row['identity'])" in source
+    assert source.index('for row in coverage_page_rows:') < source.index(
+        "registry_metrics_readiness(row['identity'])"
+    )
+    assert 'metrics = registry_metrics_readiness(identity)' not in source
+    assert 'inventory_eligibility = registry_inventory_eligibility(identity)' not in source

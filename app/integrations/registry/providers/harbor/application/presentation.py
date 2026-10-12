@@ -8,12 +8,16 @@ from app.common.presentation import present_user_datetime
 from app.integrations.asset_owner_sources import build_bound_observability_source_rows
 from app.integrations.deletion import asset_owner_deletion_guard
 from app.integrations.registry.eligibility import RegistryInventoryEligibility, registry_inventory_eligibility
-from app.integrations.registry.observability import RegistryMetricsReadiness, registry_metrics_readiness
+from app.integrations.registry.observability import (
+    RegistryMetricsReadiness,
+    registry_metrics_readiness,
+    registry_metrics_ready_provider_ids,
+)
 from app.integrations.registry.providers.harbor.capabilities import CAPABILITIES, CAPABILITY_PROFILE
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.harbor import HarborInstance
-from app.models.integration import IntegrationInstance
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.registry import RegistryCollectionState, RegistryWebhookEndpoint
 
 
@@ -54,7 +58,25 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
     instances = (
         HarborInstance.query.join(HarborInstance.integration_instance).order_by(IntegrationInstance.name.asc()).all()
     )
-    identity_ids = [int(instance.integration_instance_id) for instance in instances]
+    identities = [instance.integration_instance for instance in instances]
+    identity_ids = [int(identity.id) for identity in identities]
+    # Batch fleet evidence once; do not run Metrics Source resolution for every
+    # registered Harbor connection before the two independent UI paginators.
+    ready_metric_ids = registry_metrics_ready_provider_ids(identities)
+    binding_counts: dict[str, int] = {}
+    if identity_ids:
+        for binding in (
+            IntegrationBinding.query.join(
+                IntegrationInstance,
+                IntegrationBinding.integration_instance_id == IntegrationInstance.id,
+            ).filter(
+                IntegrationInstance.integration_type == 'metrics_source',
+                IntegrationBinding.asset_type == 'registry_instance',
+                IntegrationBinding.asset_key.in_([str(identity_id) for identity_id in identity_ids]),
+                IntegrationBinding.enabled.is_(True),
+            ).all()
+        ):
+            binding_counts[binding.asset_key] = binding_counts.get(binding.asset_key, 0) + 1
     collection_states = {
         int(state.integration_instance_id): state
         for state in (
@@ -82,17 +104,26 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
 
     for instance in instances:
         identity = instance.integration_instance
-        metrics = registry_metrics_readiness(identity)
-        binding_count = int(metrics.get('binding_count') or 0)
+        binding_count = binding_counts.get(str(identity.id), 0)
         total_bindings += binding_count
+        metrics: RegistryMetricsReadiness = {
+            'status': 'ready' if identity.id in ready_metric_ids else 'unavailable' if binding_count else 'not_bound',
+            'label': 'Ready' if identity.id in ready_metric_ids else 'Unavailable' if binding_count else 'Not Bound',
+            'tone': 'normal' if identity.id in ready_metric_ids else 'warning' if binding_count else 'unknown',
+            'binding_count': binding_count,
+            'validated_binding_count': 0,
+            'selected_source': None,
+            'detail': 'Batch fleet readiness; full binding resolution belongs to the visible coverage page.',
+        }
 
         collection = collection_states.get(int(identity.id))
         webhook = webhook_endpoints.get(int(identity.id))
         api_status = _provider_status(instance)
         is_active = bool(identity.enabled and identity.lifecycle_status == 'active')
         is_disabled = not identity.enabled
-        inventory_eligibility = registry_inventory_eligibility(identity)
-        inventory_status = _inventory_status(collection, eligibility=inventory_eligibility)
+        # Eligibility details need provider resolution only for the visible page.
+        # Full Coverage depends on committed status, not the explanation text.
+        inventory_status = _inventory_status(collection)
         metrics_status = _metrics_status(metrics)
         webhook_status = _webhook_status(webhook)
 
@@ -153,6 +184,15 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
         page=query.coverage_page,
         per_page=query.coverage_per_page,
     )
+    # Deep provider/binding explanations are bounded by the visible Coverage page.
+    for row in coverage_page_rows:
+        row['metrics_status'] = _metrics_status(registry_metrics_readiness(row['identity']))
+        collection = collection_states.get(int(row['identity'].id))
+        if collection is None or collection.status == 'not_collected':
+            row['inventory_status'] = _inventory_status(
+                collection,
+                eligibility=registry_inventory_eligibility(row['identity']),
+            )
     active = sum(
         1 for instance in instances
         if instance.integration_instance.enabled and instance.integration_instance.lifecycle_status == 'active'
