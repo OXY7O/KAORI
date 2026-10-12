@@ -44,11 +44,16 @@ The supported development path is the VS Code Dev Container described in [`docs/
 
 ```bash
 cp .env.example .env
-# Open with VS Code Dev Containers (watch-css auto-starts on folder open).
-bash scripts/init_db.sh --bootstrap-admin
-# Press F5 in VS Code, or start Flask manually:
-flask --app run:app run --host=0.0.0.0 --port=5000 --debug
+# Set distinct owner POSTGRES_* and restricted runtime DATABASE_URL secrets.
+# Open in VS Code Dev Containers; follow the guarded PostgreSQL fresh
+# bootstrap runbook to run migrations as owner, provision kaori_runtime,
+# then start Flask/Beat/workers. Do not migrate as the app runtime role.
 ```
+
+See [fresh DevContainer PostgreSQL bootstrap](docs/operations/devcontainer-postgres-fresh-bootstrap.md)
+for the exact commands, or [existing-data role cutover](docs/operations/devcontainer-postgres-runtime-role.md)
+when records must be preserved. After the database guard passes, press F5
+to start the existing Flask Debug configuration.
 
 For a laptop that should run a governed staging/RC image **without a Dev Container**, use [`example/kaori`](example/kaori/README.md). The example consumes an explicit admitted image reference rather than a mutable `staging` tag.
 
