@@ -224,24 +224,47 @@ if (canvas && form) {
         next.disabled = listPage >= maxPage
     }
 
+    let graphHasLayout = false
     const setView = (value) => {
         view = value
-        const isGraph = value === 'graph'
-        graphShell.classList.toggle('hidden', !isGraph)
-        listShell.classList.toggle('hidden', isGraph)
-        graphTab.setAttribute('aria-pressed', String(isGraph))
-        listTab.setAttribute('aria-pressed', String(!isGraph))
-        $('registry-topology-fit').disabled = !isGraph || !cy
-        $('registry-topology-reset').disabled = !isGraph || !cy
-        $('registry-topology-export').disabled = !isGraph || !cy
+        const graphVisible = value === 'graph'
+        graphShell.hidden = !graphVisible
+        listShell.hidden = graphVisible
+        graphShell.classList.toggle('hidden', !graphVisible)
+        listShell.classList.toggle('hidden', graphVisible)
+        for (const [tab, active] of [[graphTab, graphVisible], [listTab, !graphVisible]]) {
+            tab.setAttribute('aria-selected', String(active))
+            tab.tabIndex = active ? 0 : -1
+            tab.classList.toggle('bg-surface-card', active)
+            tab.classList.toggle('text-kaori-primary', active)
+            tab.classList.toggle('shadow-sm', active)
+            tab.classList.toggle('text-content-muted', !active)
+        }
+        for (const id of ['registry-topology-fit', 'registry-topology-reset', 'registry-topology-export']) {
+            $(id).disabled = !graphVisible || !cy
+        }
         const url = new URL(window.location.href)
-        if (isGraph) url.searchParams.delete('view')
+        if (graphVisible) url.searchParams.delete('view')
         else url.searchParams.set('view', 'list')
         window.history.replaceState({}, '', url)
-        if (isGraph && cy) cy.resize()
+        if (graphVisible && cy) {
+            window.requestAnimationFrame(() => {
+                cy.resize()
+                if (!graphHasLayout) runLayout()
+                else fitGraph()
+            })
+        }
     }
     graphTab.addEventListener('click', () => setView('graph'))
     listTab.addEventListener('click', () => setView('list'))
+    for (const [tab, value, other] of [[graphTab, 'graph', listTab], [listTab, 'list', graphTab]]) {
+        tab.addEventListener('keydown', (event) => {
+            if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return
+            event.preventDefault()
+            setView(value === 'graph' ? 'list' : 'graph')
+            other.focus()
+        })
+    }
     previous.addEventListener('click', () => { listPage -= 1; renderList() })
     next.addEventListener('click', () => { listPage += 1; renderList() })
 
@@ -454,6 +477,7 @@ if (canvas && form) {
         if (!visible.nodes().length) return
         const layout = visible.layout(layoutOptions())
         layout.one('layoutstop', () => {
+            graphHasLayout = true
             window.requestAnimationFrame(() => {
                 fitGraph()
                 window.setTimeout(fitGraph, 130)
@@ -522,8 +546,8 @@ if (canvas && form) {
             inspectorContent.append(elements('p', 'text-xs text-content-muted', 'Containment and ownership are presentation context from committed Registry-to-Pod bindings. Digest matches are stronger than tag-only evidence.'))
             openInspector()
         })
+        graphHasLayout = false
         setView(view)
-        if (view === 'graph') runLayout()
     }
 
     const reload = async () => {
