@@ -106,6 +106,46 @@ def test_adapter_posts_thread_only_when_configured(
         assert captured[0]['message_thread_id'] == [str(topic_id)]
 
 
+def test_channel_test_delivery_targets_configured_forum_topic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[dict[str, list[str]]] = []
+
+    def fake_urlopen(request: object, *, timeout: int) -> _Response:
+        assert timeout == 10
+        data = getattr(request, 'data')
+        assert isinstance(data, bytes)
+        captured.append(parse_qs(data.decode('utf-8')))
+        return _Response()
+
+    monkeypatch.setattr(telegram, 'urlopen', fake_urlopen)
+    monkeypatch.setattr(service, 'notification_delivery_timeout_seconds', lambda: 10)
+    commits: list[bool] = []
+    monkeypatch.setattr(
+        service,
+        'db',
+        SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append(True))),
+    )
+    channel = SimpleNamespace(
+        name='KAORI Alert',
+        provider_key='telegram',
+        configured=True,
+        credential_payload='{"bot_token":"dummy-token"}',
+        destination='-1001234567890',
+        provider_config={'message_thread_id': 123},
+        test_status='not_tested',
+        test_message=None,
+        last_tested_at=None,
+    )
+
+    result = service.test_channel(channel)
+    assert result.success
+    assert captured[0]['message_thread_id'] == ['123']
+    assert 'Notification Channel Test' in captured[0]['text'][0]
+    assert channel.test_status == 'success'
+    assert commits == [True]
+
+
 def test_invalid_stored_topic_fails_closed_without_sending(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
