@@ -83,20 +83,34 @@ Compact setup typography:
 
 This exception is limited to Database Setup Required and must not be copied to ordinary authenticated application pages.
 
-The setup page uses **no giant outer workspace card and no permanent right-side setup rail**. The page is composed as a short operator console.
+**Approved operator-feedback revision (#744, 2026-10-12):**
+Database Setup Required now has **one deliberate, bounded outer
+frame**, containing all operator content. This replaces the earlier
+"no outer workspace card" exception, following human visual feedback
+that the separate cards appeared disconnected against the page
+background. The page remains a **compact, console-first** readiness
+surface—not an authenticated Hero or a full-height administration shell.
 
-**Local DevContainer UAT visual refinement (#744):** the identity/header,
-readiness strip, primary bootstrap section, initialization steps, and
-read-only action footer have *individual compact outlined/elevated
-surfaces* (`border-outline-default`, `bg-surface-card` or shared
-`bg-surface-hover`, `shadow-sm`) to separate them from
-`bg-surface-page`. This is **not** an oversized nested parent
-workspace card or a new component family. Preserve the compact
-`text-lg`/`text-sm`/`text-xs` typography and shared terminal, flow,
-status, expandable detail, and semantic callout components. The first-run
-command is copied for **Windows PowerShell host** (or another host
-terminal), not mandated WSL Remote. The PostgreSQL-unavailable view
-follows the same bounded card treatment.
+The single frame uses existing Violet surface tokens:
+`max-w-6xl`, `rounded-2xl`, `border-kaori-outline`,
+`bg-surface-hover` and `shadow-lg` with responsive padding.
+Inside the frame, the identity/header, readiness strip, primary
+bootstrap, initialization steps and read-only footer remain **separate
+white/elevated cards** with `border-outline-default`,
+`bg-surface-card` and `shadow-sm`. The primary bootstrap and
+encryption boundary stay in a responsive 2:1 grid at laptop/desktop
+width, with the semantic warning stretched to the adjacent card height.
+The initialization path still uses the existing horizontal flow
+component. Advanced Setup stays collapsed behind the shared component.
+
+Preserve the locked `text-lg`/`text-sm`/`text-xs` hierarchy,
+existing status badges, clipboard terminal, shared components, keyboard
+accessibility, light/dark tokens and fail-closed PostgreSQL-unavailable
+state. Do **not** nest additional workspace-level outer shells,
+recreate shared terminal/step/callout components, introduce inline CSS,
+or change the manual bootstrap command. The first-run command is copied
+for **Windows PowerShell host** (or another host terminal), not mandated
+WSL Remote.
 
 ```text
 Compact Page Identity
@@ -123,7 +137,7 @@ Shared ownership is mandatory:
 - `components/view_more_content.html` owns the collapsed Advanced Setup disclosure;
 - `components/section_link_button.html` owns Retry Setup Check.
 
-The setup page must not introduce authenticated Hero geometry, a giant parent card, a permanent troubleshooting rail, a vertical timeline that consumes most of the viewport, duplicate readiness summaries, page-local terminal chrome, arbitrary typography, custom CSS, provider calls, or database mutation from presentation code.
+The setup page must not introduce authenticated Hero geometry, **additional oversized/nested parent workspace cards beyond the single approved bounded frame**, a permanent troubleshooting rail, a vertical timeline that consumes most of the viewport, duplicate readiness summaries, page-local terminal chrome, arbitrary typography, custom CSS, provider calls, or database mutation from presentation code.
 
 ## Locked Security Contract
 
