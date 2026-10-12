@@ -126,3 +126,7 @@ The landing page reads selected-backend shared storage readiness and never walks
 ### Reports Overview metric cohorts (#1533)
 
 Requests This Month counts Report records whose created_at belongs to the half-open current **UTC calendar-month** interval [month start, next month start). Completion Rate is deliberately **all-time**, calculated from Ready + Archived as successful resolved requests over Ready + Archived + Failed; requested/generating records are not in this denominator. Empty resolved cohorts display unavailable (—), not a fabricated 100% or 0% success. UI copy names the distinct temporal cohorts; neither metric is a current-provider health signal.
+
+### Generate strict submitted sections and period (#1542)
+
+GET navigation may display canonical default sections and period. On POST, analytics section selection must remain exactly the operator's requested values until server-side validation; missing/invalid sections are rejected, never silently rewritten to defaults. Inventory sections remain contract-locked and tampering fails closed. Analytics snapshot and Inventory time ranges are invalid, not silently converted. This boundary is enforced before Report/JobExecution persistence; the wizard remains advisory.
