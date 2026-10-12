@@ -81,7 +81,7 @@
                         </div>
                         {{ integration_ui.palette_icon("shield-alert" if deletion_guard.blocked else "shield-check", "warning" if deletion_guard.blocked else "normal", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ " blocking condition" ~ ("" if deletion_guard.reasons|length == 1 else "s") if deletion_guard.blocked else "No active KAORI job blocks removal." }}</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ " blocking condition" ~ ("" if deletion_guard.reasons|length == 1 else "s") if deletion_guard.blocked else "No active KAORI jobs currently block this removal." }}</p>
                 </article>
             </div>
             <div class="grid gap-px bg-outline-subtle lg:grid-cols-2"
