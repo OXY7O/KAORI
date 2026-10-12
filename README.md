@@ -44,10 +44,11 @@ The supported development path is the VS Code Dev Container described in [`docs/
 
 ```bash
 cp .env.example .env
-# Open with VS Code Dev Containers (watch-css auto-starts on folder open).
-bash scripts/init_db.sh --bootstrap-admin
-# Press F5 in VS Code, or start Flask manually:
-flask --app run:app run --host=0.0.0.0 --port=5000 --debug
+# Reopen in Container automatically starts PostgreSQL, Redis and all workers/Beat.
+# Press F5; a blank DB shows Database Setup Required.
+# Run the copied bootstrap command in the WSL HOST terminal:
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
+# Refresh /auth/login and use the initial ADMIN_* credentials in private .env.
 ```
 
 For a laptop that should run a governed staging/RC image **without a Dev Container**, use [`example/kaori`](example/kaori/README.md). The example consumes an explicit admitted image reference rather than a mutable `staging` tag.
