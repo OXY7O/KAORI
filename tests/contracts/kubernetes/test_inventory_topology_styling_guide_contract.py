@@ -281,3 +281,19 @@ def test_topology_runtime_status_strips_use_shared_semantic_border_authority() -
     assert 'id="topology-runtime-status"' in workspace
     assert 'role="status"' in workspace
     assert workspace_path not in baseline['files']
+
+
+def test_topology_adaptive_relationship_labels_and_legend() -> None:
+    script = _read('app/static/js/kubernetes/inventory/topology.js')
+    workspace = _read('app/templates/kubernetes/inventory/topology/partials/_workspace.html')
+    palette = _read('docs/design/components/TOPOLOGY_PALETTE.md')
+
+    assert 'visibleEdges.length > 0 && visibleEdges.length <= 8' in script
+    assert 'workspaceState.edgeLabels || smallGraph' in script
+    assert "cy.on('mouseout', 'edge', () => updateEdgeLabelClasses())" in script
+    assert "'text-background-shape': 'roundrectangle'" in script
+    assert "'text-rotation': 'none'" in script
+    assert 'Relationship legend: dashed lines show scope containment' in workspace
+    assert 'Small graphs display labels automatically.' in workspace
+    assert 'Relationship Visibility' in workspace
+    assert '1–8 visible relationships' in palette

@@ -523,7 +523,7 @@ const startTopologyWorkspace = () => {
                     'font-weight': 600,
                     label: '',
                     'line-color': (edge) => edgeColor(edge.data('relationship')),
-                    'line-opacity': 0.68,
+                    'line-opacity': 0.78,
                     'min-zoomed-font-size': 8,
                     'overlay-opacity': 0,
                     'target-arrow-color': (edge) => edgeColor(edge.data('relationship')),
@@ -533,8 +533,12 @@ const startTopologyWorkspace = () => {
                     'text-background-color': labelBackground,
                     'text-background-opacity': 0.96,
                     'text-background-padding': 4,
-                    'text-rotation': 'autorotate',
-                    width: 1.5,
+                    'text-background-shape': 'roundrectangle',
+                    'text-border-color': cssToken('--kaori-outline-subtle', 'GrayText'),
+                    'text-border-width': 1,
+                    'text-border-opacity': 0.7,
+                    'text-rotation': 'none',
+                    width: 2,
                 },
             },
             {
@@ -542,7 +546,7 @@ const startTopologyWorkspace = () => {
                 style: {
                     'curve-style': 'taxi',
                     'line-style': 'dashed',
-                    'line-opacity': 0.28,
+                    'line-opacity': 0.38,
                     'target-arrow-shape': 'none',
                     'taxi-direction': 'downward',
                     'taxi-turn': 24,
@@ -869,7 +873,9 @@ const startTopologyWorkspace = () => {
     const updateEdgeLabelClasses = () => {
         if (!cy) return
         cy.edges().removeClass('edge-label-visible')
-        if (workspaceState.edgeLabels) cy.edges(':visible').addClass('edge-label-visible')
+        const visibleEdges = cy.edges(':visible')
+        const smallGraph = visibleEdges.length > 0 && visibleEdges.length <= 8
+        if (workspaceState.edgeLabels || smallGraph) visibleEdges.addClass('edge-label-visible')
         cy.edges('.path-active').addClass('edge-label-visible')
         if (selectedNodeId && !pathHighlightActive) {
             const node = cy.getElementById(selectedNodeId)
@@ -1511,10 +1517,7 @@ const startTopologyWorkspace = () => {
             if (event.target === cy) clearSelection()
         })
         cy.on('mouseover', 'edge', (event) => event.target.addClass('edge-label-visible'))
-        cy.on('mouseout', 'edge', (event) => {
-            if (!workspaceState.edgeLabels && !event.target.selected() && !event.target.hasClass('path-active'))
-                event.target.removeClass('edge-label-visible')
-        })
+        cy.on('mouseout', 'edge', () => updateEdgeLabelClasses())
         cy.on('mouseover', 'node', (event) => {
             if (!workspaceState.edgeLabels) event.target.connectedEdges(':visible').addClass('edge-label-visible')
         })

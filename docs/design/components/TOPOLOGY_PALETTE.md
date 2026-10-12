@@ -32,7 +32,7 @@ The canonical node treatment uses:
 - the complete name and resource type in Resource List, search results, and Details;
 - layout calculation that includes the external label to reduce collisions.
 
-Containment relationships use quiet dashed orthogonal lines without arrowheads. Operational/dependency relationships retain colored arrows and only reveal text labels on hover, selection, explicit label mode, or highlighted paths.
+Containment relationships use quiet dashed orthogonal lines without arrowheads. Operational/dependency relationships retain colored arrows. Labels appear automatically for 1–8 visible relationships; larger graphs use hover, selection, explicit Relationship Labels control, or highlighted paths. The existing Relationship Visibility controls double as the tokenized relationship legend, explaining dashed scope containment versus solid operational dependencies. Edge labels use a compact horizontal, tokenized background.
 
 ## Relationship Tokens
 
