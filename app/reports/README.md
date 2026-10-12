@@ -202,3 +202,7 @@ Routine Reports Storage GETs only check local path availability and writability.
 ### Strong storage verification cleanup (#1598)
 
 Strong worker verification uses a per-run random object key and records successful write, existence and confirmed deletion before marking the storage backend strongly verified. Cleanup is attempted even when provider probing fails; incomplete cleanup leaves storage write readiness degraded and must be reviewed in worker logs.
+
+### Integrity Scan evidence contract (#1594)
+
+Integrity results expose checked, available, missing, error and full reference population counts, with explicit partial/empty/unknown semantics. A 500-object scan is a bounded sample, never proof of full-estate integrity. The UI renders success only when every selected reference has actually been scanned without exceptions.
