@@ -75,26 +75,6 @@
                 scope_metric_label='Active Scope',
                 coverage_metric_label='Runtime Coverage',
                 exceptions_metric_label='Correlation Exceptions') }}
-        <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-default bg-surface-card px-4 py-3">
-            <div>
-                <p class="text-sm font-semibold text-content-primary">Explore Artifact Dependencies</p>
-                <p class="mt-0.5 text-xs text-content-muted">
-                    Map committed Registry artifacts to their Kubernetes runtime consumers.
-                </p>
-            </div>
-            <a href="{{ url_for('artifact_registry.runtime_topology',
-                            q=runtime.filters.search,
-                            source_id=runtime.filters.source_id,
-                            cluster_id=runtime.filters.cluster_id,
-                            namespace=runtime.filters.namespace,
-                            match_type=runtime.filters.match_type,
-                            exposure=runtime.filters.exposure,
-                            artifact_id=runtime.filters.artifact_id) }}"
-               class="{{ table_ui.action_classes() }}">
-                <i data-lucide="git-fork" class="h-4 w-4" aria-hidden="true"></i>
-                Open Dependency Topology
-            </a>
-        </div>
         <section class="space-y-3"
                  aria-labelledby="artifact-registry-runtime-summary-heading">
             {{ section_intro.render('Runtime Correlation',
