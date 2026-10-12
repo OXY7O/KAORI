@@ -92,7 +92,10 @@ def test_post_cutover_initialization_requires_ephemeral_owner_database_url() -> 
     assert 'KAORI_DB_MIGRATION_URL' in source
     assert 'DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app db upgrade' in source
     assert 'do not migrate as application runtime' in source
-    assert 'DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app seed-rbac' in source
+    assert 'Use the controlled db-bootstrap service for grants and application administrator.' in source
+    assert 'flask --app run:app bootstrap-admin' not in source
+    assert 'flask --app run:app seed-rbac' not in source
+    assert 'if [ "${1:-}" != "--schema-only" ]; then' in source
 
 
 def test_devcontainer_runbook_requires_backup_and_explicit_operator_cutover() -> None:
