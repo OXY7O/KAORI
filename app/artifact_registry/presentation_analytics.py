@@ -305,6 +305,7 @@ def _collect_analytics_rows(
         snapshot = (
             RegistryAnalyticsSnapshot.query.filter_by(
                 integration_instance_id=identity.id,
+                time_range=normalize_registry_analytics_window(snapshot_window),
                 status='ready',
             )
             .order_by(
