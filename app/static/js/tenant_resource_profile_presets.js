@@ -634,6 +634,7 @@
         const profileSelect = form.querySelector('[data-tenant-quota-managed-profile]')
         const current = form.querySelector('[data-tenant-quota-managed-current]')
         const summary = form.querySelector('[data-tenant-quota-managed-summary]')
+        const proposedSummary = form.querySelector('[data-tenant-quota-managed-proposed-summary]')
 
         const render = () => {
             const state = governance[tenantSelect?.value] || null
@@ -647,6 +648,7 @@
             const nextProfile = form.querySelector('[data-tenant-quota-managed-proposed-profile]')
             if (nextProfile) nextProfile.textContent = proposed ? proposedLabel : '—'
             if (summary) summary.textContent = state ? quotaSummary(state.desired_quota) : '—'
+            if (proposedSummary) proposedSummary.textContent = proposed ? quotaSummary(proposed.quota) : '—'
             renderCapsuleQuotaPreview(form, state ? state.desired_quota || {} : null, proposed ? proposed.quota || {} : null)
         }
 

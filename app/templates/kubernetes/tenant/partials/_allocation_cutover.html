@@ -172,7 +172,7 @@
             {% endif %}
         </div>
         <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p class="max-w-2xl text-xs leading-5 text-content-muted">No allocation authority changes until capacity admission, resource ownership checks, provider mutation, and read-back all succeed.</p>
+            <p class="max-w-2xl text-xs leading-5 text-content-muted">Allocation stays unchanged until admission, ownership checks, mutation, and read-back succeed.</p>
             <button type="submit"
                     {% if not can_manage or not namespace_cutover_supported or not profiles %}disabled aria-disabled="true"{% endif %}
                     class="{{ action_button.classes('primary') }}">
