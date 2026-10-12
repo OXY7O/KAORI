@@ -155,6 +155,8 @@ Detail rules:
 - use `data-kaori-detail-density="unified-resource-sheet"` and `data-kaori-inventory-detail="v10"`;
 - use one unified resource sheet with natural-height horizontal evidence bands; do not use fixed card heights;
 - do not duplicate card badge values as the first row;
+- section descriptions are concise (identity/snapshot; IP/hostname/scope; CPU/memory/storage; OS/runtime/versions; scheduling/conditions), with the committed data boundary retained;
+- System UUID, Internal IP, and External IP are read-only technical values without Node-detail copy buttons; other Inventory resources retain their approved copy controls;
 - Connectivity owns network fields only; Scheduled Pods remains in the summary;
 - taints use neutral technical-value surfaces, not a collection of Violet metadata pills;
 - labels use `technical_metadata_collection.html` in embedded resource-sheet mode, one key/value pair per row, with no nested scroll region;
