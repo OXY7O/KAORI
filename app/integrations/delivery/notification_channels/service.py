@@ -136,16 +136,24 @@ def notification_channel_summary() -> dict[str, Any]:
     operational = [channel for channel in eligible if channel.last_delivery_status == 'success']
     delivery_failed = [channel for channel in eligible if channel.last_delivery_status == 'failed']
     validation_failed = [channel for channel in enabled if channel.test_status == 'failed']
+    validation_required = [
+        channel for channel in enabled
+        if not channel.configured or channel.test_status not in {'success', 'failed'}
+    ]
+    # The aggregate must not hide an unhealthy enabled destination behind
+    # another channel's successful historical delivery.
     if delivery_failed:
         label, tone = 'Degraded', 'warning'
+    elif validation_failed:
+        label, tone = 'Validation Failed', 'warning'
+    elif validation_required:
+        label, tone = 'Validation Required', 'warning'
     elif operational:
         label, tone = 'Operational', 'normal'
     elif eligible:
         label, tone = 'Ready', 'info'
-    elif validation_failed:
-        label, tone = 'Validation Failed', 'warning'
-    elif enabled:
-        label, tone = 'Validation Required', 'warning'
+    elif channels:
+        label, tone = 'Disabled', 'unknown'
     else:
         label, tone = 'Not Configured', 'unknown'
     return {
