@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.artifact_registry.presentation import build_overview
+from app.artifact_registry.presentation import build_overview_section
 from app.extensions.db import db
 from app.models.integration import IntegrationInstance
 from app.models.registry import (
