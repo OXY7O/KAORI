@@ -79,18 +79,15 @@ class AlertmanagerClient:
                 'Alertmanager alerts response is not a list.',
             )
 
-        normalized_response: list[dict[str, Any]] = []
+        if any(
+            not isinstance(item, dict) or not isinstance(item.get('labels'), dict)
+            for item in response
+        ):
+            raise AlertmanagerResponseError(
+                'Alertmanager alerts response contains a malformed alert record.',
+            )
 
-        for item in response:
-            if isinstance(
-                item,
-                dict,
-            ):
-                normalized_response.append(
-                    item,
-                )
-
-        return normalized_response
+        return response
 
     def get_silences(
         self,
@@ -115,18 +112,18 @@ class AlertmanagerClient:
                 'Alertmanager silences response is not a list.',
             )
 
-        normalized_response: list[dict[str, Any]] = []
+        if any(
+            not isinstance(item, dict)
+            or not isinstance(item.get('id'), str)
+            or not item['id'].strip()
+            or not isinstance(item.get('matchers'), list)
+            for item in response
+        ):
+            raise AlertmanagerResponseError(
+                'Alertmanager silences response contains a malformed silence record.',
+            )
 
-        for item in response:
-            if isinstance(
-                item,
-                dict,
-            ):
-                normalized_response.append(
-                    item,
-                )
-
-        return normalized_response
+        return response
 
     def test_connection(
         self,
@@ -135,16 +132,18 @@ class AlertmanagerClient:
         status_payload = self.get_status()
         elapsed_ms = int((perf_counter() - started_at) * 1000)
 
-        version_info = status_payload.get(
-            'versionInfo',
-            {},
-        )
+        if not isinstance(status_payload, dict):
+            raise AlertmanagerResponseError('Alertmanager status response is not an object.')
 
-        if not isinstance(
-            version_info,
-            dict,
+        version_info = status_payload.get('versionInfo')
+        if (
+            not isinstance(version_info, dict)
+            or not isinstance(version_info.get('version'), str)
+            or not version_info['version'].strip()
         ):
-            version_info = {}
+            raise AlertmanagerResponseError(
+                'Alertmanager status response does not establish the provider version identity.',
+            )
 
         cluster_info = status_payload.get(
             'cluster',
