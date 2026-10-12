@@ -55,6 +55,23 @@ ARCHIVED_REPORT_STATUSES = [
 IMPLEMENTED_REPORT_TYPES = frozenset(spec.value for spec in REPORT_TYPE_SPECS)
 
 
+def get_reporting_posture(
+    report_counts: dict[str, int],
+    storage_context: dict[str, Any],
+    worker_context: dict[str, Any],
+) -> dict[str, str]:
+    """Derive one conservative overview posture from canonical runtime evidence."""
+    if not bool(storage_context.get('ready')):
+        return {'label': 'Degraded', 'tone': 'warning', 'reason': 'storage'}
+    if not bool(worker_context.get('ready')):
+        if str(worker_context.get('status') or '') == 'unknown':
+            return {'label': 'Needs Review', 'tone': 'warning', 'reason': 'queue_unknown'}
+        return {'label': 'Degraded', 'tone': 'warning', 'reason': 'queue'}
+    if int(report_counts.get('failed', 0)) > 0:
+        return {'label': 'Needs Review', 'tone': 'warning', 'reason': 'failed_requests'}
+    return {'label': 'Ready', 'tone': 'normal', 'reason': 'ready'}
+
+
 def get_reports_overview_payload() -> dict[str, Any]:
     report_counts = get_report_counts()
     storage_context = get_storage_context()
@@ -80,6 +97,7 @@ def get_reports_overview_payload() -> dict[str, Any]:
         'report_type_summary': get_report_type_summary(report_type_coverage),
         'storage_context': storage_context,
         'worker_context': worker_context,
+        'reporting_posture': get_reporting_posture(report_counts, storage_context, worker_context),
     }
 
 

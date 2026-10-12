@@ -110,3 +110,7 @@ Raw S3 exceptions, access keys, secret keys, tokens, and credential values are n
 ## Notification delivery
 
 Scheduled Reports use Integrations → Notification Channels. Schedules store selected channel IDs only; provider credentials and transport behavior remain owned by the shared notification integration. Legacy report-specific Telegram environment credentials are not supported.
+
+### Reports Overview conservative runtime posture (#1530)
+
+The Overview Hero posture comes from the same Reports queue-worker evidence and shared storage readiness consumed by Runtime Health. Storage unavailable takes precedence over queue unavailable/unknown, followed by historical failed requests. A missing worker/queue observation must never produce a Ready Hero; previously generated artifacts remain separately readable through their existing guarded routes. No new provider probe or report worker execution is owned by the Overview route.
