@@ -1417,154 +1417,162 @@ def test_allocation_change_all_title_info_tips_are_adjacent_not_corner_actions()
         assert template.count('type="submit"') >= 1, filename
 
 
-def test_allocation_change_shows_request_and_limit_evidence_for_both_contracts() -> None:
+def test_allocation_contract_diff_uses_accessible_tabs_not_duplicate_cards() -> None:
     from jinja2 import Environment
 
     template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
     script = read('app/static/js/tenant_resource_profile_presets.js')
-    context = read('app/kubernetes/tenant/registry_context.py')
-    assert template.count('ResourceQuota · Requests &amp; Limits') == 2
-    assert 'Requests govern capacity admission; limits enforce ResourceQuota ceilings.' in template
 
-    expected = (
-        ('CPU Requests', 'cpu'),
-        ('CPU Limits', 'cpu-limit'),
-        ('Memory Requests', 'memory'),
-        ('Memory Limits', 'memory-limit'),
-        ('Pods', 'pods'),
-        ('Total Storage', 'storage'),
+    Environment(autoescape=True).parse(template)
+    assert 'Managed Contract Comparison' in template
+    assert 'data-tenant-allocation-current-profile' in template
+    assert 'data-tenant-allocation-proposed-profile' in template
+    assert 'role="tablist"' in template
+    assert 'aria-label="Contract comparison views"' in template
+    assert 'role="tab"' in template
+    assert 'role="tabpanel"' in template
+    assert 'data-tenant-allocation-diff-tab="{{ key }}"' in template
+    assert 'data-tenant-allocation-diff-panel="{{ tab }}"' in template
+    assert 'data-tenant-allocation-diff-panel="advanced"' in template
+    assert "('changes', 'Changes')" in template
+    assert "('full', 'Full Contract')" in template
+    assert "('advanced', 'Advanced Controls')" in template
+    assert 'aria-controls="allocation-diff-panel-{{ key }}"' in template
+    assert "aria-selected=\"{{ 'true' if key == 'changes' else 'false' }}\"" in template
+    assert '{% if tab != \'changes\' %}hidden{% endif %}' in template
+    assert "selectTab('changes')" in script
+    assert "button.setAttribute('aria-selected', String(active))" in script
+    assert "button.tabIndex = active ? 0 : -1" in script
+    assert "event.key === 'ArrowRight'" in script
+    assert "event.key === 'ArrowLeft'" in script
+    assert "event.key === 'Home'" in script
+    assert "event.key === 'End'" in script
+    assert "role=\"list\"" not in template
+    assert 'data-tenant-allocation-change-summary' not in template
+    assert 'view_more_content.render(' not in template
+    assert 'data-tenant-allocation-diff-summary aria-live="polite"' in template
+
+    # Original governed mutation entrypoint, permissions and gates remain.
+    assert "url_for('tenant.change_namespace_allocation_route')" in template
+    assert 'name="csrf_token"' in template
+    assert 'data-tenant-allocation-change-namespace' in template
+    assert 'data-tenant-allocation-change-profile' in template
+    assert 'Preflight &amp; Apply' in template
+    assert 'Governance Gates' in template
+    assert 'Capacity Admission' in template
+    assert 'Provider Reconcile' in template
+    assert 'Read-back & Commit' in template
+    assert 'not can_manage or not namespace_allocation_options or not profiles' in template
+
+
+def test_allocation_contract_diff_shares_all_frozen_and_proposed_dimensions() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    registry = read('app/kubernetes/tenant/registry_context.py')
+
+    comparison_groups = (
+        ('ResourceQuota', (
+            ('CPU Requests', 'quota', 'requests.cpu'),
+            ('CPU Limits', 'quota', 'limits.cpu'),
+            ('Memory Requests', 'quota', 'requests.memory'),
+            ('Memory Limits', 'quota', 'limits.memory'),
+            ('Pods', 'quota', 'pods'),
+            ('Total Storage', 'quota', 'requests.storage'),
+        )),
+        ('PVC Storage Guardrails', (
+            ('Min PVC Size', 'storage_policy', 'min'),
+            ('Max PVC Size', 'storage_policy', 'max'),
+        )),
+        ('Object Limits', (
+            ('PVCs', 'quota', 'persistentvolumeclaims'),
+            ('Services', 'quota', 'services'),
+            ('ConfigMaps', 'quota', 'configmaps'),
+            ('Secrets', 'quota', 'secrets'),
+        )),
+        ('Container Defaults', (
+            ('CPU Request', 'limits', 'default_request.cpu'),
+            ('CPU Limit', 'limits', 'default.cpu'),
+            ('Memory Request', 'limits', 'default_request.memory'),
+            ('Memory Limit', 'limits', 'default.memory'),
+        )),
     )
-    for side in ('current', 'proposed'):
-        block = template.split(f'aria-label="{side.title()} allocation"', 1)[1]
-        start = block.index('<dl class="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-3">')
-        end = block.index('</dl>', start) + len('</dl>')
-        markup = Environment(autoescape=True).from_string(block[start:end]).render()
-        assert markup.count('<dt ') == 6
-        assert 'lg:grid-cols-3' in markup
-        for label, suffix in expected:
-            assert f'>{label}</dt>' in markup
-            assert f'data-tenant-allocation-{side}-{suffix}' in markup
-            assert f"[data-tenant-allocation-{side}-{suffix}]" in script
-        for key, resource in (('cpu-limit', 'cpu'), ('memory-limit', 'memory')):
-            selector = f'{side}{resource.title()}Limit'
-            assert (
-                f"if ({selector}) {selector}.textContent = {side} "
-                f"? quotaValue({side}, 'limits.{resource}') : '—'"
-            ) in script
-
-    # Neither LimitRange defaults nor the current mutable profile replace
-    # frozen Namespace ResourceQuota evidence in the comparison.
+    for group, rows in comparison_groups:
+        assert f"('{group}', [" in template
+        for label, source, key in rows:
+            assert f"('{label}', '{source}', '{key}')" in template
+    assert '{% for group, dimensions in comparison_groups %}' in template
+    assert '{% for label, source, key in dimensions %}' in template
+    assert 'data-tenant-allocation-diff-mode="{{ tab }}"' in template
+    assert 'data-tenant-allocation-diff-source="{{ source }}"' in template
+    assert 'data-tenant-allocation-diff-key="{{ key }}"' in template
+    assert "const before = contractValue(current, source, key)" in script
+    assert "const after = contractValue(proposed, source, key)" in script
+    assert "return key.split('.').reduce((value, part) => value?.[part], contract.limits)" in script
+    assert "return contract[source]?.[key] ?? null" in script
     assert "const current = namespaces[namespaceSelect?.value] || null" in script
     assert "profileSelect?.value === 'adopted_baseline' ? current" in script
-    assert "'quota': record.allocation_quota_json or {}" in context
-    assert "'quota': profile.quota_hard_json or {}" in context
-    assert 'data-tenant-allocation-current-pvc-min' in template
-    assert 'data-tenant-allocation-proposed-pvc-max' in template
+    assert "'quota': record.allocation_quota_json or {}" in registry
+    assert "'limits': record.allocation_limit_defaults_json or {}" in registry
+    assert "'storage_policy': record.allocation_storage_policy_json or {}" in registry
+    assert "'quota': profile.quota_hard_json or {}" in registry
+    assert "'limits': profile.limit_defaults_json or {}" in registry
+    assert "'storage_policy': profile.storage_policy_json or {}" in registry
+    assert 'data-tenant-allocation-diff-empty' in template
+    assert "row.hidden = mode === 'changes' && !direction" in script
+    assert "direction || (current && proposed ? 'Unchanged' : '—')" in script
+    assert "if (mode === 'changes' && direction)" in script
+    assert "changes === 0 ? 'No contract changes'" in script
+    assert "renderContractDiff(current, proposed)" in script
+    assert "profileSelect?.addEventListener('change', () => renderAllocationChange())" in script
+    assert "namespaceSelect?.addEventListener('change'," in script
 
 
-def test_allocation_change_advanced_readonly_contract_and_evidence_boundaries() -> None:
+def test_allocation_contract_diff_preserves_advanced_evidence_boundaries() -> None:
     from jinja2 import Environment
 
     template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
-    registry = read('app/kubernetes/tenant/registry_context.py')
     script = read('app/static/js/tenant_resource_profile_presets.js')
+    registry = read('app/kubernetes/tenant/registry_context.py')
     page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     service = read('app/kubernetes/tenant/service.py')
 
-    assert template.count('view_more_content.render(') == 2
-    assert 'components/view_more_content.html' in template
-    assert template.count('data-tenant-allocation-detail-group') == 2
-    assert 'data-tenant-allocation-detail-group="advanced-controls"' in template
-    assert 'Advanced Contract Comparison' in template
-    assert 'Current · Frozen' in template
-    assert 'Proposed · Profile' in template
-    assert 'Not declared' in script
+    Environment(autoescape=True).parse(template)
+    assert 'No configured Advanced Controls' in template
+    assert 'data-tenant-allocation-advanced-empty' in template
+    assert 'data-tenant-allocation-advanced-list' in template
+    assert 'data-tenant-allocation-advanced-row="{{ key }}"' in template
+    assert 'data-tenant-allocation-advanced-current="{{ key }}"' in template
+    assert 'data-tenant-allocation-advanced-proposed="{{ key }}"' in template
     assert 'Capability evaluation is not proof of provider execution or read-back.' in template
-    assert 'do not infer that their external enforcement has been verified.' in template
-    assert 'reconciles its complete managed ResourceQuota' not in template
-    assert 'tenant-namespace-allocation-advanced-preflight' in page
-    assert 'def _recorded_allocation_advanced_controls(' in registry
+    assert 'This read-only diff does not approve or apply changes.' in template
+    assert 'do not infer that their external enforcement has been verified.' not in template
     assert "recorded.get('source_profile_id') != record.resource_profile.public_id" in registry
     assert "recorded.get('source_profile_version') != record.resource_profile_version" in registry
-    assert "'quota': record.allocation_quota_json or {}" in registry
-    assert "'limits': record.allocation_limit_defaults_json or {}" in registry
-    assert "'quota': profile.quota_hard_json or {}" in registry
-    assert "'limits': profile.limit_defaults_json or {}" in registry
-    assert '_tenant_capability_statuses(tenant)' in registry
-    assert 'evaluate_resource_profile_advanced_controls(' in registry
     assert "'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS" in registry
+    assert "'namespace_allocation_advanced_preflight':" in registry
+    assert 'tenant-namespace-allocation-advanced-preflight' in page
     assert 'advancedPreflight[namespaceId]?.[profileId]' in script
-    assert "const current = namespaces[namespaceSelect?.value] || null" in script
-    assert "profileSelect?.value === 'adopted_baseline' ? current" in script
-    assert 'form.querySelectorAll(\'[data-tenant-allocation-detail-current]\')' in script
-    assert 'form.querySelectorAll(\'[data-tenant-allocation-detail-proposed]\')' in script
-    assert 'row.hidden = !show' in script
-    assert 'empty.hidden = visible > 0' in script
     assert 'Supported · Preflight' in script
     assert 'Unavailable · Preflight' in script
     assert 'Not recorded' in script
     assert 'Same as current · Not verified' in script
+    assert "if (list) list.hidden = visible === 0" in script
     assert 'attachment_controls = _validate_resource_profile_attachment_controls(' in service
 
-    fragment = template.split('data-tenant-allocation-detail-group="{{ title', 1)[0]
-    assert 'Object Limits' in fragment and 'Container Defaults' in fragment
-    # Existing, shared Jinja grammar renders all 8 independent detail rows.
-    details = template.split('{% for title, description, icon, rows in [', 1)[1]
-    details = '{% for title, description, icon, rows in [' + details.split('{% endfor %}', 2)[0]
-    assert "('PVCs', 'quota', 'persistentvolumeclaims')" in details
-    assert "('Services', 'quota', 'services')" in details
-    assert "('ConfigMaps', 'quota', 'configmaps')" in details
-    assert "('Secrets', 'quota', 'secrets')" in details
-    for resource in ('default_request.cpu', 'default.cpu',
-                     'default_request.memory', 'default.memory'):
-        assert f"'limits', '{resource}'" in details
-    Environment(autoescape=True).parse(template)
 
-def test_allocation_change_redesign_uses_shared_disclosures_and_changed_only_summary() -> None:
-    from jinja2 import Environment
-
-    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+def test_allocation_diff_quantity_labels_do_not_imply_capacity_approval() -> None:
     script = read('app/static/js/tenant_resource_profile_presets.js')
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
 
-    Environment(autoescape=True).parse(template)
-    assert 'components/view_more_content.html' in template
-    assert template.count('view_more_content.render(') == 2
-    assert 'data-tenant-allocation-detail-group="advanced-controls"' in template
-    assert 'open_by_default=true' not in template
-    assert 'compact_action=true' in template
-    assert 'data-tenant-allocation-change-summary' in template
-    assert 'data-tenant-allocation-change-count aria-live="polite"' in template
-    assert 'Read-only; not an admission result.' in template
-    assert 'No configured Advanced Controls' in template
-    assert 'Current and proposed contracts have no advanced intent to compare.' in template
-    assert 'data-tenant-allocation-change-empty' in template
-    assert 'data-tenant-allocation-detail-row' in template
-    assert 'data-tenant-allocation-change-direction' in template
-
-    # All eight summary dimensions come from the same committed/proposed
-    # snapshots as the primary ResourceQuota and PVC preview.
-    dimensions = (
-        ('quota', 'requests.cpu'),
-        ('quota', 'limits.cpu'),
-        ('quota', 'requests.memory'),
-        ('quota', 'limits.memory'),
-        ('quota', 'pods'),
-        ('quota', 'requests.storage'),
-        ('storage_policy', 'min'),
-        ('storage_policy', 'max'),
-    )
-    for source, key in dimensions:
-        assert f", '{source}', '{key}')" in template
-    assert 'renderChangeSummary(current, proposed)' in script
-    assert 'renderAdvancedComparison(current, proposed' in script
-    assert "form.querySelectorAll('[data-tenant-allocation-change-row]')" in script
-    assert "row.hidden = classification === null" in script
-    assert "changed === 0 ? 'No changes'" in script
+    assert 'const parsedQuantity = (raw) => {' in script
+    assert 'const classifyChange = (before, after) => {' in script
     assert "return 'Now defined'" in script
     assert "return 'No longer defined'" in script
     assert "return right > left ? 'Increased' : 'Reduced'" in script
     assert "return prior === next ? null : 'Changed'" in script
     assert "return Number.isFinite(value) ? value : null" in script
-    assert "form.querySelectorAll('[data-tenant-allocation-detail-row]')" in script
-    assert "profileSelect?.addEventListener('change', () => renderAllocationChange())" in script
-    assert "namespaceSelect?.addEventListener('change'," in script
+    assert "boundedQuotaKeys.includes(key)" in script
+    assert "'Unbounded' : 'Not declared'" in script
+    assert "if (source === 'limits')" in script
+    assert "role=\"tabpanel\"" in template
+    assert 'No capacity approval' in template
