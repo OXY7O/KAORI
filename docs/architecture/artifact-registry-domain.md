@@ -734,3 +734,8 @@ A provider scan-overview status of `completed` is **not** proof that KAORI succe
 ### Registry Security operational source scope (#1422)
 
 Security Vulnerabilities, Supply Chain, source choices and evidence aggregation use only enabled/active Registry integrations with committed Inventory identity. The existence of configured active integrations without committed inventory still drives the Inventory Required setup posture, rather than leaking disabled/retired or unobserved artifacts. Empty eligible membership produces an explicitly empty SQL predicate, never unrestricted fleet evidence. Explicit unavailable or malformed `source_id` on GET and Sync POST fails closed; an omitted ID intentionally means the eligible fleet. The Security Sync dispatch remains a separate fleet JobExecution, not a provider mutation.
+
+
+### Scoped Registry Security evidence age (#1424)
+
+Security evidence freshness comes from the latest successful committed `RegistryScanSnapshot.observed_at` for the selected enabled/committed providers, **not** a fleet JobExecution finish timestamp. Current usable scan coverage requires a successful latest artifact scan generation and evidence within the freshness window. A mixed-age fleet is Partial; old evidence is Stale; unsupported/unverified ages are not silently Ready. Fleet Security Sync attempt progress/failure lives in its dedicated JobExecution state, independently from committed provider evidence. Supply Chain Artifact Evidence rows show their own committed per-artifact scan age, or `Age Unverified` when presence-only metadata lacks dated security observation; no shared fleet timestamp is assigned to every row.
