@@ -1671,3 +1671,5 @@ def test_allocation_change_section_heading_icons_follow_kaori_hierarchy() -> Non
     assert "url_for('tenant.change_namespace_allocation_route')" in template
     assert 'name="csrf_token"' in template
     assert 'Preflight &amp; Apply' in template
+    assert 'grid gap-4 p-4 sm:p-5 lg:grid-cols-2' in template
+    assert '<p class="mt-3 text-sm font-semibold text-content-primary">{{ title }}</p>' in template
