@@ -121,7 +121,9 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     catalog = decorate_catalog_rules([normalize_rule(rule) for rule in INTELLIGENCE_CATALOG])
     source_items = (
-        catalog if page_mode == 'catalog' else decorate_recommendation_findings(get_active_recommendation_findings())
+        catalog if page_mode == 'catalog' else decorate_recommendation_findings(
+            get_active_recommendation_findings(domain=filters['domain'] or None)
+        )
     )
     filtered = [
         rule
@@ -250,15 +252,20 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     rules = {str(rule.get('rule_key')): rule for rule in catalog}
     findings: list[dict[str, Any]] = []
 
-    findings.extend(_build_namespace_quota_findings(rules))
-    findings.extend(_build_workload_resource_governance_findings(rules))
-    findings.extend(_build_latest_image_findings(rules))
-    findings.extend(build_kubernetes_runtime_recommendation_findings(rules))
-    findings.extend(_build_storage_binding_findings(rules))
-    findings.extend(_build_tls_certificate_findings(rules))
-    findings.extend(build_object_storage_recommendation_findings(rules))
-    findings.extend(build_registry_recommendation_findings(rules))
-    findings.extend(build_tenant_governance_recommendation_findings(rules))
+    # Evaluate only rule families represented by the selected domain. Each
+    # evaluator still uses committed provider/domain-owned evidence.
+    if any(key.startswith('kubernetes.') for key in rules):
+        findings.extend(_build_namespace_quota_findings(rules))
+        findings.extend(_build_workload_resource_governance_findings(rules))
+        findings.extend(_build_latest_image_findings(rules))
+        findings.extend(build_kubernetes_runtime_recommendation_findings(rules))
+        findings.extend(_build_storage_binding_findings(rules))
+        findings.extend(_build_tls_certificate_findings(rules))
+        findings.extend(build_tenant_governance_recommendation_findings(rules))
+    if any(key.startswith('object_storage.') for key in rules):
+        findings.extend(build_object_storage_recommendation_findings(rules))
+    if any(key.startswith('registry.') for key in rules):
+        findings.extend(build_registry_recommendation_findings(rules))
 
     return _finalize_recommendation_findings(findings)
 
@@ -279,6 +286,7 @@ def get_active_recommendation_findings(
     domain: str | None = None,
     asset_key: str | None = None,
     limit: int | None = None,
+    rule_keys: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Return active catalog-backed findings for reusable product surfaces.
 
@@ -291,6 +299,8 @@ def get_active_recommendation_findings(
     selected_domain = clean(domain)
     if selected_domain:
         catalog = [rule for rule in catalog if clean(str(rule.get('domain'))) == selected_domain]
+    if rule_keys is not None:
+        catalog = [rule for rule in catalog if str(rule.get('rule_key')) in rule_keys]
 
     findings = _build_recommendation_findings(catalog)
 
@@ -497,7 +507,8 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
     if not resolved_key:
         return None
 
-    for finding in get_active_recommendation_findings():
+    base_key = resolved_key.split(':', 1)[0]
+    for finding in get_active_recommendation_findings(rule_keys={base_key}):
         if clean(str(finding.get('rule_key'))) != resolved_key:
             continue
 
