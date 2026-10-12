@@ -37,6 +37,15 @@ command** in the full VS Code Dev Containers log, not only the final
 `Exit code 1`. A clean list of running containers does not prove that PostgreSQL
 data is absent. Do not delete volumes as a troubleshooting shortcut.
 
+> **Upgrading from the earlier Docker-volume secret implementation?** If
+> VS Code Windows initialization reports `existing PostgreSQL data has no
+> matching local secrets` while `docker volume ls` still lists
+> `kaori-dev-pg-admin-secrets` and `kaori-dev-pg-migrator-secrets`,
+> **do not delete the database**. Follow the [one-time, read-only source
+> credential recovery](operations/devcontainer-postgres-first-run.md#one-time-recovery-after-upgrading-from-docker-secret-volumes-1499--1500)
+> from Windows PowerShell before retrying Reopen in Container.
+> The legacy volumes remain intact.
+
 ## First setup — new DevContainer PostgreSQL volume
 
 1. Open the project in **VS Code on Windows** (or another supported
