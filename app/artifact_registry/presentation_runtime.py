@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import Session, joinedload
 
 from app.artifact_registry.correlation import runtime_input_signature
 from app.artifact_registry.correlation_sync_jobs import correlation_prerequisites
@@ -14,7 +14,6 @@ from app.artifact_registry.presentation_inventory import _inventory_detail_provi
 from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.common.pagination import paginate_query
 from app.extensions.db import db
-from sqlalchemy.orm import Session
 from app.models.cluster import Cluster
 from app.models.job import JobExecution
 from app.models.registry import (
