@@ -359,7 +359,8 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'components/operational_alert_summary.html' in alerts
     assert 'data-kaori-alert-insight="stacked"' in shared_alerts
     assert 'KAORI Alert Cases Available' in alerts
-    assert "empty_label='Healthy'" in alerts
+    assert "empty_label='No Active Cases'" in alerts
+    assert 'No active recommendation-origin AlertCases' in alerts
     assert 'source_available=overview.alerts.available' in alerts
     assert 'scope_required=true' in alerts
     assert 'scope_selected=overview.selected_provider_id' in alerts
@@ -491,7 +492,7 @@ def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() 
         'source_available=overview.alerts.available',
         'scope_required=true',
         'scope_selected=overview.selected_provider_id',
-        "empty_label='Healthy'",
+        "empty_label='No Active Cases'",
         "status_available_label='KAORI Alert Cases Available'",
         "source_label='KAORI Alert Intelligence'",
     ):
@@ -501,7 +502,7 @@ def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() 
         'source_available=dashboard.alerts.available',
         'scope_required=true',
         'scope_selected=dashboard.selected_system_id',
-        "empty_label='Healthy'",
+        "empty_label='No Active Cases'",
         "status_available_label='KAORI Alert Cases Available'",
     ):
         assert token in object_alerts
