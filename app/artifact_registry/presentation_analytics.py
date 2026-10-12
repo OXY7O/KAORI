@@ -437,25 +437,24 @@ def _analytics_growth_summary(
     aggregate: dict[str, Any],
     growth_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    size_per_day = sum(
+    size_values = [
         float(row['size_growth_bytes_per_day'])
         for row in growth_rows
         if isinstance(row.get('size_growth_bytes_per_day'), (int, float))
-    )
-    artifacts_per_day = sum(
+    ]
+    artifact_values = [
         float(row['artifact_growth_per_day'])
         for row in growth_rows
         if isinstance(row.get('artifact_growth_per_day'), (int, float))
-    )
+    ]
     artifact_total = max(int(aggregate['artifacts']), 0)
     return {
-        'size_per_day': size_per_day,
-        'artifacts_per_day': artifacts_per_day,
+        'size_per_day': sum(size_values) if size_values else None,
+        'artifacts_per_day': sum(artifact_values) if artifact_values else None,
         'runtime_usage_percent': (
             float(aggregate['running_artifacts']) / artifact_total * 100.0 if artifact_total else None
         ),
     }
-
 
 def _analytics_capacity_outlook(
     forecast_rows: list[dict[str, Any]],
@@ -488,8 +487,11 @@ def _analytics_capacity_outlook(
     return {
         'nearest_quota_days': nearest_quota_days,
         'highest_utilization': highest_utilization,
-        'growth_bytes_per_day': growth['size_per_day'] if growth_rows else None,
-        'growth_display': (f'{_fmt_bytes(round(growth["size_per_day"]))}/day' if growth_rows else 'N/A'),
+        'growth_bytes_per_day': growth['size_per_day'],
+        'growth_display': (
+            f'{_fmt_bytes(round(growth["size_per_day"]))}/day'
+            if growth['size_per_day'] is not None else 'N/A'
+        ),
         'quota_headroom_bytes': quota_headroom,
         'quota_headroom_display': _fmt_bytes(round(quota_headroom)) if quota_headroom is not None else 'N/A',
     }
@@ -509,17 +511,17 @@ def _analytics_summary_cards(
             'value': _fmt_bytes(int(aggregate['total_size_bytes'])),
             'detail': (
                 f'{_fmt_bytes(round(growth["size_per_day"]))}/day materialized growth'
-                if growth_rows
-                else 'Growth requires another analytics materialization'
+                if growth['size_per_day'] is not None
+                else 'Historical storage-growth evidence is unavailable'
             ),
             'tone': 'brand',
         },
         {
             'icon': 'chart-no-axes-combined',
             'label': 'Artifact Growth',
-            'value': f'{growth["artifacts_per_day"]:+.1f}/day' if growth_rows else 'N/A',
+            'value': f'{growth["artifacts_per_day"]:+.1f}/day' if growth['artifacts_per_day'] is not None else 'N/A',
             'detail': f'{aggregate["artifacts"]} committed artifacts',
-            'tone': 'info' if growth_rows else 'unknown',
+            'tone': 'info' if growth['artifacts_per_day'] is not None else 'unknown',
         },
         {
             'icon': 'boxes',
@@ -551,7 +553,7 @@ def _analytics_insights(
     insights: list[dict[str, str]] = []
     candidates = (
         (
-            bool(growth_rows),
+            growth['artifacts_per_day'] is not None and growth['size_per_day'] is not None,
             {
                 'icon': 'trending-up',
                 'title': 'Registry growth is materialized',
