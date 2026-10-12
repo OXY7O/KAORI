@@ -279,9 +279,9 @@
                                         </dd>
                                     </div>
                                     <div class="border-t border-outline-subtle py-2.5">
-                                        <dt class="text-xs font-medium text-content-muted">Local Footprint</dt>
+                                        <dt class="text-xs font-medium text-content-muted">Local References</dt>
                                         <dd class="mt-0.5 text-xs font-semibold text-content-primary">
-                                            {{ payload.local.reports_file_count }} Files · {{ payload.local.reports_total_size }}
+                                            {{ payload.artifact_summary.local_reports }} retained references (database metadata; filesystem not enumerated)
                                         </dd>
                                     </div>
                                 {% endif %}

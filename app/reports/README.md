@@ -182,3 +182,7 @@ The Templates management workspace owns draft/active lifecycle and system/custom
 ### Report Templates bounded registry query (#1563)
 
 System templates remain definition-owned and first in the mixed registry. Custom template filtering, counting, and retrieval are database-side: shared KAORI pagination selects at most the current page size (default five) and a grouped type/status query supplies all-estate KPI counts without materializing the full custom estate. Search uses committed template metadata and catalog labels, not provider-live calls. No custom pagination abstraction is introduced.
+
+### Local footprint read performance (#1596)
+
+Routine Reports Storage GETs only check local path availability and writability. The Local References card counts committed report metadata; physical filesystem footprint is not claimed or recursively re-enumerated from an HTTP request.
