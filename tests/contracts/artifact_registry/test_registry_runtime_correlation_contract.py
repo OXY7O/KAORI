@@ -172,3 +172,42 @@ def test_runtime_read_and_materialization_bounded_projection() -> None:
     assert 'RegistryArtifact.id.in_(bound_artifact_ids)' in presentation
     assert '.yield_per(250)' in presentation
     assert 'Runtime bindings associated with artifacts reporting Critical or High findings.' in workspace
+
+
+def test_runtime_binding_detail_template_compiles_and_handles_optional_containers() -> None:
+    from jinja2 import Environment
+
+    source = (
+        ROOT / 'app/templates/artifact_registry/partials/_runtime_binding_detail.html'
+    ).read_text()
+    env = Environment(autoescape=True)
+    # Plain Jinja lacks application filters; register stubs for compilation.
+    env.filters['environment_name'] = lambda value, empty='Not Set': value
+    env.filters['user_datetime'] = lambda value: value
+    # Compile the entire partial to catch malformed template delimiters.
+    env.from_string(source)
+    assert '{% if binding.containers %}' in source
+    assert '{% endif %}' in source
+    assert 'endif %>' not in source
+
+    start = source.index('{% if binding.containers %}')
+    end = source.index("{{ detail.inventory_technical_row('Image Reference'", start)
+    optional_usages = env.from_string(source[start:end])
+
+    no_containers = optional_usages.render(binding={'containers': []})
+    assert 'Observed Container Usages' not in no_containers
+
+    with_containers = optional_usages.render(
+        binding={
+            'containers': [
+                {'name': 'web', 'kind': 'container', 'index': 0},
+                {'name': 'init-db', 'kind': 'initContainer', 'index': 1},
+            ]
+        }
+    )
+    assert 'Observed Container Usages' in with_containers
+    assert 'web · container #1' in with_containers
+    assert 'init-db · initContainer #2' in with_containers
+    assert "detail.inventory_technical_row('Image Reference'" in source
+    assert 'Security Exposure' in source
+    assert 'Correlation Evidence' in source
