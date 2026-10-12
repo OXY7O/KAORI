@@ -15,7 +15,7 @@ from sqlalchemy import func, or_, select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
 from app.common.celery_queue_health import get_queue_readiness
-from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence
+from app.common.pagination import PER_PAGE_OPTIONS, paginate_select
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationInstance
