@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from app.artifact_registry import presentation_inventory
 
 
@@ -34,7 +36,7 @@ def test_malformed_registry_inventory_source_filter_does_not_expand_scope() -> N
     flask = Flask('registry-inventory-scope-test')
     for raw in ('?source_id=abc', '?source_id=-2', '?source_id=0', '?source_id=3.1'):
         with flask.test_request_context('/artifact-registry/inventory/artifacts' + raw):
-            with __import__('pytest').raises(NotFound):
+            with pytest.raises(NotFound):
                 _inventory_source_id()
     for raw, expected in (('', None), ('?source_id=', None), ('?source_id=3', 3)):
         with flask.test_request_context('/artifact-registry/inventory/projects' + raw):
