@@ -79,7 +79,8 @@ def test_capsule_tenant_quota_governance_uses_compact_action_footers() -> None:
     )
 
     assert 'Capsule Tenant Quota Governance' in source
-    assert source.count('border-t border-outline-subtle bg-surface-elevated px-4 py-3') == 2
+    assert source.count('<footer class="flex flex-col gap-3 border-t border-outline-subtle') == 2
+    assert source.count('</footer>') == 2
     assert 'Governance Cutover' in source
     assert 'Managed Change' in source
     assert 'Adoption stays read-only until explicit cutover.' in source
