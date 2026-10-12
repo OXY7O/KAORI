@@ -28,6 +28,26 @@ A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend
 
 The application is available at `http://localhost:5000`.
 
+### PostgreSQL least-privilege runtime (existing DevContainer databases)
+
+Capsule Release's immutable START ledger requires the application and all
+Celery/Beat workers to use a **non-owner** PostgreSQL role. Older local
+databases may have been initialized and used entirely as `kaori` (owner);
+that role must not perform the Capsule restart/provider handoff. The
+data-preserving, opt-in procedure is documented in
+[`DevContainer PostgreSQL runtime-role cutover`](operations/devcontainer-postgres-runtime-role.md).
+
+Provision one `kaori_runtime` login in the **same** `kaori` database,
+then set the private `KAORI_DEV_RUNTIME_DATABASE_URL` before recreating
+app/worker services. Owner-only migrations must use an ephemeral
+`KAORI_DB_MIGRATION_URL` through `scripts/init_db.sh`, never the runtime
+URL. Take a backup first and verify the immutable ledger privileges;
+**do not recreate/delete the database or run `down --volumes`**. The
+legacy Compose URL fallback is for pre-cutover startup only and remains
+blocked by the Capsule evidence guards.
+
+
+
 ### Dev Container Compose lifecycle
 
 The development stack uses the isolated Compose project **`kaori-dev`**. VS Code is configured with `shutdownAction: none`, so closing or reloading the editor does not stop PostgreSQL, Redis, Celery workers, or Beat. All development services use restart policies, and Celery workers have queue-appropriate graceful shutdown windows.
