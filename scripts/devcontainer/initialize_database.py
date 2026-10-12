@@ -14,6 +14,7 @@ import sys
 
 import psycopg2
 from sqlalchemy.engine import URL, make_url
+from sqlalchemy.exc import ArgumentError
 
 
 def _abort(message: str) -> None:
@@ -33,7 +34,10 @@ def main() -> int:
     if os.getenv('KAORI_DB_MIGRATION_URL') or os.getenv('KAORI_DB_MIGRATION_PASSWORD'):
         _abort('remove ambient migration credentials; use the protected interactive prompt')
     runtime_raw = os.getenv('DATABASE_URL', '')
-    runtime = make_url(runtime_raw)
+    try:
+        runtime = make_url(runtime_raw)
+    except ArgumentError:
+        _abort('restricted runtime DATABASE_URL is missing or malformed')
     if (
         runtime.drivername not in {'postgresql', 'postgresql+psycopg2'}
         or runtime.username != 'kaori_runtime'
@@ -41,6 +45,7 @@ def main() -> int:
         or (runtime.port or 5432) != 5432
         or runtime.database != 'kaori'
         or not runtime.password
+        or len(runtime.password) < 16 or 'replace-with' in runtime.password.lower()
     ):
         _abort('DATABASE_URL must identify the isolated local runtime principal')
 
