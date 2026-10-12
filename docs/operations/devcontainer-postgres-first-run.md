@@ -128,6 +128,21 @@ Docker logs, schema version and role/trigger evidence.
 - If root `.env` or either secret file becomes inconsistent with a
   persistent volume, the initializer **aborts**. Recover the original
   matching credentials; never regenerate them against existing data.
+- Host preparation treats **only Docker's explicit "no such volume"**
+  result as a fresh database. Failure to contact Docker, malformed
+  inspection output, or a named volume without the exact
+  `kaori-dev` Compose project and `kaori_postgres_data` volume labels
+  is an **ABORT**, not permission to regenerate credentials.
+- Existing host-side PostgreSQL secret files must be owned by the
+  developer and mode `0600`; the enclosing external directory must
+  be developer-owned mode `0700`. Symlinked files or a secret directory
+  resolving inside the repository are rejected. The initializer
+  protects the app `.env` with mode `0600` without rotating secrets.
+- PostgreSQL's first-volume role init reads bootstrap passwords through
+  `psql` environment-variable support rather than command-line
+  `-v password=...` arguments, to avoid exposing secrets via process
+  argument inspection. This remains a **trusted local Docker host**
+  boundary, not a production secrets-manager equivalent.
 - The host initializer assumes VS Code is running in a WSL environment with
   `python3`, Docker/Compose and a normal `$HOME`. Other host platforms
   require an explicit adapter review; don't silently move secrets into the
