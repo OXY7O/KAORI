@@ -33,6 +33,12 @@ from app.integrations.delivery.notification_channels.providers.microsoft_teams i
 from app.integrations.delivery.notification_channels.providers.microsoft_teams import (
     validate_form as validate_microsoft_teams_form,
 )
+from app.integrations.delivery.notification_channels.providers.ntfy import (
+    form_view as ntfy_form_view,
+    parse_form as parse_ntfy_form,
+    send_ntfy_message,
+    validate_form as validate_ntfy_form,
+)
 from app.integrations.delivery.notification_channels.providers.telegram import (
     form_view as telegram_form_view,
 )
@@ -139,6 +145,46 @@ def _send_microsoft_teams(
 
 
 _PROVIDERS = {
+    'ntfy': NotificationProviderAdapter(
+        key='ntfy',
+        label='ntfy',
+        icon='bell-ring',
+        description='Self-hosted topic-based mobile and web push.',
+        transport='HTTPS Publish',
+        configuration='Approved ntfy HTTPS origin + topic + optional access token.',
+        setup_title='Configure ntfy Push Delivery',
+        setup_summary='Connect KAORI to an approved self-managed ntfy server for governed topic publishing.',
+        setup_requirements=(
+            'An HTTPS ntfy server and publishing topic controlled by your operations team.',
+            'Server origin explicitly approved via NOTIFICATION_NTFY_ALLOWED_ORIGINS.',
+            'Valid server TLS certificate or approved CA bundle configured on the KAORI runtime.',
+            'Optional ntfy access token with minimum publish rights.',
+        ),
+        setup_steps=(
+            'Configure NOTIFICATION_NTFY_ALLOWED_ORIGINS on the KAORI application and worker; '
+            'include only approved HTTPS origins, then restrict egress at network policy/firewall.',
+            'If using internal PKI, configure NOTIFICATION_NTFY_CA_BUNDLE on the application and worker.',
+            'Create a private ntfy topic and issue a publish-scoped access token where authorization is required.',
+            'Set the server origin, topic, optional token and allowed KAORI event/domain policy.',
+            'Save and run Test Delivery; confirm server acknowledgement and arrival on a test subscriber.',
+        ),
+        security_note=(
+            'HTTPS is mandatory; no TLS bypass or arbitrary endpoints. Access tokens remain encrypted '
+            'and hidden after saving. Network egress/DNS policy remains an operator-owned requirement.'
+        ),
+        validation_note='Test Delivery checks ntfy HTTPS publishing, not individual subscriber receipt.',
+        form_partial='integrations/delivery/notification_channels/providers/ntfy/_form.html',
+        form_parser=parse_ntfy_form,
+        form_validator=validate_ntfy_form,
+        form_view=ntfy_form_view,
+        sender=lambda credentials, destination, provider_config, message, timeout: send_ntfy_message(
+            credentials=credentials,
+            destination=destination,
+            provider_config=provider_config,
+            message=message,
+            timeout_seconds=timeout,
+        ),
+    ),
     'telegram': NotificationProviderAdapter(
         key='telegram',
         label='Telegram',

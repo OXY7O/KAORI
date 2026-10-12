@@ -1,0 +1,31 @@
+<div class="grid gap-4 sm:grid-cols-2">
+    <div>
+        <label for="ntfy-base-url" class="{{ table_ui.filter_label_classes() }}">ntfy HTTPS Server</label>
+        <input id="ntfy-base-url"
+               name="ntfy_base_url"
+               type="url"
+               value="{{ form_channel.ntfy_base_url if form_channel else '' }}"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="https://ntfy.internal.example">
+        <p class="mt-1 text-xs leading-5 text-content-muted">Must match an origin allowed by NOTIFICATION_NTFY_ALLOWED_ORIGINS.</p>
+    </div>
+    <div>
+        <label for="ntfy-topic" class="{{ table_ui.filter_label_classes() }}">Topic</label>
+        <input id="ntfy-topic"
+               name="ntfy_topic"
+               value="{{ form_channel.ntfy_topic if form_channel else '' }}"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="kaori-alerts">
+        <p class="mt-1 text-xs leading-5 text-content-muted">Approved private topic name; do not put secrets in the topic.</p>
+    </div>
+    <div class="sm:col-span-2">
+        <label for="ntfy-token" class="{{ table_ui.filter_label_classes() }}">Access Token (optional)</label>
+        <input id="ntfy-token"
+               name="ntfy_access_token"
+               type="password"
+               autocomplete="new-password"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="{{ 'Leave blank to keep current token' if form_channel and form_channel.credential_configured else 'Publish-scoped token, if required' }}">
+        <p class="mt-1 text-xs leading-5 text-content-muted">Encrypted and never rendered after saving. Test Delivery verifies publishing to the chosen topic.</p>
+    </div>
+</div>
