@@ -14,6 +14,8 @@ from flask import (
 )
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
+
+from app.extensions.db import db
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
@@ -29,7 +31,7 @@ from app.platform_operations.kubernetes.secret_reveal.service import (
     rollback_secret_reveal_settings_transaction,
 )
 from app.platform_operations.notifications.feedback import queue_operational_feedback
-from app.platform_operations.notifications.service import record_operational_activity
+from app.platform_operations.notifications.service import record_operational_activity, stage_operational_activity
 
 bp = Blueprint('secret_reveal', __name__)
 
@@ -103,8 +105,10 @@ def _record_settings_activity(
     title: str,
     message: str,
     metadata: dict[str, object],
+    durable_with_operation: bool = False,
 ) -> dict[str, Any]:
-    return record_operational_activity(
+    writer = stage_operational_activity if durable_with_operation else record_operational_activity
+    return writer(
         user_id=current_user.id,
         event_type=event_type,
         status=status,
@@ -118,7 +122,7 @@ def _record_settings_activity(
             'secret_value_recorded': False,
             'kubeconfig_recorded': False,
         },
-        queue_feedback=False,
+        **({} if durable_with_operation else {'queue_feedback': False}),
     )
 
 
@@ -183,6 +187,7 @@ def update_readiness(cluster_id: str):
             cluster,
             encryption_verified=request.form.get('encryption_verified') == '1',
             audit_verified=request.form.get('audit_verified') == '1',
+            commit=False,
         )
         readiness = cluster_reveal_readiness_evidence(cluster)
         ready = readiness['ready']
@@ -205,7 +210,9 @@ def update_readiness(cluster_id: str):
                 'cluster_credential_configured': readiness['credential_configured'],
                 'uses_cluster_kubeconfig': True,
             },
+            durable_with_operation=True,
         )
+        db.session.commit()
     except ValueError as exc:
         rollback_secret_reveal_settings_transaction()
         operation_feedback = _record_settings_activity(
@@ -242,6 +249,7 @@ def update_namespace_policy(cluster_id: str):
             namespace,
             requested_policy,
             actor_user_id=current_user.id,
+            commit=False,
         )
         enabled = change.policy != 'disabled'
         operation_feedback = _record_settings_activity(
@@ -261,7 +269,9 @@ def update_namespace_policy(cluster_id: str):
                 'previous_policy': change.previous_policy,
                 'uses_cluster_kubeconfig': True,
             },
+            durable_with_operation=True,
         )
+        db.session.commit()
     except ValueError as exc:
         rollback_secret_reveal_settings_transaction()
         operation_feedback = _record_settings_activity(

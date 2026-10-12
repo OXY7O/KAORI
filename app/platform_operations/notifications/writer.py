@@ -28,6 +28,7 @@ def persist_notification(
     action_url: str | None = None,
     evidence: NotificationPersistenceEvidence,
     deck_visible: bool = True,
+    commit: bool = True,
 ) -> Notification:
     """Persist one already-normalized notification record.
 
@@ -55,5 +56,6 @@ def persist_notification(
         notification.read_at = datetime.now(UTC)
 
     db.session.add(notification)
-    db.session.commit()
+    if commit:
+        db.session.commit()
     return notification

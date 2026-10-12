@@ -372,3 +372,52 @@ def mark_notification_read(*, notification_id: int, user_id: int) -> None:
 
 def mark_all_notifications_read(*, user_id: int, scope: str = 'all') -> None:
     _mark_all_notifications_read(user_id=user_id, scope=scope)
+
+
+def stage_operational_activity(
+    *,
+    user_id: int | None,
+    event_type: str,
+    status: str,
+    title: str,
+    message: str,
+    action_url: str | None = None,
+    action_label: str = 'View details',
+    action_icon: str = 'arrow-up-right',
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Stage high-risk administrative evidence in the caller's transaction.
+
+    Unlike ordinary asynchronous/best-effort notification delivery, an error
+    here MUST propagate so the protected source mutation can be rolled back.
+    """
+    status, title, message, detail = _normalize_notification_content(
+        event_type=event_type, status=status, title=title, message=message,
+        detail=None,
+    )
+    actor = resolve_operational_actor(metadata=metadata)
+    evidence = NotificationPersistenceEvidence(metadata=metadata, actor=actor)
+    persist_notification(
+        user_id=user_id,
+        event_type=event_type,
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
+        action_url=action_url,
+        evidence=evidence,
+        deck_visible=True,
+        commit=False,
+    )
+    return build_operational_feedback(
+        OperationalFeedbackSpec(
+            status=status, title=title, message=message, detail=detail,
+            action_url=action_url, action_label=action_label,
+            action_icon=action_icon, activity_audit_saved=True,
+            notification_deck_visible=True,
+            delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
+            delivery=_feedback_delivery(
+                event_type=event_type, status=status, metadata=metadata,
+            ),
+        )
+    )
