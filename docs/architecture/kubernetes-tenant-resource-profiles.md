@@ -388,47 +388,45 @@ source Resource Profile ID and version match the committed Namespace.
 Proposed **Supported** or **Unavailable** is capability preflight only.
 Missing or mismatched evidence is **Not recorded**. Neither evaluation
 establishes external **Applied** or **Verified** state without authoritative
-executor/read-back evidence (#1591). The original #1590 disclosure and #1619
-card layout are superseded by the #1632 Contract Diff tabset below; their
-data provenance, control evidence boundaries and governance gates remain.
+executor/read-back evidence (#1591). The #1590 disclosure, #1619 card layout and #1632 Contract Diff tabset
+are superseded by the #1645 calm dual comparison below; their approved
+data provenance, evidence boundaries and governance gates remain.
 
-**Allocation Change Contract Diff View (#1632, supersedes #1619 layout):**
-Preserve the governed selector and form-submit/read-back admission workflow while
-replacing duplicate Current/Proposed metric cards, Change Summary cards and
-three Advanced disclosures with a compact **Current → Proposed** identity strip
-and a single accessible `Changes | Full Contract | Advanced Controls` tabset.
-Changes is the initial tab and displays only changed values; Full Contract
-displays every recorded value grouped as **ResourceQuota**, **PVC Storage
-Guardrails**, **Object Limits** and **Container Defaults**. Each uses one
-semantic four-column comparison table, rather than repeating the same values in
-multiple cards. Advanced Controls has its own tab and an unboxed informative
-empty state. Tab buttons remain part of the read-only comparison, have
-keyboard Home/End and Left/Right navigation, and never submit the form.
+**Allocation Change calm dual comparison (#1645, supersedes #1632 presentation):**
+Operator Visual UAT rejected the previous 16-row Full Contract default and
+repetitious box-per-metric cards. Restore **Current Contract | Proposed
+Contract** as the primary two-column comparison using semantic stat labels,
+restrained dividers and PVC bounds instead of nested cards. Current always
+reads frozen Namespace allocation JSON; Proposed always reads the selected,
+versioned Resource Profile, except for the explicit `adopted_baseline`
+selection that reads the current frozen contract. All six ResourceQuota
+values and PVC min/max remain visible together, including on narrow screens.
 
-Both table views use the **same 16 canonical dimensions**, from frozen
-`TenantNamespace` quota/storage/LimitRange JSON for Current and the selected
-versioned `TenantResourceProfile` for Proposed. The committed Native
-`adopted_baseline` choice continues to use Current as Proposed. Switching
-Namespace/profile refreshes every visible value, changed-only filtering and
-summary, without provider requests or stale values. Missing CPU/memory/Pod
-quotas and PVC bounds display **Unbounded**, while absent object limits and
-Container Defaults display **Not declared**. Unit-aware comparison only
-classifies known Kubernetes quantities as `Increased` or `Reduced`; a
-previously absent constraint becomes `Now defined`, a removed constraint
-`No longer defined`, and unknown non-equivalent values remain `Changed`.
-Semantic equality such as 1000m and 1 does not create a spurious change.
-The count includes all changed dimensions represented in Full Contract,
-not only the eight headline capacity fields.
+A single **Change Highlights** strip shows at most three material changes,
+prioritizing CPU Limit, Memory Limit and Total Storage, while the count includes
+all **16** ResourceQuota, PVC, Object Limit and LimitRange Default dimensions.
+No repeated eight-card change dashboard, and no implication that any direction
+means admission approval. If there are no changes, the counter reads `No changes`.
+Missing and unknown quantities are not treated as zero: absent governed quotas
+and PVC bounds are `Unbounded`; object limits and defaults are `Not declared`.
 
-Capacity admission still uses only committed **requests**, Pods and logical
-storage; ResourceQuota **limits** remain enforcement ceilings. No comparison
-result claims free headroom, permission to apply, mutation, or read-back.
-Advanced Controls continue to show only version-matched **Recorded**
-capability evaluation for Current and **Supported / Unavailable / Pending
-Preflight** for Proposed; none imply executed or verified provider state.
-The separate executor/read-back evidence audit #1591 remains authoritative.
-The three original governance gates, submit authorization, backend route and
-fail-closed mutation path are not changed by this presentation-only UX revision.
+**Technical Details** uses one compact shared-workspace category switch
+(`Object Limits / Container Defaults / Advanced Controls`) instead of
+three accordion tiles. Only the selected category's short, read-only
+Current/Proposed table appears. Category tabs use native button/ARIA tab
+patterns and keyboard Left/Right/Home/End navigation. Advanced Control
+states remain `Recorded` capability evaluation or `Supported`/
+`Unavailable` preflight, with no implied execution or verified read-back.
+Its no-controls state is a brief informative line. Current/proposed
+selection refreshes all visible values, change highlights and controls,
+without provider mutation or fresh provider reads.
+
+The earlier #1590 and #1619 layouts and #1632 Contract Diff tabset are
+historical designs; their approved evidence provenance and security rules
+remain. Backend admission, authoritative reconciliation and provider
+read-back remain separate governed actions, and executor audit #1591
+continues independently. The original three governance gates and submitted
+form route/permission controls are unchanged.
 
 **Allocation workflow target lifecycle (#1159):** Resource Profiles → Allocation Change
 offers only `kaori_managed` Native Namespace allocations belonging to a
