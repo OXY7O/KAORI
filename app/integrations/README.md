@@ -450,11 +450,11 @@ authorization. A review-only documentation merge is not staging UAT acceptance.
 Provider availability on the review UI is **not** proof of live connectivity,
 permissioned destination ownership, UAT acceptance or release readiness.
 
-**ntfy, self-hosted:** Set \`NOTIFICATION_NTFY_ALLOWED_ORIGINS\` on the KAORI
+**ntfy, self-hosted:** Set `NOTIFICATION_NTFY_ALLOWED_ORIGINS` on the KAORI
 web process and Celery worker to explicit comma-separated HTTPS server origins,
-for example \`https://notify.internal.example\`; when unset, destination
+for example `https://notify.internal.example`; when unset, destination
 validation and delivery fail closed. Optionally provide a trusted PEM bundle
-using \`NOTIFICATION_NTFY_CA_BUNDLE\` for your internal PKI. Never disable TLS
+using `NOTIFICATION_NTFY_CA_BUNDLE` for your internal PKI. Never disable TLS
 certificate verification. Explicitly restrict DNS resolution and network
 egress at infrastructure policy: the application origin allowlist plus
 redirect denial does **not** protect against all malicious DNS changes.
@@ -464,27 +464,27 @@ operator-owned subscriber. Server acknowledgement does not prove mobile
 receipt or human reading.
 
 **Slack:** Configure an official, channel-bound Incoming Webhook on
-\`hooks.slack.com\` (or approved GovSlack host), store its secret URL only in
+`hooks.slack.com` (or approved GovSlack host), store its secret URL only in
 the password field, and assign a human destination label. Webhook ownership
 determines the Slack channel; do not assume the label changes the destination.
 Credentials are encrypted and never rendered back. Validate the destination
 and Test Delivery against a sanctioned sandbox, then confirm channel receipt.
 
-**Discord:** Configure an official \`https://discord.com/api/webhooks/...\`
+**Discord:** Configure an official `https://discord.com/api/webhooks/...`
 Execute Webhook with minimum privileges. Store its secret URL through the
 password field; Test Delivery before enabling the channel. The payload
-includes \`allowed_mentions: {"parse": []}\` to suppress accidental user,
+includes `allowed_mentions: {"parse": []}` to suppress accidental user,
 role and mass mentions. No Discord bot, chat history, guild discovery or
 subscriber-read status is replicated.
 
 **Reliability boundary:** Slack and Discord classify HTTP 429 with sanitized
 provider failures. The existing opt-in journal recovery currently uses the
 KAORI bounded retry delay; it does **not yet honor provider-specific
-\`Retry-After\` scheduling deadlines**. Do not claim rate-limit-compliant
+`Retry-After` scheduling deadlines**. Do not claim rate-limit-compliant
 retry, exactly-once remote delivery, or production readiness. Governed
 follow-up work must address provider-specific deadlines and concurrent
-claims before enabling \`NOTIFICATION_DELIVERY_RECOVERY_ENABLED=true\`.
-Keep \`NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false\` during DevContainer
+claims before enabling `NOTIFICATION_DELIVERY_RECOVERY_ENABLED=true`.
+Keep `NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false` during DevContainer
 review.
 
 **UAT still pending:** run existing regression suites, provider mocked
