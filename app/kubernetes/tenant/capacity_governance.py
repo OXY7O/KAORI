@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -40,6 +40,7 @@ from app.kubernetes.tenant.capacity_governance_support import (
     _optional_positive_quantity,
     _percent,
     _policy_json,
+    _project,
     _snapshot_cutoff,
     _state_reason,
     _text,
@@ -682,6 +683,73 @@ def _enforce_allocation_preflight(
                     capacity_evidence_available=True,
                 )
 
+    # The Request Commitment decision remains authoritative. Limit Exposure
+    # can only add a stricter block when the operator explicitly enables it.
+    limit_mode = str(getattr(policy, 'limit_exposure_mode', 'observe') or 'observe') if policy else 'observe'
+    limit_evidence: dict[str, Any] = {'mode': limit_mode, 'enforced': False, 'planning_only': True}
+    limit_positive = (
+        request.current_limits is not None and request.proposed_limits is not None
+        and any(
+            next_value is None or (current_value is not None and next_value > current_value)
+            for current_value, next_value in (
+                (request.current_limits.cpu, request.proposed_limits.cpu),
+                (request.current_limits.memory_bytes, request.proposed_limits.memory_bytes),
+            )
+        )
+    )
+    if limit_mode == 'enforce' and (positive_change or limit_positive):
+        limit_evidence['enforced'] = True
+        if request.proposed_limits is None:
+            pure = replace(
+                pure, allowed=False, decision='block', state='Unknown',
+                reason='Limit Exposure proposal is missing; operator Enforce mode fails closed.',
+            )
+        else:
+            if request.limit_committed_state is not None:
+                limit_before, _, unknown_limit_sources = request.limit_committed_state
+                projected_limits = _project(
+                    limit_before,
+                    request.current_limits or CapacityVector(cpu=None, memory_bytes=None),
+                    request.proposed_limits,
+                )
+                projection = 'committed_minus_current_plus_proposed'
+            elif request.replacement_namespace is not None:
+                # An existing Native Namespace is replaced exactly once.
+                other_limits, _, unknown_limit_sources = _committed_tenant_allocation(
+                    cluster_id, replace_namespace=request.replacement_namespace,
+                    quota_vector_factory=quota_limit_vector,
+                )
+                projected_limits = _add_capacity_vectors(other_limits, request.proposed_limits)
+                projection = 'other_committed_plus_proposed'
+            else:
+                limit_before, _, unknown_limit_sources = _committed_tenant_allocation(
+                    cluster_id, quota_vector_factory=quota_limit_vector,
+                )
+                projected_limits = _project(
+                    limit_before,
+                    request.current_limits or CapacityVector(cpu=None, memory_bytes=None),
+                    request.proposed_limits,
+                )
+                projection = 'committed_minus_current_plus_proposed'
+            limit_evidence['projection'] = projection
+            limit_evidence['projected_limits'] = _vector_json(projected_limits)
+            limit_evidence['unknown_sources'] = unknown_limit_sources
+            report = assess_limit_exposure(
+                committed=projected_limits,
+                budget=budget.available if budget is not None else None,
+                mode=limit_mode,
+                cpu_ratio=Decimal(str(getattr(policy, 'cpu_limit_ratio', '1.50'))),
+                memory_ratio=Decimal(str(getattr(policy, 'memory_limit_ratio', '1.00'))),
+                evidence_ready=capacity is not None,
+                unknown_sources=unknown_limit_sources,
+            )
+            limit_evidence['assessment'] = report
+            if report['state'] in {'Unknown', 'Overcommitted'}:
+                pure = replace(
+                    pure, allowed=False, decision='block', state=report['state'],
+                    reason=f"Limit Exposure admission blocked: {report['reason']}",
+                )
+
     decision = _persist_decision(
         cluster_id=cluster_id,
         tenant_environment=tenant_environment,
@@ -697,6 +765,7 @@ def _enforce_allocation_preflight(
             committed_count=committed_count,
             snapshot_result=snapshot_result,
             replacement_other_committed=replacement_other,
+            limit_exposure_evidence=limit_evidence,
         ),
     )
     if not pure.allowed:
@@ -767,6 +836,7 @@ def _persist_decision(
             ),
         },
         'budget': _budget_json(evidence.budget) if evidence.budget is not None else None,
+        'limit_exposure': evidence.limit_exposure_evidence,
     }
     db.session.add(record)
     db.session.flush()
