@@ -43,7 +43,10 @@
             <div class="flex-1 p-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                        <p class="text-sm font-semibold text-content-primary">Adopted → KAORI Managed</p>
+                        <p class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
+                            <i data-lucide="crosshair" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                            Adopted → KAORI Managed
+                        </p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Explicitly take over allocation governance for an observed legacy Tenant quota.</p>
                     </div>
                     {{ table_label.special_label('Cutover', 'warning', 'arrow-right-left') }}
@@ -148,7 +151,10 @@ data-tenant-quota-metric-side="proposed" data-tenant-quota-metric-key="{{ key }}
             <div class="flex-1 p-4">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                        <p class="text-sm font-semibold text-content-primary">Managed Allocation Change</p>
+                        <p class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
+                            <i data-lucide="refresh-cw" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                            Managed Allocation Change
+                        </p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Change a governed Capsule Tenant quota through the same authority and verification path.</p>
                     </div>
                     {{ table_label.special_label('KAORI Managed', 'normal', 'shield-check') }}
