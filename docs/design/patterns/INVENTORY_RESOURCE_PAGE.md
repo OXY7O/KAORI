@@ -119,6 +119,8 @@ The four-column summary strip is a flush, full-width modal band immediately belo
 
 Technical identifiers that operators frequently transfer into operational tooling may expose the shared icon-only copy control. Kubernetes UID/UID, System UUID, and concrete IP addresses are approved examples. The action must have an accessible name, use the global Clipboard behavior, and disappear for unavailable values.
 
+Namespace Detail deliberately renders UID as selectable technical text **without** the copy icon/action. Other Inventory resources retain their existing opt-in copy controls. Keep Namespace Identity, Access & Security, Object Composition, and Resource Controls descriptions compact while preserving their committed-evidence meaning; do not introduce extra UI controls to compensate for reduced copy density.
+
 Dense resource filters use the canonical `Search` field label with a concise domain-specific placeholder. Ingress DNS host actions may open only a concrete declared host using `http` or `https` derived from committed TLS declaration. Wildcard host declarations remain reference-only, and a direct-open action never implies DNS resolution, reachability, or service health.
 
 ## Architecture and ownership
