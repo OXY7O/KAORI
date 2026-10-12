@@ -130,6 +130,15 @@ def sync_object_storage_inventory(
     current_stage = 'system lock'
     try:
         _lock_system_inventory_sync(system.id)
+        # The configuration writer uses the same system-row lock. Refresh after
+        # taking it so a queued job never collects using an obsolete endpoint.
+        db.session.refresh(instance)
+        db.session.refresh(canonical, attribute_names=['metadata_json', 'readiness_status', 'enabled'])
+        if not canonical.enabled or instance.readiness_status != 'ready':
+            raise RuntimeError('Storage connection changed or lost Core Validation before Inventory Sync began.')
+        source_generation = int(
+            (canonical.metadata_json or {}).get('object_storage_connection_generation') or 0
+        )
         if empty_reconciliation is not None:
             # Refresh under the system row lock; the dispatch-time ORM identity
             # may have been loaded before a concurrent inventory generation.
@@ -192,6 +201,12 @@ def sync_object_storage_inventory(
             observed_at=observed_at,
             confirmed_empty=reconciliation_evidence is not None,
         )
+        # Record source identity lineage in the same transaction as bucket rows.
+        # On a failed collection the previous generation remains historical.
+        canonical.metadata_json = {
+            **(canonical.metadata_json or {}),
+            'object_storage_inventory_generation': source_generation,
+        }
         current_stage = 'commit'
         db.session.commit()
         result: ObjectStorageInventorySyncResult = {
