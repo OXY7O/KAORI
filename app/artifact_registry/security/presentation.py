@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import case, func, or_
+from sqlalchemy import case, false, func, or_
 from sqlalchemy.orm import joinedload
+from werkzeug.exceptions import NotFound
 
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.artifact_registry.security.job_adapter import build_registry_security_sync_state
@@ -18,6 +19,7 @@ from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 from app.models.registry import (
     RegistryArtifact,
+    RegistryCollectionState,
     RegistryProject,
     RegistryRepository,
     RegistryScanSnapshot,
@@ -43,13 +45,32 @@ def _freshness(observed_at: datetime | None) -> dict[str, str]:
     return {'label': 'Current', 'tone': 'normal'}
 
 
-def _providers() -> list[IntegrationInstance]:
+def _registered_sources() -> list[IntegrationInstance]:
     return (
         IntegrationInstance.query.filter(
             IntegrationInstance.integration_type == 'registry',
+            IntegrationInstance.enabled.is_(True),
             IntegrationInstance.lifecycle_status == 'active',
         )
-        .order_by(IntegrationInstance.name.asc())
+        .order_by(IntegrationInstance.name.asc(), IntegrationInstance.id.asc())
+        .all()
+    )
+
+
+def _providers() -> list[IntegrationInstance]:
+    """Eligible operational security evidence scope, not historical provider records."""
+    return (
+        IntegrationInstance.query.join(
+            RegistryCollectionState,
+            RegistryCollectionState.integration_instance_id == IntegrationInstance.id,
+        )
+        .filter(
+            IntegrationInstance.integration_type == 'registry',
+            IntegrationInstance.enabled.is_(True),
+            IntegrationInstance.lifecycle_status == 'active',
+            RegistryCollectionState.last_committed_at.is_not(None),
+        )
+        .order_by(IntegrationInstance.name.asc(), IntegrationInstance.id.asc())
         .all()
     )
 
@@ -96,11 +117,10 @@ def _scoped_sources(
 
 
 def _apply_source_scope(query: Any, source_ids: list[int], *, scoped: bool) -> Any:
+    """Security evidence is never allowed to expand beyond eligible source IDs."""
     if source_ids:
         return query.filter(RegistryProject.integration_instance_id.in_(source_ids))
-    if scoped:
-        return query.filter(RegistryProject.integration_instance_id == -1)
-    return query
+    return query.filter(false())
 
 
 def _snapshot_status(
@@ -634,7 +654,10 @@ def build_security(
     provider_value = provider.strip().lower()
     severity_value = severity.strip().lower()
     search_value = search.strip().lower()
+    registered_sources = _registered_sources()
     sources = _providers()
+    if source_id is not None and not any(int(item.id) == source_id for item in sources):
+        raise NotFound('The selected committed Registry security source is unavailable.')
     scoped_sources = _scoped_sources(sources, provider=provider_value, source_id=source_id)
     source_by_id = {int(item.id): item for item in sources}
     evidence = _security_scope_evidence(
@@ -707,8 +730,8 @@ def build_security(
         'endpoint': (
             'artifact_registry.security' if view == 'vulnerabilities' else 'artifact_registry.security_supply_chain'
         ),
-        'setup_blocked': not sources,
-        'inventory_required': bool(sources) and RegistryArtifact.query.count() == 0,
+        'setup_blocked': not registered_sources,
+        'inventory_required': bool(registered_sources) and not sources,
         'snapshot': snapshot_context,
         'sync_state': build_registry_security_sync_state(),
         'finding_interpretation': _security_finding_interpretation(evidence),
