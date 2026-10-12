@@ -250,6 +250,56 @@ def test_capsule_g0_refuses_orphan_kaori_tenant_label_before_independent_approva
     assert preserved_blockers == []
 
 
+
+@pytest.mark.parametrize(('declaration', 'observed_label', 'unexpected_label', 'admitted'), [
+    ('tenant-capsule', 'tenant-capsule', None, True),
+    ('different', 'tenant-capsule', None, False),
+    (None, 'tenant-capsule', None, False),
+    ('tenant-capsule', 'other', None, False),
+    ('tenant-capsule', 'tenant-capsule', 'kaori.io/unknown-control', False),
+])
+def test_capsule_g0_recognizes_only_exact_spec_projected_namespace_label(
+    declaration, observed_label, unexpected_label, admitted,
+):
+    record = SimpleNamespace(namespace='sandbox', provider_reference='ns-uid')
+    labels = {
+        'capsule.clastix.io/tenant': 'tenant-capsule',
+        'cluster': 'kaori-local',
+        'kaori.io/tenant': observed_label,
+        'pod-security.kubernetes.io/enforce': 'restricted',
+    }
+    if unexpected_label:
+        labels[unexpected_label] = 'untrusted'
+    resource = SimpleNamespace(metadata=SimpleNamespace(
+        name='sandbox', uid='ns-uid', resource_version='14',
+        labels=labels,
+    ))
+    spec = {
+        'namespaceOptions': {
+            'additionalMetadata': {'labels': (
+                {'kaori.io/tenant': declaration} if declaration is not None else {}
+            )},
+            'managedMetadataOnly': False,
+            'quota': 2,
+        }
+    }
+    component, blockers = capsule_namespace_handoff_evidence(
+        record=record, namespace=resource,
+        tenant_name='tenant-capsule', tenant_id='actual-kaori-db-id',
+        status_namespace_names={'sandbox'}, capsule_spec=spec,
+    )
+    assert component['uid'] == 'ns-uid'
+    assert component['resource_version'] == '14'
+    if admitted:
+        assert component['ownership'] == 'external_or_unattributed'
+        assert component['handoff'] == 'observe_only'
+        assert blockers == []
+    else:
+        assert component['ownership'] == 'marker_conflict'
+        assert component['handoff'] == 'owner_review_required'
+        assert any('exact Capsule spec projection' in reason for reason in blockers)
+
+
 def test_capsule_spec_fingerprint_is_canonical_and_binds_all_provider_controls():
     """#1227: provider quota, limits, owner and RBAC changes invalidate handoff."""
     from copy import deepcopy
