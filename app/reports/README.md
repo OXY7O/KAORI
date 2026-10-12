@@ -126,3 +126,7 @@ The landing page reads selected-backend shared storage readiness and never walks
 ### Reports Overview metric cohorts (#1533)
 
 Requests This Month counts Report records whose created_at belongs to the half-open current **UTC calendar-month** interval [month start, next month start). Completion Rate is deliberately **all-time**, calculated from Ready + Archived as successful resolved requests over Ready + Archived + Failed; requested/generating records are not in this denominator. Empty resolved cohorts display unavailable (—), not a fabricated 100% or 0% success. UI copy names the distinct temporal cohorts; neither metric is a current-provider health signal.
+
+### Reports job integration ownership (#1544)
+
+Canonical Report JobExecution `integration_type` and `integration_instance_id` come from the report's selected asset type: Kubernetes cluster → `kubernetes`, Object Storage system → `object_storage`, Registry IntegrationInstance → `registry` plus its numeric instance ID. Unknown future scope types must not be mislabeled as Kubernetes. The existing Report scope key, queue identity, idempotent resource group and renderer remain unchanged. Historical completed job evidence is not rewritten during this remediation.
