@@ -381,23 +381,24 @@ def _governance_filtered_query(
             else RegistryReplicationPolicy.enabled.is_(None)
         )
     if search:
-        pattern = f'%{search.casefold()}%'
+        escaped = search.casefold().replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        pattern = f'%{escaped}%'
         matched_sources = [
             int(identity.id) for identity in identities
             if search.casefold() in _governance_source_name(identity).casefold()
         ]
         clauses = (
             [
-                func.lower(RegistryProject.name).like(pattern),
+                func.lower(RegistryProject.name).like(pattern, escape='\\'),
                 RegistryProject.integration_instance_id.in_(matched_sources),
             ]
             if active_tab == 'policies'
             else [
-                func.lower(RegistryReplicationPolicy.name).like(pattern),
-                func.lower(func.coalesce(RegistryReplicationPolicy.trigger_type, '')).like(pattern),
-                func.lower(func.coalesce(RegistryReplicationPolicy.source_registry, '')).like(pattern),
-                func.lower(func.coalesce(RegistryReplicationPolicy.destination_registry, '')).like(pattern),
-                func.lower(func.coalesce(RegistryReplicationPolicy.destination_namespace, '')).like(pattern),
+                func.lower(RegistryReplicationPolicy.name).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryReplicationPolicy.trigger_type, '')).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryReplicationPolicy.source_registry, '')).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryReplicationPolicy.destination_registry, '')).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryReplicationPolicy.destination_namespace, '')).like(pattern, escape='\\'),
                 RegistryReplicationPolicy.integration_instance_id.in_(matched_sources),
             ]
         )
