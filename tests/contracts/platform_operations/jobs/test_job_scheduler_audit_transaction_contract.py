@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 
 
 def test_automatic_queue_audit_and_policy_outcome_share_a_transaction() -> None:
