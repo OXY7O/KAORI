@@ -171,6 +171,12 @@ Intelligence → Automation Control
 
 Domain drill-down and Intelligence drill-back should preserve domain, asset, source evidence, and provenance.
 
+### AlertCase source-recovery qualification (#1511)
+
+For recommendation-origin AlertCases, the absence of a current finding is **not** proof of recovery. Reconciliation first checks the exact source asset against recent committed source inventory (24-hour conservative baseline) and the rule-specific source readiness where available. Kubernetes requires a recent ClusterInventory; TLS findings also require a successful current certificate-collection state. Object Storage requires recent system inventory and no stale bucket observations. Registry requires an active, enabled, ready provider with a current successful Registry commit; a missing Registry critical vulnerability finding cannot resolve while runtime-bound artifact scans are unusable. A missing qualified source keeps the AlertCase in Source Unknown (with history and routing governed), never synthetic Resolved.
+
+Read-side inventory currency is **not** worker success or provider health: user-visible readiness must explicitly identify this limitation. Only completed evidence qualification can support absent-finding resolution. Existing Rules, provider execution, and Automation Control verification retain their ownership. Registry notification routes remain blocked until explicitly approved under #1186.
+
 ## Alert Intelligence boundary
 
 A domain fact or Recommendation does not automatically become an operational alert.

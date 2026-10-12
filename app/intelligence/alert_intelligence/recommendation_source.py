@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from sqlalchemy import or_
+
 from app.extensions.db import db
+from app.integrations.registry.security_contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.intelligence.alert_intelligence.case_state import (
     close_accepted_risk_alert,
     mark_case_source_unknown,
@@ -37,8 +40,15 @@ from app.intelligence.rule_exceptions import active_rule_exceptions, matching_ru
 from app.intelligence.service import get_active_recommendation_findings
 from app.models.alert_ops import AlertCase, RecommendationAlertState, RuleException
 from app.models.cluster import Cluster
+from app.models.inventory import ClusterInventory
+from app.models.governance import TLSCertificateCollectionState
+from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
+from app.models.registry import (
+    RegistryArtifact, RegistryCollectionState, RegistryProject, RegistryRepository,
+    RegistryWorkloadBinding,
+)
 from app.models.integration import IntegrationInstance
-from app.models.object_storage import ObjectStorageSystem
+from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 
 _GROUPED_ASSET_TYPES = {
     'kubernetes': 'kubernetes_cluster',
@@ -721,12 +731,53 @@ def _source_evidence_posture_for_finding(finding: dict[str, Any]) -> tuple[bool,
 
 def _source_evidence_posture_for_state(state: RecommendationAlertState) -> tuple[bool, str]:
     rule = catalog_rule(state.rule_key) or {}
-    return _source_evidence_posture(
+    source = _source_evidence_posture(
         domain=state.domain,
         asset_key=state.asset_key,
         signal_source=str(rule.get('signal_source') or ''),
         alert_signal_profile=str(rule.get('alert_signal_profile') or ''),
     )
+    if not source[0]:
+        return source
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
+    rule_key = str(state.rule_key or '')
+    # Missing TLS findings cannot imply recovery after a partial/failed
+    # certificate collection even when the broader cluster inventory is fresh.
+    if rule_key.startswith('kubernetes.tls_secret.'):
+        collection = db.session.get(TLSCertificateCollectionState, state.asset_key)
+        if (
+            collection is None or collection.secret_collection_status != TLS_COLLECTION_COLLECTED
+            or collection.collected_at is None or _as_utc(collection.collected_at) < cutoff
+        ):
+            return False, 'source_unavailable'
+    if state.domain == 'object_storage':
+        # A fresh system row does not qualify every bucket. Missing per-bucket
+        # findings remain Unknown if any committed bucket observation is stale.
+        stale_bucket = ObjectStorageBucket.query.filter(
+            ObjectStorageBucket.object_storage_system_id == state.asset_key,
+            ObjectStorageBucket.observed_at < cutoff,
+        ).first()
+        if stale_bucket is not None:
+            return False, 'source_unavailable'
+    if rule_key.startswith('registry.security.critical_runtime_vulnerability'):
+        runtime_artifacts = db.session.query(RegistryWorkloadBinding.artifact_id).distinct()
+        incomplete_scan = (
+            RegistryArtifact.query.join(
+                RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
+            ).join(
+                RegistryProject, RegistryRepository.project_id == RegistryProject.id
+            ).filter(
+                RegistryProject.integration_instance_id == int(state.asset_key),
+                RegistryArtifact.id.in_(runtime_artifacts),
+                or_(
+                    RegistryArtifact.scan_status.is_(None),
+                    ~RegistryArtifact.scan_status.in_(tuple(SUCCESSFUL_REGISTRY_SCAN_STATUSES)),
+                ),
+            ).first()
+        )
+        if incomplete_scan is not None:
+            return False, 'source_unavailable'
+    return source
 
 
 def _source_evidence_posture(
@@ -741,10 +792,20 @@ def _source_evidence_posture(
     signal = str(signal_source or '').strip().lower()
     if not normalized_asset:
         return True, ''
+    # A missing recommendation can imply recovery only after a successful,
+    # recent committed observation for the exact source asset. A connected
+    # provider or a live binding alone cannot establish source recovery.
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
     if normalized_domain == 'kubernetes':
         asset = db.session.get(Cluster, normalized_asset)
         if asset is None:
             return False, 'source_deleted'
+        observed = ClusterInventory.query.filter(
+            ClusterInventory.cluster_id == normalized_asset,
+            ClusterInventory.collected_at >= cutoff,
+        ).first()
+        if observed is None:
+            return False, 'source_unavailable'
         if signal == 'alertmanager':
             return _binding_posture('alert_source', 'kubernetes_cluster', normalized_asset)
         if signal in {'metrics_source', 'prometheus'}:
@@ -761,6 +822,8 @@ def _source_evidence_posture(
         asset = db.session.get(ObjectStorageSystem, normalized_asset)
         if asset is None:
             return False, 'source_deleted'
+        if asset.inventory_observed_at is None or _as_utc(asset.inventory_observed_at) < cutoff:
+            return False, 'source_unavailable'
         if signal in {'metrics_source', 'prometheus'}:
             return _binding_posture('metrics_source', 'object_storage_system', normalized_asset)
         if signal == 'alertmanager':
@@ -776,6 +839,14 @@ def _source_evidence_posture(
         if not identity.enabled or str(identity.lifecycle_status or '').lower() != 'active':
             return False, 'source_unavailable'
         if str(identity.readiness_status or '').lower() == 'blocked':
+            return False, 'source_unavailable'
+        collection = db.session.get(RegistryCollectionState, identity.id)
+        if (
+            collection is None
+            or collection.status != 'ready'
+            or collection.last_committed_at is None
+            or _as_utc(collection.last_committed_at) < cutoff
+        ):
             return False, 'source_unavailable'
         return True, ''
     return True, ''
