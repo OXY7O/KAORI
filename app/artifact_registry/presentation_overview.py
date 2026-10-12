@@ -394,10 +394,21 @@ def _fleet_freshness(
     )
     metrics_ready_count = stats['metrics_ready_count']
     analytics_ready_count = stats['analytics_ready_count']
+    analytics_stale_count = stats['analytics_stale_count']
     artifact_total = stats['artifact_total']
     scanned_count = stats['scanned_count']
     metrics_all_ready = bool(provider_count) and metrics_ready_count == provider_count
     analytics_all_ready = bool(provider_count) and analytics_ready_count == provider_count
+    analytics_status = (
+        'Ready' if analytics_all_ready
+        else 'Partial' if analytics_ready_count
+        else 'Stale' if analytics_stale_count
+        else 'Required'
+    )
+    analytics_tone = (
+        'normal' if analytics_all_ready else
+        'warning' if analytics_ready_count or analytics_stale_count else 'unknown'
+    )
     return [
         {
             'label': 'Inventory Snapshot',
@@ -439,13 +450,13 @@ def _fleet_freshness(
         },
         {
             'label': 'Analytics Snapshot',
-            'status': 'Ready' if analytics_all_ready else ('Partial' if analytics_ready_count else 'Required'),
-            'tone': 'normal' if analytics_all_ready else ('warning' if analytics_ready_count else 'unknown'),
+            'status': analytics_status,
+            'tone': analytics_tone,
             'value': _freshness_value(
                 stats['latest_analytics_at'],
                 missing='No analytics snapshot',
             ),
-            'description': 'Latest ready Registry analytics materialization across the active scope.',
+            'description': 'Current and stale materialized Registry analytics are assessed separately across this scope.',
             'icon': 'chart-no-axes-combined',
         },
     ]
@@ -479,7 +490,12 @@ def _overview_operations_projection(
     )
     analytics_by_provider = _latest_registry_analytics(scoped_providers)
     metrics_ready_count = sum(metrics.get('status') == 'ready' for metrics in metrics_by_provider.values())
-    analytics_ready_count = sum(snapshot is not None for snapshot in analytics_by_provider.values())
+    analytics_views = {
+        provider_id: _analytics_snapshot_view(snapshot)
+        for provider_id, snapshot in analytics_by_provider.items()
+    }
+    analytics_ready_count = sum(view['is_current'] for view in analytics_views.values())
+    analytics_stale_count = sum(view['is_stale'] for view in analytics_views.values())
     latest_analytics_at = max(
         (
             snapshot.generated_at
@@ -494,6 +510,7 @@ def _overview_operations_projection(
         'committed_count': len(committed_states),
         'metrics_ready_count': metrics_ready_count,
         'analytics_ready_count': analytics_ready_count,
+        'analytics_stale_count': analytics_stale_count,
         'latest_security_at': latest_security_at,
         'latest_analytics_at': latest_analytics_at,
     }
