@@ -149,6 +149,102 @@ def test_observed_capsule_namespace_preserves_foreign_manager_without_patch():
     assert full['release_authorized'] is False
 
 
+
+def test_capsule_spec_projected_tenant_label_is_preserved_without_namespace_patch():
+    component = {
+        **_components()[1],
+        'handoff': 'observe_only',
+        'ownership': 'external_or_unattributed',
+        'managed_by': '',
+    }
+    spec = {
+        'resourceQuotas': {'scope': 'Tenant'},
+        'namespaceOptions': {
+            'additionalMetadata': {'labels': {
+                'kaori.io/tenant': 'demo',
+                'cluster': 'kaori-local',
+            }},
+        },
+    }
+
+    class _ProviderCore:
+        def __init__(self):
+            self.reads = 0
+
+        def read_namespace(self, name, **kwargs):
+            self.reads += 1
+            resource = _namespace()
+            resource.metadata.labels.pop('app.kubernetes.io/managed-by')
+            resource.metadata.labels.pop('kaori.io/tenant-id')
+            resource.metadata.labels['kaori.io/tenant'] = 'demo'
+            resource.metadata.labels['cluster'] = 'kaori-local'
+            return resource
+
+        def patch_namespace(self, **kwargs):
+            pytest.fail('Capsule-projected Namespace label must never be patched')
+
+    provider = _ProviderCore()
+    receipt = preview_capsule_namespace_handoff(
+        provider, component, tenant_id='tenant-uuid',
+        capsule_tenant_name='demo', successor_owner='platform-team',
+        capsule_spec=spec,
+    )
+    assert provider.reads == 2
+    assert receipt['operation'] == 'observe_capsule_namespace_without_transfer'
+    assert receipt['dry_run'] is False
+    assert receipt['live_provider_unchanged'] is True
+
+    class _SpecCustom:
+        def get_cluster_custom_object(self, group, version, plural, name, **kwargs):
+            payload = _Custom().get_cluster_custom_object(group, version, plural, name, **kwargs)
+            payload['spec'] = spec
+            return payload
+
+    cr = dict(_components()[0])
+    cr['capsule_spec_sha256'] = _capsule_spec_sha256(spec)
+    whole = preview_capsule_handoff_scope(
+        custom=_SpecCustom(), core=_ProviderCore(),
+        components=[cr, component], tenant_id='tenant-uuid',
+        successor_owner='platform-team',
+    )
+    assert whole['namespace_preview_count'] == 0
+    assert whole['namespace_count'] == 1
+    assert whole['provider_handoff_verified'] is False
+    assert whole['release_authorized'] is False
+
+
+@pytest.mark.parametrize('declared', [
+    {'additionalMetadata': {'labels': {'kaori.io/tenant': 'other'}}},
+    {'additionalMetadata': {'labels': {}}},
+    {},
+])
+def test_capsule_unmatched_spec_projection_stays_ownership_blocker(declared):
+    component = {
+        **_components()[1],
+        'handoff': 'observe_only',
+        'ownership': 'external_or_unattributed',
+        'managed_by': '',
+    }
+
+    class _CoreNoPatch:
+        def read_namespace(self, name, **kwargs):
+            obj = _namespace()
+            obj.metadata.labels.pop('app.kubernetes.io/managed-by')
+            obj.metadata.labels.pop('kaori.io/tenant-id')
+            obj.metadata.labels['kaori.io/tenant'] = 'demo'
+            return obj
+
+        def patch_namespace(self, **kwargs):
+            pytest.fail('Unknown label origin must never be patched')
+
+    with pytest.raises(ValueError, match='unclassified KAORI control'):
+        preview_capsule_namespace_handoff(
+            _CoreNoPatch(), component, tenant_id='tenant-uuid',
+            capsule_tenant_name='demo', successor_owner='platform-team',
+            capsule_spec={'namespaceOptions': declared},
+        )
+
+
 def test_observed_capsule_namespace_blocks_unknown_kaori_control_label():
     component = {
         **_components()[1], 'handoff': 'observe_only',

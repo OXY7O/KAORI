@@ -238,6 +238,7 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                                 tenant_name=str(tenant.provider_reference),
                                 tenant_id=tenant.id,
                                 status_namespace_names=status_names,
+                                capsule_spec=obj.get('spec'),
                             )
                             handoff_components.append({
                                 **component, 'namespace': record.namespace

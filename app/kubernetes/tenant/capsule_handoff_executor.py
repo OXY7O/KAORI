@@ -46,6 +46,9 @@ from app.kubernetes.tenant.capsule_handoff_start_writer import (
     _require_postgres_ledger_write_once_guards, build_capsule_start_candidate,
 )
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
+from app.kubernetes.tenant.release_handoff_inventory import (
+    capsule_spec_projects_namespace_tenant_label,
+)
 from app.kubernetes.tenant.capsule_platform_admin_authority import (
     verify_capsule_provider_admin_authority, verify_capsule_related_admin_authority,
 )
@@ -243,9 +246,19 @@ def _read_full_source(
                 elif (
                     item['decision'] != 'preserve_existing_provider_namespace'
                     or _labels(before).get('app.kubernetes.io/managed-by') == 'kaori'
-                    or any(x.startswith('kaori.io/') for x in _labels(before))
+                    or any(
+                        key.startswith('kaori.io/')
+                        and not (
+                            key == 'kaori.io/tenant'
+                            and capsule_spec_projects_namespace_tenant_label(
+                                capsule_spec=_get(live_cr, 'spec'),
+                                capsule_name=cr['name'], labels=_labels(before),
+                            )
+                        )
+                        for key in _labels(before)
+                    )
                 ):
-                    raise ValueError('Capsule foreign Namespace has unsafe ownership.')
+                    raise ValueError('Capsule foreign Namespace has unsafe ownership or an unverified spec projection.')
             else:
                 original = observations[key]
                 live, problems = classify_capsule_related_resource(
