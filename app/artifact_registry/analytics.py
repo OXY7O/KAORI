@@ -292,6 +292,17 @@ def _alert_evidence(identity: IntegrationInstance) -> dict[str, Any]:
     )
 
     if alertmanager.get('connected'):
+        raw_alerts = alertmanager.get('alerts')
+        if not isinstance(raw_alerts, list) or any(not isinstance(item, dict) for item in raw_alerts):
+            return {
+                'status': 'unavailable',
+                'resolved_source': 'alertmanager',
+                'source_label': 'Unavailable',
+                'fallback_used': False,
+                'detail': 'Alertmanager returned malformed successful alert evidence.',
+                'rows': [],
+                'source_errors': ['Malformed Alertmanager alert record list.'],
+            }
         return {
             'status': 'ready',
             'resolved_source': 'alertmanager',
@@ -319,6 +330,17 @@ def _alert_evidence(identity: IntegrationInstance) -> dict[str, Any]:
             'detail': f'Alertmanager: {alertmanager_error} Metrics Source: {exc}',
             'rows': [],
             'source_errors': [alertmanager_error, str(exc)],
+        }
+
+    if not _valid_instant_vector(metrics_payload):
+        return {
+            'status': 'unavailable',
+            'resolved_source': 'metrics_source',
+            'source_label': 'Unavailable',
+            'fallback_used': True,
+            'detail': 'Metrics Source fallback returned malformed active-alert evidence.',
+            'rows': [],
+            'source_errors': [alertmanager_error, 'Invalid active-alert Metrics Source response.'],
         }
 
     return {
