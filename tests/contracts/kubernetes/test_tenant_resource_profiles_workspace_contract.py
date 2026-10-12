@@ -1395,7 +1395,7 @@ def test_allocation_change_all_title_info_tips_are_adjacent_not_corner_actions()
     """#1179: mirror the canonical Allocation Change heading grammar."""
     templates = (
         ('_allocation_change.html', 'Allocation Change', 'namespace-allocation-change-tip'),
-        ('_allocation_cutover.html', 'Allocation Governance Cutover', 'allocation-cutover-tip'),
+        ('_allocation_cutover.html', 'Adopted Native Governance Cutover', 'allocation-cutover-tip'),
         ('_capsule_tenant_quota_cutover.html', 'Capsule Tenant Quota Governance', 'capsule-tenant-quota-tip'),
         ('_capsule_shared_allocation_cutover.html', 'Capsule Shared Allocation Governance', 'capsule-shared-cutover-tip'),
     )
@@ -1415,6 +1415,39 @@ def test_allocation_change_all_title_info_tips_are_adjacent_not_corner_actions()
             assert 'items-start justify-between gap-4' not in header, filename
         assert template.count('name="csrf_token"') >= 1, filename
         assert template.count('type="submit"') >= 1, filename
+
+
+def test_adopted_native_cutover_reuses_committed_allocation_comparison() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    Environment(autoescape=True).parse(template)
+
+    assert 'Adopted Native Governance Cutover' in template
+    assert 'Adopted Baseline · Observed' in template
+    assert 'KAORI Managed · Only after verified cutover' in template
+    assert 'Managed Contract Comparison' in template
+    assert 'Change Highlights' in template
+    assert "('current', 'Observed Baseline', 'Adopted · Provider evidence')" in template
+    assert "('proposed', 'Proposed Governed Contract', 'Pending · Explicit cutover')" in template
+    for key in ('requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory',
+                'pods', 'requests.storage'):
+        assert f"'{key}'" in template
+    assert "('Min PVC Size', 'min')" in template
+    assert "('Max PVC Size', 'max')" in template
+    assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
+    assert 'data-tenant-allocation-highlight-count aria-live="polite"' in template
+    assert 'data-tenant-allocation-highlight-item' in template
+    assert 'data-tenant-allocation-change-namespace' in template
+    assert 'data-tenant-allocation-change-profile' in template
+    assert "url_for('tenant.cutover_namespace_allocation_route')" in template
+    assert 'namespace_cutover_state.get(item.id|string)' in template
+    assert 'not can_manage or not namespace_cutover_supported or not profiles' in template
+    assert 'name="csrf_token"' in template
+    assert 'Cut Over Governance' in template
+    assert 'renderContractPreview(current, proposed)' in script
+    assert 'renderAdvancedComparison(current, proposed' in script
 
 
 def test_allocation_comparison_uses_calm_dual_panels_without_metric_card_stacks() -> None:
