@@ -1,65 +1,36 @@
 #!/usr/bin/env python3
-"""Host-only, idempotent DevContainer secret preparation for a *new* local DB.
+"""Host-independent DevContainer env provisioning inside a short-lived Docker container.
 
-Runs through devcontainer initializeCommand before Docker Compose creates services.
-No database connection and no privileged secret is passed to application containers.
+Called via the Dev Containers initializeCommand Docker CLI on native Windows
+or Linux. App .env stays inside the ignored checkout, while PostgreSQL role
+secrets live in two *separate* named Docker volumes not mounted into Flask,
+workspace, or Celery/Beat. Never touches application tables or DBA endpoints.
 """
 from __future__ import annotations
 
 import base64
-import json
 import os
 import secrets
 import stat
-import subprocess
 from pathlib import Path
 from urllib.parse import quote
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path('/workspace')
 APP_ENV = ROOT / '.env'
-SECRET_DIR = Path.home() / '.config' / 'kaori' / 'devcontainer'
-DB_SECRETS = SECRET_DIR / 'postgres-bootstrap.env'
-MIGRATOR_SECRETS = SECRET_DIR / 'postgres-migrate.env'
+ADMIN_DIR = Path('/run/kaori-admin')
+MIGRATOR_DIR = Path('/run/kaori-migrator')
+ADMIN_SECRET = ADMIN_DIR / 'postgres_password'
+RUNTIME_SECRET = ADMIN_DIR / 'runtime_password'
+MIGRATOR_SECRET = MIGRATOR_DIR / 'password'
+ROLE_SECRETS = (ADMIN_SECRET, RUNTIME_SECRET, MIGRATOR_SECRET)
+_PLACEHOLDER = 'postgresql://kaori_runtime:generated-by-devcontainer-initialize-command@db:5432/kaori'
 
 
 def fail(message: str) -> None:
     raise SystemExit(f'KAORI DevContainer PostgreSQL: ABORT: {message}')
 
 
-def database_volume_exists() -> bool:
-    """Distinguish an actually absent DevContainer volume from Docker errors.
-
-    Never regenerate database credentials after an inspect failure or adopt a
-    named volume not owned by the expected Compose project and logical key.
-    """
-    volume_name = 'kaori-dev_kaori_postgres_data'
-    try:
-        result = subprocess.run(
-            ['docker', 'volume', 'inspect', volume_name],
-            capture_output=True, text=True, check=False, timeout=10,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        fail('Docker is required to check the existing local PostgreSQL volume')
-    if result.returncode:
-        if 'no such volume' in result.stderr.lower():
-            return False
-        fail('Docker volume inspection failed; refusing to assume a fresh database')
-    try:
-        volumes = json.loads(result.stdout)
-        info, = volumes
-        labels = info.get('Labels') or {}
-    except (ValueError, TypeError, AttributeError):
-        fail('Malformed Docker volume inspection; refusing first-run provisioning')
-    if (
-        info.get('Name') != volume_name
-        or labels.get('com.docker.compose.project') != 'kaori-dev'
-        or labels.get('com.docker.compose.volume') != 'kaori_postgres_data'
-    ):
-        fail('PostgreSQL volume identity/ownership differs from kaori-dev')
-    return True
-
-
-def existing_values(source: str) -> dict[str, str]:
+def env_values(source: str) -> dict[str, str]:
     result: dict[str, str] = {}
     for line in source.splitlines():
         if line and not line.lstrip().startswith('#') and '=' in line:
@@ -78,113 +49,134 @@ def drop_value(source: str, key: str) -> str:
     return '\n'.join(line for line in source.splitlines() if not line.startswith(f'{key}=')) + '\n'
 
 
-def write_private(path: Path, content: str) -> None:
-    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
+def write_private(path: Path, value: str) -> None:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     fd = os.open(path, flags, 0o600)
-    with os.fdopen(fd, 'w', encoding='utf-8') as stream:
-        stream.write(content)
+    with os.fdopen(fd, 'w', encoding='utf-8') as handle:
+        handle.write(value)
+    path.chmod(0o600)
 
 
-def verify_private_paths() -> None:
-    """Prevent following external-secret symlinks or adopting world-readable files."""
-    if APP_ENV.is_symlink():
-        fail('application .env must not be a symlink')
-    if APP_ENV.exists():
-        if not APP_ENV.is_file() or APP_ENV.stat().st_uid != os.getuid():
-            fail('application .env must be a developer-owned regular file')
-        # Preserve existing settings, but never leave the runtime DB secret
-        # readable by other host users after VS Code initializes.
-        if stat.S_IMODE(APP_ENV.stat().st_mode) != 0o600:
-            APP_ENV.chmod(0o600)
-    if SECRET_DIR.is_symlink() or SECRET_DIR.resolve().is_relative_to(ROOT.resolve()):
-        fail('PostgreSQL secrets directory must be outside the source workspace')
-    if SECRET_DIR.exists():
-        if not SECRET_DIR.is_dir():
-            fail('PostgreSQL secrets path is not a directory')
-        info = SECRET_DIR.stat()
-        if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700:
-            fail('PostgreSQL secret directory must be owned by developer and mode 0700')
-    for path in (DB_SECRETS, MIGRATOR_SECRETS):
+def verify_private_volumes() -> None:
+    for directory in (ADMIN_DIR, MIGRATOR_DIR):
+        if directory.is_symlink() or not directory.is_dir():
+            fail('expected isolated Docker named secret volume is absent or symlinked')
+        if directory.stat().st_uid != os.getuid():
+            fail('Docker secret volume must belong to bootstrap container user')
+        directory.chmod(0o700)
+    for path in ROLE_SECRETS:
         if path.is_symlink():
-            fail('PostgreSQL credential files must not be symlinks')
+            fail('PostgreSQL password files must not be symlinks')
         if path.exists():
             if not path.is_file():
-                fail('PostgreSQL credential path is not a file')
+                fail('PostgreSQL password path is not a regular file')
             info = path.stat()
             if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600:
-                fail('PostgreSQL credential files must be developer-owned and mode 0600')
+                fail('PostgreSQL Docker volume password files must be owned by bootstrap and mode 0600')
+
+
+def prepare_app_env() -> str:
+    if not (ROOT / '.env.example').is_file() or not ROOT.is_dir():
+        fail('workspace source is not mounted at /workspace')
+    if APP_ENV.is_symlink():
+        fail('application .env must not be symlinked')
+    if APP_ENV.exists() and not APP_ENV.is_file():
+        fail('application .env must be a regular file')
+    if not APP_ENV.exists():
+        # Do not create the file yet. Refuse any existing persistent
+        # credentials with missing .env before making the first writes.
+        return (ROOT / '.env.example').read_text(encoding='utf-8')
+    return APP_ENV.read_text(encoding='utf-8')
+
+
+def persist_app_env(source: str) -> None:
+    # Windows NTFS/OneDrive bind mounts have Windows ACLs; POSIX modes may
+    # be synthetic there. Do not impose Unix owner checks on this bind mount.
+    # Linux bind mounts should retain the source directory's owner after
+    # container root creates the file.
+    if not APP_ENV.exists():
+        fd = os.open(APP_ENV, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, 'w', encoding='utf-8') as handle:
+            handle.write(source)
+        try:
+            uid, gid = ROOT.stat().st_uid, ROOT.stat().st_gid
+            os.chown(APP_ENV, uid, gid)
+        except OSError:
+            pass  # Docker Desktop Windows binds enforce Windows ACLs instead.
+    else:
+        APP_ENV.write_text(source, encoding='utf-8')
+    try:
+        APP_ENV.chmod(0o600)
+    except OSError:
+        pass  # Existing Windows ACL governs this host-side file.
 
 
 def main() -> None:
-    verify_private_paths()
-    if not APP_ENV.exists():
-        if database_volume_exists():
-            fail('application .env is missing for an existing database; restore it, do not rotate encryption/admin secrets')
-        APP_ENV.write_text((ROOT / '.env.example').read_text(encoding='utf-8'), encoding='utf-8')
-        APP_ENV.chmod(0o600)
-        print('KAORI DevContainer: created private .env from .env.example')
-
-    source = APP_ENV.read_text(encoding='utf-8')
-    values = existing_values(source)
+    if os.getenv('KAORI_DEV_DOCKER_INIT') != '1':
+        fail('only the isolated Docker initializeCommand is authorized')
+    verify_private_volumes()
+    source = prepare_app_env()
+    values = env_values(source)
     if values.get('APP_ENV', 'development') != 'development':
-        fail('host-side PostgreSQL first-run is only authorized for APP_ENV=development')
+        fail('initialization is development-only; never alter production configuration')
     for key in (
         'KAORI_MIGRATOR_PASSWORD', 'KAORI_RUNTIME_PASSWORD',
         'KAORI_DB_MIGRATION_URL', 'PGPASSWORD', 'POSTGRES_PASSWORD_FILE',
     ):
         if key in values:
-            fail(f'{key} must not be stored in the shared application .env')
-    if database_volume_exists():
-        for key in ('SECRET_KEY', 'INTEGRATION_CREDENTIAL_KEY', 'ADMIN_PASSWORD'):
-            if not values.get(key) or values[key].startswith('replace-'):
-                fail(f'{key} missing for existing database; restore the original secret, do not regenerate')
+            fail(f'{key} must not be present in shared application .env')
     if values.get('POSTGRES_DB', 'kaori') != 'kaori':
-        fail('local DB must be kaori; do not target another environment')
-    if DB_SECRETS.exists() != MIGRATOR_SECRETS.exists():
-        fail('only one bootstrap secret file exists; restore the matched pair, do not rotate')
-    first_secrets = not DB_SECRETS.exists()
-    if first_secrets and database_volume_exists():
-        fail('PostgreSQL volume exists but bootstrap credentials are missing; recover credentials, do not rotate an existing database')
+        fail('DevContainer database name must be kaori')
+    if values.get('POSTGRES_USER', 'postgres') != 'postgres':
+        fail('DevContainer bootstrap PostgreSQL user must be postgres')
 
-    if first_secrets:
-        SECRET_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
-        os.chmod(SECRET_DIR, 0o700)
-        postgres_password = secrets.token_urlsafe(36)
-        runtime_password = secrets.token_urlsafe(36)
-        migrator_password = secrets.token_urlsafe(36)
-        write_private(
-            DB_SECRETS,
-            f'POSTGRES_PASSWORD={postgres_password}\n'
-            f'KAORI_RUNTIME_PASSWORD={runtime_password}\n',
-        )
-        write_private(MIGRATOR_SECRETS, f'KAORI_MIGRATOR_PASSWORD={migrator_password}\n')
-        print('KAORI DevContainer: generated private PostgreSQL credentials outside the repository')
+    existing = tuple(path.exists() for path in ROLE_SECRETS)
+    if any(existing) and not all(existing):
+        fail('incomplete persistent PostgreSQL secrets; recover them, never rotate')
+    previously_initialized = all(existing)
+    if previously_initialized and not APP_ENV.exists():
+        fail('existing PostgreSQL secrets but missing app .env; restore it')
+    current_url = values.get('DATABASE_URL', '')
+    if not previously_initialized and current_url and current_url != _PLACEHOLDER:
+        fail('application DB URL exists without PostgreSQL secrets; manual recovery required')
 
-    runtime = existing_values(DB_SECRETS.read_text(encoding='utf-8')).get('KAORI_RUNTIME_PASSWORD')
-    if not runtime:
-        fail('runtime password missing from bootstrap secret file')
-    runtime_url = f'postgresql://kaori_runtime:{quote(runtime, safe="")}@db:5432/kaori'
-    old_url = values.get('DATABASE_URL', '')
-    if database_volume_exists() and old_url and old_url != runtime_url:
-        fail('runtime DATABASE_URL differs from existing volume secrets; correct configuration before startup')
+    if not previously_initialized:
+        write_private(ADMIN_SECRET, secrets.token_urlsafe(36))
+        write_private(RUNTIME_SECRET, secrets.token_urlsafe(36))
+        write_private(MIGRATOR_SECRET, secrets.token_urlsafe(36))
+        print('KAORI DevContainer: generated three role credentials in separate private Docker volumes')
+
+    runtime_password = RUNTIME_SECRET.read_text(encoding='utf-8').strip()
+    if not runtime_password:
+        fail('persisted runtime credential is missing')
+    runtime_url = f'postgresql://kaori_runtime:{quote(runtime_password, safe="")}@db:5432/kaori'
+    if previously_initialized and current_url != runtime_url:
+        fail('runtime URL does not match persistent secret; refusing to rotate or overwrite')
 
     source = drop_value(source, 'POSTGRES_PASSWORD')
     source = drop_value(source, 'KAORI_DEV_RUNTIME_DATABASE_URL')
     source = set_value(source, 'POSTGRES_DB', 'kaori')
     source = set_value(source, 'POSTGRES_USER', 'postgres')
     source = set_value(source, 'DATABASE_URL', runtime_url)
-    # These are first-run development conveniences, not production credentials.
-    if values.get('SECRET_KEY', '').startswith('replace-') or not values.get('SECRET_KEY'):
+    if not values.get('SECRET_KEY') or values['SECRET_KEY'].startswith('replace-'):
+        if previously_initialized:
+            fail('existing PostgreSQL credentials with missing application SECRET_KEY')
         source = set_value(source, 'SECRET_KEY', secrets.token_urlsafe(48))
     if not values.get('INTEGRATION_CREDENTIAL_KEY'):
-        source = set_value(source, 'INTEGRATION_CREDENTIAL_KEY', base64.urlsafe_b64encode(os.urandom(32)).decode())
-    if values.get('ADMIN_PASSWORD', '').startswith('replace-') or not values.get('ADMIN_PASSWORD'):
+        if previously_initialized:
+            fail('existing PostgreSQL credentials with missing application integration key')
+        source = set_value(
+            source, 'INTEGRATION_CREDENTIAL_KEY',
+            base64.urlsafe_b64encode(os.urandom(32)).decode(),
+        )
+    if not values.get('ADMIN_PASSWORD') or values['ADMIN_PASSWORD'].startswith('replace-'):
+        if previously_initialized:
+            fail('existing PostgreSQL credentials with missing first-admin password')
         source = set_value(source, 'ADMIN_PASSWORD', secrets.token_urlsafe(32))
-    if source != APP_ENV.read_text(encoding='utf-8'):
-        APP_ENV.write_text(source, encoding='utf-8')
-        APP_ENV.chmod(0o600)
-    print('KAORI DevContainer: runtime URL configured; privileged DB credentials are DB/bootstrap-only')
-    print('KAORI DevContainer: first-run administration password is in private .env (ADMIN_PASSWORD)')
+    if not APP_ENV.exists() or source != APP_ENV.read_text(encoding='utf-8'):
+        persist_app_env(source)
+    print('KAORI DevContainer: restricted DATABASE_URL prepared; postgres/migrator secrets excluded from application env')
+    print('KAORI DevContainer: Alembic and first KAORI administrator require explicit operator bootstrap')
 
 
 if __name__ == '__main__':
