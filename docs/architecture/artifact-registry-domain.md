@@ -920,3 +920,36 @@ derive from the committed binding set. The `Security Exposed` number counts
 distinct number of artifact records; its explanatory copy makes that explicit.
 The canonical grouped Registry summary, filter controls, View More modal and
 default five-row pagination remain unchanged.
+
+### Registry runtime evidence continuity and source-qualified Intelligence (#1678, #1679, #1502)
+
+Kubernetes Pod Inventory refresh updates retained Pod identities in place
+(cluster + namespace + Pod name), keeping their database primary keys and
+existing Registry workload bindings. Only Pods absent from a successfully
+committed snapshot are pruned; those Pods' derived bindings are removed through
+the existing foreign-key cascade. The Registry source/digest/tag authority
+remains external and separate; no Kubernetes Inventory Sync implicitly dispatches
+a Registry Runtime Correlation job.
+
+Any changed Registry/Kubernetes committed generation invalidates the
+**freshness** of the prior Runtime Correlation result until the registered
+correlation job is rerun. Registry Signals & Actions and central Intelligence
+Recommendations show an explicit read-only correlation evidence warning and
+a Runtime Usage review link. A zero binding count after an input change
+is **not** proof of vulnerability remediation; Harbor scan/CVE evidence and
+historical JobExecution evidence remain distinct. AlertCase source resolution
+requires qualified source-evaluation evidence, not simple disappearance.
+
+Registry tag-only recommendation keys use a deterministic fingerprint of
+Registry instance, immutable artifact digest, cluster, namespace, Pod name,
+and image reference. They do not use the transient correlation binding row ID.
+Keys are stable across rebuilds for the same resource identity, but a changed
+image/digest/Pod legitimately produces a different key. Legacy deep links using
+an old numeric binding ID are not automatically rewritten; historical AlertCase
+records remain auditable and any required migration is separately governed.
+
+Operational runbook: first inspect committed Registry Security evidence,
+current Kubernetes Pod generation, Runtime Correlation input signature and job
+history; then run **Artifact Registry Runtime Correlation** via canonical
+Jobs & Executions. Do not run provider scans, edit binding tables or infer
+remediation from the absence of an unrefreshed runtime finding.
