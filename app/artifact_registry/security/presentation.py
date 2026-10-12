@@ -228,14 +228,6 @@ def _security_scope_evidence(
         RegistryArtifact.signature_status.isnot(None),
         RegistryArtifact.sbom_status.isnot(None),
     )
-    artifact_total = artifact_scope.order_by(None).count()
-    evidence_count = artifact_scope.filter(evidence_filter).order_by(None).count()
-    signature_observed = (
-        artifact_scope.filter(func.lower(RegistryArtifact.signature_status) == 'signed').order_by(None).count()
-    )
-    sbom_available = (
-        artifact_scope.filter(func.lower(RegistryArtifact.sbom_status) == 'available').order_by(None).count()
-    )
     supported = {
         collector.provider_key: collector.capabilities
         for collector in registered_registry_security_collectors()
@@ -248,28 +240,36 @@ def _security_scope_evidence(
         int(source.id) for source in scoped_sources
         if 'sbom' in supported.get(source.provider_key, ())
     ]
-    coverage_gaps = (
-        artifact_scope.filter(
+    gap_predicate = or_(
+        and_(
+            RegistryProject.integration_instance_id.in_(signature_ids),
             or_(
-                and_(
-                    RegistryProject.integration_instance_id.in_(signature_ids),
-                    or_(
-                        RegistryArtifact.signature_status.is_(None),
-                        func.lower(RegistryArtifact.signature_status) != 'signed',
-                    ),
-                ),
-                and_(
-                    RegistryProject.integration_instance_id.in_(sbom_ids),
-                    or_(
-                        RegistryArtifact.sbom_status.is_(None),
-                        func.lower(RegistryArtifact.sbom_status) != 'available',
-                    ),
-                ),
-            )
-        )
-        .order_by(None)
-        .count()
+                RegistryArtifact.signature_status.is_(None),
+                func.lower(RegistryArtifact.signature_status) != 'signed',
+            ),
+        ),
+        and_(
+            RegistryProject.integration_instance_id.in_(sbom_ids),
+            or_(
+                RegistryArtifact.sbom_status.is_(None),
+                func.lower(RegistryArtifact.sbom_status) != 'available',
+            ),
+        ),
     )
+
+    def count_if(predicate: Any) -> Any:
+        return func.coalesce(func.sum(case((predicate, 1), else_=0)), 0)
+
+    artifact_total, evidence_count, signature_observed, sbom_available, coverage_gaps = (
+        artifact_scope.with_entities(
+            func.count(RegistryArtifact.id),
+            count_if(evidence_filter),
+            count_if(func.lower(RegistryArtifact.signature_status) == 'signed'),
+            count_if(func.lower(RegistryArtifact.sbom_status) == 'available'),
+            count_if(gap_predicate),
+        ).one()
+    )
+
 
     latest_snapshot_ids = (
         RegistryScanSnapshot.query.with_entities(func.max(RegistryScanSnapshot.id).label('id'))
