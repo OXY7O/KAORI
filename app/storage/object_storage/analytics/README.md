@@ -275,3 +275,7 @@ Ordinary Analytics GET, filter updates and HTMX record fragments load only light
 ## Snapshot validity and attempt-state labels (#1393)
 
 Hard expiry at `expires_at + stale_grace_minutes` takes precedence over a pending or failed refresh label. After that boundary the snapshot remains stored for audit but is `usable=False` and labeled `Expired` with explicit `Worker Failed` or `Refreshing` context. Within stale grace, failed worker attempts may still display last-good committed evidence as degraded. Freshness does not change the #1368 retry rule or JobExecution's worker-attempt status.
+
+## Forecast Inventory prerequisite (#1395)
+
+The forecasting dispatcher, Job Configuration readiness and worker now require `ObjectStorageSystem.inventory_observed_at` before producing long-range system/bucket forecast snapshots, matching the existing Analytics UI Inventory prerequisite. An observed empty bucket inventory is valid; **never-collected** Inventory is not. The worker rechecks the prerequisite to reject queued jobs whose eligible context has changed.
