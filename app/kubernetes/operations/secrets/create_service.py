@@ -11,10 +11,6 @@ from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.common.kubernetes_secrets import scrub_secret_payload
 from app.common.sensitive_uploads import decode_utf8
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
-    tls_policy_for_cluster,
-)
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.kubernetes.governance.tls_certificates.certificate import validate_certificate_pair
 from app.kubernetes.operations.secrets.contracts import SecretOperationResult
 from app.kubernetes.operations.secrets.live_service import core_api, get_cluster, verify_live_namespace
@@ -201,17 +197,16 @@ def execute_secret_operation(form: Any, files: Any, *, dry_run: bool) -> SecretO
     created_uid = None
     created_resource_version = None
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            api = core_api(cluster)
-            created = api.create_namespaced_secret(
-                namespace=namespace,
-                body=body,
-                dry_run='All' if dry_run else None,
-                _request_timeout=10,
-            )
-            created_metadata = getattr(created, 'metadata', None)
-            created_uid = getattr(created_metadata, 'uid', None)
-            created_resource_version = getattr(created_metadata, 'resource_version', None)
+        api = core_api(cluster)
+        created = api.create_namespaced_secret(
+            namespace=namespace,
+            body=body,
+            dry_run='All' if dry_run else None,
+            _request_timeout=10,
+        )
+        created_metadata = getattr(created, 'metadata', None)
+        created_uid = getattr(created_metadata, 'uid', None)
+        created_resource_version = getattr(created_metadata, 'resource_version', None)
     except ApiException as exc:
         raise ValueError(_kubernetes_api_error_message(exc)) from exc
     except ConfigException as exc:

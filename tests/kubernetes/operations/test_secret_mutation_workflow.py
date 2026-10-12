@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-from contextlib import nullcontext
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
@@ -48,7 +47,6 @@ def _install_base_modules(monkeypatch: pytest.MonkeyPatch) -> dict[str, ModuleTy
         'app.integrations',
         'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api',
         'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver',
-        'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls',
         'app.kubernetes.operations',
         'app.kubernetes.operations.secrets',
         'app.kubernetes.operations.secrets.live_service',
@@ -89,9 +87,6 @@ def _install_base_modules(monkeypatch: pytest.MonkeyPatch) -> dict[str, ModuleTy
     modules[
         'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver'
     ].tls_policy_for_cluster = lambda cluster: (None, False)
-    modules['app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls'].weak_tls_context = (
-        lambda **kwargs: nullcontext()
-    )
     modules['app.kubernetes.governance.tls_certificates.certificate'].validate_certificate_pair = lambda *args: None
 
     class ApiException(Exception):
@@ -197,7 +192,6 @@ def test_create_service_executes_exactly_one_provider_call_per_mode(monkeypatch:
     monkeypatch.setattr(service, 'get_cluster', lambda cluster_id: cluster)
     monkeypatch.setattr(service, 'verify_live_namespace', lambda selected, namespace: None)
     monkeypatch.setattr(service, 'core_api', lambda selected: api)
-    monkeypatch.setattr(service, 'tls_policy_for_cluster', lambda selected: (None, False))
 
     submitted = _Form(
         cluster_id='7',
