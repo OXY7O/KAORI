@@ -1,12 +1,22 @@
 name: kaori-dev
 
-# DevContainer runtime uses the same canonical DATABASE_URL as Flask Debug.
-# Keep this non-owner URL in private .env; provide owner migration authority only
-# through transient KAORI_DB_MIGRATION_URL (never a worker/Beat environment).
-# Database bootstrap credentials POSTGRES_* are separate from app runtime.
+# Canonical DATABASE_URL is a restricted, non-owner application identity.
+# PostgreSQL administrator/migrator credentials are Docker secrets sourced
+# from a host directory OUTSIDE the bind-mounted source workspace.
+# Reopen in Container starts all services but never runs schema migration.
 
 
 services:
+  # Override the generic local compose PostgreSQL defaults for kaori-dev only.
+  # The postgres bootstrap superuser secret never enters worker/workspace env.
+  db:
+    environment: !override
+      POSTGRES_DB: kaori
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/kaori_dev_pg_admin
+    secrets:
+      - kaori_dev_pg_admin
+
   # One-shot: the bundled PostgreSQL owner creates/checks only the restricted
   # LOGIN on the first empty cluster. It never runs migration or alters data.
   db-role-bootstrap:
@@ -20,9 +30,11 @@ services:
     environment:
       APP_ENV: development
       DATABASE_URL: ${DATABASE_URL:?Set a non-owner DATABASE_URL in the private DevContainer .env}
-      POSTGRES_DB: ${POSTGRES_DB:-kaori}
-      POSTGRES_USER: ${POSTGRES_USER:-kaori}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set private PostgreSQL bootstrap password}
+      KAORI_DB_BOOTSTRAP_PASSWORD_FILE: /run/secrets/kaori_dev_pg_admin
+      KAORI_DB_MIGRATOR_PASSWORD_FILE: /run/secrets/kaori_dev_pg_migrator
+    secrets:
+      - kaori_dev_pg_admin
+      - kaori_dev_pg_migrator
     command:
       - python
       - -m
@@ -551,3 +563,11 @@ services:
 volumes:
   kaori_instance_data:
   kaori_node_modules:
+
+# First-install provisioning credentials are kept OUTSIDE the repository,
+# its bind-mounted workspace, and the application/worker environment.
+secrets:
+  kaori_dev_pg_admin:
+    file: ${KAORI_DEV_DB_SECRETS_DIR:?Set an absolute external DevContainer secrets directory}/postgres_admin_password
+  kaori_dev_pg_migrator:
+    file: ${KAORI_DEV_DB_SECRETS_DIR:?Set an absolute external DevContainer secrets directory}/migrator_password
