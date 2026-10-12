@@ -185,7 +185,9 @@ def _other_committed_for_namespace_replacement(
 
     tenant_id = str(target.environment.tenant_id)
     if tenant_id in shared_quota_by_tenant or tenant_id in ambiguous_shared_tenants:
-        raise ValueError('Atomic Native Namespace replacement is unavailable for shared or ambiguous Tenant authority.')
+        raise ValueError(
+            'Atomic Native Namespace replacement is unavailable for shared or ambiguous Tenant authority.'
+        )
 
     other_rows = [row for row in rows if row.id != target.id]
     committed, unbounded = _aggregate_committed_allocation(
