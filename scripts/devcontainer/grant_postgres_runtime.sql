@@ -28,6 +28,10 @@ END $$;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO kaori_runtime;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO kaori_runtime;
+-- Alembic revision is migration evidence: workers may read the head,
+-- but the application must not spoof INSERT/UPDATE/DELETE/TRUNCATE.
+REVOKE ALL PRIVILEGES ON TABLE public.alembic_version FROM kaori_runtime;
+GRANT SELECT ON TABLE public.alembic_version TO kaori_runtime;
 -- START ledger must never inherit blanket mutation privileges.
 REVOKE ALL PRIVILEGES ON TABLE public.capsule_handoff_ledger_events FROM kaori_runtime;
 GRANT SELECT, INSERT ON TABLE public.capsule_handoff_ledger_events TO kaori_runtime;
@@ -40,6 +44,11 @@ BEGIN
         OR NOT has_table_privilege('kaori_runtime', 'public.capsule_handoff_ledger_events', 'SELECT')
         OR NOT has_table_privilege('kaori_runtime', 'public.capsule_handoff_ledger_events', 'INSERT')
         OR has_schema_privilege('kaori_runtime', 'public', 'CREATE')
+        OR NOT has_table_privilege('kaori_runtime', 'public.alembic_version', 'SELECT')
+        OR has_table_privilege('kaori_runtime', 'public.alembic_version', 'INSERT')
+        OR has_table_privilege('kaori_runtime', 'public.alembic_version', 'UPDATE')
+        OR has_table_privilege('kaori_runtime', 'public.alembic_version', 'DELETE')
+        OR has_table_privilege('kaori_runtime', 'public.alembic_version', 'TRUNCATE')
         OR has_table_privilege('kaori_runtime', 'public.audit_events', 'TRUNCATE')
     THEN
         RAISE EXCEPTION 'Runtime immutable-ledger privileges denied; transaction rolled back';
