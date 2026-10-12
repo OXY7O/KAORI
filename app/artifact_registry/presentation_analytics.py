@@ -256,40 +256,27 @@ def _accumulate_alerts(
 
 
 def _analytics_snapshot_view(identity: Any, snapshot: RegistryAnalyticsSnapshot | None) -> dict[str, Any]:
+    from app.artifact_registry.presentation_common import _analytics_snapshot_view as classify_snapshot
+
+    classification = classify_snapshot(snapshot)
     if snapshot is None or not isinstance(snapshot.payload_json, dict):
+        sections = _analytics_sections({})
         return {
             'identity': identity,
             'snapshot': None,
             'status_label': 'Not Materialized',
             'tone': 'unknown',
-            'inventory': {},
-            'security': {},
-            'runtime': {},
-            'governance': {},
-            'metrics': {},
-            'alerts': {},
-            'growth': {},
+            **sections,
         }
     sections = _analytics_sections(snapshot.payload_json)
-    expires_at = snapshot.expires_at
-    is_stale = False
-    if expires_at is not None:
-        compare_expiry = expires_at if expires_at.tzinfo is not None else expires_at.replace(tzinfo=UTC)
-        is_stale = datetime.now(UTC) > compare_expiry
     return {
         'identity': identity,
         'snapshot': snapshot,
-        'status_label': 'Stale Snapshot' if is_stale else 'Current Snapshot',
-        'tone': 'warning' if is_stale else 'normal',
-        'inventory': sections['inventory'],
-        'security': sections['security'],
-        'runtime': sections['runtime'],
-        'governance': sections['governance'],
-        'metrics': sections['metrics'],
-        'alerts': sections['alerts'],
-        'growth': sections['growth'],
+        'status_label': classification['label'],
+        'tone': classification['tone'],
+        'is_current': classification['is_current'],
+        **sections,
     }
-
 
 def _collect_analytics_rows(
     identities: list[Any], *, snapshot_window: str = '24h'
@@ -321,6 +308,8 @@ def _collect_analytics_rows(
         bundle['latest_rows'].append(view)
         if snapshot is None or not isinstance(snapshot.payload_json, dict):
             continue
+        # Stale snapshots remain readable, but their classification is
+        # surfaced in posture and cannot produce a clean Evidence Ready.
         sections = _analytics_sections(snapshot.payload_json)
         _accumulate_domain_counts(bundle['aggregate'], sections)
         _accumulate_metrics(
@@ -423,6 +412,8 @@ def _analytics_signal_summary(
         posture = {'label': 'Materialization Required', 'tone': 'warning'}
     elif aggregate['critical_runtime_artifacts']:
         posture = {'label': 'Critical Runtime Exposure', 'tone': 'critical'}
+    elif any(not row.get('is_current') for row in latest_rows):
+        posture = {'label': 'Snapshot Attention', 'tone': 'warning'}
     elif active_signal_count:
         posture = {'label': 'Review Required', 'tone': 'warning'}
     else:
