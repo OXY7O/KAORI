@@ -730,18 +730,45 @@ def _inventory_detail_provider_context(integration_instance_id: int) -> dict[str
 
 
 def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | None:
-    repository = (
-        RegistryRepository.query.options(
-            joinedload(RegistryRepository.project),
-            joinedload(RegistryRepository.artifacts).joinedload(RegistryArtifact.tags),
-        )
-        .filter(RegistryRepository.id == int(repository_id))
-        .first()
-    )
+    repository = RegistryRepository.query.filter(RegistryRepository.id == int(repository_id)).first()
     if repository is None:
         return None
 
     source = _inventory_detail_provider_context(repository.project.integration_instance_id)
+    artifact_total = RegistryArtifact.query.filter_by(repository_id=repository.id).count()
+    artifact_items = (
+        RegistryArtifact.query.filter_by(repository_id=repository.id)
+        .order_by(RegistryArtifact.digest.asc(), RegistryArtifact.id.asc())
+        .limit(25).all()
+    )
+    artifact_ids = [int(item.id) for item in artifact_items]
+    tag_counts = dict(
+        RegistryTag.query.with_entities(RegistryTag.artifact_id, func.count(RegistryTag.id))
+        .filter(RegistryTag.artifact_id.in_(artifact_ids))
+        .group_by(RegistryTag.artifact_id).all()
+    )
+    tagged = (
+        RegistryTag.query.with_entities(
+            RegistryTag.id.label('tag_id'),
+            func.row_number().over(
+                partition_by=RegistryTag.artifact_id,
+                order_by=(func.lower(RegistryTag.name).asc(), RegistryTag.id.asc()),
+            ).label('tag_rank'),
+        )
+        .filter(RegistryTag.artifact_id.in_(artifact_ids))
+        .subquery()
+    )
+    preview_tags = (
+        RegistryTag.query.join(tagged, RegistryTag.id == tagged.c.tag_id)
+        .filter(tagged.c.tag_rank <= 3)
+        .order_by(RegistryTag.artifact_id.asc(), func.lower(RegistryTag.name).asc(), RegistryTag.id.asc())
+        .all()
+        if artifact_ids else []
+    )
+    tag_names: dict[int, list[str]] = {artifact_id: [] for artifact_id in artifact_ids}
+    for tag in preview_tags:
+        tag_names[int(tag.artifact_id)].append(tag.name)
+
     artifacts = [
         {
             'id': int(artifact.id),
@@ -751,11 +778,11 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
             ),
             'type': artifact.artifact_type or artifact.media_type or 'OCI Artifact',
             'size': _fmt_bytes(artifact.size_bytes),
-            'tag_count': len(artifact.tags),
-            'tags': [tag.name for tag in artifact.tags[:3]],
+            'tag_count': int(tag_counts.get(artifact.id, 0)),
+            'tags': tag_names.get(int(artifact.id), []),
             'observed_at': artifact.observed_at,
         }
-        for artifact in sorted(repository.artifacts, key=lambda item: item.digest)
+        for artifact in artifact_items
     ]
     provider_metadata = dict(repository.provider_metadata) if isinstance(repository.provider_metadata, dict) else {}
     return {
@@ -766,7 +793,7 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
         'project_id': int(repository.project.id),
         'project_name': repository.project.name,
         'artifact_count': (
-            int(repository.artifact_count) if repository.artifact_count is not None else len(repository.artifacts)
+            int(repository.artifact_count) if repository.artifact_count is not None else artifact_total
         ),
         'pull_count': repository.pull_count,
         'provider_created_at': repository.provider_created_at,
@@ -774,7 +801,7 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
         'observed_at': repository.observed_at,
         'artifacts': artifacts,
         'artifact_preview': artifacts[:25],
-        'artifact_truncated': len(artifacts) > 25,
+        'artifact_truncated': artifact_total > 25,
         'provider_metadata': provider_metadata,
         **source,
     }
