@@ -210,3 +210,14 @@ def test_devcontainer_first_database_initialization_is_one_explicit_safe_vscode_
     assert 'DATABASE_URL' in initializer
     assert 'flask --app run:app db upgrade' not in chosen.values()
     assert 'kaori_runtime' in initializer
+
+
+def test_first_run_authentication_setup_uses_one_dev_task_without_changing_production_copy() -> None:
+    setup = (ROOT / 'app' / 'templates' / 'access' / 'authentication' / 'setup_required.html').read_text()
+    assert '{% if config["APP_ENV"] == "development" %}' in setup
+    assert 'python -m scripts.devcontainer.initialize_database --bootstrap-admin' in setup
+    assert 'python -m scripts.devcontainer.initialize_database' in setup
+    assert '{% else %}' in setup
+    assert 'bash scripts/init_db.sh --bootstrap-admin' in setup
+    assert 'flask --app run:app db upgrade' in setup
+    assert 'flask --app run:app seed-rbac' in setup
