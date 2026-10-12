@@ -104,8 +104,8 @@ from `bg-surface-page`. This is not the rejected thick Violet frame
 or a nested multi-card dashboard.
 The title/status, step rail and footer remain **unboxed within that
 canvas**; the one bootstrap action keeps visual priority.
-The key-flow instruction is **"Keep INTEGRATION_CREDENTIAL_KEY
-unchanged."** and the hero description is **"PostgreSQL is ready. Run
+The key-flow instruction is **"Preserve
+INTEGRATION_CREDENTIAL_KEY."** and the hero description is **"PostgreSQL is ready. Run
 setup to enable sign-in and background jobs."** The encryption
 preflight callout continues to state verification before bootstrap.
 
@@ -118,8 +118,8 @@ preflight callout continues to state verification before bootstrap.
    list for Database / Application Schema / Normal Sign-In. Semantic
    values remain owned by `table_label`.
 3. **One primary action panel:** the only dominant elevated surface.
-   Full-width command-first bootstrap action with a Violet left
-   boundary, concise guidance, terminal clipboard widget and
+   Full-width command-first bootstrap action with a neutral border
+   (no Violet left-edge stripe), concise guidance, terminal clipboard widget and
    operator-controlled execution notice. No sidebar rail or
    equal-height warning column.
 4. **Preflight boundary:** a short, full-width semantic encryption
@@ -130,8 +130,9 @@ preflight callout continues to state verification before bootstrap.
    `operational_flow_steps.render(..., variant='inline')`. The new
    shared variant has no individual step cards, while the component's
    default `boxed` mode remains unchanged for all other pages.
-6. **Secondary controls:** existing collapsed Advanced Setup and a
-   subdued, unboxed read-only / Retry Setup Check footer.
+6. **Secondary controls:** existing collapsed Advanced Setup, with
+   full-width Manual Bootstrap command followed by schema-object details,
+   and a subdued, unboxed read-only / Retry Setup Check footer.
 
 Keep light/dark semantics, accessible labels, responsive stacking,
 single `h1`, compact terminal ownership, copy behavior and fail-closed

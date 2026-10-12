@@ -170,7 +170,9 @@ def main() -> int:
         errors,
     )
     require(
-        'class="border-l-4 border-kaori-primary px-4 py-4 sm:px-5">' in setup
+        'class="px-4 py-4 sm:px-5">' in setup
+        and 'border-l-4 border-kaori-primary' not in setup
+        and 'text-xs font-semibold text-content-secondary">Primary action' in setup
         and 'class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">' in setup,
         'Setup Required bootstrap wrappers must have complete HTML start tags',
         errors,
@@ -190,7 +192,7 @@ def main() -> int:
     )
     require(
         'PostgreSQL is ready. Run setup to enable sign-in and background jobs.' in setup
-        and 'Keep INTEGRATION_CREDENTIAL_KEY unchanged.' in setup,
+        and 'Preserve INTEGRATION_CREDENTIAL_KEY.' in setup,
         'Setup Required concise operator copy drifted',
         errors,
     )
@@ -200,6 +202,13 @@ def main() -> int:
         and 'copy_label=\'Copy Command\', compact=true' in setup
         and 'mt-4" data-kaori-setup-advanced' in setup,
         'Setup Required compact spacing/terminal density drifted',
+        errors,
+    )
+    require(
+        '<div class="space-y-5">' in setup
+        and 'lg:grid-cols-2' not in setup
+        and "label='Manual Bootstrap'" in setup,
+        'Setup Required manual bootstrap must use full-width advanced content',
         errors,
     )
     require('Readiness Summary' not in setup, 'Setup Required must not duplicate readiness in a summary panel', errors)
