@@ -40,6 +40,7 @@ def materialize_registry_analytics_task(
         target='Artifact Registry',
     )
     completed = 0
+    partial_sources = 0
     failures: list[dict[str, str]] = []
     snapshot_ids: list[int] = []
     for index, identity_id in enumerate(ids, start=1):
@@ -80,12 +81,24 @@ def materialize_registry_analytics_task(
         else:
             completed += 1
             snapshot_ids.append(snapshot.id)
+            payload = snapshot.payload_json if isinstance(snapshot.payload_json, dict) else {}
+            metrics = payload.get('metrics') if isinstance(payload.get('metrics'), dict) else {}
+            historical = payload.get('history') if isinstance(payload.get('history'), dict) else {}
+            partial_sources += int(
+                metrics.get('status') != 'ready'
+                or bool(historical) and historical.get('status') != 'ready'
+            )
 
     result = {
-        'status': 'error' if failures and not completed else ('warning' if failures else 'success'),
+        'status': (
+            'error' if not completed
+            else 'warning' if failures or partial_sources
+            else 'success'
+        ),
         'total_count': len(ids),
         'completed_count': completed,
         'failed_count': len(failures),
+        'partial_count': partial_sources,
         'failure_evidence': failures,
         'snapshot_ids': snapshot_ids,
         'time_range': time_range,
@@ -99,6 +112,6 @@ def materialize_registry_analytics_task(
         context.succeed(
             result_summary=result,
             result_type='artifact_registry_analytics_materialization',
-            partial=bool(failures),
+            partial=bool(failures or partial_sources),
         )
     return result
