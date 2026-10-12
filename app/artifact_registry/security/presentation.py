@@ -220,11 +220,6 @@ def _security_scope_evidence(
     )
     artifact_total = artifact_scope.order_by(None).count()
     evidence_count = artifact_scope.filter(evidence_filter).order_by(None).count()
-    scanned_artifacts = (
-        artifact_scope.filter(func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES))
-        .order_by(None)
-        .count()
-    )
     signature_observed = (
         artifact_scope.filter(func.lower(RegistryArtifact.signature_status) == 'signed').order_by(None).count()
     )
@@ -249,6 +244,23 @@ def _security_scope_evidence(
         .group_by(RegistryScanSnapshot.artifact_id)
         .subquery()
     )
+    scan_scope = (
+        RegistryScanSnapshot.query.join(
+            latest_snapshot_ids, RegistryScanSnapshot.id == latest_snapshot_ids.c.id
+        )
+        .join(RegistryArtifact, RegistryScanSnapshot.artifact_id == RegistryArtifact.id)
+        .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+    )
+    scan_scope = _apply_source_scope(scan_scope, source_ids, scoped=scoped)
+    successful_scan_scope = scan_scope.filter(
+        func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)
+    )
+    scanned_artifacts = successful_scan_scope.order_by(None).count()
+    current_scanned_artifacts = successful_scan_scope.filter(
+        RegistryScanSnapshot.observed_at >= datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
+    ).order_by(None).count()
+
     finding_scope = (
         RegistryVulnerability.query.join(
             RegistryScanSnapshot,
@@ -293,17 +305,8 @@ def _security_scope_evidence(
     # JobExecution.job_type == 'artifact_registry_security' is fleet authority.
     # Its last-success/last-failure belongs to sync_state, not a provider's
     # security evidence age. Never substitute a global job timestamp here.
-    latest_scan_query = (
-        RegistryScanSnapshot.query.join(
-            RegistryArtifact,
-            RegistryScanSnapshot.artifact_id == RegistryArtifact.id,
-        )
-        .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
-        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
-    )
-    latest_scan_query = _apply_source_scope(latest_scan_query, source_ids, scoped=scoped)
-    latest_evidence_at = latest_scan_query.with_entities(func.max(RegistryScanSnapshot.observed_at)).scalar()
-    coverage_count = scanned_artifacts if view == 'vulnerabilities' else evidence_count
+    latest_evidence_at = scan_scope.with_entities(func.max(RegistryScanSnapshot.observed_at)).scalar()
+    coverage_count = current_scanned_artifacts if view == 'vulnerabilities' else evidence_count
     snapshot = _snapshot_status(
         artifact_total=artifact_total,
         evidence_count=coverage_count,
@@ -318,6 +321,7 @@ def _security_scope_evidence(
         'artifact_total': artifact_total,
         'evidence_count': evidence_count,
         'scanned_artifacts': scanned_artifacts,
+        'current_scanned_artifacts': current_scanned_artifacts,
         'signature_observed': signature_observed,
         'sbom_available': sbom_available,
         'coverage_gaps': coverage_gaps,
