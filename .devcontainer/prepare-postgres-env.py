@@ -89,6 +89,13 @@ def verify_private_paths() -> None:
     """Prevent following external-secret symlinks or adopting world-readable files."""
     if APP_ENV.is_symlink():
         fail('application .env must not be a symlink')
+    if APP_ENV.exists():
+        if not APP_ENV.is_file() or APP_ENV.stat().st_uid != os.getuid():
+            fail('application .env must be a developer-owned regular file')
+        # Preserve existing settings, but never leave the runtime DB secret
+        # readable by other host users after VS Code initializes.
+        if stat.S_IMODE(APP_ENV.stat().st_mode) != 0o600:
+            APP_ENV.chmod(0o600)
     if SECRET_DIR.is_symlink() or SECRET_DIR.resolve().is_relative_to(ROOT.resolve()):
         fail('PostgreSQL secrets directory must be outside the source workspace')
     if SECRET_DIR.exists():
