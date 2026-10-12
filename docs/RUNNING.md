@@ -54,7 +54,8 @@ an explicit owner migration context.
 For routine VS Code DevContainer opening, the existing `runServices`
 automatically starts database, Redis, workspace, all workers and Beat,
 and the new one-shot `db-role-bootstrap` admits a non-owner login without
-running migrations. Workers/Beat remain gated on schema readiness.
+running migrations. Workers/Beat remain gated on schema readiness **and** the
+DevContainer-only restricted ledger-grants checkpoint.
 For an actually empty schema, observe the read-only setup page, then
 run `KAORI: Initialize Fresh Database` **once** from VS Code Tasks.
 That task injects the owner migration identity only into controlled child
