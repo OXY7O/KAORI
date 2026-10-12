@@ -33,6 +33,7 @@ def test_sensitive_kubernetes_operations_and_inventory_import_without_retired_tl
         "app.kubernetes.operations.configmaps.runtime",
         "app.kubernetes.inventory.synchronization",
         "app.kubernetes.governance.tls_certificates.collector",
+        "app.intelligence.alert_signals.service",
     ):
         module = importlib.import_module(module_name)
         assert module is not None
@@ -56,3 +57,12 @@ def test_operational_calls_use_provider_scoped_tls_instead_of_process_global_ove
     assert "allow_weak_tls=bool(connection.allow_weak_tls)" in adapter
     assert "configure_weak_tls(" in client
     assert "enabled=self.allow_weak_tls" in client
+
+
+def test_alert_signals_uses_canonical_scoped_transport_without_legacy_wrapper() -> None:
+    source = (
+        ROOT / "app/intelligence/alert_signals/service.py"
+    ).read_text(encoding="utf-8")
+    assert "get_integration('container_orchestrator').execute('client.build', connection)" in source
+    assert "core_api = client.core_api()" in source
+    assert "weak_tls_context" not in source
