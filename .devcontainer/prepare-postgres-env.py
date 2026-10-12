@@ -23,6 +23,10 @@ ADMIN_SECRET = ADMIN_DIR / 'postgres_password'
 RUNTIME_SECRET = ADMIN_DIR / 'runtime_password'
 MIGRATOR_SECRET = MIGRATOR_DIR / 'password'
 ROLE_SECRETS = (ADMIN_SECRET, RUNTIME_SECRET, MIGRATOR_SECRET)
+# postgres:16 (Debian) runs its initdb scripts as the postgres OS user.
+# Keep 0600 files readable to PostgreSQL without allowing a world/group ACL.
+POSTGRES_UID = 999
+POSTGRES_GID = 999
 _PLACEHOLDER = 'postgresql://kaori_runtime:generated-by-devcontainer-initialize-command@db:5432/kaori'
 
 
@@ -54,6 +58,7 @@ def write_private(path: Path, value: str) -> None:
     fd = os.open(path, flags, 0o600)
     with os.fdopen(fd, 'w', encoding='utf-8') as handle:
         handle.write(value)
+    os.chown(path, POSTGRES_UID, POSTGRES_GID)
     path.chmod(0o600)
 
 
@@ -61,8 +66,11 @@ def verify_private_volumes() -> None:
     for directory in (ADMIN_DIR, MIGRATOR_DIR):
         if directory.is_symlink() or not directory.is_dir():
             fail('expected isolated Docker named secret volume is absent or symlinked')
-        if directory.stat().st_uid != os.getuid():
-            fail('Docker secret volume must belong to bootstrap container user')
+        if directory.stat().st_uid not in (0, POSTGRES_UID):
+            fail('Docker secret volume has an unexpected owner')
+        # Docker creates the volume root-owned, but the postgres:16 entrypoint
+        # switches to the dedicated postgres Unix user before running initdb SQL.
+        os.chown(directory, POSTGRES_UID, POSTGRES_GID)
         directory.chmod(0o700)
     for path in ROLE_SECRETS:
         if path.is_symlink():
@@ -71,7 +79,7 @@ def verify_private_volumes() -> None:
             if not path.is_file():
                 fail('PostgreSQL password path is not a regular file')
             info = path.stat()
-            if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600:
+            if info.st_uid != POSTGRES_UID or stat.S_IMODE(info.st_mode) != 0o600:
                 fail('PostgreSQL Docker volume password files must be owned by bootstrap and mode 0600')
 
 
