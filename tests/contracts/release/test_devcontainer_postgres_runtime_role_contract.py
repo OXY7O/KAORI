@@ -39,7 +39,8 @@ def test_devcontainer_all_runtime_services_use_canonical_non_owner_database_url(
     assert expected <= services.keys()
     for service in expected:
         section = services[service]
-        assert section.count('DATABASE_URL: ${DATABASE_URL:?') == 1\n        assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in section
+        assert section.count('DATABASE_URL: ${DATABASE_URL:?') == 1
+        assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in section
         assert 'DATABASE_URL: postgresql://${POSTGRES_USER' not in section
         if service == 'workspace':
             assert 'WAIT_FOR_DB: "false"' in section
@@ -101,7 +102,8 @@ def test_post_cutover_initialization_requires_ephemeral_owner_database_url() -> 
 def test_devcontainer_runbook_requires_backup_and_explicit_operator_cutover() -> None:
     example = EXAMPLE.read_text()
     guide = RUNBOOK.read_text()
-    assert 'KAORI_DEV_RUNTIME_DATABASE_URL=' not in example\n    assert 'DATABASE_URL=postgresql://kaori_runtime:' in example
+    assert 'KAORI_DEV_RUNTIME_DATABASE_URL=' not in example
+    assert 'DATABASE_URL=postgresql://kaori_runtime:' in example
     assert 'KAORI_DB_MIGRATION_URL' in example
     assert 'pg_dump' in guide and 'pg_restore --list' in guide
     assert r'\password kaori_runtime' in guide
