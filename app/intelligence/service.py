@@ -642,5 +642,33 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
             imported=sum(1 for rule in catalog if rule.get('status') == 'imported_signal'),
         )
     else:
+        # The existing Intelligence Overview provides a conservative committed
+        # 24-hour Inventory baseline, *not* evaluator/scan completeness.
+        # Import here avoids a module import cycle with Overview's service consumer.
+        from app.intelligence.overview import _evidence_coverage
+
+        inventory = _evidence_coverage()
+        domain = clean(payload['filters'].get('domain'))
+        scopes = (domain,) if domain in ('kubernetes', 'object_storage', 'registry') else (
+            'kubernetes', 'object_storage', 'registry',
+        ) if not domain else ()
+        total = sum(inventory[key]['total'] for key in scopes)
+        recent = sum(inventory[key]['recent'] for key in scopes)
+        issues = payload['evaluation_issues']
+        if issues:
+            state = 'partial' if findings else 'unavailable'
+        elif total == 0:
+            state = 'not_collected'
+        elif recent < total:
+            state = 'partial'
+        else:
+            state = 'baseline_recent'
+        payload['evidence_readiness'] = {
+            'status': state,
+            'total_sources': total,
+            'recent_sources': recent,
+            'issues': issues,
+            'basis': '24-hour committed Inventory baseline; evaluator and scan coverage remain source-qualified',
+        }
         _apply_recommendation_payload(payload, findings)
     return payload
