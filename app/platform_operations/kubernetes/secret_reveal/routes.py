@@ -25,6 +25,7 @@ from app.kubernetes.operations.secrets.reveal_policy import (
     update_cluster_reveal_readiness,
 )
 from app.models import Cluster
+from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
 from app.platform_operations.kubernetes.secret_reveal.service import (
     build_secret_reveal_settings_context,
     get_secret_reveal_cluster,
@@ -85,7 +86,11 @@ def _settings_response(cluster_id: str, operation_feedback: dict[str, Any] | Non
             **operation_feedback,
             toast_oob=True,
         )
-    response = make_response(workspace_html + feedback_html)
+    summary_html = render_template(
+        'platform_operations/kubernetes/_summary_oob.html',
+        **build_kubernetes_administration_summary(),
+    )
+    response = make_response(workspace_html + summary_html + feedback_html)
     response.headers['HX-Push-Url'] = page_url
     response.headers['HX-Trigger'] = json.dumps({'kaori:notifications-changed': True})
     return response
