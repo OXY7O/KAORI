@@ -14,6 +14,47 @@ containers. A host `.venv` is not required.
 - Git.
 - Python 3 on the WSL host (DevContainer `initializeCommand` prepares private first-run credentials before Compose).
 
+## Windows + WSL DevContainer launch boundary
+
+**Required for the current DevContainer first-run implementation:** open this
+repository through **VS Code Remote - WSL (Ubuntu)** before invoking
+**Dev Containers: Reopen in Container**. Docker Desktop's WSL2 backend
+alone does **not** make a normal Windows-local VS Code workspace run its
+`initializeCommand` inside Linux.
+
+If a failed Dev Containers log includes a Windows-local
+`--workspace-folder c:\\Users\\...\\KAORI` and
+`Code.exe ... devContainersSpecCLI.js up`, inspect the **earlier** log
+lines for the first failing command. A trailing `Exit code 1` does not
+prove PostgreSQL failed; `initializeCommand=python3
+.devcontainer/prepare-postgres-env.py` expects Linux Python, WSL
+`$HOME`, Unix file permissions and Docker CLI availability.
+
+From **Ubuntu/WSL**, the existing Windows checkout can be opened through
+its mounted Windows drive without cloning or removing data:
+
+```bash
+cd /mnt/c/Users/lethisa/OneDrive/Documents/Application/KAORI
+python3 --version
+docker info >/dev/null
+code .
+```
+
+Confirm the new editor's Remote indicator says **WSL: Ubuntu**.
+Only then select **Dev Containers: Rebuild and Reopen in Container**.
+If Docker integration is missing, enable Docker Desktop integration for
+Ubuntu; if the WSL Python or `code` command fails, repair that host
+prerequisite before treating this as an application/database failure.
+
+For best filesystem and permissions behavior over time, a separate,
+reviewed move of the repository to a native WSL directory (`~/projects`)
+is preferable to developing directly under a OneDrive-mounted NTFS path.
+**Do not** move or delete an existing checkout, `.env` or volume just to
+retry a failed bootstrap. Removing containers alone does not remove a
+PostgreSQL named volume; verify its identity through the first-run
+runbook. All current scripts remain WSL-host only; Windows-native
+DevContainer initialization has **not** been implemented or certified.
+
 ## First setup — new DevContainer PostgreSQL volume
 
 1. Open the project from **WSL** in VS Code. The host needs Python 3,
