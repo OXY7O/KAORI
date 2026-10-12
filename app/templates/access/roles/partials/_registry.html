@@ -9,12 +9,14 @@
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-tree" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
                     <h2 class="{{ table_ui.block_title_classes() }}">Role Registry</h2>
+                    {{ table_label.result_count(summary.matching) }}
+                </div>
                     <p class="{{ table_ui.block_description_classes() }}">Review role type, lifecycle state, baseline integrity, assignments, permission coverage, and governed actions.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(summary.matching ~ ' Matching ' ~ ('Role' if summary.matching == 1 else 'Roles') , 'list-filter') }}
                 {% if filters.search or filters.role_type != 'all' or filters.state != 'all' %}
                     {{ registry_ui.clear_filters_link(
                         'access.roles.index',

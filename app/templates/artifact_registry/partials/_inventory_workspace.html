@@ -77,11 +77,6 @@
                         'Search the selected committed asset catalog with provider provenance preserved.',
                         'registry-inventory-records-heading',
                         supporting='Current view · ' ~ inventory.resource_label) }}
-            {% set result_badge %}
-                {{ table_label.metadata_label(inventory.total ~ (' Result' if inventory.total == 1 else ' Results') ,
-                icon='list-filter'
-                ) }}
-            {% endset %}
             {% set inventory_header_actions = none %}
             {% if inventory.has_filters %}
                 {% set inventory_header_actions %}
@@ -130,7 +125,8 @@
                                 none,
                                 none,
                                 header_actions=inventory_header_actions,
-                                title_extra=registry_title_tip ~ result_badge) }}
+                                title_extra=registry_title_tip,
+                                result_count=inventory.total) }}
                 <div id="artifact-registry-inventory-content">
                     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                         {% call registry.filter_form(

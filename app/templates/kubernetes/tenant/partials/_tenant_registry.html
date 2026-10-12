@@ -45,6 +45,7 @@
         url_for('tenant.tenants', section='tenant-setup') ,
     'Add Tenant',
     header_actions=header_actions,
+    result_count=tenant_pagination.total_items,
     title_extra=title_info
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">

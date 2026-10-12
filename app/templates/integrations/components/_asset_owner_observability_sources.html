@@ -12,12 +12,14 @@
                 <div class="flex items-start gap-3">
                     {{ integration_ui.palette_icon("radio-tower", "info", size="sm") }}
                     <div class="min-w-0">
-                        <h3 id="asset-owner-observability-sources-title"
-                            class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 id="asset-owner-observability-sources-title"
+                                class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                            {{ table_label.result_count(visible_total) }}
+                        </div>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
                     </div>
                 </div>
-                {{ table_label.metadata_label(visible_total ~ " Source" ~ ("" if visible_total == 1 else "s") ) }}
             </div>
         </header>
         <div class="overflow-x-auto">

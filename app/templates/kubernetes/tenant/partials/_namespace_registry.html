@@ -31,7 +31,8 @@
         'Refreshing Namespace Registry',
         none,
         none,
-        header_actions=header_actions) }}
+        header_actions=header_actions,
+    result_count=namespace_pagination.total_items) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.namespace_provisioning',

@@ -46,6 +46,7 @@
         '#add-user-membership-form',
         'Add Membership',
         header_actions=header_actions,
+    result_count=membership_pagination.total_items,
         title_extra=title_info) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(

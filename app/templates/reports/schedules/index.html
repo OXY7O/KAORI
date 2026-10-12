@@ -590,12 +590,14 @@
                                     <i data-lucide="calendar-clock" class="h-5 w-5"></i>
                                 </span>
                                 <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
                                     <h3 class="text-base font-semibold leading-6 text-content-primary">Schedule Registry</h3>
+                                    {{ table_label.result_count(payload.pagination.total_items) }}
+                                </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">Filter and manage recurring report definitions, scope, timing, delivery, and execution state.</p>
                                 </div>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.metadata_label(payload.pagination.total_items ~ ' Schedules', 'calendar-clock') }}
                                 {% if payload.selected_filters.search or payload.selected_filters.status or payload.selected_filters.cadence or payload.selected_filters.report_type or payload.selected_filters.asset or payload.selected_filters.delivery %}
                                     {{ registry_ui.clear_filters_link('reports.schedules', 'schedule-registry', 'schedule-registry-loading', payload.pagination.per_page, table_ui.action_classes() , query_params={'workspace': 'registry'}) }}
                                 {% endif %}
@@ -922,12 +924,14 @@
                                     <i data-lucide="history" class="h-5 w-5"></i>
                                 </span>
                                 <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
                                     <h3 class="text-base font-semibold leading-6 text-content-primary">Recent Schedule Runs</h3>
+                                    {{ table_label.result_count(payload.run_pagination.total_items) }}
+                                </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">Search retained Run Now and dispatcher lifecycle evidence with server-backed filtering and pagination.</p>
                                 </div>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.metadata_label(payload.run_pagination.total_items ~ ' Runs', 'history') }}
                                 {% set run_filters_active = payload.run_selected_filters.run_search or payload.run_selected_filters.run_schedule or payload.run_selected_filters.run_trigger or payload.run_selected_filters.run_status or payload.run_selected_filters.run_period != '30d' %}
                                 {% if run_filters_active %}
                                     {{ registry_ui.clear_filters_link('reports.schedules', 'schedule-runs-registry', 'schedule-runs-loading', payload.run_pagination.per_page, table_ui.action_classes() , query_params={'workspace': 'runs', 'run_period': '30d'}, page_param='run_page', per_page_param='run_per_page') }}
