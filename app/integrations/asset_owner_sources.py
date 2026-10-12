@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.common.pagination import paginate_query
 from app.integrations.kernel.registry import get_integration
 from app.integrations.observability.metrics_source.providers import provider_definition
 from app.integrations.readiness import resolve_binding_operational_status
@@ -10,13 +11,8 @@ from app.models.integration import IntegrationBinding, IntegrationInstance
 _OBSERVABILITY_PROVIDER_TYPES = ('metrics_source', 'alert_source')
 
 
-def build_bound_observability_source_rows(*, asset_type: str, asset_key: str) -> list[dict[str, Any]]:
-    """Project reusable observability sources bound to one asset-owner resource.
-
-    Asset-owner pages consume this read-only projection. Binding mutation remains
-    source-owned in Metrics Source and Alert Source workspaces.
-    """
-    bindings = (
+def _bound_observability_source_query(*, asset_type: str, asset_key: str):
+    return (
         IntegrationBinding.query.join(IntegrationInstance)
         .filter(
             IntegrationBinding.asset_type == asset_type,
@@ -25,10 +21,33 @@ def build_bound_observability_source_rows(*, asset_type: str, asset_key: str) ->
             IntegrationInstance.integration_type.in_(_OBSERVABILITY_PROVIDER_TYPES),
         )
         .order_by(
-            IntegrationInstance.integration_type.asc(), IntegrationBinding.priority.asc(), IntegrationBinding.id.asc()
+            IntegrationInstance.integration_type.asc(),
+            IntegrationBinding.priority.asc(),
+            IntegrationBinding.id.asc(),
         )
-        .all()
     )
+
+
+def build_bound_observability_source_rows(*, asset_type: str, asset_key: str) -> list[dict[str, Any]]:
+    """Project source-owned bindings without changing existing caller behavior."""
+    return _project_bound_source_rows(
+        _bound_observability_source_query(asset_type=asset_type, asset_key=asset_key).all()
+    )
+
+
+def paginate_bound_observability_source_rows(
+    *, asset_type: str, asset_key: str, page: int = 1, per_page: int = 5,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Bound SQL rows before resolving provider-specific source records."""
+    bindings, pagination = paginate_query(
+        _bound_observability_source_query(asset_type=asset_type, asset_key=asset_key),
+        page=page,
+        per_page=per_page,
+    )
+    return _project_bound_source_rows(bindings), pagination
+
+
+def _project_bound_source_rows(bindings: list[IntegrationBinding]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for binding in bindings:
         canonical = binding.instance
