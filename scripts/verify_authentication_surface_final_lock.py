@@ -170,6 +170,13 @@ def main() -> int:
         errors,
     )
     require(
+        'class="border-l-4 border-kaori-primary px-4 py-4 sm:px-5">' in setup
+        and 'class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">' in setup,
+        'Setup Required bootstrap wrappers must have complete HTML start tags',
+        errors,
+    )
+
+    require(
         'data-kaori-setup-outer-frame' not in setup
         and 'lg:col-span-2' not in setup,
         'Setup Required must not reintroduce the rejected nested-frame/sidebar design',
