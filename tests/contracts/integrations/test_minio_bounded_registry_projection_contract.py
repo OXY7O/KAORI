@@ -19,7 +19,9 @@ def test_minio_index_registry_uses_bounded_sql_and_aggregate_counts() -> None:
     assert 'for instance in registry_instances:' in index
     assert 'for instance in coverage_instances:' in index
     assert 'MinioInstance.query.join(MinioInstance.integration_instance).order_by(' not in index
-    assert '.all()' not in index or '.distinct().all()' in index
+    assert 'for instance in instances:' not in index
+    assert 'registry_instances, pagination = paginate_query(' in index
+    assert 'coverage_instances, coverage_pagination = paginate_query(' in index
     assert "func.sum(case((metrics_exists, 1), else_=0))" in presentation
     assert 'IntegrationBinding.asset_key == MinioInstance.object_storage_system_id' in presentation
 
