@@ -5,10 +5,11 @@ const canvas = $('registry-topology-canvas')
 const form = $('registry-topology-filters')
 
 if (canvas && form) {
-    const graphTab = $('registry-topology-graph-tab')
-    const listTab = $('registry-topology-list-tab')
-    const graphShell = $('registry-topology-canvas-shell')
-    const listShell = $('registry-topology-list-shell')
+    const graphTab = $('registry-topology-view-tab-graph')
+    const listTab = $('registry-topology-view-tab-list')
+    const graphShell = $('registry-topology-view-panel-graph')
+    const canvasShell = $('registry-topology-canvas-shell')
+    const listShell = $('registry-topology-view-panel-list')
     const tbody = $('registry-topology-resource-rows')
     const status = $('registry-topology-status')
     const warning = $('registry-topology-warning')
@@ -17,6 +18,15 @@ if (canvas && form) {
     const inspector = $('registry-topology-inspector')
     const inspectorContent = $('registry-topology-inspector-content')
     const backdrop = $('registry-topology-backdrop')
+    const controls = $('registry-topology-controls')
+    const controlsClose = $('registry-topology-controls-close')
+    const controlsButton = $('registry-topology-controls-button')
+    const detailsButton = $('registry-topology-details-button')
+    const labelsToggle = $('registry-topology-labels')
+    const edgeLabelsToggle = $('registry-topology-edge-labels')
+    const layoutSelect = $('registry-topology-layout')
+    const resourceToggles = [...document.querySelectorAll('[data-registry-topology-type]')]
+    const scopeSummary = $('registry-topology-scope-summary')
     const close = $('registry-topology-inspector-close')
     const previous = $('registry-topology-prev')
     const next = $('registry-topology-next')
@@ -48,29 +58,50 @@ if (canvas && form) {
         el.href = href
         return el
     }
-    let inspectorReturnFocus = null
-    const closeInspector = () => {
-        const wasOpen = !inspector.classList.contains('hidden')
+    let paneReturnFocus = null
+    let activePane = null
+    const closePane = () => {
+        if (!activePane) return
+        controls.classList.add('hidden')
         inspector.classList.add('hidden')
         backdrop.classList.add('hidden')
-        if (wasOpen && inspectorReturnFocus?.isConnected) inspectorReturnFocus.focus()
+        controlsButton.setAttribute('aria-expanded', 'false')
+        detailsButton.setAttribute('aria-expanded', 'false')
+        activePane = null
+        if (paneReturnFocus?.isConnected) paneReturnFocus.focus()
     }
-    const openInspector = () => {
-        if (inspector.classList.contains('hidden')) inspectorReturnFocus = document.activeElement
-        inspector.classList.remove('hidden')
+    const openPane = (pane) => {
+        if (!activePane) paneReturnFocus = document.activeElement
+        activePane = pane
+        controls.classList.toggle('hidden', pane !== controls)
+        inspector.classList.toggle('hidden', pane !== inspector)
         backdrop.classList.remove('hidden')
-        close.focus()
+        controlsButton.setAttribute('aria-expanded', String(pane === controls))
+        detailsButton.setAttribute('aria-expanded', String(pane === inspector))
+        ;(pane === controls ? controlsClose : close).focus()
     }
-    close.addEventListener('click', closeInspector)
-    backdrop.addEventListener('click', closeInspector)
+    const closeInspector = () => { if (activePane === inspector) closePane() }
+    const openInspector = () => openPane(inspector)
+    close.addEventListener('click', closePane)
+    controlsClose.addEventListener('click', closePane)
+    backdrop.addEventListener('click', closePane)
+    controlsButton.addEventListener('click', () => {
+        if (activePane === controls) closePane()
+        else openPane(controls)
+    })
+    detailsButton.addEventListener('click', () => {
+        if (activePane === inspector) closePane()
+        else openPane(inspector)
+    })
     document.addEventListener('keydown', (event) => {
-        if (inspector.classList.contains('hidden')) return
+        if (!activePane) return
         if (event.key === 'Escape') {
             event.preventDefault()
-            closeInspector()
+            closePane()
+            return
         }
         if (event.key !== 'Tab') return
-        const focusables = [...inspector.querySelectorAll('button:not([disabled]), a[href]')]
+        const focusables = [...activePane.querySelectorAll('button:not([disabled]), a[href], select:not([disabled]), input:not([disabled]), summary')]
         if (!focusables.length) return
         const first = focusables[0]
         const last = focusables[focusables.length - 1]
