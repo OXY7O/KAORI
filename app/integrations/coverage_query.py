@@ -66,12 +66,14 @@ def _coverage_statement(integration_type: str):
     )
     source = aliased(IntegrationInstance)
     winner = bindings
-    provider_checks = [
-        select(implementation.record_model.id)
-        .where(implementation.record_model.integration_instance_id == source.id)
-        .exists()
+    provider_models = tuple(dict.fromkeys(
+        implementation.record_model
         for implementation in registry.implementations_for_type(integration_type)
         if implementation.record_model is not None
+    ))
+    provider_checks = [
+        select(model.id).where(model.integration_instance_id == source.id).exists()
+        for model in provider_models
     ]
     # An orphaned canonical source may retain old Ready state; never count it.
     provider_record_exists = or_(*provider_checks) if provider_checks else literal(True)
