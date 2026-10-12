@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from hashlib import sha256
-import json
 from datetime import UTC, datetime
+from hashlib import sha256
 from urllib.parse import urlsplit
 
 from sqlalchemy import insert, select
@@ -23,6 +23,7 @@ from app.models.registry import (
 )
 
 CORRELATION_BATCH_SIZE = 250
+
 
 def _active_registry_source_ids(session: Session) -> list[int]:
     return [
@@ -283,6 +284,7 @@ def refresh_registry_workload_bindings(
             # Preserve each matching container inside the canonical unique
             # artifact/Pod/image binding, without changing the DB constraint.
             pod_bindings: dict[tuple[int, str], dict[str, object]] = {}
+            pod_usages: dict[tuple[int, str], list[dict[str, str | int]]] = {}
             for raw_image, container_name, source_kind, container_index in _container_rows(pod):
                 image = parse_image_reference(raw_image)
                 candidates = (
@@ -306,12 +308,11 @@ def refresh_registry_workload_bindings(
                     'source_kind': source_kind,
                     'index': container_index,
                 }
-                existing = pod_bindings.get(binding_identity)
-                if existing is not None:
-                    details = existing['details']
-                    if isinstance(details, dict):
-                        details['containers'].append(usage)
+                existing_usages = pod_usages.get(binding_identity)
+                if existing_usages is not None:
+                    existing_usages.append(usage)
                     continue
+                pod_usages[binding_identity] = [usage]
                 match_type, confidence = match
                 binding: dict[str, object] = {
                     'artifact_id': candidate.id,
@@ -327,7 +328,7 @@ def refresh_registry_workload_bindings(
                     'container_name': container_name,
                     'details': {
                         'source_kind': source_kind,
-                        'containers': [usage],
+                        'containers': pod_usages[binding_identity],
                         'registry_observed_at': candidate.observed_at.isoformat(),
                         'pod_collected_at': pod.collected_at.isoformat(),
                         'registry_host': candidate.host,
@@ -347,7 +348,9 @@ def refresh_registry_workload_bindings(
                 )
                 pending_bindings.clear()
 
-            if progress_callback is not None and (pod_index % normalized_batch_size == 0 or pod_index == pod_total):
+            if progress_callback is not None and (
+                pod_index % normalized_batch_size == 0 or pod_index == pod_total
+            ):
                 progress_callback(
                     pod_index,
                     pod_total,
