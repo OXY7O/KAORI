@@ -323,8 +323,14 @@ def _load_alertmanager(system: ObjectStorageSystem, *, selected_source: str) -> 
 
     raw_alerts = result.get('alerts')
     if (
-        not isinstance(raw_alerts, list)
-        or any(not isinstance(item, dict) for item in raw_alerts)
+        result.get('error')
+        or not isinstance(raw_alerts, list)
+        or any(
+            not isinstance(item, dict)
+            or not str(item.get('alert_name') or item.get('alertname') or '').strip()
+            or not isinstance(item.get('labels'), dict)
+            for item in raw_alerts
+        )
     ):
         return _source_view(
             selected_source=selected_source,
@@ -557,8 +563,8 @@ def _metrics_source_rows(payload: dict[str, Any], *, source_label: str) -> list[
         raise ValueError('Metrics Source did not return a successful Prometheus alert query envelope.')
     data = payload.get('data')
     result = data.get('result') if isinstance(data, dict) else None
-    if not isinstance(result, list):
-        raise ValueError('Metrics Source alert response is missing its complete data.result array.')
+    if not isinstance(result, list) or data.get('resultType', 'vector') != 'vector':
+        raise ValueError('Metrics Source alert response is missing a complete instant-vector data.result array.')
     rows: list[dict[str, Any]] = []
     for item in result:
         if not isinstance(item, dict) or not isinstance(item.get('metric'), dict):
