@@ -9,7 +9,7 @@
             ('history', 'Archive History', 'history', url_for('platform_operations.data_lifecycle.index', tab='history')),
             ('storage', 'Archive Storage', 'hard-drive', url_for('platform_operations.data_lifecycle.index', tab='storage'))
         ] %}
-    <div class="space-y-6">
+    <div id="data-lifecycle-page" class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
