@@ -56,6 +56,23 @@ flask --app run:app db upgrade
 
 On a fresh or migration-behind development database, the workspace remains usable while Celery workers and Beat wait for the exact current Alembic migration head. They do not dispatch or consume scheduled KAORI work before schema readiness and they do not run migrations themselves. After the migration step completes, the background services continue automatically without a manual restart.
 
+### 3a. Existing DevContainer database: PostgreSQL runtime privilege split
+
+If Capsule G1 restart reports `PostgreSQL Capsule ledger role, trigger or
+WAL durability is not admitted`, first verify which PostgreSQL role
+Flask actually uses. An owner/superuser DevContainer database connection
+does not satisfy the write-once ledger role boundary even when triggers
+and WAL settings are valid.
+
+Use the [existing-database DevContainer PostgreSQL role runbook](operations/devcontainer-postgres-runtime-role.md) before changing
+`DATABASE_URL`. It retains the current `kaori` database, existing tables,
+and data; creates one restricted `kaori_runtime` login; and explains
+interactive credential setup, PostgreSQL permissions, backup, the opt-in
+`KAORI_DEV_RUNTIME_DATABASE_URL` for **all** workers/Beat, owner-only
+migrations, read-only verification and rollback. Do not repair this by
+revoking rights from the owner, weakening the ledger triggers or
+resetting any volume.
+
 ### 4. Build or watch frontend assets
 
 For active UI development, VS Code runs the `KAORI: Watch Tailwind CSS` background task automatically on folder open after the Dev Container lifecycle completes. Trust the workspace and choose **Allow Automatic Tasks** when prompted. If auto tasks are disabled, use **Terminal → Run Task → KAORI: Watch Tailwind CSS**, or run manually:

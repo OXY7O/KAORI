@@ -12,6 +12,27 @@ KAORI uses one canonical variable inventory with explicit ownership by runtime. 
 
 The two local modes have separate Compose project names and persistent volumes. Neither local `.env` is a production/server authority. The server has no single monolithic runtime `.env` file.
 
+## Local development PostgreSQL role boundary (#1405)
+
+In `kaori-dev`, `POSTGRES_DB` and `POSTGRES_USER` continue to define
+the **existing database and privileged bootstrap owner**. After a
+non-owner `kaori_runtime` login is explicitly provisioned with immutable
+ledger SELECT/INSERT-only rights, developers may set
+`KAORI_DEV_RUNTIME_DATABASE_URL` in the private root `.env`.
+Only the DevContainer Compose override reads this optional key; it
+replaces `DATABASE_URL` for the workspace, every Celery worker and Beat.
+If unset, the legacy owner URL remains for backward-compatible setup but
+**must not pass** the Capsule write-once ledger runtime gate.
+
+`KAORI_DB_MIGRATION_URL` is a **transient shell-only owner connection** for
+`scripts/init_db.sh` after the runtime cutover. Never persist it in the
+root `.env` consumed by workers. Owner/admin credentials and schema DDL
+are not authorized for the runtime role. This feature is **not** the
+server/staging role contract; governed deployment secrets remain on their
+existing separate authority. See
+[`DevContainer role cutover`](../operations/devcontainer-postgres-runtime-role.md)
+for existing-data preservation, backup, privileges, verification and rollback.
+
 ## Environment authorities
 
 Use the template that owns the runtime you are configuring:
