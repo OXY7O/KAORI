@@ -114,6 +114,8 @@ def _registry_analytics_inputs_changed(snapshot: RegistryAnalyticsSnapshot | Non
     """Compare committed Analytics input generation, without requesting provider state."""
     if snapshot is None or not isinstance(snapshot.payload_json, dict):
         return True
+    if getattr(snapshot, 'integration_instance_id', None) is None:
+        return True
     evidence = snapshot.payload_json.get('evidence')
     if not isinstance(evidence, dict) or not evidence.get('inventory_committed_at'):
         return True
@@ -148,18 +150,27 @@ def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict
     )
     stale = bool(valid and datetime.now(UTC) > expires_at)
     inputs_changed = _registry_analytics_inputs_changed(snapshot) if valid else True
-    current = bool(valid and not stale and not inputs_changed)
+    sections = snapshot.payload_json if isinstance(snapshot.payload_json, dict) else {}
+    metrics = sections.get('metrics')
+    governance = sections.get('evidence')
+    partial = bool(
+        isinstance(metrics, dict) and metrics.get('status') != 'ready'
+        or isinstance(governance, dict) and governance.get('governance_status') not in {'ready', None}
+    )
+    current = bool(valid and not stale and not inputs_changed and not partial)
     return {
         'status': snapshot.status,
         'label': (
             'Current Snapshot' if current else
             'Inputs Changed' if valid and inputs_changed else
-            'Stale Snapshot' if stale else 'Unavailable'
+            'Stale Snapshot' if stale else
+            'Partial Evidence' if partial else 'Unavailable'
         ),
-        'tone': 'normal' if current else ('warning' if stale or inputs_changed else 'unknown'),
+        'tone': 'normal' if current else ('warning' if stale or inputs_changed or partial else 'unknown'),
         'generated_at': snapshot.generated_at,
         'is_stale': stale,
         'inputs_changed': inputs_changed,
+        'is_partial': partial,
         'is_current': current,
     }
 
