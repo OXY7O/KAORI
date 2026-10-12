@@ -138,3 +138,7 @@ GET navigation may display canonical default sections and period. On POST, analy
 ### Generate bounded namespace choices (#1543)
 
 Reports Generate bootstraps current committed namespace choices for only the selected Kubernetes cluster. On cluster switch, its existing wizard requests an authorized lightweight `GET /reports/generate/namespaces?cluster_id=...` list with `reports.generate` permission, then renders options only when response cluster identity still matches selection. Object Storage and Registry report types do not query Kubernetes namespace inventory on page load; registered asset option lists remain available for the existing in-wizard contract switcher. The server independently validates namespace membership within the selected cluster before report persistence. No live provider request or custom cache architecture is introduced.
+
+### Reports job integration ownership (#1544)
+
+Canonical Report JobExecution `integration_type` and `integration_instance_id` come from the report's selected asset type: Kubernetes cluster → `kubernetes`, Object Storage system → `object_storage`, Registry IntegrationInstance → `registry` plus its numeric instance ID. Unknown future scope types must not be mislabeled as Kubernetes. The existing Report scope key, queue identity, idempotent resource group and renderer remain unchanged. Historical completed job evidence is not rewritten during this remediation.
