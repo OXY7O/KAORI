@@ -35,13 +35,13 @@ def test_one_primary_action_has_hierarchy_and_shared_clipboard_terminal() -> Non
 
     assert 'Primary action · One-time setup' in source
     assert 'Run Initial Database Bootstrap' in source
-    assert 'text-xl font-semibold leading-7 text-content-primary' in source
+    assert 'text-lg font-semibold leading-6 text-content-primary' in source
     assert 'border-l-4 border-kaori-primary' in source
-    assert 'bg-surface-card shadow-lg' in source
+    assert 'bg-surface-card shadow-sm' in source
     assert 'data-kaori-setup-command' in source
     assert "terminal_command.render(bootstrap_command" in source
     assert "copy_label='Copy Command'" in source
-    assert 'compact=false' in source
+    assert "copy_label='Copy Command', compact=true" in source
     assert (
         'docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml '
         'run --rm db-bootstrap'
@@ -108,9 +108,9 @@ def test_normal_zoom_has_one_light_canvas_without_rejected_heavy_frame() -> None
 
     # One quiet surface for content readability at default 100% zoom.
     assert source.count('data-kaori-setup-canvas="light"') == 1
-    assert 'max-w-6xl rounded-2xl border border-outline-subtle bg-surface-card' in source
-    assert 'px-4 py-5 shadow-sm sm:px-6 sm:py-6 lg:px-8 lg:py-7' in source
-    assert 'bg-surface-page px-3 py-5 sm:px-5 sm:py-6 lg:py-8' in source
+    assert 'max-w-4xl rounded-xl border border-outline-subtle bg-surface-card' in source
+    assert 'px-4 py-4 shadow-sm sm:px-5 sm:py-5 lg:px-6' in source
+    assert 'bg-surface-page px-3 py-3 sm:px-4 sm:py-4' in source
     assert source.index('data-kaori-setup-canvas="light"') < source.index(
         'data-kaori-setup-readiness-strip'
     )
@@ -118,7 +118,7 @@ def test_normal_zoom_has_one_light_canvas_without_rejected_heavy_frame() -> None
     assert 'data-kaori-setup-identity-card' not in source
     assert 'data-kaori-setup-outer-frame' not in source
     assert 'lg:col-span-2' not in source
-    assert 'bg-surface-card shadow-lg' in source  # Only the action is elevated.
+    assert 'bg-surface-card shadow-sm' in source  # The action remains Violet-accented but compact.
     assert 'neutral white content surface' in doc
 
 
@@ -132,3 +132,35 @@ def test_requested_copy_is_shorter_without_changing_bootstrap_semantics() -> Non
     assert 'Check INTEGRATION_CREDENTIAL_KEY; keep it unchanged.' not in source
     assert 'Windows PowerShell · Repository Root' in source
     assert 'terminal_command.render(bootstrap_command' in source
+
+
+def test_native_browser_zoom_uses_compact_layout_without_css_scaling() -> None:
+    source = TEMPLATE.read_text(encoding='utf-8')
+    authority = AUTH_LOCK.read_text(encoding='utf-8')
+
+    assert 'max-w-4xl' in source
+    assert 'max-w-6xl' not in source
+    assert 'mt-3 grid gap-x-4 gap-y-2' in source
+    assert 'mt-4 overflow-hidden rounded-xl' in source
+    assert 'border-l-4 border-kaori-primary px-4 py-4 sm:px-5' in source
+    assert 'mt-3" data-kaori-setup-command' in source
+    assert 'mt-5" data-kaori-setup-flow' in source
+    assert 'mt-4" data-kaori-setup-advanced' in source
+    assert 'mt-4 flex flex-col gap-2 border-t' in source
+    assert 'Run once from Windows PowerShell at the repository root.' in source
+    assert 'text-xs leading-5 text-content-muted' in source
+    assert 'max-w-4xl' in authority
+    assert 'never set CSS zoom/transform scaling' in authority
+    assert 'zoom:' not in source
+    assert 'transform: scale' not in source
+
+
+def test_small_viewport_retains_readable_and_copyable_bootstrap() -> None:
+    source = TEMPLATE.read_text(encoding='utf-8')
+    assert 'w-full max-w-4xl' in source
+    assert 'sm:grid-cols-3' in source
+    assert 'flex flex-col gap-2 sm:flex-row' in source
+    assert "copy_label='Copy Command', compact=true" in source
+    assert 'data-kaori-setup-security' in source
+    assert 'data-kaori-setup-advanced' in source
+    assert 'data-kaori-setup-primary-action' in source
