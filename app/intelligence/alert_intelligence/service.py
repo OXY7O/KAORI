@@ -645,7 +645,8 @@ def _snapshot_context(*, domain: str, asset_key: str) -> dict[str, Any]:
         'available': available,
         'label': f'Committed Inventory · {recent}/{total} Recent (24h)',
         'tone': 'info' if available else 'warning',
-        'serving_last_good': not available,
+        # Inventory recency alone does not prove a recoverable last-good alert snapshot.
+        'serving_last_good': False,
         'generated_at': None,
         'last_attempt_at': None,
         'refresh_owner': 'Domain Collection + Recommendation Alert Worker',
