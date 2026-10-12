@@ -283,22 +283,34 @@ def test_topology_runtime_status_strips_use_shared_semantic_border_authority() -
     assert workspace_path not in baseline['files']
 
 
-def test_topology_adaptive_relationship_labels_and_legend() -> None:
+def test_topology_hover_only_relationship_labels_and_legend() -> None:
     script = _read('app/static/js/kubernetes/inventory/topology.js')
     workspace = _read('app/templates/kubernetes/inventory/topology/partials/_workspace.html')
     palette = _read('docs/design/components/TOPOLOGY_PALETTE.md')
 
-    assert 'visibleEdges.length > 0 && visibleEdges.length <= 8' in script
-    assert 'workspaceState.edgeLabels || smallGraph' in script
-    assert "cy.edges(':selected').addClass('edge-label-visible')" in script
-    assert 'Always Show Relationship Labels' in workspace
-    assert "cy.on('mouseout', 'edge', () => updateEdgeLabelClasses())" in script
+    # Relationship labels stay hidden by default, including on small graphs.
+    assert "if (workspaceState.edgeLabels) cy.edges(':visible').addClass('edge-label-visible')" in script
+    assert 'smallGraph' not in script
+    assert 'visibleEdges.length <= 8' not in script
+    assert "cy.edges('.edge-hovered:visible').addClass('edge-label-visible')" in script
+    assert "cy.edges(':selected:visible').addClass('edge-label-visible')" in script
+    assert "cy.edges('.path-active:visible').addClass('edge-label-visible')" in script
+    # Only the hovered edge gains a label and emphasis; mouseout restores persistent states.
+    assert "cy.on('mouseover', 'edge', (event) => {" in script
+    assert "event.target.addClass('edge-hovered edge-label-visible')" in script
+    assert "cy.on('mouseout', 'edge', (event) => {" in script
+    assert "event.target.removeClass('edge-hovered')" in script
+    assert "updateEdgeLabelClasses()" in script
+    assert "selector: 'edge.edge-hovered'" in script
+    assert "'line-color': brandPrimary" in script
+    assert "cy.on('mouseover', 'node'" not in script
+    # Retain the existing semantic label chip and explicit opt-in control.
     assert "'text-background-shape': 'roundrectangle'" in script
     assert "'text-rotation': 'none'" in script
+    assert 'Always Show Relationship Labels' in workspace
     assert 'Relationship legend: dashed lines show scope containment' in workspace
-    assert 'Small graphs display labels automatically.' in workspace
-    assert 'Relationship Visibility' in workspace
-    assert '1–8 visible relationships' in palette
+    assert 'Relationship labels appear on edge hover or selection' in workspace
+    assert 'Relationship labels stay hidden by default' in palette
 
 
 def test_topology_compact_layout_fits_external_labels_and_resize() -> None:

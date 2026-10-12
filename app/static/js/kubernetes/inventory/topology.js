@@ -554,6 +554,16 @@ const startTopologyWorkspace = () => {
                 },
             },
             { selector: 'edge.edge-label-visible', style: { label: 'data(label)' } },
+            {
+                selector: 'edge.edge-hovered',
+                style: {
+                    'line-color': brandPrimary,
+                    'target-arrow-color': brandPrimary,
+                    'line-opacity': 1,
+                    width: 2.5,
+                    'z-index': 1150,
+                },
+            },
             { selector: '.dimmed', style: { opacity: 0.1, 'text-opacity': 0.06 } },
             { selector: '.focused', style: { opacity: 1, 'text-opacity': 1, 'z-index': 999 } },
             { selector: 'edge.focused', style: { 'line-opacity': 1, width: 2.8 } },
@@ -877,15 +887,10 @@ const startTopologyWorkspace = () => {
     const updateEdgeLabelClasses = () => {
         if (!cy) return
         cy.edges().removeClass('edge-label-visible')
-        const visibleEdges = cy.edges(':visible')
-        const smallGraph = visibleEdges.length > 0 && visibleEdges.length <= 8
-        if (workspaceState.edgeLabels || smallGraph) visibleEdges.addClass('edge-label-visible')
-        cy.edges('.path-active').addClass('edge-label-visible')
-        cy.edges(':selected').addClass('edge-label-visible')
-        if (selectedNodeId && !pathHighlightActive) {
-            const node = cy.getElementById(selectedNodeId)
-            if (node?.length) node.connectedEdges(':visible').addClass('edge-label-visible')
-        }
+        if (workspaceState.edgeLabels) cy.edges(':visible').addClass('edge-label-visible')
+        cy.edges('.path-active:visible').addClass('edge-label-visible')
+        cy.edges(':selected:visible').addClass('edge-label-visible')
+        cy.edges('.edge-hovered:visible').addClass('edge-label-visible')
     }
 
     const applyVisibility = ({ relayout = false } = {}) => {
@@ -1562,12 +1567,13 @@ const startTopologyWorkspace = () => {
         cy.on('tap', (event) => {
             if (event.target === cy) clearSelection()
         })
-        cy.on('mouseover', 'edge', (event) => event.target.addClass('edge-label-visible'))
-        cy.on('mouseout', 'edge', () => updateEdgeLabelClasses())
-        cy.on('mouseover', 'node', (event) => {
-            if (!workspaceState.edgeLabels) event.target.connectedEdges(':visible').addClass('edge-label-visible')
+        cy.on('mouseover', 'edge', (event) => {
+            event.target.addClass('edge-hovered edge-label-visible')
         })
-        cy.on('mouseout', 'node', () => updateEdgeLabelClasses())
+        cy.on('mouseout', 'edge', (event) => {
+            event.target.removeClass('edge-hovered')
+            updateEdgeLabelClasses()
+        })
         cy.on('pan zoom resize render position', () => {
             scheduleBoundaryUpdate()
         })
