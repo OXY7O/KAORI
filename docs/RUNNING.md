@@ -11,8 +11,8 @@ The files and Docker volumes for these modes are intentionally separate. A root 
 
 ### 1. Prepare the application environment
 
-`.env.example` is the **app-only DevContainer template**. The WSL
-host `initializeCommand` automatically creates private root `.env` if it
+`.env.example` is the **app-only DevContainer template**. The Docker-host
+`initializeCommand` automatically creates private root `.env` if it
 does not already exist and replaces the placeholder runtime
 `DATABASE_URL` with a generated `kaori_runtime` credential. You may
 instead copy it before first open to choose your own
@@ -35,13 +35,13 @@ It must **not** contain `POSTGRES_PASSWORD`,
 
 Instead, the first host initialization generates:
 
-- `~/.config/kaori/devcontainer/postgres-bootstrap.env` — credentials
-  for local `postgres` and initial `kaori_runtime` provisioning.
-- `~/.config/kaori/devcontainer/postgres-migrate.env` — credential
-  for non-superuser `kaori_migrator`, used by database initdb and
-  explicit operator bootstrap only.
+- Docker volume `kaori-dev-pg-admin-secrets`: private files
+  `postgres_password` and `runtime_password` for initial PostgreSQL
+  and runtime login provisioning.
+- Docker volume `kaori-dev-pg-migrator-secrets`: private file
+  `password` for non-superuser migrator DDL and explicit operator bootstrap.
 
-Both are outside the repository, developer-owned, and private. They are
+Both are outside the repository in Docker-managed volumes, and private. They are
 not application/worker env files. The initializer preserves their
 contents across reopens and refuses missing/mismatched credentials for
 an existing volume. **Never edit generated `DATABASE_URL` to point to
@@ -52,7 +52,9 @@ for exact file ownership, keys, and production boundaries.
 
 ### 2. Open the Dev Container
 
-Open the repository in VS Code and run **Dev Containers: Rebuild and Reopen in Container**. The Dev Container compose stack starts PostgreSQL, Redis, the workspace, the canonical Celery workers, and Beat under the isolated **`kaori-dev`** Compose project. `shutdownAction` is `none`, so closing VS Code does not tear down the running development services. Docker restart policies bring them back after a Docker Desktop restart unless they were explicitly stopped.
+Open the existing Windows checkout directly in **VS Code Windows** and run
+**Dev Containers: Rebuild and Reopen in Container**. Docker Desktop must
+be running Linux containers; WSL Remote and Windows Python are unnecessary. The Dev Container compose stack starts PostgreSQL, Redis, the workspace, the canonical Celery workers, and Beat under the isolated **`kaori-dev`** Compose project. `shutdownAction` is `none`, so closing VS Code does not tear down the running development services. Docker restart policies bring them back after a Docker Desktop restart unless they were explicitly stopped.
 
 Do not use plain `docker compose down` for the Dev Container. Host-side development lifecycle commands must use both Compose files:
 
@@ -66,8 +68,7 @@ Do not create or use a host `.venv`; the supported Python runtime is inside the 
 ### 3. Initialize or upgrade the database
 
 For a **fresh** development database, start Flask with F5, view the existing
-**Database Setup Required**, and run the copied command from a **WSL host**
-terminal at the repository root:
+**Database Setup Required**, and run the copied command from **Windows PowerShell on the host** at the repository root:
 
 ```bash
 docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
@@ -81,9 +82,8 @@ docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml \
 ```
 
 The application `DATABASE_URL` belongs only to `kaori_runtime`, not a DBA
-or migration role. The two PostgreSQL authority files live outside the
-source workspace at `~/.config/kaori/devcontainer/`; they are not in `.env`
-and are not inherited by Flask or workers. `POSTGRES_USER=postgres` inside
+or migration role. The two PostgreSQL authority **Docker volumes** are not in `.env`
+and are not mounted into Flask, workspace or workers. `POSTGRES_USER=postgres` inside
 the shared app `.env` remains a non-secret Compose selector, **not** a
 runtime identity or password.
 On a fresh or migration-behind development database, the workspace remains usable while Celery workers and Beat wait for the exact current Alembic migration head. They do not dispatch or consume scheduled KAORI work before schema readiness and they do not run migrations themselves. After migrations, grants, and first-admin admission pass, the background services continue automatically without a manual restart.

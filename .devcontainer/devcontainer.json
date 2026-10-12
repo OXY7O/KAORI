@@ -58,7 +58,22 @@
       }
     }
   },
-  "initializeCommand": "python3 .devcontainer/prepare-postgres-env.py",
+  "initializeCommand": [
+    "docker",
+    "run",
+    "--rm",
+    "--mount",
+    "type=bind,source=${localWorkspaceFolder},target=/workspace",
+    "--mount",
+    "type=volume,source=kaori-dev-pg-admin-secrets,target=/run/kaori-admin",
+    "--mount",
+    "type=volume,source=kaori-dev-pg-migrator-secrets,target=/run/kaori-migrator",
+    "-e",
+    "KAORI_DEV_DOCKER_INIT=1",
+    "python:3.12-alpine",
+    "python",
+    "/workspace/.devcontainer/prepare-postgres-env.py"
+  ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "postStartCommand": "bash .devcontainer/post-start.sh"
 }

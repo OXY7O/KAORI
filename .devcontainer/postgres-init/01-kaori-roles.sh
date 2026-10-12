@@ -6,8 +6,14 @@ set -eu
 # Never mount these DB-only environment values into Flask/Celery containers.
 [ "${POSTGRES_USER:-}" = postgres ] || { echo 'ABORT: expected local postgres bootstrap user' >&2; exit 1; }
 [ "${POSTGRES_DB:-}" = kaori ] || { echo 'ABORT: expected local kaori database' >&2; exit 1; }
-[ -n "${KAORI_MIGRATOR_PASSWORD:-}" ] && [ -n "${KAORI_RUNTIME_PASSWORD:-}" ] ||
-  { echo 'ABORT: missing segregated PostgreSQL role passwords' >&2; exit 1; }
+# The two Docker volumes exist independently of both application checkout
+# and host OS. No elevated credential is present in a common env_file.
+[ -s /run/kaori-admin/runtime_password ] &&
+[ -s /run/kaori-migrator/password ] ||
+  { echo 'ABORT: missing segregated PostgreSQL role password files' >&2; exit 1; }
+KAORI_RUNTIME_PASSWORD="$(cat /run/kaori-admin/runtime_password)"
+KAORI_MIGRATOR_PASSWORD="$(cat /run/kaori-migrator/password)"
+export KAORI_RUNTIME_PASSWORD KAORI_MIGRATOR_PASSWORD
 
 # Load role passwords via psql's environment-variable reader rather than
 # process arguments (ps argv would otherwise disclose both secrets).
@@ -27,4 +33,5 @@ GRANT CONNECT ON DATABASE kaori TO kaori_runtime;
 GRANT USAGE ON SCHEMA public TO kaori_runtime;
 SQL
 
+unset KAORI_RUNTIME_PASSWORD KAORI_MIGRATOR_PASSWORD
 echo 'KAORI DevContainer: database and separated PostgreSQL roles initialized; application schema remains empty'

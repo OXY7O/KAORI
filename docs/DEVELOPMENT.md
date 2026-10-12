@@ -12,54 +12,36 @@ containers. A host `.venv` is not required.
 - Visual Studio Code.
 - VS Code Dev Containers extension.
 - Git.
-- Python 3 on the WSL host (DevContainer `initializeCommand` prepares private first-run credentials before Compose).
+- Docker Desktop with a working Docker CLI on the host; host-side Python is not needed.
 
-## Windows + WSL DevContainer launch boundary
+## Windows VS Code DevContainer host — supported workflow
 
-**Required for the current DevContainer first-run implementation:** open this
-repository through **VS Code Remote - WSL (Ubuntu)** before invoking
-**Dev Containers: Reopen in Container**. Docker Desktop's WSL2 backend
-alone does **not** make a normal Windows-local VS Code workspace run its
-`initializeCommand` inside Linux.
+KAORI supports the existing workflow: **open the repository directly in
+VS Code Windows**, including a checkout under `C:\\Users\\...\\KAORI`,
+then choose **Dev Containers: Rebuild and Reopen in Container**.
+You do **not** need to open VS Code through WSL Remote or run Python on
+the Windows host. Docker Desktop must be running with **Linux containers**.
 
-If a failed Dev Containers log includes a Windows-local
-`--workspace-folder c:\\Users\\...\\KAORI` and
-`Code.exe ... devContainersSpecCLI.js up`, inspect the **earlier** log
-lines for the first failing command. A trailing `Exit code 1` does not
-prove PostgreSQL failed; `initializeCommand=python3
-.devcontainer/prepare-postgres-env.py` expects Linux Python, WSL
-`$HOME`, Unix file permissions and Docker CLI availability.
+The `initializeCommand` now starts a small, short-lived
+`python:3.12-alpine` container through the normal Docker CLI. This
+container prepares the private runtime `.env` in the ignored workspace
+and stores PostgreSQL bootstrap/runtime/migrator passwords in two
+persistent **Docker named volumes**, not in `%USERPROFILE%`, WSL
+`~/.config`, or the application env. It then exits before the
+normal DevContainer services start.
 
-From **Ubuntu/WSL**, the existing Windows checkout can be opened through
-its mounted Windows drive without cloning or removing data:
-
-```bash
-cd "/mnt/c/Users/<WindowsUser>/OneDrive/Documents/Application/KAORI"
-python3 --version
-docker info >/dev/null
-code .
-```
-
-Confirm the new editor's Remote indicator says **WSL: Ubuntu**.
-Only then select **Dev Containers: Rebuild and Reopen in Container**.
-If Docker integration is missing, enable Docker Desktop integration for
-Ubuntu; if the WSL Python or `code` command fails, repair that host
-prerequisite before treating this as an application/database failure.
-
-For best filesystem and permissions behavior over time, a separate,
-reviewed move of the repository to a native WSL directory (`~/projects`)
-is preferable to developing directly under a OneDrive-mounted NTFS path.
-**Do not** move or delete an existing checkout, `.env` or volume just to
-retry a failed bootstrap. Removing containers alone does not remove a
-PostgreSQL named volume; verify its identity through the first-run
-runbook. All current scripts remain WSL-host only; Windows-native
-DevContainer initialization has **not** been implemented or certified.
+When Dev Containers reports an error, inspect the **first failing
+command** in the full VS Code Dev Containers log, not only the final
+`Exit code 1`. A clean list of running containers does not prove that
+the named PostgreSQL volumes were deleted; never remove volumes
+automatically as a troubleshooting shortcut.
 
 ## First setup — new DevContainer PostgreSQL volume
 
-1. Open the project from **WSL** in VS Code. The host needs Python 3,
-   Docker/Compose, and the Dev Containers extension. No host virtualenv or
-   manual `docker compose up` is required.
+1. Open the project in **VS Code on Windows** (or another supported
+   Docker-CLI host), with Docker Desktop running Linux containers.
+   No host Python, WSL Remote, host virtualenv or manual
+   `docker compose up` is required.
 2. Optionally copy `.env.example` to ignored `.env` to set your intended
    `ADMIN_EMAIL`, `ADMIN_USERNAME`, or other development configuration
    **before the first application administrator is created**.
@@ -67,17 +49,18 @@ DevContainer initialization has **not** been implemented or certified.
    automatically. It generates a secure runtime `DATABASE_URL`, application
    encryption keys and `ADMIN_PASSWORD` when those have placeholders.
    **Do not copy in real PostgreSQL bootstrap/migrator passwords.**
-3. Choose **Dev Containers → Reopen in Container**. Host
-   `initializeCommand` creates or validates the two external WSL
-   credential files and private `.env`. The normal Compose startup
+3. Choose **Dev Containers → Rebuild and Reopen in Container**. A
+   Docker-based `initializeCommand` creates or validates two isolated
+   secret **Docker volumes** and private `.env`. The normal Compose startup
    automatically creates PostgreSQL, Redis, workspace, ten workers and Beat.
    PostgreSQL creates non-superuser `kaori_migrator` and `kaori_runtime`
    on an empty volume, but does **not** run Alembic or create KAORI admin.
 4. Select **KAORI: Flask Debug** (F5) and open
    `http://localhost:5000/auth/login`. Empty schema should show
    **HTTP 503 Database Setup Required / Initialization Required**.
-5. Copy the bootstrap command on that page, then run it from a **WSL
-   HOST terminal at the repository root**, not from the DevContainer terminal:
+5. Copy the bootstrap command on that page and run it from the **VS Code
+   Windows PowerShell terminal (outside the DevContainer)** at the
+   repository root. The same `docker compose` CLI also works on Linux:
 
    ```bash
    docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
@@ -93,17 +76,16 @@ DevContainer initialization has **not** been implemented or certified.
    watcher, allow **Automatic Tasks** for this trusted workspace;
    otherwise launch **KAORI: Watch Tailwind CSS** from VS Code Tasks.
 
-**Three-file environment contract:**
-`<repo>/.env` (app runtime only, including `DATABASE_URL` as
-`kaori_runtime`), `~/.config/kaori/devcontainer/postgres-bootstrap.env`
-(local PostgreSQL `postgres` + runtime-role setup) and
-`~/.config/kaori/devcontainer/postgres-migrate.env`
-(`kaori_migrator`). The two latter files are generated on the WSL host
-**outside the repository** and must never be mounted into Flask/workers/Beat.
-See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
+**Environment authority:** `<repo>/.env` contains only
+application configuration and the `kaori_runtime` `DATABASE_URL`.
+Two dedicated **Docker volumes** named `kaori-dev-pg-admin-secrets`
+and `kaori-dev-pg-migrator-secrets` store administrator/runtime
+provisioning and migrator credentials separately. Neither is mounted
+into Flask/workspace/Celery/Beat. Only `db` has both volumes;
+`db-bootstrap` gets the migrator one when invoked explicitly.
+Reopen does not create KAORI tables, rotate secrets, or run migration
+automatically. See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
 and [the first-run runbook](operations/devcontainer-postgres-first-run.md).
-Reopening an initialized DevContainer does not re-create accounts, rotate
-secrets, or automatically run schema migrations.
 
 A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend verification before the watcher can work. The `postCreate` lifecycle no longer forces an unconditional global npm upgrade, and `postStart` avoids rebuilding unchanged assets. If lifecycle startup fails, resolve that failure before treating the watcher as ready.
 
@@ -142,7 +124,7 @@ docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml down --r
 
 Do not use plain `docker compose down` to manage the Dev Container. The plain root Compose project is a separate `kaori` boundary; the supported development runtime is `kaori-dev` through the merged files above. Never use `down --volumes` during normal development: a destructive reset requires separate scope and operator authorization.
 
-On a fresh or reset PostgreSQL volume, the workspace remains available immediately, while every Celery worker and Beat waits at the shared database entrypoint until the database reaches the current Alembic migration head. DevContainer creates roles but does not apply Alembic automatically. Press F5 to view **Initialization Required**, then run `docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap` from the WSL host. Workers/Beat remain gated until schema, immutable-ledger grants and first-admin readiness pass. Future schema upgrades use the same one-off service with `sh scripts/devcontainer/bootstrap-db.sh --upgrade-only`, without recreating the administrator.
+On a fresh or reset PostgreSQL volume, the workspace remains available immediately, while every Celery worker and Beat waits at the shared database entrypoint until the database reaches the current Alembic migration head. DevContainer creates roles but does not apply Alembic automatically. Press F5 to view **Initialization Required**, then run `docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap` from Windows PowerShell on the host. Workers/Beat remain gated until schema, immutable-ledger grants and first-admin readiness pass. Future schema upgrades use the same one-off service with `sh scripts/devcontainer/bootstrap-db.sh --upgrade-only`, without recreating the administrator.
 
 Equivalent terminal launch inside the Dev Container:
 
@@ -158,7 +140,7 @@ only after changing the Dockerfile or Python dependency files.
 
 Useful VS Code tasks:
 
-- `KAORI: Database Upgrade` — now fails closed inside the DevContainer; use the guarded WSL-host migrator command
+- `KAORI: Database Upgrade` — now fails closed inside the DevContainer; use the guarded Windows-host PowerShell Docker Compose migrator command
 - `KAORI: Database Current`
 - `KAORI: Ruff Check`
 - `KAORI: djLint Check`
