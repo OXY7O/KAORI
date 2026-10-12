@@ -82,8 +82,14 @@ def _finalize_schedule(
     try:
         run.delivery_result = deliver_generated_report(report, delivery_channel_ids)
     except Exception:
+        # The shared sender may have left a failed SQLAlchemy transaction.
+        # Recover the session before committing separate terminal delivery evidence.
+        db.session.rollback()
         current_app.logger.exception('Scheduled report %s delivery failed.', report.id)
-        run.delivery_result = {
+        recovered_run = db.session.get(ReportScheduleRun, schedule_run_id)
+        if recovered_run is None or recovered_run.report_id != report.id:
+            return
+        recovered_run.delivery_result = {
             'requested': len(delivery_channel_ids),
             'successful': 0,
             'failed': len(delivery_channel_ids),
@@ -91,6 +97,8 @@ def _finalize_schedule(
             'duplicate': 0,
             'results': [],
         }
+        db.session.commit()
+        return
     db.session.commit()
 
 
