@@ -28,7 +28,7 @@
 {% if not runtime_observed %}
     {% set runtime_next_action = "Run Runtime Refresh to establish persisted Harbor health evidence." %}
 {% elif runtime_state.health_status in ["unhealthy", "failed"] %}
-    {% set runtime_next_action = "Restore Harbor endpoint health, refresh runtime evidence, and rerun Full Validation only when identity, compatibility, or authorization changed." %}
+    {% set runtime_next_action = "Restore Harbor health and refresh runtime evidence. Rerun Full Validation only after identity, compatibility, or authorization changes." %}
 {% elif runtime_state.readiness == "degraded" %}
     {% set runtime_next_action = "This provider remains usable with degraded compatibility. Plan an upgrade to a current qualified Harbor release, then rerun Full Validation." %}
 {% elif runtime_state.readiness != "ready" %}
@@ -79,7 +79,7 @@
                 runtime_state.health_score_display if runtime_observed else "N/A",
                 "Persisted Runtime Refresh evidence",
                 runtime_gate_label,
-                "Health gate only; Full Validation readiness remains independent.",
+                "Health gate only; Full Validation remains independent.",
                 runtime_state.readiness,
                 runtime_state.readiness_label,
                 (runtime_state.compatibility_profile or "Compatibility not validated") ~ " · " ~ runtime_state.capability_count ~ " observed capabilities",
