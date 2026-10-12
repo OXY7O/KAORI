@@ -12,7 +12,11 @@ database provisioning procedure and must never be applied to production.
    `docker compose up` is needed.
 2. The **host-side** `initializeCommand` runs
    `.devcontainer/prepare-postgres-env.py` *before* the services start.
-   It creates or aligns the private application `.env` and writes
+   If root `.env` is absent, it copies the committed `.env.example`
+   automatically. It then writes the generated runtime
+   `DATABASE_URL`, application encryption secrets (if missing) and first
+   administrator password (if placeholder) into that private `.env`.
+   It creates or aligns the application `.env` and writes
    `~/.config/kaori/devcontainer/postgres-bootstrap.env` and
    `postgres-migrate.env`, mode 0600, outside the bind-mounted repository.
    The first file holds the PostgreSQL bootstrap and local runtime provisioning
@@ -48,6 +52,63 @@ database provisioning procedure and must never be applied to production.
 6. Refresh the login page, then authenticate using the configured
    `ADMIN_USERNAME` and private `ADMIN_PASSWORD` in `.env`. Do not paste
    the password in issue/PR logs.
+
+## Effective ENV values — what changes after first Reopen
+
+This is the **DevContainer-only** file layout; there is no need to manually
+create an administrative PostgreSQL role or copy privileged passwords into
+the application `.env`:
+
+```text
+<KAORI repository>/.env
+  APP_ENV=development
+  POSTGRES_DB=kaori
+  POSTGRES_USER=postgres              # infrastructure selector, NOT Flask login
+  POSTGRES_PORT=5432
+  DATABASE_URL=postgresql://kaori_runtime:<generated-password>@db:5432/kaori
+  SECRET_KEY=<generated-if-placeholder>
+  INTEGRATION_CREDENTIAL_KEY=<generated-if-empty>
+  ADMIN_USERNAME=admin
+  ADMIN_EMAIL=admin@example.com       # customize before first admin bootstrap
+  ADMIN_PASSWORD=<generated-if-placeholder>
+  REDIS_URL=redis://redis:6379/0
+  CELERY_BROKER_URL=redis://redis:6379/1
+  CELERY_RESULT_BACKEND=redis://redis:6379/3
+
+~/.config/kaori/devcontainer/postgres-bootstrap.env
+  POSTGRES_PASSWORD=<generated-postgres-superuser-password>
+  KAORI_RUNTIME_PASSWORD=<generated-runtime-role-password>
+
+~/.config/kaori/devcontainer/postgres-migrate.env
+  KAORI_MIGRATOR_PASSWORD=<generated-migrator-role-password>
+```
+
+The values in angle brackets above are **descriptions**, not real
+credentials or a file to paste unchanged. The actual passwords are
+generated with cryptographic randomness by the WSL host initializer,
+not committed to GitHub, logged, or sent in chat. A new private
+`.env` is created automatically from `.env.example` if missing.
+If you want to customize `ADMIN_EMAIL`/`ADMIN_USERNAME` or any other
+non-secret settings, you may copy the template **before** first opening.
+Do not change the generated runtime URL while retaining an existing DB
+volume. Do not define `POSTGRES_PASSWORD`, `KAORI_RUNTIME_PASSWORD`,
+`KAORI_MIGRATOR_PASSWORD`, `PGPASSWORD` or
+`KAORI_DB_MIGRATION_URL` inside the application `.env`.
+
+`POSTGRES_DB`, `POSTGRES_USER` and `POSTGRES_PORT` are present in
+the root app file only to provide Compose infrastructure defaults.
+`POSTGRES_USER=postgres` **does not** mean Flask uses `postgres`;
+only the canonical `DATABASE_URL` selects the DB identity used by
+Flask, workers and Beat.
+
+**Who gets the secrets?** The `db` service receives the bootstrap
+and migrator initdb credentials. The explicit one-off `db-bootstrap`
+receives the migrator file and runtime app `.env`. Ordinary
+`workspace`, web, workers and Beat receive neither privileged
+PostgreSQL file. The host files must be `0600` and external
+directory `0700`. Production and external DBA deployments use the
+existing governed split `/etc/kaori/{app,secrets,deploy}.env`
+instead, and **must not** reuse these local credentials.
 
 ## PostgreSQL identities
 
