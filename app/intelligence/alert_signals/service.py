@@ -12,7 +12,6 @@ from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     connection_for_cluster,
 )
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.intelligence.alert_signals.config import alert_signal_freshness_minutes
 from app.models import AlertSignalSnapshot, Cluster
 
@@ -117,11 +116,12 @@ def refresh_kubernetes_runtime_signal(cluster: Cluster) -> AlertSignalSnapshot:
     if not instance.enabled or instance.lifecycle_status != 'active':
         raise RuntimeError('The canonical Kubernetes integration is not active for alert signal evaluation.')
 
+    # The canonical client.build adapter applies approved TLS policy to this
+    # Kubernetes SDK transport. No process-wide cipher override is required.
     client = get_integration('container_orchestrator').execute('client.build', connection)
-    with weak_tls_context(enabled=bool(connection.allow_weak_tls)):
-        core_api = client.core_api()
-        pods = _pod_signal_rows(core_api)
-        nodes = _node_signal_rows(core_api)
+    core_api = client.core_api()
+    pods = _pod_signal_rows(core_api)
+    nodes = _node_signal_rows(core_api)
 
     now = _utcnow()
     snapshot = _get_or_create_snapshot(cluster_id=cluster.id)

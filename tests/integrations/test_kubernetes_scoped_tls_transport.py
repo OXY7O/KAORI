@@ -47,3 +47,14 @@ def test_independent_legacy_clients_never_restore_or_change_global_functions():
         two.rest_client.pool_manager.connection_pool_kw['ssl_context']
     )
     assert urllib3.util.ssl_.create_urllib3_context is original
+
+
+def test_retired_context_import_bridge_never_mutates_process_global_tls():
+    from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
+
+    original = urllib3.util.ssl_.create_urllib3_context
+    connection_original = urllib3.connection.create_urllib3_context
+    with weak_tls_context(enabled=True):
+        assert urllib3.util.ssl_.create_urllib3_context is original
+        assert urllib3.connection.create_urllib3_context is connection_original
+    assert urllib3.util.ssl_.create_urllib3_context is original
