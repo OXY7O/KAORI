@@ -130,6 +130,10 @@ def fleet_statement():
             ai.name.label('alerts_name'),
             mi.readiness_status.label('metrics_readiness'),
             ai.readiness_status.label('alerts_readiness'),
+            mi.enabled.label('metrics_source_enabled'),
+            ai.enabled.label('alerts_source_enabled'),
+            mi.lifecycle_status.label('metrics_source_lifecycle'),
+            ai.lifecycle_status.label('alerts_source_lifecycle'),
             mb.validation_status.label('metrics_binding_validation'),
             ab.validation_status.label('alerts_binding_validation'),
             metrics_source.label('metrics_source_status'),
@@ -166,17 +170,21 @@ def fleet_stats(fleet: Any) -> dict[str, int]:
             present(fleet.c.metrics_id.is_not(None)).label('metrics_source_configured'),
             present(and_(
                 fleet.c.metrics_id.is_not(None),
-                fleet.c.metrics_source_status == 'ready',
+                fleet.c.metrics_readiness == 'ready',
+                fleet.c.metrics_source_enabled.is_(True),
+                fleet.c.metrics_source_lifecycle == 'active',
             )).label('metrics_source_ready'),
             present(fleet.c.metrics_binding_validation == 'ready').label('metrics_binding_ready'),
-            present(fleet.c.metrics_coverage_status == 'ready').label('metrics_source_operational'),
+            present(fleet.c.metrics_source_status == 'ready').label('metrics_source_operational'),
             present(fleet.c.alertmanager_id.is_not(None)).label('alertmanager_configured'),
             present(and_(
                 fleet.c.alertmanager_id.is_not(None),
-                fleet.c.alert_source_status == 'ready',
+                fleet.c.alerts_readiness == 'ready',
+                fleet.c.alerts_source_enabled.is_(True),
+                fleet.c.alerts_source_lifecycle == 'active',
             )).label('alertmanager_source_ready'),
             present(fleet.c.alerts_binding_validation == 'ready').label('alertmanager_binding_ready'),
-            present(fleet.c.alerts_coverage_status == 'ready').label('alertmanager_operational'),
+            present(fleet.c.alert_source_status == 'ready').label('alertmanager_operational'),
         ).select_from(fleet)
     ).mappings().one()
     stats = {name: int(value or 0) for name, value in result.items()}
