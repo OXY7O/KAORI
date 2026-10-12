@@ -120,7 +120,9 @@ def get_report_object_storage_analysis_payload(report: Report) -> dict[str, Any]
         system_id=system_id, time_range=report.period or '30d'
     )
     if snapshot_payload is None:
-        return {'_error': 'Object Storage analytics evidence is unavailable or expired; refresh materialization first.'}
+        return {
+            '_error': 'Object Storage analytics evidence is unavailable or expired; refresh materialization first.'
+        }
     shared_snapshot = (snapshot_payload, snapshot_state)
     overview = get_object_storage_analytics_context('overview', args, committed_snapshot=shared_snapshot)
     performance = get_object_storage_analytics_context('performance', args, committed_snapshot=shared_snapshot)
@@ -143,7 +145,9 @@ def get_report_object_storage_analysis_payload(report: Report) -> dict[str, Any]
     if snapshot_state.get('stale'):
         source_status['label'] = 'Stale'
         source_status['status'] = 'Stale'
-        source_status['description'] = 'Latest committed analytics evidence is stale; refresh before relying on current posture.'
+        source_status['description'] = (
+            'Latest committed analytics evidence is stale; refresh before relying on current posture.'
+        )
     now = datetime.now(UTC)
 
     return {
