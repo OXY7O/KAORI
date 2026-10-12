@@ -146,3 +146,7 @@ Canonical Report JobExecution `integration_type` and `integration_instance_id` c
 ### Generate report naming boundary (#1545)
 
 Operator report names are optional, trimmed, and bounded at 255 Unicode code points before report persistence to match `Report.name`'s existing VARCHAR(255) contract. Over-limit names render actionable validation feedback. The wizard input uses the corresponding HTML maxlength as convenience only; server-side checks remain authoritative. No schema migration is necessary.
+
+### Generated Reports Registry scope identity (#1555)
+
+Registry's generic scope filter includes active IntegrationInstance Registry options through `get_active_registry_options()`, alongside Kubernetes and Object Storage. Each persisted report's immutable scope label snapshot remains authoritative for historical presentation even when an integration is unavailable; absent snapshots use a safe Registry Integration ID fallback without per-row provider or IntegrationInstance lookups. Registry rows/detail display `Artifact Registry` / `Integration Scope`, not Kubernetes/namespace metadata. Scope filters remain server-side committed SQL.

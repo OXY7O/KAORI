@@ -30,8 +30,10 @@ from app.reports.catalog import REPORT_TYPE_SPECS
 from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.generate.service import REPORT_TYPE_OPTIONS
 from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    get_active_registry_options,
     resolve_report_scope,
 )
 from app.reports.storage.service import (
@@ -655,6 +657,15 @@ def _get_period_start_date(
     return None
 
 
+def get_generated_scope_labels(asset_type: str, namespace: str | None) -> tuple[str, str]:
+    """Reuse domain-first scope identities without Kubernetes fallback for Registry."""
+    if asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        return 'Artifact Registry', 'Integration Scope'
+    if asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        return 'Object Storage System', 'System Scope'
+    return 'Kubernetes Cluster', namespace or 'All Namespaces'
+
+
 def _serialize_report(
     report: Report,
     cluster_map: dict[str, str],
@@ -690,20 +701,18 @@ def _serialize_report(
         active_backend_status.get('write_available', False)
     )
     can_download_artifact = report.status in ['ready', 'archived'] and bool(report.file_path) and file_exists
-    scope = resolve_report_scope(report)
     scope_asset_type = str(getattr(report, 'scope_asset_type', '') or '')
-    scope_label = (
-        'Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Kubernetes Cluster'
-    )
+    # Registry reports carry a committed label snapshot: avoid a per-row IntegrationInstance lookup.
+    scope = resolve_report_scope(report) if scope_asset_type != ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else None
+    scope_label, secondary_scope = get_generated_scope_labels(scope_asset_type, report.namespace)
     scope_value = (
-        scope.label
-        if scope is not None
-        else (getattr(report, 'scope_asset_label_snapshot', None) or 'Asset Selection Missing')
-    )
-    secondary_scope = (
-        'System Scope'
-        if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-        else (report.namespace or 'All Namespaces')
+        str(getattr(report, 'scope_asset_label_snapshot', '') or '').strip()
+        or (scope.label if scope is not None else '')
+        or (
+            f"Registry Integration {getattr(report, 'scope_asset_id', '')}"
+            if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE
+            else 'Asset Selection Missing'
+        )
     )
 
     return {
@@ -1424,6 +1433,14 @@ def _get_scope_options() -> list[dict[str, str]]:
             {
                 'value': f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{system.id}',
                 'label': f'Object Storage · {system.name}',
+            }
+        )
+
+    for instance in get_active_registry_options():
+        options.append(
+            {
+                'value': f"{ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}:{instance['value']}",
+                'label': f"Artifact Registry · {instance['label']}",
             }
         )
 
