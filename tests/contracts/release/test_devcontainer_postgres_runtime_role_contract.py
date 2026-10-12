@@ -134,7 +134,8 @@ def test_fresh_bootstrap_contract_reuses_owner_only_migration_and_scoped_reset()
     assert 'down -v' in guide
     assert 'redis' in guide.lower() and 'DBSIZE' in guide
     assert 'KAORI_DB_MIGRATION_URL' in init
-    assert '"KAORI_DB_MIGRATION_URL": owner_url' in guide
+    assert 'KAORI_DB_MIGRATION_URL' in guide
+    assert 'scripts.devcontainer.initialize_database' in guide
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in init
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in compose
     assert 'DATABASE_URL=postgresql://kaori_runtime:' in EXAMPLE.read_text()
@@ -145,8 +146,9 @@ def test_fresh_bootstrap_documents_existing_read_only_first_run_view() -> None:
     assert 'Database Setup Required' in guide
     assert 'HTTP 503' in guide
     assert "to_regclass('public.users') IS NULL" in guide
-    assert 'CREATE ROLE kaori_runtime' in guide
-    assert 'no application table grants' in guide
+    assert 'db-role-bootstrap' in guide
+    assert 'kaori|t|t|t' in guide
+    assert 'does **not** create schema, grant application' in guide
 
 
 def test_post_create_guides_transient_owner_bootstrap_for_empty_database() -> None:
@@ -154,3 +156,56 @@ def test_post_create_guides_transient_owner_bootstrap_for_empty_database() -> No
     assert 'docs/operations/devcontainer-postgres-fresh-bootstrap.md' in post_create
     assert 'KAORI_DB_MIGRATION_URL' in post_create
     assert 'Run "bash scripts/init_db.sh --bootstrap-admin"' not in post_create
+
+
+def test_devcontainer_first_open_automatically_admits_non_owner_login() -> None:
+    import json
+
+    devcontainer = json.loads((ROOT / '.devcontainer' / 'devcontainer.json').read_text())
+    compose = COMPOSE.read_text()
+    services = _services(compose)
+    bootstrap = (ROOT / 'scripts' / 'devcontainer' / 'bootstrap_runtime_role.py').read_text()
+    assert 'db-role-bootstrap' in devcontainer['runServices']
+    assert 'db-role-bootstrap' in services
+    assert 'scripts.devcontainer.bootstrap_runtime_role' in services['db-role-bootstrap']
+    assert 'restart: "no"' in services['db-role-bootstrap']
+    assert 'condition: service_healthy' in services['db-role-bootstrap']
+    assert 'CREATE ROLE' in bootstrap
+    assert 'KAORI_DB_MIGRATION_URL' in bootstrap
+    assert 'to_regclass(\'public.alembic_version\')' in bootstrap
+    assert 'existing application role has elevated attributes' in bootstrap
+    assert 'runtime and owner secrets must differ' in bootstrap
+    assert 'GRANT USAGE ON SCHEMA' in bootstrap
+    assert 'flask --app run:app db upgrade' not in bootstrap
+    assert 'scripts.init_db' not in bootstrap
+
+    for service in (
+        'workspace', 'inventory-worker', 'registry-security-worker',
+        'maintenance-worker', 'runtime-worker', 'validation-worker',
+        'analytics-worker', 'reports-worker', 'forecasting-worker',
+        'resolver-execution-worker', 'resolver-maintenance-worker', 'beat',
+    ):
+        assert 'db-role-bootstrap:' in services[service]
+        assert 'condition: service_completed_successfully' in services[service]
+
+
+def test_devcontainer_first_database_initialization_is_one_explicit_safe_vscode_task() -> None:
+    import json
+
+    tasks = json.loads((ROOT / '.vscode' / 'tasks.json').read_text())['tasks']
+    chosen = {task['label']: task['command'] for task in tasks}
+    assert chosen['KAORI: Initialize Fresh Database'] == (
+        'python -m scripts.devcontainer.initialize_database --bootstrap-admin'
+    )
+    assert chosen['KAORI: Database Upgrade'] == 'python -m scripts.devcontainer.initialize_database'
+    assert chosen['KAORI: Bootstrap Admin'] == chosen['KAORI: Initialize Fresh Database']
+    assert chosen['KAORI: Seed RBAC'] == chosen['KAORI: Database Upgrade']
+    initializer = (ROOT / 'scripts' / 'devcontainer' / 'initialize_database.py').read_text()
+    assert "['sh', 'scripts/init_db.sh'" in initializer
+    assert "'KAORI_DB_MIGRATION_URL': migration_url" in initializer
+    assert "'PGAPPNAME': 'kaori-devcontainer-role-provision'" in initializer
+    assert 'provision_postgres_runtime_role.sql' in initializer
+    assert '_require_postgres_ledger_write_once_guards(db.session)' in initializer
+    assert 'DATABASE_URL' in initializer
+    assert 'flask --app run:app db upgrade' not in chosen.values()
+    assert 'kaori_runtime' in initializer
