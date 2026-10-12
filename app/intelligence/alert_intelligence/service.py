@@ -3,10 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from sqlalchemy import and_, case, func, or_
+from sqlalchemy.orm import selectinload
 from werkzeug.datastructures import MultiDict
 
 from app.common.alert_case_source_state import is_active_alert_case
-from app.common.pagination import paginate_sequence
+from app.common.pagination import paginate_query, paginate_sequence
 from app.integrations.delivery.notification_channels.service import notification_channel_summary
 from app.intelligence.alert_intelligence.lifecycle import active_delivery_silence
 from app.intelligence.alert_intelligence.notifications import case_delivery_rows
@@ -62,27 +64,64 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     routing_status = _choice(args.get('routing_status'), _VALID_ROUTING_STATUSES, 'all')
 
     scoped_cases = [] if scope_invalid else _case_rows(domain=domain, asset_key=selected_asset_key)
-    active_cases = [
-        row for row in scoped_cases if is_active_alert_case(row)
-    ]
-    history_cases = [row for row in scoped_cases if row.source_state == 'resolved' or row.workflow_state == 'closed']
-    filtered_active = _filter_cases(
-        active_cases, severity=severity, workflow=workflow, source_type=source_type, search=search
-    )
-    filtered_history = _filter_cases(
-        history_cases, severity=severity, workflow='all', source_type=source_type, search=search
-    )
-    active_page, active_pagination = paginate_sequence(
-        [_serialize_case(row) for row in filtered_active],
-        page=args.get('page', 1),
-        per_page=args.get('per_page', 5),
-    )
-    history_page, history_pagination = paginate_sequence(
-        [_serialize_case(row) for row in filtered_history],
-        page=args.get('history_page', 1),
-        per_page=args.get('history_per_page', 5),
-    )
-    selected_case = _selected_case(args.get('case'), scoped_cases)
+    if isinstance(scoped_cases, list):
+        # Minimal compatibility for deterministic source fixtures. Production
+        # uses the SQL query branch below and does not hydrate the whole estate.
+        active_cases = [row for row in scoped_cases if is_active_alert_case(row)]
+        history_cases = [
+            row for row in scoped_cases if row.source_state == 'resolved' or row.workflow_state == 'closed'
+        ]
+        filtered_active = _filter_cases(
+            active_cases, severity=severity, workflow=workflow, source_type=source_type, search=search,
+        )
+        filtered_history = _filter_cases(
+            history_cases, severity=severity, workflow='all', source_type=source_type, search=search,
+        )
+        active_page, active_pagination = paginate_sequence(
+            [_serialize_case(row) for row in filtered_active],
+            page=args.get('page', 1), per_page=args.get('per_page', 5),
+        )
+        history_page, history_pagination = paginate_sequence(
+            [_serialize_case(row) for row in filtered_history],
+            page=args.get('history_page', 1), per_page=args.get('history_per_page', 5),
+        )
+        selected_case = _selected_case(args.get('case'), scoped_cases)
+        metrics = _case_counts_from_rows(active_cases, history_cases)
+    else:
+        active = scoped_cases.filter(
+            AlertCase.source_state.in_(('firing', 'unknown')),
+            AlertCase.workflow_state != 'closed',
+        )
+        historical = scoped_cases.filter(
+            or_(AlertCase.source_state == 'resolved', AlertCase.workflow_state == 'closed')
+        )
+        filtered_active = _filter_case_query(
+            active, severity=severity, workflow=workflow, source_type=source_type, search=search,
+        )
+        filtered_history = _filter_case_query(
+            historical, severity=severity, workflow='all', source_type=source_type, search=search,
+        )
+        active_rows, active_pagination = paginate_query(
+            filtered_active.options(selectinload(AlertCase.owner)),
+            page=args.get('page', 1), per_page=args.get('per_page', 5),
+        )
+        history_rows, history_pagination = paginate_query(
+            filtered_history.options(selectinload(AlertCase.owner)),
+            page=args.get('history_page', 1), per_page=args.get('history_per_page', 5),
+        )
+        silences_by_case = _page_silences([*active_rows, *history_rows])
+        active_page = [
+            _serialize_case(row, silence=silences_by_case.get(row.id)) for row in active_rows
+        ]
+        history_page = [
+            _serialize_case(row, silence=silences_by_case.get(row.id)) for row in history_rows
+        ]
+        selected_public_id = str(args.get('case') or '').strip()
+        selected_case = (
+            scoped_cases.filter(AlertCase.public_id == selected_public_id).first()
+            if selected_public_id else None
+        )
+        metrics = _case_counts_from_query(scoped_cases)
     snapshot = _snapshot_context(domain=domain, asset_key=selected_asset_key)
     if scope_invalid:
         snapshot = {**snapshot, 'available': False, 'label': 'Registry Scope Unavailable', 'tone': 'warning'}
@@ -130,24 +169,11 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'tab': tab,
         'snapshot': snapshot,
         'summary': {
-            'active': len(active_cases),
-            'critical': sum(case.severity == 'critical' and case.source_state == 'firing' for case in active_cases),
-            'source_unknown': sum(case.source_state == 'unknown' for case in active_cases),
-            'acknowledged': sum(case.workflow_state == 'acknowledged' for case in active_cases),
+            **metrics,
             'silenced': len(active_silences),
-            'verification_pending': sum(case.workflow_state == 'verification_pending' for case in history_cases),
-            'resolved_today': sum(
-                bool(case.source_resolved_at and _as_utc(case.source_resolved_at) >= now - timedelta(days=1))
-                for case in history_cases
-            ),
-            'resolved_total': len(history_cases),
-            'closed': sum(case.workflow_state == 'closed' for case in history_cases),
-            'false_positive': sum(case.closure_reason == 'false_positive' for case in history_cases),
-            'accepted_risk': sum(case.closure_reason == 'accepted_risk' for case in history_cases),
             'delivery_failures': (
                 0 if scope_invalid else _delivery_failure_count(domain=domain, asset_key=selected_asset_key)
             ),
-            'postmortem_required': sum(case.postmortem_status in {'required', 'draft'} for case in history_cases),
             'routing_policies': len(all_routing),
             'channels': channel_summary.get('eligible', 0),
         },
@@ -212,15 +238,98 @@ def list_active_alert_events() -> list[dict[str, Any]]:
     ]
 
 
-def _case_rows(*, domain: str, asset_key: str) -> list[AlertCase]:
+def _case_rows(*, domain: str, asset_key: str):
+    """Return a scoped SQL query; pagination and aggregates execute in SQL."""
     query = AlertCase.query.filter(
         AlertCase.domain == domain,
         AlertCase.source_type == 'recommendation',
     )
     if asset_key != 'all':
         query = query.filter(AlertCase.asset_key == asset_key)
-    return query.order_by(AlertCase.first_seen_at.desc(), AlertCase.id.desc()).all()
+    return query.order_by(AlertCase.first_seen_at.desc(), AlertCase.id.desc())
 
+
+def _filter_case_query(query, *, severity: str, workflow: str, source_type: str, search: str):
+    if severity != 'all':
+        query = query.filter(AlertCase.severity == severity)
+    if workflow != 'all':
+        query = query.filter(AlertCase.workflow_state == workflow)
+    if source_type != 'all':
+        query = query.filter(AlertCase.source_type == source_type)
+    if search:
+        pattern = f'%{search.replace("%", r"\\%").replace("_", r"\\_")}%'
+        query = query.filter(or_(
+            AlertCase.public_id.ilike(pattern, escape='\\'),
+            AlertCase.alert_name.ilike(pattern, escape='\\'),
+            AlertCase.asset_name.ilike(pattern, escape='\\'),
+            AlertCase.namespace.ilike(pattern, escape='\\'),
+            AlertCase.summary.ilike(pattern, escape='\\'),
+            AlertCase.source_ref.ilike(pattern, escape='\\'),
+            AlertCase.rule_key.ilike(pattern, escape='\\'),
+        ))
+    return query
+
+
+def _case_counts_from_rows(active_cases, history_cases) -> dict[str, int]:
+    now = datetime.now(UTC)
+    return {
+        'active': len(active_cases),
+        'critical': sum(row.severity == 'critical' and row.source_state == 'firing' for row in active_cases),
+        'source_unknown': sum(row.source_state == 'unknown' for row in active_cases),
+        'acknowledged': sum(row.workflow_state == 'acknowledged' for row in active_cases),
+        'verification_pending': sum(row.workflow_state == 'verification_pending' for row in history_cases),
+        'resolved_today': sum(
+            bool(row.source_resolved_at and _as_utc(row.source_resolved_at) >= now - timedelta(days=1))
+            for row in history_cases
+        ),
+        'resolved_total': len(history_cases),
+        'closed': sum(row.workflow_state == 'closed' for row in history_cases),
+        'false_positive': sum(row.closure_reason == 'false_positive' for row in history_cases),
+        'accepted_risk': sum(row.closure_reason == 'accepted_risk' for row in history_cases),
+        'postmortem_required': sum(row.postmortem_status in {'required', 'draft'} for row in history_cases),
+    }
+
+
+def _case_counts_from_query(query) -> dict[str, int]:
+    active = and_(AlertCase.source_state.in_(('firing', 'unknown')), AlertCase.workflow_state != 'closed')
+    historical = or_(AlertCase.source_state == 'resolved', AlertCase.workflow_state == 'closed')
+    conditions = (
+        active,
+        and_(active, AlertCase.severity == 'critical', AlertCase.source_state == 'firing'),
+        and_(active, AlertCase.source_state == 'unknown'),
+        and_(active, AlertCase.workflow_state == 'acknowledged'),
+        and_(historical, AlertCase.workflow_state == 'verification_pending'),
+        and_(historical, AlertCase.source_resolved_at >= datetime.now(UTC) - timedelta(days=1)),
+        historical,
+        and_(historical, AlertCase.workflow_state == 'closed'),
+        and_(historical, AlertCase.closure_reason == 'false_positive'),
+        and_(historical, AlertCase.closure_reason == 'accepted_risk'),
+        and_(historical, AlertCase.postmortem_status.in_(('required', 'draft'))),
+    )
+    values = query.order_by(None).with_entities(
+        *(func.sum(case((condition, 1), else_=0)) for condition in conditions)
+    ).one()
+    keys = (
+        'active', 'critical', 'source_unknown', 'acknowledged', 'verification_pending',
+        'resolved_today', 'resolved_total', 'closed', 'false_positive', 'accepted_risk',
+        'postmortem_required',
+    )
+    return dict(zip(keys, (int(value or 0) for value in values), strict=True))
+
+
+def _page_silences(rows: list[AlertCase]) -> dict[int, AlertSilence]:
+    if not rows:
+        return {}
+    now = datetime.now(UTC)
+    result: dict[int, AlertSilence] = {}
+    for silence in AlertSilence.query.filter(
+        AlertSilence.case_id.in_([row.id for row in rows]),
+        AlertSilence.starts_at <= now,
+        AlertSilence.ends_at > now,
+        AlertSilence.revoked_at.is_(None),
+    ).order_by(AlertSilence.ends_at.desc()).all():
+        result.setdefault(int(silence.case_id), silence)
+    return result
 
 def _filter_cases(
     cases: list[AlertCase],
@@ -258,8 +367,7 @@ def _filter_cases(
     return rows
 
 
-def _serialize_case(case: AlertCase) -> dict[str, Any]:
-    silence = active_delivery_silence(case)
+def _serialize_case(case: AlertCase, *, silence: AlertSilence | None = None) -> dict[str, Any]:
     duration_end = case.closed_at or case.source_resolved_at or datetime.now(UTC)
     duration_seconds = max(int((_as_utc(duration_end) - _as_utc(case.first_seen_at)).total_seconds()), 0)
     owner = case.owner
@@ -496,6 +604,7 @@ def _active_silence_rows(
     now = datetime.now(UTC)
     query = AlertSilence.query.join(AlertCase, AlertCase.id == AlertSilence.case_id).filter(
         AlertCase.domain == domain,
+        AlertCase.source_type == 'recommendation',
         AlertSilence.starts_at <= now,
         AlertSilence.ends_at > now,
         AlertSilence.revoked_at.is_(None),
@@ -577,6 +686,7 @@ def _delivery_failure_count(*, domain: str, asset_key: str) -> int:
         NotificationDelivery.event_type.in_(('alert_ops.firing', 'alert_ops.resolved')),
         NotificationDelivery.domain == domain,
         NotificationDelivery.status == 'failed',
+        NotificationDelivery.updated_at >= datetime.now(UTC) - timedelta(days=1),
     )
     if asset_key != 'all':
         query = query.filter(NotificationDelivery.asset_key == asset_key)
