@@ -202,3 +202,37 @@ def test_application_env_symlink_is_rejected(tmp_path: Path) -> None:
     state['APP_ENV'].symlink_to(redirect)
     with pytest.raises(SystemExit, match='application .env must not be a symlink'):
         main()
+
+
+@pytest.mark.parametrize(
+    'invalid_key',
+    [
+        'KAORI_MIGRATOR_PASSWORD',
+        'KAORI_RUNTIME_PASSWORD',
+        'KAORI_DB_MIGRATION_URL',
+        'PGPASSWORD',
+        'POSTGRES_PASSWORD_FILE',
+    ],
+)
+def test_shared_application_env_rejects_database_authority(
+    tmp_path: Path, invalid_key: str,
+) -> None:
+    main, state = _initialization(tmp_path, volume_exists={'value': False})
+    app_env = state['APP_ENV']
+    app_env.write_text(
+        f'APP_ENV=development\n{invalid_key}=not-an-application-password\n',
+        encoding='utf-8',
+    )
+    with pytest.raises(SystemExit, match=f'{invalid_key} must not be stored'):
+        main()
+    assert not state['DB_SECRETS'].exists()
+    assert not state['MIGRATOR_SECRETS'].exists()
+
+
+def test_host_initializer_refuses_non_development_application_env(tmp_path: Path) -> None:
+    main, state = _initialization(tmp_path, volume_exists={'value': False})
+    state['APP_ENV'].write_text('APP_ENV=production\n', encoding='utf-8')
+    with pytest.raises(SystemExit, match='only authorized for APP_ENV=development'):
+        main()
+    assert not state['DB_SECRETS'].exists()
+    assert not state['MIGRATOR_SECRETS'].exists()
