@@ -8,6 +8,11 @@ if [ -z "${KAORI_DB_MIGRATION_URL:-}" ]; then
     exit 1
 fi
 
+if [ "${1:-}" != "--schema-only" ]; then
+    echo 'ABORT: Alembic-only entrypoint. Use the controlled db-bootstrap service for grants and application administrator.' >&2
+    exit 2
+fi
+
 python - <<'PY'
 import os
 import sys
@@ -38,20 +43,4 @@ PY
 
 DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app db upgrade
 
-case "${1:-}" in
-    --schema-only)
-        echo 'Schema upgraded; runtime grants and application administrator bootstrap are still required.'
-        ;;
-    --bootstrap-admin)
-        # For backward-compatible operator use, the one-shot runner should be preferred:
-        # it refreshes restricted grants before creating an administrator under runtime.
-        DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app bootstrap-admin
-        ;;
-    "")
-        DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app seed-rbac
-        ;;
-    *)
-        echo 'Usage: scripts/init_db.sh [--schema-only|--bootstrap-admin]' >&2
-        exit 2
-        ;;
-esac
+echo 'PASS: Alembic schema upgraded by kaori_migrator; application role grants and admin are not yet applied.'
