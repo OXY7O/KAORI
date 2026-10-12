@@ -245,6 +245,222 @@ if (canvas && form) {
     previous.addEventListener('click', () => { listPage -= 1; renderList() })
     next.addEventListener('click', () => { listPage += 1; renderList() })
 
+    // Match Kubernetes Inventory Topology's small domain badge + external label
+    // instead of long centered text inside oversized rectangle nodes.
+    const visualDomains = {
+        artifact: 'configuration',
+        cluster: 'scope',
+        namespace: 'scope',
+        workload: 'compute',
+        pod: 'compute',
+    }
+    const glyphs = { artifact: 'AR', cluster: 'CL', namespace: 'NS', workload: 'WL', pod: 'PD' }
+    const badgeCache = new Map()
+    const nodeVisual = (type) => {
+        const domain = visualDomains[type] || 'compute'
+        return {
+            fill: token(`--kaori-topology-domain-${domain}-fill`, 'Canvas'),
+            border: token(`--kaori-topology-domain-${domain}-border`, 'CanvasText'),
+            text: token(`--kaori-topology-domain-${domain}-text`, 'CanvasText'),
+        }
+    }
+    const nodeTone = (data) => {
+        if (data.type !== 'artifact') return 'unknown'
+        if (Number(data.critical) > 0) return 'critical'
+        if (Number(data.high) > 0) return 'warning'
+        // A scan with zero high findings is not evidence of healthy runtime.
+        return 'unknown'
+    }
+    const badgeImage = (data) => {
+        const visual = nodeVisual(data.type)
+        const tone = nodeTone(data)
+        const statusColor = token(`--kaori-status-${tone === 'critical' ? 'critical' : tone === 'warning' ? 'warning' : 'unknown'}`, 'CanvasText')
+        const outline = token('--kaori-surface-card', 'Canvas')
+        const glyph = glyphs[data.type] || 'RS'
+        const key = [data.type, tone, visual.text, statusColor, outline].join(':')
+        if (badgeCache.has(key)) return badgeCache.get(key)
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="52" viewBox="0 0 96 52"><text x="48" y="32" text-anchor="middle" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="${visual.text}">${glyph}</text><circle cx="84" cy="10" r="5" fill="${statusColor}" stroke="${outline}" stroke-width="2"/></svg>`
+        const result = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+        badgeCache.set(key, result)
+        return result
+    }
+    const displayLabel = (value) => {
+        const label = String(value || 'Not Reported')
+        return label.length > 30 ? `${label.slice(0, 29)}…` : label
+    }
+    const graphStyle = () => {
+        const surface = token('--kaori-surface-card', 'Canvas')
+        const foreground = token('--kaori-content-primary', 'CanvasText')
+        const contains = token('--kaori-topology-edge-contains', 'CanvasText')
+        const owns = token('--kaori-topology-edge-owns', 'CanvasText')
+        const uses = token('--kaori-topology-edge-uses', 'CanvasText')
+        const warningColor = token('--kaori-status-warning', 'CanvasText')
+        return [
+            {
+                selector: 'node',
+                style: {
+                    'background-color': (node) => nodeVisual(node.data('type')).fill,
+                    'border-color': (node) => nodeVisual(node.data('type')).border,
+                    'border-width': 2,
+                    shape: 'round-rectangle',
+                    height: 44,
+                    width: 76,
+                    padding: 0,
+                    'background-image': (node) => badgeImage(node.data()),
+                    'background-width': '100%',
+                    'background-height': '100%',
+                    'background-position-x': '50%',
+                    'background-position-y': '50%',
+                    'background-repeat': 'no-repeat',
+                    'background-fit': 'none',
+                    'background-image-containment': 'inside',
+                    label: labelsToggle.checked ? 'data(display_label)' : '',
+                    color: foreground,
+                    'font-family': 'Inter, sans-serif',
+                    'font-size': 10,
+                    'font-weight': 600,
+                    'text-valign': 'bottom',
+                    'text-halign': 'center',
+                    'text-justification': 'center',
+                    'text-wrap': 'ellipsis',
+                    'text-max-width': 195,
+                    'text-margin-y': 11,
+                    'text-background-color': surface,
+                    'text-background-opacity': 0.94,
+                    'text-background-padding': 3,
+                    'text-background-shape': 'roundrectangle',
+                    'text-border-color': token('--kaori-outline-subtle', 'GrayText'),
+                    'text-border-width': 1,
+                    'text-border-opacity': 0.8,
+                    'overlay-opacity': 0,
+                    'shadow-blur': 10,
+                    'shadow-color': foreground,
+                    'shadow-offset-x': 0,
+                    'shadow-offset-y': 3,
+                    'shadow-opacity': 0.1,
+                },
+            },
+            {
+                selector: 'node[type = "artifact"]',
+                style: { width: 96, height: 52, 'font-size': 11, 'font-weight': 700 },
+            },
+            {
+                selector: 'node[type = "cluster"]',
+                style: { width: 92, height: 48, 'font-weight': 700 },
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'curve-style': 'bezier',
+                    'line-color': (edge) => {
+                        const kind = edge.data('relationship')
+                        if (kind === 'contains') return contains
+                        if (kind === 'owns') return owns
+                        return ['medium', 'mixed'].includes(edge.data('confidence')) ? warningColor : uses
+                    },
+                    'line-opacity': 0.78,
+                    'line-style': (edge) => edge.data('relationship') === 'contains' ? 'dashed' : 'solid',
+                    'target-arrow-shape': (edge) => edge.data('relationship') === 'contains' ? 'none' : 'triangle',
+                    'target-arrow-color': (edge) => {
+                        if (edge.data('relationship') === 'owns') return owns
+                        return ['medium', 'mixed'].includes(edge.data('confidence')) ? warningColor : uses
+                    },
+                    'arrow-scale': 0.78,
+                    width: 2,
+                    label: (edge) => {
+                        if (!edgeLabelsToggle.checked && payload.edges.length > 8) return ''
+                        return edge.data('relationship') === 'runtime_usage'
+                            ? 'uses artifact' : edge.data('relationship') === 'owns' ? 'owns' : 'contains'
+                    },
+                    'font-family': 'Inter, sans-serif',
+                    'font-size': 9,
+                    'font-weight': 600,
+                    color: foreground,
+                    'text-rotation': 'none',
+                    'text-background-color': surface,
+                    'text-background-opacity': 0.96,
+                    'text-background-padding': 3,
+                    'text-background-shape': 'roundrectangle',
+                    'text-border-color': token('--kaori-outline-subtle', 'GrayText'),
+                    'text-border-width': 1,
+                    'text-border-opacity': 0.7,
+                    'overlay-opacity': 0,
+                },
+            },
+            { selector: 'node:selected', style: { 'border-width': 3, 'border-color': token('--kaori-brand-primary', 'CanvasText') } },
+            { selector: '.kaori-topology-muted', style: { opacity: 0.16 } },
+        ]
+    }
+    const layoutOptions = () => {
+        const displayed = cy ? cy.nodes(':visible').length : payload.nodes.length
+        if (layoutSelect.value === 'dependency') {
+            return {
+                name: 'cose',
+                animate: 'end',
+                animationDuration: 420,
+                fit: true,
+                nodeDimensionsIncludeLabels: true,
+                padding: 80,
+                idealEdgeLength: 175,
+                nodeRepulsion: 620000,
+                gravity: 0.3,
+                componentSpacing: 145,
+                numIter: 1200,
+                randomize: false,
+            }
+        }
+        return {
+            name: 'breadthfirst',
+            directed: true,
+            circle: false,
+            grid: true,
+            roots: cy.nodes('[type = "artifact"]').filter(':visible'),
+            animate: false,
+            nodeDimensionsIncludeLabels: true,
+            padding: displayed <= 8 ? 72 : 64,
+            spacingFactor: displayed <= 8 ? 1.18 : displayed <= 35 ? 1.48 : 1.88,
+            // Rotate hierarchy into a left-to-right reading flow. A single
+            // artifact should not consume 38rem as a vertical five-node stick.
+            transform: (_node, position) => ({ x: position.y, y: position.x }),
+        }
+    }
+    const fitGraph = () => {
+        if (!cy || !cy.nodes(':visible').length || view !== 'graph') return
+        cy.resize()
+        const rect = canvas.getBoundingClientRect()
+        if (rect.width < 120 || rect.height < 120) return
+        const nodes = cy.nodes(':visible')
+        const edges = cy.edges(':visible')
+        const bbox = nodes.union(edges).boundingBox({ includeLabels: true, includeOverlays: false })
+        const padding = Math.max(48, Math.min(88, Math.round(Math.min(rect.width, rect.height) * 0.08)))
+        cy.fit(bbox, padding)
+        // Cap over-magnification of small graphs while keeping them centered.
+        if (cy.zoom() > 1.6) cy.zoom({ level: 1.6, renderedPosition: { x: rect.width / 2, y: rect.height / 2 } })
+        cy.center(nodes)
+    }
+    const applyVisibility = () => {
+        if (!cy) return
+        const enabled = Object.fromEntries(resourceToggles.map((toggle) => [toggle.dataset.registryTopologyType, toggle.checked]))
+        cy.nodes().forEach((node) => node.style('display', enabled[node.data('type')] ? 'element' : 'none'))
+        cy.edges().forEach((edge) => {
+            const included = enabled[edge.source().data('type')] && enabled[edge.target().data('type')]
+            edge.style('display', included ? 'element' : 'none')
+        })
+    }
+    const runLayout = () => {
+        if (!cy) return
+        applyVisibility()
+        const visible = cy.elements(':visible')
+        if (!visible.nodes().length) return
+        const layout = visible.layout(layoutOptions())
+        layout.one('layoutstop', () => {
+            window.requestAnimationFrame(() => {
+                fitGraph()
+                window.setTimeout(fitGraph, 130)
+            })
+        })
+        layout.run()
+    }
     const renderGraph = async () => {
         if (!renderer) {
             const module = await import(canvas.dataset.rendererUrl)
@@ -252,88 +468,47 @@ if (canvas && form) {
             if (typeof renderer !== 'function') throw new Error('Cytoscape module is unavailable')
         }
         if (cy) cy.destroy()
-        const colors = {
-            artifact: token('--kaori-topology-domain-configuration-border', 'CanvasText'),
-            cluster: token('--kaori-topology-domain-scope-border', 'CanvasText'),
-            namespace: token('--kaori-topology-domain-scope-border', 'CanvasText'),
-            workload: token('--kaori-topology-domain-compute-border', 'CanvasText'),
-            pod: token('--kaori-topology-domain-compute-border', 'CanvasText'),
-        }
-        const fills = {
-            artifact: token('--kaori-topology-domain-configuration-fill', 'Canvas'),
-            cluster: token('--kaori-topology-domain-scope-fill', 'Canvas'),
-            namespace: token('--kaori-topology-domain-scope-fill', 'Canvas'),
-            workload: token('--kaori-topology-domain-compute-fill', 'Canvas'),
-            pod: token('--kaori-topology-domain-compute-fill', 'Canvas'),
-        }
-        const textColors = {
-            artifact: token('--kaori-topology-domain-configuration-text', 'CanvasText'),
-            cluster: token('--kaori-topology-domain-scope-text', 'CanvasText'),
-            namespace: token('--kaori-topology-domain-scope-text', 'CanvasText'),
-            workload: token('--kaori-topology-domain-compute-text', 'CanvasText'),
-            pod: token('--kaori-topology-domain-compute-text', 'CanvasText'),
-        }
+        const records = payload.nodes.map((node) => ({
+            ...node,
+            data: { ...node.data, display_label: displayLabel(node.data.label) },
+        }))
         cy = renderer({
             container: canvas,
-            elements: [...payload.nodes, ...payload.edges],
-            layout: {
-                name: 'breadthfirst',
-                directed: true,
-                roots: payload.nodes.filter((n) => n.data.type === 'artifact').map((n) => n.data.id),
-                padding: 42,
-                spacingFactor: 1.35,
-            },
-            minZoom: 0.2,
-            maxZoom: 2.2,
-            wheelSensitivity: 0.18,
-            style: [
-                {
-                    selector: 'node',
-                    style: {
-                        label: (ele) => `${ele.data('label')}\n${ele.data('subtitle') || ele.data('type')}`,
-                        shape: 'round-rectangle',
-                        width: 170,
-                        height: 56,
-                        'background-color': (ele) => fills[ele.data('type')] || 'Canvas',
-                        'border-color': (ele) => colors[ele.data('type')] || 'CanvasText',
-                        'border-width': 1.5,
-                        color: (ele) => textColors[ele.data('type')] || 'CanvasText',
-                        'font-size': 10,
-                        'font-weight': 600,
-                        'text-wrap': 'ellipsis',
-                        'text-max-width': 155,
-                        'text-valign': 'center',
-                        'text-halign': 'center',
-                        'overlay-opacity': 0,
-                    },
-                },
-                {
-                    selector: 'edge',
-                    style: {
-                        width: 1.8,
-                        'curve-style': 'taxi',
-                        'taxi-direction': 'downward',
-                        'line-color': (ele) =>
-                            ele.data('relationship') === 'runtime_usage' &&
-                            ['medium', 'mixed'].includes(ele.data('confidence'))
-                                ? token('--kaori-status-warning', 'CanvasText')
-                                : token('--kaori-topology-edge-contains', 'CanvasText'),
-                        'target-arrow-shape': 'none',
-                        'line-style': (ele) =>
-                            ele.data('relationship') === 'contains' ? 'dashed' : 'solid',
-                        'overlay-opacity': 0,
-                    },
-                },
-                {
-                    selector: ':selected',
-                    style: {
-                        'border-width': 3,
-                        'border-color': token('--kaori-topology-domain-configuration-border', 'CanvasText'),
-                    },
-                },
-            ],
+            elements: [...records, ...payload.edges],
+            layout: { name: 'preset' },
+            minZoom: 0.12,
+            maxZoom: 2.6,
+            pixelRatio: 'auto',
+            selectionType: 'single',
+            style: graphStyle(),
         })
-        cy.on('tap', 'node', (event) => inspect(event.target))
+        const tip = $('registry-topology-node-tooltip')
+        const hideTip = () => tip?.classList.add('hidden')
+        cy.on('mouseover', 'node', (event) => {
+            if (!tip) return
+            const node = event.target
+            tip.textContent = `${node.data('type')} · ${node.data('label')}`
+            tip.classList.remove('hidden')
+            const at = node.renderedPosition()
+            tip.style.left = `${Math.max(12, Math.min(canvas.clientWidth - Math.min(tip.offsetWidth, 300) - 12, at.x + 15))}px`
+            tip.style.top = `${Math.max(8, Math.min(canvas.clientHeight - 52, at.y - 36))}px`
+        })
+        cy.on('mouseout', 'node', hideTip)
+        cy.on('pan zoom', hideTip)
+        cy.on('tap', 'node', (event) => {
+            hideTip()
+            const node = event.target
+            cy.elements().removeClass('kaori-topology-muted')
+            const neighborhood = node.closedNeighborhood().union(node)
+            cy.elements().difference(neighborhood).addClass('kaori-topology-muted')
+            inspect(node)
+        })
+        cy.on('tap', (event) => {
+            if (event.target === cy) {
+                cy.elements().removeClass('kaori-topology-muted')
+                hideTip()
+            }
+        })
         cy.on('tap', 'edge', (event) => {
             const edge = event.target
             inspectorContent.replaceChildren()
@@ -344,11 +519,11 @@ if (canvas && form) {
             appendField(details, 'From', edge.source().data('label'))
             appendField(details, 'To', edge.target().data('label'))
             inspectorContent.append(details)
-            inspectorContent.append(elements('p', 'text-xs text-content-muted', 'Context edges are structural. A mixed runtime edge includes both digest and tag evidence. Inspect exact binding rows for certainty.'))
+            inspectorContent.append(elements('p', 'text-xs text-content-muted', 'Containment and ownership are presentation context from committed Registry-to-Pod bindings. Digest matches are stronger than tag-only evidence.'))
             openInspector()
         })
-        cy.fit(undefined, 36)
         setView(view)
+        if (view === 'graph') runLayout()
     }
 
     const reload = async () => {
