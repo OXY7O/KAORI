@@ -31,13 +31,17 @@ try:
     with create_engine(migration_url).connect() as conn:
         row = conn.execute(text("""
             SELECT current_user, current_database(),
-                   rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls
+                   rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls,
+                   (SELECT pg_get_userbyid(datdba)
+                    FROM pg_database WHERE datname = current_database()),
+                   has_schema_privilege(current_user, 'public', 'CREATE')
             FROM pg_roles WHERE rolname = current_user
         """)).one()
 except Exception:
     sys.exit('ABORT: migration identity connection failed (credentials not printed)')
-if row[0] != 'kaori_migrator' or row[1] != 'kaori' or any(row[2:]):
-    sys.exit('ABORT: migration must run as non-elevated kaori_migrator against local kaori database')
+if (row[0] != 'kaori_migrator' or row[1] != 'kaori'
+        or any(row[2:7]) or row[7] != 'kaori_migrator' or row[8] is not True):
+    sys.exit('ABORT: non-elevated migrator must own the intended database and schema DDL authority')
 print('PASS: trusted, non-superuser migration identity admitted')
 PY
 
