@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from math import ceil
 from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.datastructures import MultiDict
+
+from app.extensions.db import db
 
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.finding_presentation import (
@@ -105,7 +108,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         'provider': clean(args.get('provider')),
         'category': clean(args.get('category')),
         'severity': clean(args.get('severity')),
-        'status': clean(args.get('status')),
+        'status': clean(args.get('status')) if page_mode == 'catalog' else '',
         'source_kind': clean(args.get('source_kind')),
         'logic_type': clean(args.get('logic_type')),
         'signal_source': clean(args.get('signal_source')),
@@ -163,6 +166,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         'active_filters': active_filter_count,
         'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes'),
         'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage'),
+        'registry_items': sum(1 for item in filtered if item.get('domain') == 'registry'),
         'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical'),
         'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning'),
     }
@@ -178,6 +182,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     return {
         'page_mode': page_mode,
         'evaluation_issues': evaluation_issues,
+        'matching_findings': filtered if page_mode != 'catalog' else [],
         'active_filter_count': active_filter_count,
         'filters': filters,
         'filter_options': {
@@ -195,6 +200,10 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
                 {'value': 'automatic_eligible', 'label': 'Auto Eligible'},
                 {'value': 'escalated', 'label': 'Alert Open'},
                 {'value': 'resolved', 'label': 'Resolved Alert'},
+                {'value': 'resolved_pending', 'label': 'Resolved · Verify'},
+                {'value': 'source_unknown', 'label': 'Source Unknown'},
+                {'value': 'withdrawn', 'label': 'Alert Withdrawn'},
+                {'value': 'retired', 'label': 'Source Decommissioned'},
                 {'value': 'accepted_risk', 'label': 'Accepted Risk'},
                 {'value': 'recommendation_only', 'label': 'Recommendation Only'},
             ],
@@ -264,6 +273,9 @@ def _build_recommendation_findings(
         except SQLAlchemyError:
             if evidence_issues is None:
                 raise  # Worker/reconciliation must never treat failed reads as no findings.
+            # A read-only request can recover its database session to project
+            # other committed evidence as partial rather than a false empty state.
+            db.session.rollback()
             evidence_issues.append(label)
 
     # Domain selection narrows evaluator execution before loading committed data.
@@ -372,8 +384,6 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
         return []
 
     try:
-        from datetime import UTC, datetime, timedelta
-
         cutoff = datetime.now(UTC) - timedelta(hours=24)
         rows = (
             TLSCertificateInventory.query.join(
@@ -590,33 +600,42 @@ def _apply_catalog_payload(
 
 
 def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[str, Any]]) -> None:
-    critical = sum(1 for item in findings if item.get('severity') == 'critical')
-    warning = sum(1 for item in findings if item.get('severity') == 'warning')
+    scoped_findings = payload['matching_findings']
+    critical = sum(1 for item in scoped_findings if item.get('severity') == 'critical')
+    warning = sum(1 for item in scoped_findings if item.get('severity') == 'warning')
     selected_domain = clean(payload['filters'].get('domain'))
-    scope_label = domain_label(selected_domain) if selected_domain else 'Multi-Domain'
-    posture_tone = 'critical' if critical else ('warning' if warning else 'normal')
+    scope_label = _catalog_scope_label(payload['filters'])
+    if payload['active_filter_count'] and not selected_domain:
+        scope_label = f'Filtered · {scope_label}'
+    readiness = payload.get('evidence_readiness') or {}
+    uncertain = readiness.get('status') in {'partial', 'unavailable', 'not_collected'}
+    posture_tone = 'critical' if critical else ('warning' if warning or uncertain else 'info')
     if critical:
         posture_label = 'Critical'
     elif warning:
         posture_label = 'Review'
-    elif findings:
+    elif uncertain:
+        posture_label = 'Evidence Review Required'
+    elif scoped_findings:
         posture_label = 'Active'
     else:
         posture_label = 'No Active Findings'
-    active_domains = {str(item.get('domain') or '') for item in findings if item.get('domain')}
+    active_domains = {str(item.get('domain') or '') for item in scoped_findings if item.get('domain')}
     payload.update(
         {
             'page_title': 'Recommendations',
             'scope_label': scope_label,
             'summary': {
-                'actionable': len(findings),
+                'actionable': len(scoped_findings),
                 'critical': critical,
                 'warning': warning,
                 'domains': len(active_domains),
-                'object_storage': sum(1 for item in findings if item.get('domain') == 'object_storage'),
-                'alert_eligible': sum(1 for item in findings if (item.get('alert_handling') or {}).get('eligible')),
+                'object_storage': sum(1 for item in scoped_findings if item.get('domain') == 'object_storage'),
+                'alert_eligible': sum(
+                    1 for item in scoped_findings if (item.get('alert_handling') or {}).get('eligible')
+                ),
                 'alert_open': sum(
-                    1 for item in findings if (item.get('alert_handling') or {}).get('status') == 'escalated'
+                    1 for item in scoped_findings if (item.get('alert_handling') or {}).get('status') == 'escalated'
                 ),
             },
             'posture': {

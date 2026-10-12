@@ -5,6 +5,7 @@
 {% set active_filters = payload.result_context.active_filters|default(0, true) %}
 {% set kubernetes_items = payload.result_context.kubernetes_items|default(0, true) %}
 {% set object_storage_items = payload.result_context.object_storage_items|default(0, true) %}
+{% set registry_items = payload.result_context.registry_items|default(0, true) %}
 {% set critical_items = payload.result_context.critical_items|default(0, true) %}
 {% set warning_items = payload.result_context.warning_items|default(0, true) %}
 <div id="recommendation-summary-section"
@@ -22,10 +23,11 @@
         ('siren', 'Alert Intelligence', url_for('alert_intelligence.index'))
         ]
         ) %}
-        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
             {{ intelligence_ui.posture_metric('scan-search', 'Matching Findings', matching_items, source_items ~ ' active finding(s) before filters') }}
             {{ intelligence_ui.posture_metric('ship-wheel', 'Kubernetes', kubernetes_items, 'Committed Kubernetes finding(s)') }}
             {{ intelligence_ui.posture_metric('database-zap', 'Object Storage', object_storage_items, 'Committed Object Storage finding(s)') }}
+            {{ intelligence_ui.posture_metric('package', 'Artifact Registry', registry_items, 'Committed Registry finding(s)') }}
             {{ intelligence_ui.posture_metric('triangle-alert', 'Priority', critical_items ~ ' Critical · ' ~ warning_items ~ ' Warning', 'Priority across matching findings') }}
         </div>
     {% endcall %}
