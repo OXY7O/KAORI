@@ -74,27 +74,31 @@ Do not create or use a host `.venv`; the supported Python runtime is inside the 
 
 ### 3. Initialize or upgrade the database
 
-For a **fresh** development database, start Flask with F5, view the existing
-**Database Setup Required**, and run the copied command from **Windows PowerShell on the host** at the repository root:
+For a virgin development database, the `db-first-run` Compose service
+automatically invokes existing `db-bootstrap` after PostgreSQL role
+initialization. This is a one-shot, schema-empty-only operation. The web
+debugger (F5) can open the normal login page after bootstrap succeeds;
+workers and Beat wait for Alembic, immutable-ledger and admin admission.
+
+Existing or partially initialized databases are **never** automatically
+migrated or reset. If first bootstrap fails, examine the job logs and the
+**Database Setup Required** recovery command from the Windows host:
 
 ```bash
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml logs db-first-run
 docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
 ```
 
-For an existing development database after pulling new Alembic migrations:
+For later development Alembic upgrades, operator action stays explicit:
 
 ```bash
 docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml \
   run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only
 ```
 
-The application `DATABASE_URL` belongs only to `kaori_runtime`, not a DBA
-or migration role. The two PostgreSQL authority **ignored local ENV files** are not
-loaded as environment variables into Flask/workers/Beat, but are
-physically readable to processes with full source-workspace access. `POSTGRES_USER=postgres` inside
-the shared app `.env` remains a non-secret Compose selector, **not** a
-runtime identity or password.
-On a fresh or migration-behind development database, the workspace remains usable while Celery workers and Beat wait for the exact current Alembic migration head. They do not dispatch or consume scheduled KAORI work before schema readiness and they do not run migrations themselves. After migrations, grants, and first-admin admission pass, the background services continue automatically without a manual restart.
+No privileged migrator credentials are supplied to normal Flask/workers/Beat.
+The application always uses the restricted `kaori_runtime` `DATABASE_URL`.
+
 
 ### 3a. Existing DevContainer databases and the historical role cutover
 

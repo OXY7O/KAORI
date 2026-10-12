@@ -116,17 +116,18 @@ def test_devcontainer_runbook_requires_backup_and_explicit_operator_cutover() ->
     assert 'No migration, provisioning SQL or runtime cutover was executed' in guide
 
 
-def test_new_devcontainer_three_role_initialization_keeps_ddl_off_automatic_start() -> None:
+def test_devcontainer_initialization_only_auto_bootstraps_virgin_schema() -> None:
     import json
 
     config = json.loads((ROOT / '.devcontainer/devcontainer.json').read_text())
     assert config['initializeCommand'][0:3] == ['docker', 'run', '--rm']
     assert 'KAORI_DEV_DOCKER_INIT=1' in config['initializeCommand']
     assert 'db-bootstrap' not in config['runServices']
-    assert {'db', 'redis', 'workspace', 'beat'} <= set(config['runServices'])
+    assert {'db', 'redis', 'workspace', 'beat', 'db-first-run'} <= set(config['runServices'])
     compose = COMPOSE.read_text()
     db_block = _services(compose)['db']
     operator_block = _services(compose)['db-bootstrap']
+    first_run_block = _services(compose)['db-first-run']
     assert 'POSTGRES_PASSWORD: !reset null' not in db_block
     assert 'postgres-bootstrap.env' in db_block
     assert 'postgres-migrate.env' in db_block
@@ -137,6 +138,27 @@ def test_new_devcontainer_three_role_initialization_keeps_ddl_off_automatic_star
     assert 'postgres-migrate.env' in operator_block
     assert 'postgres-bootstrap.env' not in operator_block
     assert 'db-bootstrap' not in _services(compose)['workspace']
+    assert 'restart: "no"' in first_run_block
+    assert 'scripts/devcontainer/auto-bootstrap-db.sh' in first_run_block
+    assert 'postgres-migrate.env' in first_run_block
+    assert 'postgres-bootstrap.env' not in first_run_block
+    assert 'db-first-run' not in _services(compose)['workspace']
+
+
+def test_auto_bootstrap_guard_never_migrates_existing_schema() -> None:
+    source = (ROOT / 'scripts/devcontainer/auto-bootstrap-db.sh').read_text()
+    assert "runtime.username != 'kaori_runtime'" in source
+    assert "runtime.host != 'db'" in source
+    assert "runtime.database != 'kaori'" in source
+    for table in ('pg_catalog.pg_class', 'pg_catalog.pg_proc',
+                  'pg_catalog.pg_type', 'pg_catalog.pg_namespace',
+                  'pg_catalog.pg_extension'):
+        assert table in source
+    assert "existing)" in source and "virgin)" in source
+    assert "No automatic migration" in source
+    assert "exec sh scripts/devcontainer/bootstrap-db.sh" in source
+    for forbidden in ("DROP DATABASE", "TRUNCATE", "down --volumes"):
+        assert forbidden not in source
 
 
 def test_devcontainer_role_init_and_secret_preparation_are_non_elevated() -> None:

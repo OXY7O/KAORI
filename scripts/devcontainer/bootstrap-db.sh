@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# Explicit operator action (NOT part of DevContainer auto-start).
+# Explicit operator action OR guarded virgin-first-run delegation (#1528).
 # Container identity is a one-shot DevContainer service; all web/workers/Beat
 # retain only their existing canonical non-owner DATABASE_URL.
 if [ "${APP_ENV:-}" != development ] || [ -z "${KAORI_MIGRATOR_PASSWORD:-}" ]; then
