@@ -133,6 +133,8 @@
                             <p class="mt-3 text-xs leading-5 text-content-muted">
                                 {% if state.key == 'supported_observed' %}
                                     Supported and observed in the latest committed provider evidence.
+                                {% elif state.key == 'supported_partial' %}
+                                    Usable evidence covers only part of the committed artifact scope; remaining artifacts require review.
                                 {% elif state.key == 'supported_unavailable' %}
                                     Supported by the provider, but usable evidence was unavailable during collection.
                                 {% elif state.key == 'unsupported' %}
