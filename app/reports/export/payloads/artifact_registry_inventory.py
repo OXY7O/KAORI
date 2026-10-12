@@ -52,11 +52,36 @@ def get_report_artifact_registry_inventory_payload(report: Report) -> dict[str, 
 
     rows: list[dict[str, Any]] = []
     for project in projects:
+        if not project.repositories:
+            rows.append(
+                {
+                    'record_type': 'project',
+                    'registry': instance.name,
+                    'environment': instance.environment or 'Not Set',
+                    'project': project.name,
+                    'repository': None,
+                    'digest': None,
+                    'observed_at': getattr(project, 'observed_at', None),
+                }
+            )
         for repository in project.repositories or ():
+            if not repository.artifacts:
+                rows.append(
+                    {
+                        'record_type': 'repository',
+                        'registry': instance.name,
+                        'environment': instance.environment or 'Not Set',
+                        'project': project.name,
+                        'repository': repository.name,
+                        'digest': None,
+                        'observed_at': getattr(repository, 'observed_at', None),
+                    }
+                )
             for artifact in repository.artifacts or ():
                 summary = dict(artifact.vulnerability_summary or {})
                 rows.append(
                     {
+                        'record_type': 'artifact',
                         'registry': instance.name,
                         'environment': instance.environment or 'Not Set',
                         'project': project.name,
