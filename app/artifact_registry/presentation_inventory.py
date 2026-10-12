@@ -157,7 +157,9 @@ def _inventory_snapshot_context(overview: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _inventory_fleet_readings(overview: dict[str, Any]) -> list[dict[str, Any]]:
+def _inventory_fleet_readings(
+    overview: dict[str, Any], committed_provider_ids: list[int]
+) -> list[dict[str, Any]]:
     provider_count = int(overview['provider_count'])
     snapshot_count = int(overview['snapshot_count'])
     exception_count = (
@@ -166,8 +168,11 @@ def _inventory_fleet_readings(overview: dict[str, Any]) -> list[dict[str, Any]]:
         + int(overview['failed_refresh_count'])
     )
     project_count = int(overview['project_count'])
-    visibility_observed = RegistryProject.query.filter(RegistryProject.public.is_not(None)).count()
-    public_projects = RegistryProject.query.filter(RegistryProject.public.is_(True)).count()
+    scoped_projects = RegistryProject.query.filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
+    visibility_observed = scoped_projects.filter(RegistryProject.public.is_not(None)).count()
+    public_projects = scoped_projects.filter(RegistryProject.public.is_(True)).count()
 
     if provider_count == 0:
         coverage_title, coverage_tone = 'No Registry Providers', 'unknown'
@@ -241,8 +246,9 @@ def _inventory_base_context() -> dict[str, Any]:
         'artifact_count': counts['artifacts'],
     }
     resource_catalog = _inventory_resource_catalog(overview)
-    fleet_readings = _inventory_fleet_readings(overview)
+    fleet_readings = _inventory_fleet_readings(overview, committed_provider_ids)
     return {
+        'committed_provider_ids': committed_provider_ids,
         'setup': overview['setup'],
         'overview': overview,
         'snapshot_context': _inventory_snapshot_context(overview),
@@ -368,21 +374,29 @@ def _inventory_resource_posture_metrics(
     ]
 
 
-def _inventory_rows(resource: str) -> list[dict[str, Any]]:
+def _inventory_rows(
+    resource: str, committed_provider_ids: list[int]
+) -> list[dict[str, Any]]:
     if resource == 'repositories':
         items = RegistryRepository.query.options(
             joinedload(RegistryRepository.project),
             joinedload(RegistryRepository.artifacts),
+        ).join(RegistryRepository.project).filter(
+            RegistryProject.integration_instance_id.in_(committed_provider_ids)
         ).all()
         rows = [_repository_row(item) for item in items]
     elif resource == 'artifacts':
         items = RegistryArtifact.query.options(
             joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
             joinedload(RegistryArtifact.tags),
+        ).join(RegistryArtifact.repository).join(RegistryRepository.project).filter(
+            RegistryProject.integration_instance_id.in_(committed_provider_ids)
         ).all()
         rows = [_artifact_row(item) for item in items]
     else:
-        items = RegistryProject.query.options(joinedload(RegistryProject.repositories)).all()
+        items = RegistryProject.query.options(
+            joinedload(RegistryProject.repositories)
+        ).filter(RegistryProject.integration_instance_id.in_(committed_provider_ids)).all()
         rows = [_project_row(item) for item in items]
     return _decorate_inventory_provider_provenance(rows)
 
@@ -502,7 +516,8 @@ def build_inventory(
     if visibility_value not in {'public', 'private', 'not_observed'}:
         visibility_value = ''
 
-    rows = _inventory_rows(resource)
+    context = _inventory_base_context()
+    rows = _inventory_rows(resource, context['committed_provider_ids'])
     source_options, environment_options = _inventory_filter_options(rows)
     resource_posture_metrics = _inventory_resource_posture_metrics(resource, rows)
     rows = _inventory_scope_filter(
@@ -514,7 +529,6 @@ def build_inventory(
     )
     filtered = [row for row in rows if not search_value or search_value in _inventory_search_text(resource, row)]
     paged, pagination = paginate_sequence(filtered, page=page, per_page=per_page)
-    context = _inventory_base_context()
     selected_resource = context['resource_catalog'][resource]
     posture_copy = _inventory_posture_copy(resource)
     has_filters = bool(
