@@ -499,6 +499,36 @@
         renderAllocationChange({ preferCurrentProfile: true })
     }
 
+    // Present Capsule authoritative quota evidence; do not infer eligibility,
+    // capacity approval or Native ResourceQuota ownership from this diff.
+    const renderCapsuleQuotaPreview = (form, current, proposed) => {
+        const dimensions = [
+            'requests.cpu', 'limits.cpu', 'requests.memory',
+            'limits.memory', 'pods', 'requests.storage',
+        ]
+        const value = (quota, key) => quota?.[key] ?? null
+        const formatted = (quota, key) => {
+            if (!quota) return 'Unbounded'
+            const raw = value(quota, key)
+            return raw === null || raw === '' ? 'Unbounded' : String(raw)
+        }
+        form.querySelectorAll('[data-tenant-quota-metric-side]').forEach((cell) => {
+            const source = cell.dataset.tenantQuotaMetricSide === 'current' ? current : proposed
+            const present = cell.dataset.tenantQuotaMetricSide === 'current' ? current !== null : proposed !== null
+            cell.textContent = present ? formatted(source, cell.dataset.tenantQuotaMetricKey) : '—'
+        })
+        const summary = form.querySelector('[data-tenant-quota-change-summary]')
+        if (!summary) return
+        if (current === null || proposed === null) {
+            summary.textContent = 'Choose contracts'
+            return
+        }
+        const changed = dimensions.filter((key) => formatted(current, key) !== formatted(proposed, key)).length
+        summary.textContent = changed === 0
+            ? 'No quota differences'
+            : `${changed} of 6 quota dimensions differ · Read only`
+    }
+
     const initSharedAllocationForm = (form) => {
         if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
         form.dataset.kaoriInitialized = 'true'
@@ -533,6 +563,7 @@
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
             if (proposedCpu) proposedCpu.textContent = proposed ? requestValue(proposed.quota, 'cpu') : '—'
             if (proposedMemory) proposedMemory.textContent = proposed ? requestValue(proposed.quota, 'memory') : '—'
+            renderCapsuleQuotaPreview(form, current ? current.current_quota || {} : null, proposed ? proposed.quota || {} : null)
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -585,6 +616,7 @@
             }
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
             if (proposedSummary) proposedSummary.textContent = proposed ? quotaSummary(proposed.quota) : '—'
+            renderCapsuleQuotaPreview(form, current ? current.current_quota || {} : null, proposed ? proposed.quota || {} : null)
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -612,13 +644,10 @@
                     ? `${state.scope || 'Tenant'} · ${state.provenance || 'kaori_managed'}`
                     : '—'
             }
-            if (summary) {
-                const currentSummary = state ? quotaSummary(state.desired_quota) : '—'
-                const nextSummary = proposed ? quotaSummary(proposed.quota) : '—'
-                summary.textContent = proposed
-                    ? `Current: ${currentSummary} → Proposed: ${proposedLabel} · ${nextSummary}`
-                    : `Current: ${currentSummary}`
-            }
+            const nextProfile = form.querySelector('[data-tenant-quota-managed-proposed-profile]')
+            if (nextProfile) nextProfile.textContent = proposed ? proposedLabel : '—'
+            if (summary) summary.textContent = state ? quotaSummary(state.desired_quota) : '—'
+            renderCapsuleQuotaPreview(form, state ? state.desired_quota || {} : null, proposed ? proposed.quota || {} : null)
         }
 
         tenantSelect?.addEventListener('change', render)
