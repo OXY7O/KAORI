@@ -88,3 +88,64 @@ def test_capsule_tenant_quota_governance_uses_compact_action_footers() -> None:
     assert 'Change Allocation' in source
     assert 'Take Over Allocation Governance' not in source
     assert 'Change Governed Allocation' not in source
+
+def test_capsule_quota_cutover_comparisons_preserve_distinct_provider_authorities() -> None:
+    from jinja2 import Environment
+
+    folder = ROOT / 'app/templates/kubernetes/tenant/partials'
+    shared = (folder / '_capsule_shared_allocation_cutover.html').read_text(encoding='utf-8')
+    tenant = (folder / '_capsule_tenant_quota_cutover.html').read_text(encoding='utf-8')
+    script = (ROOT / 'app/static/js/tenant_resource_profile_presets.js').read_text(encoding='utf-8')
+    env = Environment(autoescape=True)
+    env.parse(shared)
+    env.parse(tenant)
+
+    for template in (shared, tenant):
+        assert 'Managed Contract Comparison' in template
+        assert 'Change Highlights' in template
+        assert 'grid md:grid-cols-2' in template
+        assert 'ResourceQuota' in template or 'Tenant.spec.resourceQuotas' in template
+        assert 'data-tenant-quota-metric-side=' in template
+        assert 'data-tenant-quota-metric-key="{{ key }}"' in template
+        for dimension in ('requests.cpu', 'limits.cpu', 'requests.memory',
+                          'limits.memory', 'pods', 'requests.storage'):
+            assert f"'{dimension}'" in template
+        assert 'data-tenant-quota-change-summary aria-live="polite"' in template
+        assert 'name="csrf_token"' in template
+        assert 'border border-outline-subtle bg-surface-card shadow-sm' in template
+
+    # Shared GlobalResourceQuota eligibility and alternative-authority
+    # explanations remain separate from Capsule Tenant.spec.resourceQuotas.
+    assert "url_for('tenant.cutover_capsule_shared_allocation_route')" in shared
+    assert 'data-tenant-shared-allocation-tenant' in shared
+    assert 'data-tenant-shared-allocation-profile' in shared
+    assert "not can_manage or not capsule_shared_cutover_supported or not profiles" in shared
+    assert "capsule_shared_cutover_state.values()" in shared
+    assert 'Other allocation authorities' in shared
+    assert 'Not applicable here' in shared
+    assert 'Control Unavailable' in shared
+    assert 'Committed GRQ sources:' in shared
+    assert 'GlobalResourceQuota/' in script
+    assert 'current ? current.current_quota || {} : null' in script
+
+    # Tenant CR cutover and managed-change remain distinct POSTs, preserving
+    # provider scope and external LimitRange observations.
+    assert "url_for('tenant.cutover_capsule_tenant_quota_route')" in tenant
+    assert "url_for('tenant.change_capsule_tenant_quota_route')" in tenant
+    assert tenant.count('data-tenant-quota-change-summary aria-live="polite"') == 2
+    assert tenant.count('data-tenant-quota-metric-side=') == 2
+    assert 'data-tenant-quota-current-scope' in tenant
+    assert 'data-tenant-quota-managed-summary' in tenant
+    assert 'data-tenant-quota-managed-proposed-profile' in tenant
+    assert 'external_constraints' in tenant
+    assert 'not can_manage or not capsule_tenant_quota_cutover_supported or not profiles' in tenant
+    assert 'not can_manage or not capsule_tenant_quota_managed or not profiles' in tenant
+
+    assert 'const renderCapsuleQuotaPreview = (form, current, proposed) => {' in script
+    assert "form.querySelectorAll('[data-tenant-quota-metric-side]')" in script
+    assert "summary.textContent = 'Choose contracts'" in script
+    assert 'No quota differences' in script
+    assert 'of 6 quota dimensions differ · Read only' in script
+    assert 'state ? state.desired_quota || {} : null' in script
+    assert 'tenantSelect?.addEventListener(\'change\', render)' in script
+    assert 'profileSelect?.addEventListener(\'change\', render)' in script
