@@ -46,7 +46,41 @@ def assess_limit_exposure(
     if missing:
         state = 'Unknown'
         reason = 'Committed limits or fresh governed capacity evidence are incomplete.'
-    elif committed.cpu > ceiling.cpu or committed.memory_bytes > ceiling.memory_bytes:
+    else:
+        assert committed.cpu is not None and committed.memory_bytes is not None
+        assert ceiling.cpu is not None and ceiling.memory_bytes is not None
+        return _assess_known_limits(
+            committed=committed, ceiling=ceiling, mode=mode,
+            cpu_ratio=cpu_ratio, memory_ratio=memory_ratio,
+        )
+    return {
+        'mode': mode,
+        'state': state,
+        'reason': reason,
+        'scope': 'committed_resourcequota_limits',
+        'cpu_ratio': format(cpu_ratio, 'f'),
+        'memory_ratio': format(memory_ratio, 'f'),
+        'committed': {
+            'cpu': None if committed.cpu is None else format(committed.cpu, 'f'),
+            'memory_bytes': None if committed.memory_bytes is None else format(committed.memory_bytes, 'f'),
+        },
+        'threshold': {
+            'cpu': None if ceiling.cpu is None else format(ceiling.cpu, 'f'),
+            'memory_bytes': None if ceiling.memory_bytes is None else format(ceiling.memory_bytes, 'f'),
+        },
+        'unknown_sources': list(unknown_sources or []),
+        'planning_only': True,
+        'capacity_approval': False,
+    }
+
+
+def _assess_known_limits(
+    *, committed: CapacityVector, ceiling: CapacityVector,
+    mode: str, cpu_ratio: Decimal, memory_ratio: Decimal,
+) -> dict[str, Any]:
+    assert committed.cpu is not None and committed.memory_bytes is not None
+    assert ceiling.cpu is not None and ceiling.memory_bytes is not None
+    if committed.cpu > ceiling.cpu or committed.memory_bytes > ceiling.memory_bytes:
         state = 'Overcommitted'
         reason = 'Committed CPU/Memory Limit Exposure exceeds operator policy thresholds.'
     else:
@@ -72,7 +106,7 @@ def assess_limit_exposure(
             'cpu': None if ceiling.cpu is None else format(ceiling.cpu, 'f'),
             'memory_bytes': None if ceiling.memory_bytes is None else format(ceiling.memory_bytes, 'f'),
         },
-        'unknown_sources': list(unknown_sources or []),
+        'unknown_sources': [],
         'planning_only': True,
         'capacity_approval': False,
     }
