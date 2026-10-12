@@ -42,7 +42,14 @@ def test_runtime_correlation_keeps_digest_and_mutable_tag_confidence():
     tag = parse_image_reference('harbor.example/team/service:latest')
     assert _match(digest, artifact, registry_host='harbor.example') == ('digest', 'strong')
     assert _match(tag, artifact, registry_host='harbor.example') == ('tag', 'medium')
-    assert _match(parse_image_reference('harbor.example/team/service@sha256:wrong'), artifact, registry_host='harbor.example') is None
+    assert (
+        _match(
+            parse_image_reference('harbor.example/team/service@sha256:wrong'),
+            artifact,
+            registry_host='harbor.example',
+        )
+        is None
+    )
 
 
 def test_registry_authority_retains_configured_nondefault_port():
