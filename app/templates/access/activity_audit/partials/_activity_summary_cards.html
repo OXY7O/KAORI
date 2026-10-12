@@ -17,10 +17,10 @@
     </header>
     <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
         {% set metrics = [
-                    ('activity', 'Events · 24H', summary.events_24h, 'Administrative and operational evidence recorded during the last 24 hours.', 'bg-kaori-soft text-kaori-primary'),
-                    ('circle-check', 'Successful · 24H', summary.success_24h, 'Recorded outcomes that completed successfully during the last 24 hours.', 'bg-status-normal-soft text-status-normal-text'),
-                    ('triangle-alert', 'Attention · 24H', summary.attention_24h, 'Warning or failed outcomes that deserve operator review.', 'bg-status-warning-soft text-status-warning-text' if summary.attention_24h else 'bg-status-normal-soft text-status-normal-text'),
-                    ('users-round', 'Actors · 24H', summary.actors_24h, 'Distinct immutable actor identities represented in recent evidence.', 'bg-status-info-soft text-status-info-text')
+                    ('activity', 'Events · 24H', summary.events_24h, 'Administrative and operational evidence from the last 24 hours.', 'bg-kaori-soft text-kaori-primary'),
+                    ('circle-check', 'Successful · 24H', summary.success_24h, 'Successful outcomes in the last 24 hours.', 'bg-status-normal-soft text-status-normal-text'),
+                    ('triangle-alert', 'Attention · 24H', summary.attention_24h, 'Warnings and failures requiring review.', 'bg-status-warning-soft text-status-warning-text' if summary.attention_24h else 'bg-status-normal-soft text-status-normal-text'),
+                    ('users-round', 'Actors · 24H', summary.actors_24h, 'Unique immutable actors in recent evidence.', 'bg-status-info-soft text-status-info-text')
                 ] %}
         {% for icon, label, value, description, tone in metrics %}
             <article class="flex min-h-[11rem] flex-col bg-surface-card p-5">
@@ -40,7 +40,7 @@
     </div>
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {% set boundaries = [('globe-2', 'Hot Evidence Scope', 'Notification-backed', 'Authorized readers can review committed notification-backed activity across KAORI.'), ('fingerprint', 'Actor Evidence', 'Immutable', 'Actor identity, role, and authentication source are preserved at commit time.'), ('archive-restore', 'Lifecycle Boundary', 'Hot + Archive', 'Hot records stay in PostgreSQL; older verified evidence stays in Data Lifecycle.'), ('shield-check', 'Sensitive Data Boundary', 'Protected', 'Passwords, Secret values, tokens, private keys, and raw credentials are never audit metadata.')] %}
+            {% set boundaries = [('globe-2', 'Hot Evidence Scope', 'Notification-backed', 'Authorized access to committed KAORI activity evidence.'), ('fingerprint', 'Actor Evidence', 'Immutable', 'Actor identity, role, and authentication source preserved at commit.'), ('archive-restore', 'Lifecycle Boundary', 'Hot + Archive', 'Recent records in PostgreSQL; archived evidence in Data Lifecycle.'), ('shield-check', 'Sensitive Data Boundary', 'Protected', 'Sensitive credentials are excluded from audit metadata.')] %}
             {% for icon, title, value, description in boundaries %}
                 <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
