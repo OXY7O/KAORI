@@ -57,7 +57,8 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     assert "'security_exposed': counts['security_exposed']" in presentation
     assert 'def build_runtime_binding_detail(binding_id: int)' in presentation
 
-    assert "request.args.get('source_id', type=int)" in routes
+    assert "source_id=_runtime_scope_id('source_id')" in routes
+    assert "artifact_id=_runtime_scope_id('artifact_id')" in routes
     assert "request.args.get('cluster_id', '', type=str)" in routes
     assert "request.args.get('namespace', '', type=str)" in routes
     assert "request.args.get('match_type', '', type=str)" in routes
@@ -138,3 +139,21 @@ def test_runtime_summary_reuses_shared_section_intro_and_grouped_metrics() -> No
     assert "'critical' if runtime.security_exposed else 'info'" in summary
     assert 'metric_card.render(' not in summary
     assert 'registry.footer(' in template
+
+
+def test_runtime_generation_freshness_and_active_scope_contract() -> None:
+    correlation = (ROOT / 'app/artifact_registry/correlation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
+    prerequisites = (ROOT / 'app/artifact_registry/correlation_sync_jobs.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    assert 'def runtime_input_signature(' in correlation
+    assert 'ClusterInventory.collected_at' in correlation
+    assert 'RegistryCollectionState.last_committed_at' in correlation
+    assert "if runtime_input_signature(materialization_session) != input_signature:" in correlation
+    assert "'input_signature': input_signature" in correlation
+    assert "latest_success.result_summary_json" in presentation
+    assert "status, tone = 'Inputs Changed', 'warning'" in presentation
+    assert 'RegistryProject.integration_instance_id.in_(active_source_ids)' in presentation
+    assert 'RegistryProject.integration_instance_id.in_(source_ids)' in presentation
+    assert "IntegrationInstance.enabled.is_(True)" in prerequisites
+    assert "def _runtime_scope_id(name: str)" in routes
