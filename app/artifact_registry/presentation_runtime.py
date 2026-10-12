@@ -739,6 +739,15 @@ def build_runtime_binding_detail(binding_id: int) -> dict[str, Any] | None:
         'pod_name': binding.pod_name,
         'container_name': binding.container_name or 'Container',
         'source_kind': str(details.get('source_kind') or 'container').replace('_', ' ').title(),
+        'containers': [
+            {
+                'name': str(entry.get('name') or 'Container'),
+                'kind': str(entry.get('source_kind') or 'container').replace('_', ' ').title(),
+                'index': int(entry.get('index') or 0),
+            }
+            for entry in (details.get('containers') or [])
+            if isinstance(entry, dict)
+        ],
         'registry_host': details.get('registry_host') or 'Not Collected',
         'registry_observed_at': _runtime_parse_observed_at(details.get('registry_observed_at')) or artifact.observed_at,
         'kubernetes_observed_at': _runtime_parse_observed_at(details.get('pod_collected_at')),
