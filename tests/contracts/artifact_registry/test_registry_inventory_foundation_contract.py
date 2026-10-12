@@ -189,11 +189,13 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert "'artifact_registry.inventory_repositories': 'repositories'" in navigation_service
     assert "'artifact_registry.inventory_artifacts': 'artifacts'" in navigation_service
     assert 'def build_inventory_overview()' in presentation
-    assert 'def _inventory_fleet_readings(overview: dict[str, Any])' in presentation
-    assert "'fleet_readings': _inventory_fleet_readings(overview)" in presentation
+    assert 'def _inventory_fleet_readings(' in presentation
+    assert "'fleet_readings': fleet_readings" in presentation
     assert "'asset_catalog': list(resource_catalog.values())" in presentation
     assert "'resource_endpoint': selected_resource['endpoint']" in presentation
     assert 'def _inventory_resource_posture_metrics(' in presentation
+    assert 'paginate_query(filtered_query, page=page, per_page=per_page)' in presentation
+    assert 'paginate_sequence(filtered,' not in presentation
     assert "'resource_posture_metrics': resource_posture_metrics" in presentation
     assert "'Project Inventory Posture'" in presentation
     assert "'Repository Inventory Posture'" in presentation
