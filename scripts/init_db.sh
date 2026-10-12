@@ -10,6 +10,11 @@ if [ -z "${KAORI_DB_MIGRATION_URL:-}" ]; then
     exit 1
 fi
 
+if [ "${1:-}" = "--bootstrap-admin" ]; then
+    echo "ABORT: use the explicit DevContainer initialize_database task for first-admin setup." >&2
+    exit 1
+fi
+
 # Fail before any schema write if the selected identity is not the
 # DevContainer schema migrator or is the ordinary application runtime.
 # This check uses the SAME migration connection Alembic will use.
@@ -70,9 +75,5 @@ DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app db upgrade
 
 # RBAC seed is migration-owned data. Application administrator is created
 # AFTER runtime grants, by the explicit initialize_database.py workflow.
-if [ "${1:-}" = "--bootstrap-admin" ]; then
-    echo "ABORT: use the explicit DevContainer initialize_database task for first-admin setup." >&2
-    exit 1
-fi
 DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app seed-rbac
 echo "Database migration and RBAC initialization completed."
