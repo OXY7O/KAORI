@@ -98,6 +98,9 @@ ARCHIVABLE_STATUSES = (
     'ready',
 )
 
+# Mirror JobExecution.is_active for indexed, batched SQL guards.
+ACTIVE_GENERATION_JOB_STATUSES = ('queued', 'running', 'retrying', 'cancel_requested')
+
 
 def get_generated_reports_payload(
     query_args: Mapping[str, str] | None = None,
@@ -158,6 +161,26 @@ def get_generated_reports_payload(
     }
 
 
+def _get_active_report_generation_ids(reports: Sequence[Report]) -> set[int]:
+    """Use committed canonical job evidence instead of report lifecycle status alone."""
+    ids = {int(report.id) for report in reports}
+    if not ids:
+        return set()
+    groups = {f'report:{report_id}' for report_id in ids}
+    rows = db.session.scalars(
+        select(JobExecution.resource_group).where(
+            JobExecution.job_type == 'report_generation',
+            JobExecution.resource_group.in_(groups),
+            JobExecution.status.in_(ACTIVE_GENERATION_JOB_STATUSES),
+        )
+    ).all()
+    return {
+        int(resource_group.removeprefix('report:'))
+        for resource_group in rows
+        if resource_group and resource_group.startswith('report:')
+    }
+
+
 def get_report_detail_payload(
     report_id: int,
 ) -> dict[str, Any]:
@@ -186,6 +209,7 @@ def get_report_detail_payload(
         report,
         cluster_map,
         user_map,
+        active_generation_report_ids=_get_active_report_generation_ids([report]),
     )
     artifact_access = report_detail['artifact_access']
     job = db.session.get(JobExecution, report.job_execution_id) if report.job_execution_id else None
@@ -454,6 +478,7 @@ def get_reports(
         report_items,
     )
 
+    active_generation_ids = _get_active_report_generation_ids(report_items)
     return [
         _serialize_report(
             report,
@@ -461,6 +486,7 @@ def get_reports(
             user_map,
             verify_artifact=False,
             active_backend_status=backend_status,
+            active_generation_report_ids=active_generation_ids,
         )
         for report in report_items
     ], total_items
@@ -494,40 +520,37 @@ def get_pagination(
     }
 
 
-def bulk_archive_report_records(
-    report_ids: Sequence[int],
-) -> tuple[bool, str]:
-    normalized_ids = [int(report_id) for report_id in report_ids if str(report_id).isdigit()]
-
+def bulk_archive_report_records(report_ids: Sequence[int]) -> tuple[bool, str]:
+    """Archive all selected records or none; serialize with worker state transitions."""
+    normalized_ids = sorted({int(report_id) for report_id in report_ids if str(report_id).isdigit()})
     if not normalized_ids:
         return False, 'Select at least one report to archive.'
 
-    reports = (
-        db.session.execute(
-            select(
-                Report,
-            ).where(
-                Report.id.in_(normalized_ids),
-                Report.status.in_(ARCHIVABLE_STATUSES),
-            )
+    reports = db.session.scalars(
+        select(Report)
+        .where(Report.id.in_(normalized_ids))
+        .order_by(Report.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    ).all()
+    if len(reports) != len(normalized_ids):
+        db.session.rollback()
+        return False, f'No reports archived: {len(normalized_ids) - len(reports)} selected record(s) were not found.'
+
+    ineligible = [report for report in reports if report.status not in ARCHIVABLE_STATUSES]
+    active_ids = _get_active_report_generation_ids(reports)
+    if ineligible or active_ids:
+        db.session.rollback()
+        return False, (
+            f'No reports archived: {len(ineligible)} ineligible and {len(active_ids)} '
+            'with active generation jobs. Review and retry eligible reports.'
         )
-        .scalars()
-        .all()
-    )
 
-    if not reports:
-        return False, 'No selected reports can be archived.'
-
-    now = datetime.now(
-        UTC,
-    )
-
+    now = datetime.now(UTC)
     for report in reports:
         report.status = 'archived'
         report.updated_at = now
-
     db.session.commit()
-
     return True, f'Archived {len(reports)} report(s).'
 
 
@@ -662,6 +685,7 @@ def _serialize_report(
     *,
     verify_artifact: bool = True,
     active_backend_status: Mapping[str, Any] | None = None,
+    active_generation_report_ids: set[int] | None = None,
 ) -> dict[str, Any]:
     status_meta = _get_status_meta(
         report.status,
@@ -780,7 +804,8 @@ def _serialize_report(
         'generate_artifact_label': (
             f'Regenerate {artifact_format.label}' if report.status == 'ready' else f'Generate {artifact_format.label}'
         ),
-        'can_archive_report': report.status in ARCHIVABLE_STATUSES,
+        'can_archive_report': report.status in ARCHIVABLE_STATUSES
+        and report.id not in (active_generation_report_ids or set()),
         'can_restore_report': report.status == 'archived' and bool(artifact_access['reachable']) and file_exists,
         'can_download_artifact': can_download_artifact,
     }
@@ -858,11 +883,14 @@ def _serialize_report_detail(
     report: Report,
     cluster_map: dict[str, str],
     user_map: dict[int, dict[str, Any]],
+    *,
+    active_generation_report_ids: set[int] | None = None,
 ) -> dict[str, Any]:
     report_item = _serialize_report(
         report,
         cluster_map,
         user_map,
+        active_generation_report_ids=active_generation_report_ids,
     )
 
     file_exists = bool(
@@ -898,7 +926,7 @@ def _serialize_report_detail(
             report.updated_at,
         ),
         'can_generate_artifact': report_item['can_generate_artifact'],
-        'can_archive_report': report.status in ARCHIVABLE_STATUSES,
+        'can_archive_report': report_item['can_archive_report'],
         'can_restore_report': report_item['can_restore_report'],
         'can_download_artifact': report_item['can_download_artifact'],
     }
@@ -907,19 +935,24 @@ def _serialize_report_detail(
 def archive_report_record(
     report_id: int,
 ) -> tuple[bool, str]:
-    report = db.session.get(
-        Report,
-        report_id,
+    report = db.session.scalar(
+        select(Report)
+        .where(Report.id == report_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
-
     if report is None:
+        db.session.rollback()
         return False, 'Report not found.'
-
     if report.status == 'archived':
+        db.session.rollback()
         return True, 'Report is already archived.'
-
     if report.status not in ARCHIVABLE_STATUSES:
+        db.session.rollback()
         return False, f'{STATUS_LABELS.get(report.status, report.status.title())} reports cannot be archived.'
+    if report.id in _get_active_report_generation_ids([report]):
+        db.session.rollback()
+        return False, 'Report generation is active. Archive after the latest job reaches a terminal state.'
 
     report.status = 'archived'
     db.session.commit()
