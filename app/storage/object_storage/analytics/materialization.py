@@ -446,21 +446,36 @@ def mark_forecast_pending(
     stale_grace_minutes: int,
     job_execution_id: int | None,
 ) -> ObjectStorageForecastSnapshot:
-    snapshot = get_forecast_snapshot(system_id=system_id, history_window=history_window)
-    if snapshot is None:
-        snapshot = ObjectStorageForecastSnapshot()
-        snapshot.object_storage_system_id = str(system_id)
-        snapshot.history_window = history_window
-        snapshot.method = FORECAST_METHOD
-        db.session.add(snapshot)
-    snapshot.status = 'pending'
-    snapshot.last_attempt_at = datetime.now(UTC)
-    snapshot.last_error = None
-    snapshot.freshness_minutes = max(int(freshness_minutes), 5)
-    snapshot.stale_grace_minutes = max(int(stale_grace_minutes), 15)
-    snapshot.last_job_execution_id = job_execution_id
-    db.session.commit()
-    return snapshot
+    for attempt in range(2):
+        snapshot = (
+            ObjectStorageForecastSnapshot.query.filter_by(
+                object_storage_system_id=str(system_id),
+                history_window=history_window,
+                method=FORECAST_METHOD,
+            ).with_for_update().populate_existing().first()
+        )
+        if snapshot is None:
+            snapshot = ObjectStorageForecastSnapshot()
+            snapshot.object_storage_system_id = str(system_id)
+            snapshot.history_window = history_window
+            snapshot.method = FORECAST_METHOD
+            db.session.add(snapshot)
+        else:
+            _ensure_new_attempt_is_current(snapshot.last_job_execution_id, job_execution_id)
+        snapshot.status = 'pending'
+        snapshot.last_attempt_at = datetime.now(UTC)
+        snapshot.last_error = None
+        snapshot.freshness_minutes = max(int(freshness_minutes), 5)
+        snapshot.stale_grace_minutes = max(int(stale_grace_minutes), 15)
+        snapshot.last_job_execution_id = job_execution_id
+        try:
+            db.session.commit()
+            return snapshot
+        except IntegrityError:
+            db.session.rollback()
+            if attempt:
+                raise
+    raise RuntimeError('Object Storage forecast snapshot claim could not be established.')
 
 
 def _bucket_forecast_payload(
