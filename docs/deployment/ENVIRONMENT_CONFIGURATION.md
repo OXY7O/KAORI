@@ -53,7 +53,7 @@ deployments may provide only a restricted runtime login and execute
 reviewed SQL changes themselves; no DBA password enters Flask/worker
 environments. The external server adapter and DBA SQL migration package
 are NOT production-ready just because this DevContainer flow exists.
-See [DBA migration contract](../operations/postgres-dba-migration-contract.md)
+See [production DBA migration-contract draft PR #1463](https://github.com/OXY7O/KAORI/pull/1463)
 and implementation authority #1439/#1440. Existing release/rollback
 gates and UAT continue to apply.
 
