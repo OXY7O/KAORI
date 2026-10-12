@@ -68,180 +68,208 @@
         </section>
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  aria-labelledby="allocation-comparison-heading">
-            {% set comparison_groups = [
-                ('ResourceQuota', [
-                    ('CPU Requests', 'quota', 'requests.cpu'),
-                    ('CPU Limits', 'quota', 'limits.cpu'),
-                    ('Memory Requests', 'quota', 'requests.memory'),
-                    ('Memory Limits', 'quota', 'limits.memory'),
-                    ('Pods', 'quota', 'pods'),
-                    ('Total Storage', 'quota', 'requests.storage')
-                ]),
-                ('PVC Storage Guardrails', [
-                    ('Min PVC Size', 'storage_policy', 'min'),
-                    ('Max PVC Size', 'storage_policy', 'max')
-                ]),
-                ('Object Limits', [
-                    ('PVCs', 'quota', 'persistentvolumeclaims'),
-                    ('Services', 'quota', 'services'),
-                    ('ConfigMaps', 'quota', 'configmaps'),
-                    ('Secrets', 'quota', 'secrets')
-                ]),
-                ('Container Defaults', [
-                    ('CPU Request', 'limits', 'default_request.cpu'),
-                    ('CPU Limit', 'limits', 'default.cpu'),
-                    ('Memory Request', 'limits', 'default_request.memory'),
-                    ('Memory Limit', 'limits', 'default.memory')
-                ])
-            ] %}
-            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3.5 sm:px-5">
-                <div>
+            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+                <div class="min-w-0">
                     <h3 id="allocation-comparison-heading" class="text-sm font-semibold text-content-primary">Managed Contract Comparison</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Review the contract diff before capacity admission, reconciliation, and read-back.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Compare the committed allocation with the selected next profile before admission.</p>
                 </div>
                 {{ table_label.special_label('Preflight · Read Only', 'maintenance', 'shield-check') }}
             </div>
-            <div class="px-4 py-4 sm:px-5">
-                <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-lg bg-surface-elevated px-3 py-3 sm:gap-5 sm:px-4">
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current · Active</p>
-                        <p class="mt-1 break-words text-sm font-semibold text-content-primary"
-                           data-tenant-allocation-current-profile>—</p>
+            <div class="grid md:grid-cols-2">
+                {% for side, title, subtitle in [
+                    ('current', 'Current Contract', 'Active · Frozen evidence'),
+                    ('proposed', 'Proposed Contract', 'Pending · Profile intent')
+                ] %}
+                    <section class="min-w-0 px-4 py-4 sm:px-5 sm:py-5 {% if side == 'proposed' %}border-t border-outline-subtle md:border-t-0 md:border-l{% endif %}"
+                             aria-label="{{ title }}">
+                        <div class="flex min-w-0 items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold {{ 'text-kaori-primary' if side == 'proposed' else 'text-content-muted' }}">{{ title }}</p>
+                                <p class="mt-0.5 text-xs text-content-muted">{{ subtitle }}</p>
+                                <p class="mt-2 break-words text-sm font-semibold text-content-primary"
+                                   data-tenant-allocation-{{ side }}-profile>—</p>
+                            </div>
+                            <span class="mt-0.5 h-2 w-2 shrink-0 rounded-full {{ 'bg-kaori-primary' if side == 'proposed' else 'bg-emerald-500' }}"
+                                  aria-hidden="true"></span>
+                        </div>
+                        <p class="mt-5 border-b border-outline-subtle pb-2 text-xs font-semibold text-content-secondary">ResourceQuota</p>
+                        <dl class="grid grid-cols-2 gap-x-5 sm:grid-cols-3">
+                            {% for label, source, key in [
+                                ('CPU Requests', 'quota', 'requests.cpu'),
+                                ('CPU Limits', 'quota', 'limits.cpu'),
+                                ('Memory Requests', 'quota', 'requests.memory'),
+                                ('Memory Limits', 'quota', 'limits.memory'),
+                                ('Pods', 'quota', 'pods'),
+                                ('Total Storage', 'quota', 'requests.storage')
+                            ] %}
+                                <div class="min-w-0 border-b border-outline-subtle/70 py-3">
+                                    <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary"
+                                        data-tenant-allocation-metric-side="{{ side }}"
+                                        data-tenant-allocation-metric-source="{{ source }}"
+                                        data-tenant-allocation-metric-key="{{ key }}">—</dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                        <div class="mt-4">
+                            <p class="text-xs font-semibold text-content-secondary">Per-PVC Policy</p>
+                            <dl class="mt-2 grid grid-cols-2 gap-5">
+                                {% for label, key in [('Min PVC Size', 'min'), ('Max PVC Size', 'max')] %}
+                                    <div class="min-w-0">
+                                        <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary"
+                                            data-tenant-allocation-metric-side="{{ side }}"
+                                            data-tenant-allocation-metric-source="storage_policy"
+                                            data-tenant-allocation-metric-key="{{ key }}">—</dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
+            <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-3.5 sm:px-5"
+                 aria-labelledby="allocation-change-highlights-heading">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h4 id="allocation-change-highlights-heading" class="text-xs font-semibold text-content-primary">Change Highlights</h4>
+                        <p class="mt-0.5 text-xs text-content-muted">Key differences only · Not an admission decision</p>
                     </div>
-                    <i data-lucide="arrow-right" class="h-4 w-4 shrink-0 text-content-muted" aria-hidden="true"></i>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Proposed · Preflight</p>
-                        <p class="mt-1 break-words text-sm font-semibold text-content-primary"
-                           data-tenant-allocation-proposed-profile>—</p>
+                    <span class="text-xs font-semibold text-content-secondary"
+                          data-tenant-allocation-highlight-count aria-live="polite">Choose a contract</span>
+                </div>
+                <div class="mt-3 grid gap-x-5 gap-y-3 sm:grid-cols-3" data-tenant-allocation-highlights>
+                    {% for i in range(3) %}
+                        <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:pl-3"
+                             data-tenant-allocation-highlight-item hidden>
+                            <p class="text-xs font-semibold text-content-secondary"
+                               data-tenant-allocation-highlight-label>—</p>
+                            <p class="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-xs">
+                                <span class="break-words text-content-muted" data-tenant-allocation-highlight-from>—</span>
+                                <i data-lucide="arrow-right" class="h-3 w-3 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                <span class="break-words font-semibold text-content-primary"
+                                      data-tenant-allocation-highlight-to>—</span>
+                            </p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <p class="mt-2 text-xs text-content-muted" data-tenant-allocation-highlight-more hidden></p>
+            </div>
+            <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h4 class="text-sm font-semibold text-content-primary">Technical Details</h4>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Review supplementary contract dimensions without changing either profile.</p>
                     </div>
+                    <span class="text-xs text-content-muted">Read Only</span>
                 </div>
-                <div class="mt-4 flex flex-wrap items-center justify-between gap-2">
-                    <p class="text-xs leading-5 text-content-secondary"
-                       data-tenant-allocation-diff-summary aria-live="polite">Select a Namespace and Resource Profile.</p>
-                    <p class="text-xs text-content-muted">Read-only · No capacity approval</p>
-                </div>
-                <div class="mt-4 flex flex-wrap gap-1 border-b border-outline-subtle"
+                <div class="mt-3 flex gap-1 overflow-x-auto border-b border-outline-subtle"
                      role="tablist"
-                     aria-label="Contract comparison views"
-                     data-tenant-allocation-diff-tabs>
+                     aria-label="Technical contract categories"
+                     data-tenant-allocation-detail-tabs>
                     {% for key, label in [
-                        ('changes', 'Changes'),
-                        ('full', 'Full Contract'),
+                        ('objects', 'Object Limits'),
+                        ('defaults', 'Container Defaults'),
                         ('advanced', 'Advanced Controls')
                     ] %}
                         <button type="button"
-                                id="allocation-diff-tab-{{ key }}"
                                 role="tab"
-                                aria-selected="{{ 'true' if key == 'changes' else 'false' }}"
-                                aria-controls="allocation-diff-panel-{{ key }}"
-                                tabindex="{{ 0 if key == 'changes' else -1 }}"
-                                data-tenant-allocation-diff-tab="{{ key }}"
-                                class="border-b-2 px-3 py-2.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus {{ 'border-kaori-primary text-kaori-primary' if key == 'changes' else 'border-transparent text-content-muted hover:text-content-primary' }}">
+                                id="allocation-detail-tab-{{ key }}"
+                                aria-controls="allocation-detail-panel-{{ key }}"
+                                aria-selected="{{ 'true' if key == 'objects' else 'false' }}"
+                                tabindex="{{ 0 if key == 'objects' else -1 }}"
+                                data-tenant-allocation-detail-tab="{{ key }}"
+                                class="shrink-0 border-b-2 px-3 py-2.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus {{ 'border-kaori-primary text-kaori-primary' if key == 'objects' else 'border-transparent text-content-muted hover:text-content-primary' }}">
                             {{ label }}
                         </button>
                     {% endfor %}
                 </div>
-
-                {% for tab in ['changes', 'full'] %}
-                    <section id="allocation-diff-panel-{{ tab }}"
-                             role="tabpanel"
-                             aria-labelledby="allocation-diff-tab-{{ tab }}"
+                {% for key, rows in [
+                    ('objects', [
+                        ('PVCs', 'quota', 'persistentvolumeclaims'),
+                        ('Services', 'quota', 'services'),
+                        ('ConfigMaps', 'quota', 'configmaps'),
+                        ('Secrets', 'quota', 'secrets')
+                    ]),
+                    ('defaults', [
+                        ('CPU Request', 'limits', 'default_request.cpu'),
+                        ('CPU Limit', 'limits', 'default.cpu'),
+                        ('Memory Request', 'limits', 'default_request.memory'),
+                        ('Memory Limit', 'limits', 'default.memory')
+                    ])
+                ] %}
+                    <section role="tabpanel"
+                             id="allocation-detail-panel-{{ key }}"
+                             aria-labelledby="allocation-detail-tab-{{ key }}"
                              tabindex="0"
-                             data-tenant-allocation-diff-panel="{{ tab }}"
-                             class="pt-3"
-                             {% if tab != 'changes' %}hidden{% endif %}>
+                             data-tenant-allocation-detail-panel="{{ key }}"
+                             class="pt-2"
+                             {% if key != 'objects' %}hidden{% endif %}>
                         <div class="overflow-x-auto">
-                            <table class="w-full min-w-[33rem] text-left text-xs">
+                            <table class="w-full min-w-[24rem] text-left text-xs">
                                 <thead class="border-b border-outline-subtle text-content-muted">
                                     <tr>
-                                        <th scope="col" class="w-[32%] px-3 py-2.5 font-semibold">Resource</th>
-                                        <th scope="col" class="px-3 py-2.5 font-semibold">Current</th>
-                                        <th scope="col" class="px-3 py-2.5 font-semibold">Proposed</th>
-                                        <th scope="col" class="px-3 py-2.5 font-semibold">Change</th>
+                                        <th scope="col" class="w-[38%] px-2 py-2 font-semibold">Dimension</th>
+                                        <th scope="col" class="px-2 py-2 font-semibold">Current</th>
+                                        <th scope="col" class="px-2 py-2 font-semibold">Proposed</th>
                                     </tr>
                                 </thead>
-                                {% for group, dimensions in comparison_groups %}
-                                    <tbody class="divide-y divide-outline-subtle">
-                                        {% if tab == 'full' %}
-                                            <tr class="bg-surface-elevated">
-                                                <th scope="colgroup" colspan="4" class="px-3 py-2.5 text-xs font-semibold text-content-secondary">{{ group }}</th>
-                                            </tr>
-                                        {% endif %}
-                                        {% for label, source, key in dimensions %}
-                                            <tr data-tenant-allocation-diff-row
-                                                data-tenant-allocation-diff-mode="{{ tab }}"
-                                                data-tenant-allocation-diff-source="{{ source }}"
-                                                data-tenant-allocation-diff-key="{{ key }}"
-                                                {% if tab == 'changes' %}hidden{% endif %}>
-                                                <th scope="row" class="px-3 py-3 font-medium text-content-primary">
-                                                    <span>{{ label }}</span>
-                                                    {% if tab == 'changes' %}
-                                                        <span class="mt-0.5 block text-xs font-normal text-content-muted">{{ group }}</span>
-                                                    {% endif %}
-                                                </th>
-                                                <td class="px-3 py-3 text-content-muted"
-                                                    data-tenant-allocation-diff-current>—</td>
-                                                <td class="px-3 py-3 font-semibold text-content-primary"
-                                                    data-tenant-allocation-diff-proposed>—</td>
-                                                <td class="px-3 py-3 text-content-secondary"
-                                                    data-tenant-allocation-diff-direction>—</td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                {% endfor %}
+                                <tbody class="divide-y divide-outline-subtle">
+                                    {% for label, source, resource in rows %}
+                                        <tr>
+                                            <th scope="row" class="px-2 py-3 font-medium text-content-secondary">{{ label }}</th>
+                                            <td class="px-2 py-3 text-content-muted"
+                                                data-tenant-allocation-tech-current="{{ source }}.{{ resource }}">—</td>
+                                            <td class="px-2 py-3 font-semibold text-content-primary"
+                                                data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}">—</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
                             </table>
                         </div>
-                        {% if tab == 'changes' %}
-                            <p class="mt-3 rounded-lg bg-surface-elevated px-3 py-3 text-xs leading-5 text-content-muted"
-                               data-tenant-allocation-diff-empty>
-                                Select a Namespace and Resource Profile to review changes.
-                            </p>
-                        {% endif %}
                     </section>
                 {% endfor %}
-                <section id="allocation-diff-panel-advanced"
-                         role="tabpanel"
-                         aria-labelledby="allocation-diff-tab-advanced"
+                <section role="tabpanel"
+                         id="allocation-detail-panel-advanced"
+                         aria-labelledby="allocation-detail-tab-advanced"
                          tabindex="0"
-                         data-tenant-allocation-diff-panel="advanced"
+                         data-tenant-allocation-detail-panel="advanced"
                          class="pt-3"
                          hidden>
-                    <p class="mb-3 text-xs leading-5 text-content-muted">
-                        Capability evaluation is not proof of provider execution or read-back.
-                        Supported means preflight only; Recorded means KAORI stored evaluation evidence.
-                    </p>
+                    <p class="mb-2 text-xs leading-5 text-content-muted">Capability evaluation is not proof of provider execution or read-back.</p>
                     <div class="overflow-x-auto" data-tenant-allocation-advanced-list>
-                        <table class="w-full min-w-[30rem] text-left text-xs">
+                        <table class="w-full min-w-[24rem] text-left text-xs">
                             <thead class="border-b border-outline-subtle text-content-muted">
                                 <tr>
-                                    <th scope="col" class="px-3 py-2.5 font-semibold">Control</th>
-                                    <th scope="col" class="px-3 py-2.5 font-semibold">Current · Recorded</th>
-                                    <th scope="col" class="px-3 py-2.5 font-semibold">Proposed · Preflight</th>
+                                    <th scope="col" class="px-2 py-2 font-semibold">Control</th>
+                                    <th scope="col" class="px-2 py-2 font-semibold">Current · Recorded</th>
+                                    <th scope="col" class="px-2 py-2 font-semibold">Proposed · Preflight</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-outline-subtle">
-                                {% for key, contract in resource_profile_advanced_controls.items() %}
-                                    <tr data-tenant-allocation-advanced-row="{{ key }}" hidden>
-                                        <th scope="row" class="px-3 py-3 font-medium text-content-primary">{{ contract.label }}</th>
-                                        <td class="px-3 py-3 text-content-muted"
-                                            data-tenant-allocation-advanced-current="{{ key }}">—</td>
-                                        <td class="px-3 py-3 font-semibold text-content-primary"
-                                            data-tenant-allocation-advanced-proposed="{{ key }}">—</td>
+                                {% for control_key, contract in resource_profile_advanced_controls.items() %}
+                                    <tr data-tenant-allocation-advanced-row="{{ control_key }}" hidden>
+                                        <th scope="row" class="px-2 py-3 font-medium text-content-secondary">{{ contract.label }}</th>
+                                        <td class="px-2 py-3 text-content-muted"
+                                            data-tenant-allocation-advanced-current="{{ control_key }}">—</td>
+                                        <td class="px-2 py-3 font-semibold text-content-primary"
+                                            data-tenant-allocation-advanced-proposed="{{ control_key }}">—</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                    <div class="flex items-start gap-3 rounded-lg bg-surface-elevated px-4 py-4"
+                    <div class="flex items-start gap-2 py-4 text-xs text-content-muted"
                          data-tenant-allocation-advanced-empty>
-                        <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-content-muted" aria-hidden="true"></i>
-                        <div>
-                            <p class="text-xs font-semibold text-content-primary">No configured Advanced Controls</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Current and proposed contracts have no advanced intent to compare.</p>
-                        </div>
+                        <i data-lucide="shield-check" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
+                        <span>No configured Advanced Controls in either contract.</span>
                     </div>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">Supported means preflight only; Recorded means KAORI stored evaluation evidence, not verified execution.</p>
                 </section>
-                <p class="mt-4 text-xs leading-5 text-content-muted">Requests govern capacity admission; limits enforce ResourceQuota ceilings. This read-only diff does not approve or apply changes. Advanced Control execution remains separately verified.</p>
+                <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">
+                    Requests govern capacity admission; ResourceQuota limits enforce ceilings.
+                    This preview never approves or applies changes.
+                </p>
             </div>
         </section>
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
