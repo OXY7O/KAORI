@@ -50,8 +50,12 @@ def probe_runtime_values(
     latency_ms = max(int((perf_counter() - started) * 1000), 0)
     if product_key == 'minio' and response.status_code != 200:
         raise MinioConnectionError(f'MinIO runtime health endpoint returned HTTP {response.status_code}.')
-    if product_key != 'minio' and response.status_code >= 500:
-        raise MinioConnectionError(f'Object-storage runtime endpoint returned HTTP {response.status_code}.')
+    if product_key != 'minio' and not 200 <= response.status_code < 300:
+        # An unauthenticated HEAD can prove network reachability but cannot prove
+        # usable provider health on 3xx/4xx responses (nor on 5xx).
+        raise MinioConnectionError(
+            f'Object-storage runtime endpoint returned HTTP {response.status_code}; runtime health is not verified.'
+        )
     return MinioRuntimeProbeResult(
         connected=True,
         latency_ms=latency_ms,
