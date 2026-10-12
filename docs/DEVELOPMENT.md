@@ -67,8 +67,10 @@ On a fresh database, VS Code already starts all services through its
 existing `runServices` list. The new one-shot Compose service creates only
 the non-owner runtime login; **it never runs Alembic or creates an app
 administrator**. Workers and Beat are started by DevContainer, but their
-existing `WAIT_FOR_SCHEMA=true` gate keeps task consumption disabled until
-the schema reaches the current Alembic head. The initial schema/admin
+existing `WAIT_FOR_SCHEMA=true` gate plus DevContainer-only
+`WAIT_FOR_RUNTIME_GRANTS=true` keeps task consumption disabled until the
+schema reaches the current Alembic head **and** restricted Capsule ledger
+privileges are applied. The initial schema/admin
 mutation stays an explicit one-time VS Code task. If opening fails, check
 `db-role-bootstrap` logs, configuration and persisted role credentials;
 do not reset a nonempty database or silently switch to owner runtime.
