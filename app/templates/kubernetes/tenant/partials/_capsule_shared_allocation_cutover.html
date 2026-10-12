@@ -2,13 +2,13 @@
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
-<section class="overflow-visible rounded-xl border border-kaori-primary/20 bg-kaori-soft/40 shadow-sm"
+<section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="capsule-shared-cutover-heading">
-    <header class="flex min-w-0 items-start gap-4 border-b border-kaori-primary/15 px-5 py-4">
+    <header class="flex min-w-0 items-start gap-4 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                   aria-hidden="true">
-                <i data-lucide="layers-3" class="h-5 w-5"></i>
+                <i data-lucide="layers-3" class="h-4 w-4"></i>
             </span>
             <div>
                 <div class="flex flex-wrap items-center gap-2">
@@ -39,6 +39,14 @@
           data-tenant-shared-allocation-form>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="space-y-5 p-5">
+            <div class="mb-4 flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <i data-lucide="crosshair" class="h-4 w-4"></i>
+                </span>
+                <div><h3 class="text-sm font-semibold text-content-primary">Change Target</h3>
+                    <p class="mt-1 text-xs text-content-muted">Select the Capsule Tenant and governed Resource Profile.</p>
+                </div>
+            </div>
             <div class="grid gap-4 md:grid-cols-2">
                 <label class="block">
                     {{ form_field.label_row("Capsule Tenant") }}
@@ -71,58 +79,53 @@
                     </select>
                 </label>
             </div>
-            <div class="grid gap-4 md:grid-cols-2">
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"
-                         aria-label="Observed Capsule shared allocation">
-                    <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed Shared Baseline</p>
-                        {{ table_label.special_label('Adopted · Observed', 'info', 'eye') }}
-                    </div>
-                    <p class="mt-3 text-sm font-semibold text-content-primary"
-                       data-tenant-shared-current-source>—</p>
-                    <dl class="mt-4 grid grid-cols-2 gap-3">
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">CPU requests</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-shared-current-cpu>
-                                —
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">Memory requests</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-shared-current-memory>
-                                —
-                            </dd>
-                        </div>
-                    </dl>
-                </section>
-                <section class="rounded-xl border border-kaori-primary/20 bg-surface-card p-4"
-                         aria-label="Proposed Capsule shared allocation">
-                    <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed Governed Contract</p>
-                        {{ table_label.special_label('Capacity Preflight', 'warning', 'shield-check') }}
-                    </div>
-                    <p class="mt-3 text-sm font-semibold text-content-primary"
-                       data-tenant-shared-proposed-profile>—</p>
-                    <dl class="mt-4 grid grid-cols-2 gap-3">
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">CPU requests</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-shared-proposed-cpu>
-                                —
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">Memory requests</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-shared-proposed-memory>
-                                —
-                            </dd>
-                        </div>
-                    </dl>
-                </section>
-            </div>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-label="Capsule GlobalResourceQuota contract comparison">
+                <div class="flex items-center justify-between gap-2 border-b border-outline-subtle px-4 py-3">
+                    <span class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <i data-lucide="git-compare-arrows" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Managed Contract Comparison
+                    </span>
+                    {{ table_label.special_label('Preflight · Read Only', 'maintenance', 'shield-check') }}
+                </div>
+                <div class="grid md:grid-cols-2">
+                    {% for side, title, caption in [
+                        ('current', 'Observed GlobalResourceQuota', 'Capsule provider authority · Observed'),
+                        ('proposed', 'Proposed Shared Contract', 'Resource Profile · Pending admission')
+                    ] %}
+                        <section aria-label="{{ title }}" class="min-w-0 px-5 py-4 {% if side == 'proposed' %}border-t border-outline-subtle md:border-t-0 md:border-l{% endif %}">
+                            <p class="text-sm font-semibold {{ 'text-kaori-primary' if side == 'proposed' else 'text-content-secondary' }}">{{ title }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ caption }}</p>
+                            {% if side == 'current' %}
+                                <p data-tenant-shared-current-source class="mt-2 break-words text-sm font-semibold text-content-primary">—</p>
+                            {% else %}
+                                <p data-tenant-shared-proposed-profile class="mt-2 break-words text-sm font-semibold text-content-primary">—</p>
+                            {% endif %}
+                            <p class="mt-4 border-b border-outline-subtle pb-2 text-xs font-semibold text-content-secondary">GlobalResourceQuota · Requests &amp; Limits</p>
+                            <dl class="grid grid-cols-2 gap-x-5 sm:grid-cols-3">
+                                {% for label, key in [
+                                    ('CPU Requests', 'requests.cpu'), ('CPU Limits', 'limits.cpu'),
+                                    ('Memory Requests', 'requests.memory'), ('Memory Limits', 'limits.memory'),
+                                    ('Pods', 'pods'), ('Total Storage', 'requests.storage')
+                                ] %}
+                                    <div class="border-b border-outline-subtle py-3">
+                                        <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                        <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                            data-tenant-quota-metric-side="{{ side }}"
+                                            data-tenant-quota-metric-key="{{ key }}">—</dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
+                        </section>
+                    {% endfor %}
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle bg-surface-elevated px-4 py-3">
+                    <span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary">
+                        <i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        Change Highlights
+                    </span>
+                    <span data-tenant-quota-change-summary aria-live="polite" class="text-xs text-content-secondary">Choose contracts</span>
+                </div>
+            </section>
             {# A different committed authority is not a broken GlobalResourceQuota.
                Keep actual GRQ blockers separate from workflow-inapplicability guidance. #}
             {% set blocked_grq = capsule_shared_cutover_state.values()
@@ -215,7 +218,7 @@
                 </section>
             {% endif %}
         </div>
-        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-kaori-primary/15 bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="max-w-2xl text-xs leading-5 text-content-muted">
                 Provider identity and resourceVersion are rechecked before mutation. Success requires Capsule read-back.
             </p>
