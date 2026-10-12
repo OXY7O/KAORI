@@ -3,10 +3,10 @@ from __future__ import annotations
 from app.artifact_registry.correlation_tasks import materialize_registry_runtime_correlation_task
 from app.common.inventory_generation import filter_current_generation
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_RUNTIME_CORRELATION_OPERATION
+from app.models.integration import IntegrationInstance
 from app.models.inventory import PodInventory
 from app.models.job import JobExecution
 from app.models.registry import RegistryArtifact, RegistryProject, RegistryRepository
-from app.models.integration import IntegrationInstance
 from app.platform_operations.jobs.constants import WORKLOAD_STANDARD
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 
