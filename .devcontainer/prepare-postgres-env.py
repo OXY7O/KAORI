@@ -107,6 +107,14 @@ def main() -> None:
     if not (ROOT / '.env.example').is_file():
         abort('repository workspace is not mounted at /workspace')
     check_regular_file(APP_ENV)
+    # The ignored secrets directory itself must not redirect through a
+    # symlink. This is a trusted development workspace, but avoid accidental
+    # writes into an unrelated checkout or host path.
+    for folder in (ROOT / 'secrets', SECRET_DIR):
+        if folder.is_symlink():
+            abort('local PostgreSQL secrets directory must not be a symlink')
+        if folder.exists() and not folder.is_dir():
+            abort('local PostgreSQL secrets directory path must be a directory')
     check_regular_file(ADMIN_ENV)
     check_regular_file(MIGRATOR_ENV)
     check_regular_file(BACKUP_ENV)
