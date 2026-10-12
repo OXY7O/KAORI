@@ -295,3 +295,38 @@ channel/event identity suppress committed duplicates, but providers are external
 authorities and may not support remote idempotency. Do not enable the recovery
 schedule until Celery worker/Beat, database crash injection, secret rotation,
 test-adapter delivery, duplicate/concurrency and human acceptance are verified.
+
+
+## Telegram Forum Topics — Notification Channels (#1454)
+
+The Telegram provider in **Integrations → Notification Channels** supports an optional
+numeric `message_thread_id` (Forum Topic ID) alongside the existing `chat_id`
+and encrypted bot token. The chat ID identifies a supergroup or chat;
+`message_thread_id` targets an existing **Topic** within a Telegram Forum
+supergroup. KAORI does not create/manage Telegram topics or treat them as
+new integration providers.
+
+Configure a single private **KAORI** supergroup with Topics enabled and create
+separate Telegram topics such as **🚨 Alert**, **🔄 GitHub**, and **💬 Diskusi**.
+For application alerts create one notification channel pointing to the supergroup
+and **Alert** Topic ID; select only the intended domain/event types in its policy.
+Leave Topic ID empty for ordinary Telegram chat/group/channel destinations.
+
+**GitHub Actions Topic remains separately authoritative** under issue #64:
+`.github/workflows/telegram-github-actions.yml` and
+`scripts/ci_delivery_notify.py` use GitHub repository secret
+`TELEGRAM_BOT_TOKEN` plus `TELEGRAM_CHAT_ID` /
+`TELEGRAM_GITHUB_ACTIONS_TOPIC_ID`. Do not duplicate GitHub events through
+the application Notification Channels catalog. The discussion topic belongs
+to Telegram's human conversation and needs no KAORI application channel.
+
+Topic IDs must be positive integers (1–2147483647); invalid configurations
+fail closed rather than accidentally posting to the general supergroup.
+The Topic ID is ordinary provider configuration (not a secret). It is preserved
+for edit and transport replay; changing or clearing it resets channel validation
+through the existing `update_channel` transport-change check. Always run
+**Test Delivery** after modifying a Topic ID and confirm the message arrived
+in the intended topic before enabling operational use. Existing channels with
+no Topic ID keep their chat-only behavior. Replayed deliveries obey the
+existing provider_config snapshot/transport mismatch guard. No migration
+or global delivery worker change is required.

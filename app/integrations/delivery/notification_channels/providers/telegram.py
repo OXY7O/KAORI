@@ -17,6 +17,20 @@ from app.models.notification_channel import NotificationChannel
 
 _TELEGRAM_API = 'https://api.telegram.org'
 _TELEGRAM_TEXT_LIMIT = 4096
+# Telegram Bot API message_thread_id is a positive 32-bit integer.
+_TELEGRAM_TOPIC_ID_MAX = 2_147_483_647
+
+
+def normalize_telegram_topic_id(value: object) -> int | None:
+    """Normalize a configured forum topic ID; never silently coerce bad input."""
+    if isinstance(value, bool):
+        return None
+    text = str(value or '').strip()
+    if not text or len(text) > 10 or not text.isascii() or not text.isdecimal():
+        return None
+    topic_id = int(text)
+    return topic_id if 1 <= topic_id <= _TELEGRAM_TOPIC_ID_MAX else None
+
 
 
 def send_telegram_message(
@@ -25,13 +39,18 @@ def send_telegram_message(
     chat_id: str,
     message: NotificationMessage,
     timeout_seconds: int = 10,
+    message_thread_id: int | None = None,
 ) -> DeliveryResult:
+    if message_thread_id is not None and normalize_telegram_topic_id(message_thread_id) is None:
+        return DeliveryResult(False, 'Telegram topic ID must be a positive integer.')
     text = _render_message(message)
-    payload = {
+    payload: dict[str, str | int] = {
         'chat_id': chat_id,
         'text': text,
         'link_preview_options': json.dumps({'is_disabled': True}, separators=(',', ':')),
     }
+    if message_thread_id is not None:
+        payload['message_thread_id'] = message_thread_id
     if message.content_format == 'markdown':
         payload['parse_mode'] = 'Markdown'
     elif message.content_format == 'html':
@@ -118,7 +137,16 @@ def parse_form(form: Any, existing: NotificationChannel | None) -> tuple[str, di
     existing_credentials = credential_map(existing)
     token = str(form.get('bot_token') or '').strip()
     destination = str(form.get('target_chat_id') or '').strip()
-    return destination, {'bot_token': token or existing_credentials.get('bot_token', '')}, {}, bool(token)
+    raw_topic_id = str(form.get('telegram_topic_id') or '').strip()
+    topic_id = normalize_telegram_topic_id(raw_topic_id) if raw_topic_id else None
+    # Preserve invalid raw form input for the validator; never silently fall
+    # back to sending a misconfigured topic message to the general chat.
+    provider_config: dict[str, Any] = (
+        {'message_thread_id': topic_id if topic_id is not None else raw_topic_id}
+        if raw_topic_id
+        else {}
+    )
+    return destination, {'bot_token': token or existing_credentials.get('bot_token', '')}, provider_config, bool(token)
 
 
 def validate_form(data: NotificationChannelFormInput) -> list[str]:
@@ -127,8 +155,16 @@ def validate_form(data: NotificationChannelFormInput) -> list[str]:
         errors.append('Telegram bot token is required.')
     if not data.destination:
         errors.append('Telegram chat ID or @channel username is required.')
+    raw_topic_id = data.provider_config.get('message_thread_id')
+    if raw_topic_id is not None and normalize_telegram_topic_id(raw_topic_id) is None:
+        errors.append('Telegram Topic ID must be a positive integer (1–2147483647).')
     return errors
 
 
 def form_view(channel: NotificationChannel) -> dict[str, Any]:
-    return {'target_chat_id': channel.destination}
+    config = dict(channel.provider_config or {})
+    topic_id = config.get('message_thread_id')
+    return {
+        'target_chat_id': channel.destination,
+        'telegram_topic_id': str(topic_id) if topic_id is not None else '',
+    }

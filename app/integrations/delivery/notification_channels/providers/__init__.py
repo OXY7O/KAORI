@@ -37,6 +37,7 @@ from app.integrations.delivery.notification_channels.providers.telegram import (
     form_view as telegram_form_view,
 )
 from app.integrations.delivery.notification_channels.providers.telegram import (
+    normalize_telegram_topic_id,
     parse_form as parse_telegram_form,
 )
 from app.integrations.delivery.notification_channels.providers.telegram import (
@@ -87,15 +88,21 @@ def _send_telegram(
     message: NotificationMessage,
     timeout_seconds: int,
 ) -> DeliveryResult:
-    del provider_config
     token = str(credentials.get('bot_token') or '').strip()
     if not token:
         return DeliveryResult(False, 'Telegram bot token is not configured.')
+    raw_topic_id = provider_config.get('message_thread_id')
+    topic_id = None
+    if raw_topic_id is not None:
+        topic_id = normalize_telegram_topic_id(raw_topic_id)
+        if topic_id is None:
+            return DeliveryResult(False, 'Telegram topic ID is invalid; delivery was not attempted.')
     return send_telegram_message(
         bot_token=token,
         chat_id=destination,
         message=message,
         timeout_seconds=timeout_seconds,
+        message_thread_id=topic_id,
     )
 
 
@@ -136,9 +143,9 @@ _PROVIDERS = {
         key='telegram',
         label='Telegram',
         icon='message-circle',
-        description='Telegram Bot API delivery to a chat, group, or channel.',
+        description='Telegram Bot API delivery to a chat, supergroup topic, or channel.',
         transport='Bot API',
-        configuration='Bot token + chat, group, or channel destination.',
+        configuration='Bot token + destination chat ID + optional forum topic ID.',
         setup_title='Configure Telegram Bot Delivery',
         setup_summary=(
             'Use a dedicated Telegram bot and destination that KAORI can reach without sharing the bot token '
@@ -147,23 +154,26 @@ _PROVIDERS = {
         setup_requirements=(
             'A Telegram bot created with BotFather.',
             'The bot token generated for that bot.',
-            'A target chat ID, group ID, or @channel username.',
-            'Posting permission for the bot in the selected destination.',
+            'A target chat ID, supergroup ID, or @channel username.',
+            'For topic routing, enable Topics in a Telegram supergroup and obtain its numeric message_thread_id.',
+            'Posting permission for the bot in the selected chat and topic.',
         ),
         setup_steps=(
             'Create or select a dedicated KAORI notification bot in BotFather and copy its token.',
             'Add the bot to the intended chat, group, or channel and grant the minimum permission required '
             'to post messages.',
-            'Resolve the destination as a numeric chat ID or @channel username, then enter it in the KAORI '
-            'channel configuration.',
-            'Save the channel and run Test Delivery. Keep the channel out of automatic use until the test '
-            'status is Ready.',
+            'Resolve the destination as a numeric chat/supergroup ID or @channel username. Optionally enter a '
+            'numeric Topic ID for a supergroup forum topic.',
+            'Create one KAORI Notification Channel per application delivery topic, then save and run Test '
+            'Delivery to confirm the selected topic receives the message.',
+            'GitHub Actions notifications remain owned by the separate GitHub notifier; avoid subscribing an '
+            'application channel to duplicate that delivery.',
         ),
         security_note=(
             'Treat the bot token as a secret. KAORI stores it in the channel credential payload and never renders '
             'the stored token back into the form.'
         ),
-        validation_note='Test Delivery verifies both bot credentials and access to the configured destination.',
+        validation_note='Test Delivery confirms bot access to the configured chat and optional forum topic.',
         form_partial='integrations/delivery/notification_channels/providers/telegram/_form.html',
         form_parser=parse_telegram_form,
         form_validator=validate_telegram_form,
