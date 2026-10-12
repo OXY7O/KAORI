@@ -61,3 +61,27 @@ def test_authentication_security_and_compact_login_contract_remain_locked() -> N
     assert 'width: min(1060px, 100%);' in css
     assert 'height: 44px;' in css
     assert '@media (max-height: 760px) and (min-width: 1024px)' in css
+
+
+def test_setup_bootstrap_neutral_copy_and_full_width() -> None:
+    setup = read('app/templates/access/authentication/setup_required.html')
+    lock = read('docs/design/KAORI_AUTHENTICATION_SURFACE_LOCK_V1.md')
+
+    assert 'border-l-4 border-kaori-primary' not in setup
+    assert '<div class="px-4 py-4 sm:px-5">' in setup
+    assert 'text-content-secondary">Primary action · One-time setup' in setup
+    assert '<div class="space-y-5">' in setup
+    assert 'lg:grid-cols-2' not in setup
+    assert "label='Manual Bootstrap'" in setup
+    assert (
+        'Run once in Windows PowerShell at the repo root to create the '
+        'schema, grants, and admin.'
+    ) in setup
+    assert 'Preserve INTEGRATION_CREDENTIAL_KEY.' in setup
+    assert 'Create schema, grants, and admin.' in setup
+    assert (
+        'Use the host terminal; never migrate with the runtime DATABASE_URL.'
+        in setup
+    )
+    assert 'no Violet left-edge stripe' in lock
+    assert 'full-width Manual Bootstrap command' in lock

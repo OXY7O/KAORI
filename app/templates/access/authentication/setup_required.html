@@ -26,7 +26,7 @@
         docker compose ps
         pg_isready -h db -p 5432
     {%- endset %}
-    {% set initialization_flow_rows = [[('key-round', 'Confirm the Encryption Boundary', 'Keep INTEGRATION_CREDENTIAL_KEY unchanged.'), ('database-zap', 'Run the Initial KAORI Database Bootstrap', 'Create the schema, grants, and first administrator.'), ('refresh-cw', 'Return to the Readiness Check', 'Refresh the page, then sign in when ready.')]] %}
+    {% set initialization_flow_rows = [[('key-round', 'Confirm the Encryption Boundary', 'Preserve INTEGRATION_CREDENTIAL_KEY.'), ('database-zap', 'Run the Initial KAORI Database Bootstrap', 'Create schema, grants, and admin.'), ('refresh-cw', 'Return to the Readiness Check', 'Refresh the page, then sign in when ready.')]] %}
     <main class="min-h-screen bg-surface-page px-3 py-3 sm:px-4 sm:py-4">
         <div class="mx-auto w-full max-w-4xl rounded-xl border border-outline-subtle bg-surface-card px-4 py-4 shadow-sm sm:px-5 sm:py-5 lg:px-6"
              data-kaori-setup-workspace="release-v4"
@@ -104,15 +104,15 @@
                          data-kaori-setup-console
                          data-kaori-setup-primary-action
                          aria-labelledby="development-bootstrap-title">
-                    <div class="border-l-4 border-kaori-primary px-4 py-4 sm:px-5">
+                    <div class="px-4 py-4 sm:px-5">
                         <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
-                                <p class="text-xs font-semibold text-kaori-primary">Primary action · One-time setup</p>
+                                <p class="text-xs font-semibold text-content-secondary">Primary action · One-time setup</p>
                                 <h2 id="development-bootstrap-title"
                                     class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ 'Run Initial Database Bootstrap' if devcontainer_setup else 'Initialize KAORI Database' }}</h2>
                                 <p class="mt-1 max-w-2xl text-xs leading-5 text-content-muted">
                                     {% if devcontainer_setup %}
-                                        Run once from Windows PowerShell at the repository root. Create the schema, runtime grants, and first KAORI administrator.
+                                        Run once in Windows PowerShell at the repo root to create the schema, grants, and admin.
                                     {% else %}
                                         Complete the authorized schema migration and first administrator setup before signing in.
                                     {% endif %}
@@ -144,7 +144,7 @@
                 <section class="mt-5" data-kaori-setup-flow aria-labelledby="initialization-path-title">
                     <div class="mb-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                         <h2 id="initialization-path-title" class="text-sm font-semibold text-content-primary">Initialization Path</h2>
-                        <p class="text-xs leading-5 text-content-muted">Three steps · No automatic database changes</p>
+                        <p class="text-xs leading-5 text-content-muted">Three steps · This page is read-only</p>
                     </div>
                     {{ operational_flow_steps.render(initialization_flow_rows, aria_label='Initialization Path', variant='inline') }}
                 </section>
@@ -158,12 +158,12 @@
                         compact_action=true,
                         extra_classes=''
                         ) %}
-                        <div class="grid gap-5 lg:grid-cols-2">
+                        <div class="space-y-5">
                             <section aria-labelledby="manual-initialization-title">
                                 <h3 id="manual-initialization-title" class="text-xs font-semibold text-content-secondary">Manual Initialization Commands</h3>
                                 <p class="mb-3 mt-1 text-xs leading-5 text-content-muted">
                                     {% if devcontainer_setup %}
-                                        Run only from the host terminal. Do not use the restricted application DATABASE_URL for raw Flask migrations.
+                                        Use the host terminal; never migrate with the runtime DATABASE_URL.
                                     {% else %}
                                         Use only if approved migration and RBAC steps must run separately.
                                     {% endif %}
