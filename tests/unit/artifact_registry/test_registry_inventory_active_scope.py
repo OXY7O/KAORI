@@ -23,3 +23,19 @@ def test_committed_empty_has_no_visibility_evidence() -> None:
     assert 'visibility_observed = scoped_projects.filter(' in source
     assert 'public_projects = scoped_projects.filter(' in source
     assert 'project_count == 0' in source
+
+
+def test_malformed_registry_inventory_source_filter_does_not_expand_scope() -> None:
+    from flask import Flask
+    from werkzeug.exceptions import NotFound
+
+    from app.artifact_registry.routes import _inventory_source_id
+
+    flask = Flask('registry-inventory-scope-test')
+    for raw in ('?source_id=abc', '?source_id=-2', '?source_id=0', '?source_id=3.1'):
+        with flask.test_request_context('/artifact-registry/inventory/artifacts' + raw):
+            with __import__('pytest').raises(NotFound):
+                _inventory_source_id()
+    for raw, expected in (('', None), ('?source_id=', None), ('?source_id=3', 3)):
+        with flask.test_request_context('/artifact-registry/inventory/projects' + raw):
+            assert _inventory_source_id() == expected
