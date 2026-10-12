@@ -59,6 +59,55 @@ Reserve and unmanaged values use Kubernetes quantity syntax and may explicitly b
 
 Unmanaged commitment is a governed request commitment outside KAORI Tenant Management. It is not current utilization and is not inferred from PVC quota, limits, or filesystem usage.
 
+## Limit Exposure policy and operator planning (#1681, #1685)
+
+Request Commitment is still the Kubernetes scheduling/admission budget. A
+separate **Limit Exposure** planning plane evaluates frozen CPU and memory
+`ResourceQuota.limits` across the same canonical active Native Namespace
+and shared Capsule quota authority as requests (shared Tenant exposure is
+counted once). It is not container usage, guaranteed burst, or physical
+reservation. Missing limits, ambiguous shared authority and stale capacity
+snapshot remain **Unknown**, never zero.
+
+A cluster's committed Capacity Policy contains:
+- **Exposure Mode:** `observe` (safe default), or `enforce` selected explicitly
+  by the operator;
+- **CPU Limit Ratio:** default `1.50`, allowed 1.00–4.00, supporting deliberate
+  controlled CPU overcommit;
+- **Memory Limit Ratio:** default `1.00`, allowed 1.00–2.00, conservative by
+  default because physical memory oversubscription can cause OOM;
+- **Exposure Threshold:** governed Tenant CPU/memory budget *after* platform
+  reserve, safety headroom and unmanaged commitments, multiplied by its
+  configured ratio.
+
+The **Capacity Policy** form rehydrates the selected cluster's committed mode
+and ratios via the existing policy JSON and HTMX workspace pattern. The
+**Tenant Allocation Overview** adds a compact, separate **CPU & Memory Limit
+Exposure** table showing committed limits, operator thresholds, ratio, state
+(Healthy, Near Capacity, Overcommitted, Unknown), and mode/capacity cutoff.
+These are read-only committed-state figures, not availability confirmations
+or a second calculation of Request headroom.
+
+In **Observe** mode, the Limit Exposure assessment is advisory and cannot
+change the original admission decision. In **Enforce**, positive Requests
+changes or increased/previously undeclared Limits require a fresh snapshot,
+a completely provable post-mutation Limits projection and limits within the
+operator's thresholds. This is an *additional fail-closed* admission gate:
+Request Commitment must still pass, and its original refusal takes precedence
+if both gates fail. Native managed replacement excludes exactly the target
+Namespace before adding Proposed; Capsule Tenant/Namespace scopes retain
+their own authoritative multiplication and shared-deduplication semantics.
+Policy/evidence and any Limit Exposure preflight results are committed into
+`TenantCapacityDecision` audit evidence. No new Kubernetes executor,
+provider override or live request is introduced.
+
+The `20261013_limit_exposure` migration is source-only until the operator
+explicitly approves schema admission. **No runtime use of the new model
+columns is supported before migration**. The phased rollout is migration,
+snapshot/data qualification, Observe review, local UAT and human acceptance,
+then an optional explicit operator change to Enforce. CI/CD, Full Admission,
+staging/main promotion and provider writes remain HOLD in review.
+
 ## Allocation Budget
 
 For CPU, memory, and Pods:
@@ -314,8 +363,10 @@ Namespace identities to be expanded for correlation.
 read model**, not actual CPU/memory use, Pod runtime pressure, or physical
 storage reservation. Actual metrics and backend capacity remain in dedicated
 Kubernetes Analytics; the link to Capacity Analytics is permission-gated.
-The view performs no live provider/Prometheus call, no adoption/provisioning
-mutation, no new quota arithmetic or independent admission rule. Cluster policy
+The view performs no live provider/Prometheus call or adoption/provisioning
+mutation. Request Commitment remains the original admission arithmetic; the
+separate Limit Exposure read model uses committed ceilings, and its optional
+Enforce setting introduces a governed additional check as specified above. Cluster policy
 changes and Namespace allocation increases still require the same #654
 preflight and provider reconciliation/write-readback governance. Projected
 transaction impact for Create/Adopt is scoped separately under #125.
