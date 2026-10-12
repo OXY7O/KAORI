@@ -451,3 +451,14 @@ def test_security_summary_uses_registry_section_intro_and_grouped_metrics() -> N
     assert "operational_metric_card" not in summary
     assert "registry.footer(" in template
 
+
+
+def test_security_sync_action_states_fleet_scope_independently_of_view_filters() -> None:
+    template = read('app/templates/artifact_registry/partials/_security_workspace.html')
+    routes = read('app/artifact_registry/routes.py')
+    adapter = read('app/artifact_registry/security/job_adapter.py')
+    assert 'Sync Security Evidence · All Eligible Sources' in template
+    assert 'only control displayed evidence, not the scope' in template
+    assert "job_key='artifact_registry.security.sync'" in routes
+    assert 'del parameters' in adapter
+    assert 'name="csrf_token"' in template
