@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from math import ceil
 from typing import Any
 
@@ -383,8 +384,6 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
         return []
 
     try:
-        from datetime import UTC, datetime, timedelta
-
         cutoff = datetime.now(UTC) - timedelta(hours=24)
         rows = (
             TLSCertificateInventory.query.join(
@@ -632,7 +631,9 @@ def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[s
                 'warning': warning,
                 'domains': len(active_domains),
                 'object_storage': sum(1 for item in scoped_findings if item.get('domain') == 'object_storage'),
-                'alert_eligible': sum(1 for item in scoped_findings if (item.get('alert_handling') or {}).get('eligible')),
+                'alert_eligible': sum(
+                    1 for item in scoped_findings if (item.get('alert_handling') or {}).get('eligible')
+                ),
                 'alert_open': sum(
                     1 for item in scoped_findings if (item.get('alert_handling') or {}).get('status') == 'escalated'
                 ),
