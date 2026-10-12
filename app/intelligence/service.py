@@ -509,7 +509,7 @@ def _severity_rank(value: str) -> int:
     }.get(value.lower(), 9)
 
 
-def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
+def get_catalog_rule(rule_key: str, *, include_owner_options: bool = False) -> dict[str, Any] | None:
     """Return one normalized catalog definition by its canonical rule key."""
 
     resolved_key = clean(rule_key)
@@ -523,10 +523,18 @@ def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
             raw_exception_policy = rule.get('risk_exception')
             exception_policy = raw_exception_policy if isinstance(raw_exception_policy, dict) else {}
             if bool(exception_policy.get('enabled')):
+                evidence_issues: list[str] = []
+                scoped_findings = get_active_recommendation_findings(
+                    domain=str(rule['domain']),
+                    rule_keys={resolved_key},
+                    evidence_issues=evidence_issues,
+                )
                 exception_view = build_rule_exception_view(
                     resolved_key,
-                    get_active_recommendation_findings(),
+                    scoped_findings,
+                    include_owner_options=include_owner_options and not evidence_issues,
                 )
+                exception_view['evaluation_issues'] = evidence_issues
                 exception_view['policy'] = dict(exception_policy)
                 rule['rule_exceptions'] = exception_view
             else:
