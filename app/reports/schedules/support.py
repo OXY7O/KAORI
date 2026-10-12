@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.object_storage import ObjectStorageSystem
-from app.models.report import ReportSchedule
+from app.models.report import ReportSchedule, ReportScheduleRun
 from app.reports.catalog import REPORT_TYPE_OPTIONS
 from app.reports.scope import (
     ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
@@ -233,4 +233,14 @@ def build_schedule_evidence_snapshot(schedule: ReportSchedule) -> dict[str, Any]
         'day_of_week': schedule.day_of_week,
         'day_of_month': schedule.day_of_month,
         'timezone': schedule.timezone,
+        'notification_channel_ids': schedule.notification_channel_ids_as_list(),
     }
+
+
+def get_run_delivery_channel_ids(run: ReportScheduleRun, schedule: ReportSchedule | None) -> list[int]:
+    """Use accepted per-run delivery intent, not later changes to the schedule."""
+    snapshot = run.schedule_snapshot if isinstance(run.schedule_snapshot, dict) else {}
+    stored = snapshot.get('notification_channel_ids')
+    if isinstance(stored, list):
+        return list(dict.fromkeys(int(item) for item in stored if str(item).isdigit() and int(item) > 0))
+    return schedule.notification_channel_ids_as_list() if schedule is not None else []
