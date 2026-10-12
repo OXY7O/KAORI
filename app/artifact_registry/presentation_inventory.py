@@ -646,9 +646,28 @@ def build_inventory(
     }
 
 
+def _inventory_detail_in_active_committed_scope(provider_id: int) -> bool:
+    """Do not expose archived/disabled/unobserved providers as active Inventory detail."""
+    return (
+        IntegrationInstance.query.join(
+            RegistryCollectionState,
+            RegistryCollectionState.integration_instance_id == IntegrationInstance.id,
+        )
+        .filter(
+            IntegrationInstance.id == provider_id,
+            IntegrationInstance.integration_type == 'registry',
+            IntegrationInstance.enabled.is_(True),
+            IntegrationInstance.lifecycle_status == 'active',
+            RegistryCollectionState.last_committed_at.is_not(None),
+        )
+        .first()
+        is not None
+    )
+
+
 def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
     project = RegistryProject.query.filter(RegistryProject.id == int(project_id)).first()
-    if project is None:
+    if project is None or not _inventory_detail_in_active_committed_scope(project.integration_instance_id):
         return None
 
     provider = IntegrationInstance.query.filter(IntegrationInstance.id == int(project.integration_instance_id)).first()
@@ -731,7 +750,7 @@ def _inventory_detail_provider_context(integration_instance_id: int) -> dict[str
 
 def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | None:
     repository = RegistryRepository.query.filter(RegistryRepository.id == int(repository_id)).first()
-    if repository is None:
+    if repository is None or not _inventory_detail_in_active_committed_scope(repository.project.integration_instance_id):
         return None
 
     source = _inventory_detail_provider_context(repository.project.integration_instance_id)
@@ -809,7 +828,9 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
 
 def build_inventory_artifact_detail(artifact_id: int) -> dict[str, Any] | None:
     artifact = RegistryArtifact.query.filter(RegistryArtifact.id == int(artifact_id)).first()
-    if artifact is None:
+    if artifact is None or not _inventory_detail_in_active_committed_scope(
+        artifact.repository.project.integration_instance_id
+    ):
         return None
 
     repository = artifact.repository
