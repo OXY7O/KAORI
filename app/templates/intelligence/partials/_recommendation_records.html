@@ -59,6 +59,16 @@
                                     Managed in Alert Intelligence
                                 {% elif item.alert_handling.status == 'exception_active' %}
                                     Detection retained · promotion suppressed
+                                {% elif item.alert_handling.status == 'source_unknown' %}
+                                    Source unknown · verify evidence
+                                {% elif item.alert_handling.status == 'resolved_pending' %}
+                                    Source resolved · verify closure
+                                {% elif item.alert_handling.status == 'withdrawn' %}
+                                    Alert manually withdrawn
+                                {% elif item.alert_handling.status == 'retired' %}
+                                    Source decommissioned
+                                {% elif item.alert_handling.status == 'resolved' %}
+                                    Case closed · history retained
                                 {% elif item.alert_handling.eligible %}
                                     {{ item.alert_handling.mode|title }} escalation
                                 {% else %}
