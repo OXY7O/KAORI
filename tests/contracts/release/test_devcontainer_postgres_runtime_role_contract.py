@@ -91,7 +91,7 @@ def test_post_cutover_initialization_requires_ephemeral_owner_database_url() -> 
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in source
     assert 'KAORI_DB_MIGRATION_URL' in source
     assert 'DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app db upgrade' in source
-    assert 'Do not run database migrations with kaori_runtime' in source
+    assert 'do not migrate as application runtime' in source
     assert 'DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app seed-rbac' in source
 
 
@@ -168,5 +168,6 @@ def test_workers_and_beat_wait_for_runtime_immutable_ledger_admission() -> None:
     assert '_runtime_database_admitted(database_url)' in waiter
     assert "'kaori_migrator', 'MEMBER'" in waiter
     assert "'tr_capsule_ledger_deny_truncate'" in waiter
+    assert 'WHERE is_super_admin = TRUE AND account_is_active = TRUE' in waiter
     assert "'public.capsule_handoff_ledger_events', 'UPDATE'" in waiter
     assert 'if current_heads == expected_heads:' in waiter
