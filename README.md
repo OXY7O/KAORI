@@ -40,7 +40,13 @@ The root view intentionally stays product-level. Runtime boundaries, data author
 
 ## Quick Start
 
-The supported development path is the VS Code Dev Container described in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+The supported development path is the VS Code Dev Container described in
+[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). On Windows, launch VS Code
+**from Ubuntu/WSL** (`code .` within the repository's WSL path) and
+confirm **WSL: Ubuntu** before selecting **Reopen in Container**.
+Opening the same repository as a native `C:\\Users\\...` VS Code folder
+is not equivalent: the first-run host bootstrap currently requires WSL
+Python and the Linux `$HOME` secret boundary.
 
 ```bash
 # Optional before first open: cp .env.example .env
