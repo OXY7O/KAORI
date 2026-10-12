@@ -138,3 +138,7 @@ Automatic Alert Intelligence notification polling runs on the existing maintenan
 - `NOTIFICATION_DELIVERY_MAX_ATTEMPTS` (default `3`, bounded `1..10`)
 
 An enabled channel is not eligible for automatic delivery until Test Delivery succeeds. Active-alert events are deduplicated per channel and alert episode; failed deliveries can retry up to the configured attempt ceiling. Alertmanager remains the authoritative raw routing/receiver layer. Alert Intelligence emits enriched alert events into Notification Channels; Scheduled Reports can use the same channel infrastructure for report completion events.
+
+### Rule Catalog detail bounded read model (#1523)
+
+Definition listing remains source-controlled and read-only. Opening one exception-enabled rule evaluates only its canonical rule/domain, and Tenant Governance evaluation is skipped for unrelated Kubernetes rule families. Exception history is limited to 12 newest rows in SQL; active/expiring totals use scoped SQL aggregates and only current finding assets require active-row hydration. Owner options are read only for authorized create workflows. Partial evaluator evidence must be disclosed, not silently represented as recovered or eligible for Accepted Risk creation. This path performs no live infrastructure-provider requests.
