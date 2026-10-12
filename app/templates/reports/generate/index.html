@@ -826,6 +826,7 @@
                 "has_object_storage_systems": {{ payload.has_object_storage_systems|tojson }},
                 "has_artifact_registries": {{ payload.has_artifact_registries|tojson }},
                 "initial_sections": {{ payload.form_state.sections|tojson }},
+                "has_validation_errors": {{ (payload.errors|length > 0)|tojson }},
                 "initial_namespace": {{ payload.form_state.namespace|tojson }},
                 "generation_allowed": {{ payload.generation_allowed|tojson }},
                 "initial_request_ready": {{ initial_request_ready|tojson }}
