@@ -178,7 +178,12 @@ def _other_committed_for_namespace_replacement(
     """
 
     target_rows = [row for row in rows if row.id == target.id]
-    if len(target_rows) != 1 or target_rows[0].namespace != target.namespace:
+    if (
+        len(target_rows) != 1
+        or target_rows[0].namespace != target.namespace
+        or str(target_rows[0].cluster_id) != str(target.cluster_id)
+        or str(target_rows[0].environment.tenant_id) != str(target.environment.tenant_id)
+    ):
         raise ValueError('Atomic allocation replacement requires exactly one active matching Namespace generation.')
     if any(row.id != target.id and row.namespace == target.namespace for row in rows):
         raise ValueError('Atomic allocation replacement cannot resolve multiple active generations of this Namespace.')
