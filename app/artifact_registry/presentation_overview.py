@@ -60,9 +60,19 @@ def _provider_health_status(
             'warning',
             'Latest inventory refresh failed; the previous committed snapshot is retained.',
         )
+    if security['high'] > 0:
+        return 'Warning', 'warning', f'{security["high"]} high security finding(s).'
+    if security['artifacts'] > 0 and security['scanned'] < security['artifacts']:
+        return (
+            'Warning',
+            'warning',
+            f'Security scans incomplete: {security["scanned"]} / {security["artifacts"]} artifacts assessed.',
+        )
     if readiness == 'degraded':
         return 'Warning', 'warning', 'Provider is usable with compatibility attention.'
-    return 'Healthy', 'normal', 'Provider and committed inventory are operational.'
+    if readiness != 'ready':
+        return 'Warning', 'warning', 'Provider readiness has not been validated as ready.'
+    return 'Healthy', 'normal', 'Ready provider, committed inventory and assessed security evidence.'
 
 
 def _provider_health_projection(
@@ -107,11 +117,27 @@ def _provider_health_projection(
                 0,
             ),
             func.coalesce(
-                func.sum(RegistryArtifact.vulnerability_summary['critical'].as_integer()),
+                func.sum(
+                    case(
+                        (
+                            func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
+                            RegistryArtifact.vulnerability_summary['critical'].as_integer(),
+                        ),
+                        else_=0,
+                    )
+                ),
                 0,
             ),
             func.coalesce(
-                func.sum(RegistryArtifact.vulnerability_summary['high'].as_integer()),
+                func.sum(
+                    case(
+                        (
+                            func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
+                            RegistryArtifact.vulnerability_summary['high'].as_integer(),
+                        ),
+                        else_=0,
+                    )
+                ),
                 0,
             ),
         )
@@ -161,7 +187,10 @@ def _provider_health_projection(
         readiness = str(provider.readiness_status or 'validation_required')
         inventory_ready = bool(state is not None and state.last_committed_at is not None)
         provider_artifact_count = security['artifacts']
-        security_ready = bool(security['scanned'])
+        security_ready = inventory_ready and (
+            provider_artifact_count > 0 and security['scanned'] >= provider_artifact_count
+        )
+        security_partial = bool(security['scanned']) and security['scanned'] < provider_artifact_count
         security_not_applicable = inventory_ready and provider_artifact_count == 0
 
         overall_status, overall_tone, status_reason = _provider_health_status(
@@ -192,6 +221,8 @@ def _provider_health_projection(
                 'inventory_ready': inventory_ready,
                 'metrics_ready': metrics.get('status') == 'ready',
                 'security_ready': security_ready,
+                'security_partial': security_partial,
+                'scanned_count': security['scanned'],
                 'security_not_applicable': security_not_applicable,
                 'snapshot': snapshot,
             }
@@ -286,8 +317,8 @@ def _security_freshness_status(
         return 'No Artifacts', 'info', 'No committed artifacts to scan'
     if scanned_count:
         return (
-            'Available',
-            'normal',
+            'Available' if scanned_count >= artifact_total else 'Partial',
+            'normal' if scanned_count >= artifact_total else 'warning',
             _freshness_value(latest_security_at, missing='Committed scan evidence available'),
         )
     return (
@@ -431,11 +462,21 @@ def _fleet_freshness(
         },
         {
             'label': 'Security Snapshot',
-            'status': 'No Artifacts' if artifact_total == 0 else ('Available' if scanned_count else 'Required'),
-            'tone': 'info' if artifact_total == 0 else ('normal' if scanned_count else 'warning'),
+            'status': (
+                'No Artifacts' if artifact_total == 0 and stats['committed_count']
+                else 'Required' if not scanned_count
+                else 'Available' if scanned_count >= artifact_total
+                else 'Partial'
+            ),
+            'tone': (
+                'info' if artifact_total == 0 and stats['committed_count']
+                else 'unknown' if artifact_total == 0
+                else 'normal' if scanned_count >= artifact_total
+                else 'warning'
+            ),
             'value': (
                 'No committed artifacts to scan'
-                if artifact_total == 0
+                if artifact_total == 0 and stats['committed_count']
                 else (
                     _freshness_value(
                         stats['latest_security_at'],
