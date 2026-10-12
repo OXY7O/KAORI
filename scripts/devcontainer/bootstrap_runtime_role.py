@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import psycopg2
 from psycopg2 import sql
@@ -37,7 +38,7 @@ def _read_secret(name: str) -> str:
     return secret
 
 
-def _role_flags(cursor: object, name: str) -> tuple[bool, ...] | None:
+def _role_flags(cursor: Any, name: str) -> tuple[bool, ...] | None:
     cursor.execute(
         """SELECT rolcanlogin, rolsuper, rolcreatedb, rolcreaterole,
                   rolreplication, rolbypassrls
@@ -52,6 +53,8 @@ def main() -> int:
         _abort('APP_ENV must be development')
     if os.getenv('KAORI_DB_MIGRATION_URL'):
         _abort('migration URL is forbidden in the one-shot bootstrap job')
+    if os.getenv('POSTGRES_PASSWORD'):
+        _abort('move legacy POSTGRES_PASSWORD out of the app .env before opening DevContainer')
     url = make_url(os.getenv('DATABASE_URL', ''))
     if (
         url.drivername not in {'postgresql', 'postgresql+psycopg2'}
