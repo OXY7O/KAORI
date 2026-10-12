@@ -5,15 +5,14 @@ from typing import cast
 
 import pytest
 
-from app.models.inventory import PodInventory
-from app.models.registry import RegistryArtifact
-
 from app.artifact_registry.correlation import (
     _container_rows,
     _match,
     _normalized_registry_host,
     parse_image_reference,
 )
+from app.models.inventory import PodInventory
+from app.models.registry import RegistryArtifact
 
 
 def _artifact() -> RegistryArtifact:
