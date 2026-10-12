@@ -232,8 +232,12 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
         'selected_coverage_query': query.coverage_query,
         'selected_coverage_environment': query.coverage_environment,
         'selected_coverage_status': query.coverage_status,
-        'registry_has_active_filters': bool(query.query or query.environment or query.readiness or query.compatibility),
-        'coverage_has_active_filters': bool(query.coverage_query or query.coverage_environment or query.coverage_status),
+        'registry_has_active_filters': bool(
+            query.query or query.environment or query.readiness or query.compatibility
+        ),
+        'coverage_has_active_filters': bool(
+            query.coverage_query or query.coverage_environment or query.coverage_status
+        ),
         'environment_options': sorted(all_environments),
         'readiness_options': [
             {'value': 'ready', 'label': 'Ready'},
@@ -372,9 +376,12 @@ def build_minio_capability_registry(
     rows: list[dict[str, Any]] = []
     for definition in API_CAPABILITIES:
         available = definition.key in observed
-        row_status = (
-            'ready' if available else 'blocked' if definition.required and instance.last_validated_at else 'not_checked'
-        )
+        if available:
+            row_status = 'ready'
+        elif definition.required and instance.last_validated_at:
+            row_status = 'blocked'
+        else:
+            row_status = 'not_checked'
         rows.append(
             {
                 'key': definition.key,
@@ -383,7 +390,11 @@ def build_minio_capability_registry(
                 'required': bool(definition.required),
                 'requirement_label': 'Required' if definition.required else 'Optional',
                 'status': row_status,
-                'status_label': 'Ready' if available else 'Blocked' if row_status == 'blocked' else 'Not Checked',
+                'status_label': {
+                    'ready': 'Ready',
+                    'blocked': 'Blocked',
+                    'not_checked': 'Not Checked',
+                }[row_status],
                 'available': available,
                 'contract': CAPABILITY_PROFILE,
                 'category': 'MinIO S3 API',
@@ -394,7 +405,10 @@ def build_minio_capability_registry(
                     else (
                         f'Full Validation did not prove required {definition.label}.'
                         if row_status == 'blocked'
-                        else f'{definition.label} has no validated provider-core evidence. Optional bucket configuration is assessed during Inventory Sync.'
+                        else (
+                            f'{definition.label} has no validated provider-core evidence. '
+                            'Optional bucket configuration is assessed during Inventory Sync.'
+                        )
                     )
                 ),
                 'success_criteria': definition.description,
@@ -409,7 +423,10 @@ def build_minio_capability_registry(
                     else (
                         'Verify the registered S3 API access and rerun Full Validation.'
                         if row_status == 'blocked'
-                        else 'Review optional bucket evidence after Object Storage Inventory Sync; do not infer provider-core readiness from an untested API.'
+                        else (
+                            'Review optional bucket evidence after Object Storage Inventory Sync; '
+                            'do not infer provider-core readiness from an untested API.'
+                        )
                     )
                 ),
                 'remediation': (
