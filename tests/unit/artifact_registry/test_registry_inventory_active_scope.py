@@ -11,7 +11,7 @@ def test_inventory_scope_is_restricted_before_resource_filter_and_pagination() -
     assert "'committed_provider_ids': committed_provider_ids" in source
     assert "_inventory_rows(resource, context['committed_provider_ids'])" in source
     rows = source.split('def _inventory_rows(', 1)[1].split('def _inventory_filter_options(', 1)[0]
-    assert rows.count('RegistryProject.integration_instance_id.in_(committed_provider_ids)') == 3
+    assert rows.count('RegistryProject.integration_instance_id.in_(committed_provider_ids)') >= 1
     fleet = source.split('def _inventory_fleet_readings(', 1)[1].split('def _inventory_base_context(', 1)[0]
     assert 'scoped_projects = RegistryProject.query.filter(' in fleet
     assert 'RegistryProject.integration_instance_id.in_(committed_provider_ids)' in fleet

@@ -703,3 +703,8 @@ Registry Inventory Hero, Fleet, and Project/Repository/Artifact Asset Catalog co
 ### Registry Inventory fleet membership (#1410)
 
 The operational Registry Inventory fleet uses the same enabled/active provider identities and committed RegistryCollectionState membership as Overview. Project visibility numerators, project/repository/artifact resource tables, source/environment selectors, and resource posture are filtered to those committed provider IDs; disabled/retired or never-observed historical rows stay stored but do not silently inflate the operational fleet. An observed-empty provider remains in coverage with zero assets. This does not implement a historical inventory browser or delete data.
+
+
+### Bounded Registry Inventory list reads (#1409)
+
+Projects, Repositories and Artifacts query only enabled/active committed Registry provider identities. Source/environment/visibility/search predicates execute in SQL **before** canonical `paginate_query` applies 5/10/25/50 limits. Artifact tag search uses a correlated relationship `EXISTS` rather than joining tags and duplicating artifact rows; related tag collections are loaded only after the artifact page is selected. SQL aggregates provide whole-scope resource posture and distinct small provider/environment selectors, independently of the visible page. Optional missing provider-reported project/repository child counts use bounded per-visible-row database counts instead of loading child collections. No live Harbor calls and no new pagination framework. Real PostgreSQL explain/statement-count, fulltext equivalence and HTMX pagination UAT remain required.
