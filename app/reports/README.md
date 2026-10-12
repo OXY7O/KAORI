@@ -158,3 +158,7 @@ List pages remain metadata-first and must never treat a reachable backend plus r
 ### Generated Reports Registry scope identity (#1555)
 
 Registry's generic scope filter includes active IntegrationInstance Registry options through `get_active_registry_options()`, alongside Kubernetes and Object Storage. Each persisted report's immutable scope label snapshot remains authoritative for historical presentation even when an integration is unavailable; absent snapshots use a safe Registry Integration ID fallback without per-row provider or IntegrationInstance lookups. Registry rows/detail display `Artifact Registry` / `Integration Scope`, not Kubernetes/namespace metadata. Scope filters remain server-side committed SQL.
+
+### Report Templates generation permission (#1564)
+
+The Templates management workspace owns draft/active lifecycle and system/custom duplication. A Template manager may open Generate only if they independently have `reports.generate`; draft templates remain unavailable regardless of RBAC. The Generate route remains authoritative for admission and scope validation.

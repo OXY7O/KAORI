@@ -439,9 +439,13 @@
                                         </div>
                                     </section>
                                     <div class="flex flex-wrap items-center justify-end gap-2 border-t border-outline-subtle pt-4">
-                                        {% if template.can_generate %}
+                                        {% if template.can_generate and current_user.has_permission('reports.generate') %}
                                             <a href="{{ template.generate_href }}"
                                                class="{{ table_ui.action_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>Generate Report</a>
+                                        {% elif template.can_generate %}
+                                            <span class="{{ table_ui.action_classes() }} cursor-not-allowed opacity-60"
+                                                  aria-disabled="true"
+                                                  title="Generate Report permission is required."><i data-lucide="lock-keyhole" class="h-4 w-4" aria-hidden="true"></i>Generate Access Required</span>
                                         {% else %}
                                             <span class="{{ table_ui.action_classes() }} cursor-not-allowed opacity-60"
                                                   aria-disabled="true"
