@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.platform_operations.data_lifecycle.presentation import build_data_lifecycle_overview_summary
+from app.platform_operations.jobs.configuration import build_job_configuration_attention_summary
 from app.platform_operations.jobs.presentation import build_job_execution_status_context
 from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
 
@@ -39,8 +40,9 @@ def build_platform_operations_overview_context(
         job_context = build_job_execution_status_context()
         job_stats = job_context['job_stats']
         attention = _count_value(job_stats.get('attention', 0))
+        policy_attention = build_job_configuration_attention_summary()
         active = _count_value(job_stats.get('active', 0))
-        if attention:
+        if attention or policy_attention:
             status_label, status_tone = 'Needs Attention', 'warning'
         elif active:
             status_label, status_tone = 'Active', 'info'
@@ -56,7 +58,7 @@ def build_platform_operations_overview_context(
                 'status_tone': status_tone,
                 'metrics': (
                     ('activity', 'Active', active),
-                    ('triangle-alert', 'Attention', attention),
+                    ('triangle-alert', 'Execution / Policy Alerts', f'{attention} / {policy_attention}'),
                     ('circle-check', 'Completed · 24H', _count_value(job_stats.get('completed_24h', 0))),
                 ),
                 'action_endpoint': 'jobs.executions',
