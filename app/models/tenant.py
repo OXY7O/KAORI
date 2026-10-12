@@ -279,6 +279,9 @@ class TenantCapacityPolicy(db.Model):
     unmanaged_commitment_memory: Mapped[str] = mapped_column(String(50), nullable=False, default='0')
     unmanaged_commitment_pods: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     tenant_storage_budget: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    limit_exposure_mode: Mapped[str] = mapped_column(String(16), nullable=False, default='observe')
+    cpu_limit_ratio: Mapped[str] = mapped_column(String(16), nullable=False, default='1.50')
+    memory_limit_ratio: Mapped[str] = mapped_column(String(16), nullable=False, default='1.00')
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
