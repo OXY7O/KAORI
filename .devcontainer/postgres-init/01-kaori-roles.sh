@@ -9,9 +9,12 @@ set -eu
 [ -n "${KAORI_MIGRATOR_PASSWORD:-}" ] && [ -n "${KAORI_RUNTIME_PASSWORD:-}" ] ||
   { echo 'ABORT: missing segregated PostgreSQL role passwords' >&2; exit 1; }
 
-psql --set=ON_ERROR_STOP=1 --username postgres --dbname kaori \
-  -v "migrator_password=$KAORI_MIGRATOR_PASSWORD" \
-  -v "runtime_password=$KAORI_RUNTIME_PASSWORD" <<'SQL'
+# Load role passwords via psql's environment-variable reader rather than
+# process arguments (ps argv would otherwise disclose both secrets).
+# psql quotes variables as SQL string literals for the ALTER ROLE statements.
+psql -X --set=ON_ERROR_STOP=1 --username postgres --dbname kaori <<'SQL'
+\getenv migrator_password KAORI_MIGRATOR_PASSWORD
+\getenv runtime_password KAORI_RUNTIME_PASSWORD
 CREATE ROLE kaori_migrator LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;
 CREATE ROLE kaori_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;
 SELECT format('ALTER ROLE kaori_migrator PASSWORD %L', :'migrator_password') \gexec
