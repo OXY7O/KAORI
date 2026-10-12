@@ -175,6 +175,18 @@ def main() -> int:
         'Setup Required must not reintroduce the rejected nested-frame/sidebar design',
         errors,
     )
+    require(
+        'data-kaori-setup-canvas="light"' in setup
+        and 'max-w-6xl rounded-2xl border border-outline-subtle bg-surface-card' in setup,
+        'Setup Required 100-percent-zoom white workspace canvas drifted',
+        errors,
+    )
+    require(
+        'PostgreSQL is ready. Run setup to enable sign-in and background jobs.' in setup
+        and 'Keep INTEGRATION_CREDENTIAL_KEY unchanged.' in setup,
+        'Setup Required concise operator copy drifted',
+        errors,
+    )
     require('Readiness Summary' not in setup, 'Setup Required must not duplicate readiness in a summary panel', errors)
     require(
         'components/info_flow.html' not in setup,
