@@ -126,3 +126,7 @@ The landing page reads selected-backend shared storage readiness and never walks
 ### Reports Overview metric cohorts (#1533)
 
 Requests This Month counts Report records whose created_at belongs to the half-open current **UTC calendar-month** interval [month start, next month start). Completion Rate is deliberately **all-time**, calculated from Ready + Archived as successful resolved requests over Ready + Archived + Failed; requested/generating records are not in this denominator. Empty resolved cohorts display unavailable (—), not a fabricated 100% or 0% success. UI copy names the distinct temporal cohorts; neither metric is a current-provider health signal.
+
+### Generate report naming boundary (#1545)
+
+Operator report names are optional, trimmed, and bounded at 255 Unicode code points before report persistence to match `Report.name`'s existing VARCHAR(255) contract. Over-limit names render actionable validation feedback. The wizard input uses the corresponding HTML maxlength as convenience only; server-side checks remain authoritative. No schema migration is necessary.

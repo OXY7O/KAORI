@@ -520,6 +520,16 @@ def get_form_state_from_form(
     }
 
 
+MAX_REPORT_NAME_LENGTH = 255  # app.models.report.Report.name (VARCHAR(255))
+
+
+def validate_report_name(value: str | None) -> list[str]:
+    """Reject overlong operator names rather than relying on database errors."""
+    if len(str(value or '').strip()) > MAX_REPORT_NAME_LENGTH:
+        return [f'Report name must be {MAX_REPORT_NAME_LENGTH} characters or fewer.']
+    return []
+
+
 def validate_form_state(
     form_state: dict[str, Any],
 ) -> list[str]:
@@ -528,6 +538,10 @@ def validate_form_state(
 
     if report_type not in {item['value'] for item in REPORT_TYPE_OPTIONS}:
         errors.append('Please select a valid report type.')
+
+    name_errors = validate_report_name(form_state.get('name'))
+    if name_errors:
+        return name_errors
 
     report_spec = get_report_type_spec(report_type)
     scope_errors, cluster_exists = _validate_primary_scope(form_state, report_spec)
