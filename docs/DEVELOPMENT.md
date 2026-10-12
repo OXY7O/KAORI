@@ -12,6 +12,7 @@ containers. A host `.venv` is not required.
 - Visual Studio Code.
 - VS Code Dev Containers extension.
 - Git.
+- Python 3 on the WSL host (DevContainer `initializeCommand` prepares private first-run credentials before Compose).
 
 ## First setup
 
