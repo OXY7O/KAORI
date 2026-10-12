@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import configure_weak_tls
+
 from kubernetes import client, config
 from kubernetes.client import (
     AppsV1Api,
@@ -23,9 +25,11 @@ class KubernetesClient:
         kubeconfig_content: str,
         *,
         verify_ssl: bool = True,
+        allow_weak_tls: bool = False,
     ) -> None:
         self.kubeconfig_content = kubeconfig_content
         self.verify_ssl = verify_ssl
+        self.allow_weak_tls = allow_weak_tls
 
     def _load_configuration(
         self,
@@ -65,9 +69,13 @@ class KubernetesClient:
     ) -> client.ApiClient:
         configuration = self._load_configuration()
 
-        return client.ApiClient(
-            configuration=configuration,
+        api_client = client.ApiClient(configuration=configuration)
+        configure_weak_tls(
+            api_client,
+            enabled=self.allow_weak_tls,
+            verify_ssl=self.verify_ssl,
         )
+        return api_client
 
     def core_api(
         self,

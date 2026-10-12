@@ -16,7 +16,7 @@ contracts.
 - `compatibility.py`: served-API discovery and version-aware adapter selection.
 - `validation.py`: connection, version, RBAC, and runtime validation.
 - `resolver.py`: canonical cluster-to-connection resolution.
-- `tls.py`: bounded operator-approved weak-TLS context.
+- `tls.py`: operator-approved legacy cipher policy scoped to each Kubernetes SDK API client; no process-global TLS overrides.
 
 ## Registry contract
 

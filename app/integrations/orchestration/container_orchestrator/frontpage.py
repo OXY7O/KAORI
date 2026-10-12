@@ -12,6 +12,7 @@ from app.integrations.readiness import (
     OperationalPosture,
     resolve_binding_operational_status,
     resolve_cluster_coverage,
+    source_operational_enabled,
 )
 from app.kubernetes.cluster.constants import get_environment_label
 from app.models import Cluster
@@ -68,7 +69,7 @@ def _provider_posture(source: Any | None, binding: Any | None) -> OperationalPos
     return resolve_binding_operational_status(
         source_readiness=getattr(source, 'readiness_status', None),
         binding_validation=getattr(binding, 'validation_status', None),
-        source_enabled=bool(getattr(source, 'enabled', True)),
+        source_enabled=source_operational_enabled(source),
         binding_enabled=bool(getattr(binding, 'enabled', True)),
     )
 
@@ -117,6 +118,15 @@ def _build_registry_row(
     bound_sources: dict[tuple[str, str], tuple[Any | None, Any | None]] | None = None,
 ) -> dict[str, Any]:
     cluster = connection.cluster
+    canonical = connection.integration_instance
+    canonical_active = bool(
+        canonical is not None
+        and canonical.enabled
+        and canonical.lifecycle_status == 'active'
+    )
+    readiness = (
+        connection.readiness_status or 'validation_required'
+    ) if canonical_active else 'blocked'
     if bound_sources is None:
         metrics_source, metrics_binding = bound_source_for_scope(
             'metrics_source', scope_type='kubernetes_cluster', scope_key=cluster.id
@@ -131,16 +141,15 @@ def _build_registry_row(
     metrics_operational = _provider_posture(metrics_source, metrics_binding)
     alerts_operational = _provider_posture(alertmanager, alertmanager_binding)
     metrics_coverage = resolve_cluster_coverage(
-        kubernetes_readiness=connection.readiness_status,
+        kubernetes_readiness=readiness,
         source=metrics_source,
         binding=metrics_binding,
     )
     alerts_coverage = resolve_cluster_coverage(
-        kubernetes_readiness=connection.readiness_status,
+        kubernetes_readiness=readiness,
         source=alertmanager,
         binding=alertmanager_binding,
     )
-    readiness = connection.readiness_status or 'validation_required'
     inventory_coverage = _inventory_coverage(readiness)
     coverage_items = (inventory_coverage, metrics_coverage, alerts_coverage)
     coverage_summary = _coverage_summary(readiness=readiness, coverage_items=coverage_items)
