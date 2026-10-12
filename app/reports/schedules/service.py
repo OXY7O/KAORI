@@ -19,7 +19,6 @@ from app.common.pagination import PER_PAGE_OPTIONS, paginate_select
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationInstance
-from app.models.job import JobPolicy
 from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
@@ -41,10 +40,16 @@ from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
 from app.reports.notifications import get_report_notification_channel_options
 from app.reports.schedules.delivery import get_recommended_actions, get_scheduler_context
+from app.reports.schedules.read_models import (
+    _get_run_schedule_options,
+    _get_schedule_counts,
+    _get_schedule_filter_context,
+    _serialize_schedule_rows,
+)
+from app.reports.schedules.readiness import get_automation_posture
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
 from app.reports.schedules.presentation import DAY_OF_WEEK_OPTIONS
 from app.reports.schedules.presentation import serialize_run as _serialize_run
-from app.reports.schedules.presentation import serialize_schedule as _serialize_schedule
 from app.reports.schedules.presentation import title_case_period_options as _title_case_period_options
 from app.reports.schedules.registry import filter_schedule_statement as _filter_schedule_statement
 from app.reports.schedules.registry import get_selected_filters as _get_selected_filters
@@ -52,7 +57,6 @@ from app.reports.schedules.support import build_run_filter_options as _build_run
 from app.reports.schedules.support import build_schedule_asset_filter_options as _build_schedule_asset_filter_options
 from app.reports.schedules.support import build_schedule_evidence_snapshot as _build_schedule_evidence_snapshot
 from app.reports.schedules.support import ensure_utc as _ensure_utc
-from app.reports.schedules.support import get_cluster_map as _get_cluster_map
 from app.reports.schedules.support import get_cluster_options as _get_cluster_options
 from app.reports.schedules.support import get_default_sections as _get_default_sections
 from app.reports.schedules.support import get_default_sections_by_report_type as _get_default_sections_by_report_type
@@ -679,79 +683,6 @@ def calculate_next_run_at(
     return candidate.astimezone(UTC)
 
 
-def get_automation_posture(
-    storage_context: dict[str, Any],
-    worker_context: dict[str, Any],
-) -> dict[str, str]:
-    storage_ready = bool(storage_context.get('ready', False))
-    worker_tone = str(worker_context.get('tone') or 'unknown')
-    worker_ready = worker_tone == 'normal'
-
-    if not storage_ready:
-        return {
-            'status_label': 'Execution Needs Review',
-            'status_tone': 'warning',
-            'title': 'Artifact Execution Paused',
-            'description': (
-                'Schedule definitions remain available for management, but Run Now and unattended '
-                'generation stay paused until artifact storage is writable.'
-            ),
-            'execution_label': 'Paused',
-            'execution_tone': 'warning',
-        }
-
-    if not worker_ready:
-        return {
-            'status_label': 'Dispatcher Needs Review',
-            'status_tone': worker_tone if worker_tone in {'warning', 'critical', 'unknown'} else 'warning',
-            'title': 'Dispatcher Needs Attention',
-            'description': (
-                'Artifact storage is writable, but unattended execution depends on a healthy Reports '
-                'worker consuming the dedicated queue.'
-            ),
-            'execution_label': 'Needs Review',
-            'execution_tone': worker_tone if worker_tone in {'warning', 'critical', 'unknown'} else 'warning',
-        }
-
-    dispatcher_enabled = db.session.scalar(
-        select(JobPolicy.enabled).where(JobPolicy.job_key == 'reports.schedule.dispatch')
-    )
-    if not dispatcher_enabled:
-        return {
-            'status_label': 'Dispatcher Disabled',
-            'status_tone': 'warning',
-            'title': 'Automatic Dispatch Is Disabled',
-            'description': 'Enable the Report Schedule Dispatcher in Job Configuration before unattended reporting.',
-            'execution_label': 'Disabled',
-            'execution_tone': 'warning',
-        }
-
-    enabled_schedules = db.session.scalar(
-        select(func.count(ReportSchedule.id)).where(ReportSchedule.is_enabled.is_(True))
-    ) or 0
-    if not enabled_schedules:
-        return {
-            'status_label': 'Waiting For Schedule',
-            'status_tone': 'warning',
-            'title': 'No Active Report Schedules',
-            'description': 'Create or enable at least one recurring definition before unattended reporting.',
-            'execution_label': 'Waiting',
-            'execution_tone': 'warning',
-        }
-
-    return {
-        'status_label': 'Automation Ready',
-        'status_tone': 'normal',
-        'title': 'Ready for Unattended Execution',
-        'description': (
-            'Schedule definitions, the Reports worker, and artifact storage are ready for Run Now '
-            'and recurring report execution.'
-        ),
-        'execution_label': 'Ready',
-        'execution_tone': 'normal',
-    }
-
-
 def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str, Any]) -> None:
     schedule.name = form_state['name']
     schedule.description = form_state['description'] or None
@@ -936,62 +867,6 @@ def _get_schedule_filter_options(
             ],
         ],
     }
-
-
-def _get_schedule_counts() -> tuple[int, int]:
-    total, active = db.session.execute(
-        select(
-            func.count(ReportSchedule.id),
-            func.count(ReportSchedule.id).filter(ReportSchedule.is_enabled.is_(True)),
-        )
-    ).one()
-    return int(total or 0), int(active or 0)
-
-
-def _get_schedule_filter_context() -> list[dict[str, Any]]:
-    # Only distinct asset references are needed for historical/deleted filters.
-    keys = db.session.execute(
-        select(
-            ReportSchedule.scope_asset_type,
-            ReportSchedule.scope_asset_id,
-            ReportSchedule.cluster_id,
-            ReportSchedule.scope_asset_label_snapshot,
-        ).distinct()
-    ).all()
-    result: list[dict[str, Any]] = []
-    for asset_type, asset_id, cluster_id, label in keys:
-        selected_type = str(asset_type or KUBERNETES_CLUSTER_ASSET_TYPE)
-        selected_id = str(asset_id or cluster_id or '')
-        if selected_id:
-            result.append({
-                'scope_asset_filter_key': f'{selected_type}:{selected_id}',
-                'scope_label': selected_type.replace('_', ' ').title(),
-                'scope': str(label or selected_id),
-            })
-    return result
-
-
-def _get_run_schedule_options(selected_id: str) -> list[dict[str, Any]]:
-    rows = db.session.execute(
-        select(ReportSchedule.id, ReportSchedule.name)
-        .order_by(ReportSchedule.created_at.desc(), ReportSchedule.id.desc())
-        .limit(200)
-    ).all()
-    options = [{'id': item_id, 'name': name} for item_id, name in rows]
-    selected = _parse_optional_int(selected_id)
-    if selected is not None and all(item['id'] != selected for item in options):
-        row = db.session.get(ReportSchedule, selected)
-        if row is not None:
-            options.append({'id': row.id, 'name': row.name})
-    return options
-
-
-def _serialize_schedule_rows(schedules: list[ReportSchedule]) -> list[dict[str, Any]]:
-    cluster_map = _get_cluster_map([item.cluster_id for item in schedules if item.cluster_id])
-    delivery_label_map = {
-        int(item['channel_id']): f'{item["label"]} · {item["provider"]}' for item in _get_delivery_channel_options()
-    }
-    return [_serialize_schedule(item, cluster_map, delivery_label_map) for item in schedules]
 
 
 def _get_recent_runs(limit: int = 8) -> list[dict[str, Any]]:
