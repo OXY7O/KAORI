@@ -263,7 +263,7 @@ def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
     assert "'filter_query': filter_query" in presentation
     assert "'has_filters': filters_active" in presentation
     assert "'provider_options': [" in presentation
-    assert 'func.lower(RegistryProject.name).like(pattern)' in presentation
+    assert 'func.lower(RegistryProject.name).like(pattern,' in presentation
     assert "'retention_label'" in presentation
     assert "'immutability_label'" in presentation
     assert "observed_state = 'enabled' if enabled is True" in presentation
@@ -290,10 +290,12 @@ def test_governance_table_filter_and_pagination_use_active_sql_scope() -> None:
     assert 'RegistryProject.integration_instance_id.in_(source_ids)' in query
     assert 'RegistryReplicationPolicy.integration_instance_id.in_(source_ids)' in query
     assert 'selected in source_ids' in query
+    assert "escaped = search.casefold().replace(" in query
+    assert "escape=" in query
     assert 'RegistryProjectGovernance.retention_status == retention' in query
     assert 'RegistryProjectGovernance.immutability_status == immutability' in query
     assert 'RegistryReplicationPolicy.enabled.is_(None)' in query
-    assert 'func.lower(RegistryReplicationPolicy.name).like(pattern)' in query
+    assert 'func.lower(RegistryReplicationPolicy.name).like(pattern,' in query
     assert 'RegistryReplicationPolicy.name.asc()' in query
     assert 'RegistryProjectGovernance.observed_at.desc()' in query
     assert "row['provider_label']" not in query
