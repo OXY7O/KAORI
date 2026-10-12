@@ -418,20 +418,32 @@ def bound_source_for_scope(
 
 
 def _instances(integration_type: str) -> list[Any]:
-    from app.integrations.kernel.registry import get_integration
+    """Batch registered provider models rather than resolving every canonical row."""
+    from app.integrations.kernel.registry import get_integration, registry
 
     module = get_integration(integration_type)
-    identities = (
-        IntegrationInstance.query.filter_by(integration_type=integration_type)
-        .order_by(IntegrationInstance.name.asc(), IntegrationInstance.id.asc())
-        .all()
-    )
     records: list[Any] = []
-    for identity in identities:
-        record = module.get_record_for_canonical(identity.id)
-        if record is not None:
-            records.append(record)
-    return records
+    for implementation in registry.implementations_for_type(integration_type):
+        model = implementation.record_model
+        if model is not None:
+            records.extend(
+                model.query.join(model.integration_instance)
+                .filter(
+                    IntegrationInstance.integration_type == integration_type,
+                    IntegrationInstance.provider_key == implementation.provider_key,
+                )
+                .all()
+            )
+            continue
+        # Future provider implementations without a batch mapping retain correctness.
+        identities = IntegrationInstance.query.filter_by(
+            integration_type=integration_type, provider_key=implementation.provider_key,
+        ).with_entities(IntegrationInstance.id).all()
+        for (identity_id,) in identities:
+            record = module.get_record_for_canonical(identity_id)
+            if record is not None:
+                records.append(record)
+    return sorted(records, key=lambda record: (record.name.lower(), record.id))
 
 
 def _coverage_status(
