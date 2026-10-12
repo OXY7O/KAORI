@@ -2,6 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_card.html" as operational_section %}
+{% import "components/section_intro.html" as section_intro %}
 {% import "components/operational_point_flow.html" as point_flow %}
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
@@ -90,7 +91,13 @@
                 </div>
             </div>
         </section>
-        {% call operational_section.render(
+        <div class="space-y-3">
+            {{ section_intro.render(
+                'Authorization Flow',
+                'Follow how code-owned permissions reach users through role assignments and access checks.',
+                id='role-assignment-section-heading'
+            ) }}
+            {% call operational_section.render(
             'Role Assignment Flow',
             'How code-owned permissions become effective user authorization.',
             'workflow',
@@ -102,8 +109,16 @@
             {% set role_flow = [('book-key', 'Permission Catalog', 'Code-owned capabilities define the available permission contracts.'), ('layers-3', 'Role Composition', 'Default or custom roles package permissions into reusable profiles.'), ('user-round-check', 'User Assignment', 'User Management assigns one active role to each managed account.'), ('shield-check', 'Authorization Check', 'Server-side guards evaluate effective permissions on every protected action.')] %}
             {{ point_flow.render(role_flow, aria_label='Role Assignment Flow') }}
             <p class="mt-4 text-xs leading-5 text-content-muted">Super Admin remains a separately controlled Local Database emergency authority flag and is never granted through a normal role. Custom role delegation cannot exceed the administrator's own effective permission boundary.</p>
-        {% endcall %}
-        {% include "access/roles/partials/_registry.html" %}
+            {% endcall %}
+        </div>
+        <div class="space-y-3">
+            {{ section_intro.render(
+                'Role Administration',
+                'Review registered roles, assignment coverage, lifecycle state, and baseline integrity.',
+                id='role-registry-section-heading'
+            ) }}
+            {% include "access/roles/partials/_registry.html" %}
+        </div>
         {{ resource_detail_modal.host('Role',
                 url_for('access.roles.modal_details', role_id=0) ,
         footer_text='Role evidence reflects the current committed RBAC registry.',

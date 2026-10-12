@@ -62,6 +62,10 @@ Legacy Settings role/permission URLs are retired. Settings must not contain redi
 
 Access v1 is final-locked across Access Overview, User Management, Identity Providers, Roles & Access, Permission Catalog, and Activity Audit. Runtime ownership remains distributed by domain, while the Access control-plane UI, security boundaries, canonical components, and legacy-cleanup rules are protected by `scripts/verify_access_final_lock.py`.
 
+## Access workspace section introductions
+
+The Permission Catalog, Roles & Access, and User Management pages use the existing `components/section_intro.html` outside the owned card to establish the next section's purpose. Permission Governance introduces the shared Permission Registry / Role Coverage tab workspace; Authorization Flow and Role Administration introduce their separate role-flow and registry cards; Account Directory introduces User Directory. Card-owned titles, search/filters, actions, status, pagination and permission-scoped data remain unchanged. HTMX swaps continue targeting only `permission-workspace` and `user-directory`; the outer section intro is not rendered inside those fragment targets. No new component or layout system is introduced.
+
 ## Access Overview review status
 
 Access Overview is a read-only composition surface. It does not query User, Identity Provider, Role, Permission, or Activity persistence directly to invent a second health model. The overview consumes domain-owned summary contracts and only aggregates permission-scoped posture. Roles and Permission Catalog expose summary-only projections for Overview; the full registry/detail builders remain authoritative for their own workspaces, while the common summary calculators preserve identical aggregate counts and drift semantics. These request-time projections read KAORI's committed DB state and make no external-provider calls.
