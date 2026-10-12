@@ -53,3 +53,42 @@ def test_info_tip_viewport_controller_prevents_ordinary_overflow_clipping() -> N
     assert 'viewportMargin = 12' in script
     assert 'window.innerWidth - previewRect.width - viewportMargin' in script
     assert 'window.innerHeight - previewRect.height - viewportMargin' in script
+
+
+
+def test_guide_variant_renders_compact_label_and_reuses_existing_popover() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    macro = env.get_template('components/info_tip.html').module.render
+    guide = str(macro('example-guide', 'Inventory Guide', 'Review committed evidence.', items=['One point'], placement='right', variant='guide'))
+    icon = str(macro('example-icon', 'Field help', 'An inline explanation.'))
+
+    assert 'data-kaori-info-tip-variant="guide"' in guide
+    assert 'data-lucide="info"' in guide
+    assert '<span>Guide</span>' in guide
+    assert 'rounded-full' in guide and 'bg-kaori-soft' in guide
+    assert 'border-brand-outline' in guide and 'focus-visible:ring-2' in guide
+    assert 'aria-controls="example-guide-tooltip"' in guide
+    assert 'aria-expanded="false"' in guide
+    assert 'role="tooltip"' in guide
+    assert 'Review committed evidence.' in guide and 'One point' in guide
+
+    assert 'data-kaori-info-tip-variant="icon"' in icon
+    assert 'data-lucide="circle-help"' in icon
+    assert '<span>Guide</span>' not in icon
+    assert 'role="tooltip"' in icon
+
+
+def test_title_level_guides_share_existing_portal_controller() -> None:
+    source = read('app/templates/components/info_tip.html')
+    script = read('app/static/js/info_tips.js')
+    doc = read('docs/design/components/INFO_TIP.md')
+
+    assert "variant='icon'" in source
+    assert "guide_variant = variant == 'guide' and not button_text" in source
+    assert 'data-kaori-info-tip-preview' in source
+    assert 'variant=\'guide\'' in doc
+    assert 'field-level' in doc
+    assert 'document.body.appendChild(preview)' in script
+    assert "document.addEventListener('htmx:beforeSwap'" in script
