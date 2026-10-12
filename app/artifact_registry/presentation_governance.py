@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
+from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 
 from app.artifact_registry.presentation_common import _aware_datetime, _providers, _state_view
 from app.artifact_registry.presentation_overview import build_overview
-from app.common.pagination import paginate_sequence
+from app.common.pagination import paginate_query
+from app.models.integration import IntegrationInstance
 from app.models.registry import (
+    RegistryCollectionState,
     RegistryGovernanceState,
     RegistryProject,
     RegistryProjectGovernance,
@@ -28,148 +32,169 @@ def _policy_state_view(value: str | None) -> dict[str, str]:
     return {'label': 'Not Collected', 'tone': 'unknown'}
 
 
-def _governance_project_rows(identity_by_id: dict[int, Any]) -> list[dict[str, Any]]:
+def _governance_source_name(identity: Any) -> str:
+    return f'{identity.name} · {identity.provider_key.title()}'
+
+
+def _governance_project_rows(items: list[Any], identity_by_id: dict[int, Any]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    items = (
-        RegistryProjectGovernance.query.options(joinedload(RegistryProjectGovernance.project))
-        .order_by(
-            RegistryProjectGovernance.observed_at.desc(),
-            RegistryProjectGovernance.id.desc(),
-        )
-        .all()
-    )
     for item in items:
-        identity = identity_by_id.get(int(item.project.integration_instance_id))
+        identity = identity_by_id[int(item.project.integration_instance_id)]
         retention = _policy_state_view(item.retention_status)
         immutability = _policy_state_view(item.immutability_status)
-        rows.append(
-            {
-                'project': item.project.name,
-                'provider_label': (
-                    str((identity.metadata_json or {}).get('provider_label') or identity.provider_key.title())
-                    if identity is not None
-                    else 'Registry'
-                ),
-                'retention_status': str(item.retention_status or 'not_collected'),
-                'retention_label': retention['label'],
-                'retention_tone': retention['tone'],
-                'immutability_status': str(item.immutability_status or 'not_collected'),
-                'immutability_label': immutability['label'],
-                'immutability_tone': immutability['tone'],
-                'observed_at': item.observed_at,
-            }
-        )
+        rows.append({
+            'project': item.project.name,
+            'provider_label': _governance_source_name(identity),
+            'retention_status': str(item.retention_status or 'not_collected'),
+            'retention_label': retention['label'],
+            'retention_tone': retention['tone'],
+            'immutability_status': str(item.immutability_status or 'not_collected'),
+            'immutability_label': immutability['label'],
+            'immutability_tone': immutability['tone'],
+            'observed_at': item.observed_at,
+        })
     return rows
 
 
-def _governance_replication_rows(identity_by_id: dict[int, Any]) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for item in RegistryReplicationPolicy.query.order_by(
-        RegistryReplicationPolicy.name.asc(),
-        RegistryReplicationPolicy.id.asc(),
-    ).all():
-        identity = identity_by_id.get(int(item.integration_instance_id))
-        rows.append(
-            {
-                'name': item.name,
-                'provider_label': (
-                    str((identity.metadata_json or {}).get('provider_label') or identity.provider_key.title())
-                    if identity is not None
-                    else 'Registry'
-                ),
-                'enabled': item.enabled,
-                'trigger_type': item.trigger_type,
-                'source_registry': item.source_registry,
-                'destination_registry': item.destination_registry,
-                'destination_namespace': item.destination_namespace,
-                'observed_at': item.observed_at,
-            }
-        )
-    return rows
-
-
-def _filter_governance_rows(
-    rows: list[dict[str, Any]],
-    *,
-    active_tab: str,
-    search: str,
-    provider: str,
-    retention: str,
-    immutability: str,
-    state: str,
-) -> list[dict[str, Any]]:
-    search_key = search.strip().casefold()
-    provider_key = provider.strip().casefold()
-    filtered: list[dict[str, Any]] = []
-    for row in rows:
-        if provider_key and str(row['provider_label']).casefold() != provider_key:
-            continue
-        if active_tab == 'policies':
-            if retention and row['retention_label'].casefold().replace(' ', '_') != retention:
-                continue
-            if immutability and row['immutability_label'].casefold().replace(' ', '_') != immutability:
-                continue
-            searchable = (row['project'], row['provider_label'])
-        else:
-            enabled = row['enabled']
-            observed_state = 'enabled' if enabled is True else ('disabled' if enabled is False else 'unknown')
-            if state and observed_state != state:
-                continue
-            searchable = (
-                row['name'],
-                row['provider_label'],
-                row['trigger_type'],
-                row['source_registry'],
-                row['destination_registry'],
-                row['destination_namespace'],
-            )
-        if search_key and search_key not in ' '.join(str(value or '') for value in searchable).casefold():
-            continue
-        filtered.append(row)
-    return filtered
+def _governance_replication_rows(items: list[Any], identity_by_id: dict[int, Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            'name': item.name,
+            'provider_label': _governance_source_name(identity_by_id[int(item.integration_instance_id)]),
+            'enabled': item.enabled,
+            'trigger_type': item.trigger_type,
+            'source_registry': item.source_registry,
+            'destination_registry': item.destination_registry,
+            'destination_namespace': item.destination_namespace,
+            'observed_at': item.observed_at,
+        }
+        for item in items
+    ]
 
 
 def _governance_capability_counts(
     governance_states: dict[int, RegistryGovernanceState],
+    source_ids: list[int],
 ) -> dict[str, dict[str, int]]:
-    capability_counts: dict[str, dict[str, int]] = {}
+    result: dict[str, dict[str, int]] = {}
     for capability in ('retention', 'immutability', 'replication'):
         counts = {'observed': 0, 'unavailable': 0, 'unsupported': 0, 'unknown': 0}
-        for state in governance_states.values():
-            raw = (state.capability_states or {}).get(capability) if isinstance(state.capability_states, dict) else None
+        for source_id in source_ids:
+            state = governance_states.get(source_id)
+            raw = (state.capability_states or {}).get(capability) if state and isinstance(state.capability_states, dict) else None
             status = str(raw.get('status') or 'unknown') if isinstance(raw, dict) else 'unknown'
             counts[status if status in counts else 'unknown'] += 1
-        capability_counts[capability] = counts
-    return capability_counts
+        result[capability] = counts
+    return result
+
+
+def _governance_inventory_changed(
+    governance_state: RegistryGovernanceState | None,
+    inventory_state: RegistryCollectionState | None,
+) -> bool:
+    if governance_state is None or governance_state.last_committed_at is None:
+        return False
+    metadata = governance_state.metadata_json if isinstance(governance_state.metadata_json, dict) else {}
+    recorded = metadata.get('inventory_committed_at')
+    current = inventory_state.last_committed_at if inventory_state is not None else None
+    if not recorded or current is None:
+        # Legacy snapshots with no recorded generation are not proven current.
+        return True
+    try:
+        recorded_at = _aware_datetime(datetime.fromisoformat(str(recorded).replace('Z', '+00:00')))
+    except ValueError:
+        return True
+    return recorded_at != _aware_datetime(current)
+
+
+def _governance_evidence_counts(source_ids: list[int]) -> dict[str, int]:
+    counts = {
+        'policy_rows': 0,
+        'replication_rows': 0,
+        'retention_configured': 0,
+        'retention_unavailable': 0,
+        'retention_not_configured': 0,
+        'immutability_configured': 0,
+        'immutability_unavailable': 0,
+        'immutability_not_configured': 0,
+    }
+    if not source_ids:
+        return counts
+
+    grouped = (
+        RegistryProjectGovernance.query.join(
+            RegistryProject, RegistryProjectGovernance.project_id == RegistryProject.id
+        )
+        .filter(RegistryProject.integration_instance_id.in_(source_ids))
+        .with_entities(
+            RegistryProjectGovernance.retention_status,
+            RegistryProjectGovernance.immutability_status,
+            func.count(RegistryProjectGovernance.id),
+        )
+        .group_by(RegistryProjectGovernance.retention_status, RegistryProjectGovernance.immutability_status)
+        .all()
+    )
+    for retention_status, immutability_status, amount in grouped:
+        count = int(amount)
+        counts['policy_rows'] += count
+        if retention_status in {'configured', 'unavailable', 'not_configured'}:
+            counts[f'retention_{retention_status}'] += count
+        if immutability_status in {'configured', 'unavailable', 'not_configured'}:
+            counts[f'immutability_{immutability_status}'] += count
+    counts['replication_rows'] = RegistryReplicationPolicy.query.filter(
+        RegistryReplicationPolicy.integration_instance_id.in_(source_ids)
+    ).count()
+    return counts
 
 
 def _governance_summary(
     identities: list[Any],
-    identity_by_id: dict[int, Any],
-    governance_states: dict[int, RegistryGovernanceState],
-    project_rows: list[dict[str, Any]],
+    states: dict[int, RegistryGovernanceState],
+    inventory_states: dict[int, RegistryCollectionState],
+    evidence_counts: dict[str, int],
 ) -> dict[str, Any]:
-    provider_count = len(identities)
-    project_total = (
-        RegistryProject.query.filter(RegistryProject.integration_instance_id.in_(identity_by_id)).count()
-        if identity_by_id
-        else 0
-    )
+    source_ids = [int(source.id) for source in identities]
+    provider_count = len(source_ids)
+    project_total = RegistryProject.query.filter(
+        RegistryProject.integration_instance_id.in_(source_ids)
+    ).count() if source_ids else 0
     ready_count = sum(
-        1
-        for identity in identities
-        if governance_states.get(int(identity.id)) is not None
-        and governance_states[int(identity.id)].status == 'ready'
-        and governance_states[int(identity.id)].last_committed_at is not None
+        1 for source_id in source_ids
+        if (state := states.get(source_id)) is not None
+        and state.status in {'ready', 'partial'}
+        and state.last_committed_at is not None
     )
-    state_views = [_state_view(governance_states.get(int(identity.id))) for identity in identities]
-    exception_count = sum(
-        1 for view in state_views if view['status'] != 'ready' or view.get('is_stale') or view.get('refresh_failed')
+    state_views = [_state_view(states.get(source_id)) for source_id in source_ids]
+    changed_count = sum(
+        _governance_inventory_changed(states.get(source_id), inventory_states.get(source_id))
+        for source_id in source_ids
     )
+    exception_count = 0
+    for source_id, view in zip(source_ids, state_views, strict=True):
+        source_state = states.get(source_id)
+        capabilities = (
+            source_state.capability_states
+            if source_state is not None and isinstance(source_state.capability_states, dict)
+            else {}
+        )
+        capability_incomplete = any(
+            not isinstance(capabilities.get(name), dict)
+            or capabilities[name].get('status') in {'unavailable', 'unknown'}
+            for name in ('retention', 'immutability', 'replication')
+        )
+        if (
+            view['status'] != 'ready'
+            or view.get('is_stale')
+            or view.get('refresh_failed')
+            or capability_incomplete
+            or _governance_inventory_changed(source_state, inventory_states.get(source_id))
+        ):
+            exception_count += 1
     latest_committed_at = max(
         (
             committed_at
-            for state in governance_states.values()
+            for source_id in source_ids
+            if (state := states.get(source_id)) is not None
             if (committed_at := _aware_datetime(state.last_committed_at)) is not None
         ),
         default=None,
@@ -179,13 +204,9 @@ def _governance_summary(
         'project_total': project_total,
         'ready_count': ready_count,
         'exception_count': exception_count,
+        'inputs_changed_count': changed_count,
         'latest_committed_at': latest_committed_at,
-        'retention_configured': sum(1 for row in project_rows if row['retention_status'] == 'configured'),
-        'retention_unavailable': sum(1 for row in project_rows if row['retention_status'] == 'unavailable'),
-        'retention_not_configured': sum(1 for row in project_rows if row['retention_status'] == 'not_configured'),
-        'immutability_configured': sum(1 for row in project_rows if row['immutability_status'] == 'configured'),
-        'immutability_unavailable': sum(1 for row in project_rows if row['immutability_status'] == 'unavailable'),
-        'immutability_not_configured': sum(1 for row in project_rows if row['immutability_status'] == 'not_configured'),
+        **evidence_counts,
     }
 
 
@@ -204,40 +225,45 @@ def _governance_snapshot_context(summary: dict[str, Any]) -> dict[str, Any]:
     ready_count = summary['ready_count']
     exception_count = summary['exception_count']
     status = (
-        'Current'
-        if provider_count and ready_count == provider_count and exception_count == 0
-        else ('Not Collected' if ready_count == 0 else 'Attention')
+        'Inputs Changed' if summary['inputs_changed_count']
+        else 'Current' if provider_count and ready_count == provider_count and exception_count == 0
+        else 'Not Collected' if ready_count == 0
+        else 'Attention'
     )
     return {
         'source_label': 'Committed Registry Governance Evidence',
         'status': status,
         'tone': 'normal' if status == 'Current' else ('unknown' if status == 'Not Collected' else 'warning'),
-        'description': 'Retention, immutability, and replication evidence committed from Registry providers.',
+        'description': (
+            'Committed Registry Inventory changed since Governance Sync; refresh Governance evidence.'
+            if status == 'Inputs Changed'
+            else 'Retention, immutability, and replication evidence committed from Registry providers.'
+        ),
         'latest_collected_at': summary['latest_committed_at'],
         'scope_label': f'{provider_count} Registry Provider' + ('' if provider_count == 1 else 's'),
         'coverage_label': f'{ready_count}/{provider_count} Providers Committed',
         'coverage_supporting': 'Provider-neutral Governance snapshots.',
-        'coverage_tone': 'normal' if provider_count and ready_count == provider_count else 'warning',
+        'coverage_tone': 'normal' if provider_count and ready_count == provider_count and not exception_count else 'warning',
         'exception_count': exception_count,
         'exceptions_label': (
             'No Exceptions'
-            if exception_count == 0
+            if provider_count and exception_count == 0
             else f'{exception_count} Evidence Exception' + ('' if exception_count == 1 else 's')
+            if exception_count
+            else 'Not Collected'
         ),
         'exceptions_supporting': (
-            'Missing, stale, or failed Governance collection.'
+            'Missing, stale, partial, unavailable, or superseded Governance collection.'
             if exception_count
-            else 'No freshness or collection exceptions.'
+            else 'No freshness or collection exceptions.' if provider_count else 'No active Registry providers.'
         ),
-        'exceptions_tone': 'normal' if exception_count == 0 else 'warning',
+        'exceptions_tone': 'normal' if provider_count and exception_count == 0 else 'warning',
     }
 
 
 def _governance_posture_cards(
     summary: dict[str, Any],
     *,
-    project_rows: list[dict[str, Any]],
-    replication_rows: list[dict[str, Any]],
     capability_counts: dict[str, dict[str, int]],
 ) -> list[dict[str, Any]]:
     project_total = summary['project_total']
@@ -245,19 +271,25 @@ def _governance_posture_cards(
     ready_count = summary['ready_count']
     retention_observed = summary['retention_configured'] + summary['retention_not_configured']
     immutability_observed = summary['immutability_configured'] + summary['immutability_not_configured']
+    replication = capability_counts['replication']
+    replication_status = (
+        'Observed' if replication['observed']
+        else 'Unavailable' if replication['unavailable']
+        else 'Unsupported' if replication['unsupported'] and replication['unsupported'] == provider_count
+        else 'Not Collected'
+    )
     return [
         {
             'label': 'Policy Coverage',
-            'value': f'{len(project_rows)}/{project_total} Projects',
+            'value': f'{summary["policy_rows"]}/{project_total} Projects',
             'status_label': (
                 'Committed'
-                if project_total and len(project_rows) == project_total
-                else ('Partial' if project_rows else 'Not Collected')
+                if project_total and summary['policy_rows'] == project_total
+                else 'Partial' if summary['policy_rows'] else 'Not Collected'
             ),
             'tone': (
-                'normal'
-                if project_total and len(project_rows) == project_total
-                else ('warning' if project_rows else 'unknown')
+                'normal' if project_total and summary['policy_rows'] == project_total
+                else 'warning' if summary['policy_rows'] else 'unknown'
             ),
             'detail': 'Committed project retention and immutability evidence.',
         },
@@ -265,9 +297,9 @@ def _governance_posture_cards(
             'label': 'Retention Coverage',
             'value': f'{retention_observed}/{project_total} Projects',
             'status_label': 'Observed' if retention_observed else 'Not Collected',
-            'tone': 'normal'
-            if project_total and retention_observed == project_total
-            else ('warning' if project_total else 'unknown'),
+            'tone': 'normal' if project_total and retention_observed == project_total else (
+                'warning' if project_total else 'unknown'
+            ),
             'detail': (
                 f'{summary["retention_configured"]} configured · '
                 f'{summary["retention_not_configured"]} not configured · '
@@ -278,9 +310,9 @@ def _governance_posture_cards(
             'label': 'Immutability Coverage',
             'value': f'{immutability_observed}/{project_total} Projects',
             'status_label': 'Observed' if immutability_observed else 'Not Collected',
-            'tone': 'normal'
-            if project_total and immutability_observed == project_total
-            else ('warning' if project_total else 'unknown'),
+            'tone': 'normal' if project_total and immutability_observed == project_total else (
+                'warning' if project_total else 'unknown'
+            ),
             'detail': (
                 f'{summary["immutability_configured"]} configured · '
                 f'{summary["immutability_not_configured"]} not configured · '
@@ -289,20 +321,86 @@ def _governance_posture_cards(
         },
         {
             'label': 'Replication Coverage',
-            'value': f'{capability_counts["replication"]["observed"]}/{provider_count} Providers',
-            'status_label': 'Observed' if ready_count else 'Not Collected',
-            'tone': (
-                'normal'
-                if provider_count and capability_counts['replication']['observed'] == provider_count
-                else ('warning' if ready_count else 'unknown')
+            'value': f'{replication["observed"]}/{provider_count} Providers',
+            'status_label': replication_status,
+            'tone': 'normal' if provider_count and replication['observed'] == provider_count else (
+                'warning' if provider_count else 'unknown'
             ),
             'detail': (
-                f'{len(replication_rows)} policies · '
-                f'{capability_counts["replication"]["unavailable"]} unavailable · '
-                f'{capability_counts["replication"]["unsupported"]} unsupported.'
+                f'{summary["replication_rows"]} policies · '
+                f'{replication["unavailable"]} unavailable · '
+                f'{replication["unsupported"]} unsupported.'
             ),
         },
     ]
+
+
+def _governance_filtered_query(
+    *,
+    active_tab: str,
+    source_ids: list[int],
+    provider: str,
+    search: str,
+    retention: str,
+    immutability: str,
+    state: str,
+    identities: list[Any],
+) -> Any:
+    if active_tab == 'policies':
+        query = (
+            RegistryProjectGovernance.query.join(
+                RegistryProject, RegistryProjectGovernance.project_id == RegistryProject.id
+            )
+            .options(joinedload(RegistryProjectGovernance.project))
+            .filter(RegistryProject.integration_instance_id.in_(source_ids))
+        )
+        source_col = RegistryProject.integration_instance_id
+    else:
+        query = RegistryReplicationPolicy.query.filter(
+            RegistryReplicationPolicy.integration_instance_id.in_(source_ids)
+        )
+        source_col = RegistryReplicationPolicy.integration_instance_id
+    if provider:
+        selected = int(provider) if provider.isdecimal() else -1
+        query = query.filter(source_col == selected if selected in source_ids else source_col == -1)
+    if active_tab == 'policies':
+        if retention:
+            query = query.filter(RegistryProjectGovernance.retention_status == retention)
+        if immutability:
+            query = query.filter(RegistryProjectGovernance.immutability_status == immutability)
+    elif state:
+        query = query.filter(
+            RegistryReplicationPolicy.enabled.is_(True if state == 'enabled' else False)
+            if state != 'unknown'
+            else RegistryReplicationPolicy.enabled.is_(None)
+        )
+    if search:
+        pattern = f'%{search.casefold()}%'
+        matched_sources = [
+            int(identity.id) for identity in identities
+            if search.casefold() in _governance_source_name(identity).casefold()
+        ]
+        clauses = (
+            [
+                func.lower(RegistryProject.name).like(pattern),
+                RegistryProject.integration_instance_id.in_(matched_sources),
+            ]
+            if active_tab == 'policies'
+            else [
+                func.lower(RegistryReplicationPolicy.name).like(pattern),
+                func.lower(func.coalesce(RegistryReplicationPolicy.trigger_type, '')).like(pattern),
+                func.lower(func.coalesce(RegistryReplicationPolicy.source_registry, '')).like(pattern),
+                func.lower(func.coalesce(RegistryReplicationPolicy.destination_registry, '')).like(pattern),
+                func.lower(func.coalesce(RegistryReplicationPolicy.destination_namespace, '')).like(pattern),
+                RegistryReplicationPolicy.integration_instance_id.in_(matched_sources),
+            ]
+        )
+        query = query.filter(or_(*clauses))
+    return (
+        query.order_by(RegistryProjectGovernance.observed_at.desc(), RegistryProjectGovernance.id.desc())
+        if active_tab == 'policies'
+        else query.order_by(RegistryReplicationPolicy.name.asc(), RegistryReplicationPolicy.id.asc())
+    )
 
 
 def build_governance(
@@ -321,13 +419,23 @@ def build_governance(
     overview = build_overview()
     identities = _providers()
     identity_by_id = {int(item.id): item for item in identities}
-    governance_states = {int(item.integration_instance_id): item for item in RegistryGovernanceState.query.all()}
-    project_rows = _governance_project_rows(identity_by_id)
-    replication_rows = _governance_replication_rows(identity_by_id)
-    capability_counts = _governance_capability_counts(governance_states)
-    summary = _governance_summary(identities, identity_by_id, governance_states, project_rows)
+    source_ids = list(identity_by_id)
+    governance_states = {
+        int(item.integration_instance_id): item
+        for item in RegistryGovernanceState.query.filter(
+            RegistryGovernanceState.integration_instance_id.in_(source_ids)
+        ).all()
+    }
+    inventory_states = {
+        int(item.integration_instance_id): item
+        for item in RegistryCollectionState.query.filter(
+            RegistryCollectionState.integration_instance_id.in_(source_ids)
+        ).all()
+    }
+    capability_counts = _governance_capability_counts(governance_states, source_ids)
+    evidence_counts = _governance_evidence_counts(source_ids)
+    summary = _governance_summary(identities, governance_states, inventory_states, evidence_counts)
     normalized_tab = active_tab if active_tab in {'policies', 'replication'} else 'policies'
-    active_rows = project_rows if normalized_tab == 'policies' else replication_rows
     search_value = search.strip()
     provider_value = provider.strip()
     policy_states = {'configured', 'not_configured', 'unavailable', 'unsupported', 'not_collected'}
@@ -341,16 +449,23 @@ def build_governance(
     if state_value not in {'enabled', 'disabled', 'unknown'}:
         state_value = ''
     filters_active = bool(search_value or provider_value or retention_value or immutability_value or state_value)
-    filtered_rows = _filter_governance_rows(
-        active_rows,
+
+    query = _governance_filtered_query(
         active_tab=normalized_tab,
-        search=search_value,
+        source_ids=source_ids,
         provider=provider_value,
+        search=search_value,
         retention=retention_value,
         immutability=immutability_value,
         state=state_value,
+        identities=identities,
     )
-    page_rows, pagination = paginate_sequence(filtered_rows, page=page, per_page=per_page)
+    items, pagination = paginate_query(query, page=page, per_page=per_page)
+    rows = (
+        _governance_project_rows(items, identity_by_id)
+        if normalized_tab == 'policies'
+        else _governance_replication_rows(items, identity_by_id)
+    )
     filter_query = {'tab': normalized_tab, 'q': search_value, 'provider': provider_value}
     if normalized_tab == 'policies':
         filter_query.update({'retention': retention_value, 'immutability': immutability_value})
@@ -359,19 +474,15 @@ def build_governance(
     return {
         'setup': overview['setup'],
         'provider_count': summary['provider_count'],
-        'project_count': len(project_rows),
-        'replication_count': len(replication_rows),
+        'project_count': evidence_counts['policy_rows'],
+        'replication_count': evidence_counts['replication_rows'],
         'governance_ready_count': summary['ready_count'],
         'posture': _governance_posture(summary),
         'snapshot_context': _governance_snapshot_context(summary),
-        'posture_cards': _governance_posture_cards(
-            summary,
-            project_rows=project_rows,
-            replication_rows=replication_rows,
-            capability_counts=capability_counts,
-        ),
+        'posture_cards': _governance_posture_cards(summary, capability_counts=capability_counts),
+        'capability_counts': capability_counts,
         'active_tab': normalized_tab,
-        'rows': page_rows,
+        'rows': rows,
         'pagination': pagination,
         'filter_query': filter_query,
         'filters': {
@@ -382,6 +493,9 @@ def build_governance(
             'state': state_value,
         },
         'has_filters': filters_active,
-        'provider_options': sorted({str(row['provider_label']) for row in active_rows}, key=str.casefold),
+        'provider_options': [
+            {'id': int(identity.id), 'name': _governance_source_name(identity)}
+            for identity in identities
+        ],
         'sync_state': build_registry_governance_sync_state(),
     }

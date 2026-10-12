@@ -216,7 +216,8 @@
                         <select name="provider" class="{{ table_ui.filter_select_classes() }}">
                             <option value="">All Providers</option>
                             {% for provider in governance.provider_options %}
-                                <option value="{{ provider }}" {% if governance.filters.provider == provider %}selected{% endif %}>{{ provider }}</option>
+                                <option value="{{ provider.id }}"
+                                        {% if governance.filters.provider == provider.id|string %}selected{% endif %}>{{ provider.name }}</option>
                             {% endfor %}
                         </select>
                     </label>
