@@ -101,7 +101,7 @@
                                                                                         </div>
                                                                                     </div>
                                                                                 {%- endmacro %}
-                                                                                {% macro inventory_block_header(icon, title, description, loading_id, loading_label, action_href, action_label='Open Cluster Integrations', header_actions='', title_extra='') -%}
+                                                                                {% macro inventory_block_header(icon, title, description, loading_id, loading_label, action_href, action_label='Open Cluster Integrations', header_actions='', title_extra='', result_count=none) -%}
                                                                                     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                                                                                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                                                                             <div class="flex min-w-0 items-start gap-3">
@@ -109,9 +109,10 @@
                                                                                                     <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
                                                                                                 </span>
                                                                                                 <div class="min-w-0">
-                                                                                                    <div class="inline-flex min-h-6 items-center gap-1.5">
+                                                                                                    <div class="flex min-h-6 flex-wrap items-center gap-1.5">
                                                                                                         <h2 class="{{ block_title_classes() }}">{{ title }}</h2>
                                                                                                         {% if title_extra %}{{ title_extra }}{% endif %}
+                                                                                                        {% if result_count is not none %}{{ table_label.result_count(result_count) }}{% endif %}
                                                                                                     </div>
                                                                                                     <p class="{{ block_description_classes() }}">{{ description }}</p>
                                                                                                 </div>

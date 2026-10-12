@@ -93,3 +93,10 @@
         <span class="{{ 'break-all whitespace-normal' if wrap else 'whitespace-nowrap' }}">{{ text }}</span>
     </span>
 {%- endmacro %}
+
+{# Non-interactive filtered-total indicator for KAORI table headers. #}
+{% macro result_count(count) -%}
+    {%- if count is not none -%}
+        {{- metadata_label(count_text(count, 'Result'), icon='list-filter') -}}
+    {%- endif -%}
+{%- endmacro %}
