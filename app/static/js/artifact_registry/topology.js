@@ -48,11 +48,15 @@ if (canvas && form) {
         el.href = href
         return el
     }
+    let inspectorReturnFocus = null
     const closeInspector = () => {
+        const wasOpen = !inspector.classList.contains('hidden')
         inspector.classList.add('hidden')
         backdrop.classList.add('hidden')
+        if (wasOpen && inspectorReturnFocus?.isConnected) inspectorReturnFocus.focus()
     }
     const openInspector = () => {
+        if (inspector.classList.contains('hidden')) inspectorReturnFocus = document.activeElement
         inspector.classList.remove('hidden')
         backdrop.classList.remove('hidden')
         close.focus()
@@ -60,7 +64,23 @@ if (canvas && form) {
     close.addEventListener('click', closeInspector)
     backdrop.addEventListener('click', closeInspector)
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !inspector.classList.contains('hidden')) closeInspector()
+        if (inspector.classList.contains('hidden')) return
+        if (event.key === 'Escape') {
+            event.preventDefault()
+            closeInspector()
+        }
+        if (event.key !== 'Tab') return
+        const focusables = [...inspector.querySelectorAll('button:not([disabled]), a[href]')]
+        if (!focusables.length) return
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault()
+            last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault()
+            first.focus()
+        }
     })
 
     const associatedBindings = (nodeId) => {
