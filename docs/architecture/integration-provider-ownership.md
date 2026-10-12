@@ -2,6 +2,30 @@
 
 KAORI separates provider-neutral orchestration from presentation and backend-specific implementations.
 
+## Kubernetes Orchestration provider isolation
+
+Kubernetes API is the authoritative execution/control-plane provider. KAORI
+holds one encrypted `KubernetesConnection` per managed Cluster and separates
+Core Validation, Runtime Refresh and consumer binding readiness. The operator-
+approved legacy TLS cipher exception is configured on the **individual Kubernetes
+SDK API client's urllib3 transport**, never by mutating process-global TLS
+functions. Kubernetes discovery and SSAR probes use the same client-local
+transport policy; an unavailable/forbidden SelfSubjectAccessReview does not
+prove a required permission.
+
+A failed **Full Validation** commits blocked current Kubernetes Core Readiness
+and invalidates stale current compatibility/discovery success. The separate
+lightweight **Runtime Refresh** does not erase previously validated provider
+capability evidence. Provider and downstream source canonical enabled/active
+lifecycle are required for Ready/Operational presentation.
+
+The Container Orchestrator landing page uses
+`app/integrations/orchestration/container_orchestrator/fleet_query.py` for
+SQL-backed lifecycle/coverage aggregates and independent filtered pagination.
+It hydrates only displayed connection and binding records, using the shared
+source-identity bounded loader. Five rows is the default display size;
+existing 5/10/25/50 controls and both independent workspace panels remain.
+
 ## Metrics Source
 
 ```text

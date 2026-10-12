@@ -82,8 +82,18 @@ def fleet_statement():
     alert_source = _source_status(ab, ai, ap)
     # A non-Ready Kubernetes API blocks dependent consumers before their own
     # binding/transport evidence is evaluated.
-    metrics_coverage = case((readiness != 'ready', readiness), else_=metrics_source)
-    alert_coverage = case((readiness != 'ready', readiness), else_=alert_source)
+    metrics_coverage = case(
+        (readiness == 'blocked', 'blocked'),
+        (readiness == 'degraded', 'degraded'),
+        (readiness != 'ready', 'validation_required'),
+        else_=metrics_source,
+    )
+    alert_coverage = case(
+        (readiness == 'blocked', 'blocked'),
+        (readiness == 'degraded', 'degraded'),
+        (readiness != 'ready', 'validation_required'),
+        else_=alert_source,
+    )
     ready_count = (
         case((readiness == 'ready', 1), else_=0)
         + case((metrics_coverage == 'ready', 1), else_=0)
@@ -126,8 +136,8 @@ def fleet_statement():
             ab.id.label('alerts_binding_id'),
             mp.id.label('metrics_id'),
             ap.id.label('alertmanager_id'),
-            mi.name.label('metrics_name'),
-            ai.name.label('alerts_name'),
+            case((mp.id.is_not(None), mi.name), else_=None).label('metrics_name'),
+            case((ap.id.is_not(None), ai.name), else_=None).label('alerts_name'),
             mi.readiness_status.label('metrics_readiness'),
             ai.readiness_status.label('alerts_readiness'),
             mi.enabled.label('metrics_source_enabled'),
