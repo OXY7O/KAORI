@@ -25,9 +25,9 @@ def _valid_core_response(key: str, payload: Any) -> bool:
     if not isinstance(payload, dict) or payload.get('status') != 'success':
         return False
     data = payload.get('data')
-    if not isinstance(data, dict):
-        return False
     if key in {'instant_query', 'range_query'}:
+        if not isinstance(data, dict):
+            return False
         kind = 'vector' if key == 'instant_query' else 'matrix'
         if data.get('resultType') != kind or not isinstance(data.get('result'), list):
             return False
@@ -45,7 +45,8 @@ def _valid_core_response(key: str, payload: Any) -> bool:
         return True
     if key == 'series_discovery':
         return isinstance(data, list) and all(
-            isinstance(item, Mapping) and all(isinstance(k, str) and isinstance(v, str) for k, v in item.items())
+            isinstance(item, Mapping)
+            and all(isinstance(k, str) and isinstance(v, str) for k, v in item.items())
             for item in data
         )
     if key == 'label_discovery':
