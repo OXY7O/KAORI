@@ -170,7 +170,11 @@ def get_custom_template_contract_errors(template: ReportTemplate) -> list[str]:
         errors.append('Stored output format is not supported by this report type.')
     sections = template.sections_as_list()
     allowed = set(spec.default_sections)
-    if not sections or any(item not in allowed for item in sections) or len(sections) != len(set(sections)):
+    if (
+        not sections
+        or any(not isinstance(item, str) or item not in allowed for item in sections)
+        or len(sections) != len(set(item for item in sections if isinstance(item, str)))
+    ):
         errors.append('Stored section selection no longer matches the canonical contract.')
     elif spec.family == REPORT_FAMILY_INVENTORY and sections != list(spec.default_sections):
         errors.append('Inventory sections no longer match the protected contract.')
@@ -182,7 +186,9 @@ def get_custom_template_contract_errors(template: ReportTemplate) -> list[str]:
 def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
     contract_errors = get_custom_template_contract_errors(template)
     contract_valid = not contract_errors
-    sections = template.sections_as_list()
+    # Historical JSON is untrusted presentation data; malformed entries must not
+    # crash get_section_labels or expose nested metadata in operator-facing UI.
+    sections = [item if isinstance(item, str) else 'Invalid Section' for item in template.sections_as_list()]
     report_type_label = get_report_type_label(template.report_type)
     status = template.status or 'draft'
     family = get_report_family(template.report_type) if template.report_type in get_allowed_report_types() else 'unknown'
