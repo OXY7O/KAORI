@@ -79,6 +79,7 @@ class _DecisionEvidenceContext:
     proposed: CapacityVector
     committed_count: int
     snapshot_result: SnapshotResult
+    replacement_other_committed: CapacityVector | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,6 +90,7 @@ class _AllocationRequest:
     proposed: CapacityVector
     operation: str
     allocation_scope: str = 'namespace'
+    replacement_namespace: TenantNamespace | None = None
 
 
 def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
@@ -299,6 +301,7 @@ def enforce_existing_namespace_allocation_preflight(
             current=current,
             proposed=proposed,
             operation=operation,
+            replacement_namespace=record,
         ),
     )
 
@@ -499,6 +502,23 @@ def _enforce_allocation_preflight(
     snapshot_result = _read_capacity_snapshot(cluster_id)
     capacity, capacity_reason = _capacity_vector(snapshot_result)
     positive_change = request.operation in {'create', 'increase'}
+    atomic_replacement = (
+        request.allocation_scope == 'namespace'
+        and request.replacement_namespace is not None
+        and request.operation == 'increase'
+        and any(
+            value is None
+            for value in (request.current.cpu, request.current.memory_bytes, request.current.pods)
+        )
+    )
+    replacement_other: CapacityVector | None = None
+    replacement_unknown_sources: list[str] = []
+    if atomic_replacement:
+        assert request.replacement_namespace is not None
+        replacement_other, _, replacement_unknown_sources = _committed_tenant_allocation(
+            cluster_id,
+            replace_namespace=request.replacement_namespace,
+        )
 
     budget: TenantAllocationBudget | None = None
     if policy is None:
@@ -519,27 +539,62 @@ def _enforce_allocation_preflight(
         )
     else:
         budget = _budget(policy, capacity)
-        commitment_reason = _committed_evidence_reason(
-            committed,
-            unbounded_namespaces,
-            budget=budget.available,
-        )
-        if commitment_reason:
-            pure = _unknown_evidence_decision(
-                reason=commitment_reason,
-                committed=committed,
-                current=request.current,
-                proposed=request.proposed,
-                positive_change=positive_change,
-            )
-        else:
-            pure = evaluate_allocation_preflight(
+        if atomic_replacement:
+            assert replacement_other is not None
+            # Project the complete post-change cluster commitment. Unknown
+            # target requests are NEVER cast to zero or subtracted from a
+            # potentially unknown aggregate.
+            projected = _add_capacity_vectors(replacement_other, request.proposed)
+            commitment_reason = _committed_evidence_reason(
+                projected,
+                replacement_unknown_sources,
                 budget=budget.available,
-                committed_before=committed,
-                current_allocation=request.current,
-                proposed_allocation=request.proposed,
-                capacity_evidence_available=True,
             )
+            if replacement_unknown_sources and not commitment_reason:
+                commitment_reason = (
+                    'Atomic replacement is blocked: other active Tenant allocations have '
+                    'missing or ambiguous governed commitments.'
+                )
+            if commitment_reason:
+                pure = _unknown_evidence_decision(
+                    reason=commitment_reason,
+                    committed=committed,
+                    current=request.current,
+                    proposed=request.proposed,
+                    positive_change=True,
+                )
+            else:
+                pure = evaluate_allocation_preflight(
+                    budget=budget.available,
+                    committed_before=replacement_other,
+                    current_allocation=CapacityVector(
+                        cpu=_ZERO, memory_bytes=_ZERO, pods=_ZERO, storage_bytes=_ZERO,
+                    ),
+                    proposed_allocation=request.proposed,
+                    capacity_evidence_available=True,
+                )
+        else:
+            commitment_reason = _committed_evidence_reason(
+                committed,
+                unbounded_namespaces,
+                budget=budget.available,
+            )
+            if commitment_reason:
+                pure = _unknown_evidence_decision(
+                    reason=commitment_reason,
+                    committed=committed,
+                    current=request.current,
+                    proposed=request.proposed,
+                    positive_change=positive_change,
+                )
+            else:
+                pure = evaluate_allocation_preflight(
+                    budget=budget.available,
+                    committed_before=committed,
+                    current_allocation=request.current,
+                    proposed_allocation=request.proposed,
+                    capacity_evidence_available=True,
+                )
 
     decision = _persist_decision(
         cluster_id=cluster_id,
@@ -555,6 +610,7 @@ def _enforce_allocation_preflight(
             proposed=request.proposed,
             committed_count=committed_count,
             snapshot_result=snapshot_result,
+            replacement_other_committed=replacement_other,
         ),
     )
     if not pure.allowed:
@@ -609,6 +665,20 @@ def _persist_decision(
             'projected_committed': _vector_json(pure.projected_committed),
             'projected_headroom': _vector_json(pure.projected_headroom),
             'shortfall': _vector_json(pure.shortfall),
+            **(
+                {
+                    'atomic_replacement': {
+                        'mode': 'bounded_native_namespace_replacement',
+                        'target_namespace_id': request.replacement_namespace.id,
+                        'other_committed': _vector_json(evidence.replacement_other_committed),
+                        'projection': 'other_committed_plus_proposed',
+                        'current_unbounded_preserved': True,
+                    }
+                }
+                if evidence.replacement_other_committed is not None
+                and request.replacement_namespace is not None
+                else {}
+            ),
         },
         'budget': _budget_json(evidence.budget) if evidence.budget is not None else None,
     }
