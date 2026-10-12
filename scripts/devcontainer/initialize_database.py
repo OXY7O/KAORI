@@ -1,16 +1,18 @@
-"""One explicit DevContainer task for owner-only schema/RBAC/admin bootstrap.
+"""Explicit, operator-run DevContainer migration with a separate DDL identity.
 
-The first-run UI stays read-only. This operator-invoked command is NOT
-executed at every VS Code container start; it reuses the canonical
-scripts/init_db.sh and existing immutable-ledger GRANT SQL.
+The migrator password is requested at an interactive terminal. It is NEVER
+stored in the workspace .env, mounted as a runtime secret, or given to workers.
+The postgres bootstrap identity is not used for Alembic or app RBAC.
 """
 from __future__ import annotations
 
 import argparse
+import getpass
 import os
 import subprocess
 import sys
 
+import psycopg2
 from sqlalchemy.engine import URL, make_url
 
 
@@ -19,87 +21,98 @@ def _abort(message: str) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description='Initialize or upgrade local KAORI database as its owner')
+    parser = argparse.ArgumentParser(description='Upgrade the local KAORI schema as kaori_migrator')
     parser.add_argument(
         '--bootstrap-admin', action='store_true',
-        help='Create the initial KAORI administrator after owner migrations and RBAC seed',
+        help='After migration and grants, initialize the first application admin as kaori_runtime',
     )
     args = parser.parse_args()
 
     if os.getenv('APP_ENV') != 'development':
-        _abort('not running in the development runtime')
-    if os.getenv('KAORI_DB_MIGRATION_URL'):
-        _abort('remove ambient migration URL; this task creates a temporary owner connection')
-    if (
-        os.getenv('POSTGRES_USER') != 'kaori'
-        or os.getenv('POSTGRES_DB') != 'kaori'
-        or not os.getenv('POSTGRES_PASSWORD')
-    ):
-        _abort('local PostgreSQL bootstrap owner configuration is missing or unexpected')
-
+        _abort('only the local development runtime is authorized')
+    if os.getenv('KAORI_DB_MIGRATION_URL') or os.getenv('KAORI_DB_MIGRATION_PASSWORD'):
+        _abort('remove ambient migration credentials; use the protected interactive prompt')
     runtime_raw = os.getenv('DATABASE_URL', '')
-    if not runtime_raw:
-        _abort('canonical runtime DATABASE_URL is missing')
     runtime = make_url(runtime_raw)
     if (
-        runtime.username != 'kaori_runtime' or runtime.host != 'db'
-        or runtime.database != 'kaori' or (runtime.port or 5432) != 5432
+        runtime.drivername not in {'postgresql', 'postgresql+psycopg2'}
+        or runtime.username != 'kaori_runtime'
+        or runtime.host != 'db'
+        or (runtime.port or 5432) != 5432
+        or runtime.database != 'kaori'
         or not runtime.password
     ):
-        _abort('runtime DATABASE_URL does not describe the expected restricted local role')
-    if runtime.password == os.environ['POSTGRES_PASSWORD']:
-        _abort('runtime and owner passwords must differ')
+        _abort('DATABASE_URL must identify the isolated local runtime principal')
 
-    # Reject incomplete first-admin credentials BEFORE writing schema.
+    # Refuse incomplete first-admin credentials BEFORE writing any schema.
     if args.bootstrap_admin:
         username = (os.getenv('ADMIN_USERNAME') or '').strip()
         email = (os.getenv('ADMIN_EMAIL') or '').strip()
         password = os.getenv('ADMIN_PASSWORD') or ''
-        encryption_key = os.getenv('INTEGRATION_CREDENTIAL_KEY') or ''
+        key = os.getenv('INTEGRATION_CREDENTIAL_KEY') or ''
         if (
             not username or not email or '@' not in email
             or len(password) < 12 or 'replace-with' in password.lower()
-            or not encryption_key or 'replace-with' in encryption_key.lower()
+            or not key or 'replace-with' in key.lower()
         ):
-            _abort('configure valid private ADMIN_* and INTEGRATION_CREDENTIAL_KEY '
-                   'before first schema migration')
+            _abort('configure private ADMIN_* and INTEGRATION_CREDENTIAL_KEY before migration')
 
-    # Owner authority is never saved in .env or inherited by workers.
+    if not sys.stdin.isatty():
+        _abort('an interactive terminal is required for the migration secret')
+    migrator_password = getpass.getpass('PostgreSQL kaori_migrator password: ')
+    if not migrator_password or migrator_password == runtime.password:
+        _abort('migration password must be nonempty and distinct from runtime')
     migration_url = URL.create(
-        'postgresql',
-        username=os.environ['POSTGRES_USER'],
-        password=os.environ['POSTGRES_PASSWORD'],
-        host='db',
-        port=5432,
-        database='kaori',
+        'postgresql', username='kaori_migrator',
+        password=migrator_password, host='db', port=5432, database='kaori',
     ).render_as_string(hide_password=False)
-    migrate_env = {**os.environ, 'KAORI_DB_MIGRATION_URL': migration_url}
-    print('KAORI database setup: owner migrations + application RBAC...')
-    subprocess.run(
-        ['sh', 'scripts/init_db.sh', *(['--bootstrap-admin'] if args.bootstrap_admin else [])],
-        env=migrate_env,
-        check=True,
-    )
 
-    # Reuse the existing transactional, checked grants script; future
-    # migrations must refresh privileges because default grants are withheld.
-    role_env = {
-        **os.environ,
-        'PGPASSWORD': os.environ['POSTGRES_PASSWORD'],
+    # Validate the actual login before invoking Flask-Migrate.
+    try:
+        with psycopg2.connect(
+            host='db', port=5432, dbname='kaori',
+            user='kaori_migrator', password=migrator_password,
+            connect_timeout=5, application_name='kaori-dev-migrator-preflight',
+        ) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT current_user, current_database(),
+                              (SELECT rolsuper OR rolcreatedb OR rolcreaterole
+                               OR rolreplication OR rolbypassrls
+                               FROM pg_roles WHERE rolname = current_user),
+                              has_schema_privilege(current_user, 'public', 'CREATE')"""
+                )
+                if cursor.fetchone() != ('kaori_migrator', 'kaori', False, True):
+                    _abort('the configured DDL identity/privileges are invalid')
+    except psycopg2.Error:
+        _abort('migration login or schema authorization failed (credentials not logged)')
+
+    print('KAORI database: applying explicit non-superuser Alembic/RBAC migration...')
+    migrate_env = {**os.environ, 'KAORI_DB_MIGRATION_URL': migration_url}
+    subprocess.run(['sh', 'scripts/init_db.sh'], env=migrate_env, check=True)
+
+    # Scope credential to the psql grants child process; the worker/Beat
+    # environment and canonical application DATABASE_URL never change.
+    grant_env = {
+        **os.environ, 'PGPASSWORD': migrator_password,
         'PGAPPNAME': 'kaori-devcontainer-role-provision',
     }
-    print('KAORI database setup: applying restricted runtime table grants...')
+    print('KAORI database: refreshing reviewed immutable runtime grants...')
     subprocess.run(
         [
-            'psql', '-X', '-h', 'db', '-U', 'kaori', '-d', 'kaori',
+            'psql', '-X', '-h', 'db', '-U', 'kaori_migrator', '-d', 'kaori',
             '-v', 'ON_ERROR_STOP=1', '-v', 'kaori_devcontainer_confirm=1',
             '-f', 'scripts/devcontainer/provision_postgres_runtime_role.sql',
         ],
-        env=role_env,
-        check=True,
+        env=grant_env, check=True,
     )
 
-    # Reuse the actual application-side fail-closed guard.
+    # Bootstrap the KAORI first administrator with normal application grants.
+    # This command is not a PostgreSQL CREATE ROLE operation.
+    if args.bootstrap_admin:
+        print('KAORI database: initializing application administrator as restricted runtime...')
+        subprocess.run(['flask', '--app', 'run:app', 'bootstrap-admin'], env=os.environ.copy(), check=True)
+
     from app.extensions.db import db
     from app.kubernetes.tenant.capsule_handoff_start_writer import (
         _require_postgres_ledger_write_once_guards,
@@ -109,20 +122,18 @@ def main() -> int:
     with app.app_context():
         try:
             if db.engine.url.username != 'kaori_runtime':
-                _abort('Flask ORM resolved an elevated or unexpected runtime role')
+                _abort('Flask ORM resolved an elevated or unexpected runtime identity')
             _require_postgres_ledger_write_once_guards(db.session)
         finally:
             db.session.rollback()
 
-    print('PASS: KAORI migrated; restricted runtime grants and Capsule ledger guard admitted.')
+    print('PASS: migration, runtime ACLs and Capsule ledger guard admitted.')
     return 0
 
 
 if __name__ == '__main__':
     try:
         raise SystemExit(main())
-    except (RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
-        # Avoid echoing shell or connection strings, including role password.
-        print(f'Database initialization failed ({type(exc).__name__}); see preceding '
-              'step output and keep provider actions disabled.', file=sys.stderr)
+    except (RuntimeError, ValueError, subprocess.CalledProcessError):
+        print('Database initialization failed; inspect step output, no credentials logged.', file=sys.stderr)
         raise SystemExit(1) from None
