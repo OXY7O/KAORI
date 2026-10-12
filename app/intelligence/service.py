@@ -6,6 +6,8 @@ from typing import Any
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.datastructures import MultiDict
 
+from app.extensions.db import db
+
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.finding_presentation import (
     build_affected_assets,
@@ -270,6 +272,9 @@ def _build_recommendation_findings(
         except SQLAlchemyError:
             if evidence_issues is None:
                 raise  # Worker/reconciliation must never treat failed reads as no findings.
+            # A read-only request can recover its database session to project
+            # other committed evidence as partial rather than a false empty state.
+            db.session.rollback()
             evidence_issues.append(label)
 
     # Domain selection narrows evaluator execution before loading committed data.
