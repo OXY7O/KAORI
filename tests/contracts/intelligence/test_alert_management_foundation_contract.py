@@ -74,7 +74,8 @@ def test_resolved_workspace_is_source_state_based_not_close_only() -> None:
     workspace = read('app/templates/intelligence/partials/_alert_intelligence_workspace.html')
     resolved = read('app/templates/intelligence/partials/_alert_ops_history.html')
     resolved_modal = read('app/templates/intelligence/partials/_alert_ops_resolved_case_modal.html')
-    assert "row.source_state in {'firing', 'unknown'}" in service
+    assert 'if is_active_alert_case(row)' in service
+    assert "AlertCase.source_state.in_(('firing', 'unknown'))" in service
     assert "row.source_state == 'resolved' or row.workflow_state == 'closed'" in service
     assert "('resolved', 'Resolved'" in workspace
     assert 'Verification Pending' in resolved_modal
