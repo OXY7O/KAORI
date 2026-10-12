@@ -1,6 +1,6 @@
 # KAORI production PostgreSQL — governed migration authority and DBA SQL handoff
 
-**Authorities:** #619 → #621 / #622, bounded workstreams #1439 / #1440.
+**Authorities:** #619 → #621 / #622, bounded workstreams #1439 / #1440 and DBA SQL-package child #1467.
 **Status:** architecture and operator contract only. The existing
 `deploy/server` production adapter currently starts bundled PostgreSQL and
 Redis and executes its migration service with the application environment.
@@ -76,6 +76,9 @@ DBA-side approved migration runner or a separately reviewed SQL equivalent.
 When the database is reachable but schema is absent, the existing
 `Database Setup Required` page remains read-only; it is never a route to
 send DBA passwords to KAORI or invoke SQL through a browser.
+
+The production SQL generator/admission implementation is tracked separately in
+#1467 (child of #1439); do not treat this written contract as a runnable SQL artifact.
 
 This document describes the **target**, not a claim of external-mode
 availability or production UAT PASS. Implementation authority and gates
