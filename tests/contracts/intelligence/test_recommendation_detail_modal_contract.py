@@ -91,3 +91,18 @@ def test_generated_fix_steps_follow_review_validate_apply_verify_sequence():
     apply_change = presentation.index("'Upload the renewed tls.crt")
     verify = presentation.index("'Resync TLS inventory, validate the affected Ingress endpoint")
     assert review < validate < apply_change < verify
+
+
+def test_operational_dashboard_recommendation_cards_deep_link_to_filtered_review() -> None:
+    cards = Path('app/templates/components/operational_recommendation_cards.html').read_text()
+    javascript = Path('app/static/js/detail_rows.js').read_text()
+    recommendation_service = Path('app/intelligence/rule_presentation.py').read_text()
+
+    # Dashboard cards must land on the fully styled Intelligence workspace, not a modal-only fragment.
+    assert "url_for('intelligence.recommendations', q=action.rule_key, detail=action.rule_key)" in cards
+    assert "url_for('intelligence.recommendation_details', recommendation_key=action.rule_key)" not in cards
+    assert "if action.rule_key else url_for('intelligence.recommendations')" in cards
+    # Existing search and modal deep-link behavior target the same finding identity.
+    assert "'rule_key'," in recommendation_service
+    assert "const DETAIL_PARAM = 'detail'" in javascript
+    assert "if (detailId) openFromUrl(detailId)" in javascript

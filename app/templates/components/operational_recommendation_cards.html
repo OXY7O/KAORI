@@ -12,7 +12,7 @@
         body_classes='grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5'
         ) %}
         {% for action in actions %}
-            <a href="{{ url_for('intelligence.recommendation_details', recommendation_key=action.rule_key) if action.rule_key else url_for('intelligence.recommendations') }}"
+            <a href="{{ url_for('intelligence.recommendations', q=action.rule_key, detail=action.rule_key) if action.rule_key else url_for('intelligence.recommendations') }}"
                title="{{ action.rule_key or action.title }}"
                class="group flex min-h-[190px] flex-col rounded-lg border border-outline-subtle bg-surface-elevated p-4 transition-colors hover:border-outline-focus hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
                 <div class="mb-3 flex items-start justify-between gap-3">
