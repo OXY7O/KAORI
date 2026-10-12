@@ -27,7 +27,8 @@
 BEGIN;
 DO $$
 DECLARE
-    current_role record;
+    -- CURRENT_ROLE is a PostgreSQL SQL special form, not a safe record name.
+    v_role_flags record;
 BEGIN
     IF current_database() <> 'kaori'
        OR current_setting('application_name', true) <> 'kaori-devcontainer-role-provision'
@@ -43,9 +44,9 @@ BEGIN
     END IF;
 
     SELECT rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls
-    INTO current_role FROM pg_roles WHERE rolname = current_user;
-    IF current_role.rolsuper IS DISTINCT FROM TRUE
-       AND current_role.rolcreaterole IS DISTINCT FROM TRUE
+    INTO v_role_flags FROM pg_roles WHERE rolname = current_user;
+    IF v_role_flags.rolsuper IS DISTINCT FROM TRUE
+       AND v_role_flags.rolcreaterole IS DISTINCT FROM TRUE
     THEN
         RAISE EXCEPTION 'Trusted existing PostgreSQL owner/admin connection required';
     END IF;
@@ -57,10 +58,10 @@ BEGIN
     END IF;
 
     SELECT rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls
-    INTO current_role FROM pg_roles WHERE rolname = 'kaori_runtime';
-    IF current_role.rolsuper OR current_role.rolcreatedb
-       OR current_role.rolcreaterole OR current_role.rolreplication
-       OR current_role.rolbypassrls
+    INTO v_role_flags FROM pg_roles WHERE rolname = 'kaori_runtime';
+    IF v_role_flags.rolsuper OR v_role_flags.rolcreatedb
+       OR v_role_flags.rolcreaterole OR v_role_flags.rolreplication
+       OR v_role_flags.rolbypassrls
        OR pg_has_role(
            (SELECT oid FROM pg_roles WHERE rolname = 'kaori_runtime'),
            (SELECT relowner FROM pg_class
