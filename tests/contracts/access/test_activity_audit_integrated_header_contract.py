@@ -37,19 +37,21 @@ def test_audit_context_avoids_narrow_three_way_role_and_email_columns() -> None:
     context = detail.split('<section data-activity-audit-context', 1)[1].split(
         '{% if item.additional_evidence %}', 1
     )[0]
-    shared = read('app/templates/components/details/_detail_content.html')
-    assert 'sm:grid-cols-2 sm:p-5' in context
-    assert context.count('mt-3 space-y-3') == 2
+    assert 'grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2' in context
+    assert context.count('<dl class="divide-y divide-outline-subtle">') == 2
+    assert context.count('<dt class="text-xs font-medium text-content-muted">') == 5
+    assert 'activity-actor-context-heading' in context
+    assert 'activity-target-context-heading' in context
     assert 'sm:grid-cols-3' not in context
-    assert 'md:grid-cols-5' not in context
-    assert "detail_ui.stacked_detail_row('Email', item.user_email or 'Not recorded')" in context
-    assert "detail_ui.stacked_detail_row('Role', item.user_role)" in context
-    assert "detail_ui.stacked_detail_row('Authentication', item.user_auth_source)" in context
-    assert "detail_ui.stacked_detail_row('Target Type', item.target_type)" in context
-    assert "detail_ui.stacked_detail_row('Module', item.module_label)" in context
-    assert 'max-w-full whitespace-normal' in shared
-    assert '[overflow-wrap:anywhere]' in shared
-
+    for value in (
+        "{{ item.user_email or 'Not recorded' }}",
+        '{{ item.user_role }}',
+        '{{ item.user_auth_source }}',
+        '{{ item.target_type }}',
+        '{{ item.module_label }}',
+    ):
+        assert value in context
+    assert '[overflow-wrap:anywhere]' in context
 
 def test_read_only_committed_evidence_and_disclosure_unchanged() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')

@@ -43,9 +43,13 @@ def test_audit_identity_and_source_evidence_remain_present() -> None:
     assert 'item.created_at|user_datetime' in detail
     assert 'Actor & Access' in detail
     assert 'Target Context' in detail
-    assert "detail_ui.stacked_detail_row('Email', item.user_email or 'Not recorded')" in detail
-    assert "detail_ui.stacked_detail_row('Authentication', item.user_auth_source)" in detail
-    assert "detail_ui.stacked_detail_row('Module', item.module_label)" in detail
+    assert 'activity-actor-context-heading' in detail
+    assert 'activity-target-context-heading' in detail
+    assert "{{ item.user_email or 'Not recorded' }}" in detail
+    assert '{{ item.user_role }}' in detail
+    assert '{{ item.user_auth_source }}' in detail
+    assert '{{ item.target_type }}' in detail
+    assert '{{ item.module_label }}' in detail
     assert 'data-activity-related-sources="committed-only"' in detail
     assert 'No duplicate event is created.' in detail
     assert 'item.trace_references' in detail

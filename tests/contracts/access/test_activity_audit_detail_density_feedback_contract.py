@@ -42,28 +42,26 @@ def test_failure_summary_uses_labelled_rows_without_nested_card() -> None:
     assert 'Next Review Step' in outcome
 
 
-def test_context_uses_full_width_shared_rows_for_long_identity_text() -> None:
+def test_context_uses_full_width_trace_style_rows_for_long_identity_text() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
-    shared = read('app/templates/components/details/_detail_content.html')
     start = detail.index('<section data-activity-audit-context')
     end = detail.index('{% if item.additional_evidence %}', start)
     context = detail[start:end]
-    assert 'gap-x-8 gap-y-5 p-4 sm:grid-cols-2 sm:p-5' in context
-    assert context.count('mt-3 space-y-3') == 2
-    assert 'sm:grid-cols-3' not in context
-    assert 'sm:grid-cols-2' in context
+    assert 'grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2' in context
+    assert context.count('<dl class="divide-y divide-outline-subtle">') == 2
+    assert context.count('<dt class="text-xs font-medium text-content-muted">') == 5
+    assert context.count('[overflow-wrap:anywhere]') == 5
     assert 'Actor & Access' in context
     assert 'Target Context' in context
-    assert 'user-round' in context
-    assert 'crosshair' in context
-    assert "detail_ui.stacked_detail_row('Email', item.user_email or 'Not recorded')" in context
-    assert "detail_ui.stacked_detail_row('Role', item.user_role)" in context
-    assert "detail_ui.stacked_detail_row('Authentication', item.user_auth_source)" in context
-    assert "detail_ui.stacked_detail_row('Target Type', item.target_type)" in context
-    assert "detail_ui.stacked_detail_row('Module', item.module_label)" in context
-    assert 'detail_ui.detail_row(' not in context
-    assert 'overflow-wrap:anywhere' in shared
-
+    assert 'sm:grid-cols-3' not in context
+    for value in (
+        "{{ item.user_email or 'Not recorded' }}",
+        '{{ item.user_role }}',
+        '{{ item.user_auth_source }}',
+        '{{ item.target_type }}',
+        '{{ item.module_label }}',
+    ):
+        assert value in context
 
 def test_optional_metadata_displays_long_fields_as_open_two_column_rows() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
