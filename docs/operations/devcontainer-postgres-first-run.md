@@ -4,56 +4,45 @@
 **Scope:** developer-owned disposable `kaori-dev` PostgreSQL. This is NOT a DBA/external
 database provisioning procedure and must never be applied to production.
 
-## Windows host prerequisite — open as WSL Remote first
+## Supported VS Code Windows + Docker Desktop launch
 
-The first-run initializer is **not** a Windows-native Python bootstrap.
-Its `initializeCommand` executes on the same host on which VS Code
-Dev Containers resolves the workspace. If you open
-`C:\\Users\\...\\KAORI` as a normal Windows folder, VS Code can
-try to run `python3` from Windows, and the Compose overlay expects
-Linux `$HOME` and external WSL secret files. That may fail before
-any PostgreSQL container starts, even when Docker has no running
-containers. A trailing Dev Containers `Exit code 1` alone is not
-the diagnostic error—look above it for the first failure.
+Open the checkout in **VS Code for Windows**, including a Windows/OneDrive
+working tree. Choose **Dev Containers: Rebuild and Reopen in Container**
+with Docker Desktop running Linux containers. Remote-WSL, WSL terminal,
+and a Windows-installed Python interpreter are **not required**.
 
-Run the Ubuntu WSL terminal, open the repository as WSL Remote with
-`code .` and confirm **WSL: Ubuntu** before Reopen in Container.
-For the Windows-mounted checkout used in local testing:
+`.devcontainer/devcontainer.json` invokes Docker directly as a host
+`initializeCommand`: a transient `python:3.12-alpine` container bind
+mounts the checkout and mounts two private Docker named volumes. This
+container generates/validates the ignored application `.env` and role
+credentials, then exits. Docker subsequently starts the existing
+services. If VS Code fails with `Exit code 1`, use the **first error**
+in the Dev Containers log: the final CLI stack trace is insufficient.
 
-```bash
-cd "/mnt/c/Users/<WindowsUser>/OneDrive/Documents/Application/KAORI"
-python3 --version
-docker info >/dev/null
-code .
-```
-
-No fresh-volume UAT should begin until the WSL host requirements
-pass. If `docker info` fails, enable Docker Desktop's WSL integration
-for Ubuntu. Do not delete named database volumes merely because the
-container is absent; `docker volume ls` is non-destructive.
-A Linux-native WSL working tree is preferable for performance and
-permission semantics, especially if the original workspace is
-OneDrive-synchronized. This project does not claim Windows-native
-DevContainer initialization support.
+The volumes `kaori-dev-pg-admin-secrets` and
+`kaori-dev-pg-migrator-secrets` are outside the working tree and
+never mounted to workspace, Flask, Celery workers or Beat.
+Do not remove volumes simply because no containers are running.
+The secret volumes use mode 0700 directories/0600 files readable by
+the pinned PostgreSQL 16 container UID, with separate mounts by role.
 
 ## Lifecycle: opening a zero-volume DevContainer
 
-1. Start VS Code in WSL, open this project, and choose **Reopen in Container**.
+1. Start **VS Code Windows** from the existing checkout and choose **Rebuild and Reopen in Container**.
    `.devcontainer/devcontainer.json` still includes all 14 `runServices`:
    workspace, PostgreSQL, Redis, ten Celery workers and one Beat. No manual
    `docker compose up` is needed.
-2. The **host-side** `initializeCommand` runs
-   `.devcontainer/prepare-postgres-env.py` *before* the services start.
+2. The cross-platform Docker `initializeCommand` runs
+   `python /workspace/.devcontainer/prepare-postgres-env.py` **inside a disposable Python container** before services start.
    If root `.env` is absent, it copies the committed `.env.example`
    automatically. It then writes the generated runtime
    `DATABASE_URL`, application encryption secrets (if missing) and first
    administrator password (if placeholder) into that private `.env`.
-   It creates or aligns the application `.env` and writes
-   `~/.config/kaori/devcontainer/postgres-bootstrap.env` and
-   `postgres-migrate.env`, mode 0600, outside the bind-mounted repository.
-   The first file holds the PostgreSQL bootstrap and local runtime provisioning
-   secrets. The second holds only the migration role password. Do not copy
-   either into the repository or expose them in chat/logs.
+   It creates/validates `kaori-dev-pg-admin-secrets` (two private
+   files: `postgres_password`, `runtime_password`) and
+   `kaori-dev-pg-migrator-secrets` (one private file: `password`).
+   These are Docker volumes, not files in the Windows workspace. No
+   postgres or migrator password is copied into application `.env`.
 3. The PostgreSQL 16 official image initializes an **empty volume only** with
    `POSTGRES_USER=postgres` and database `kaori`. Its
    `/docker-entrypoint-initdb.d/01-kaori-roles.sh` creates `kaori_migrator`
@@ -66,15 +55,16 @@ DevContainer initialization support.
    Database Setup Required — Initialization Required**. This existing page
    stays read-only. All workers and Beat containers exist, but schema/ledger
    admission holds them before they consume/schedule jobs.
-5. Use **Copy Command** on that page, then run it from a **WSL HOST terminal**
-   at the repository root (not inside the DevContainer terminal):
+5. Use **Copy Command** and run it in **Windows PowerShell on the host**
+   from the repository root, not inside the DevContainer terminal:
 
    ```bash
    docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
    ```
 
-   The one-off Compose service receives ONLY `postgres-migrate.env` (never
-   `postgres-bootstrap.env`) and normal `.env`. It runs:
+   The one-off Compose service mounts ONLY the migrator Docker secret
+   volume (never the postgres/runtime bootstrap volume) and normal
+   application `.env`. It runs:
    - `flask --app run:app db upgrade` with temporary **kaori_migrator** connection;
    - `grant_postgres_runtime.sql` as migrator after migrations, with negative
      Capsule ledger privileges and schema CREATE restrictions;
@@ -107,17 +97,17 @@ the application `.env`:
   CELERY_BROKER_URL=redis://redis:6379/1
   CELERY_RESULT_BACKEND=redis://redis:6379/3
 
-~/.config/kaori/devcontainer/postgres-bootstrap.env
-  POSTGRES_PASSWORD=<generated-postgres-superuser-password>
-  KAORI_RUNTIME_PASSWORD=<generated-runtime-role-password>
+Docker volume kaori-dev-pg-admin-secrets
+  postgres_password    # credential for postgres (bootstrap only)
+  runtime_password     # credential for kaori_runtime (runtime URL generated from this)
 
-~/.config/kaori/devcontainer/postgres-migrate.env
-  KAORI_MIGRATOR_PASSWORD=<generated-migrator-role-password>
+Docker volume kaori-dev-pg-migrator-secrets
+  password             # credential for kaori_migrator, non-superuser DDL
 ```
 
 The values in angle brackets above are **descriptions**, not real
 credentials or a file to paste unchanged. The actual passwords are
-generated with cryptographic randomness by the WSL host initializer,
+generated with cryptographic randomness by the Docker-based initializer,
 not committed to GitHub, logged, or sent in chat. A new private
 `.env` is created automatically from `.env.example` if missing.
 If you want to customize `ADMIN_EMAIL`/`ADMIN_USERNAME` or any other
@@ -159,7 +149,7 @@ container; this is not a substitute for a production secrets manager.
 
 ## Safe read-only UAT checkpoints
 
-From the WSL host:
+From the Windows host:
 
 ```bash
 kaori_dc() { docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml "$@"; }
@@ -199,49 +189,35 @@ Run the existing #1405 runtime guard
 and actual UI CRUD/audit/Capsule UAT before declaring PASS. Capture sanitized
 Docker logs, schema version and role/trigger evidence.
 
-## Existing volume, migration upgrades, and recovery
+## Existing database and first-run recovery
 
-- Reopening with a persistent volume **does not** regenerate passwords,
-  reinitialize roles, delete data or run Alembic automatically.
-- When a newer source introduces a migration, explicitly execute from the
-  WSL host:
+- Existing database data and roles are **never** silently reset. A missing
+  Docker secret file, mismatched runtime URL, or incomplete credential
+  pair is a failing preflight; preserve volumes and application `.env`.
+- `docker volume ls` can reveal named volumes even when `docker ps`
+  displays no running containers. Never use `down --volumes` for normal
+  troubleshooting. The two credential volumes are external Docker
+  volumes and intentionally survive Compose shutdown.
+- For migration upgrades (after an accepted backup), run from Windows
+  PowerShell at the repository root:
 
-  ```bash
-  docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml \
-    run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only
+  ```powershell
+  docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only
   ```
 
-  This migrates/refreshes grants/seeds RBAC but never creates another first
-  administrator. Workers/Beat wait for current migration heads and role
-  admission throughout.
-- Existing data migration requires reviewed backup and recovery. The
-  historical data-preserving #1405 cutover runbook is preserved for old
-  `kaori`-owner clusters; do **not** apply the new first-volume-only
-  provisioning script retroactively to an existing cluster.
-- If root `.env` or either secret file becomes inconsistent with a
-  persistent volume, the initializer **aborts**. Recover the original
-  matching credentials; never regenerate them against existing data.
-- Host preparation treats **only Docker's explicit "no such volume"**
-  result as a fresh database. Failure to contact Docker, malformed
-  inspection output, or a named volume without the exact
-  `kaori-dev` Compose project and `kaori_postgres_data` volume labels
-  is an **ABORT**, not permission to regenerate credentials.
-- Existing host-side PostgreSQL secret files must be owned by the
-  developer and mode `0600`; the enclosing external directory must
-  be developer-owned mode `0700`. Symlinked files or a secret directory
-  resolving inside the repository are rejected. The initializer
-  protects the app `.env` with mode `0600` without rotating secrets.
-- PostgreSQL's first-volume role init reads bootstrap passwords through
-  `psql` environment-variable support rather than command-line
-  `-v password=...` arguments, to avoid exposing secrets via process
-  argument inspection. This remains a **trusted local Docker host**
-  boundary, not a production secrets-manager equivalent.
-- The host initializer assumes VS Code is running in a WSL environment with
-  `python3`, Docker/Compose and a normal `$HOME`. Other host platforms
-  require an explicit adapter review; don't silently move secrets into the
-  workspace.
+  This updates schema/grants without re-creating the first KAORI admin.
+- The old two-role `kaori`-owned PostgreSQL volume must go through a
+  separate, data-preserving review/cutover. The Docker initializer
+  refuses missing secret state or an existing unmatched runtime URL.
+  Do not overwrite existing credentials to make a connection work.
 
-**Review boundary:** this implementation does not operate a provider-owned
-database, does not expose a DDL wizard through HTTP, and does not enable
-production schema auto-migration. Formal CI/CD and admission remain HOLD until
-developer verification and explicit acceptance.
+**Windows note:** `.env` remains an ignored local application runtime
+configuration in the source checkout; on NTFS/OneDrive its host privacy
+is governed by Windows ACL and sync policy, not Unix `chmod` alone.
+No elevated PostgreSQL secret is stored there. For production or
+external DBA databases, do not use these local volumes, roles or
+commands; follow #1439/#1440/#1469 instead.
+
+**Admission:** This branch is for local function testing first;
+CI/CD, Full Admission, staging human UAT and main promotion remain
+HOLD until explicitly requested and verified.
