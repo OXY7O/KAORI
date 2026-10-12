@@ -24,17 +24,18 @@ the Windows host. Docker Desktop must be running with **Linux containers**.
 
 The `initializeCommand` now starts a small, short-lived
 `python:3.12-alpine` container through the normal Docker CLI. This
-container prepares the private runtime `.env` in the ignored workspace
-and stores PostgreSQL bootstrap/runtime/migrator passwords in two
-persistent **Docker named volumes**, not in `%USERPROFILE%`, WSL
-`~/.config`, or the application env. It then exits before the
+container prepares private runtime `.env` and two separately
+ignored role-credential files under `secrets/devcontainer/` in
+the checkout. It also reads the PostgreSQL Docker data volume
+**read-only** to distinguish genuinely empty data from an initialized
+database. This preserves the standard Windows-host workflow without
+putting credentials in source control. It then exits before the
 normal DevContainer services start.
 
 When Dev Containers reports an error, inspect the **first failing
 command** in the full VS Code Dev Containers log, not only the final
-`Exit code 1`. A clean list of running containers does not prove that
-the named PostgreSQL volumes were deleted; never remove volumes
-automatically as a troubleshooting shortcut.
+`Exit code 1`. A clean list of running containers does not prove that PostgreSQL
+data is absent. Do not delete volumes as a troubleshooting shortcut.
 
 ## First setup — new DevContainer PostgreSQL volume
 
@@ -50,8 +51,8 @@ automatically as a troubleshooting shortcut.
    encryption keys and `ADMIN_PASSWORD` when those have placeholders.
    **Do not copy in real PostgreSQL bootstrap/migrator passwords.**
 3. Choose **Dev Containers → Rebuild and Reopen in Container**. A
-   Docker-based `initializeCommand` creates or validates two isolated
-   secret **Docker volumes** and private `.env`. The normal Compose startup
+   Docker-based `initializeCommand` creates/validates two ignored local
+   PostgreSQL ENV files and private `.env` after inspecting PGDATA. The normal Compose startup
    automatically creates PostgreSQL, Redis, workspace, ten workers and Beat.
    PostgreSQL creates non-superuser `kaori_migrator` and `kaori_runtime`
    on an empty volume, but does **not** run Alembic or create KAORI admin.
@@ -76,16 +77,22 @@ automatically as a troubleshooting shortcut.
    watcher, allow **Automatic Tasks** for this trusted workspace;
    otherwise launch **KAORI: Watch Tailwind CSS** from VS Code Tasks.
 
-**Environment authority:** `<repo>/.env` contains only
-application configuration and the `kaori_runtime` `DATABASE_URL`.
-Two dedicated **Docker volumes** named `kaori-dev-pg-admin-secrets`
-and `kaori-dev-pg-migrator-secrets` store administrator/runtime
-provisioning and migrator credentials separately. Neither is mounted
-into Flask/workspace/Celery/Beat. Only `db` has both volumes;
-`db-bootstrap` gets the migrator one when invoked explicitly.
-Reopen does not create KAORI tables, rotate secrets, or run migration
-automatically. See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
-and [the first-run runbook](operations/devcontainer-postgres-first-run.md).
+**Local ENV layout:** private ignored `.env` stays the normal
+application configuration and uses only `kaori_runtime`
+`DATABASE_URL`. Privileged PostgreSQL credentials are created under
+ignored `secrets/devcontainer/postgres-bootstrap.env` and
+`postgres-migrate.env`, with safe `.example` files under
+`.devcontainer/examples/`. The initializer backs up an older **local**
+`.env` before reconciling its URL **only when the real PostgreSQL
+volume is empty**. It refuses a populated database without matching
+secrets, without rotating credentials or removing data.
+
+These repo-local secrets are convenient for **trusted development** but
+visible to anyone/process with access to the bind-mounted source.
+They are never Git-tracked or copied into Docker images; production
+continues using separate controlled secrets and DBA migration authority.
+See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
+and [first-run runbook](operations/devcontainer-postgres-first-run.md).
 
 A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend verification before the watcher can work. The `postCreate` lifecycle no longer forces an unconditional global npm upgrade, and `postStart` avoids rebuilding unchanged assets. If lifecycle startup fails, resolve that failure before treating the watcher as ready.
 
