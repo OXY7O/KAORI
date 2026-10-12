@@ -365,6 +365,40 @@ Multiple legacy sources, unsupported LimitRange constraints, foreign controller 
 
 After successful takeover, subsequent allocation changes continue through the governed capacity/preflight and provider-verification path while Namespace `ownership_status` remains `adopted`.
 
+**Dual-plane Kubernetes capacity governance (#1681):** KAORI keeps
+**Request Commitment** as the exclusive Kubernetes scheduling-capacity
+admission basis (CPU/memory requests, Pods, logical storage) while calculating
+an independent **Limit Exposure** view from frozen `limits.cpu` and
+`limits.memory` in the same canonical active Namespace and authoritative
+Capsule shared quota sources. Shared Capsule ceilings count once per Tenant;
+ambiguous shared authority and undeclared/missing limits remain **Unknown**,
+never zero. Neither ResourceQuota limits nor Tenant profile ceilings represent
+actual node utilization, guaranteed burst capacity, or physical memory
+reservation. Live utilization continues through provider Analytics.
+
+An operator-configured per-cluster Limit Exposure policy stores:
+`limit_exposure_mode` (`observe` default or `enforce` explicitly selected),
+`cpu_limit_ratio` (**1.50× default**, range 1–4), and
+`memory_limit_ratio` (**1.00× default**, range 1–2). Thresholds multiply the
+*governed tenant budget after reserve, unmanaged and safety headroom*, not
+raw physical node capacity. Observe is read-only planning evidence and never
+changes existing admission. Enforce adds a fail-closed check for positive
+request changes or newly increased CPU/memory limits using fresh
+`analytics.capacity` and a provable post-change limit projection.
+Enforce blocks exceeded or unknown thresholds while preserving the original
+Request Commitment refusal if that gate already rejected. Native managed
+replacement removes the exact target before adding Proposed, while Capsule
+Tenant vs Namespace scopes use their original authoritative quota scaling.
+The committed decision audit records the policy mode and any enforced
+Limit Exposure assessment separately from Request Admission.
+
+The `20261013_limit_exposure` Alembic migration is source-only during
+review; runtime consumption must await explicit approved schema admission
+and local test/UAT. Existing policies receive Observe/1.50/1.00 server
+defaults. Operator rollout sequence is migration gate, evidence validation,
+Observe calibration, Human Acceptance and *optional* explicit Enforce
+selection; never silently enable Enforce on existing Tenants.
+
 **Atomic bounded Native allocation replacement (#1676):** An existing
 **KAORI Managed Native** Namespace with a previously adopted unbounded
 `requests.cpu`, `requests.memory`, or Pods commitment may select a bounded

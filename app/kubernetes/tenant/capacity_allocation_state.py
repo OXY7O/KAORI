@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from decimal import Decimal
 
 from sqlalchemy.orm import joinedload
 
 from app.extensions.db import db
-from app.kubernetes.tenant.capacity import CapacityVector, quota_request_vector
+from app.kubernetes.tenant.capacity import CapacityVector, quota_limit_vector, quota_request_vector
 from app.models.tenant import (
     Tenant,
     TenantEnvironment,
@@ -124,6 +124,7 @@ def _aggregate_committed_allocation(
     *,
     shared_quota_by_tenant: Mapping[str, Mapping[str, object]],
     ambiguous_shared_tenants: list[str] | None = None,
+    quota_vector_factory: Callable[[Mapping[str, object]], CapacityVector] = quota_request_vector,
 ) -> tuple[CapacityVector, list[str]]:
     totals: list[Decimal | None] = [_ZERO, _ZERO, _ZERO, _ZERO]
     unbounded: list[str] = []
@@ -142,11 +143,11 @@ def _aggregate_committed_allocation(
         tenant_id = str(row.environment.tenant_id)
         if tenant_id in shared_tenant_ids:
             continue
-        add_vector(quota_request_vector(row.allocation_quota_json or {}), row.namespace)
+        add_vector(quota_vector_factory(row.allocation_quota_json or {}), row.namespace)
 
     for tenant_id, quota in shared_quota_by_tenant.items():
         add_vector(
-            quota_request_vector(quota),
+            quota_vector_factory(quota),
             f'Tenant/{tenant_id} shared allocation',
         )
 
@@ -169,6 +170,7 @@ def _other_committed_for_namespace_replacement(
     target: TenantNamespace,
     shared_quota_by_tenant: Mapping[str, Mapping[str, object]],
     ambiguous_shared_tenants: list[str],
+    quota_vector_factory: Callable[[Mapping[str, object]], CapacityVector] = quota_request_vector,
 ) -> tuple[CapacityVector, int, list[str]]:
     """Project a single existing Native Namespace replacement without hiding other commitments.
 
@@ -199,6 +201,7 @@ def _other_committed_for_namespace_replacement(
         other_rows,
         shared_quota_by_tenant=shared_quota_by_tenant,
         ambiguous_shared_tenants=ambiguous_shared_tenants,
+        quota_vector_factory=quota_vector_factory,
     )
     return committed, len(rows), unbounded
 
@@ -287,6 +290,8 @@ def _canonical_shared_allocation_quota_by_cluster(
 
 def _committed_tenant_allocations(
     cluster_ids: list[str],
+    *,
+    quota_vector_factory: Callable[[Mapping[str, object]], CapacityVector] = quota_request_vector,
 ) -> dict[str, tuple[CapacityVector, int, list[str]]]:
     rows = (
         _active_namespace_allocation_query()
@@ -307,6 +312,7 @@ def _committed_tenant_allocations(
             cluster_rows,
             shared_quota_by_tenant=shared_by_cluster.get(cluster_id, {}),
             ambiguous_shared_tenants=ambiguous_by_cluster.get(cluster_id, []),
+            quota_vector_factory=quota_vector_factory,
         )
         result[cluster_id] = (committed, len(cluster_rows), unbounded)
     return result
@@ -317,6 +323,7 @@ def _committed_tenant_allocation(
     *,
     shared_overrides: Mapping[str, Mapping[str, object]] | None = None,
     replace_namespace: TenantNamespace | None = None,
+    quota_vector_factory: Callable[[Mapping[str, object]], CapacityVector] = quota_request_vector,
 ) -> tuple[CapacityVector, int, list[str]]:
     rows = (
         _active_namespace_allocation_query()
@@ -338,11 +345,13 @@ def _committed_tenant_allocation(
             target=replace_namespace,
             shared_quota_by_tenant=shared,
             ambiguous_shared_tenants=ambiguous,
+            quota_vector_factory=quota_vector_factory,
         )
 
     committed, unbounded = _aggregate_committed_allocation(
         rows,
         shared_quota_by_tenant=shared,
         ambiguous_shared_tenants=ambiguous,
+        quota_vector_factory=quota_vector_factory,
     )
     return committed, len(rows), unbounded
