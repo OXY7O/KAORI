@@ -89,14 +89,20 @@ nested outer frame are explicitly **REJECTED** by human review. Do not
 reintroduce either layout. The operational page should explain one next
 action clearly instead of assigning equal visual weight to many panels.
 
-**100% zoom refinement (#744, operator screenshot review):** retain the
-command-first composition, but present all sections on **one quiet,
-light `bg-surface-card` workspace canvas** with `border-outline-subtle`
-and `shadow-sm`. The workspace uses `max-w-6xl`, responsive
-horizontal padding, and light/dark surface tokens so the content is
-visibly distinct from `bg-surface-page` at normal browser zoom.
-This is a **neutral white content surface**, not the previously rejected
-thick Violet outer frame or nested multi-card dashboard.
+**100% zoom density correction (#744, real-browser review):** retain
+the command-first composition and **one quiet, neutral white content
+surface** (`bg-surface-card`, `border-outline-subtle`, `shadow-sm`),
+but restrict the workspace to `max-w-4xl` with compact responsive
+padding. The prior `max-w-6xl` was rejected as oversized in an actual
+100% browser screenshot even though its appearance at 80% zoom was
+acceptable. Reduce page and panel vertical gaps, use compact shared
+terminal density, and use approved `text-lg` page-title,
+`text-sm` primary-action heading, and `text-xs` helper hierarchy.
+All compactness is achieved with standard responsive utility classes:
+**never set CSS zoom/transform scaling or require browser zoom 80%.**
+Preserve light/dark surface tokens so the canvas remains distinct
+from `bg-surface-page`. This is not the rejected thick Violet frame
+or a nested multi-card dashboard.
 The title/status, step rail and footer remain **unboxed within that
 canvas**; the one bootstrap action keeps visual priority.
 The key-flow instruction is **"Keep INTEGRATION_CREDENTIAL_KEY
