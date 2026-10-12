@@ -388,6 +388,16 @@ def _runtime_scope_id(name: str) -> int | None:
     return value
 
 
+@artifact_registry_bp.get('/runtime/overview')
+@permission_required('artifact_registry.view')
+def runtime_overview() -> ResponseReturnValue:
+    """Runtime capability landing page backed by existing committed evidence."""
+    return render_template(
+        'artifact_registry/runtime_overview.html',
+        runtime=build_runtime_usage(**_runtime_topology_filters()),
+    )
+
+
 @artifact_registry_bp.get('/runtime')
 @permission_required('artifact_registry.view')
 def runtime() -> ResponseReturnValue:
