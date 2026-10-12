@@ -616,7 +616,7 @@ def test_missing_compute_snapshot_keeps_logical_storage_budget_visible(monkeypat
     monkeypatch.setattr(
         capacity_governance,
         '_committed_tenant_allocation',
-        lambda cluster_id: (
+        lambda cluster_id, **_kwargs: (
             CapacityVector(
                 cpu=Decimal('0'),
                 memory_bytes=Decimal('0'),
@@ -667,7 +667,7 @@ def test_fleet_capacity_summary_batches_snapshot_reads(monkeypatch) -> None:
     monkeypatch.setattr(
         capacity_governance,
         '_committed_tenant_allocations',
-        lambda cluster_ids: {cluster_id: committed_state for cluster_id in cluster_ids},
+        lambda cluster_ids, **_kwargs: {cluster_id: committed_state for cluster_id in cluster_ids},
     )
 
     batch_calls: list[list[str]] = []
