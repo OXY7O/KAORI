@@ -27,6 +27,61 @@
    This explicit, profiled one-off `db-bootstrap` uses `kaori_migrator` only for `flask --app run:app db upgrade` and reviewed runtime-grant refresh; it then creates the first KAORI **application administrator** as `kaori_runtime`. It enforces Capsule immutable ledger negative ACLs and read-only `alembic_version` runtime. The application administrator is not a PostgreSQL superuser.
 8. Refresh the page, log in with `ADMIN_USERNAME` and private `ADMIN_PASSWORD` in `.env`, and collect real browser/worker/Beat/UAT evidence. **Do not consider a copied command or successful CI alone UAT acceptance.**
 
+## One-time recovery after upgrading from Docker secret volumes (#1499 → #1500)
+
+If **Reopen in Container** aborts with:
+
+`existing PostgreSQL data has no matching local secrets; recovery required`
+
+and `docker volume ls --filter "name=kaori-dev"` shows all three
+`kaori-dev-pg-admin-secrets`, `kaori-dev-pg-migrator-secrets`,
+and `kaori-dev_kaori_postgres_data`, **do not reset anything**.
+The previous three-role implementation stored role passwords inside
+those first two Docker named volumes, while the current
+DevContainer expects `secrets/devcontainer/*.env` in the ignored checkout.
+
+Run the following one-time **read-only source recovery** from
+**Windows PowerShell in the KAORI repository root** after fetching the
+review branch with `.devcontainer/recover-legacy-postgres-secrets.py`:
+
+```powershell
+docker run --rm `
+  --mount "type=bind,source=$($PWD.Path),target=/workspace" `
+  --mount "type=volume,source=kaori-dev_kaori_postgres_data,target=/pgdata,readonly" `
+  --mount "type=volume,source=kaori-dev-pg-admin-secrets,target=/legacy-admin,readonly" `
+  --mount "type=volume,source=kaori-dev-pg-migrator-secrets,target=/legacy-migrator,readonly" `
+  -e KAORI_DEV_LEGACY_RECOVERY=1 `
+  python:3.12-alpine python /workspace/.devcontainer/recover-legacy-postgres-secrets.py
+```
+
+The script refuses recovery unless **all** checks pass:
+PostgreSQL 16 `PG_VERSION` exists, both previous volumes contain all
+three format-validated, distinct role passwords, and the existing
+application `.env` has `APP_ENV=development` and its **exact**
+`kaori_runtime` `DATABASE_URL` matches the legacy runtime secret.
+It refuses external DB URLs, altered secrets, missing `.env`, mismatched
+already-created files or symlinked destinations. This does **not** start
+PostgreSQL, change SQL users/passwords, run Alembic, alter `.env`, or
+delete any volume. It writes only the two ignored local files
+`secrets/devcontainer/postgres-bootstrap.env` and
+`secrets/devcontainer/postgres-migrate.env`; previous Docker volumes
+stay intact and the command is idempotent if rerun with matching files.
+Success output never includes a password.
+
+After `PASS`, retry **VS Code Windows → Dev Containers: Rebuild and
+Reopen in Container** without clearing data. This only proves credential
+**handoff**, not that the existing cluster contains the expected role
+and schema ownership: inspect subsequent PostgreSQL startup/UAT evidence.
+If recovery refuses a mismatch, **stop and share only the error text**;
+do not invent replacement passwords, delete PGDATA or edit the connection
+URL to bypass it.
+
+Because new files are inside the full bind-mounted checkout and on
+OneDrive-backed Windows storage, Git-ignore and Docker-build exclusion
+do **not** protect them from programs with workspace access or OneDrive
+sync. Use this only on the trusted development host; it is not approved
+for external/production DBA databases.
+
 ## Data preservation and recovery
 
 - If the PostgreSQL data volume contains `PG_VERSION` but either ignored local secret file is missing, the initializer **ABORTS**. It never generates a new owner/migrator password against existing PGDATA. Restore the original matching secrets or use a separately reviewed, data-preserving credential recovery procedure.

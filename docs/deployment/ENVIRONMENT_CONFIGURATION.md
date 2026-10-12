@@ -68,6 +68,15 @@ credential isolation and must not replace the segregated server
 `/etc/kaori/{app,secrets,deploy}.env` or DBA-controlled credentials.
 See [the first-run runbook](../operations/devcontainer-postgres-first-run.md).
 
+**Historical local credential-store migration (#1499 → #1500):** a
+populated `kaori-dev_kaori_postgres_data` volume plus legacy
+`kaori-dev-pg-admin-secrets`/`kaori-dev-pg-migrator-secrets` volumes
+can require **manual read-only recovery** of the original role passwords
+into the ignored repo-local ENV files. Do not regenerate passwords or
+delete PGDATA. The controlled PowerShell command and all preconditions
+are documented in the [first-run runbook](../operations/devcontainer-postgres-first-run.md#one-time-recovery-after-upgrading-from-docker-secret-volumes-1499--1500).
+This recovery never applies to production or external PostgreSQL.
+
 ### Production database authority is separate
 
 Current `deploy/server` behavior is still bundled PostgreSQL + Redis
