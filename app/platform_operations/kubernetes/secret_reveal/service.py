@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from math import ceil
 from typing import Any
 
 from flask import current_app
 
+from app.common.pagination import build_pagination_window, pagination_payload
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.kubernetes.operations.secrets.reveal_policy import (
@@ -127,13 +127,12 @@ def build_secret_reveal_settings_context(
         query=normalized_query,
         policy_filter=normalized_policy_filter,
     )
-    filtered_total = len(filtered_namespace_rows)
-    total_pages = max(ceil(filtered_total / normalized_per_page), 1)
-    current_page = min(requested_page, total_pages)
-    start_offset = (current_page - 1) * normalized_per_page
-    namespace_rows = filtered_namespace_rows[start_offset : start_offset + normalized_per_page]
-    start_item = start_offset + 1 if filtered_total else 0
-    end_item = min(start_offset + normalized_per_page, filtered_total)
+    window = build_pagination_window(
+        total_items=len(filtered_namespace_rows),
+        page=requested_page,
+        per_page=normalized_per_page,
+    )
+    namespace_rows = filtered_namespace_rows[window.offset : window.offset + window.per_page]
 
     total_enabled_namespaces = SecretRevealNamespacePolicy.query.filter(
         SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))
@@ -178,18 +177,7 @@ def build_secret_reveal_settings_context(
         },
         'namespace_filter_options': _NAMESPACE_POLICY_FILTERS,
         'namespace_per_page_options': _NAMESPACE_PER_PAGE_OPTIONS,
-        'namespace_pagination': {
-            'page': current_page,
-            'per_page': normalized_per_page,
-            'total_items': filtered_total,
-            'total_pages': total_pages,
-            'start_item': start_item,
-            'end_item': end_item,
-            'has_prev': current_page > 1,
-            'has_next': current_page < total_pages,
-            'prev_page': max(current_page - 1, 1),
-            'next_page': min(current_page + 1, total_pages),
-        },
+        'namespace_pagination': pagination_payload(window),
         'namespace_summary': {
             'total': len(all_namespace_rows),
             'enabled': selected_enabled_namespace_count,
