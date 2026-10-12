@@ -7,7 +7,6 @@ from typing import Any
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.extensions.db import db
-
 from app.integrations.registry.security_contracts import registry_scan_evidence_ready
 from app.models.integration import IntegrationInstance
 from app.models.registry import (
@@ -78,7 +77,11 @@ def _artifact_evidence(
 ) -> dict[str, Any]:
     # Old vulnerability JSON does not constitute a valid assessed finding.
     scan_usable = bool(registry_scan_evidence_ready(artifact.scan_status))
-    summary = artifact.vulnerability_summary if scan_usable and isinstance(artifact.vulnerability_summary, dict) else {}
+    summary = (
+        artifact.vulnerability_summary
+        if scan_usable and isinstance(artifact.vulnerability_summary, dict)
+        else {}
+    )
     return {
         'asset_key': str(identity.id),
         'registry_instance_id': str(identity.id),
@@ -173,7 +176,8 @@ def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
                         title=f'{critical} critical finding(s) affect a running Registry artifact',
                         summary=(
                             f'{artifact.repository.project.name}/{artifact.repository.name}@{artifact.digest[:20]}… '
-                            f'has {critical} critical vulnerability finding(s) and {len(bindings)} committed runtime binding(s).'
+                            f'has {critical} critical vulnerability finding(s) and '
+                            f'{len(bindings)} committed runtime binding(s).'
                         ),
                         condition_summary=(
                             'Critical vulnerability evidence and committed Kubernetes runtime usage are both present '
@@ -193,7 +197,8 @@ def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
                         title='Running Registry artifact has no usable scan evidence',
                         summary=(
                             f'{artifact.repository.project.name}/{artifact.repository.name}@{artifact.digest[:20]}… '
-                            f'is referenced at runtime but committed scan status {scan_label!r} is not usable evidence.'
+                            f'is referenced at runtime but committed scan status {scan_label!r} '
+                            'is not usable evidence.'
                         ),
                         condition_summary=(
                             'Runtime binding count is positive while Registry scan_status is not a normalized '
