@@ -399,24 +399,29 @@
     </div>
 {%- endmacro %}
 {% macro summary_strip(metrics, columns=4, compact=false, borderless=false, layout='default', pinned=true) -%}
-    {# Opt-in long-identity strip; standard Inventory/Access callers retain their existing geometry. #}
+    {# Opt-in identity layouts; existing Inventory/Access summary geometry stays unchanged. #}
     {% set target_wide = layout == 'target-wide' and not borderless %}
+    {% set unified = layout == 'unified' and not borderless %}
     {% set summary_classes = (
         'grid min-w-0 gap-x-6 gap-y-3 px-5 py-3.5 sm:grid-cols-2 sm:px-6 xl:grid-cols-4'
         if borderless
         else (
-            'mt-5 grid min-w-0 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:mt-6 xl:grid-cols-5'
-            if target_wide
-            else 'mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:mt-6 xl:grid-cols-4'
+            'mt-4 grid min-w-0 gap-x-6 gap-y-4 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3.5 sm:grid-cols-2 sm:px-5 lg:grid-cols-5'
+            if unified
+            else (
+                'mt-5 grid min-w-0 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:mt-6 xl:grid-cols-5'
+                if target_wide
+                else 'mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:mt-6 xl:grid-cols-4'
+            )
         )
     ) %}
     <div {% if pinned %}data-resource-detail-summary{% endif %}
          data-kaori-inventory-summary-strip
-         {% if target_wide %}data-kaori-summary-layout="target-wide"{% endif %}
+         {% if unified %}data-kaori-summary-layout="unified"{% elif target_wide %}data-kaori-summary-layout="target-wide"{% endif %}
          {% if borderless %}data-kaori-summary-variant="borderless"{% endif %}
          class="{{ summary_classes }}">
         {% for label, value, description in metrics %}
-            <article class="{{ 'min-w-0 py-0.5' if borderless else ('min-w-0 bg-surface-card px-4 py-3 sm:px-5 sm:py-3.5' if target_wide else 'min-w-0 border-b border-outline-subtle px-5 py-3.5 sm:border-r xl:border-b-0 xl:last:border-r-0') }} {{ 'xl:col-span-2' if target_wide and loop.index0 == 1 else '' }}">
+            <article class="{{ 'min-w-0 py-0.5' if borderless else ('min-w-0' if unified else ('min-w-0 bg-surface-card px-4 py-3 sm:px-5 sm:py-3.5' if target_wide else 'min-w-0 border-b border-outline-subtle px-5 py-3.5 sm:border-r xl:border-b-0 xl:last:border-r-0')) }} {{ 'lg:col-span-2' if unified and loop.index0 == 1 else ('xl:col-span-2' if target_wide and loop.index0 == 1 else '') }}">
                 <p class="text-xs font-medium leading-4 text-content-muted">{{ label }}</p>
                 <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
                 {% if description %}<p class="mt-0.5 break-words text-xs leading-4 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>{% endif %}
