@@ -107,6 +107,12 @@ S3/MinIO unavailability degrades artifact capabilities; it does **not** make the
 Raw S3 exceptions, access keys, secret keys, tokens, and credential values are never written into the shared readiness payload or rendered in Reports UI. Technical exceptions remain server-side evidence.
 
 
+## Scheduled execution and delivery intent
+
+A ReportSchedule occurrence is claimed under a database row lock before artifact generation is admitted. Failed unadmitted scheduled dispatch is eligible for bounded retry, while Run Now does not move the automatic cadence.
+
+Each ReportScheduleRun captures selected Notification Channel identities on admission. The report worker uses this immutable selection after generation, including when the current schedule was edited or deleted. Shared Notification Channels still enforce send-time eligibility and event idempotency. Delivery outcomes remain separate from artifact generation success.
+
 ## Notification delivery
 
 Scheduled Reports use Integrations → Notification Channels. Schedules store selected channel IDs only; provider credentials and transport behavior remain owned by the shared notification integration. Legacy report-specific Telegram environment credentials are not supported.
