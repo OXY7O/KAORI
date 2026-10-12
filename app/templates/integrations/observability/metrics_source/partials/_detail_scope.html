@@ -8,9 +8,9 @@
 {% import "integrations/components/_binding_readiness_boundary.html" as binding_readiness_boundary %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% set ready_binding_count = binding_rows|selectattr('operational_status', 'equalto', 'ready')|list|length %}
-{% set validated_binding_count = binding_rows|selectattr('validation_status', 'equalto', 'ready')|list|length %}
-{% set resolution_scope_count = source_resolution_rows|length %}
+{% set ready_binding_count = operational_binding_total %}
+{% set validated_binding_count = validated_binding_total %}
+{% set resolution_scope_count = resolution_scope_total %}
 {% set active_binding_id = binding_validation_job.get('binding_id') if binding_validation_job else none %}
 {% set active_binding_task_id = binding_validation_job.get('task_id') if binding_validation_job else none %}
 {% set binding_poll_active = binding_validation_job and binding_validation_job.get('is_active') and active_binding_id and active_binding_task_id %}
@@ -94,7 +94,7 @@
                 <div class="min-w-0">
                     <h3 id="metrics-source-consumer-resolution-title"
                         class="text-base font-semibold leading-6 text-content-primary">Effective Consumer Resolution</h3>
-                    <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">Compare which source each analytics domain resolves to. Expand a consumer only when candidate-level evidence is required.</p>
+                    <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">Compare source resolution for the visible binding page. Use binding pagination to inspect other assets.</p>
                 </div>
             </div>
             {{ table_label.metadata_label(source_resolution_rows|length ~ (' Asset' if source_resolution_rows|length == 1 else ' Assets') ) }}
