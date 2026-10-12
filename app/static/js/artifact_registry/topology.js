@@ -127,9 +127,20 @@ if (canvas && form) {
     const inspect = (node) => {
         const data = node.data()
         inspectorContent.replaceChildren()
-        inspectorContent.append(elements('p', 'text-xs font-semibold uppercase tracking-wide text-kaori-primary', safeLabel(data.type)))
-        inspectorContent.append(elements('h4', 'break-words text-lg font-semibold text-content-primary', safeLabel(data.label)))
-        if (data.subtitle) inspectorContent.append(elements('p', 'text-sm text-content-muted', data.subtitle))
+        const heading = elements('section', 'rounded-xl border border-outline-subtle bg-surface-elevated p-4')
+        const headingRow = elements('div', 'flex items-start gap-3')
+        const badge = elements(
+            'span',
+            `flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border text-sm font-bold kaori-topology-domain-${visualDomains[data.type] || 'compute'}`,
+            glyphs[data.type] || 'RS'
+        )
+        const identity = elements('div', 'min-w-0 flex-1')
+        identity.append(elements('p', 'text-xs font-semibold uppercase tracking-wide text-kaori-primary', safeLabel(data.type)))
+        identity.append(elements('h4', 'mt-1 break-words text-base font-semibold text-content-primary', safeLabel(data.label)))
+        if (data.subtitle) identity.append(elements('p', 'mt-1 text-xs text-content-muted', data.subtitle))
+        headingRow.append(badge, identity)
+        heading.append(headingRow)
+        inspectorContent.append(heading)
         const info = elements('div', 'rounded-xl border border-outline-default bg-surface-card px-4 py-2')
         if (data.type === 'artifact') {
             appendField(info, 'Registry Source', data.source)
@@ -197,8 +208,13 @@ if (canvas && form) {
         for (const item of page) {
             const tr = elements('tr', 'border-b border-outline-subtle')
             const a = elements('td', 'px-4 py-3 text-sm font-medium text-content-primary')
-            a.append(elements('div', '', item.artifact))
-            a.append(elements('div', 'text-xs text-content-muted', item.digest.slice(0, 28)))
+            const identity = elements('div', 'flex min-w-0 items-center gap-3')
+            identity.append(elements('span', 'flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-xs font-bold kaori-topology-domain-configuration', 'AR'))
+            const description = elements('div', 'min-w-0')
+            description.append(elements('div', 'break-words', item.artifact))
+            description.append(elements('div', 'text-xs text-content-muted', item.digest.slice(0, 28)))
+            identity.append(description)
+            a.append(identity)
             const b = elements('td', 'px-4 py-3 text-xs text-content-secondary')
             b.append(elements('p', 'font-semibold text-content-primary', `${item.cluster} · ${item.namespace}`))
             b.append(elements('p', '', `${item.workload} · ${item.pod}`))
