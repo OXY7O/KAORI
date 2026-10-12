@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Blueprint, render_template, request, send_file
+from flask import Blueprint, abort, render_template, request, send_file
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
@@ -27,6 +27,14 @@ def _int(name: str, default: int) -> int:
 def _domain() -> str:
     value = str(request.values.get('domain') or 'operational_activity').strip().lower().replace('-', '_')
     return value if value in DOMAIN_FACTORIES else 'operational_activity'
+
+
+def _mutation_domain() -> str:
+    """Reject missing/unsupported POST domains; never mutate the GET fallback domain."""
+    value = str(request.form.get('domain') or '').strip().lower().replace('-', '_')
+    if value not in DOMAIN_FACTORIES:
+        abort(400, description='A registered Data Lifecycle domain is required.')
+    return value
 
 
 def _context(*, feedback: dict | None = None, preview: bool = False) -> dict:
@@ -74,7 +82,7 @@ def preview() -> ResponseReturnValue:
 @permission_required('platform_operations.manage_data_lifecycle')
 def save_policy() -> ResponseReturnValue:
     feedback = update_lifecycle_policy(
-        domain_name=_domain(),
+        domain_name=_mutation_domain(),
         values=request.form,
         user_id=current_user.id,
     )
@@ -88,7 +96,7 @@ def save_policy() -> ResponseReturnValue:
 @permission_required('platform_operations.manage_data_lifecycle')
 def run() -> ResponseReturnValue:
     feedback = queue_lifecycle_execution(
-        domain_name=_domain(),
+        domain_name=_mutation_domain(),
         mode=str(request.form.get('mode') or 'archive_only'),
         user_id=current_user.id,
     )
