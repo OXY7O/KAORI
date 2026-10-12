@@ -322,6 +322,11 @@ Record actual Alembic heads, the PostgreSQL owner/runtime role flags,
 effective ACLs and four write-once ledger triggers, worker/Beat
 admission, browser initial 503 and normal login after bootstrap.
 Keep Redis queues and any existing workload data intact on reopen.
+For a deliberately retained Redis volume during scoped developer reset,
+check `kaori_dc exec -T redis redis-cli -n 1 DBSIZE` and queue lengths
+before worker/Beat admission. Do not flush or replay old broker jobs against
+a new database without separate operator authorization.
+
 The scoped destructive reset above is **not** part of normal first use.
 The operator reported a fully empty local installation; no additional
 volume deletion is warranted for that UAT.
