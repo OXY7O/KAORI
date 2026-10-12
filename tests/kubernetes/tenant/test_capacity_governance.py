@@ -767,10 +767,11 @@ def test_atomic_replacement_rejects_absent_duplicate_and_shared_authority() -> N
 
     target = _replacement_row('tenant-native', 'adopted-a', 1, {})
     other = _replacement_row('tenant-other', 'unrelated-b', 2, {})
-    call = lambda rows, **kw: _other_committed_for_namespace_replacement(
-        rows, target=target, shared_quota_by_tenant=kw.get('shared', {}),
-        ambiguous_shared_tenants=kw.get('ambiguous', []),
-    )
+    def call(rows, **kw):
+        return _other_committed_for_namespace_replacement(
+            rows, target=target, shared_quota_by_tenant=kw.get('shared', {}),
+            ambiguous_shared_tenants=kw.get('ambiguous', []),
+        )
     with pytest.raises(ValueError, match='exactly one active matching'):
         call([other])
     with pytest.raises(ValueError, match='multiple active generations'):
