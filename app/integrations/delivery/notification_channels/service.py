@@ -343,7 +343,6 @@ def dispatch_alert_notification(
             if delivery.status != 'failed' or delivery.attempt_count >= max_attempts:
                 stats['skipped'] += 1
                 continue
-            stats['retried'] += 1
         else:
             delivery = NotificationDelivery()
             delivery.channel_id = channel.id
@@ -383,6 +382,8 @@ def dispatch_alert_notification(
                 db.session.rollback()
                 continue
             message = original
+        if delivery.attempt_count:
+            stats['retried'] += 1
         _begin_delivery_attempt(delivery, channel, message)
         result = _deliver(channel, message)
         _record_delivery_outcome(delivery, channel, result)
