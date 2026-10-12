@@ -1063,3 +1063,171 @@ def test_managed_native_service_wires_atomic_replacement_only_after_managed_chec
     assert "shared_overrides: Mapping[str, Mapping[str, object]] | None = None" in state
     assert "_canonical_shared_allocation_quota(cluster_id)" in state
     assert state.count("_active_namespace_allocation_query()") == 3
+
+
+def test_limit_vector_does_not_confuse_requests_with_limits() -> None:
+    from app.kubernetes.tenant.capacity import quota_limit_vector
+
+    gib = Decimal(1024**3)
+    quota = {
+        'requests.cpu': '2', 'requests.memory': '1Gi',
+        'limits.cpu': '3', 'limits.memory': '2Gi',
+    }
+    assert quota_request_vector(quota).cpu == Decimal('2')
+    assert quota_limit_vector(quota).cpu == Decimal('3')
+    assert quota_limit_vector(quota).memory_bytes == Decimal('2') * gib
+    assert quota_limit_vector({'requests.cpu': '2'}).cpu is None
+    assert quota_limit_vector({'requests.cpu': '2'}).memory_bytes is None
+
+
+def test_limit_exposure_uses_ratios_as_separate_operator_ceiling() -> None:
+    from app.kubernetes.tenant.capacity_limit_exposure import assess_limit_exposure
+
+    gib = Decimal(1024**3)
+    budget = CapacityVector(cpu=Decimal('10'), memory_bytes=Decimal('20') * gib)
+    quota = CapacityVector(cpu=Decimal('15'), memory_bytes=Decimal('20') * gib)
+    def report(committed, ready=True, unknown=None):
+        return assess_limit_exposure(
+            committed=committed, budget=budget,
+            mode='observe', cpu_ratio=Decimal('1.50'), memory_ratio=Decimal('1.00'),
+            evidence_ready=ready, unknown_sources=unknown,
+        )
+    healthy = report(quota)
+    assert healthy['state'] == 'Near Capacity'
+    assert healthy['threshold']['cpu'] == '15.00'
+    assert healthy['threshold']['memory_bytes'] == format(Decimal('20') * gib, 'f')
+    assert healthy['capacity_approval'] is False
+    assert report(CapacityVector(cpu=Decimal('15.1'), memory_bytes=quota.memory_bytes))['state'] == 'Overcommitted'
+    assert report(CapacityVector(cpu=Decimal('12'), memory_bytes=Decimal('21') * gib))['state'] == 'Overcommitted'
+    assert report(CapacityVector(cpu=None, memory_bytes=quota.memory_bytes))['state'] == 'Unknown'
+    assert report(quota, ready=False)['state'] == 'Unknown'
+    assert report(quota, unknown=['Tenant/ambiguous shared allocation'])['state'] == 'Unknown'
+
+
+def test_committed_limit_exposure_uses_native_and_shared_quota_once() -> None:
+    from app.kubernetes.tenant.capacity import quota_limit_vector
+
+    rows = [
+        _replacement_row('native', 'payments', 1, {'limits.cpu': '4', 'limits.memory': '8Gi'}),
+        _replacement_row('capsule', 'ns-a', 2, {'limits.cpu': '3', 'limits.memory': '6Gi'}),
+        _replacement_row('capsule', 'ns-b', 3, {'limits.cpu': '3', 'limits.memory': '6Gi'}),
+    ]
+    committed, unknown = _aggregate_committed_allocation(
+        rows,
+        shared_quota_by_tenant={'capsule': {'limits.cpu': '5', 'limits.memory': '10Gi'}},
+        quota_vector_factory=quota_limit_vector,
+    )
+    assert unknown == []
+    assert committed.cpu == Decimal('9')
+    assert committed.memory_bytes == Decimal('18') * Decimal(1024**3)
+    missing, unknown = _aggregate_committed_allocation(
+        [rows[0]], shared_quota_by_tenant={},
+        quota_vector_factory=quota_limit_vector,
+    )
+    assert missing.cpu == Decimal('4')
+    assert unknown == []
+
+
+def test_operator_limit_ratios_validate_finite_and_governed_ranges() -> None:
+    import pytest
+    from app.kubernetes.tenant.capacity_governance import _operator_limit_ratio
+
+    assert _operator_limit_ratio('1.50', name='CPU', upper='4') == '1.50'
+    assert _operator_limit_ratio('1', name='Memory', upper='2') == '1'
+    for raw in ('0.99', '-1', 'NaN', 'Infinity', 'abc', ''):
+        with pytest.raises(ValueError):
+            _operator_limit_ratio(raw, name='CPU', upper='4')
+    with pytest.raises(ValueError):
+        _operator_limit_ratio('4.1', name='CPU', upper='4')
+    with pytest.raises(ValueError):
+        _operator_limit_ratio('2.1', name='Memory', upper='2')
+
+
+def test_limit_observe_does_not_change_existing_request_admission(monkeypatch) -> None:
+    _reads, decisions, _commits = _install_atomic_replacement_test_evidence(
+        monkeypatch, limit_mode='observe', other_limit_cpu='25',
+    )
+    environment, request = _atomic_native_request()
+    result = capacity_governance._enforce_allocation_preflight(
+        tenant_environment=environment, request=request,
+    )
+    assert result.id == 32
+    assert decisions[0]['pure'].allowed is True
+    assert decisions[0]['evidence'].limit_exposure_evidence['enforced'] is False
+
+
+def test_limit_enforce_allows_bounded_native_replacement_below_threshold(monkeypatch) -> None:
+    _reads, decisions, _commits = _install_atomic_replacement_test_evidence(
+        monkeypatch, limit_mode='enforce', other_limit_cpu='2',
+    )
+    environment, request = _atomic_native_request()
+    capacity_governance._enforce_allocation_preflight(
+        tenant_environment=environment, request=request,
+    )
+    assert decisions[0]['pure'].allowed is True
+    report = decisions[0]['evidence'].limit_exposure_evidence
+    assert report['enforced'] is True
+    assert report['projection'] == 'other_committed_plus_proposed'
+    assert report['assessment']['state'] == 'Healthy'
+    assert report['assessment']['capacity_approval'] is False
+
+
+def test_limit_enforce_blocks_overexposed_native_replacement(monkeypatch) -> None:
+    import pytest
+    from app.kubernetes.tenant.capacity_governance import TenantCapacityBlockedError
+
+    _reads, decisions, commits = _install_atomic_replacement_test_evidence(
+        monkeypatch, limit_mode='enforce', other_limit_cpu='20',
+    )
+    environment, request = _atomic_native_request()
+    with pytest.raises(TenantCapacityBlockedError, match='Limit Exposure admission blocked'):
+        capacity_governance._enforce_allocation_preflight(
+            tenant_environment=environment, request=request,
+        )
+    assert decisions[0]['pure'].decision == 'block'
+    assert decisions[0]['evidence'].limit_exposure_evidence['assessment']['state'] == 'Overcommitted'
+    assert commits == [True]
+
+
+def test_limit_enforce_preserves_original_request_block_reason(monkeypatch) -> None:
+    import pytest
+    from app.kubernetes.tenant.capacity_governance import TenantCapacityBlockedError
+
+    _reads, decisions, _commits = _install_atomic_replacement_test_evidence(
+        monkeypatch, limit_mode='enforce', other_storage_gib='2030',
+    )
+    environment, request = _atomic_native_request()
+    with pytest.raises(TenantCapacityBlockedError, match='Projected committed allocation exceeds'):
+        capacity_governance._enforce_allocation_preflight(
+            tenant_environment=environment, request=request,
+        )
+    assert 'Projected committed allocation exceeds' in decisions[0]['pure'].reason
+    assert decisions[0]['evidence'].limit_exposure_evidence['enforced'] is True
+
+
+def test_limit_enforce_blocks_limit_increase_even_when_requests_decrease(monkeypatch) -> None:
+    import pytest
+    from app.kubernetes.tenant.capacity_governance import TenantCapacityBlockedError
+
+    _reads, decisions, commits = _install_atomic_replacement_test_evidence(
+        monkeypatch, limit_mode='enforce', other_limit_cpu='20',
+    )
+    environment, original = _atomic_native_request()
+    request = capacity_governance._AllocationRequest(
+        profile=original.profile, namespace=original.namespace,
+        current=quota_request_vector({
+            'requests.cpu': '2', 'requests.memory': '4Gi', 'pods': '12', 'requests.storage': '2Gi',
+        }),
+        proposed=quota_request_vector({
+            'requests.cpu': '1', 'requests.memory': '2Gi', 'pods': '10', 'requests.storage': '1Gi',
+        }),
+        operation='decrease', replacement_namespace=original.replacement_namespace,
+        current_limits=capacity_governance.quota_limit_vector({'limits.cpu': '3', 'limits.memory': '4Gi'}),
+        proposed_limits=capacity_governance.quota_limit_vector({'limits.cpu': '8', 'limits.memory': '8Gi'}),
+    )
+    with pytest.raises(TenantCapacityBlockedError, match='Limit Exposure admission blocked'):
+        capacity_governance._enforce_allocation_preflight(
+            tenant_environment=environment, request=request,
+        )
+    assert decisions[0]['pure'].decision == 'block'
+    assert commits == [True]
