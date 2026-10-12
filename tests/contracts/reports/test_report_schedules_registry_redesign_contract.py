@@ -51,8 +51,9 @@ def test_schedule_registry_and_run_lifecycle_use_framed_canonical_workspaces() -
     assert 'xl:grid-cols-6' not in template
     assert 'xl:grid-cols-5' not in template
 
-    assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence' in service
-    assert 'paginate_sequence(' in service
+    assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_select' in service
+    assert 'paginate_sequence(' not in service
+    assert '_filter_schedule_statement(selected_filters).order_by(' in service
     assert 'paginate_select(' in service
     assert "query_args.get('run_page', 1)" in service
     assert "query_args.get('run_per_page', PER_PAGE_OPTIONS[0])" in service
