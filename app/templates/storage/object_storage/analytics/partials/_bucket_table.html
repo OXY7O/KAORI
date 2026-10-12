@@ -11,6 +11,7 @@
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
+                <div class="flex flex-wrap items-center gap-2">
                 <h2 class="text-base font-semibold text-content-primary">
                     {% if page_key == 'top_consumers' %}
                         Consumer Records
@@ -20,6 +21,8 @@
                         Bucket Request Path Records
                     {% endif %}
                 </h2>
+                    {% if bucket_table %}{{ table_label.result_count(bucket_table.pagination.total_items) }}{% endif %}
+                </div>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">
                     {% if page_key == 'capacity' %}
                         Review bucket usage, system share, objects, and quota pressure. Metrics are preferred; Inventory is the explicit fallback when bucket metrics are absent.
@@ -30,9 +33,6 @@
                     {% endif %}
                 </p>
             </div>
-            {% if bucket_table %}
-                {{ table_label.metadata_label(bucket_table.pagination.total_items ~ ' Buckets', size='compact') }}
-            {% endif %}
         </div>
         {{ loading_bar.render('object-storage-bucket-table-loading-indicator', label='Refreshing Bucket Capacity Records' if page_key == 'capacity' else ('Refreshing Bucket Request Path Records' if page_key == 'performance' else 'Refreshing Consumer Records') ) }}
     </header>
