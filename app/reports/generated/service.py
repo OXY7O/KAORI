@@ -713,7 +713,18 @@ def _serialize_report(
     can_generate_artifact = report.status in ['requested', 'failed', 'ready'] and bool(
         active_backend_status.get('write_available', False)
     )
-    can_download_artifact = report.status in ['ready', 'archived'] and bool(report.file_path) and file_exists
+    # Registry metadata is not an existence probe. A reachable reference may be opened,
+    # but only the detail/download path can claim that the artifact was verified.
+    can_download_artifact = (
+        report.status in ['ready', 'archived']
+        and bool(report.file_path)
+        and bool(artifact_access.get('reachable', False))
+        and (
+            file_exists
+            if bool(artifact_access.get('verified', verify_artifact))
+            else artifact_access.get('state') == 'referenced'
+        )
+    )
     scope = resolve_report_scope(report)
     scope_asset_type = str(getattr(report, 'scope_asset_type', '') or '')
     scope_label = (
@@ -853,9 +864,9 @@ def _summarize_report_file_reference(
 
     reachable = bool(backend_status.get('reachable', False))
     return {
-        # For the registry, a retained URI is enough to expose the download action.
-        # The download route performs the authoritative existence probe.
-        'exists': bool(file_path and reachable),
+        # Storage reachability does not prove that this specific object exists.
+        # Download remains a guarded handoff; only detail/download probes existence.
+        'exists': False,
         'reachable': reachable,
         'backend': backend_name,
         'backend_label': (storage_location.get('backend_label') or _format_storage_backend_label(backend_name)),
@@ -1339,6 +1350,20 @@ def _get_file_state(
             ),
             'tone': 'amber',
             'icon': 'cloud-off',
+        }
+
+    if (
+        report.status in {'ready', 'archived'}
+        and report.file_path
+        and storage_reachable
+        and artifact_access.get('verified') is False
+        and artifact_access.get('state') == 'referenced'
+    ):
+        return {
+            'label': 'Artifact Referenced' if report.status == 'ready' else 'Archived Reference',
+            'description': 'Stored metadata is retained; exact artifact existence is not verified in the registry.',
+            'tone': 'gray',
+            'icon': 'file-check-2',
         }
 
     if report.status == 'ready' and report.file_path and file_exists:

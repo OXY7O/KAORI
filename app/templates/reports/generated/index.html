@@ -333,7 +333,9 @@
                                             <div class="min-w-[9rem]">
                                                 {{ table_label.metadata_label(report.output_format, 'file-text') }}
                                                 <p class="mt-1 text-xs leading-5 text-content-muted">
-                                                    {% if report.file_exists %}
+                                                    {% if report.artifact_access.state == 'referenced' %}
+                                                        {{ report.file_size }} · Reference Not Verified
+                                                    {% elif report.file_exists %}
                                                         {{ report.file_size }} · {{ report.storage_backend_label }}
                                                     {% elif report.raw_status in ['requested', 'queued', 'generating'] %}
                                                         Artifact Pending

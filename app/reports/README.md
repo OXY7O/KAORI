@@ -150,3 +150,7 @@ Operator report names are optional, trimmed, and bounded at 255 Unicode code poi
 ### Generated Reports concurrent archive admission (#1557)
 
 Archive (single/bulk) and worker generation serialize against the Report row with the existing database transaction/row-lock contract. Archive rejects any report with an active canonical JobExecution for `report:<id>` even when its retained artifact makes the report lifecycle still `ready`. Bulk archive is atomic: any missing, ineligible, or active request rejects the entire selection with actionable counts. The worker rechecks archived lifecycle under a row lock after storage preflight and before committing `generating`, and failure cleanup never overwrites an archived record. The Registry reads one batched active-job query per page, not per row. Historical committed artifact and job evidence remain owned by the existing Reports/Platform Operations boundaries.
+
+### Generated Reports artifact evidence honesty (#1556)
+
+List pages remain metadata-first and must never treat a reachable backend plus retained storage URI as proof an individual artifact exists. Unprobed retained URIs are surfaced as **Artifact Referenced / Reference Not Verified**. The list may offer a protected download handoff when the reference is reachable; the download route and detail separately perform authoritative per-object probing, with unavailable/missing feedback. No per-row HEAD and no provider-live dependency is introduced into normal registry polling.
