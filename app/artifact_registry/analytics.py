@@ -505,6 +505,7 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
     inventory_state = db.session.get(RegistryCollectionState, identity_id)
     governance_state = db.session.get(RegistryGovernanceState, identity_id)
     latest_binding = bindings.with_entities(func.max(RegistryWorkloadBinding.observed_at)).scalar()
+    latest_scan = artifacts.with_entities(func.max(RegistryArtifact.scan_completed_at)).scalar()
     return {
         'inventory': inventory, 'security': security, 'runtime': runtime,
         'governance': governance_counts,
@@ -522,6 +523,7 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
             ),
             'governance_status': governance_state.status if governance_state else 'not_collected',
             'runtime_observed_at': latest_binding.isoformat() if latest_binding else None,
+            'security_latest_scan_at': latest_scan.isoformat() if latest_scan else None,
             'security_assessed_count': counts['scanned_artifacts'],
         },
     }
@@ -660,6 +662,18 @@ def materialize_registry_analytics(
         raise RuntimeError('Registry inventory generation changed during Analytics materialization.')
     if current_generation is None:
         raise RuntimeError('Registry Inventory has no usable committed generation for Analytics.')
+    db.session.refresh(identity, attribute_names=['enabled', 'lifecycle_status'])
+    if not identity.enabled or identity.lifecycle_status != 'active':
+        raise RuntimeError('Registry source was disabled during Analytics materialization.')
+    current_governance = db.session.get(RegistryGovernanceState, int(identity.id))
+    if current_governance is not None:
+        db.session.refresh(current_governance, attribute_names=['last_committed_at'])
+    governance_generation = (
+        current_governance.last_committed_at.isoformat()
+        if current_governance and current_governance.last_committed_at else None
+    )
+    if governance_generation != domain['evidence']['governance_committed_at']:
+        raise RuntimeError('Registry Governance changed during Analytics materialization.')
 
     snapshot = RegistryAnalyticsSnapshot()
     snapshot.integration_instance_id = identity.id
