@@ -130,6 +130,18 @@ authority. Concurrent source tasks publish monotonic aggregate progress through 
 metadata. A slow or failed source cannot consume the inventory worker and does not invalidate committed
 inventory or another source's committed security evidence.
 
+### Analytics instance scope, alerts, and explicit governance gaps (#1466)
+
+Analytics shell, sections, active alert filters, and background materialization
+resolution reject invalid or disabled explicit `provider_id` rather than
+silently falling back to All Registries. Alert tables reuse canonical KAORI
+table geometry and user-local timestamps. Committed-empty and filtered-zero
+alert states are distinct from no Analytics snapshot; no provider query occurs
+during these UI reads. Governance `Not Configured` is counted only when the
+provider actually reported `not_configured`, not by subtracting configured
+projects from the full Inventory denominator. Shared Violet navigation,
+HTMX loading, responsive layout, and five-row pagination remain intact.
+
 ### Bounded Analytics and committed input generations (#1465)
 
 Registry Analytics materialization uses SQL counts and bounded scalar artifact
