@@ -14,6 +14,7 @@ from app.artifact_registry.presentation_common import _fmt_bytes, _providers
 from app.artifact_registry.presentation_overview import build_overview
 from app.common.analytics.params import get_allowed_time_ranges
 from app.common.pagination import paginate_sequence
+from app.common.presentation import present_user_datetime
 from app.models.registry import RegistryAnalyticsSnapshot
 
 
@@ -668,7 +669,20 @@ def _analytics_alert_page(
             ).casefold()
             if search_value not in haystack:
                 continue
-        filtered_rows.append({**row, 'effective_state': effective_state})
+        raw_start = row.get('starts_at')
+        try:
+            started = (
+                datetime.fromisoformat(raw_start.replace('Z', '+00:00'))
+                if isinstance(raw_start, str)
+                else raw_start if isinstance(raw_start, datetime) else None
+            )
+        except ValueError:
+            started = None
+        filtered_rows.append({
+            **row,
+            'effective_state': effective_state,
+            'starts_at_display': present_user_datetime(started, empty='Not Observed'),
+        })
     page_rows, pagination = paginate_sequence(
         filtered_rows,
         page=page,
