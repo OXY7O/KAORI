@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any, overload
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
+
+from app.extensions.db import db
 from werkzeug.exceptions import NotFound
 
 from app.common.pagination import paginate_sequence
@@ -654,17 +656,35 @@ def _overview_kpi_values(
 def _latest_registry_analytics(
     scoped_providers: list[IntegrationInstance],
 ) -> dict[int, RegistryAnalyticsSnapshot | None]:
-    snapshots: dict[int, RegistryAnalyticsSnapshot | None] = {}
-    for provider in scoped_providers:
-        snapshots[int(provider.id)] = (
-            RegistryAnalyticsSnapshot.query.filter_by(
-                integration_instance_id=provider.id,
-                status='ready',
-            )
-            .order_by(
-                RegistryAnalyticsSnapshot.generated_at.desc(),
-                RegistryAnalyticsSnapshot.id.desc(),
-            )
-            .first()
+    """Select each provider's latest ready generation in one scoped SQL read."""
+    provider_ids = [int(provider.id) for provider in scoped_providers]
+    snapshots: dict[int, RegistryAnalyticsSnapshot | None] = {key: None for key in provider_ids}
+    if not provider_ids:
+        return snapshots
+    ranked = (
+        db.session.query(
+            RegistryAnalyticsSnapshot.id.label('snapshot_id'),
+            func.row_number().over(
+                partition_by=RegistryAnalyticsSnapshot.integration_instance_id,
+                order_by=(
+                    RegistryAnalyticsSnapshot.generated_at.desc(),
+                    RegistryAnalyticsSnapshot.id.desc(),
+                ),
+            ).label('ordinal'),
         )
+        .filter(
+            RegistryAnalyticsSnapshot.integration_instance_id.in_(provider_ids),
+            RegistryAnalyticsSnapshot.status == 'ready',
+        )
+        .subquery()
+    )
+    rows = (
+        RegistryAnalyticsSnapshot.query.join(
+            ranked, RegistryAnalyticsSnapshot.id == ranked.c.snapshot_id
+        )
+        .filter(ranked.c.ordinal == 1)
+        .all()
+    )
+    for snapshot in rows:
+        snapshots[int(snapshot.integration_instance_id)] = snapshot
     return snapshots
