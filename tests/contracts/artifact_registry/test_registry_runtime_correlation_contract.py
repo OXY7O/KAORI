@@ -157,3 +157,18 @@ def test_runtime_generation_freshness_and_active_scope_contract() -> None:
     assert 'RegistryProject.integration_instance_id.in_(source_ids)' in presentation
     assert "IntegrationInstance.enabled.is_(True)" in prerequisites
     assert "def _runtime_scope_id(name: str)" in routes
+
+
+def test_runtime_read_and_materialization_bounded_projection() -> None:
+    correlation = (ROOT / 'app/artifact_registry/correlation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html').read_text()
+    assert 'for artifact in artifact_query.yield_per(normalized_batch_size):' in correlation
+    assert 'class IndexedArtifact:' in correlation
+    assert 'artifact_query.all()' not in correlation
+    assert 'artifact_ids = [artifact.id for artifact in artifacts]' not in correlation
+    assert 'RegistryWorkloadBinding.artifact_id.in_(artifact_id_scope)' in correlation
+    assert 'def _runtime_security_index(' in presentation
+    assert 'RegistryArtifact.id.in_(bound_artifact_ids)' in presentation
+    assert '.yield_per(250)' in presentation
+    assert 'Runtime bindings associated with artifacts reporting Critical or High findings.' in workspace
