@@ -1,21 +1,9 @@
--- KAORI DevContainer PostgreSQL application role provisioning (#1405).
--- Execute ONCE per permission refresh *after* Alembic upgrades, using the
--- trusted owner/migration connection to the existing development database.
--- This script never creates/drops databases, moves rows, or changes ownership.
--- An initial role is created NOLOGIN; set its password with interactive
--- psql \password and enable LOGIN only after reviewing the read-only checks.
---
--- Example from a trusted DevContainer terminal with owner psql connection:
---   PGAPPNAME=kaori-devcontainer-role-provision psql -h db -U kaori -W -d kaori \
---     -X -v ON_ERROR_STOP=1 -v kaori_devcontainer_confirm=1 \
---     -f scripts/devcontainer/provision_postgres_runtime_role.sql
--- Then inside interactive owner psql: \password kaori_runtime
--- Then ALTER ROLE kaori_runtime LOGIN;
---
--- The runtime login never receives ownership, CREATE, TRUNCATE or schema DDL.
--- Permissions for future tables MUST be refreshed after each Alembic upgrade:
--- no blanket ALTER DEFAULT PRIVILEGES, which could grant UPDATE/DELETE to
--- future immutable evidence ledgers.
+-- DevContainer PostgreSQL grant refresh under restricted kaori_migrator.
+-- postgres bootstrap owns role creation ONLY on the empty-volume one-shot.
+-- This is an explicit operator migration step; not part of app startup.
+-- Non-superuser kaori_migrator owns all Alembic-created application tables.
+-- No blanket default ACLs: new immutable tables must be reviewed first.
+-- Credentials never appear in this committed SQL file.
 
 \set ON_ERROR_STOP on
 \if :{?kaori_devcontainer_confirm}
@@ -43,18 +31,18 @@ BEGIN
         RAISE EXCEPTION 'Apply current KAORI schema migrations as DB owner first; existing ledger/audit tables required';
     END IF;
 
-    SELECT rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls
-    INTO v_role_flags FROM pg_roles WHERE rolname = current_user;
-    IF v_role_flags.rolsuper IS DISTINCT FROM TRUE
-       AND v_role_flags.rolcreaterole IS DISTINCT FROM TRUE
+    IF current_user <> 'kaori_migrator'
+       OR NOT has_schema_privilege(current_user, 'public', 'CREATE')
+       OR pg_get_userbyid((
+           SELECT relowner FROM pg_class
+           WHERE oid = 'public.capsule_handoff_ledger_events'::regclass
+       )) <> current_user
     THEN
-        RAISE EXCEPTION 'Trusted existing PostgreSQL owner/admin connection required';
+        RAISE EXCEPTION 'Trusted non-superuser schema migrator/ledger owner required';
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'kaori_runtime') THEN
-        CREATE ROLE kaori_runtime
-            NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
-            NOREPLICATION NOBYPASSRLS INHERIT;
+        RAISE EXCEPTION 'Restricted runtime principal must be provisioned before migrations';
     END IF;
 
     SELECT rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls
@@ -105,5 +93,5 @@ BEGIN
 END $$;
 COMMIT;
 
--- Never ALTER ROLE ... LOGIN with a blank password. Finish with interactive
--- \password kaori_runtime under trusted psql and then enable LOGIN separately.
+-- Never rotate credentials or change LOGIN from a schema migration;
+-- the one-shot bootstrap has already provisioned the application principal.
