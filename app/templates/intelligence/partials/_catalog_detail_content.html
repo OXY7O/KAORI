@@ -262,6 +262,11 @@
                        aria-hidden="true"></i>
                     <p class="text-xs leading-5 text-content-muted">Accepted Risk only suppresses AlertCase promotion while active; findings remain non-compliant and become eligible again after expiry or revocation.</p>
                 </div>
+                {% if item.rule_exceptions.evaluation_issues %}
+                    <div class="mt-4 rounded-lg border border-status-warning bg-status-warning-soft px-4 py-3 text-sm text-content-primary" role="alert">
+                        Recommendation evidence is incomplete. Accepted Risk candidates cannot be changed until the affected evaluator recovers.
+                    </div>
+                {% endif %}
                 {% if item.rule_exceptions.exceptions %}
                     <div class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
@@ -314,7 +319,7 @@
                         </div>
                     </div>
                 {% endif %}
-                {% if current_user.has_permission('intelligence.decisions.create') %}
+                {% if current_user.has_permission('intelligence.decisions.create') and not item.rule_exceptions.evaluation_issues %}
                     <form method="post"
                           action="{{ url_for('alert_intelligence.create_rule_exception_for_rule', rule_key=item.rule_key) }}"
                           class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
