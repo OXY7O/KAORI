@@ -305,7 +305,7 @@ def _security_scope_evidence(
     # JobExecution.job_type == 'artifact_registry_security' is fleet authority.
     # Its last-success/last-failure belongs to sync_state, not a provider's
     # security evidence age. Never substitute a global job timestamp here.
-    latest_evidence_at = scan_scope.with_entities(func.max(RegistryScanSnapshot.observed_at)).scalar()
+    latest_evidence_at = successful_scan_scope.with_entities(func.max(RegistryScanSnapshot.observed_at)).scalar()
     coverage_count = current_scanned_artifacts if view == 'vulnerabilities' else evidence_count
     snapshot = _snapshot_status(
         artifact_total=artifact_total,
