@@ -1431,7 +1431,7 @@ def test_allocation_comparison_uses_calm_dual_panels_without_metric_card_stacks(
     assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
     assert 'data-tenant-allocation-metric-source="{{ source }}"' in template
     assert 'data-tenant-allocation-metric-key="{{ key }}"' in template
-    assert 'border-b border-outline-subtle/70 py-3' in template
+    assert 'border-b border-outline-subtle py-3' in template
     assert 'data-tenant-allocation-highlight-count aria-live="polite"' in template
     assert 'data-tenant-allocation-highlight-item hidden' in template
     assert 'data-tenant-allocation-highlight-more hidden' in template
