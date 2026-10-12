@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.integrations import coverage_query
 from app.integrations.binding_selectors import build_selector
+from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.metrics_source import MetricsSource
 from app.models.object_storage import ObjectStorageSystem
 
 
@@ -15,6 +17,8 @@ def test_coverage_sql_pagination_preserves_counts_filter_and_lifecycle(monkeypat
     engine = create_engine('sqlite+pysqlite:///:memory:')
     IntegrationInstance.__table__.create(engine)
     IntegrationBinding.__table__.create(engine)
+    MetricsSource.__table__.create(engine)
+    AlertmanagerInstance.__table__.create(engine)
     ObjectStorageSystem.__table__.create(engine)
 
     with Session(engine) as session:
@@ -32,6 +36,8 @@ def test_coverage_sql_pagination_preserves_counts_filter_and_lifecycle(monkeypat
             provider_key='prometheus', adapter_key='prometheus_http',
             readiness_status='ready', enabled=True, lifecycle_status='active',
         ))
+        session.add(MetricsSource(id=1, integration_instance_id=1, query_language='promql',
+                                  endpoint='https://prometheus.example.invalid'))
         for number in range(1, 8):
             session.add(ObjectStorageSystem(
                 id=f'asset-{number}', name=f'Scope {number}', environment='production',
@@ -83,6 +89,8 @@ def test_coverage_rejects_unvalidated_bindings_even_when_provider_ready(monkeypa
     engine = create_engine('sqlite+pysqlite:///:memory:')
     IntegrationInstance.__table__.create(engine)
     IntegrationBinding.__table__.create(engine)
+    MetricsSource.__table__.create(engine)
+    AlertmanagerInstance.__table__.create(engine)
     ObjectStorageSystem.__table__.create(engine)
     with Session(engine) as session:
         monkeypatch.setattr(coverage_query, 'db', SimpleNamespace(session=session))
@@ -99,6 +107,8 @@ def test_coverage_rejects_unvalidated_bindings_even_when_provider_ready(monkeypa
             provider_key='alertmanager', adapter_key='alertmanager_api_v2',
             readiness_status='ready', enabled=True, lifecycle_status='active',
         ))
+        session.add(AlertmanagerInstance(id=2, integration_instance_id=2,
+                                         endpoint='https://alertmanager.example.invalid'))
         session.add(ObjectStorageSystem(id='asset-9', name='Scope 9', environment='testing'))
         session.add(IntegrationBinding(
             integration_instance_id=2, asset_type='object_storage_system',
