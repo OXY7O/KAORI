@@ -100,6 +100,13 @@ Central Recommendation
 
 The domain produces the evidence. Intelligence evaluates whether that evidence satisfies a rule and owns the resulting recommendation.
 
+
+### Active-source and bounded Registry evidence evaluation (#1491)
+
+Central Intelligence must qualify Registry findings to **enabled, active** Registry integration instances before evaluating committed Security, Governance, Runtime, and Capacity evidence. A retired, disabled, missing, or inactive provider cannot contribute active finding counts. Critical vulnerability facts require normalized successful scan evidence; a stale vulnerability JSON summary alone is not a valid assessed critical finding.
+
+For high-cardinality runtime-backed Registry artifacts, the evaluator uses provider-scoped keyset batches and batch-fetches workload bindings instead of loading the entire artifact estate and issuing per-artifact binding queries. Rule identity and findings stay central; no provider or page owns a shadow recommendation registry. Registry capacity forecasts are qualified by a current, nonexpired Analytics snapshot. The normal Overview still evaluates the broader multi-domain central rule set; future persisted finding materialization, if required for scale, must be separately designed under a bounded implementation issue rather than assumed complete from source-only checks.
+
 ## Rule namespace and provider coverage
 
 Rules use canonical domain-oriented namespaces where possible:
