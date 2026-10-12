@@ -46,7 +46,14 @@ def history_plan(window: str, *, now: datetime | None = None) -> tuple[datetime,
     return start, end, step_seconds
 
 
-def _bounded_matrix(result: Any, *, project_scoped: bool) -> dict[str, dict[str, float]]:
+def _bounded_matrix(
+    result: Any,
+    *,
+    project_scoped: bool,
+    start_at: datetime,
+    end_at: datetime,
+    step_seconds: int,
+) -> dict[str, dict[str, float]]:
     if not isinstance(result, dict) or result.get('status') != 'success':
         raise ValueError('Metrics Source range query did not report success.')
     data = result.get('data')
@@ -82,8 +89,17 @@ def _bounded_matrix(result: Any, *, project_scoped: bool) -> dict[str, dict[str,
             if not isfinite(timestamp) or not isfinite(value):
                 raise ValueError('Historical sample is not finite.')
             points.append((timestamp, value))
-        if any(b[0] <= a[0] for a, b in zip(points, points[1:])):
+        if len(points) < 2:
+            raise ValueError('Historical series has no measured growth interval.')
+        if any(next_point[0] <= prior[0] for prior, next_point in zip(points, points[1:])):
             raise ValueError('Historical sample timestamps are not strictly increasing.')
+        if (
+            points[0][0] > start_at.timestamp() + 2 * step_seconds
+            or points[-1][0] < end_at.timestamp() - 2 * step_seconds
+            or points[0][0] < start_at.timestamp() - step_seconds
+            or points[-1][0] > end_at.timestamp() + step_seconds
+        ):
+            raise ValueError('Historical source retention did not cover the requested interval.')
         normalized[project] = {
             'start_time': points[0][0],
             'end_time': points[-1][0],
@@ -134,7 +150,13 @@ def collect_registry_metric_history(
                 f'{step}s',
                 retry_count=0,
             )
-            values[field] = _bounded_matrix(result, project_scoped=field != 'request_rate_per_second')
+            values[field] = _bounded_matrix(
+                result,
+                project_scoped=field != 'request_rate_per_second',
+                start_at=start,
+                end_at=end,
+                step_seconds=step,
+            )
         except (MetricsSourceError, ValueError) as exc:
             errors[key] = str(exc)[:500]
 
