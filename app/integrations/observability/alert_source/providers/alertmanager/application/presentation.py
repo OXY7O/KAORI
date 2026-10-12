@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy import case, func, or_
 
-from app.common.pagination import paginate_query
+from app.common.pagination import paginate_query, paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
@@ -15,7 +15,6 @@ from app.integrations.deletion import provider_deletion_guard
 from app.integrations.kernel.registry import get_integration
 from app.integrations.observability.alert_source.providers.alertmanager.application.repository import (
     count_bindings_by_scope_type,
-    list_bindings_for_instance,
 )
 from app.integrations.observability.alert_source.providers.alertmanager.application.resolver import (
     AlertmanagerSourceResolution,
@@ -185,9 +184,9 @@ def build_instance_context(
     ).order_by(IntegrationBinding.priority.asc(), IntegrationBinding.id.asc()) if instance else None
     bindings, binding_registry_pagination = (
         paginate_query(binding_query, page=binding_page, per_page=binding_per_page)
-        if binding_query is not None else ([], None)
+        if binding_query is not None else paginate_sequence([], page=binding_page, per_page=binding_per_page)
     )
-    binding_total = binding_registry_pagination['total_items'] if binding_registry_pagination else 0
+    binding_total = binding_registry_pagination['total_items']
     observed_capabilities = set(instance.capabilities or []) if instance else set()
     capability_rows = []
     for capability in CORE_CAPABILITIES:
