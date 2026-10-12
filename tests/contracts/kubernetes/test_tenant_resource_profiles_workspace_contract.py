@@ -1436,7 +1436,7 @@ def test_allocation_change_shows_request_and_limit_evidence_for_both_contracts()
     )
     for side in ('current', 'proposed'):
         block = template.split(f'aria-label="{side.title()} allocation"', 1)[1]
-        start = block.index('<dl class="mt-2 grid grid-cols-2 gap-px')
+        start = block.index('<dl class="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-3">')
         end = block.index('</dl>', start) + len('</dl>')
         markup = Environment(autoescape=True).from_string(block[start:end]).render()
         assert markup.count('<dt ') == 6
@@ -1471,8 +1471,9 @@ def test_allocation_change_advanced_readonly_contract_and_evidence_boundaries() 
     page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
     service = read('app/kubernetes/tenant/service.py')
 
-    assert template.count('<details class="group') == 2
-    assert template.count('data-tenant-allocation-detail-group') == 2
+    assert template.count('view_more_content.render(') == 2
+    assert 'components/view_more_content.html' in template
+    assert template.count('data-tenant-allocation-detail-group') == 3
     assert 'data-tenant-allocation-detail-group="advanced-controls"' in template
     assert 'Advanced Contract Comparison' in template
     assert 'Current · Frozen' in template
@@ -1508,8 +1509,8 @@ def test_allocation_change_advanced_readonly_contract_and_evidence_boundaries() 
     fragment = template.split('data-tenant-allocation-detail-group="{{ title', 1)[0]
     assert 'Object Limits' in fragment and 'Container Defaults' in fragment
     # Existing, shared Jinja grammar renders all 8 independent detail rows.
-    details = template.split('{% for title, description, rows in [', 1)[1]
-    details = '{% for title, description, rows in [' + details.split('{% endfor %}', 2)[0]
+    details = template.split('{% for title, description, icon, rows in [', 1)[1]
+    details = '{% for title, description, icon, rows in [' + details.split('{% endfor %}', 2)[0]
     assert "('PVCs', 'quota', 'persistentvolumeclaims')" in details
     assert "('Services', 'quota', 'services')" in details
     assert "('ConfigMaps', 'quota', 'configmaps')" in details
@@ -1518,3 +1519,55 @@ def test_allocation_change_advanced_readonly_contract_and_evidence_boundaries() 
                      'default_request.memory', 'default.memory'):
         assert f"'limits', '{resource}'" in details
     Environment(autoescape=True).parse(template)
+
+def test_allocation_change_redesign_uses_shared_disclosures_and_changed_only_summary() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+
+    Environment(autoescape=True).parse(template)
+    assert 'components/view_more_content.html' in template
+    assert template.count('view_more_content.render(') == 2
+    assert 'data-tenant-allocation-detail-group="advanced-controls"' in template
+    assert 'open_by_default=true' not in template
+    assert 'compact_action=true' in template
+    assert 'data-tenant-allocation-change-summary' in template
+    assert 'data-tenant-allocation-change-count aria-live="polite"' in template
+    assert 'Read-only; not an admission result.' in template
+    assert 'No configured Advanced Controls' in template
+    assert 'Current and proposed contracts have no advanced intent to compare.' in template
+    assert 'data-tenant-allocation-change-empty' in template
+    assert 'data-tenant-allocation-detail-row' in template
+    assert 'data-tenant-allocation-change-direction' in template
+
+    # All eight summary dimensions come from the same committed/proposed
+    # snapshots as the primary ResourceQuota and PVC preview.
+    dimensions = (
+        ('quota', 'requests.cpu'),
+        ('quota', 'limits.cpu'),
+        ('quota', 'requests.memory'),
+        ('quota', 'limits.memory'),
+        ('quota', 'pods'),
+        ('quota', 'requests.storage'),
+        ('storage_policy', 'min'),
+        ('storage_policy', 'max'),
+    )
+    for source, key in dimensions:
+        assert f"('{source}', '{key}')" in template
+    assert 'renderChangeSummary(current, proposed)' in script
+    assert 'renderAdvancedComparison(current, proposed' in script
+    assert "form.querySelectorAll('[data-tenant-allocation-change-row]')" in script
+    assert "row.hidden = classification === null" in script
+    assert "changed === 0 ? 'No changes'" in script
+    assert "return 'Now defined'" in script
+    assert "return 'No longer defined'" in script
+    assert "return right > left ? 'Increased' : 'Reduced'" in script
+    assert "return prior === next ? null : 'Changed'" in script
+    assert "return Number.isFinite(value) ? value : null" in script
+    assert "if (!current || !proposed)" not in script.split('renderChangeSummary', 1)[1].split(
+        'const renderAllocationChange', 1
+    )[0]
+    assert "form.querySelectorAll('[data-tenant-allocation-detail-row]')" in script
+    assert "profileSelect?.addEventListener('change', () => renderAllocationChange())" in script
+    assert "namespaceSelect?.addEventListener('change'," in script
