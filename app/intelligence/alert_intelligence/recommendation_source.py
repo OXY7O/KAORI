@@ -754,7 +754,7 @@ def _source_evidence_posture_for_state(state: RecommendationAlertState) -> tuple
         # A fresh system row does not qualify every bucket. Missing per-bucket
         # findings remain Unknown if any committed bucket observation is stale.
         stale_bucket = ObjectStorageBucket.query.filter(
-            ObjectStorageBucket.system_id == state.asset_key,
+            ObjectStorageBucket.object_storage_system_id == state.asset_key,
             ObjectStorageBucket.observed_at < cutoff,
         ).first()
         if stale_bucket is not None:
