@@ -40,58 +40,116 @@ Beat). Credentials must never be printed in logs or committed to Git.
    Kubernetes/external providers **untouched**. No provider PATCH,
    Kubernetes reconciliation mutation, or staging/production changes.
 
-## 1. Locate and guard the exact PostgreSQL volume (WSL host)
+## 1. Check current state before resetting (WSL host)
 
-Run from the KAORI repository root on the WSL host:
+The reset **must not** start until the expected issue branch and the
+private environment contract have been confirmed. A blank result from a
+shell with `set -e` is **not** a PASS; the original operator attempt
+returned no deletion output and therefore did not establish fresh state.
+
+From the KAORI repository root:
 
 ```bash
+git branch --show-current
+git status --short
 kaori_dc() {
   docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml "$@"
 }
-
-PG_CONTAINER="$(kaori_dc ps -q db)"
-test -n "$PG_CONTAINER" || { echo "ABORT: kaori-dev db container not found"; exit 1; }
-
-PG_PROJECT="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$PG_CONTAINER")"
-PG_SERVICE="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}}' "$PG_CONTAINER")"
-PG_VOLUME="$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Name}}{{end}}{{end}}' "$PG_CONTAINER")"
-
-printf 'Project: %s\nService: %s\nPostgreSQL volume: %s\n' "$PG_PROJECT" "$PG_SERVICE" "$PG_VOLUME"
-test "$PG_PROJECT" = "kaori-dev" &&
-test "$PG_SERVICE" = "db" &&
-test "$PG_VOLUME" = "kaori-dev_kaori_postgres_data" ||
-  { echo "ABORT: unexpected PostgreSQL container/volume"; exit 1; }
-
-test "$(docker volume inspect "$PG_VOLUME" --format '{{index .Labels "com.docker.compose.project"}}')" = "kaori-dev" ||
-  { echo "ABORT: PostgreSQL volume project ownership differs"; exit 1; }
+kaori_dc ps db redis
+kaori_dc exec -T db sh -c \
+  'psql -X -At -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+   -c "SELECT current_database(),
+              to_regclass('\''public.alembic_version'\'') IS NULL,
+              to_regclass('\''public.users'\'') IS NULL,
+              EXISTS (SELECT 1 FROM pg_roles WHERE rolname='\''kaori_runtime'\'')"'
 ```
 
-If **any** assertion fails, **STOP**; do not guess an alternative volume
-name. Do not use `docker compose down -v`, `down --volumes`, or prune.
+An empty schema has the form `kaori|t|t|f`. If it is already fresh,
+**skip deletion entirely** and continue to optional step 2a. A present
+schema (`kaori|f|f|t`) means old state remains. Do not destroy anything
+based solely on `pg_isready`, which proves connectivity, not emptiness.
 
-## 2. Delete only the authorized PostgreSQL data (WSL host)
+## 2. Guarded PostgreSQL-only deletion (WSL host)
 
-These commands are destructive and must follow step 1. They keep Redis,
-its volume and other Compose-managed data intact.
+This block runs **only** when the operator explicitly intends to
+discard the disposable local DB and the preceding query shows old state.
+It validates the project, branch, private runtime URL, service and
+**exact** named PostgreSQL volume, including its Docker Compose project
+label, before stopping/removing the database. Each failure reports a
+specific `ABORT` reason; Redis and all other volumes remain unchanged.
 
 ```bash
-kaori_dc stop \
-  beat inventory-worker registry-security-worker maintenance-worker \
-  runtime-worker validation-worker analytics-worker reports-worker \
-  forecasting-worker resolver-execution-worker resolver-maintenance-worker
+(
+  set -euo pipefail
 
-kaori_dc stop db
-kaori_dc rm -f db
-docker volume rm "$PG_VOLUME"
-kaori_dc up -d --no-deps db
-kaori_dc ps db redis
+  fail() { printf 'ABORT: %s\n' "$*" >&2; exit 1; }
+
+  [[ "$(git branch --show-current)" == \
+    "kaori/issue-1427-devcontainer-fresh-bootstrap" ]] ||
+    fail "checkout the reviewed #1427 implementation branch first"
+
+  [[ -f .env ]] && git check-ignore -q .env ||
+    fail "private ignored root .env is missing"
+  grep -q '^POSTGRES_DB=kaori$' .env ||
+    fail "POSTGRES_DB must be kaori"
+  grep -q '^POSTGRES_USER=kaori$' .env ||
+    fail "POSTGRES_USER must be kaori"
+  grep -q '^POSTGRES_PASSWORD=.' .env ||
+    fail "POSTGRES_PASSWORD is missing"
+  grep -q '^DATABASE_URL=postgresql://kaori_runtime:' .env ||
+    fail "canonical DATABASE_URL must use the restricted role"
+  ! grep -q '^KAORI_DEV_RUNTIME_DATABASE_URL=' .env ||
+    fail "remove deprecated duplicate runtime URL"
+  ! grep -q '^KAORI_DB_MIGRATION_URL=' .env ||
+    fail "migration owner URL must not persist in .env"
+  kaori_dc config --quiet || fail "DevContainer Compose configuration invalid"
+
+  PG_CONTAINER="$(kaori_dc ps -q db)"
+  [[ -n "$PG_CONTAINER" ]] || fail "db container is not running"
+  PG_PROJECT="$(docker inspect -f \
+    '{{index .Config.Labels "com.docker.compose.project"}}' "$PG_CONTAINER")"
+  PG_SERVICE="$(docker inspect -f \
+    '{{index .Config.Labels "com.docker.compose.service"}}' "$PG_CONTAINER")"
+  PG_VOLUME="$(docker inspect -f \
+    '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql/data"}}{{.Name}}{{end}}{{end}}' \
+    "$PG_CONTAINER")"
+  printf 'Target: project=%s service=%s volume=%s\n' \
+    "$PG_PROJECT" "$PG_SERVICE" "$PG_VOLUME"
+
+  [[ "$PG_PROJECT" == "kaori-dev" ]] ||
+    fail "unexpected Compose project"
+  [[ "$PG_SERVICE" == "db" ]] ||
+    fail "unexpected PostgreSQL service"
+  [[ "$PG_VOLUME" == "kaori-dev_kaori_postgres_data" ]] ||
+    fail "unexpected PostgreSQL volume"
+  OWNER_LABEL="$(docker volume inspect "$PG_VOLUME" \
+    --format '{{index .Labels "com.docker.compose.project"}}')"
+  [[ "$OWNER_LABEL" == "kaori-dev" ]] ||
+    fail "volume Compose ownership label is '$OWNER_LABEL', expected kaori-dev"
+
+  printf 'PASS: exact DevContainer PostgreSQL data volume admitted for reset\n'
+
+  kaori_dc stop \
+    beat inventory-worker registry-security-worker maintenance-worker \
+    runtime-worker validation-worker analytics-worker reports-worker \
+    forecasting-worker resolver-execution-worker resolver-maintenance-worker
+  kaori_dc stop db
+  kaori_dc rm -f db
+  docker volume rm "$PG_VOLUME"
+
+  printf 'PASS: previous DevContainer PostgreSQL volume removed\n'
+  kaori_dc up -d --no-deps db
+  kaori_dc ps db redis
+)
 ```
 
-Do not start workers or Beat yet. The `workspace` process only sleeps
-until Flask Debug is explicitly started. VS Code may reconnect if the
-workspace was independently recreated. PostgreSQL must show healthy
-before moving on. Fresh cluster initialization consumes the existing
-`POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` private values.
+Wait until PostgreSQL reports `healthy`. Rerun the read-only
+`to_regclass` check from step 1 and require `kaori|t|t|f` before
+continuing. If the script prints `ABORT`, diagnose that reason; do
+not substitute `down -v`, `down --volumes`, Docker prune, or remove
+an unexpected volume. The current DevContainer `workspace` process
+may stay running, but keep **Flask Debug, workers and Beat stopped**.
+Fresh database creation uses private `POSTGRES_DB/USER/PASSWORD`.
 
 ## 2a. Optional first-run UI checkpoint — schema deliberately absent
 
