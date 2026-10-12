@@ -27,7 +27,7 @@
         'Inventory Assets: Number of buckets or containers observed for this system in committed inventory; it is not a live listing of all provider objects.',
         'System Inventory Snapshot: Most recent committed collection evidence for this system; a timestamp is not a guarantee that the system is healthy.',
         'System Inventory Status: KAORI inventory/source posture based on recorded evidence, not a substitute for live provider health checks.'
-    ], placement='right')
+    ], placement='right', variant='guide')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('object_storage_inventory.systems') }}"

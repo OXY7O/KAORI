@@ -27,7 +27,7 @@
         'Bucket Quota: Provider-reported quota or capacity boundary if available. Missing quota evidence does not imply unlimited capacity.',
         'Bucket Protection: Observed protection controls such as versioning, retention, object lock or related provider features when supported; displayed evidence is not an audit verdict.',
         'Last Committed Snapshot: Timestamp of the latest stored observation for this asset. It does not mean a current live provider request was made.'
-    ], placement='right')
+    ], placement='right', variant='guide')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('object_storage_inventory.buckets') }}"

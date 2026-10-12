@@ -101,20 +101,20 @@
             'Project Visibility: Public projects may be readable without project membership; Private projects require provider-side access. The value is observed provider metadata, not a KAORI access decision.',
             'Project Repositories: Number of repositories observed inside this Registry project in the committed snapshot; not a live provider count.',
             'Project Last Observed: Latest committed inventory observation for this project. A timestamp does not establish current provider health.'
-        ], placement='right') }}
+        ], placement='right', variant='guide') }}
                     {% elif inventory.resource == 'repositories' %}
         {{ info_tip.render('registry-inventory-repositories-title', 'Repositories Inventory Guide', 'Definitions of fields shown in the committed Registry inventory.', items=[
             'Repository Artifacts: Count of artifact identities observed for this repository in committed Registry inventory.',
             'Repository Pulls: Provider-reported pull count when available; Not Collected is different from zero downloads.',
             'Repository Last Observed: Latest committed repository observation, not an on-demand Registry request.'
-        ], placement='right') }}
+        ], placement='right', variant='guide') }}
                     {% else %}
         {{ info_tip.render('registry-inventory-artifacts-title', 'Artifacts Inventory Guide', 'Definitions of fields shown in the committed Registry inventory.', items=[
             'Artifact Digest: Content-addressed artifact identifier such as sha256. Tags may change, but digest identifies a specific manifest.',
             'Artifact Tags: Human-readable artifact references reported by the Registry provider; an artifact may have multiple tags or none.',
             'Artifact Type: Provider-reported artifact/package format or media type, not a security or compliance classification.',
             'Artifact Last Observed: Latest committed observation of this artifact. It is not proof the artifact is currently present or scanned.'
-        ], placement='right') }}
+        ], placement='right', variant='guide') }}
                     {% endif %}
                 {% endset %}
                 {{ table_ui.inventory_block_header(inventory.resource_icon,
