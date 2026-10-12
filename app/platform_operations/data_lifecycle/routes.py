@@ -86,10 +86,9 @@ def save_policy() -> ResponseReturnValue:
         values=request.form,
         user_id=current_user.id,
     )
-    return render_template(
-        'platform_operations/data_lifecycle/partials/_domain_workspace.html',
-        lifecycle=_context(feedback=feedback),
-    )
+    # Refresh hero metrics, domain cards and selected policy from one committed state.
+    # HTMX selects only #data-lifecycle-page; regular POST renders a full page.
+    return render_template('platform_operations/data_lifecycle/index.html', lifecycle=_context(feedback=feedback))
 
 
 @bp.post('/run')
