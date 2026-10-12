@@ -22,3 +22,14 @@ def test_registry_context_remains_same_origin_and_scoped() -> None:
     assert 'safe_next_url(value)' in routes
     assert 'MultiDict(parse_qsl(urlsplit(registry_return_url).query, keep_blank_values=True))' in routes
     assert "registry_return_url = _template_registry_return_url(request.form.get('next'))" in routes
+
+
+def test_rejected_select_choices_do_not_silently_fall_back_during_modal_init() -> None:
+    page = (ROOT / 'app/templates/reports/report_templates/index.html').read_text()
+    runtime = (ROOT / 'app/static/js/reports/report_templates.js').read_text()
+    assert 'data-template-has-server-errors=' in page
+    assert 'Choose a valid report type' in page
+    assert 'Choose a supported output' in page
+    assert 'Choose a valid status' in page
+    assert "const hasServerErrors = form.dataset.templateHasServerErrors === 'true'" in runtime
+    assert '!(hasServerErrors && !reset)' in runtime
