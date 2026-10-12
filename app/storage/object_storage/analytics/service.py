@@ -5,7 +5,7 @@ from typing import Any, cast
 from celery.exceptions import CeleryError
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import load_only
 
 from app.common.analytics.metrics.contracts import MetricPoint
 from app.common.analytics.params import get_allowed_time_ranges, get_selected_time_range
@@ -84,10 +84,16 @@ FORECAST_HISTORY_WINDOWS = (
 
 
 def _systems() -> list[ObjectStorageSystem]:
+    # Scope selector identity only; worker-owned bucket evidence stays in committed
+    # Analytics snapshots and must not be eager-loaded for every page/HTMX GET.
     return list(
         ObjectStorageSystem.query.options(
-            selectinload(ObjectStorageSystem.buckets),
-        ).order_by(ObjectStorageSystem.name.asc())
+            load_only(
+                ObjectStorageSystem.id,
+                ObjectStorageSystem.name,
+                ObjectStorageSystem.inventory_observed_at,
+            )
+        ).order_by(ObjectStorageSystem.name.asc(), ObjectStorageSystem.id.asc())
     )
 
 
