@@ -154,3 +154,7 @@ Archive (single/bulk) and worker generation serialize against the Report row wit
 ### Generated Reports artifact evidence honesty (#1556)
 
 List pages remain metadata-first and must never treat a reachable backend plus retained storage URI as proof an individual artifact exists. Unprobed retained URIs are surfaced as **Artifact Referenced / Reference Not Verified**. The list may offer a protected download handoff when the reference is reachable; the download route and detail separately perform authoritative per-object probing, with unavailable/missing feedback. No per-row HEAD and no provider-live dependency is introduced into normal registry polling.
+
+### Generated Reports Registry scope identity (#1555)
+
+Registry's generic scope filter includes active IntegrationInstance Registry options through `get_active_registry_options()`, alongside Kubernetes and Object Storage. Each persisted report's immutable scope label snapshot remains authoritative for historical presentation even when an integration is unavailable; absent snapshots use a safe Registry Integration ID fallback without per-row provider or IntegrationInstance lookups. Registry rows/detail display `Artifact Registry` / `Integration Scope`, not Kubernetes/namespace metadata. Scope filters remain server-side committed SQL.
