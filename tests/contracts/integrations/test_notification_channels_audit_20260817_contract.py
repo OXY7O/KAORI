@@ -191,7 +191,9 @@ def test_report_delivery_source_link_is_exact_committed_and_permissioned() -> No
     assert "delivery.event_type != 'report.generated'" in service
     assert "delivery.asset_type != 'report'" in service
     assert "delivery.event_key != f'report.generated:{report_id}'" in service
-    assert 'Report.query.filter_by(id=int(report_id)).first()' in service
+    assert 'Report.query.filter(Report.id.in_(report_ids)).all()' in service
+    assert 'report_id = _report_id_for_delivery(delivery)' in service
+    assert 'delivery.event_key != f\'report.generated:{report_id}\'' in service
     assert "url_for('reports.generated_report_detail', report_id=report.id)" in service
     assert "event_key=f'report.generated:{report.id}'" in producer
     assert "@permission_required('reports.view')" in source_routes

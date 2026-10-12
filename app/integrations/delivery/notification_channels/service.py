@@ -248,17 +248,26 @@ def _delivery_registry_page(
         query = query.filter(NotificationDelivery.event_key == event_key)
     query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
     rows, pagination = paginate_query(query, page=page, per_page=per_page)
+    # An exact, permissioned page-local read: no per-delivery report query.
+    report_ids = {
+        report_id for row in rows
+        if (report_id := _report_id_for_delivery(row)) is not None
+    } if can_view_reports else set()
+    report_lookup = (
+        {report.id: report for report in Report.query.filter(Report.id.in_(report_ids)).all()}
+        if report_ids else {}
+    )
     return [
         {
             **_delivery_view(row),
-            'report_source_url': _report_source_url(row) if can_view_reports else None,
+            'report_source_url': _report_source_url(row, report_lookup) if can_view_reports else None,
         }
         for row in rows
     ], pagination
 
 
-def _report_source_url(delivery: NotificationDelivery) -> str | None:
-    """Link only an exact source-owned event with a still-committed report."""
+def _report_id_for_delivery(delivery: NotificationDelivery) -> int | None:
+    """Trust only the exact source-owned report identity from a committed delivery."""
     if delivery.event_type != 'report.generated' or delivery.asset_type != 'report':
         return None
     report_id = str(delivery.asset_key or '')
@@ -266,10 +275,14 @@ def _report_source_url(delivery: NotificationDelivery) -> str | None:
         return None
     if delivery.event_key != f'report.generated:{report_id}':
         return None
-    report = Report.query.filter_by(id=int(report_id)).first()
-    if report is None:
+    return int(report_id)
+
+
+def _report_source_url(delivery: NotificationDelivery, report_lookup: dict[int, Report]) -> str | None:
+    report_id = _report_id_for_delivery(delivery)
+    if report_id is None or report_id not in report_lookup:
         return None
-    return url_for('reports.generated_report_detail', report_id=report.id)
+    return url_for('reports.generated_report_detail', report_id=report_id)
 
 
 def _reset_channel_validation(channel: NotificationChannel) -> None:
