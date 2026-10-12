@@ -259,6 +259,7 @@ def configuration() -> ResponseReturnValue:
 @bp.get('/configuration/<path:job_key>/status')
 @permission_required('jobs.view')
 def configuration_status(job_key: str) -> ResponseReturnValue:
+    _get_job_definition_or_404(job_key)
     context = _configuration_live_context(job_key)
     response = make_response(
         render_template('platform_operations/jobs/configuration/_live_status_response.html', **context)
