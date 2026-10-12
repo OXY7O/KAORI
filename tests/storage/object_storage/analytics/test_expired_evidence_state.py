@@ -47,3 +47,38 @@ def test_failed_snapshot_preserves_last_good_within_grace(reader) -> None:
     assert state['usable']
     assert state['label'] == 'Stale · Failed'
     assert state['last_error'] == 'timeout'
+
+
+@pytest.mark.parametrize('reader', [analytics_snapshot_state, forecast_snapshot_state])
+def test_fresh_payload_remains_current_but_warns_about_failed_refresh(reader) -> None:
+    now = datetime.now(UTC)
+    snapshot = SimpleNamespace(
+        status='failed',
+        payload_json={'old': 'committed'},
+        generated_at=now - timedelta(minutes=10),
+        expires_at=now + timedelta(minutes=5),
+        stale_grace_minutes=60,
+        last_attempt_at=now,
+        last_error='timeout',
+    )
+    state = reader(snapshot)
+    assert state['usable']
+    assert state['label'] == 'Current · Refresh Failed'
+    assert state['tone'] == 'warning'
+
+
+@pytest.mark.parametrize('reader', [analytics_snapshot_state, forecast_snapshot_state])
+@pytest.mark.parametrize('status', ['pending', 'failed'])
+def test_retained_payload_without_expiration_is_unusable_and_not_called_stale(reader, status) -> None:
+    snapshot = SimpleNamespace(
+        status=status,
+        payload_json={'old': 'committed'},
+        generated_at=datetime.now(UTC) - timedelta(minutes=10),
+        expires_at=None,
+        stale_grace_minutes=60,
+        last_attempt_at=datetime.now(UTC),
+        last_error='timeout',
+    )
+    state = reader(snapshot)
+    assert state['label'].startswith('Expired')
+    assert not state['usable']
