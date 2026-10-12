@@ -120,9 +120,12 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     page = max(to_int(args.get('page'), 1), 1)
 
     catalog = decorate_catalog_rules([normalize_rule(rule) for rule in INTELLIGENCE_CATALOG])
+    evaluation_issues: list[str] = []
     source_items = (
         catalog if page_mode == 'catalog' else decorate_recommendation_findings(
-            get_active_recommendation_findings(domain=filters['domain'] or None)
+            get_active_recommendation_findings(
+                domain=filters['domain'] or None, evidence_issues=evaluation_issues,
+            )
         )
     )
     filtered = [
@@ -174,6 +177,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     return {
         'page_mode': page_mode,
+        'evaluation_issues': evaluation_issues,
         'active_filter_count': active_filter_count,
         'filters': filters,
         'filter_options': {
@@ -241,7 +245,9 @@ def _finalize_recommendation_findings(findings: list[dict[str, Any]]) -> list[di
     return normalized
 
 
-def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _build_recommendation_findings(
+    catalog: list[dict[str, Any]], *, evidence_issues: list[str] | None = None,
+) -> list[dict[str, Any]]:
     """Evaluate currently available catalog rules into actionable findings.
 
     Catalog remains the rule registry. Recommendations should only show findings
@@ -252,20 +258,27 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     rules = {str(rule.get('rule_key')): rule for rule in catalog}
     findings: list[dict[str, Any]] = []
 
-    # Evaluate only rule families represented by the selected domain. Each
-    # evaluator still uses committed provider/domain-owned evidence.
+    def collect(label: str, evaluator: Any) -> None:
+        try:
+            findings.extend(evaluator(rules))
+        except SQLAlchemyError:
+            if evidence_issues is None:
+                raise  # Worker/reconciliation must never treat failed reads as no findings.
+            evidence_issues.append(label)
+
+    # Domain selection narrows evaluator execution before loading committed data.
     if any(key.startswith('kubernetes.') for key in rules):
-        findings.extend(_build_namespace_quota_findings(rules))
-        findings.extend(_build_workload_resource_governance_findings(rules))
-        findings.extend(_build_latest_image_findings(rules))
-        findings.extend(build_kubernetes_runtime_recommendation_findings(rules))
-        findings.extend(_build_storage_binding_findings(rules))
-        findings.extend(_build_tls_certificate_findings(rules))
-        findings.extend(build_tenant_governance_recommendation_findings(rules))
+        collect('Kubernetes Namespace', _build_namespace_quota_findings)
+        collect('Kubernetes Workload Governance', _build_workload_resource_governance_findings)
+        collect('Kubernetes Image', _build_latest_image_findings)
+        collect('Kubernetes Runtime', build_kubernetes_runtime_recommendation_findings)
+        collect('Kubernetes Storage Binding', _build_storage_binding_findings)
+        collect('Kubernetes TLS', _build_tls_certificate_findings)
+        collect('Tenant Governance', build_tenant_governance_recommendation_findings)
     if any(key.startswith('object_storage.') for key in rules):
-        findings.extend(build_object_storage_recommendation_findings(rules))
+        collect('Object Storage', build_object_storage_recommendation_findings)
     if any(key.startswith('registry.') for key in rules):
-        findings.extend(build_registry_recommendation_findings(rules))
+        collect('Artifact Registry', build_registry_recommendation_findings)
 
     return _finalize_recommendation_findings(findings)
 
@@ -287,6 +300,7 @@ def get_active_recommendation_findings(
     asset_key: str | None = None,
     limit: int | None = None,
     rule_keys: set[str] | None = None,
+    evidence_issues: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Return active catalog-backed findings for reusable product surfaces.
 
@@ -302,7 +316,7 @@ def get_active_recommendation_findings(
     if rule_keys is not None:
         catalog = [rule for rule in catalog if str(rule.get('rule_key')) in rule_keys]
 
-    findings = _build_recommendation_findings(catalog)
+    findings = _build_recommendation_findings(catalog, evidence_issues=evidence_issues)
 
     selected_asset = clean(asset_key)
     if selected_asset:
@@ -352,14 +366,23 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
         return []
 
     try:
-        from app.models import TLSCertificateInventory
+        from app.models import TLSCertificateCollectionState, TLSCertificateInventory
 
     except ImportError:
         return []
 
     try:
+        from datetime import UTC, datetime, timedelta
+
+        cutoff = datetime.now(UTC) - timedelta(hours=24)
         rows = (
-            TLSCertificateInventory.query.filter(
+            TLSCertificateInventory.query.join(
+                TLSCertificateCollectionState,
+                TLSCertificateCollectionState.cluster_id == TLSCertificateInventory.cluster_id,
+            ).filter(
+                TLSCertificateInventory.collected_at >= cutoff,
+                TLSCertificateCollectionState.collected_at >= cutoff,
+            ).filter(
                 TLSCertificateInventory.status.in_(['expired', 'critical', 'warning', 'invalid'])
             )
             .order_by(
@@ -371,7 +394,7 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
             .all()
         )
     except SQLAlchemyError:
-        return []
+        raise
 
     cluster_names = _cluster_name_map({str(row.cluster_id) for row in rows})
     findings: list[dict[str, Any]] = []
@@ -605,6 +628,19 @@ def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[s
     )
 
 
+def classify_recommendation_readiness(
+    *, total: int, recent: int, issues: list[str], has_findings: bool,
+) -> str:
+    """Missing observations or evaluator failure never imply a healthy empty set."""
+    if issues:
+        return 'partial' if has_findings else 'unavailable'
+    if total == 0:
+        return 'not_collected'
+    if recent < total:
+        return 'partial'
+    return 'baseline_recent'
+
+
 def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = 'recommendations') -> dict[str, Any]:
     payload = _base_payload(args, page_mode=page_mode)
     catalog = payload['catalog']
@@ -619,5 +655,28 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
             imported=sum(1 for rule in catalog if rule.get('status') == 'imported_signal'),
         )
     else:
+        # The existing Intelligence Overview provides a conservative committed
+        # 24-hour Inventory baseline, *not* evaluator/scan completeness.
+        # Import here avoids a module import cycle with Overview's service consumer.
+        from app.intelligence.overview import _evidence_coverage
+
+        inventory = _evidence_coverage()
+        domain = clean(payload['filters'].get('domain'))
+        scopes = (domain,) if domain in ('kubernetes', 'object_storage', 'registry') else (
+            'kubernetes', 'object_storage', 'registry',
+        ) if not domain else ()
+        total = sum(inventory[key]['total'] for key in scopes)
+        recent = sum(inventory[key]['recent'] for key in scopes)
+        issues = payload['evaluation_issues']
+        state = classify_recommendation_readiness(
+            total=total, recent=recent, issues=issues, has_findings=bool(findings),
+        )
+        payload['evidence_readiness'] = {
+            'status': state,
+            'total_sources': total,
+            'recent_sources': recent,
+            'issues': issues,
+            'basis': '24-hour committed Inventory baseline; evaluator and scan coverage remain source-qualified',
+        }
         _apply_recommendation_payload(payload, findings)
     return payload

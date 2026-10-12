@@ -4,7 +4,6 @@ import hashlib
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import AuditEvent
 from app.models.tenant import (
@@ -596,17 +595,15 @@ def build_tenant_governance_recommendation_findings(
 ) -> list[dict[str, Any]]:
     """Evaluate Tenant Governance only from committed KAORI evidence."""
 
-    try:
-        return [
-            *_credential_findings(rules),
-            *_access_findings(rules),
-            *_access_declaration_findings(rules),
-            *_namespace_findings(rules),
-            *_managed_resource_findings(rules),
-            *_provider_findings(rules),
-            *_capacity_findings(rules),
-            *_audit_findings(rules),
-            *_policy_event_findings(rules),
-        ]
-    except SQLAlchemyError:
-        return []
+    # Historical audit/policy decision events are retained in Audit evidence,
+    # not projected indefinitely as currently actionable source conditions.
+    # Let SQL errors propagate so callers cannot interpret evaluator failure as no risk.
+    return [
+        *_credential_findings(rules),
+        *_access_findings(rules),
+        *_access_declaration_findings(rules),
+        *_namespace_findings(rules),
+        *_managed_resource_findings(rules),
+        *_provider_findings(rules),
+        *_capacity_findings(rules),
+    ]
