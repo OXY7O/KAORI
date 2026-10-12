@@ -12,26 +12,50 @@ KAORI uses one canonical variable inventory with explicit ownership by runtime. 
 
 The two local modes have separate Compose project names and persistent volumes. Neither local `.env` is a production/server authority. The server has no single monolithic runtime `.env` file.
 
-## Local development PostgreSQL role boundary (#1405)
+## Local DevContainer three-role PostgreSQL first-run (#1427, follows #1405)
 
-In `kaori-dev`, `POSTGRES_DB` and `POSTGRES_USER` continue to define
-the **existing database and privileged bootstrap owner**. After a
-non-owner `kaori_runtime` login is explicitly provisioned with immutable
-ledger SELECT/INSERT-only rights, developers may set
-`KAORI_DEV_RUNTIME_DATABASE_URL` in the private root `.env`.
-Only the DevContainer Compose override reads this optional key; it
-replaces `DATABASE_URL` for the workspace, every Celery worker and Beat.
-If unset, the legacy owner URL remains for backward-compatible setup but
-**must not pass** the Capsule write-once ledger runtime gate.
+The local `kaori-dev` Compose project remains an automatically started
+VS Code DevContainer. Its host `initializeCommand` prepares separate
+private PostgreSQL secrets in
+`~/.config/kaori/devcontainer/postgres-bootstrap.env` and
+`postgres-migrate.env` **outside** the project and its bind-mounted
+workspace. Neither the initial PostgreSQL superuser password nor the
+migration password belongs in root `.env`, which holds the canonical
+non-owner `DATABASE_URL` for all application/web/worker/Beat processes.
 
-`KAORI_DB_MIGRATION_URL` is a **transient shell-only owner connection** for
-`scripts/init_db.sh` after the runtime cutover. Never persist it in the
-root `.env` consumed by workers. Owner/admin credentials and schema DDL
-are not authorized for the runtime role. This feature is **not** the
-server/staging role contract; governed deployment secrets remain on their
-existing separate authority. See
-[`DevContainer role cutover`](../operations/devcontainer-postgres-runtime-role.md)
-for existing-data preservation, backup, privileges, verification and rollback.
+An empty local PostgreSQL volume initializes `postgres` as bootstrap
+superuser, `kaori_migrator` as application-schema owner with non-superuser
+DDL authority, and `kaori_runtime` as a non-owner login with only initial
+CONNECT/USAGE. **Opening DevContainer never runs migrations or creates
+the application administrator automatically.** The existing
+`Database Setup Required` screen displays before migration; the developer
+intentionally runs the WSL-host `db-bootstrap` one-off service to migrate,
+refresh immutable evidence ledger grants and create the first KAORI admin.
+
+For existing database upgrades, the same service supports
+`--upgrade-only` without administrator recreation. The former
+`KAORI_DEV_RUNTIME_DATABASE_URL` owner fallback is removed from active
+DevContainer Compose. Do not confuse local `postgres` superuser with
+application `kaori_runtime`, or run `flask db upgrade` with runtime
+credentials. The previous data-preserving #1405 owner cutover runbook is
+historical and is **not** the procedure to reset an existing cluster.
+
+See [DevContainer first-run and verification](../operations/devcontainer-postgres-first-run.md)
+and [historical owner-role cutover](../operations/devcontainer-postgres-runtime-role.md).
+
+### Production database authority is separate
+
+Current `deploy/server` behavior is still bundled PostgreSQL + Redis
+with migration using existing application environment. The approved
+production **target** splits provisioner, migration-only DDL authority,
+and restricted runtime for bundled or DBA-external PostgreSQL. DBA-managed
+deployments may provide only a restricted runtime login and execute
+reviewed SQL changes themselves; no DBA password enters Flask/worker
+environments. The external server adapter and DBA SQL migration package
+are NOT production-ready just because this DevContainer flow exists.
+See [DBA migration contract](../operations/postgres-dba-migration-contract.md)
+and implementation authority #1439/#1440. Existing release/rollback
+gates and UAT continue to apply.
 
 ## Environment authorities
 
