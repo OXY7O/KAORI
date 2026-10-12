@@ -5,6 +5,7 @@ from typing import Any
 
 from werkzeug.datastructures import MultiDict
 
+from app.common.alert_case_source_state import is_active_alert_case
 from app.common.pagination import paginate_sequence
 from app.integrations.delivery.notification_channels.service import notification_channel_summary
 from app.intelligence.alert_intelligence.lifecycle import active_delivery_silence
@@ -62,7 +63,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
 
     scoped_cases = [] if scope_invalid else _case_rows(domain=domain, asset_key=selected_asset_key)
     active_cases = [
-        row for row in scoped_cases if row.source_state in {'firing', 'unknown'} and row.workflow_state != 'closed'
+        row for row in scoped_cases if is_active_alert_case(row)
     ]
     history_cases = [row for row in scoped_cases if row.source_state == 'resolved' or row.workflow_state == 'closed']
     filtered_active = _filter_cases(
