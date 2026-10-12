@@ -75,7 +75,7 @@
                        hx-indicator="#alert-operations-active-loading"
                        class="{{ table_ui.action_classes() }}">Acknowledged</a>
                     <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, source_state='unknown') }}"
-                       hx-get="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity='unknown') }}"
+                       hx-get="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, source_state='unknown') }}"
                        hx-target="#alert-operations-active-registry"
                        hx-select="#alert-operations-active-registry"
                        hx-swap="outerHTML"
