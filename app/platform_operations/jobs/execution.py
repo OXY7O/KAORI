@@ -79,7 +79,7 @@ class JobExecutionContext:
     ) -> None:
         if is_cancel_requested(self._task_id()):
             raise JobCancellationRequested('The job was canceled by an operator.')
-        update_job_progress(
+        job = update_job_progress(
             self._task_id(),
             current=current,
             total=total,
@@ -88,6 +88,14 @@ class JobExecutionContext:
             stage=stage,
             target=target,
         )
+        if job is None:
+            raise JobExecutionUnavailable('Canonical job was not found at the progress checkpoint.')
+        if job.status == 'cancel_requested':
+            raise JobCancellationRequested('The job was canceled by an operator.')
+        if job.is_terminal:
+            raise JobExecutionUnavailable(
+                f'Canonical job {job.public_id} is already terminal with status {job.status}.'
+            )
 
     def succeed(
         self,
