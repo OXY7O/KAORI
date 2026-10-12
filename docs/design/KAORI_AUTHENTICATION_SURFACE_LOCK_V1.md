@@ -90,8 +90,7 @@ reintroduce either layout. The operational page should explain one next
 action clearly instead of assigning equal visual weight to many panels.
 
 **100% zoom density correction (#744, real-browser review):** retain
-the command-first composition and **one quiet, neutral white content
-surface** (`bg-surface-card`, `border-outline-subtle`, `shadow-sm`),
+the command-first composition and **one quiet, neutral white content surface** (`bg-surface-card`, `border-outline-subtle`, `shadow-sm`),
 but restrict the workspace to `max-w-4xl` with compact responsive
 padding. The prior `max-w-6xl` was rejected as oversized in an actual
 100% browser screenshot even though its appearance at 80% zoom was
