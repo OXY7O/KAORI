@@ -110,3 +110,7 @@ Raw S3 exceptions, access keys, secret keys, tokens, and credential values are n
 ## Notification delivery
 
 Scheduled Reports use Integrations → Notification Channels. Schedules store selected channel IDs only; provider credentials and transport behavior remain owned by the shared notification integration. Legacy report-specific Telegram environment credentials are not supported.
+
+### Reports Overview bounded storage read path (#1532)
+
+The landing page reads selected-backend shared storage readiness and never walks the local artifact file tree. Local readiness uses inexpensive path existence/writability checks; filesystem count/size scanning remains an opt-in diagnostic operation in the authorized Storage workspace. S3 readiness remains worker/Redis authoritative under the existing monitor and fallback guardrails. No provider mutation or new state cache is introduced.
