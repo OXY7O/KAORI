@@ -5,7 +5,25 @@
   (icon, title, description) tuples. The component owns step geometry and
   connectors. It never collapses or hides the workflow.
 #}
-{% macro render(rows, aria_label='Operational Flow') -%}
+{# 'inline' exposes a semantic unboxed step rail; default peer boxes unchanged. #}
+{% macro render(rows, aria_label='Operational Flow', variant='boxed') -%}
+    {% if variant == 'inline' %}
+        <div class="grid gap-4 sm:grid-cols-3 sm:gap-6" role="list" aria-label="{{ aria_label }}">
+            {% for row in rows %}
+                {% for icon, title, detail in row %}
+                    <article class="min-w-0 border-l-2 border-outline-default pl-4 sm:border-l-0 sm:border-t-2 sm:pl-0 sm:pt-3"
+                             role="listitem">
+                        <div class="mb-2 flex items-center gap-2 text-kaori-primary">
+                            <span class="text-xs font-semibold">0{{ loop.index }}</span>
+                            <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                        </div>
+                        <p class="text-xs font-semibold leading-5 text-content-primary">{{ title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ detail }}</p>
+                    </article>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    {% else %}
     <div class="space-y-2" role="list" aria-label="{{ aria_label }}">
         {% for row in rows %}
             {% set row_classes = 'sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' if row|length == 2 else 'sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)]' %}
@@ -39,4 +57,5 @@
             {% endif %}
         {% endfor %}
     </div>
+    {% endif %}
 {%- endmacro %}
