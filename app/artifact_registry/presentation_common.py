@@ -706,6 +706,7 @@ def _latest_registry_analytics(
         )
         .filter(
             RegistryAnalyticsSnapshot.integration_instance_id.in_(provider_ids),
+            RegistryAnalyticsSnapshot.time_range == 'current',
             RegistryAnalyticsSnapshot.status == 'ready',
         )
         .subquery()
