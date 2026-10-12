@@ -72,7 +72,8 @@ def test_schedule_automation_posture_is_state_aware_for_storage_and_worker() -> 
     assert 'Artifact Storage Needs Review' in template
     assert "url_for('reports.storage')" in template
     assert "'automation_posture': get_automation_posture(storage_context, worker_context)" in service
-    assert 'def get_automation_posture(' in service
+    assert 'from app.reports.schedules.readiness import get_automation_posture' in service
+    assert 'def get_automation_posture(' in read(ROOT / 'app/reports/schedules/readiness.py')
     for label in [
         'Automation Ready',
         'Ready for Unattended Execution',
