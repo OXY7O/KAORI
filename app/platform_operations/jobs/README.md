@@ -90,6 +90,10 @@ A definition may require an additional domain permission. Inventory Sync require
 
 Celery Beat runs `app.platform_operations.jobs.tasks.dispatch_scheduled_jobs` every minute on the maintenance queue. The task claims due `job_policies` rows with `FOR UPDATE SKIP LOCKED`, advances the next due time, and dispatches through the registry. Policy changes do not require a Beat restart.
 
+A pre-dispatch failure marks the claimed policy failed and makes it eligible for a **bounded five-minute retry**, but only if no concurrent policy edit replaced the original claim. This does not bypass the canonical active-job deduplication guard or the definition's source-owned freshness contract. When the job has already been dispatched, the automatic queued AuditEvent and JobPolicy outcome are persisted in one transaction. If evidence persistence fails, Jobs records a best-effort `evidence_failed`/ **Dispatch Evidence Incomplete** attention state without automatically dispatching a duplicate; operators should review the committed JobExecution before further action.
+
+Cancellation and recovery use the same committed job state. If Celery cannot accept a revoke, KAORI retains a pending cancellation and its deduplication slot; reconciliation continues with other jobs and retries the pending cancellation later. A late worker progress callback cannot mutate terminal or cancel-requested JobExecution evidence.
+
 ## Analytics Definitions
 
 The registry includes `analytics.materialize`, `analytics.forecast.materialize`, `object_storage.analytics.materialize`, and `object_storage.forecast.materialize`. These definitions use database-backed `JobPolicy`, canonical `JobExecution`, worker-specific queues, shared deduplication, and Activity Audit records for automatic runs. Kubernetes and Object Storage operational analytics use the `analytics-batch` queue, while both forecast definitions use the dedicated `forecasting` queue and retain separate domain artifacts and eligibility contracts. Scheduled jobs have no user subscriber and therefore do not produce notification-center items or toasts.
