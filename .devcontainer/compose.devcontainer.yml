@@ -5,7 +5,34 @@ name: kaori-dev
 # through transient KAORI_DB_MIGRATION_URL (never a worker/Beat environment).
 # Database bootstrap credentials POSTGRES_* are separate from app runtime.
 
+
 services:
+  # One-shot: the bundled PostgreSQL owner creates/checks only the restricted
+  # LOGIN on the first empty cluster. It never runs migration or alters data.
+  db-role-bootstrap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      APP_ENV: development
+      DATABASE_URL: ${DATABASE_URL:?Set a non-owner DATABASE_URL in the private DevContainer .env}
+      POSTGRES_DB: ${POSTGRES_DB:-kaori}
+      POSTGRES_USER: ${POSTGRES_USER:-kaori}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set private PostgreSQL bootstrap password}
+    command:
+      - python
+      - -m
+      - scripts.devcontainer.bootstrap_runtime_role
+    volumes:
+      - .:/workspace/kaori:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
   workspace:
     build:
       context: .
@@ -41,6 +68,8 @@ services:
       - kaori_instance_data:/workspace/kaori/instance
       - kaori_node_modules:/workspace/kaori/node_modules
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -84,6 +113,8 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -125,6 +156,8 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -165,6 +198,8 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -204,6 +239,8 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -243,6 +280,8 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -282,6 +321,8 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -322,6 +363,8 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -361,6 +404,8 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -400,6 +445,8 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -439,6 +486,8 @@ services:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
     depends_on:
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -481,6 +530,8 @@ services:
     depends_on:
       workspace:
         condition: service_started
+      db-role-bootstrap:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
