@@ -6,19 +6,33 @@
 
 ## Placement and boundaries
 
-`Artifact Registry → Runtime Usage → Dependency Topology` is a read-only,
-artifact-centric graph over the existing committed RegistryWorkloadBinding
-materialization. It is **not** an additional provider API, relationship
-database, scanner, or Intelligence recommendation lifecycle.
+**Artifact Registry → Runtime** is a sidebar capability. Its canonical
+level-three Integrated Workspace Tabs appear **above the Hero**, using the
+existing `capability_navigation` injection from `layouts/app.html` and
+`components/workspace_tabs.html::render_navigation`:
 
-- `/artifact-registry/runtime` remains the canonical searchable Runtime
-  Bindings detail registry.
-- `/artifact-registry/runtime/topology` owns the Adaptive Explorer.
-- `/artifact-registry/runtime/topology/data` returns bounded JSON with the
-  existing `artifact_registry.view` permission and the Runtime Usage filter
-  authority.
-- Graph and Resource List present the **same bounded query slice**, and the
-  inspector links back to the canonical Runtime Bindings view.
+1. **Overview** — `/artifact-registry/runtime/overview`; default sidebar
+   destination, committed correlation posture, freshness, evidence coverage
+   and links to detailed explorations.
+2. **Runtime Usage** — `/artifact-registry/runtime`; existing searchable
+   Runtime Bindings table/filter/detail registry, preserved for backwards
+   compatibility with deep links and other domain handoffs.
+3. **Topology** — `/artifact-registry/runtime/topology`; read-only
+   artifact-centric Adaptive Explorer graph/list/inspector.
+
+The Runtime menu is named **Runtime**, not `Runtime Usage`. Tab labels are
+exactly **Overview**, **Runtime Usage**, **Topology**. They are page-level views,
+not an additional sidebar level or an inner graph tab family. The
+`/artifact-registry/runtime/topology/data` endpoint retains its existing
+`artifact_registry.view` permission and read-only filters. Tab navigation
+preserves supported URL scope filters while not carrying list pagination or
+graph-only display state.
+
+The topology is a read-only, artifact-centric graph over the existing
+committed RegistryWorkloadBinding materialization. It is **not** an additional
+provider API, relationship database, scanner, or Intelligence recommendation
+lifecycle. Graph and Resource List present the **same bounded query slice**,
+and the inspector links back to the canonical Runtime Bindings view.
 
 ## Relationship model
 
