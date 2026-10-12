@@ -4,7 +4,6 @@ import hashlib
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import AuditEvent
 from app.models.tenant import (
