@@ -11,9 +11,7 @@ from app.common.kubernetes_secrets import scrub_secret_payload
 from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     connection_for_cluster,
-    tls_policy_for_cluster,
 )
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.kubernetes.governance.tls_certificates.certificate import (
     TLSValidityPolicy,
     decode_secret_data,
@@ -193,15 +191,14 @@ def collect_ingress_tls_usage(cluster: Cluster) -> dict[tuple[str, str], dict[st
                 )
                 current['ingress_hosts'].extend(usage['hosts'])
 
-    with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-        networking_api = build_kubernetes_client(cluster).networking_api()
-        _collect_pages(
-            lambda token: networking_api.list_ingress_for_all_namespaces(
-                limit=_TLS_PAGE_SIZE, _continue=token, _request_timeout=_TLS_REQUEST_TIMEOUT_SECONDS,
-            ),
-            consume_page,
-            kind='Ingress',
-        )
+    networking_api = build_kubernetes_client(cluster).networking_api()
+    _collect_pages(
+        lambda token: networking_api.list_ingress_for_all_namespaces(
+            limit=_TLS_PAGE_SIZE, _continue=token, _request_timeout=_TLS_REQUEST_TIMEOUT_SECONDS,
+        ),
+        consume_page,
+        kind='Ingress',
+    )
 
     for value in usage_map.values():
         value['ingress_hosts'] = sorted({host for host in value['ingress_hosts'] if host})
@@ -380,16 +377,15 @@ def collect_tls_certificate_batch(
         )
 
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            core_api = build_kubernetes_client(cluster).core_api()
-            _collect_pages(
-                lambda token: core_api.list_secret_for_all_namespaces(
-                    limit=_TLS_PAGE_SIZE, _continue=token, _request_timeout=_TLS_REQUEST_TIMEOUT_SECONDS,
-                ),
-                consume_page,
-                kind='Secret',
-                scrub_secrets=True,
-            )
+        core_api = build_kubernetes_client(cluster).core_api()
+        _collect_pages(
+            lambda token: core_api.list_secret_for_all_namespaces(
+                limit=_TLS_PAGE_SIZE, _continue=token, _request_timeout=_TLS_REQUEST_TIMEOUT_SECONDS,
+            ),
+            consume_page,
+            kind='Secret',
+            scrub_secrets=True,
+        )
     except Exception as exc:
         secret_status, secret_detail = _collection_failure(exc)
         return TLSCollectionBatch(
