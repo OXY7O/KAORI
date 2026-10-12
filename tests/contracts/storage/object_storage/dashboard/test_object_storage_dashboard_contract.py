@@ -271,6 +271,41 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
     assert "'requests': request_items" in presentation
 
 
+def test_object_storage_forecast_uses_kubernetes_current_to_projected_comparison() -> None:
+    forecast = read('app/templates/storage/object_storage/dashboard/partials/_forecast_risk.html')
+    kubernetes_forecast = read('app/templates/kubernetes/dashboard/partials/_forecast_risk.html')
+    presentation = read('app/storage/object_storage/dashboard/presentation.py')
+
+    for token in (
+        'components/resource_series_legend.html',
+        "resource_series_legend.swatch('storage')",
+        'sm:col-span-2',
+        'data-lucide="arrow-right"',
+        '>Current</p>',
+        '>Projected</p>',
+        'dashboard.forecast.current_percent_display',
+        'dashboard.forecast.projected_percent_display',
+        'dashboard.forecast.current_display',
+        'dashboard.forecast.projected_30d_display',
+        'dashboard.forecast.growth_per_day_display',
+        'dashboard.forecast.days_to_capacity_display',
+        'dashboard.forecast.sample_count',
+        "else 'Trend Unavailable'",
+    ):
+        assert token in forecast
+    assert 'data-lucide="arrow-right"' in kubernetes_forecast
+    assert 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' in kubernetes_forecast
+    assert 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' in forecast
+    assert "('Current Usage'," not in forecast
+    assert "('Projected 30d'," not in forecast
+    assert "'current_percent_display': format_percent(current_percent)" in presentation
+    assert "'projected_percent_display': format_percent(projected_percent)" in presentation
+    assert "'current_display': format_bytes(current)" in presentation
+    assert "'projected_30d_display': format_bytes(projected)" in presentation
+    assert "if not dashboard.forecast.available" in forecast
+    assert 'Forecast Conclusion' in forecast
+
+
 def test_signals_and_reporting_match_kubernetes_dashboard_composition() -> None:
     signals = read('app/templates/storage/object_storage/dashboard/partials/_signals.html')
     alerts = read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html')
