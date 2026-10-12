@@ -162,6 +162,49 @@ def read_latest_known_analytics_snapshot(
     return payload, state
 
 
+class SnapshotSupersededError(RuntimeError):
+    """An older or duplicate worker lost committed snapshot ownership."""
+
+
+def _ensure_new_attempt_is_current(previous_id: int | None, requested_id: int | None) -> None:
+    if previous_id is not None and (requested_id is None or requested_id < previous_id):
+        raise SnapshotSupersededError(
+            'A newer JobExecution already owns this Object Storage dataset snapshot.'
+        )
+
+
+def _verify_snapshot_claim(
+    snapshot: ObjectStorageAnalyticsSnapshot | ObjectStorageForecastSnapshot,
+    *,
+    job_execution_id: int | None,
+    claimed_at: datetime,
+) -> None:
+    if (
+        snapshot.status != 'pending'
+        or snapshot.last_job_execution_id != job_execution_id
+        or _aware(snapshot.last_attempt_at) != _aware(claimed_at)
+    ):
+        raise SnapshotSupersededError(
+            'This Object Storage materialization attempt was superseded; committed evidence is unchanged.'
+        )
+
+
+def _locked_analytics_snapshot(*, system_id: str, time_range: str) -> ObjectStorageAnalyticsSnapshot:
+    return (
+        ObjectStorageAnalyticsSnapshot.query.filter_by(
+            object_storage_system_id=str(system_id), time_range=time_range
+        ).with_for_update().populate_existing().one()
+    )
+
+
+def _locked_forecast_snapshot(*, system_id: str, history_window: str) -> ObjectStorageForecastSnapshot:
+    return (
+        ObjectStorageForecastSnapshot.query.filter_by(
+            object_storage_system_id=str(system_id), history_window=history_window, method=FORECAST_METHOD
+        ).with_for_update().populate_existing().one()
+    )
+
+
 def mark_analytics_pending(
     *,
     system_id: str,
@@ -170,27 +213,35 @@ def mark_analytics_pending(
     stale_grace_minutes: int,
     job_execution_id: int | None,
 ) -> ObjectStorageAnalyticsSnapshot:
-    snapshot = get_analytics_snapshot(system_id=system_id, time_range=time_range)
-    if snapshot is None:
-        snapshot = ObjectStorageAnalyticsSnapshot()
-        snapshot.object_storage_system_id = str(system_id)
-        snapshot.time_range = time_range
-        db.session.add(snapshot)
-    snapshot.status = 'pending'
-    snapshot.last_attempt_at = datetime.now(UTC)
-    snapshot.last_error = None
-    snapshot.freshness_minutes = max(int(freshness_minutes), 5)
-    snapshot.stale_grace_minutes = max(int(stale_grace_minutes), 15)
-    snapshot.last_job_execution_id = job_execution_id
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        snapshot = ObjectStorageAnalyticsSnapshot.query.filter_by(
-            object_storage_system_id=str(system_id),
-            time_range=time_range,
-        ).one()
-    return snapshot
+    # The claim is committed *before* source I/O. A later attempt may take
+    # ownership, but the older worker can no longer commit after it finishes.
+    for attempt in range(2):
+        snapshot = (
+            ObjectStorageAnalyticsSnapshot.query.filter_by(
+                object_storage_system_id=str(system_id), time_range=time_range
+            ).with_for_update().populate_existing().first()
+        )
+        if snapshot is None:
+            snapshot = ObjectStorageAnalyticsSnapshot()
+            snapshot.object_storage_system_id = str(system_id)
+            snapshot.time_range = time_range
+            db.session.add(snapshot)
+        else:
+            _ensure_new_attempt_is_current(snapshot.last_job_execution_id, job_execution_id)
+        snapshot.status = 'pending'
+        snapshot.last_attempt_at = datetime.now(UTC)
+        snapshot.last_error = None
+        snapshot.freshness_minutes = max(int(freshness_minutes), 5)
+        snapshot.stale_grace_minutes = max(int(stale_grace_minutes), 15)
+        snapshot.last_job_execution_id = job_execution_id
+        try:
+            db.session.commit()
+            return snapshot
+        except IntegrityError:
+            db.session.rollback()
+            if attempt:
+                raise
+    raise RuntimeError('Object Storage analytics snapshot claim could not be established.')
 
 
 def store_analytics_snapshot(
