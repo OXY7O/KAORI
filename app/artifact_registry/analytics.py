@@ -5,6 +5,10 @@ from typing import Any
 
 from sqlalchemy import func, select
 
+from app.artifact_registry.analytics_history import (
+    REGISTRY_HISTORY_WINDOWS,
+    collect_registry_metric_history,
+)
 from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.extensions.db import db
 from app.integrations.observability.alert_source.providers.alertmanager.application.consumer import (
@@ -335,6 +339,7 @@ def _previous_snapshot(identity_id: int) -> RegistryAnalyticsSnapshot | None:
     return (
         RegistryAnalyticsSnapshot.query.filter_by(
             integration_instance_id=identity_id,
+            time_range='current',
             status='ready',
         )
         .order_by(RegistryAnalyticsSnapshot.generated_at.desc(), RegistryAnalyticsSnapshot.id.desc())
@@ -511,8 +516,10 @@ def _growth_payload(
         previous.payload_json.get('inventory') if previous and isinstance(previous.payload_json, dict) else {}
     )
     elapsed_days = _days_between(previous, generated_at)
-    artifact_delta = artifact_count - int((previous_inventory or {}).get('artifacts') or artifact_count)
-    size_delta = total_size - int((previous_inventory or {}).get('total_size_bytes') or total_size)
+    old_artifacts = (previous_inventory or {}).get('artifacts')
+    old_size = (previous_inventory or {}).get('total_size_bytes')
+    artifact_delta = artifact_count - int(old_artifacts) if old_artifacts is not None else 0
+    size_delta = total_size - int(old_size) if old_size is not None else 0
     return (
         {
             'elapsed_days': elapsed_days,
@@ -567,6 +574,7 @@ def materialize_registry_analytics(
     identity: IntegrationInstance,
     *,
     job_execution_id: int | None = None,
+    time_range: str = 'current',
     freshness_minutes: int = 15,
     stale_grace_minutes: int = 1440,
 ) -> RegistryAnalyticsSnapshot:
@@ -579,6 +587,8 @@ def materialize_registry_analytics(
     ):
         raise ValueError('Registry analytics requires an active and enabled Registry source.')
 
+    if time_range != 'current' and time_range not in REGISTRY_HISTORY_WINDOWS:
+        raise ValueError('Unrecognized Registry history interval.')
     generated_at = datetime.now(UTC)
     previous = _previous_snapshot(identity.id)
     domain = _registry_bounded_state(identity.id, generated_at)
@@ -590,9 +600,22 @@ def materialize_registry_analytics(
         artifact_count=int(inventory['artifacts']),
         total_size=total_size,
     )
-    metrics = _metrics_evidence(identity)
+    if time_range == 'current':
+        metrics = _metrics_evidence(identity)
+        history: dict[str, Any] | None = None
+        prior_usage = _previous_project_usage(previous)
+    else:
+        history, metrics, measured_growth = collect_registry_metric_history(
+            identity, time_range, now=generated_at
+        )
+        growth = measured_growth
+        elapsed_days = measured_growth['elapsed_days']
+        prior_usage = {
+            project: point['first']
+            for project, point in history.get('series', {}).get('project_usage_bytes', {}).items()
+        }
     alerts = _alert_evidence(identity)
-    project_forecasts = _project_forecasts(metrics, _previous_project_usage(previous), elapsed_days)
+    project_forecasts = _project_forecasts(metrics, prior_usage, elapsed_days)
     payload = {
         **domain,
         'growth': growth,
@@ -600,6 +623,8 @@ def materialize_registry_analytics(
         'metrics': metrics,
         'alerts': alerts,
     }
+    if history is not None:
+        payload['history'] = history
     # An Inventory refresh racing with materialization must not bless the
     # earlier generation as current. Preserve the previously committed snapshot.
     inventory_state = db.session.get(RegistryCollectionState, int(identity.id))
@@ -616,7 +641,7 @@ def materialize_registry_analytics(
 
     snapshot = RegistryAnalyticsSnapshot()
     snapshot.integration_instance_id = identity.id
-    snapshot.time_range = 'current'
+    snapshot.time_range = time_range
     snapshot.payload_json = payload
     snapshot.status = 'ready'
     snapshot.generated_at = generated_at
