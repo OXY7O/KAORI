@@ -26,6 +26,7 @@ if (canvas && form) {
     const edgeLabelsToggle = $('registry-topology-edge-labels')
     const layoutSelect = $('registry-topology-layout')
     const resourceToggles = [...document.querySelectorAll('[data-registry-topology-type]')]
+    const relationshipToggles = [...document.querySelectorAll('[data-registry-topology-relationship]')]
     const scopeSummary = $('registry-topology-scope-summary')
     const close = $('registry-topology-inspector-close')
     const previous = $('registry-topology-prev')
@@ -464,9 +465,12 @@ if (canvas && form) {
     const applyVisibility = () => {
         if (!cy) return
         const enabled = Object.fromEntries(resourceToggles.map((toggle) => [toggle.dataset.registryTopologyType, toggle.checked]))
+        const relationships = Object.fromEntries(relationshipToggles.map((toggle) => [toggle.dataset.registryTopologyRelationship, toggle.checked]))
         cy.nodes().forEach((node) => node.style('display', enabled[node.data('type')] ? 'element' : 'none'))
         cy.edges().forEach((edge) => {
-            const included = enabled[edge.source().data('type')] && enabled[edge.target().data('type')]
+            const included = enabled[edge.source().data('type')] &&
+                enabled[edge.target().data('type')] &&
+                relationships[edge.data('relationship')]
             edge.style('display', included ? 'element' : 'none')
         })
     }
@@ -569,6 +573,11 @@ if (canvas && form) {
             })
             if (!response.ok) throw new Error(`Graph request failed (HTTP ${response.status})`)
             payload = await response.json()
+            for (const typeToggle of resourceToggles) {
+                const count = payload.nodes.filter((node) => node.data.type === typeToggle.dataset.registryTopologyType).length
+                const countNode = document.querySelector(`[data-registry-topology-type-count="${typeToggle.dataset.registryTopologyType}"]`)
+                if (countNode) countNode.textContent = String(count)
+            }
             listPage = 1
             renderList()
             const summary = payload.summary
@@ -639,6 +648,7 @@ if (canvas && form) {
         window.history.replaceState({}, '', url)
         updateDisplay(true)
     })
+    relationshipToggles.forEach((toggle) => toggle.addEventListener('change', () => updateDisplay(true)))
     resourceToggles.forEach((toggle) => toggle.addEventListener('change', () => {
         if (!cy) return
         applyVisibility()
