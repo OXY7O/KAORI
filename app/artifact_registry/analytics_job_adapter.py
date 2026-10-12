@@ -37,8 +37,11 @@ def dispatch_registry_analytics_materialization(
     trigger_type: str,
     parameters: dict[str, Any] | None = None,
 ) -> RegisteredJobDispatchResult:
-    del parameters
     from app.artifact_registry.analytics_tasks import materialize_registry_analytics_task
+
+    time_range = str((parameters or {}).get('snapshot_window') or 'current')
+    if time_range not in _ANALYTICS_SNAPSHOT_WINDOWS:
+        raise ValueError('Unsupported Registry Analytics history window.')
 
     ids = _eligible_ids()
     if not ids:
@@ -51,6 +54,7 @@ def dispatch_registry_analytics_materialization(
         task_kwargs={
             'integration_instance_ids': ids,
             'requested_by_user_id': requested_by_user_id,
+            'time_range': time_range,
         },
         job_type='artifact_registry_analytics',
         operation=ARTIFACT_REGISTRY_ANALYTICS_MATERIALIZE_OPERATION,
@@ -60,10 +64,15 @@ def dispatch_registry_analytics_materialization(
         integration_type='registry',
         integration_instance_id=None,
         scope_type='registry_analytics_fleet',
-        scope_key='all',
-        resource_group='artifact-registry-analytics:global',
-        parameters={'scope': 'all'},
-        payload={'total_count': len(ids), 'targets': ids, 'trigger_type': trigger_type},
+        scope_key=f'all:{time_range}',
+        resource_group=f'artifact-registry-analytics:{time_range}',
+        parameters={'scope': 'all', 'snapshot_window': time_range},
+        payload={
+            'total_count': len(ids),
+            'targets': ids,
+            'trigger_type': trigger_type,
+            'time_range': time_range,
+        },
         max_attempts=3,
         dispatch_options=JobDispatchOptions(
             require_registered_worker=True,
@@ -159,13 +168,9 @@ def analytics_snapshot_matches_window(
     *,
     now: datetime | None = None,
 ) -> bool:
-    """A lookback limits the age of committed snapshot evidence, not provider measurements."""
-    lookback = _ANALYTICS_SNAPSHOT_WINDOWS[normalize_registry_analytics_window(window)]
-    if lookback is None:
-        return True
-    generated = snapshot.generated_at
-    aware = generated if generated.tzinfo is not None else generated.replace(tzinfo=UTC)
-    return aware >= (now or datetime.now(UTC)) - lookback
+    """A worker dataset's range must match the requested measured interval."""
+    del now
+    return snapshot.time_range == normalize_registry_analytics_window(window)
 
 
 ANALYTICS_JOB_KEY = 'artifact_registry.analytics.materialize'
@@ -262,11 +267,13 @@ def build_registry_analytics_readiness(
     )
 
     snapshots: list[RegistryAnalyticsSnapshot] = []
+    normalized_window = normalize_registry_analytics_window(snapshot_window)
     if eligible_ids:
         latest_ids = (
             RegistryAnalyticsSnapshot.query.with_entities(func.max(RegistryAnalyticsSnapshot.id))
             .filter(
                 RegistryAnalyticsSnapshot.status == 'ready',
+                RegistryAnalyticsSnapshot.time_range == normalized_window,
                 RegistryAnalyticsSnapshot.integration_instance_id.in_(eligible_ids),
             )
             .group_by(RegistryAnalyticsSnapshot.integration_instance_id)
@@ -276,9 +283,6 @@ def build_registry_analytics_readiness(
         if ids:
             snapshots = RegistryAnalyticsSnapshot.query.filter(RegistryAnalyticsSnapshot.id.in_(ids)).all()
     has_older_evidence = bool(snapshots)
-    snapshots = [
-        row for row in snapshots if analytics_snapshot_matches_window(row, snapshot_window)
-    ]
 
     from app.artifact_registry.presentation_common import _analytics_snapshot_view
 
@@ -291,15 +295,11 @@ def build_registry_analytics_readiness(
         covered_count=len(snapshots),
         current_count=len(current),
     )
-    if (
-        normalize_registry_analytics_window(snapshot_window) != 'current'
-        and has_older_evidence
-        and not snapshots
-    ):
+    if normalized_window != 'current' and not has_older_evidence and eligible_ids:
         label, tone, helper = (
-            'No Snapshots in Window',
-            'info',
-            'Previous committed snapshots exist, but none were generated within the selected lookback.',
+            'Historical Materialization Required',
+            'warning',
+            'No worker-materialized source range dataset is available for the requested interval.',
         )
     if active is not None:
         execution_label = 'Queued' if active.status == 'queued' else 'Collecting'
