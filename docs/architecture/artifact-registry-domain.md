@@ -755,3 +755,20 @@ Security workspace Sync Security Evidence is a fleet-wide canonical JobExecution
 A Registry provider with a successfully committed **empty Inventory** is presented as neutral `No Artifacts` rather than `Inventory Required`; a configured but uncommitted provider retains the Inventory prerequisite warning. Security JobExecution last-success visibility queries the latest real completed success directly without relying on a 50-row recent-attempt window. Current/fresh scan evidence remains separate from worker attempt state (#1424).
 
 Registry Security fleet base KPIs (artifact count, observed security metadata, signed artifacts, available SBOMs, capability-qualified gaps) use one provider-scoped SQL aggregate rather than separate per-metric COUNT requests. Vulnerability severity, latest generation and runtime exposure remain separate scoped queries because they have distinct multiplicity/authority; profile them with PostgreSQL UAT rather than falsely asserting constant runtime latency (#1426).
+
+
+### Runtime correlation source and container identity (#1441)
+
+Runtime binding materialization correlates explicit Registry image authority with the
+committed Registry source host. Missing/implicit image hosts or missing provider
+host evidence cannot establish a positive match; digest equality alone does not
+make the Registry source authoritative. Ambiguous matches across independently
+registered Registry instances are omitted rather than duplicated as certain
+usage. Harbor provider inventory preserves non-default endpoint ports.
+
+A canonical RegistryWorkloadBinding still represents one unique
+artifact/Pod/image-reference correlation. Its `details.containers` evidence
+retains all observed ordinary/init container usages (name or positional fallback,
+kind and index) even when several containers share the same image. Legacy
+bindings without this evidence remain readable using the existing single
+container projection. The derived binding schema/identity is unchanged.

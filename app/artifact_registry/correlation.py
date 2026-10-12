@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from urllib.parse import urlsplit
 
 from sqlalchemy import insert
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -77,6 +78,22 @@ def _artifact_repository_path(artifact: RegistryArtifact) -> str:
     return f'{artifact.repository.project.name}/{artifact.repository.name}'.strip('/')
 
 
+def _normalized_registry_host(value: str | None) -> str | None:
+    """Compare explicit Registry authority including non-default ports."""
+    if not value:
+        return None
+    try:
+        parsed = urlsplit(f'//{value.strip().lower()}')
+        hostname = (parsed.hostname or '').rstrip('.')
+        port = parsed.port
+    except ValueError:
+        return None
+    if not hostname:
+        return None
+    authority = f'[{hostname}]' if ':' in hostname else hostname
+    return f'{authority}:{port}' if port not in (None, 443) else authority
+
+
 def _match(
     image: ImageReference,
     artifact: RegistryArtifact,
@@ -86,7 +103,11 @@ def _match(
     expected_path = _artifact_repository_path(artifact)
     if image.repository != expected_path:
         return None
-    if image.host and registry_host and image.host != registry_host:
+    # Unknown or implicit hosts are not proof of source identity. A digest
+    # alone must never attribute a runtime image to an unrelated Registry.
+    expected_host = _normalized_registry_host(registry_host)
+    observed_host = _normalized_registry_host(image.host)
+    if expected_host is None or observed_host is None or observed_host != expected_host:
         return None
     if image.digest:
         if image.digest == artifact.digest:
@@ -99,12 +120,14 @@ def _match(
     return None
 
 
-def _container_rows(pod: PodInventory) -> Iterable[tuple[str, str | None, str]]:
+def _container_rows(pod: PodInventory) -> Iterable[tuple[str, str, str, int]]:
     names = list(pod.container_names or [])
     for index, image in enumerate(pod.container_images or []):
-        yield str(image), names[index] if index < len(names) else None, 'container'
-    for image in pod.init_container_images or []:
-        yield str(image), None, 'init_container'
+        yield str(image), str(names[index] or f'Container {index + 1}') if index < len(names) else f'Container {index + 1}', 'container', index
+    for index, image in enumerate(pod.init_container_images or []):
+        # PodInventory does not persist init-container names; retain their
+        # stable position instead of pretending that their names are known.
+        yield str(image), f'Init container {index + 1}', 'init_container', index
 
 
 def refresh_registry_workload_bindings(
@@ -175,51 +198,65 @@ def refresh_registry_workload_bindings(
             pod_query.yield_per(normalized_batch_size),
             start=1,
         ):
-            # RegistryWorkloadBinding identity intentionally collapses duplicate
-            # references to the same artifact/image inside one Pod.
-            pod_seen: set[tuple[int, str]] = set()
-            for raw_image, container_name, source_kind in _container_rows(pod):
+            # Preserve each matching container inside the canonical unique
+            # artifact/Pod/image binding, without changing the DB constraint.
+            pod_bindings: dict[tuple[int, str], dict[str, object]] = {}
+            for raw_image, container_name, source_kind, container_index in _container_rows(pod):
                 image = parse_image_reference(raw_image)
                 candidates = (
                     digest_index.get((image.repository, image.digest), ())
                     if image.digest
                     else (tag_index.get((image.repository, image.tag), ()) if image.tag else ())
                 )
-                for artifact, registry_host in candidates:
-                    match = _match(image, artifact, registry_host=registry_host)
-                    if match is None:
-                        continue
-                    binding_identity = (int(artifact.id), image.raw)
-                    if binding_identity in pod_seen:
-                        break
-                    pod_seen.add(binding_identity)
-                    match_type, confidence = match
-                    pending_bindings.append(
-                        {
-                            'artifact_id': artifact.id,
-                            'pod_inventory_id': pod.id,
-                            'image_reference': image.raw,
-                            'match_type': match_type,
-                            'confidence': confidence,
-                            'cluster_id': str(pod.cluster_id),
-                            'namespace': pod.namespace,
-                            'workload_type': pod.workload_type,
-                            'workload_name': pod.workload_name,
-                            'pod_name': pod.pod_name,
-                            'container_name': container_name,
-                            'details': {
-                                'source_kind': source_kind,
-                                'registry_observed_at': artifact.observed_at.isoformat(),
-                                'pod_collected_at': pod.collected_at.isoformat(),
-                                'registry_host': registry_host,
-                            },
-                            'observed_at': observed_at,
-                        }
-                    )
-                    binding_count += 1
-                    digest_matches += int(match_type == 'digest')
-                    tag_matches += int(match_type == 'tag')
-                    break
+                resolved = [
+                    (artifact, registry_host, match)
+                    for artifact, registry_host in candidates
+                    if (match := _match(image, artifact, registry_host=registry_host)) is not None
+                ]
+                # Two Registry instances claiming the same image authority
+                # cannot be distinguished from committed image evidence.
+                if len(resolved) != 1:
+                    continue
+                artifact, registry_host, match = resolved[0]
+                binding_identity = (int(artifact.id), image.raw)
+                usage = {
+                    'name': container_name,
+                    'source_kind': source_kind,
+                    'index': container_index,
+                }
+                existing = pod_bindings.get(binding_identity)
+                if existing is not None:
+                    details = existing['details']
+                    if isinstance(details, dict):
+                        details['containers'].append(usage)
+                    continue
+                match_type, confidence = match
+                binding: dict[str, object] = {
+                    'artifact_id': artifact.id,
+                    'pod_inventory_id': pod.id,
+                    'image_reference': image.raw,
+                    'match_type': match_type,
+                    'confidence': confidence,
+                    'cluster_id': str(pod.cluster_id),
+                    'namespace': pod.namespace,
+                    'workload_type': pod.workload_type,
+                    'workload_name': pod.workload_name,
+                    'pod_name': pod.pod_name,
+                    'container_name': container_name,
+                    'details': {
+                        'source_kind': source_kind,
+                        'containers': [usage],
+                        'registry_observed_at': artifact.observed_at.isoformat(),
+                        'pod_collected_at': pod.collected_at.isoformat(),
+                        'registry_host': registry_host,
+                    },
+                    'observed_at': observed_at,
+                }
+                pod_bindings[binding_identity] = binding
+                binding_count += 1
+                digest_matches += int(match_type == 'digest')
+                tag_matches += int(match_type == 'tag')
+            pending_bindings.extend(pod_bindings.values())
 
             if len(pending_bindings) >= normalized_batch_size:
                 materialization_session.execute(
