@@ -376,6 +376,13 @@ def dispatch_alert_notification(
             recommendations=recommendations or [],
             base_url=base_url,
         )
+        if delivery.attempt_count and _REPLAY_KEY in (delivery.payload_json or {}):
+            original = _replay_message(delivery, channel)
+            if original is None:
+                stats['skipped'] += 1
+                db.session.rollback()
+                continue
+            message = original
         _begin_delivery_attempt(delivery, channel, message)
         result = _deliver(channel, message)
         _record_delivery_outcome(delivery, channel, result)
@@ -538,8 +545,25 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
                 stats['duplicate'] += 1
                 stats['skipped'] += 1
                 continue
-        _begin_delivery_attempt(delivery, channel, event.message)
-        result = _deliver(channel, event.message)
+        message = event.message
+        if delivery.attempt_count and _REPLAY_KEY in (delivery.payload_json or {}):
+            original = _replay_message(delivery, channel)
+            if original is None:
+                db.session.rollback()
+                stats['skipped'] += 1
+                stats['results'].append(
+                    {
+                        'channel_id': channel.id,
+                        'channel': channel.name,
+                        'provider': _provider_label(channel.provider_key),
+                        'status': 'skipped',
+                        'message': 'Committed delivery cannot replay after channel transport changes.',
+                    }
+                )
+                continue
+            message = original
+        _begin_delivery_attempt(delivery, channel, message)
+        result = _deliver(channel, message)
         _record_delivery_outcome(delivery, channel, result)
         result_status = 'success' if result.success else 'failed'
         if result.success:
