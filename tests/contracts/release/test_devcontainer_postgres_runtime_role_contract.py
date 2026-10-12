@@ -78,6 +78,14 @@ def test_devcontainer_role_provisioning_is_transactional_and_not_data_destructiv
         )
 
 
+def test_postgresql_provisioning_role_record_does_not_shadow_current_role() -> None:
+    sql = PROVISION.read_text()
+    assert 'v_role_flags record;' in sql
+    assert sql.count('INTO v_role_flags FROM pg_roles') == 2
+    assert 'current_role record;' not in sql
+    assert 'current_role.' not in sql
+
+
 def test_post_cutover_initialization_requires_ephemeral_owner_database_url() -> None:
     source = INIT_DB.read_text()
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL' in source
