@@ -1,10 +1,14 @@
 # DevContainer PostgreSQL role separation — local, data-preserving procedure
 
-**Scope:** KAORI `kaori-dev` Compose project only. Issue #1405, blocked
+**Scope:** KAORI `kaori-dev` Compose project, **existing data preservation** only. Issue #1405, blocked
 Capsule G1 restart #1228/#1229. **No new database, no data move, no DROP,
 TRUNCATE, role-owner change, or provider mutation.** The database remains
 `kaori`; its existing owner/admin role (reported as `kaori` in local
 evidence) stays available for migrations and recovery.
+
+**A separately authorized destructive fresh-bootstrap path exists under #1427:** see
+[DevContainer PostgreSQL fresh bootstrap](devcontainer-postgres-fresh-bootstrap.md).
+Do not use its deletion commands while preserving records in #1405.
 
 The new `kaori_runtime` role is a non-elevated application login.
 Flask, all development Celery workers and Beat use **the same runtime DB
@@ -125,18 +129,19 @@ A missing/misconfigured guard **must** keep Capsule Release denied.
 
 ## Step 3 — Opt-in runtime cutover, all service connections
 
-Add **only to your ignored private root `.env`**:
+Configure the **canonical application** URL in your ignored private root `.env`:
 
 ```dotenv
-KAORI_DEV_RUNTIME_DATABASE_URL=postgresql://kaori_runtime:<URL-encoded-runtime-password>@db:5432/kaori
+DATABASE_URL=postgresql://kaori_runtime:<URL-encoded-runtime-password>@db:5432/kaori
 ```
 
 URL-encode special password characters. Never commit this value.
-The Compose override applies the same URL to workspace, all named Celery
-workers and Beat. An unset variable falls back to the existing owner
-connection **for backward compatibility only**; that path is deliberately
-**NOT Capsule-ledger-admitted**. Do not mistake successful UI startup for
-ledger authority.
+The DevContainer Compose override uses the same canonical `DATABASE_URL`
+for workspace, all named Celery workers and Beat. There is **no owner
+runtime fallback**. In VS Code, reload the window/open a fresh terminal
+after changing a private `.env`; stale integrated-terminal environment
+may otherwise still point the ORM at the owner. Do not mistake a
+successful `psql` in a different process for an admitted Flask ORM.
 
 Recreate the application/worker containers using the existing
 `compose.yml` + `.devcontainer/compose.devcontainer.yml` DevContainer
@@ -159,7 +164,7 @@ then the existing Capsule guarded PostgreSQL role/trigger checks.
 ## Step 4 — Future migrations and database rollback
 
 For later owner-only migrations, supply `KAORI_DB_MIGRATION_URL`
-**temporarily to the existing `scripts/init_db.sh` invocation**.
+**temporarily to each `scripts/init_db.sh` invocation**.
 Do **not** persist this privileged connection in `.env` (the latter
 is supplied to all development workers). The script refuses an ownerless
 migration after the runtime URL is configured. After Alembic migration,
@@ -168,10 +173,11 @@ and reconnect the runtime role. Workers already retain their existing
 `WAIT_FOR_SCHEMA=true` gate.
 
 If application behavior fails **before any Capsule START**, safely stop
-application processes and inspect permission errors. Restore previous
-`KAORI_DEV_RUNTIME_DATABASE_URL` value or unset it only for reversible
-DevContainer application troubleshooting; doing so restores the legacy
-owner runtime and **must leave Capsule handoff/restart disabled**.
+application processes and inspect permission errors. Review/correct the canonical private `DATABASE_URL` and restart affected
+DevContainer processes. Do **not** restore an owner-privileged application
+connection as a normal rollback; it cannot pass Capsule admission.
+Keep Capsule handoff/restart disabled during any extraordinary owner-only
+administrative recovery.
 The role and table grants need not be dropped to roll back the
 application URL. Do not delete immutable ledger evidence, reset the
 database, or auto-retry any uncertain provider PATCH. Preserve logs and
@@ -189,7 +195,9 @@ owner credentials using the governed secrets boundary before any
 staging/production rollout. Those environments have separate deployment
 configuration and are **out of scope** of this change.
 
-No migration, provisioning SQL or runtime cutover was executed through
-the GitHub-only implementation path. Operator-run DevContainer
-verification, existing quality gates and human acceptance are still
-needed. CI/CD, staging/main promotion and Kubernetes mutation remain HOLD.
+Local operator evidence of the prior data-preserving role cutover and
+read-only ORM guard has been recorded on issue #1405; the GitHub connector
+did not execute commands in the user's DevContainer. For disposable
+fresh-bootstrap evidence, use issue #1427. Existing quality gates and
+human acceptance are still required. CI/CD, staging/main promotion and
+Kubernetes mutation remain HOLD.
