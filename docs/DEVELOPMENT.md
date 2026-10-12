@@ -20,7 +20,7 @@ containers. A host `.venv` is not required.
 2. Review `ADMIN_*` and development secret values.
 3. Open the repository in VS Code.
 4. Run `Dev Containers: Rebuild and Reopen in Container`.
-5. Run `bash scripts/init_db.sh --bootstrap-admin` in the Dev Container terminal.
+5. For the first PostgreSQL initialization, follow the [owner-only fresh-bootstrap runbook](operations/devcontainer-postgres-fresh-bootstrap.md). It provisions the runtime login before Flask/worker startup. Do not invoke `scripts/init_db.sh` without transient owner `KAORI_DB_MIGRATION_URL`.
 6. After the Dev Container reports frontend assets are ready, allow VS Code **Automatic Tasks** for this trusted workspace. The existing `KAORI: Watch Tailwind CSS` task starts on folder open, with at most one instance. If disabled, start it from **Terminal → Run Task**.
 7. Press `F5` and select `KAORI: Flask Debug`.
 
@@ -28,25 +28,20 @@ A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend
 
 The application is available at `http://localhost:5000`.
 
-### PostgreSQL least-privilege runtime (existing DevContainer databases)
+### PostgreSQL least-privilege runtime (existing and fresh DevContainer databases)
 
-Capsule Release's immutable START ledger requires the application and all
-Celery/Beat workers to use a **non-owner** PostgreSQL role. Older local
-databases may have been initialized and used entirely as `kaori` (owner);
-that role must not perform the Capsule restart/provider handoff. The
-data-preserving, opt-in procedure is documented in
-[`DevContainer PostgreSQL runtime-role cutover`](operations/devcontainer-postgres-runtime-role.md).
+Capsule Release's immutable ledger requires Flask, Celery workers and Beat
+to connect as **non-owner** `kaori_runtime`, using only canonical
+`DATABASE_URL`. The PostgreSQL `POSTGRES_*` settings belong to the
+bootstrap owner; schema migrations/RBAC/admin bootstrap use a distinct
+temporary `KAORI_DB_MIGRATION_URL` passed only to `scripts/init_db.sh`.
+Never persist owner migration authority in `.env`.
 
-Provision one `kaori_runtime` login in the **same** `kaori` database,
-then set the private `KAORI_DEV_RUNTIME_DATABASE_URL` before recreating
-app/worker services. Owner-only migrations must use an ephemeral
-`KAORI_DB_MIGRATION_URL` through `scripts/init_db.sh`, never the runtime
-URL. Take a backup first and verify the immutable ledger privileges;
-**do not recreate/delete the database or run `down --volumes`**. The
-legacy Compose URL fallback is for pre-cutover startup only and remains
-blocked by the Capsule evidence guards.
+- Existing data: use the [data-preserving runtime-role cutover](operations/devcontainer-postgres-runtime-role.md) for grants/login, guard, backup and rollback.
+- Explicitly disposable local data only: use the [guarded PostgreSQL-only fresh bootstrap](operations/devcontainer-postgres-fresh-bootstrap.md), which resets **only** the identified `kaori-dev` Postgres volume, runs migrations as owner, and provisions restricted runtime before services resume.
 
-
+No source-level owner runtime fallback is admitted. Neither runbook
+authorizes production/staging reset or Kubernetes provider mutation.
 
 ### Dev Container Compose lifecycle
 
@@ -60,9 +55,20 @@ docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml logs --t
 docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml down --remove-orphans
 ```
 
-Do not use plain `docker compose down` to manage the Dev Container. The plain root Compose project is a separate `kaori` boundary; the supported development runtime is `kaori-dev` through the merged files above. To intentionally reset the development database and all development volumes, use the same merged command with `down --volumes --remove-orphans`.
+Do not use plain `docker compose down` to manage the Dev Container.
+The plain root Compose project is a separate `kaori` boundary;
+the supported development runtime is `kaori-dev` through both files.
+**Never use `down -v` or `down --volumes` for a PostgreSQL-only reset**:
+that deletes unrelated DevContainer volumes too. Follow the
+[scoped fresh-bootstrap procedure](operations/devcontainer-postgres-fresh-bootstrap.md)
+only when the developer explicitly authorizes local data destruction.
 
-On a fresh or reset PostgreSQL volume, the workspace remains available immediately, while every Celery worker and Beat waits at the shared database entrypoint until the database reaches the current Alembic migration head. Run `bash scripts/init_db.sh --bootstrap-admin` from the workspace as usual; background services continue automatically after migration completes. Workers and Beat never own migration or RBAC/bootstrap mutation.
+On a fresh database, bring up PostgreSQL and the workspace first.
+Keep workers and Beat paused until owner migrations/bootstrap,
+runtime role provisioning, ORM/ledger admission and retained Redis
+queue-safety review are complete. Workers and Beat still enforce their
+existing `WAIT_FOR_SCHEMA=true` gate, which does not authorize them
+to run migrations or compensate for a missing runtime login.
 
 Equivalent terminal launch inside the Dev Container:
 
@@ -78,7 +84,7 @@ only after changing the Dockerfile or Python dependency files.
 
 Useful VS Code tasks:
 
-- `KAORI: Database Upgrade`
+- `KAORI: Database Upgrade` (owner-only; do not run without explicit migration identity; use the fresh-bootstrap runbook)
 - `KAORI: Database Current`
 - `KAORI: Ruff Check`
 - `KAORI: djLint Check`
