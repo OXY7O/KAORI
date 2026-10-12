@@ -59,6 +59,44 @@ def _current_migration_heads(database_url: str) -> frozenset[str]:
         connection.close()
 
 
+
+def _restricted_runtime_grants_ready(database_url: str) -> bool:
+    """DevContainer-only gate: do not consume jobs before owner grant refresh.
+
+    This is a read-only preliminary admission check, not a substitute for
+    Capsule's authoritative PostgreSQL ledger/trigger/WAL START guard.
+    """
+    connection = psycopg2.connect(database_url, connect_timeout=5)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    has_table_privilege(current_user, c.oid, 'SELECT'),
+                    has_table_privilege(current_user, c.oid, 'INSERT'),
+                    has_table_privilege(current_user, c.oid, 'UPDATE'),
+                    has_table_privilege(current_user, c.oid, 'DELETE'),
+                    has_table_privilege(current_user, c.oid, 'TRUNCATE'),
+                    has_schema_privilege(current_user, 'public', 'CREATE'),
+                    (SELECT rolsuper OR rolcreatedb OR rolcreaterole
+                     FROM pg_roles WHERE rolname = current_user),
+                    pg_get_userbyid(c.relowner) = current_user,
+                    pg_has_role(
+                        (SELECT oid FROM pg_roles WHERE rolname = current_user),
+                        c.relowner, 'MEMBER'
+                    )
+                FROM pg_class AS c
+                WHERE c.oid = to_regclass('public.capsule_handoff_ledger_events')
+                """
+            )
+            return cursor.fetchone() == (
+                True, True, False, False, False, False, False, False, False
+            )
+    finally:
+        connection.close()
+
+
+
 def wait_for_database() -> None:
     database_url = _database_url()
     attempts = max(_env_int('DB_WAIT_ATTEMPTS', 30), 1)
@@ -93,6 +131,17 @@ def wait_for_schema() -> None:
             current_heads = frozenset()
 
         if current_heads == expected_heads:
+            if _env_bool('WAIT_FOR_RUNTIME_GRANTS'):
+                try:
+                    grants_ready = _restricted_runtime_grants_ready(database_url)
+                except psycopg2.Error:
+                    grants_ready = False
+                if not grants_ready:
+                    if not announced:
+                        print('Schema migrated; waiting for restricted runtime ledger grants...')
+                        announced = True
+                    time.sleep(interval_seconds)
+                    continue
             print(f'Database schema ready at migration head(s): {", ".join(sorted(expected_heads))}')
             return
 
