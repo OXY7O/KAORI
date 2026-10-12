@@ -1,7 +1,6 @@
 """Pure host-side first-run contract tests; never connect to Docker or mutate KAORI DB."""
 from __future__ import annotations
 
-import os
 import runpy
 from pathlib import Path
 
