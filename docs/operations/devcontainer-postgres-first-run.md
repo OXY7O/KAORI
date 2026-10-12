@@ -21,7 +21,7 @@ Run the Ubuntu WSL terminal, open the repository as WSL Remote with
 For the Windows-mounted checkout used in local testing:
 
 ```bash
-cd /mnt/c/Users/lethisa/OneDrive/Documents/Application/KAORI
+cd "/mnt/c/Users/<WindowsUser>/OneDrive/Documents/Application/KAORI"
 python3 --version
 docker info >/dev/null
 code .
