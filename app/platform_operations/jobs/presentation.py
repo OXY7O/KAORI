@@ -204,7 +204,9 @@ def _queue_activity(cutoff: datetime) -> list[dict[str, Any]]:
                 'attention': attention,
                 'completed_24h': int(getattr(aggregate, 'completed_24h', 0) or 0),
                 'failed_24h': int(getattr(aggregate, 'failed_24h', 0) or 0),
-                'latest_activity': present_user_datetime(getattr(aggregate, 'latest_activity', None), empty='No activity'),
+                'latest_activity': present_user_datetime(
+                    getattr(aggregate, 'latest_activity', None), empty='No activity'
+                ),
                 'worker_readiness': readiness,
             }
         )
