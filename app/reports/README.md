@@ -162,3 +162,7 @@ Registry's generic scope filter includes active IntegrationInstance Registry opt
 ### Report Templates POST type/status admission (#1561)
 
 Custom Template create and update preserve the submitted report type and lifecycle status until catalog validation. Unknown/missing type or status is rejected before database mutation and cannot be normalized into a different Analytics contract or draft template. UI form defaults remain distinct from submitted values; only the canonical Reports catalog determines supported types.
+
+### Report Templates submitted section evidence (#1562)
+
+Custom Template POST preserves Analytics section keys, including empty/invalid selections, until server validation rejects them. Inventory sections must exactly match the definition's fixed workbook contract. Initial GET defaults and operator-driven Reset Sections are presentation only; no unsupported or duplicate section can be committed under the current catalog. Generate admission remains separately authoritative.

@@ -370,9 +370,8 @@ def get_template_form_state(
     # POST values are authoritative until validated; never replace a rejected type.
     report_type = str(form.get('report_type') or '').strip()
     fallback_type = report_type if report_type in get_allowed_report_types() else REPORT_TYPE_SPECS[0].value
-    sections = sanitize_sections(fallback_type, form.getlist('sections'))
-    if not sections:
-        sections = get_default_sections(report_type)
+    # The posted selection is authoritative until backend catalog validation.
+    sections = form.getlist('sections')
 
     return {
         'name': form.get('name', '').strip(),
@@ -403,6 +402,15 @@ def validate_template_form_state(form_state: dict[str, Any]) -> list[str]:
         errors.append('Please select an output format supported by the report type.')
     if not form_state['sections']:
         errors.append('Please select at least one template section.')
+    else:
+        spec = get_report_type_spec(form_state['report_type'])
+        defaults = list(spec.default_sections)
+        selected = form_state['sections']
+        if spec.family == REPORT_FAMILY_INVENTORY:
+            if selected != defaults:
+                errors.append('Inventory sections are fixed by the published report contract.')
+        elif len(selected) != len(set(selected)) or any(item not in defaults for item in selected):
+            errors.append('One or more selected template sections are invalid or duplicated.')
     return errors
 
 
