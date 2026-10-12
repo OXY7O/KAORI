@@ -55,7 +55,8 @@ def test_inventory_copy_controls_are_shared_and_used_for_identifiers_and_address
     assert 'data-kaori-copy-source' in shared
     assert 'data-lucide="copy"' in shared
     assert 'data-kaori-copy-icon' in shared
-    assert "inventory_technical_row('UID', namespace.uid, copyable=true)" in namespace
+    assert "inventory_technical_row('UID', namespace.uid)" in namespace
+    assert "inventory_technical_row('UID', namespace.uid, copyable=true)" not in namespace
     assert "inventory_technical_row('UID', workload.uid, copyable=true)" in workload
     assert "inventory_technical_row('Kubernetes UID', pod.uid, copyable=true)" in pod
     assert "inventory_technical_row('Kubernetes UID', service.uid, copyable=true)" in service
@@ -67,6 +68,33 @@ def test_inventory_copy_controls_are_shared_and_used_for_identifiers_and_address
     assert "'label': 'Pod IP', 'value': pod.pod_ip or unknown, 'copyable': True" in pod_detail
     assert "'label': 'Host IP', 'value': details.get('host_ip') or unknown, 'copyable': True" in pod_detail
     assert "{'label': 'Cluster IP', 'value': service.cluster_ip, 'copyable': true}" in service
+
+
+def test_namespace_detail_context_is_compact_and_uid_has_no_clipboard_control() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
+    expected = (
+        'Identity, cluster, lifecycle, and snapshot.',
+        'Pod Security Admission and access metadata.',
+        'Committed workloads, networking, and configuration.',
+        'ResourceQuota and LimitRange controls.',
+    )
+    for description in expected:
+        assert f"description='{description}'" in detail
+
+    assert "detail.inventory_technical_row('UID', namespace.uid)" in detail
+    assert "detail.inventory_technical_row('UID', namespace.uid, copyable=true)" not in detail
+
+    # Verify the existing non-copyable macro has no clipboard hook in the rendered UID row.
+    environment = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    macro = environment.get_template('components/details/_detail_content.html').module.inventory_technical_row
+    rendered = str(macro('UID', '7f1769e7-f7a7-42e1-82f0-2898557100e3'))
+    assert '7f1769e7-f7a7-42e1-82f0-2898557100e3' in rendered
+    assert 'data-kaori-copy-root' not in rendered
+    assert 'data-kaori-copy-source' not in rendered
+    assert 'data-kaori-copy-button' not in rendered
+    assert 'data-lucide="copy"' not in rendered
 
 
 def test_namespace_control_copy_and_reported_quota_presentation_are_concise() -> None:
