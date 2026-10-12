@@ -51,6 +51,16 @@ or RBAC/admin seed must be explicitly run as that owner. The existing
 `flask db upgrade` from a runtime-only VS Code terminal without
 an explicit owner migration context.
 
+For routine VS Code DevContainer opening, the existing `runServices`
+automatically starts database, Redis, workspace, all workers and Beat,
+and the new one-shot `db-role-bootstrap` admits a non-owner login without
+running migrations. Workers/Beat remain gated on schema readiness.
+For an actually empty schema, observe the read-only setup page, then
+run `KAORI: Initialize Fresh Database` **once** from VS Code Tasks.
+That task injects the owner migration identity only into controlled child
+processes, refreshes runtime table grants and checks the Capsule ledger
+guard. Subsequent container opens need no manual database commands.
+
 For a fresh, disposable DevContainer PostgreSQL database, follow the
 [scoped fresh-bootstrap runbook](operations/devcontainer-postgres-fresh-bootstrap.md):
 DB-only volume confirmation/reset → Alembic and admin/RBAC with owner →
