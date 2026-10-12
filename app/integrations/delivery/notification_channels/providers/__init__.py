@@ -39,6 +39,12 @@ from app.integrations.delivery.notification_channels.providers.ntfy import (
     send_ntfy_message,
     validate_form as validate_ntfy_form,
 )
+from app.integrations.delivery.notification_channels.providers.slack import (
+    form_view as slack_form_view,
+    parse_form as parse_slack_form,
+    send_slack_message,
+    validate_form as validate_slack_form,
+)
 from app.integrations.delivery.notification_channels.providers.telegram import (
     form_view as telegram_form_view,
 )
@@ -145,6 +151,40 @@ def _send_microsoft_teams(
 
 
 _PROVIDERS = {
+    'slack': NotificationProviderAdapter(
+        key='slack',
+        label='Slack',
+        icon='hash',
+        description='Channel-bound Slack Incoming Webhook delivery.',
+        transport='HTTPS Incoming Webhook',
+        configuration='Approved Slack Incoming Webhook URL + human-readable destination label.',
+        setup_title='Configure Slack Incoming Webhook',
+        setup_summary='Send governed KAORI notifications to a selected Slack channel via its dedicated webhook.',
+        setup_requirements=(
+            'An authorized Slack workspace with an Incoming Webhook-enabled app.',
+            'A channel-bound Incoming Webhook URL, stored as a secret in KAORI.',
+            'Publishing permission for that app in the target Slack channel.',
+        ),
+        setup_steps=(
+            'Create or configure a Slack app and enable Incoming Webhooks.',
+            'Select the destination channel and copy its dedicated webhook URL.',
+            'Enter the destination label and secret URL in KAORI, then select allowed event/domain policy.',
+            'Save and run Test Delivery; confirm the message arrived in the expected Slack channel.',
+        ),
+        security_note=(
+            'Incoming Webhook URL is a secret; it is encrypted and never rendered back. Only official HTTPS '
+            'Slack webhook hosts and paths are allowed, redirects and inherited proxies are rejected.'
+        ),
+        validation_note='Test Delivery checks a Slack webhook acceptance response, not human message read status.',
+        form_partial='integrations/delivery/notification_channels/providers/slack/_form.html',
+        form_parser=parse_slack_form,
+        form_validator=validate_slack_form,
+        form_view=slack_form_view,
+        sender=lambda credentials, destination, provider_config, message, timeout: send_slack_message(
+            credentials=credentials, destination=destination, provider_config=provider_config,
+            message=message, timeout_seconds=timeout,
+        ),
+    ),
     'ntfy': NotificationProviderAdapter(
         key='ntfy',
         label='ntfy',
