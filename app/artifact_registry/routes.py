@@ -21,7 +21,6 @@ from app.artifact_registry.governance_job_adapter import (
     build_registry_governance_sync_state,
     get_registry_governance_sync_job,
 )
-from app.artifact_registry.presentation_common import _providers as _active_registry_sources
 from app.artifact_registry.presentation import (
     build_analytics,
     build_analytics_shell,
@@ -36,6 +35,7 @@ from app.artifact_registry.presentation import (
     build_runtime_binding_detail,
     build_runtime_usage,
 )
+from app.artifact_registry.presentation_common import _providers as _active_registry_sources
 from app.artifact_registry.security.job_adapter import (
     build_registry_security_sync_state,
     get_registry_security_sync_job,
