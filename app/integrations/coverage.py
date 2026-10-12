@@ -159,7 +159,8 @@ def _coverage_source_options(
     blocked = {'blocked', 'unavailable', 'disabled', 'incompatible'}
     options: list[dict[str, Any]] = []
     for instance in instances:
-        if not instance.enabled:
+        canonical = instance.integration_instance
+        if not instance.enabled or not canonical.enabled or canonical.lifecycle_status != 'active':
             continue
         readiness = (instance.readiness_status or 'validation_required').lower()
         canonical_id = instance.integration_instance_id or -1
@@ -416,6 +417,11 @@ def _coverage_status(
         return 'uncovered', 'Not Bound', 'Select an existing registered source for this operational scope.'
     if selected_source is None:
         return 'blocked', 'Source Missing', 'The binding points to a provider record that no longer exists.'
+    canonical = selected_source.integration_instance
+    if canonical is None or not selected_source.enabled or not canonical.enabled:
+        return 'blocked', 'Source Disabled', 'Reactivate the source before relying on its consumer bindings.'
+    if canonical.lifecycle_status != 'active':
+        return 'blocked', 'Source Inactive', 'The source lifecycle is not active; its binding is not eligible.'
     if shared and not selector_configured:
         return (
             'blocked',
