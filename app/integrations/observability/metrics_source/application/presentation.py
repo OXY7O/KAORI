@@ -162,6 +162,19 @@ def build_instance_context(
     ).filter(
         IntegrationBinding.integration_instance_id == instance.integration_instance_id,
     ).one()
+    operational_binding_total = (
+        int(db.session.query(func.count(IntegrationBinding.id)).filter(
+            IntegrationBinding.integration_instance_id == instance.integration_instance_id,
+            IntegrationBinding.enabled.is_(True),
+            IntegrationBinding.validation_status == 'ready',
+        ).scalar() or 0)
+        if instance.enabled and instance.readiness_status == 'ready' else 0
+    )
+    resolution_scope_total = int(db.session.query(func.count()).select_from(
+        db.session.query(IntegrationBinding.asset_type, IntegrationBinding.asset_key)
+        .filter(IntegrationBinding.integration_instance_id == instance.integration_instance_id)
+        .distinct().subquery()
+    ).scalar() or 0)
     consumer_asset_groups = build_consumer_asset_groups(
         lambda asset_type: get_binding_validation_profile(instance.adapter_key, asset_type)
     )
@@ -212,6 +225,9 @@ def build_instance_context(
         'deletion_guard': deletion_guard,
         'binding_rows': binding_rows,
         'binding_total': binding_total,
+        'validated_binding_total': int(validated_total or 0),
+        'operational_binding_total': operational_binding_total,
+        'resolution_scope_total': resolution_scope_total,
         'binding_registry_rows': binding_registry_rows,
         'binding_registry_pagination': binding_registry_pagination,
         'consumer_asset_groups': consumer_asset_groups,
