@@ -77,3 +77,46 @@ def test_missing_finding_with_unavailable_source_stays_unknown_not_resolved(monk
     assert stats['resolved'] == 0
     assert stats['source_unknown'] == 1
     assert observed == [(alert_case, 'source_unavailable')]
+
+
+def test_capacity_forecast_can_clear_only_after_usable_fresh_projection(monkeypatch) -> None:
+    monkeypatch.setattr(source, '_source_evidence_posture', lambda **_kwargs: (True, ''))
+    monkeypatch.setattr(source, 'catalog_rule', lambda _rule: {})
+    state = SimpleNamespace(
+        rule_key='object_storage.forecast.capacity_exhaustion_critical',
+        asset_key='storage-1', domain='object_storage',
+    )
+    stale_or_absent = SimpleNamespace(
+        payload_json={'forecast': {'days_to_capacity': 100, 'growth_per_day': 1}},
+    )
+
+    class Column:
+        def __eq__(self, other):
+            return True
+        def __gt__(self, other):
+            return True
+
+    class ForecastQuery:
+        row = None
+        def filter(self, *_criteria):
+            return self
+        def first(self):
+            return self.row
+
+    query = ForecastQuery()
+    monkeypatch.setattr(
+        source, 'ObjectStorageForecastSnapshot',
+        SimpleNamespace(
+            query=query,
+            object_storage_system_id=Column(),
+            history_window=Column(),
+            method=Column(),
+            status=Column(),
+            expires_at=Column(),
+        ),
+    )
+    assert source._source_evidence_posture_for_state(state) == (False, 'source_unavailable')
+    query.row = stale_or_absent
+    assert source._source_evidence_posture_for_state(state) == (True, '')
+    query.row = SimpleNamespace(payload_json={'forecast': {'days_to_capacity': None}})
+    assert source._source_evidence_posture_for_state(state) == (False, 'source_unavailable')
