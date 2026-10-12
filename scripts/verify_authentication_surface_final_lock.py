@@ -136,6 +136,8 @@ def main() -> int:
         'data-kaori-setup-workspace="release-v4"',
         'data-kaori-setup-readiness-strip',
         'data-kaori-setup-console',
+        'data-kaori-setup-primary-action',
+        'data-kaori-setup-security',
         'data-kaori-setup-flow',
         'Initialization Path',
         'Advanced Setup',
@@ -156,11 +158,23 @@ def main() -> int:
         require(required in setup, f'Setup Required release workspace contract missing: {required}', errors)
 
     require(
-        'class="text-lg font-semibold leading-6 text-content-primary"' in setup,
-        'Setup Required compact title contract drifted',
+        'class="text-xl font-semibold leading-7 text-content-primary"' in setup,
+        'Setup Required command-first title hierarchy drifted',
         errors,
     )
-    require('lg:grid-cols-3' in setup and 'lg:col-span-2' in setup, 'Setup Required console split drifted', errors)
+    require(
+        'data-kaori-setup-design="command-first"' in setup
+        and 'data-kaori-setup-primary-action' in setup
+        and "variant='inline'" in setup,
+        'Setup Required command-first action/inline-flow hierarchy drifted',
+        errors,
+    )
+    require(
+        'data-kaori-setup-outer-frame' not in setup
+        and 'lg:col-span-2' not in setup,
+        'Setup Required must not reintroduce the rejected nested-frame/sidebar design',
+        errors,
+    )
     require('Readiness Summary' not in setup, 'Setup Required must not duplicate readiness in a summary panel', errors)
     require(
         'components/info_flow.html' not in setup,
