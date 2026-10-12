@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import os
 from time import perf_counter, sleep
 from typing import Any
 from urllib.parse import quote
@@ -10,6 +11,7 @@ from requests import Response
 from requests.auth import HTTPBasicAuth
 
 from app.integrations.registry.providers.harbor.contracts import HarborConnectionResult, HarborRetryPolicy
+from app.integrations.registry.providers.harbor.transport_policy import validate_harbor_endpoint
 from app.integrations.registry.providers.harbor.exceptions import (
     HarborAuthError,
     HarborConnectionError,
@@ -17,6 +19,14 @@ from app.integrations.registry.providers.harbor.exceptions import (
 )
 
 _TRANSIENT_STATUS_CODES = frozenset({429, 502, 503, 504})
+
+
+def _direct_get(url: str, **kwargs: Any) -> Response:
+    """Never inherit environment proxies/netrc and never follow redirects."""
+    with requests.Session() as session:
+        session.trust_env = False
+        return session.get(url, allow_redirects=False, **kwargs)
+
 
 
 class HarborClient:
@@ -33,7 +43,7 @@ class HarborClient:
         verify_ssl: bool = True,
         retry_policy: HarborRetryPolicy | None = None,
     ) -> None:
-        self.endpoint = endpoint.rstrip('/')
+        self.endpoint = validate_harbor_endpoint(endpoint, verify_ssl=verify_ssl)
         self.auth_type = auth_type
         self.username = username
         self.password = password
@@ -301,12 +311,12 @@ class HarborClient:
         last_transport_error: requests.RequestException | None = None
         for attempt in range(self.transport_retries + 1):
             try:
-                response = requests.get(
+                response = _direct_get(
                     f'{self.endpoint}{path}',
                     params=params,
                     auth=auth,
                     timeout=self.timeout,
-                    verify=self.verify_ssl,
+                    verify=os.getenv('INTEGRATION_HARBOR_CA_BUNDLE', '').strip() or True,
                     headers=request_headers,
                 )
             except requests.RequestException as exc:
@@ -317,6 +327,11 @@ class HarborClient:
                     sleep(self.retry_backoff_seconds * (2**attempt))
                 continue
 
+            if 300 <= response.status_code < 400:
+                raise HarborResponseError(
+                    'Harbor API redirect was rejected; verify the approved HTTPS origin.',
+                    status=response.status_code,
+                )
             if response.status_code in {401, 403}:
                 raise HarborAuthError(
                     f'Harbor authentication or authorization failed with HTTP {response.status_code}.',
