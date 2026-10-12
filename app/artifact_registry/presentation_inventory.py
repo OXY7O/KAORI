@@ -808,20 +808,19 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
 
 
 def build_inventory_artifact_detail(artifact_id: int) -> dict[str, Any] | None:
-    artifact = (
-        RegistryArtifact.query.options(
-            joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
-            joinedload(RegistryArtifact.tags),
-        )
-        .filter(RegistryArtifact.id == int(artifact_id))
-        .first()
-    )
+    artifact = RegistryArtifact.query.filter(RegistryArtifact.id == int(artifact_id)).first()
     if artifact is None:
         return None
 
     repository = artifact.repository
     project = repository.project
     source = _inventory_detail_provider_context(project.integration_instance_id)
+    tag_total = RegistryTag.query.filter_by(artifact_id=artifact.id).count()
+    tag_items = (
+        RegistryTag.query.filter_by(artifact_id=artifact.id)
+        .order_by(func.lower(RegistryTag.name).asc(), RegistryTag.id.asc())
+        .limit(25).all()
+    )
     tags = [
         {
             'id': int(tag.id),
@@ -831,7 +830,7 @@ def build_inventory_artifact_detail(artifact_id: int) -> dict[str, Any] | None:
             'pull_time': tag.pull_time,
             'observed_at': tag.observed_at,
         }
-        for tag in sorted(artifact.tags, key=lambda item: item.name.lower())
+        for tag in tag_items
     ]
     provider_metadata = dict(artifact.provider_metadata) if isinstance(artifact.provider_metadata, dict) else {}
     return {
@@ -853,10 +852,10 @@ def build_inventory_artifact_detail(artifact_id: int) -> dict[str, Any] | None:
         'repository_name': repository.name,
         'project_id': int(project.id),
         'project_name': project.name,
-        'tag_count': len(tags),
+        'tag_count': tag_total,
         'tags': tags,
         'tag_preview': tags[:25],
-        'tag_truncated': len(tags) > 25,
+        'tag_truncated': tag_total > 25,
         'provider_metadata': provider_metadata,
         **source,
     }
