@@ -7,7 +7,7 @@ from time import monotonic
 from typing import Any
 
 from flask import current_app, g
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.artifact_storage.base import ArtifactStorageBackend, StoredArtifact
 from app.extensions.db import db
