@@ -52,3 +52,14 @@ def test_capability_table_surfaces_partial_numerator_and_denominator() -> None:
     for key in ('vulnerability', 'signature', 'sbom'):
         assert 'row.coverage.' + key in template
         assert 'row.artifact_count' in template
+
+
+def test_partially_usable_capability_is_not_presented_as_fully_observed() -> None:
+    assert _capability_state(
+        supported=True, observed=True, attempted=True,
+        observed_count=1, artifact_total=100,
+    ) == {'key': 'supported_partial', 'label': 'Partial', 'tone': 'warning'}
+    assert _capability_state(
+        supported=True, observed=True, attempted=True,
+        observed_count=100, artifact_total=100,
+    )['label'] == 'Observed'
