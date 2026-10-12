@@ -44,7 +44,7 @@ def send_telegram_message(
     if message_thread_id is not None and normalize_telegram_topic_id(message_thread_id) is None:
         return DeliveryResult(False, 'Telegram topic ID must be a positive integer.')
     text = _render_message(message)
-    payload = {
+    payload: dict[str, str | int] = {
         'chat_id': chat_id,
         'text': text,
         'link_preview_options': json.dumps({'is_disabled': True}, separators=(',', ':')),
