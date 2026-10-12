@@ -328,9 +328,9 @@
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.source_name, 'Registry security source', 'blocks') }}</td>
                                                     <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.provider_label }}</span></td>
                                                     <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.artifact_count }}</span></td>
-                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.vulnerability.label, row.vulnerability.tone) }}</td>
-                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.signature.label, row.signature.tone) }}</td>
-                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.sbom.label, row.sbom.tone) }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.vulnerability.label, row.vulnerability.tone) }}<p class="mt-1 text-xs text-content-muted">{{ row.coverage.vulnerability }} / {{ row.artifact_count }} usable</p></td>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.signature.label, row.signature.tone) }}<p class="mt-1 text-xs text-content-muted">{{ row.coverage.signature }} / {{ row.artifact_count }} signed</p></td>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.sbom.label, row.sbom.tone) }}<p class="mt-1 text-xs text-content-muted">{{ row.coverage.sbom }} / {{ row.artifact_count }} available</p></td>
                                                     <td class="{{ table_ui.cell_classes(action=true) }}">
                                                         <div class="ml-auto w-fit">
                                                             <button type="button"
