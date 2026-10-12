@@ -34,7 +34,7 @@ From **Ubuntu/WSL**, the existing Windows checkout can be opened through
 its mounted Windows drive without cloning or removing data:
 
 ```bash
-cd /mnt/c/Users/lethisa/OneDrive/Documents/Application/KAORI
+cd "/mnt/c/Users/<WindowsUser>/OneDrive/Documents/Application/KAORI"
 python3 --version
 docker info >/dev/null
 code .
