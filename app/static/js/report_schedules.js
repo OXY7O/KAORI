@@ -55,7 +55,7 @@
                 namespaceSelect.replaceChildren()
                 const allOption = document.createElement('option')
                 allOption.value = ''
-                allOption.textContent = loaded ? 'All Namespaces' : 'Loading namespaces…'
+                allOption.textContent = !selectedCluster || loaded ? 'All Namespaces' : 'Loading namespaces…'
                 namespaceSelect.appendChild(allOption)
 
                 options.forEach((namespace) => {
