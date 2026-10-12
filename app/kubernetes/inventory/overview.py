@@ -219,10 +219,7 @@ def _inventory_guidance(
         }
     return {
         'title': 'Snapshot Ready for Review',
-        'description': (
-            'The committed snapshot is current and no inventory signals require immediate '
-            'attention. Continue to an asset inventory for object-level review.'
-        ),
+        'description': 'Snapshot current; no active signals. Review assets.',
         'tone': 'normal',
         'icon': 'circle-check',
     }
