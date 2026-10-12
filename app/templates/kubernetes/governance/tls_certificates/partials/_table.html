@@ -30,7 +30,7 @@
         'Certificate Validity: Observed certificate expiry and validity posture from the committed TLS inventory; it is not a live handshake test.',
         'TLS Host Coverage: Hostnames associated with the observed certificate and Ingress declarations. Coverage alone does not prove clients trust the certificate.',
         'Ingress Certificate Usage: Observed Kubernetes Ingress resources referring to this certificate or Secret; references are not proof of successful TLS termination.'
-    ], placement='right')
+    ], placement='right', variant='guide')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% include "kubernetes/governance/tls_certificates/partials/_filters.html" %}
