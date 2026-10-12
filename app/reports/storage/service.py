@@ -159,6 +159,33 @@ def build_storage_integrity_presentation(result: dict[str, Any]) -> dict[str, An
             }
         )
     presented['review_samples'] = samples
+    checked = int(presented.get('checked_count') or 0)
+    available = int(presented.get('available_count') or 0)
+    missing = int(presented.get('missing_count') or 0)
+    errors = int(presented.get('error_count') or 0)
+    total = int(presented.get('total_reference_count') or 0)
+    limited = total > checked
+    if errors:
+        status, tone = 'Errors Detected', 'critical'
+    elif missing:
+        status, tone = 'Missing Artifacts', 'critical'
+    elif limited:
+        status, tone = 'Partial Coverage', 'warning'
+    elif checked == 0:
+        status, tone = 'No References', 'unknown'
+    else:
+        status, tone = 'Verified Sample', 'normal'
+    presented.update({
+        'checked': checked,
+        'available': available,
+        'missing': missing,
+        'errors': errors,
+        'status': status,
+        'tone': tone,
+        'total_reference_count': total,
+        'is_limited': limited,
+        'coverage_label': f'{checked} of {total} retained references checked',
+    })
     return presented
 
 
@@ -829,17 +856,17 @@ def verify_active_report_storage() -> dict[str, Any]:
 def scan_report_storage_integrity(
     max_items: int = 500,
 ) -> dict[str, Any]:
+    max_items = max(1, min(int(max_items), 500))
+    reference_filter = (Report.file_path.is_not(None), Report.file_path != '')
+    total_reference_count = int(
+        db.session.scalar(select(func.count(Report.id)).where(*reference_filter)) or 0
+    )
     checked_reports = (
         db.session.execute(
             select(
                 Report,
             )
-            .where(
-                Report.file_path.is_not(
-                    None,
-                ),
-                Report.file_path != '',
-            )
+            .where(*reference_filter)
             .order_by(
                 Report.updated_at.desc(),
                 Report.id.desc(),
@@ -944,6 +971,8 @@ def scan_report_storage_integrity(
         'missing_samples': missing_samples,
         'error_samples': error_samples,
         'max_items': max_items,
-        'is_limited': checked_count >= max_items,
-        'is_healthy': missing_count == 0 and error_count == 0,
+        'total_reference_count': total_reference_count,
+        'is_limited': checked_count < total_reference_count,
+        'is_healthy': checked_count > 0 and checked_count == total_reference_count
+        and missing_count == 0 and error_count == 0,
     }

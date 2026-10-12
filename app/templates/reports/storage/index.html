@@ -505,6 +505,7 @@
                             {% endif %}
                         </div>
                         {% if integrity %}
+                            <p class="mt-2 text-xs text-content-muted" role="status">{{ integrity.coverage_label }}{% if integrity.is_limited %} · Partial coverage; unscanned references have unknown integrity.{% endif %}</p>
                             <dl class="mt-4 grid border-y border-outline-subtle sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle">
                                 <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">
                                     <dt class="text-xs text-content-muted">Checked</dt>
@@ -563,7 +564,7 @@
                                         </tbody>
                                     </table>
                                 </div>
-                            {% else %}
+                            {% elif integrity.status == 'Verified Sample' %}
                                 <div class="mt-4 rounded-xl border border-status-success-border bg-status-success-soft p-4">
                                     <div class="flex items-start gap-3">
                                         <i data-lucide="circle-check"
@@ -575,6 +576,8 @@
                                         </div>
                                     </div>
                                 </div>
+                            {% else %}
+                                <p class="mt-4 text-sm text-content-muted" role="status">{{ integrity.status }} — {{ integrity.coverage_label }}. No exception samples were recorded; this does not certify unscanned references.</p>
                             {% endif %}
                         {% else %}
                             <div class="mt-4 rounded-xl border border-kaori-primary/20 bg-kaori-soft/45 p-4">

@@ -182,3 +182,7 @@ The Templates management workspace owns draft/active lifecycle and system/custom
 ### Report Templates bounded registry query (#1563)
 
 System templates remain definition-owned and first in the mixed registry. Custom template filtering, counting, and retrieval are database-side: shared KAORI pagination selects at most the current page size (default five) and a grouped type/status query supplies all-estate KPI counts without materializing the full custom estate. Search uses committed template metadata and catalog labels, not provider-live calls. No custom pagination abstraction is introduced.
+
+### Integrity Scan evidence contract (#1594)
+
+Integrity results expose checked, available, missing, error and full reference population counts, with explicit partial/empty/unknown semantics. A 500-object scan is a bounded sample, never proof of full-estate integrity. The UI renders success only when every selected reference has actually been scanned without exceptions.
