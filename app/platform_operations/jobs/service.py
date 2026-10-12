@@ -252,6 +252,11 @@ def get_job_by_task_id(task_id: str) -> JobExecution | None:
     return JobExecution.query.filter_by(celery_task_id=task_id).first()
 
 
+def _lock_job_by_task_id(task_id: str) -> JobExecution | None:
+    """Serialize worker lifecycle writes with concurrent terminal-state changes."""
+    return JobExecution.query.filter_by(celery_task_id=task_id).with_for_update().first()
+
+
 def _terminalize(job: JobExecution, status: str) -> None:
     job.status = status
     job.active_deduplication_key = None
@@ -307,7 +312,7 @@ def mark_job_running(
     stage: str | None = None,
     target: str | None = None,
 ) -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
+    job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
     if job.is_terminal or job.status == 'cancel_requested':
@@ -341,9 +346,9 @@ def update_job_progress(
     stage: str | None = None,
     target: str | None = None,
 ) -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
-    if job is None:
-        return None
+    job = _lock_job_by_task_id(task_id)
+    if job is None or job.is_terminal or job.status == 'cancel_requested':
+        return job
     if current is not None:
         job.progress_current = max(current, 0)
     if total is not None:
@@ -395,7 +400,7 @@ def mark_job_succeeded(
     result_reference: str | None = None,
     partial: bool = False,
 ) -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
+    job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
     if job.is_terminal:
@@ -420,7 +425,7 @@ def mark_job_succeeded(
 
 
 def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | None = None) -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
+    job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
     if job.is_terminal:
@@ -454,7 +459,7 @@ def request_job_cancel(job: JobExecution) -> JobExecution:
 
 
 def mark_job_retrying(task_id: str, *, message: str, error: Exception | str | None = None) -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
+    job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
     if job.is_terminal or job.status == 'cancel_requested':
@@ -471,7 +476,7 @@ def mark_job_retrying(task_id: str, *, message: str, error: Exception | str | No
 
 
 def mark_job_canceled(task_id: str, *, message: str = 'Canceled') -> JobExecution | None:
-    job = get_job_by_task_id(task_id)
+    job = _lock_job_by_task_id(task_id)
     if job is None:
         return None
     if job.is_terminal:
