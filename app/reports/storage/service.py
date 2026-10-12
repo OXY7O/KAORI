@@ -26,6 +26,7 @@ from app.reports.storage.state import (
     format_storage_check_age,
     format_storage_check_source,
     get_shared_report_storage_status,
+    get_storage_config_fingerprint,
     publish_shared_report_storage_status,
 )
 
@@ -196,20 +197,12 @@ def _get_storage_status_cache_ttl_seconds() -> int:
 
 
 def _get_process_storage_status_cache_key(backend_name: str) -> tuple[object, ...]:
-    app_identity = id(current_app.config)
-    if backend_name == 's3':
-        return (
-            app_identity,
-            backend_name,
-            str(current_app.config.get('REPORT_S3_BUCKET', '') or ''),
-            str(current_app.config.get('REPORT_S3_ENDPOINT_URL', '') or ''),
-            str(current_app.config.get('REPORT_S3_REGION', '') or ''),
-            str(current_app.config.get('REPORT_S3_PREFIX', '') or ''),
-        )
+    # Use the same non-reversible config identity as Redis. Credentials, bucket,
+    # addressing style and local root rotations all invalidate process readiness.
     return (
-        app_identity,
+        id(current_app.config),
         backend_name,
-        str(current_app.config.get('REPORT_LOCAL_STORAGE_DIR', '') or ''),
+        get_storage_config_fingerprint(backend_name),
     )
 
 
