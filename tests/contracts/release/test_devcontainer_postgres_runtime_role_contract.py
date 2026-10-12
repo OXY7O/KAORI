@@ -154,7 +154,8 @@ def test_fresh_bootstrap_documents_existing_read_only_first_run_view() -> None:
 def test_post_create_guides_transient_owner_bootstrap_for_empty_database() -> None:
     post_create = (ROOT / '.devcontainer' / 'post-create.sh').read_text()
     assert 'docs/operations/devcontainer-postgres-fresh-bootstrap.md' in post_create
-    assert 'KAORI_DB_MIGRATION_URL' in post_create
+    assert 'KAORI: Initialize Fresh Database' in post_create
+    assert 'automatically by Compose' in post_create
     assert 'Run "bash scripts/init_db.sh --bootstrap-admin"' not in post_create
 
 
