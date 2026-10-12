@@ -11,7 +11,7 @@ if [ -z "${KAORI_DB_MIGRATION_URL:-}" ]; then
 fi
 
 # Fail before any schema write if the selected identity is not the
-# DevContainer bootstrap owner or is the ordinary application runtime.
+# DevContainer schema migrator or is the ordinary application runtime.
 # This check uses the SAME migration connection Alembic will use.
 python - <<'PY'
 import os
