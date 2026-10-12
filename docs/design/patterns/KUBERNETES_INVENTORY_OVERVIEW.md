@@ -87,7 +87,7 @@ Uses `components/resource_detail_modal.html` and Unified Resource Sheet V10 prim
 - Inventory Signals;
 - Operational Context;
 
-The summary includes total objects, populated asset categories, and largest inventory segment. The final Operational Context section explains that the data is a committed database snapshot and provides one state-aware next step.
+The summary includes total objects, populated asset categories, and largest inventory segment. The Inventory Breakdown subtitle stays concise: `Committed inventory by Kubernetes resource type.` The final Operational Context section explains that the data is a committed database snapshot and provides one state-aware next step.
 
 ## Data Contract
 
