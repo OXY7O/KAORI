@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from flask import url_for
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 
 from app.common.pagination import paginate_query
@@ -654,6 +654,10 @@ def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
             NotificationDelivery.query.filter(
                 NotificationDelivery.status.in_(('failed', 'queued')),
                 NotificationDelivery.updated_at <= cutoff,
+                or_(
+                    NotificationDelivery.attempt_count < max_attempts,
+                    NotificationDelivery.status == 'queued',
+                ),
             )
             .order_by(NotificationDelivery.updated_at.asc(), NotificationDelivery.id.asc())
             .with_for_update(skip_locked=True)

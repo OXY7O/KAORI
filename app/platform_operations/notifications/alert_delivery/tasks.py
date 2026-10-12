@@ -35,3 +35,15 @@ def dispatch_alert_intelligence_notifications() -> dict[str, object]:
         'expiring_rule_exceptions': expiring_rule_exceptions,
         'delivery': delivery,
     }
+
+
+@shared_task(
+    name='app.platform_operations.notifications.alert_delivery.tasks.recover_notification_channel_deliveries',
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def recover_notification_channel_deliveries() -> dict[str, int]:
+    """Retry due committed channel attempts using the canonical journal."""
+    from app.integrations.delivery.notification_channels.service import recover_notification_deliveries
+
+    return recover_notification_deliveries()
