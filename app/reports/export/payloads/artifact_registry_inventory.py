@@ -24,32 +24,7 @@ def _severity_count(summary: dict[str, Any] | None, key: str) -> int:
         return 0
 
 
-def get_report_artifact_registry_inventory_payload(report: Report) -> dict[str, Any]:
-    """Return committed provider-neutral Artifact Registry evidence only."""
-
-    validate_report_instance(report)
-    scope_id = require_artifact_registry_instance(report)
-    try:
-        instance_id = int(scope_id)
-    except (TypeError, ValueError):
-        return {'_error': 'The selected Artifact Registry integration is invalid.'}
-
-    instance = db.session.get(IntegrationInstance, instance_id)
-    if instance is None or instance.integration_type != 'registry':
-        return {'_error': 'The selected Artifact Registry integration no longer exists.'}
-
-    state = db.session.get(RegistryCollectionState, instance_id)
-    projects = (
-        RegistryProject.query.options(
-            selectinload(RegistryProject.repositories)
-            .selectinload(RegistryRepository.artifacts)
-            .selectinload(RegistryArtifact.tags)
-        )
-        .filter(RegistryProject.integration_instance_id == instance_id)
-        .order_by(RegistryProject.name.asc())
-        .all()
-    )
-
+def _inventory_rows(instance: IntegrationInstance, projects: list[RegistryProject]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for project in projects:
         if not project.repositories:
@@ -101,6 +76,37 @@ def get_report_artifact_registry_inventory_payload(report: Report) -> dict[str, 
                         'observed_at': artifact.observed_at,
                     }
                 )
+
+    return rows
+
+
+def get_report_artifact_registry_inventory_payload(report: Report) -> dict[str, Any]:
+    """Return committed provider-neutral Artifact Registry evidence only."""
+
+    validate_report_instance(report)
+    scope_id = require_artifact_registry_instance(report)
+    try:
+        instance_id = int(scope_id)
+    except (TypeError, ValueError):
+        return {'_error': 'The selected Artifact Registry integration is invalid.'}
+
+    instance = db.session.get(IntegrationInstance, instance_id)
+    if instance is None or instance.integration_type != 'registry':
+        return {'_error': 'The selected Artifact Registry integration no longer exists.'}
+
+    state = db.session.get(RegistryCollectionState, instance_id)
+    projects = (
+        RegistryProject.query.options(
+            selectinload(RegistryProject.repositories)
+            .selectinload(RegistryRepository.artifacts)
+            .selectinload(RegistryArtifact.tags)
+        )
+        .filter(RegistryProject.integration_instance_id == instance_id)
+        .order_by(RegistryProject.name.asc())
+        .all()
+    )
+
+    rows = _inventory_rows(instance, projects)
 
     cutoff = state.last_committed_at if state is not None else None
     return {
