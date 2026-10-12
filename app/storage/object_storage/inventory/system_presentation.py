@@ -198,8 +198,8 @@ def _system_row(
     status_label, status_tone = _status(system.status)
     buckets = list(system.buckets or ())
     latest_observed_at = system.inventory_observed_at
-    metadata = owner.identity.metadata_json or {} if owner is not None else {}
-    source_changed = (
+    metadata = (owner.identity.metadata_json or {}) if owner is not None else {}
+    source_changed = latest_observed_at is not None and (
         int(metadata.get('object_storage_connection_generation') or 0)
         != int(metadata.get('object_storage_inventory_generation') or 0)
     )
