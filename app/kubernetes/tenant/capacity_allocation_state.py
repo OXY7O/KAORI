@@ -162,6 +162,47 @@ def _aggregate_committed_allocation(
     ), unbounded
 
 
+
+def _other_committed_for_namespace_replacement(
+    rows: list[TenantNamespace],
+    *,
+    target: TenantNamespace,
+    shared_quota_by_tenant: Mapping[str, Mapping[str, object]],
+    ambiguous_shared_tenants: list[str],
+) -> tuple[CapacityVector, int, list[str]]:
+    """Project a single existing Native Namespace replacement without hiding other commitments.
+
+    Target identity must match exactly one active row. Shared Capsule Tenant
+    authority is not interchangeable with namespaced ResourceQuota admission.
+    Unknown/ambiguous commitments of every *other* active source remain intact.
+    """
+
+    target_rows = [row for row in rows if row.id == target.id]
+    if (
+        len(target_rows) != 1
+        or target_rows[0].namespace != target.namespace
+        or str(target_rows[0].cluster_id) != str(target.cluster_id)
+        or str(target_rows[0].environment.tenant_id) != str(target.environment.tenant_id)
+    ):
+        raise ValueError('Atomic allocation replacement requires exactly one active matching Namespace generation.')
+    if any(row.id != target.id and row.namespace == target.namespace for row in rows):
+        raise ValueError('Atomic allocation replacement cannot resolve multiple active generations of this Namespace.')
+
+    tenant_id = str(target.environment.tenant_id)
+    if tenant_id in shared_quota_by_tenant or tenant_id in ambiguous_shared_tenants:
+        raise ValueError(
+            'Atomic Native Namespace replacement is unavailable for shared or ambiguous Tenant authority.'
+        )
+
+    other_rows = [row for row in rows if row.id != target.id]
+    committed, unbounded = _aggregate_committed_allocation(
+        other_rows,
+        shared_quota_by_tenant=shared_quota_by_tenant,
+        ambiguous_shared_tenants=ambiguous_shared_tenants,
+    )
+    return committed, len(rows), unbounded
+
+
 def _canonical_shared_allocation_quota_by_cluster(
     cluster_ids: list[str],
 ) -> tuple[dict[str, dict[str, Mapping[str, object]]], dict[str, list[str]]]:
@@ -275,6 +316,7 @@ def _committed_tenant_allocation(
     cluster_id: str,
     *,
     shared_overrides: Mapping[str, Mapping[str, object]] | None = None,
+    replace_namespace: TenantNamespace | None = None,
 ) -> tuple[CapacityVector, int, list[str]]:
     rows = (
         _active_namespace_allocation_query()
@@ -287,6 +329,16 @@ def _committed_tenant_allocation(
         shared[str(tenant_id)] = dict(quota)
         if str(tenant_id) in ambiguous:
             ambiguous.remove(str(tenant_id))
+
+    if replace_namespace is not None:
+        if str(replace_namespace.cluster_id) != str(cluster_id) or shared_overrides:
+            raise ValueError('Atomic allocation replacement requires its own cluster and Namespace authority.')
+        return _other_committed_for_namespace_replacement(
+            rows,
+            target=replace_namespace,
+            shared_quota_by_tenant=shared,
+            ambiguous_shared_tenants=ambiguous,
+        )
 
     committed, unbounded = _aggregate_committed_allocation(
         rows,

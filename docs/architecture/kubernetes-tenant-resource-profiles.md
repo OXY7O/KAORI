@@ -365,6 +365,45 @@ Multiple legacy sources, unsupported LimitRange constraints, foreign controller 
 
 After successful takeover, subsequent allocation changes continue through the governed capacity/preflight and provider-verification path while Namespace `ownership_status` remains `adopted`.
 
+**Atomic bounded Native allocation replacement (#1676):** An existing
+**KAORI Managed Native** Namespace with a previously adopted unbounded
+`requests.cpu`, `requests.memory`, or Pods commitment may select a bounded
+Resource Profile directly through the existing Allocation Change action,
+including when logical storage increases. This is an *admission-only*
+exception to the old cluster-wide unknown baseline calculation, not a
+provider or ownership shortcut. The original frozen Current contract remains
+unknown/unbounded in evidence; neither `ResourceQuota` Limits nor live
+utilization are substituted for Requests.
+
+The preflight reads the same canonical active Namespace scope as #654, and
+requires **exactly one matching active target record by ID and Namespace
+identity** in the selected cluster. It rejects duplicate active Namespace
+generations and target Tenant identities participating in Capsule shared or
+ambiguous quota authority. For the projected **post-replacement** capacity,
+KAORI aggregates all *other* active Namespace commitments and all authoritative
+shared Tenant commitments, preserving every unrelated unknown source and
+ambiguity, then adds the **selected versioned Proposed request vector exactly
+once**. Admission requires an existing policy, fresh usable committed
+`analytics.capacity` evidence, bounded all governed projected dimensions,
+no other ambiguous/unbounded allocation, and adequate CPU/Memory/Pod and
+logical storage budgets with the usual reserve and safety headroom. Unknown,
+stale, over-budget or unbounded Proposed projections are blocked *before*
+provider reconciliation. No unknown Current value is ever assumed to be zero.
+
+The committed `TenantCapacityDecision` retains original
+`allocation.committed_before` and `allocation.current` (including their
+Unknown fields) and records `allocation.atomic_replacement` with
+`target_namespace_id`, `other_committed`, `projection`, and the bounded
+post-change `allocation.projected_committed`. This mode is limited to
+positive changes in **managed Native Namespace** allocations, not to create,
+initial adoption, observed cutover, Capsule GRQ or Tenant CR. The existing
+provider authority/UID/resourceVersion checks, mutation ordering, read-back
+and last-verified committed contract remain fully mandatory. UAT must exercise
+Platform Small after the adopted baseline and negative cases for other
+unknown allocations, missing/duplicate target, shared authority, stale
+capacity, and storage-budget shortfall before human acceptance; CI/CD and
+promotion remain HOLD in review.
+
 **Native optional LimitRange recovery (#1163):** A managed Resource Profile with
 no Container Defaults and no Storage Guardrails has no active LimitRange.
 Provisioning intentionally omits/deletes it. On verified allocation reconcile,

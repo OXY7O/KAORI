@@ -717,3 +717,338 @@ def test_committed_allocation_queries_exclude_terminal_generations_in_all_paths(
     assert overview.count("_active_namespace_allocation_query()") == 1
     assert "Tenant.lifecycle_status.notin_(_TERMINAL_TENANT_ALLOCATION_LIFECYCLES)" in overview
     assert "resource_profile_id is None" not in source
+
+
+def _replacement_row(tenant_id: str, namespace: str, row_id: int, quota: dict[str, str]):
+    return SimpleNamespace(
+        id=row_id,
+        cluster_id='cluster-1',
+        namespace=namespace,
+        environment=SimpleNamespace(tenant_id=tenant_id),
+        allocation_quota_json=quota,
+    )
+
+
+def test_atomic_replacement_excludes_only_the_exact_active_native_namespace() -> None:
+    from app.kubernetes.tenant.capacity_allocation_state import _other_committed_for_namespace_replacement
+
+    target = _replacement_row(
+        'tenant-native', 'tenant-adopt-quota-uat', 8,
+        {'limits.cpu': '4', 'limits.memory': '8Gi', 'pods': '10', 'requests.storage': '1Gi'},
+    )
+    other = _replacement_row(
+        'tenant-other', 'payments', 9,
+        {'requests.cpu': '2', 'requests.memory': '4Gi', 'pods': '20', 'requests.storage': '100Gi'},
+    )
+    capsule = _replacement_row('tenant-shared', 'capsule-a', 10, {})
+    shared = {
+        'tenant-shared': {
+            'requests.cpu': '3', 'requests.memory': '6Gi',
+            'pods': '15', 'requests.storage': '25Gi',
+        },
+    }
+    committed, count, unknown = _other_committed_for_namespace_replacement(
+        [target, other, capsule],
+        target=target, shared_quota_by_tenant=shared, ambiguous_shared_tenants=[],
+    )
+    gib = Decimal(1024**3)
+    assert count == 3
+    assert unknown == []
+    assert committed == CapacityVector(
+        cpu=Decimal('5'), memory_bytes=Decimal('10') * gib,
+        pods=Decimal('35'), storage_bytes=Decimal('125') * gib,
+    )
+
+
+def test_atomic_replacement_rejects_absent_duplicate_and_shared_authority() -> None:
+    import pytest
+
+    from app.kubernetes.tenant.capacity_allocation_state import _other_committed_for_namespace_replacement
+
+    target = _replacement_row('tenant-native', 'adopted-a', 1, {})
+    other = _replacement_row('tenant-other', 'unrelated-b', 2, {})
+    def call(rows, **kw):
+        return _other_committed_for_namespace_replacement(
+            rows, target=target, shared_quota_by_tenant=kw.get('shared', {}),
+            ambiguous_shared_tenants=kw.get('ambiguous', []),
+        )
+    with pytest.raises(ValueError, match='exactly one active matching'):
+        call([other])
+    with pytest.raises(ValueError, match='multiple active generations'):
+        call([target, _replacement_row('tenant-other', 'adopted-a', 3, {})])
+    with pytest.raises(ValueError, match='shared or ambiguous Tenant authority'):
+        call([target], shared={'tenant-native': {'requests.cpu': '2'}})
+    with pytest.raises(ValueError, match='shared or ambiguous Tenant authority'):
+        call([target], ambiguous=['tenant-native'])
+
+
+def _install_atomic_replacement_test_evidence(
+    monkeypatch, *,
+    other_cpu='2', other_memory_gib='4', other_pods='20', other_storage_gib='100',
+    other_unknown=None, snapshot_stale=False, has_policy=True,
+):
+    """Set up the same contracted admission components, without a provider write."""
+    gib = Decimal(1024**3)
+    policy = SimpleNamespace(
+        platform_reserve_cpu='0', platform_reserve_memory='0', platform_reserve_pods=0,
+        safety_headroom_percent=10, unmanaged_commitment_cpu='0',
+        unmanaged_commitment_memory='0', unmanaged_commitment_pods=0,
+        tenant_storage_budget='2048Gi',
+    )
+    monkeypatch.setattr(
+        capacity_governance, 'TenantCapacityPolicy',
+        SimpleNamespace(query=SimpleNamespace(filter_by=lambda **_k: SimpleNamespace(
+            first=lambda: policy if has_policy else None,
+        ))),
+    )
+    snapshot = SnapshotResult(
+        context={'capacity_summary': {
+            'cpu': {'capacity_evidence_available': True, 'capacity': 12},
+            'memory': {'capacity_evidence_available': True, 'capacity': 32},
+            'pods': {'capacity_evidence_available': True, 'capacity': 200},
+        }},
+        snapshot=None, state='stale' if snapshot_stale else 'fresh',
+        stale=snapshot_stale,
+    )
+    monkeypatch.setattr(capacity_governance, '_read_capacity_snapshot', lambda _id: snapshot)
+    unknown = CapacityVector(cpu=None, memory_bytes=None, pods=Decimal('30'), storage_bytes=Decimal('101') * gib)
+    other = CapacityVector(
+        cpu=Decimal(other_cpu) if other_cpu is not None else None,
+        memory_bytes=Decimal(other_memory_gib) * gib if other_memory_gib is not None else None,
+        pods=Decimal(other_pods) if other_pods is not None else None,
+        storage_bytes=Decimal(other_storage_gib) * gib if other_storage_gib is not None else None,
+    )
+    reads = []
+
+    def fake_committed(cluster_id, *, replace_namespace=None):
+        assert cluster_id == 'cluster-1'
+        reads.append(replace_namespace is not None)
+        return (other, 2, list(other_unknown or [])) if replace_namespace else (
+            unknown, 2, ['tenant-adopt-quota-uat'],
+        )
+
+    monkeypatch.setattr(capacity_governance, '_committed_tenant_allocation', fake_committed)
+    decisions = []
+    monkeypatch.setattr(
+        capacity_governance, '_persist_decision',
+        lambda **kwargs: decisions.append(kwargs) or SimpleNamespace(id=32),
+    )
+    commits = []
+    monkeypatch.setattr(
+        capacity_governance, 'db',
+        SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append(True))),
+    )
+    return reads, decisions, commits
+
+
+def _atomic_native_request(*, proposed_cpu='1', proposed_storage='50Gi'):
+    from app.kubernetes.tenant.capacity_governance import _AllocationRequest
+
+    target = _replacement_row('tenant-native', 'tenant-adopt-quota-uat', 8, {})
+    tenant = SimpleNamespace(id='tenant-native', cluster_id='cluster-1')
+    target.environment.tenant = tenant
+    current = {
+        'limits.cpu': '4', 'limits.memory': '8Gi',
+        'pods': '10', 'requests.storage': '1Gi',
+    }
+    proposed = {
+        'limits.cpu': '2', 'requests.memory': '2Gi',
+        'limits.memory': '4Gi', 'pods': '10',
+        'requests.storage': proposed_storage,
+    }
+    if proposed_cpu is not None:
+        proposed['requests.cpu'] = proposed_cpu
+    return SimpleNamespace(tenant=tenant), _AllocationRequest(
+        profile=SimpleNamespace(id=5, version=2),
+        namespace=target.namespace,
+        current=quota_request_vector(current),
+        proposed=quota_request_vector(proposed),
+        operation='increase',
+        replacement_namespace=target,
+    )
+
+
+def test_native_bounded_atomic_replacement_allows_proven_post_state(monkeypatch) -> None:
+    reads, decisions, commits = _install_atomic_replacement_test_evidence(monkeypatch)
+    environment, request = _atomic_native_request()
+
+    result = capacity_governance._enforce_allocation_preflight(
+        tenant_environment=environment, request=request,
+    )
+
+    gib = Decimal(1024**3)
+    assert result.id == 32
+    assert reads == [False, True]
+    assert commits == []
+    pure = decisions[0]['pure']
+    context = decisions[0]['evidence']
+    assert pure.allowed is True
+    assert pure.positive_change is True
+    assert pure.projected_committed.cpu == Decimal('3')
+    assert pure.projected_committed.memory_bytes == Decimal('6') * gib
+    assert pure.projected_committed.pods == Decimal('30')
+    assert pure.projected_committed.storage_bytes == Decimal('150') * gib
+    assert context.committed_before.cpu is None  # Original evidence remains unknown.
+    assert context.replacement_other_committed.cpu == Decimal('2')
+    assert request.current.cpu is None
+
+
+def test_native_bounded_atomic_replacement_fails_closed_for_unprovable_or_over_budget(monkeypatch) -> None:
+    import pytest
+
+    from app.kubernetes.tenant.capacity_governance import TenantCapacityBlockedError
+
+    for options, proposed_cpu, expected in (
+        ({'other_unknown': ['another-namespace']}, '1', 'other active Tenant allocations'),
+        ({'other_cpu': None, 'other_unknown': ['another-namespace']}, '1', 'Unbounded or missing'),
+        ({'other_storage_gib': '2030'}, '1', 'Projected committed allocation exceeds'),
+        ({'snapshot_stale': True}, '1', 'stale'),
+        ({'has_policy': False}, '1', 'policy is not configured'),
+        ({}, None, 'Unbounded or missing'),
+    ):
+        _reads, decisions, commits = _install_atomic_replacement_test_evidence(
+            monkeypatch, **options,
+        )
+        environment, request = _atomic_native_request(proposed_cpu=proposed_cpu)
+        with pytest.raises(TenantCapacityBlockedError, match=expected):
+            capacity_governance._enforce_allocation_preflight(
+                tenant_environment=environment, request=request,
+            )
+        assert len(decisions) == 1
+        assert decisions[0]['pure'].allowed is False
+        assert commits == [True]
+
+
+def test_atomic_native_preflight_evidence_keeps_raw_unknown_and_other_committed(monkeypatch) -> None:
+    from app.kubernetes.tenant.capacity_governance import _DecisionEvidenceContext, _persist_decision
+
+    environment, request = _atomic_native_request()
+    gib = Decimal(1024**3)
+    current = request.current
+    other = CapacityVector(
+        cpu=Decimal('2'), memory_bytes=Decimal('4') * gib,
+        pods=Decimal('20'), storage_bytes=Decimal('100') * gib,
+    )
+    projected = CapacityVector(
+        cpu=Decimal('3'), memory_bytes=Decimal('6') * gib,
+        pods=Decimal('30'), storage_bytes=Decimal('150') * gib,
+    )
+    class DummyDecision:
+        pass
+
+    monkeypatch.setattr(capacity_governance, 'TenantCapacityDecision', DummyDecision)
+    monkeypatch.setattr(capacity_governance, '_policy_json', lambda _policy: {})
+    monkeypatch.setattr(capacity_governance, '_budget_json', lambda _budget: {})
+    saves = []
+    monkeypatch.setattr(
+        capacity_governance, 'db',
+        SimpleNamespace(session=SimpleNamespace(add=saves.append, flush=lambda: None)),
+    )
+    from app.kubernetes.tenant.capacity import AllocationPreflightDecision
+    pure = AllocationPreflightDecision(
+        allowed=True, decision='allow', state='Healthy', reason='Projected bounded.',
+        projected_committed=projected, projected_headroom=other,
+        shortfall=CapacityVector(cpu=Decimal(0), memory_bytes=Decimal(0)),
+        positive_change=True,
+    )
+    record = _persist_decision(
+        cluster_id='cluster-1', tenant_environment=SimpleNamespace(id=17),
+        tenant=environment.tenant, request=request, pure=pure,
+        evidence=_DecisionEvidenceContext(
+            policy=SimpleNamespace(), budget=SimpleNamespace(),
+            committed_before=CapacityVector(cpu=None, memory_bytes=None),
+            current=current, proposed=request.proposed,
+            committed_count=2,
+            snapshot_result=SnapshotResult(context=None, snapshot=None, state='fresh', stale=False),
+            replacement_other_committed=other,
+        ),
+    )
+    assert saves == [record]
+    allocation = record.evidence_json['allocation']
+    assert allocation['committed_before']['cpu'] is None
+    assert allocation['current']['cpu'] is None
+    assert allocation['projected_committed']['cpu'] == '3'
+    assert allocation['atomic_replacement']['target_namespace_id'] == 8
+    assert allocation['atomic_replacement']['other_committed']['cpu'] == '2'
+    assert allocation['atomic_replacement']['projection'] == 'other_committed_plus_proposed'
+
+
+def test_atomic_replacement_keeps_other_unbounded_sources_unknown() -> None:
+    from app.kubernetes.tenant.capacity_allocation_state import _other_committed_for_namespace_replacement
+
+    target = _replacement_row('native', 'target', 1, {})
+    other = _replacement_row(
+        'another-native', 'unbounded-other', 2,
+        {'requests.memory': '2Gi', 'pods': '10', 'requests.storage': '1Gi'},
+    )
+    committed, count, unknown = _other_committed_for_namespace_replacement(
+        [target, other], target=target,
+        shared_quota_by_tenant={}, ambiguous_shared_tenants=[],
+    )
+    assert count == 2
+    assert committed.cpu is None
+    assert unknown == ['unbounded-other']
+
+
+def test_atomic_replacement_is_not_used_for_bounded_or_observed_preflight(monkeypatch) -> None:
+    import pytest
+
+    from app.kubernetes.tenant.capacity_governance import TenantCapacityBlockedError
+
+    reads, decisions, commits = _install_atomic_replacement_test_evidence(monkeypatch)
+    environment, request = _atomic_native_request()
+    bounded_request = capacity_governance._AllocationRequest(
+        profile=request.profile,
+        namespace=request.namespace,
+        current=quota_request_vector({
+            'requests.cpu': '1', 'requests.memory': '2Gi',
+            'pods': '10', 'requests.storage': '1Gi',
+        }),
+        proposed=request.proposed,
+        operation='increase',
+        replacement_namespace=request.replacement_namespace,
+    )
+    with pytest.raises(TenantCapacityBlockedError, match='Unbounded or missing governed'):
+        capacity_governance._enforce_allocation_preflight(
+            tenant_environment=environment, request=bounded_request,
+        )
+    assert reads == [False]
+    assert decisions[0]['evidence'].replacement_other_committed is None
+    assert commits == [True]
+
+    reads.clear()
+    decisions.clear()
+    commits.clear()
+    observed_request = capacity_governance._AllocationRequest(
+        profile=request.profile,
+        namespace=request.namespace,
+        current=request.current,
+        proposed=request.proposed,
+        operation='increase',
+        # Observed initial cutover has no replacement-authority flag.
+    )
+    with pytest.raises(TenantCapacityBlockedError, match='Unbounded or missing governed'):
+        capacity_governance._enforce_allocation_preflight(
+            tenant_environment=environment, request=observed_request,
+        )
+    assert reads == [False]
+    assert decisions[0]['evidence'].replacement_other_committed is None
+    assert commits == [True]
+
+
+def test_managed_native_service_wires_atomic_replacement_only_after_managed_checks() -> None:
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    service = (root / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    governance = (root / 'app/kubernetes/tenant/capacity_governance.py').read_text(encoding='utf-8')
+    state = (root / 'app/kubernetes/tenant/capacity_allocation_state.py').read_text(encoding='utf-8')
+    assert "allocation_control_state(record) != 'kaori_managed'" in service
+    assert "record.environment.tenant.provider_key != 'native_kubernetes'" in service
+    assert "capacity_decision = enforce_existing_namespace_allocation_preflight(" in service
+    assert "capacity_decision = enforce_observed_namespace_allocation_preflight(" not in service
+    assert "replacement_namespace=record" in governance
+    assert "replace_namespace=request.replacement_namespace" in governance
+    assert "shared_overrides: Mapping[str, Mapping[str, object]] | None = None" in state
+    assert "_canonical_shared_allocation_quota(cluster_id)" in state
+    assert state.count("_active_namespace_allocation_query()") == 3
