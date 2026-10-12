@@ -120,9 +120,10 @@ Explorer (including `adaptive_grid_classes`, `drawer_pane_classes`, and
   Dependency mode uses COSE. Fit uses the visible graph bounding box including
   external labels, bounded margins, and a cap on over-magnification.
 - Dashed quiet containment, solid ownership, and digest/tag-confidence-aware
-  runtime edges preserve graph semantics. At most eight visible relationships
-  show labels automatically; larger graphs reveal labels via Controls or
-  selection/hover. Hiding an edge or resource type is **display-only**.
+  runtime edges preserve graph semantics. Relationship labels are hidden by
+  default at every graph size, and appear only on edge hover, selection,
+  or explicit Always Show control, per the current Kubernetes authority.
+  Hiding an edge or resource type is **display-only**.
 - Node selection focuses the local neighborhood and opens the right inspector.
   List fallback and a committed-only Reload remain available if Cytoscape
   fails. Export never implies full coverage when omitted bindings are nonzero.
