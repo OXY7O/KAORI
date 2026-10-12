@@ -64,12 +64,18 @@ def write_private(path: Path, content: str) -> None:
 
 def main() -> None:
     if not APP_ENV.exists():
+        if database_volume_exists():
+            fail('application .env is missing for an existing database; restore it, do not rotate encryption/admin secrets')
         APP_ENV.write_text((ROOT / '.env.example').read_text(encoding='utf-8'), encoding='utf-8')
         APP_ENV.chmod(0o600)
         print('KAORI DevContainer: created private .env from .env.example')
 
     source = APP_ENV.read_text(encoding='utf-8')
     values = existing_values(source)
+    if database_volume_exists():
+        for key in ('SECRET_KEY', 'INTEGRATION_CREDENTIAL_KEY', 'ADMIN_PASSWORD'):
+            if not values.get(key) or values[key].startswith('replace-'):
+                fail(f'{key} missing for existing database; restore the original secret, do not regenerate')
     if values.get('POSTGRES_DB', 'kaori') != 'kaori':
         fail('local DB must be kaori; do not target another environment')
     if values.get('KAORI_DB_MIGRATION_URL'):
