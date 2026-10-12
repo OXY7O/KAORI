@@ -130,6 +130,24 @@ authority. Concurrent source tasks publish monotonic aggregate progress through 
 metadata. A slow or failed source cannot consume the inventory worker and does not invalidate committed
 inventory or another source's committed security evidence.
 
+### Bounded Analytics and committed input generations (#1465)
+
+Registry Analytics materialization uses SQL counts and bounded scalar artifact
+iteration (`yield_per(250)`), rather than hydrating entire ORM project,
+repository, artifact and workload trees into worker memory. Runtime evidence
+uses an authoritative scoped binding query and deduplicated artifact membership;
+Security findings count only successful normalized scans. Governance configured
+and explicitly `not_configured` are independent from unsupported/unavailable/
+not-collected projects.
+
+The worker records committed Inventory and Governance generations plus runtime
+observation provenance in the snapshot's `evidence` payload, and rejects
+Inventory generation changes during a collection attempt. Read-model freshness
+compares committed inputs to source state and presents `Inputs Changed` or
+`Partial Evidence`, not clean Current. Historical or missing generation
+markers are *not* proof of readiness. The external provider remains
+authoritative and normal page loads do not query provider APIs.
+
 ### Analytics snapshot and worker-failure semantics (#1464)
 
 Registry Analytics uses the canonical committed snapshot validity contract: a ready
