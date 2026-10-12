@@ -6,6 +6,7 @@ from typing import Any, overload
 from sqlalchemy import func, or_
 from werkzeug.exceptions import NotFound
 
+from app.artifact_registry.correlation import runtime_input_signature
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
 from app.dashboards.common.operational import normalize_operational_tab
@@ -128,6 +129,8 @@ def _registry_analytics_inputs_changed(snapshot: RegistryAnalyticsSnapshot | Non
     governance = db.session.get(RegistryGovernanceState, source_id)
     committed = governance.last_committed_at.isoformat() if governance and governance.last_committed_at else None
     if committed != evidence.get('governance_committed_at'):
+        return True
+    if runtime_input_signature(db.session) != evidence.get('correlation_input_signature'):
         return True
 
     artifacts = RegistryArtifact.query.join(
