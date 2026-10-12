@@ -259,14 +259,18 @@
 
         const currentProfile = form.querySelector('[data-tenant-allocation-current-profile]')
         const currentCpu = form.querySelector('[data-tenant-allocation-current-cpu]')
+        const currentCpuLimit = form.querySelector('[data-tenant-allocation-current-cpu-limit]')
         const currentMemory = form.querySelector('[data-tenant-allocation-current-memory]')
+        const currentMemoryLimit = form.querySelector('[data-tenant-allocation-current-memory-limit]')
         const currentPods = form.querySelector('[data-tenant-allocation-current-pods]')
         const currentStorage = form.querySelector('[data-tenant-allocation-current-storage]')
         const currentPvcMin = form.querySelector('[data-tenant-allocation-current-pvc-min]')
         const currentPvcMax = form.querySelector('[data-tenant-allocation-current-pvc-max]')
         const proposedProfile = form.querySelector('[data-tenant-allocation-proposed-profile]')
         const proposedCpu = form.querySelector('[data-tenant-allocation-proposed-cpu]')
+        const proposedCpuLimit = form.querySelector('[data-tenant-allocation-proposed-cpu-limit]')
         const proposedMemory = form.querySelector('[data-tenant-allocation-proposed-memory]')
+        const proposedMemoryLimit = form.querySelector('[data-tenant-allocation-proposed-memory-limit]')
         const proposedPods = form.querySelector('[data-tenant-allocation-proposed-pods]')
         const proposedStorage = form.querySelector('[data-tenant-allocation-proposed-storage]')
         const proposedPvcMin = form.querySelector('[data-tenant-allocation-proposed-pvc-min]')
@@ -297,14 +301,18 @@
                     : '—'
             }
             if (currentCpu) currentCpu.textContent = current ? requestValue(current, 'cpu') : '—'
+            if (currentCpuLimit) currentCpuLimit.textContent = current ? quotaValue(current, 'limits.cpu') : '—'
             if (currentMemory) currentMemory.textContent = current ? requestValue(current, 'memory') : '—'
+            if (currentMemoryLimit) currentMemoryLimit.textContent = current ? quotaValue(current, 'limits.memory') : '—'
             if (currentPods) currentPods.textContent = current ? quotaValue(current, 'pods') : '—'
             if (currentStorage) currentStorage.textContent = current ? requestValue(current, 'storage') : '—'
             if (currentPvcMin) currentPvcMin.textContent = current ? storageValue(current, 'min') : '—'
             if (currentPvcMax) currentPvcMax.textContent = current ? storageValue(current, 'max') : '—'
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
             if (proposedCpu) proposedCpu.textContent = proposed ? requestValue(proposed, 'cpu') : '—'
+            if (proposedCpuLimit) proposedCpuLimit.textContent = proposed ? quotaValue(proposed, 'limits.cpu') : '—'
             if (proposedMemory) proposedMemory.textContent = proposed ? requestValue(proposed, 'memory') : '—'
+            if (proposedMemoryLimit) proposedMemoryLimit.textContent = proposed ? quotaValue(proposed, 'limits.memory') : '—'
             if (proposedPods) proposedPods.textContent = proposed ? quotaValue(proposed, 'pods') : '—'
             if (proposedStorage) proposedStorage.textContent = proposed ? requestValue(proposed, 'storage') : '—'
             if (proposedPvcMin) proposedPvcMin.textContent = proposed ? storageValue(proposed, 'min') : '—'
