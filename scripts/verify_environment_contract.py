@@ -32,6 +32,11 @@ INHERITED_OPTIONAL_KEYS = {
     'ARCHIVE_S3_FORCE_PATH_STYLE',
 }
 COMPOSE_COMPAT_KEYS = {'KAORI_ENV_FILE', 'KAORI_BIND_ADDRESS', 'KAORI_PORT', 'KAORI_RELEASE_ENV_FILE'}
+# The root Compose default has POSTGRES_PASSWORD for non-DevContainer uses.
+# In the DevContainer this value comes exclusively from the host-only
+# postgres-bootstrap.env and MUST NOT be documented or active in the
+# application .env template forwarded to Flask/Celery/Beat.
+DEVCONTAINER_BOOTSTRAP_SECRET_KEYS = {'POSTGRES_PASSWORD'}
 
 RC_REQUIRED_KEYS = {
     'KAORI_IMAGE',
@@ -208,7 +213,16 @@ def verify() -> None:
         assert_no_duplicates(relative)
 
     development_keys = documented_env_keys('.env.example')
-    missing_development = sorted((common_keys | development_compose_keys) - development_keys)
+    leaking_bootstrap = sorted(DEVCONTAINER_BOOTSTRAP_SECRET_KEYS & development_keys)
+    if leaking_bootstrap:
+        raise AssertionError(
+            'PostgreSQL bootstrap-only secrets must not appear in application .env.example: '
+            + ', '.join(leaking_bootstrap)
+        )
+    missing_development = sorted(
+        ((common_keys | development_compose_keys) - DEVCONTAINER_BOOTSTRAP_SECRET_KEYS)
+        - development_keys
+    )
     if missing_development:
         raise AssertionError('.env.example is missing environment contract keys: ' + ', '.join(missing_development))
 
