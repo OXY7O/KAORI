@@ -311,10 +311,21 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
     assert 'hx-post' not in template
     assert '<form method="post"' not in template
 
-    # The four request dimensions read frozen Namespace quota, never current
-    # reusable profile values or raw provider JSON.
-    for key in ("requests.cpu", "requests.memory", "pods", "requests.storage"):
-        assert f"quota.get('{key}')" in template
+    # All six primary ResourceQuota dimensions use committed Namespace
+    # snapshot values, not mutable profiles or Container LimitRange defaults.
+    for label, key in (
+        ('CPU Requests', 'requests.cpu'),
+        ('CPU Limits', 'limits.cpu'),
+        ('Memory Requests', 'requests.memory'),
+        ('Memory Limits', 'limits.memory'),
+        ('Pod Slots', 'pods'),
+        ('Logical Storage', 'requests.storage'),
+    ):
+        assert f"('{label}', quota.get('{key}'))" in template
+    assert 'Frozen Namespace ResourceQuota · Not live utilization' in template
+    assert 'grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3' in template
+    assert "('CPU Limit', (limit_defaults.get('default') or {}).get('cpu'))" in template
+    assert "('Memory Limit', (limit_defaults.get('default') or {}).get('memory'))" in template
     assert 'item.allocation_quota_json or {}' in template
     assert 'item.allocation_limit_defaults_json or {}' in template
     assert 'item.allocation_storage_policy_json or {}' in template
@@ -371,6 +382,45 @@ def test_namespace_provisioning_rows_separate_identity_allocation_and_state() ->
     assert "registry_ui.footer('tenant.namespace_provisioning'" in template
     assert "registry_ui.filter_form(" in template
     assert "hx-post" not in template
+
+
+def test_namespace_allocation_dialog_renders_resourcequota_limits_not_container_defaults() -> None:
+    import re
+
+    from jinja2 import Environment
+
+    source = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    marker = '<dl class="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">'
+    begin = source.index(marker)
+    end = source.index('</dl>', begin) + len('</dl>')
+    render = Environment(autoescape=True).from_string(source[begin:end]).render
+
+    observed = render(
+        quota={
+            'limits.cpu': '4',
+            'limits.memory': '8Gi',
+            'pods': '10',
+            'requests.storage': '1Gi',
+        },
+        limit_defaults={'default': {'cpu': '250m', 'memory': '512Mi'}},
+    )
+    expected = (
+        ('CPU Requests', 'Not declared'),
+        ('CPU Limits', '4'),
+        ('Memory Requests', 'Not declared'),
+        ('Memory Limits', '8Gi'),
+        ('Pod Slots', '10'),
+        ('Logical Storage', '1Gi'),
+    )
+    for label, value in expected:
+        pattern = rf'>{re.escape(label)}</dt>\s*<dd[^>]*>\s*{re.escape(value)}\s*</dd>'
+        assert re.search(pattern, observed)
+
+    # Container default LimitRange values must not appear as quota limits.
+    assert '250m' not in observed
+    assert '512Mi' not in observed
+    empty = render(quota={})
+    assert empty.count('Not declared') == 6
 
 
 def test_namespace_registry_uses_existing_compact_profile_naming_rules() -> None:

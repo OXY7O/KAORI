@@ -210,18 +210,23 @@ uniquely identified by committed Namespace record ID (not Namespace name).
 The read-only detail workspace groups full Namespace/Tenant identity,
 ownership, Native/Capsule provider reconciliation authority, provisioning
 state, full profile/provenance and committed snapshot version. **CPU requests,
-memory requests, Pod slots, and logical storage** use the Namespace's
-**frozen `allocation_quota_json`**, never the mutable reusable Resource
-Profile and never a fresh live provider query. Missing dimensions are
-**Not declared**, never invented zero. An optional native disclosure shows
-the committed PVC min/max and Container LimitRange defaults when present;
+CPU limits, memory requests, memory limits, Pod slots, and logical storage**
+use the Namespace's **frozen `allocation_quota_json`**, never the mutable
+reusable Resource Profile and never a fresh live provider query. These are
+ResourceQuota values, including adopted Native provider baseline limits;
+the optional **Container Defaults** disclosure separately reads committed
+LimitRange defaults. Missing dimensions are **Not declared**, never invented
+zero, and an absent CPU/memory request is not inferred from a declared limit.
+The optional native disclosure shows committed PVC min/max and Container
+LimitRange defaults when present;
 full provider reconciliation messages, last-reconciled evidence and
 Native-adopted / Capsule-provider-mirrored distinctions remain readable.
 
 After additional DevContainer visual feedback, the modal body follows one
 compact, left-aligned reading order: **Status / Ownership / Provider / Authority**
-in a single evidence strip; **Committed Allocation** as four consistently
-labelled frozen values; **Source Profile / Effective Snapshot** within that
+in a single evidence strip; **Committed Allocation** as six consistently
+labelled frozen values in a two-column mobile / three-column wider layout;
+**Source Profile / Effective Snapshot** within that
 allocation section; then the full **Reconciliation** message as an understated
 left-accented text block. Optional PVC/LimitRange controls stay collapsed
 below the operational facts. Removing redundant nested cards and repeated
