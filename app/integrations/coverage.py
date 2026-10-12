@@ -358,18 +358,32 @@ def bound_sources_for_scopes(
         provider_by_instance[binding.integration_instance_id] = provider
         candidates.setdefault((provider, str(binding.asset_key)), []).append(binding)
 
+    # Hydrate only the preferred binding for each *visible* asset, not every
+    # failover candidate or every registered Metrics/Alert source in the fleet.
+    winners: dict[tuple[str, str], IntegrationBinding] = {}
+    for key, options in candidates.items():
+        winners[key] = min(
+            options,
+            key=lambda item: (_role_rank(item.binding_role), item.priority, item.id),
+        )
+    selected_ids = {
+        provider: {
+            binding.integration_instance_id
+            for binding in winners.values()
+            if provider_by_instance.get(binding.integration_instance_id) == provider
+        }
+        for provider in normalized_providers
+    }
     source_maps = {
         provider: {
             instance.integration_instance_id: instance
-            for instance in _instances(provider)
+            for instance in _instances(provider, canonical_ids=selected_ids[provider])
             if instance.integration_instance_id is not None
         }
         for provider in normalized_providers
     }
     resolved: dict[tuple[str, str], tuple[Any | None, IntegrationBinding | None]] = {}
-    for key, options in candidates.items():
-        options.sort(key=lambda item: (_role_rank(item.binding_role), item.priority, item.id))
-        binding = options[0]
+    for key, binding in winners.items():
         provider = provider_by_instance.get(binding.integration_instance_id, key[0])
         source = source_maps.get(provider, {}).get(binding.integration_instance_id)
         resolved[key] = (source, binding)
@@ -417,28 +431,35 @@ def bound_source_for_scope(
     return source, binding
 
 
-def _instances(integration_type: str) -> list[Any]:
+def _instances(integration_type: str, *, canonical_ids: set[int] | None = None) -> list[Any]:
     """Batch registered provider models rather than resolving every canonical row."""
     from app.integrations.kernel.registry import get_integration, registry
 
+    if canonical_ids is not None and not canonical_ids:
+        return []
     module = get_integration(integration_type)
     records: list[Any] = []
     for implementation in registry.implementations_for_type(integration_type):
         model = implementation.record_model
         if model is not None:
-            records.extend(
+            query = (
                 model.query.join(model.integration_instance)
                 .filter(
                     IntegrationInstance.integration_type == integration_type,
                     IntegrationInstance.provider_key == implementation.provider_key,
                 )
-                .all()
             )
+            if canonical_ids is not None:
+                query = query.filter(model.integration_instance_id.in_(canonical_ids))
+            records.extend(query.all())
             continue
         # Future provider implementations without a batch mapping retain correctness.
-        identities = IntegrationInstance.query.filter_by(
+        identities_query = IntegrationInstance.query.filter_by(
             integration_type=integration_type, provider_key=implementation.provider_key,
-        ).with_entities(IntegrationInstance.id).all()
+        )
+        if canonical_ids is not None:
+            identities_query = identities_query.filter(IntegrationInstance.id.in_(canonical_ids))
+        identities = identities_query.with_entities(IntegrationInstance.id).all()
         for (identity_id,) in identities:
             record = module.get_record_for_canonical(identity_id)
             if record is not None:

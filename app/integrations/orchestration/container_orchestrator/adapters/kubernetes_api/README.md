@@ -41,3 +41,13 @@ available API resources. Stable API candidates are preferred; tested legacy API
 adapters may be selected only when declared by the compatibility contract.
 Blocked or unsupported API requirements degrade or block readiness with stored
 evidence.
+
+## Connection Registry and Coverage read model
+
+The Kubernetes front page performs provider lifecycle, selected source/binding
+coverage, operator filters and complete-fleet counters in SQL via
+`container_orchestrator/fleet_query.py`. It selects independent Registry and
+Coverage pagination windows (default five) **before** hydrating full provider
+records and reusable Metrics Source/Alertmanager bindings. The shared source
+lookup is limited to the visible cluster IDs and canonical source identities.
+All runtime operations and provider state remain Kubernetes-owned.

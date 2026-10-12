@@ -5,9 +5,14 @@ from typing import Any
 
 from sqlalchemy.orm import contains_eager
 
-from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.integrations.coverage import bound_source_for_scope, bound_sources_for_scopes
+from app.integrations.orchestration.container_orchestrator.fleet_query import (
+    environment_options,
+    fleet_statement,
+    fleet_stats,
+    page_connection_ids,
+)
 from app.integrations.readiness import (
     OperationalPosture,
     resolve_binding_operational_status,
@@ -199,11 +204,18 @@ def build_kubernetes_registry_row(cluster_id: str) -> dict[str, Any] | None:
     return _build_registry_row(connection)
 
 
-def _load_rows() -> list[dict[str, Any]]:
+def _hydrate_connection_rows(connection_ids: list[int]) -> dict[int, dict[str, Any]]:
+    """Hydrate only rows selected by SQL pagination, using one bounded source batch."""
+    if not connection_ids:
+        return {}
     connections = (
         KubernetesConnection.query.join(Cluster)
-        .options(contains_eager(KubernetesConnection.cluster))
-        .order_by(Cluster.created_at.asc(), Cluster.id.asc())
+        .join(KubernetesConnection.integration_instance)
+        .options(
+            contains_eager(KubernetesConnection.cluster),
+            contains_eager(KubernetesConnection.integration_instance),
+        )
+        .filter(KubernetesConnection.id.in_(connection_ids))
         .all()
     )
     bound_sources = bound_sources_for_scopes(
@@ -211,7 +223,10 @@ def _load_rows() -> list[dict[str, Any]]:
         scope_type='kubernetes_cluster',
         scope_keys=[str(connection.cluster_id) for connection in connections],
     )
-    return [_build_registry_row(connection, bound_sources=bound_sources) for connection in connections]
+    return {
+        connection.id: _build_registry_row(connection, bound_sources=bound_sources)
+        for connection in connections
+    }
 
 
 def _search_blob(row: dict[str, Any], fields: tuple[str, ...]) -> str:
@@ -277,21 +292,25 @@ def _stats(rows: list[dict[str, Any]]) -> dict[str, int]:
 
 def build_kubernetes_page(filters: KubernetesFrontPageFilters | None = None) -> dict[str, Any]:
     resolved = filters or KubernetesFrontPageFilters()
-    rows = _load_rows()
-    registry_rows, registry_query = _filter_registry_rows(rows, resolved.registry)
-    coverage_rows, coverage_query = _filter_coverage_rows(rows, resolved.coverage)
-    page_rows, pagination = paginate_sequence(
-        registry_rows, page=resolved.registry.page, per_page=resolved.registry.per_page
+    fleet = fleet_statement()
+    stats = fleet_stats(fleet)
+    environments = environment_options(fleet)
+    registry_ids, pagination = page_connection_ids(
+        fleet, filters=resolved.registry, coverage=False,
     )
-    coverage_page_rows, coverage_pagination = paginate_sequence(
-        coverage_rows, page=resolved.coverage.page, per_page=resolved.coverage.per_page
+    coverage_ids, coverage_pagination = page_connection_ids(
+        fleet, filters=resolved.coverage, coverage=True,
     )
-    environments = sorted({row['environment'] for row in rows if row.get('environment')})
+    hydrated = _hydrate_connection_rows(list(dict.fromkeys(
+        [*registry_ids, *coverage_ids]
+    )))
+    registry_rows = [hydrated[identity] for identity in registry_ids if identity in hydrated]
+    coverage_rows = [hydrated[identity] for identity in coverage_ids if identity in hydrated]
 
     return {
-        'rows': page_rows,
+        'rows': registry_rows,
         'pagination': pagination,
-        'coverage_rows': coverage_page_rows,
+        'coverage_rows': coverage_rows,
         'coverage_pagination': coverage_pagination,
         'selected_query': resolved.registry.query,
         'selected_environment': resolved.registry.environment,
@@ -301,15 +320,20 @@ def build_kubernetes_page(filters: KubernetesFrontPageFilters | None = None) -> 
         'selected_coverage_environment': resolved.coverage.environment,
         'selected_coverage_status': resolved.coverage.status,
         'registry_has_active_filters': bool(
-            registry_query or resolved.registry.environment or resolved.registry.readiness or resolved.registry.coverage
+            resolved.registry.query.strip()
+            or resolved.registry.environment
+            or resolved.registry.readiness
+            or resolved.registry.coverage
         ),
         'coverage_has_active_filters': bool(
-            coverage_query or resolved.coverage.environment or resolved.coverage.status
+            resolved.coverage.query.strip()
+            or resolved.coverage.environment
+            or resolved.coverage.status
         ),
         'environment_options': environments,
         'coverage_environment_options': environments,
         'readiness_options': READINESS_OPTIONS,
         'coverage_options': COVERAGE_OPTIONS,
         'coverage_status_options': COVERAGE_OPTIONS,
-        'stats': _stats(rows),
+        'stats': stats,
     }
