@@ -7,6 +7,7 @@ No database connection and no privileged secret is passed to application contain
 from __future__ import annotations
 
 import base64
+import json
 import os
 import secrets
 import subprocess
@@ -25,14 +26,36 @@ def fail(message: str) -> None:
 
 
 def database_volume_exists() -> bool:
+    """Distinguish an actually absent DevContainer volume from Docker errors.
+
+    Never regenerate database credentials after an inspect failure or adopt a
+    named volume not owned by the expected Compose project and logical key.
+    """
+    volume_name = 'kaori-dev_kaori_postgres_data'
     try:
         result = subprocess.run(
-            ['docker', 'volume', 'inspect', 'kaori-dev_kaori_postgres_data'],
-            capture_output=True, check=False, timeout=10,
+            ['docker', 'volume', 'inspect', volume_name],
+            capture_output=True, text=True, check=False, timeout=10,
         )
     except (OSError, subprocess.TimeoutExpired):
         fail('Docker is required to check the existing local PostgreSQL volume')
-    return result.returncode == 0
+    if result.returncode:
+        if 'no such volume' in result.stderr.lower():
+            return False
+        fail('Docker volume inspection failed; refusing to assume a fresh database')
+    try:
+        volumes = json.loads(result.stdout)
+        info, = volumes
+        labels = info.get('Labels') or {}
+    except (ValueError, TypeError, AttributeError):
+        fail('Malformed Docker volume inspection; refusing first-run provisioning')
+    if (
+        info.get('Name') != volume_name
+        or labels.get('com.docker.compose.project') != 'kaori-dev'
+        or labels.get('com.docker.compose.volume') != 'kaori_postgres_data'
+    ):
+        fail('PostgreSQL volume identity/ownership differs from kaori-dev')
+    return True
 
 
 def existing_values(source: str) -> dict[str, str]:
