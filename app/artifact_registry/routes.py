@@ -21,6 +21,7 @@ from app.artifact_registry.governance_job_adapter import (
     build_registry_governance_sync_state,
     get_registry_governance_sync_job,
 )
+from app.artifact_registry.presentation_common import _providers as _active_registry_sources
 from app.artifact_registry.presentation import (
     build_analytics,
     build_analytics_shell,
@@ -371,17 +372,32 @@ def security_sync_status(public_id: str) -> ResponseReturnValue:
     return response
 
 
+def _runtime_scope_id(name: str) -> int | None:
+    raw = request.args.get(name)
+    if raw is None or not raw.strip():
+        return None
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        abort(404)
+    if value < 1:
+        abort(404)
+    if name == 'source_id' and not any(int(source.id) == value for source in _active_registry_sources()):
+        abort(404)
+    return value
+
+
 @artifact_registry_bp.get('/runtime')
 @permission_required('artifact_registry.view')
 def runtime() -> ResponseReturnValue:
     context = build_runtime_usage(
         search=request.args.get('q', '', type=str),
-        source_id=request.args.get('source_id', type=int),
+        source_id=_runtime_scope_id('source_id'),
         cluster_id=request.args.get('cluster_id', '', type=str),
         namespace=request.args.get('namespace', '', type=str),
         match_type=request.args.get('match_type', '', type=str),
         exposure=request.args.get('exposure', '', type=str),
-        artifact_id=request.args.get('artifact_id', type=int),
+        artifact_id=_runtime_scope_id('artifact_id'),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
