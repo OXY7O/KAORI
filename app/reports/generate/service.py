@@ -488,6 +488,8 @@ def get_form_state_from_form(
         period = '30d'
 
     return {
+        # Keep the raw posted type so validation cannot accept a silent catalog fallback.
+        '_submitted_report_type': str(form.get('report_type') or '').strip(),
         'name': form.get(
             'name',
             '',
@@ -526,8 +528,13 @@ def validate_form_state(
     errors: list[str] = []
     report_type = form_state['report_type']
 
-    if report_type not in {item['value'] for item in REPORT_TYPE_OPTIONS}:
-        errors.append('Please select a valid report type.')
+    published_types = {item['value'] for item in REPORT_TYPE_OPTIONS}
+    if (
+        report_type not in published_types
+        or form_state.get('_submitted_report_type', report_type) not in published_types
+    ):
+        # Do not validate/persist a different report family after normalization.
+        return ['Please select a valid published report type.']
 
     report_spec = get_report_type_spec(report_type)
     scope_errors, cluster_exists = _validate_primary_scope(form_state, report_spec)
