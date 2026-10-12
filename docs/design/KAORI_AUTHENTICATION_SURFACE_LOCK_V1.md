@@ -83,7 +83,20 @@ Compact setup typography:
 
 This exception is limited to Database Setup Required and must not be copied to ordinary authenticated application pages.
 
-The setup page uses **no giant outer workspace card and no permanent right-side setup rail**. The page is composed as a short operator console:
+The setup page uses **no giant outer workspace card and no permanent right-side setup rail**. The page is composed as a short operator console.
+
+**Local DevContainer UAT visual refinement (#744):** the identity/header,
+readiness strip, primary bootstrap section, initialization steps, and
+read-only action footer have *individual compact outlined/elevated
+surfaces* (`border-outline-default`, `bg-surface-card` or shared
+`bg-surface-hover`, `shadow-sm`) to separate them from
+`bg-surface-page`. This is **not** an oversized nested parent
+workspace card or a new component family. Preserve the compact
+`text-lg`/`text-sm`/`text-xs` typography and shared terminal, flow,
+status, expandable detail, and semantic callout components. The first-run
+command is copied for **Windows PowerShell host** (or another host
+terminal), not mandated WSL Remote. The PostgreSQL-unavailable view
+follows the same bounded card treatment.
 
 ```text
 Compact Page Identity
