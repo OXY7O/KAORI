@@ -16,6 +16,7 @@ from app.kubernetes.tenant.capacity import (
     classify_allocation_change,
     classify_capacity_state,
     evaluate_allocation_preflight,
+    quota_limit_vector,
     quota_request_vector,
 )
 from app.kubernetes.tenant.capacity_allocation_state import (
@@ -24,6 +25,7 @@ from app.kubernetes.tenant.capacity_allocation_state import (
     _committed_tenant_allocation,
     _committed_tenant_allocations,
 )
+from app.kubernetes.tenant.capacity_limit_exposure import assess_limit_exposure
 from app.kubernetes.tenant.capacity_governance_support import (
     _GIB,
     _budget,
@@ -93,6 +95,16 @@ class _AllocationRequest:
     replacement_namespace: TenantNamespace | None = None
 
 
+def _operator_limit_ratio(value: object, *, name: str, upper: str) -> str:
+    try:
+        ratio = Decimal(str(value).strip())
+    except (InvalidOperation, ValueError, TypeError) as exc:
+        raise ValueError(f'{name} ratio must be a finite number.') from exc
+    if not ratio.is_finite() or not Decimal('1') <= ratio <= Decimal(upper):
+        raise ValueError(f'{name} ratio must be between 1 and {upper}.')
+    return format(ratio, 'f')
+
+
 def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
     cluster_id = _text(source, 'capacity_cluster_id')
     cluster = db.session.get(Cluster, cluster_id)
@@ -129,6 +141,20 @@ def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
         policy.cluster_id = cluster.id
         db.session.add(policy)
 
+    mode = str(source.get('limit_exposure_mode') or getattr(policy, 'limit_exposure_mode', 'observe') or 'observe')
+    if mode not in {'observe', 'enforce'}:
+        raise ValueError('Limit Exposure mode must be Observe or Enforce.')
+    cpu_ratio = _operator_limit_ratio(
+        source.get('cpu_limit_ratio') or getattr(policy, 'cpu_limit_ratio', '1.50'),
+        name='CPU Limit Exposure', upper='4',
+    )
+    memory_ratio = _operator_limit_ratio(
+        source.get('memory_limit_ratio') or getattr(policy, 'memory_limit_ratio', '1.00'),
+        name='Memory Limit Exposure', upper='2',
+    )
+    policy.limit_exposure_mode = mode
+    policy.cpu_limit_ratio = cpu_ratio
+    policy.memory_limit_ratio = memory_ratio
     policy.platform_reserve_cpu = reserve_cpu
     policy.platform_reserve_memory = reserve_memory
     policy.platform_reserve_pods = reserve_pods
