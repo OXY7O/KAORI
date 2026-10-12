@@ -158,3 +158,7 @@ List pages remain metadata-first and must never treat a reachable backend plus r
 ### Generated Reports Registry scope identity (#1555)
 
 Registry's generic scope filter includes active IntegrationInstance Registry options through `get_active_registry_options()`, alongside Kubernetes and Object Storage. Each persisted report's immutable scope label snapshot remains authoritative for historical presentation even when an integration is unavailable; absent snapshots use a safe Registry Integration ID fallback without per-row provider or IntegrationInstance lookups. Registry rows/detail display `Artifact Registry` / `Integration Scope`, not Kubernetes/namespace metadata. Scope filters remain server-side committed SQL.
+
+### Report Templates validation recovery (#1565)
+
+Invalid custom-template create/edit submissions render the same existing native modal with submitted values and an accessible server-owned validation summary (`422`). No unbounded session or cross-user flash store is introduced; the safe registry query/pagination return boundary remains intact. Valid mutations still perform canonical feedback and redirect to the edited template. The externally owned form JavaScript under merged #394/#435 remains unchanged.
