@@ -80,7 +80,9 @@ def _vulnerability_report(raw: Any) -> dict[str, Any] | None:
 def _normalize_vulnerabilities(raw: Any) -> tuple[list[dict[str, Any]], dict[str, int], dict[str, Any]]:
     report = _vulnerability_report(raw)
     if report is None:
-        return [], {}, {}
+        raise HarborResponseError('Harbor vulnerability detail lacks a usable vulnerabilities list.')
+    if any(not isinstance(item, dict) for item in report['vulnerabilities']):
+        raise HarborResponseError('Harbor vulnerability detail contains a malformed finding.')
     rows: list[dict[str, Any]] = []
     counts = {severity: 0 for severity in _SEVERITIES}
     for item in report.get('vulnerabilities') or []:
@@ -284,6 +286,7 @@ class _SecurityCollectionState:
     successful_repositories: int = 0
     records: list[RegistryArtifactSecurityEvidence] = field(default_factory=list)
     repository_failures: list[dict[str, str]] = field(default_factory=list)
+    report_failures: list[dict[str, str]] = field(default_factory=list)
 
     def current(self, target: RegistrySecurityTarget) -> bool:
         return self.target_is_current is None or self.target_is_current(target)
@@ -307,6 +310,15 @@ class _SecurityCollectionState:
         reused: int = 0,
     ) -> None:
         self.records.append(record)
+        report_error = record.provider_metadata.get('report_error')
+        if report_error:
+            self.report_failures.append({
+                'project_name': target.project_name,
+                'repository_name': target.repository_name,
+                'digest': target.digest,
+                'error_type': 'VulnerabilityReportIncomplete',
+                'message': str(report_error)[:500],
+            })
         self.refreshed_reports += refreshed
         self.reused_reports += reused
         self.processed += 1
@@ -427,11 +439,28 @@ def _artifact_security_record(
                 repository_name=repository_name,
                 reference=target.digest,
             )
+            vulnerabilities, report_summary, report_meta = _normalize_vulnerabilities(payload)
         except HarborError as exc:
             report_error = f'{type(exc).__name__}: {exc}'[:1000]
-            report_summary: dict[str, int] = {}
-        else:
-            vulnerabilities, report_summary, report_meta = _normalize_vulnerabilities(payload)
+            # Do not advance the committed scan identity or create a false-clean
+            # snapshot. The next refresh must retry this same changed scan.
+            return (
+                RegistryArtifactSecurityEvidence(
+                    artifact_id=target.artifact_id,
+                    scan_status=target.scan_status,
+                    scan_completed_at=target.scan_completed_at,
+                    vulnerability_summary=dict(target.vulnerability_summary or {}),
+                    signature_status=target.signature_status,
+                    sbom_status=target.sbom_status,
+                    reuse_existing_scan=bool(target.has_scan_snapshot),
+                    provider_metadata={
+                        'report_error': report_error,
+                        'provider_evidence': 'vulnerability_report_incomplete',
+                    },
+                ),
+                0,
+                int(target.has_scan_snapshot),
+            )
         scanner_name, scanner_version = _scanner_identity(scan, report_meta)
         if report_summary:
             scan_summary = report_summary
@@ -566,6 +595,8 @@ def collect_harbor_security(
             'repository_count': len(grouped),
             'successful_repository_count': state.successful_repositories,
             'repository_failure_count': len(state.repository_failures),
+            'report_failure_count': len(state.report_failures),
+            'report_failures': state.report_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE],
             'stale_target_skip_count': state.stale_target_skip_count,
             'repository_failures': state.repository_failures[:_MAX_REPOSITORY_FAILURE_EVIDENCE],
             'repository_failure_evidence_truncated': (
