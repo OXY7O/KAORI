@@ -11,7 +11,6 @@ from app.integrations.storage.object_storage.providers.minio.presentation import
 
 def test_minio_runtime_row_uses_canonical_detail_identity_even_if_ids_differ():
     provider = SimpleNamespace(key='minio', label='MinIO')
-    original = service.provider_kind if hasattr(service, 'provider_kind') else None
     from app.integrations.storage.object_storage.providers.minio import presentation
     from unittest.mock import patch
     canonical = SimpleNamespace(id=77, provider_key='minio', adapter_key='s3', bindings=[], lifecycle_status='active', enabled=True)

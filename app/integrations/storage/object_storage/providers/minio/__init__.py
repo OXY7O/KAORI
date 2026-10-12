@@ -67,6 +67,7 @@ provider_implementation = IntegrationImplementation(
     adapter_key='s3',
     adapter=runtime_adapter,
     instance_loader=model_loader(MinioInstance),
+    record_model=MinioInstance,
     canonical_record_loader=canonical_model_loader(MinioInstance),
     module_path='app.integrations.storage.object_storage.providers.minio',
     detail_url_builder=_detail_url,

@@ -82,6 +82,7 @@ provider_implementation = IntegrationImplementation(
     adapter_key='harbor_api_v2',
     adapter=runtime_adapter,
     instance_loader=model_loader(HarborInstance),
+    record_model=HarborInstance,
     canonical_record_loader=canonical_model_loader(HarborInstance),
     module_path='app.integrations.registry.providers.harbor',
     detail_url_builder=_detail_url,
