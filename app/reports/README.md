@@ -198,3 +198,7 @@ Process storage readiness cache keys use the canonical hashed configuration fing
 ### Local footprint read performance (#1596)
 
 Routine Reports Storage GETs only check local path availability and writability. The Local References card counts committed report metadata; physical filesystem footprint is not claimed or recursively re-enumerated from an HTTP request.
+
+### Strong storage verification cleanup (#1598)
+
+Strong worker verification uses a per-run random object key and records successful write, existence and confirmed deletion before marking the storage backend strongly verified. Cleanup is attempted even when provider probing fails; incomplete cleanup leaves storage write readiness degraded and must be reviewed in worker logs.

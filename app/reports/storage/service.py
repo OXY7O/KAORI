@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from uuid import uuid4
 from tempfile import NamedTemporaryFile
 from threading import Lock
 from time import monotonic
@@ -774,39 +775,34 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
 
 
 def verify_active_report_storage() -> dict[str, Any]:
+    """Worker-owned write, confirm and delete probe with a unique object key."""
     backend = get_active_report_storage_backend()
     backend_name = get_configured_storage_backend_name()
-    test_key = 'reports/storage-verification/kaori-report-storage-check.txt'
+    test_key = f'reports/storage-verification/{uuid4().hex}.txt'
 
-    with NamedTemporaryFile(
-        mode='w',
-        encoding='utf-8',
-        suffix='.txt',
-        delete=False,
-    ) as temp_file:
+    with NamedTemporaryFile(mode='w', encoding='utf-8', suffix='.txt', delete=False) as temp_file:
         temp_file.write('kaori report storage verification\n')
         temp_path = Path(temp_file.name)
 
+    stored_file: StoredArtifact | None = None
+    cleanup_confirmed = False
     try:
         if backend_name == 's3' and hasattr(backend, 'test_connection'):
             backend.test_connection()  # type: ignore[attr-defined]
 
-        stored_file = backend.save_file(
-            source_path=temp_path,
-            object_key=test_key,
-        )
-        exists = backend.exists(stored_file.object_key)
-        backend.delete(stored_file.object_key)
+        stored_file = backend.save_file(source_path=temp_path, object_key=test_key)
+        try:
+            exists = bool(backend.exists(stored_file.object_key))
+        finally:
+            # Cleanup must run even when the existence probe fails.
+            backend.delete(stored_file.object_key)
+            cleanup_confirmed = not bool(backend.exists(stored_file.object_key))
+
+        verified = exists and cleanup_confirmed
         readiness = (
-            refresh_report_storage_readiness(
-                backend_name,
-                source='manual_verification',
-            )
-            if exists
-            else mark_report_storage_backend_unavailable(
-                backend_name,
-                source='manual_verification_failure',
-            )
+            refresh_report_storage_readiness(backend_name, source='manual_verification')
+            if verified
+            else mark_report_storage_backend_unavailable(backend_name, source='manual_verification_failure')
         )
         return {
             'backend': backend_name,
@@ -814,16 +810,19 @@ def verify_active_report_storage() -> dict[str, Any]:
             'object_key': stored_file.object_key,
             'size_bytes': stored_file.size_bytes,
             'exists_after_upload': exists,
-            'verified': exists,
+            'cleanup_confirmed': cleanup_confirmed,
+            'verified': verified,
             'readiness': readiness,
         }
     except Exception:
-        mark_report_storage_backend_unavailable(
-            backend_name,
-            source='manual_verification_failure',
-        )
+        mark_report_storage_backend_unavailable(backend_name, source='manual_verification_failure')
         raise
     finally:
+        if stored_file is not None and not cleanup_confirmed:
+            try:
+                backend.delete(stored_file.object_key)
+            except Exception:
+                current_app.logger.warning('Report verification temporary object cleanup retry failed.', exc_info=True)
         temp_path.unlink(missing_ok=True)
 
 
