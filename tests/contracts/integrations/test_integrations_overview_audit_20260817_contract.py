@@ -20,7 +20,7 @@ def test_overview_only_builds_the_selected_deep_workspace() -> None:
     assert 'framed_workspace_tabs.render_navigation(' in overview
     assert "{% if active_tab == 'catalog' %}" in overview
     assert "{% elif active_tab == 'runtime' %}" in overview
-    assert 'x-show="activeTab === \\'catalog\\'"' not in overview
+    assert 'x-show="activeTab' not in overview
 
 
 def test_runtime_overview_reuses_scoped_latest_observations_and_hydrates_only_a_page() -> None:
@@ -56,7 +56,7 @@ def test_overview_ready_counts_require_active_canonical_targets() -> None:
     assert "getattr(canonical, 'lifecycle_status', 'active') == 'active'" in extension
     assert "if is_configured and is_enabled and readiness == 'ready'" in extension
     assert "identity.lifecycle_status == 'active'" in sql
-    assert 'ready = and_(configured, active, state == \'ready\')' in sql
+    assert "ready = and_(configured, active, state == 'ready')" in sql
     assert 'posture_state, posture_label = portfolio_posture(summary)' in service
     assert 'No targets registered' in overview
     assert 'Available Domains' in overview

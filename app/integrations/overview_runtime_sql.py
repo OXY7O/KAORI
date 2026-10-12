@@ -90,6 +90,7 @@ def runtime_fleet():
         select(lookup.id)
         .where(
             lookup.integration_type == candidates.c.integration_type,
+            lookup.provider_key == candidates.c.provider_key,
             lookup.instance_id == cast(candidates.c.provider_record_id, String),
         )
         .order_by(lookup.observed_at.desc(), lookup.id.desc())
