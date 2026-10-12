@@ -162,6 +162,23 @@
                                         Open Job
                                         <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
                                     </a>
+                                {% elif row.archive_history_url %}
+                                    <div class="flex min-w-0 flex-col items-end gap-1.5">
+                                        <a href="{{ row.archive_history_url }}"
+                                           class="{{ table_ui.action_classes() }}"
+                                           aria-label="Browse Job Archives in Data Lifecycle">
+                                            Browse Job Archives
+                                            <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
+                                        </a>
+                                        <span class="max-w-52 text-right text-xs leading-4 text-content-muted">
+                                            Archive bundles only; job match not verified.
+                                        </span>
+                                    </div>
+                                {% elif row.job_unavailable %}
+                                    <div class="flex min-w-0 flex-col items-end gap-1">
+                                        <span class="text-xs font-medium text-content-secondary">Job unavailable</span>
+                                        <span class="text-right text-xs leading-4 text-content-muted">Not in current Job Registry.</span>
+                                    </div>
                                 {% else %}
                                     <span class="text-xs text-content-muted">Source-owned</span>
                                 {% endif %}
