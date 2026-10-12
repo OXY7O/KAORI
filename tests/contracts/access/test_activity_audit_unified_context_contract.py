@@ -30,18 +30,20 @@ def test_audit_context_uses_full_width_values_in_two_responsive_groups() -> None
         '{% if item.additional_evidence %}', 1
     )[0]
     assert 'Committed actor identity and target attribution.' in context
-    assert 'gap-x-8 gap-y-5 p-4 sm:grid-cols-2 sm:p-5' in context
-    assert context.count('mt-3 space-y-3') == 2
-    assert 'sm:grid-cols-3' not in context
-    assert 'md:col-span-3' not in context
-    assert 'md:col-span-2' not in context
-    assert 'aria-label="Actor and Access"' in context
-    assert 'aria-label="Target Context"' in context
-    assert "detail_ui.stacked_detail_row('Email', item.user_email or 'Not recorded')" in context
-    assert "detail_ui.stacked_detail_row('Role', item.user_role)" in context
-    assert "detail_ui.stacked_detail_row('Authentication', item.user_auth_source)" in context
-    assert "detail_ui.stacked_detail_row('Target Type', item.target_type)" in context
-    assert "detail_ui.stacked_detail_row('Module', item.module_label)" in context
+    assert 'grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2' in context
+    assert context.count('<dl class="divide-y divide-outline-subtle">') == 2
+    assert 'aria-labelledby="activity-actor-context-heading"' in context
+    assert 'aria-labelledby="activity-target-context-heading"' in context
+    for term in ('Email', 'Role', 'Authentication', 'Target Type', 'Module'):
+        assert f'>{term}</dt>' in context
+    for value in (
+        "{{ item.user_email or 'Not recorded' }}",
+        '{{ item.user_role }}',
+        '{{ item.user_auth_source }}',
+        '{{ item.target_type }}',
+        '{{ item.module_label }}',
+    ):
+        assert value in context
 
 def test_evidence_authorities_and_optional_metadata_are_preserved() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
