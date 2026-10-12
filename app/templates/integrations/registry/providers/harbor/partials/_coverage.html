@@ -28,7 +28,7 @@
             marker='harbor-coverage'
         ) if coverage_filters_active else '' %}
     {{ provider_registry.registry_header("Harbor Integration Coverage",
-        "Review provider readiness and committed Registry evidence for each Harbor-backed Registry instance.",
+        "Full Coverage requires API, committed Inventory, Metrics Source and Webhook evidence; optional integration dimensions do not gate core provider readiness.",
         "route",
         "harbor-coverage-loading",
         title_id="harbor-coverage-title",

@@ -233,7 +233,7 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
         ),
         'coverage_environment_options': sorted({row['environment'] for row in coverage_rows if row.get('environment')}),
         'coverage_status_options': [
-            {'value': 'ready', 'label': 'Complete'},
+            {'value': 'ready', 'label': 'Full Coverage'},
             {'value': 'attention', 'label': 'Partial Coverage'},
             {'value': 'disabled', 'label': 'Disabled'},
             {'value': 'inactive', 'label': 'Inactive'},
