@@ -83,7 +83,7 @@ gates and UAT continue to apply.
 
 Use the template that owns the runtime you are configuring:
 
-- `.env.example` is the comprehensive **development / Dev Container** application template. The WSL host `initializeCommand` creates `.env` automatically when absent; operators may copy it first to customize non-secret values and the first administrator email.
+- `.env.example` is the comprehensive **development / Dev Container** application template. The cross-platform Docker-based `initializeCommand` creates `.env` automatically when absent; operators may copy it first to customize non-secret values and the first administrator email.
 - `example/kaori/.env.example` is the intentionally minimal **disposable RC-image** example. It may omit optional settings and relies on safe application defaults baked into the image where appropriate; it is not a production template.
 - `deploy/env/app.env.example` owns portable **production application configuration**.
 - `deploy/env/secrets.env.example` owns **production runtime secrets**. Example values must remain placeholders; real credentials must not be committed.
