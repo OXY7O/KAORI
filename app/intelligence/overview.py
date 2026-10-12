@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import and_, case, func
 
+from app.common.alert_case_source_state import active_alert_case_filters
 from app.common.automation_execution import execution_enabled
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
@@ -108,51 +109,64 @@ def _automation_summary() -> dict[str, Any]:
 
 
 def _alert_operations_summary() -> dict[str, int]:
+    """Use Alert Intelligence active-case semantics, not workflow state alone."""
     now = datetime.now(UTC)
+    active = and_(*active_alert_case_filters())
+    firing = and_(active, AlertCase.source_state == 'firing')
     alert_counts = db.session.query(
-        func.sum(case((AlertCase.workflow_state != 'closed', 1), else_=0)),
+        func.sum(case((active, 1), else_=0)),
+        func.sum(case((and_(firing, AlertCase.severity == 'critical'), 1), else_=0)),
+        func.sum(case((and_(firing, AlertCase.severity == 'warning'), 1), else_=0)),
+        func.sum(case((and_(active, AlertCase.source_state == 'unknown'), 1), else_=0)),
+        func.sum(case((and_(active, AlertCase.workflow_state == 'acknowledged'), 1), else_=0)),
         func.sum(
-            case(
-                (
-                    and_(AlertCase.workflow_state != 'closed', AlertCase.severity == 'critical'),
-                    1,
-                ),
-                else_=0,
-            )
+            case((
+                and_(
+                    AlertCase.source_type == 'recommendation',
+                    AlertCase.source_state == 'resolved',
+                    AlertCase.workflow_state == 'verification_pending',
+                ), 1
+            ), else_=0)
         ),
-        func.sum(case((AlertCase.workflow_state == 'acknowledged', 1), else_=0)),
-        func.sum(case((AlertCase.workflow_state == 'verification_pending', 1), else_=0)),
         func.sum(
-            case(
-                (
-                    and_(
-                        AlertCase.workflow_state == 'closed',
-                        AlertCase.closed_at.is_not(None),
-                        AlertCase.closed_at >= now - timedelta(days=1),
-                    ),
-                    1,
-                ),
-                else_=0,
-            )
+            case((
+                and_(
+                    AlertCase.source_type == 'recommendation',
+                    AlertCase.workflow_state == 'closed',
+                    AlertCase.closed_at.is_not(None),
+                    AlertCase.closed_at >= now - timedelta(days=1),
+                ), 1
+            ), else_=0)
         ),
-        func.sum(case((AlertCase.postmortem_status.in_(('required', 'draft')), 1), else_=0)),
+        func.sum(
+            case((
+                and_(
+                    AlertCase.source_type == 'recommendation',
+                    AlertCase.postmortem_status.in_(('required', 'draft')),
+                ), 1
+            ), else_=0)
+        ),
     ).one()
     active_silences = AlertSilence.query.filter(
         AlertSilence.starts_at <= now,
         AlertSilence.ends_at > now,
         AlertSilence.revoked_at.is_(None),
     ).count()
+    # Delivery rows change to sent on successful retry. Only recent failed
+    # attempts affect current attention; older failures remain in delivery audit.
     delivery_failures = NotificationDelivery.query.filter(
         NotificationDelivery.event_type.in_(('alert_ops.firing', 'alert_ops.resolved')),
         NotificationDelivery.status == 'failed',
+        NotificationDelivery.updated_at >= now - timedelta(days=1),
     ).count()
-
-    active, critical, acknowledged, verification_pending, closed_24h, postmortem_required = (
+    active_count, critical, warning, source_unknown, acknowledged, verification_pending, closed_24h, postmortem_required = (
         int(value or 0) for value in alert_counts
     )
     return {
-        'active': active,
+        'active': active_count,
         'critical': critical,
+        'warning': warning,
+        'source_unknown': source_unknown,
         'acknowledged': acknowledged,
         'verification_pending': verification_pending,
         'silenced': int(active_silences),
@@ -160,7 +174,6 @@ def _alert_operations_summary() -> dict[str, int]:
         'delivery_failures': int(delivery_failures),
         'postmortem_required': postmortem_required,
     }
-
 
 def _overview_posture(
     *,
@@ -187,7 +200,9 @@ def _overview_posture(
                 'require operational review.'
             ),
         }
-    if summary['warning'] or alerts['verification_pending'] or automation['pending_governance']:
+    if (summary['warning'] or alerts['warning'] or alerts['source_unknown']
+            or alerts['verification_pending'] or alerts['postmortem_required']
+            or automation['pending_governance']):
         return {
             'label': 'Review Required',
             'tone': 'warning',
@@ -240,12 +255,13 @@ def _kpi_cards(
         {
             'label': 'Active Alerts',
             'value': alerts['active'],
-            'supporting': f'{alerts["critical"]} critical · {alerts["verification_pending"]} verify',
+            'supporting': f'{alerts["critical"]} critical · {alerts["warning"]} warning · {alerts["source_unknown"]} unknown',
             'icon': 'bell-ring',
             'tone': (
                 'critical'
                 if alerts['critical']
-                else ('warning' if alerts['verification_pending'] else ('info' if alerts['active'] else 'normal'))
+                else ('warning' if alerts['warning'] or alerts['source_unknown'] or alerts['verification_pending']
+                      or alerts['postmortem_required'] else ('info' if alerts['active'] else 'normal'))
             ),
             'href_endpoint': 'alert_intelligence.index',
             'action_label': 'View Alert Intelligence',
@@ -338,7 +354,7 @@ def _workspace_rows(
             'title': 'Alert Intelligence',
             'description': 'Alert cases, acknowledgement, routing, silences, resolution evidence, and history.',
             'icon': 'bell-ring',
-            'tone': 'critical' if alerts['critical'] else ('warning' if alerts['verification_pending'] else 'info'),
+            'tone': 'critical' if alerts['critical'] else ('warning' if alerts['warning'] or alerts['source_unknown'] or alerts['verification_pending'] or alerts['postmortem_required'] else 'info'),
             'primary_value': alerts['active'],
             'primary_label': 'active',
             'secondary_value': alerts['verification_pending'],
