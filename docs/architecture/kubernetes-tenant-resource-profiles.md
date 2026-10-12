@@ -402,6 +402,16 @@ versioned Resource Profile, except for the explicit `adopted_baseline`
 selection that reads the current frozen contract. All six ResourceQuota
 values and PVC min/max remain visible together, including on narrow screens.
 
+**Section heading consistency (#1664):** Allocation Change uses the
+existing KAORI Violet semantic 9x9 icon surface on the page's peer
+**Change Target**, **Managed Contract Comparison**, **Technical Details**
+and **Governance Gates** headings. The nested **Change Highlights**
+subsection uses a smaller 8x8 accent, keeping the heading hierarchy
+clear. Icons are decorative and `aria-hidden`; heading text and
+description remain authoritative. This refines appearance only,
+retaining the two primary contract panels, read-only advanced
+comparison and governed action flow without extra metric cards.
+
 A single **Change Highlights** strip shows at most three material changes,
 prioritizing CPU Limit, Memory Limit and Total Storage, while the count includes
 all **16** ResourceQuota, PVC, Object Limit and LimitRange Default dimensions.
