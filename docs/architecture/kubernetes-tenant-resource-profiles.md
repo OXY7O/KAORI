@@ -374,6 +374,21 @@ exact active Tenant generation/Namespace UID and committed/live evidence in
 DevContainer before any provider UAT write; source integration alone never
 reconfigures Kubernetes.
 
+**Allocation Change ResourceQuota comparison (#1577):** The preflight-only
+Managed Contract Comparison shows the frozen current Namespace and selected
+next Resource Profile side by side with six independent ResourceQuota
+dimensions: CPU Requests, CPU Limits, Memory Requests, Memory Limits, Pods
+and Total Storage, followed by the committed/proposed per-PVC storage bounds.
+Current values come only from `allocation_quota_json` committed evidence;
+proposed values come from the selected profile's versioned `quota_hard_json`,
+not live provider reads or mutable current-profile values. Missing controlled
+dimensions display `Unbounded` and never inherit a limit from a request
+or vice versa. CPU/memory **requests** govern the #654 committed capacity
+budget; CPU/memory **limits** are Kubernetes enforcement ceilings, not a
+substitute for requested commitments or physical reservation. This is a
+presentation expansion only; the existing three provider/admission/read-back
+gates and fail-closed execution are unchanged.
+
 **Allocation workflow target lifecycle (#1159):** Resource Profiles → Allocation Change
 offers only `kaori_managed` Native Namespace allocations belonging to a
 `ready` Tenant and a non-terminal Namespace generation. Adopted / Observed
