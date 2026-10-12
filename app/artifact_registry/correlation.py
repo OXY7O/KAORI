@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from hashlib import sha256
+import json
 from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
@@ -10,15 +12,55 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
-from app.models.inventory import PodInventory
+from app.models.inventory import ClusterInventory, PodInventory
+from app.models.integration import IntegrationInstance
 from app.models.registry import (
     RegistryArtifact,
     RegistryCollectionState,
+    RegistryProject,
     RegistryRepository,
     RegistryWorkloadBinding,
 )
 
 CORRELATION_BATCH_SIZE = 250
+
+def _active_registry_source_ids(session: Session) -> list[int]:
+    return [
+        int(source_id)
+        for (source_id,) in session.query(IntegrationInstance.id).filter(
+            IntegrationInstance.integration_type == 'registry',
+            IntegrationInstance.lifecycle_status == 'active',
+            IntegrationInstance.enabled.is_(True),
+        ).all()
+    ]
+
+
+def runtime_input_signature(session: Session) -> str:
+    """Fingerprint committed Registry and Kubernetes generation authorities.
+
+    No provider calls and no full artifact or Pod inventory traversal.
+    """
+    source_ids = _active_registry_source_ids(session)
+    registry_rows = session.query(
+        RegistryCollectionState.integration_instance_id,
+        RegistryCollectionState.last_committed_at,
+    ).filter(RegistryCollectionState.integration_instance_id.in_(source_ids)).all()
+    pod_generations = session.query(
+        ClusterInventory.cluster_id, ClusterInventory.collected_at
+    ).all()
+    evidence = {
+        'active_registry_sources': sorted(source_ids),
+        'registry': sorted(
+            (int(source_id), committed_at.isoformat() if committed_at else None)
+            for source_id, committed_at in registry_rows
+        ),
+        'kubernetes': sorted(
+            (str(cluster_id), collected_at.isoformat() if collected_at else None)
+            for cluster_id, collected_at in pod_generations
+        ),
+    }
+    return sha256(json.dumps(evidence, sort_keys=True).encode('utf-8')).hexdigest()
+
 CorrelationProgressCallback = Callable[[int, int, str], None]
 
 
@@ -135,7 +177,7 @@ def refresh_registry_workload_bindings(
     integration_instance_id: int | None = None,
     progress_callback: CorrelationProgressCallback | None = None,
     batch_size: int = CORRELATION_BATCH_SIZE,
-) -> dict[str, int]:
+) -> dict[str, int | str]:
     """Correlate committed Pod images to Registry artifacts in one atomic replacement transaction."""
 
     normalized_batch_size = max(int(batch_size or CORRELATION_BATCH_SIZE), 1)
@@ -146,7 +188,15 @@ def refresh_registry_workload_bindings(
     # Keep correlation replacement state on an independent transaction so
     # heartbeat checkpoints cannot partially commit the materialized binding set.
     with Session(db.engine) as materialization_session, materialization_session.begin():
-        artifact_query = materialization_session.query(RegistryArtifact).options(
+        input_signature = runtime_input_signature(materialization_session)
+        active_source_ids = _active_registry_source_ids(materialization_session)
+        artifact_query = materialization_session.query(RegistryArtifact).filter(
+            RegistryArtifact.repository.has(
+                RegistryRepository.project.has(
+                    RegistryProject.integration_instance_id.in_(active_source_ids)
+                )
+            )
+        ).options(
             joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
             selectinload(RegistryArtifact.tags),
         )
@@ -277,10 +327,15 @@ def refresh_registry_workload_bindings(
                 insert(RegistryWorkloadBinding),
                 pending_bindings,
             )
+        if runtime_input_signature(materialization_session) != input_signature:
+            raise RuntimeError(
+                'Committed Registry or Kubernetes inventory generation changed during runtime correlation.'
+            )
 
     return {
         'bindings': binding_count,
         'digest_matches': digest_matches,
         'tag_matches': tag_matches,
         'pods_evaluated': pod_total,
+        'input_signature': input_signature,
     }
