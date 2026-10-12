@@ -10,7 +10,7 @@
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('git-fork', 'Artifact Registry / Runtime Usage', 'waypoints') %}
+                    {% call page_hero.intro('git-fork', 'Artifact Registry Runtime', 'waypoints') %}
                         <h1 class="{{ page_hero.title_classes() }}">Dependency Topology</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
                             Trace committed artifact-to-Kubernetes usage and explain match confidence,
@@ -32,16 +32,9 @@
                         ('database', 'Registry Scope', runtime.scope.source_label, 'Committed registry inventory'),
                         ('boxes', 'Kubernetes Scope', runtime.scope.cluster_label, 'Committed Pod inventory')
                     ],
-                    'Runtime Bindings',
-                    url_for('artifact_registry.runtime',
-                        q=runtime.filters.search,
-                        source_id=runtime.filters.source_id,
-                        cluster_id=runtime.filters.cluster_id,
-                        namespace=runtime.filters.namespace,
-                        match_type=runtime.filters.match_type,
-                        exposure=runtime.filters.exposure,
-                        artifact_id=runtime.filters.artifact_id),
-                    action_icon='list',
+                    'Open Security',
+                    url_for('artifact_registry.security'),
+                    action_icon='shield-check',
                     blocked=runtime.setup.is_blocked,
                     blocked_info=runtime.setup.description,
                     blocked_label='Correlation Prerequisites') }}

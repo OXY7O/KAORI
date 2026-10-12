@@ -47,8 +47,10 @@ def test_topology_routes_are_permission_scoped_and_linked_to_runtime() -> None:
     assert '_runtime_scope_id(\'artifact_id\')' in source
 
     runtime = RUNTIME.read_text(encoding='utf-8')
-    assert "url_for('artifact_registry.runtime_topology'" in runtime
-    assert 'Open Dependency Topology' in runtime
+    # Level-three integrated tabs own navigation; the legacy duplicate CTA
+    # must not compete with the canonical workspace navigation above the Hero.
+    assert 'Open Dependency Topology' not in runtime
+    assert 'Runtime Bindings' in runtime
 
 
 def test_topology_reuses_shared_workspace_with_accessible_list_fallback() -> None:
