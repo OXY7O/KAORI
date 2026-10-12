@@ -168,6 +168,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes'),
         'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage'),
         'registry_items': sum(1 for item in filtered if item.get('domain') == 'registry'),
+        'matched_domains': len({str(item.get('domain')) for item in filtered if item.get('domain')}),
         'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical'),
         'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning'),
     }
@@ -569,33 +570,42 @@ def _catalog_scope_label(filters: dict[str, str]) -> str:
     return ' · '.join(scope_parts) if scope_parts else 'Multi-Domain'
 
 
-def _apply_catalog_payload(
-    payload: dict[str, Any],
-    catalog: list[dict[str, Any]],
-    *,
-    available: int,
-    reserved: int,
-    imported: int,
-) -> None:
-    catalog_domains = {str(rule.get('domain') or '') for rule in catalog if rule.get('domain')}
-    minio_coverage = sum(1 for rule in catalog if 'minio' in provider_keys(rule))
-    object_storage_rules = sum(1 for rule in catalog if rule.get('domain') == 'object_storage')
+def _apply_catalog_payload(payload: dict[str, Any]) -> None:
+    """Project the *matching* definitions, not global inventory, onto the filtered workspace."""
+    context = payload['result_context']
+    available = int(context['available_items'])
+    reserved = int(context['reserved_items'])
+    imported = int(context['imported_items'])
+    matching = int(context['matching_items'])
+    if not matching:
+        label, tone = 'No Matching Rules', 'unknown'
+    elif available:
+        label, tone = 'Definitions Available', 'normal'
+    elif reserved and not imported:
+        label, tone = 'Reserved Plan', 'unknown'
+    elif imported and not reserved:
+        label, tone = 'Imported Signal', 'info'
+    else:
+        label, tone = 'Catalog Only', 'unknown'
+
+    scope_label = _catalog_scope_label(payload['filters'])
+    if payload['active_filter_count']:
+        scope_label = f'Filtered · {scope_label}'
     payload.update(
         {
             'page_title': 'Rule Catalog',
-            'scope_label': _catalog_scope_label(payload['filters']),
+            'scope_label': scope_label,
             'summary': {
                 'available': available,
                 'reserved': reserved,
                 'imported': imported,
-                'domains': len(catalog_domains),
-                'object_storage': object_storage_rules,
-                'minio': minio_coverage,
+                'domains': int(context['matched_domains']),
+                'matching': matching,
             },
             'posture': {
                 'title': 'Catalog Posture',
-                'label': 'Active Coverage' if available else 'Reserved Plan',
-                'tone': 'normal' if available else 'unknown',
+                'label': label,
+                'tone': tone,
             },
         }
     )
@@ -668,13 +678,7 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
     findings = payload['recommendation_findings'] if page_mode != 'catalog' else []
 
     if page_mode == 'catalog':
-        _apply_catalog_payload(
-            payload,
-            catalog,
-            available=sum(1 for rule in catalog if rule.get('status') == 'available'),
-            reserved=sum(1 for rule in catalog if rule.get('status') == 'reserved'),
-            imported=sum(1 for rule in catalog if rule.get('status') == 'imported_signal'),
-        )
+        _apply_catalog_payload(payload)
     else:
         # The existing Intelligence Overview provides a conservative committed
         # 24-hour Inventory baseline, *not* evaluator/scan completeness.

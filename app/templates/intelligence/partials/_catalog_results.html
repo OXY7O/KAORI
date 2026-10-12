@@ -3,6 +3,7 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import 'intelligence/components/_pagination.html' as intelligence_pagination %}
 {% if request.headers.get('HX-Request') == 'true' %}
+    {% include 'intelligence/partials/_catalog_hero_posture.html' %}
     <div id="catalog-summary-section" hx-swap-oob="outerHTML">
         {% include 'intelligence/partials/_catalog_summary.html' %}
     </div>
