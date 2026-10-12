@@ -39,3 +39,41 @@ def test_unknown_source_never_counts_as_explicit_resolution() -> None:
     assert is_active_alert_case(case)
     case.source_state = 'resolved'
     assert not is_active_alert_case(case)
+
+
+def test_missing_finding_with_unavailable_source_stays_unknown_not_resolved(monkeypatch) -> None:
+    state = SimpleNamespace(
+        finding_key='registry.security.critical_runtime_vulnerability:42',
+        active=True, alert_case_id=42,
+    )
+    alert_case = SimpleNamespace(workflow_state='open')
+    observed = []
+
+    class StateQuery:
+        def filter_by(self, **kwargs):
+            assert kwargs == {'active': True}
+            return self
+        def all(self):
+            return [state]
+
+    monkeypatch.setattr(
+        source, 'RecommendationAlertState',
+        SimpleNamespace(query=StateQuery()),
+    )
+    monkeypatch.setattr(source, '_source_evidence_posture_for_state',
+                        lambda _state: (False, 'source_unavailable'))
+    monkeypatch.setattr(source, 'db', SimpleNamespace(
+        session=SimpleNamespace(get=lambda *_args: alert_case),
+    ))
+    monkeypatch.setattr(
+        source, 'mark_case_source_unknown',
+        lambda case, **kwargs: observed.append((case, kwargs['reason'])) or True,
+    )
+    stats = {'source_unknown': 0, 'resolved': 0}
+    source._reconcile_missing_recommendation_states(
+        fresh_keys=set(), now=datetime.now(UTC), stats=stats,
+    )
+    assert state.active is True
+    assert stats['resolved'] == 0
+    assert stats['source_unknown'] == 1
+    assert observed == [(alert_case, 'source_unavailable')]
