@@ -14,6 +14,14 @@ _ZERO = Decimal('0')
 _HUNDRED = Decimal('100')
 
 
+def _display_limit_cpu(value: Decimal | None) -> str:
+    return 'N/A' if value is None else f'{value.quantize(Decimal("0.01"))} cores'
+
+
+def _display_limit_memory(value: Decimal | None) -> str:
+    return 'N/A' if value is None else f'{(value / Decimal(1024**3)).quantize(Decimal("0.01"))} GiB'
+
+
 def limit_exposure_threshold(budget: CapacityVector, *, cpu_ratio: Decimal, memory_ratio: Decimal) -> CapacityVector:
     return CapacityVector(
         cpu=budget.cpu * cpu_ratio if budget.cpu is not None else None,
@@ -68,6 +76,12 @@ def assess_limit_exposure(
             'cpu': None if ceiling.cpu is None else format(ceiling.cpu, 'f'),
             'memory_bytes': None if ceiling.memory_bytes is None else format(ceiling.memory_bytes, 'f'),
         },
+        'display': {
+            'cpu_committed': _display_limit_cpu(committed.cpu),
+            'cpu_threshold': _display_limit_cpu(ceiling.cpu),
+            'memory_committed': _display_limit_memory(committed.memory_bytes),
+            'memory_threshold': _display_limit_memory(ceiling.memory_bytes),
+        },
         'unknown_sources': list(unknown_sources or []),
         'planning_only': True,
         'capacity_approval': False,
@@ -105,6 +119,12 @@ def _assess_known_limits(
         'threshold': {
             'cpu': None if ceiling.cpu is None else format(ceiling.cpu, 'f'),
             'memory_bytes': None if ceiling.memory_bytes is None else format(ceiling.memory_bytes, 'f'),
+        },
+        'display': {
+            'cpu_committed': _display_limit_cpu(committed.cpu),
+            'cpu_threshold': _display_limit_cpu(ceiling.cpu),
+            'memory_committed': _display_limit_memory(committed.memory_bytes),
+            'memory_threshold': _display_limit_memory(ceiling.memory_bytes),
         },
         'unknown_sources': [],
         'planning_only': True,
