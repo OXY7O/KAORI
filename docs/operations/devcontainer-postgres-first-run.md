@@ -99,7 +99,10 @@ SELECT has_table_privilege('kaori_runtime',
                           'public.capsule_handoff_ledger_events','TRUNCATE');"
 ```
 
-Expected ledger flags: `t|f|f|f`. Run the existing #1405 runtime guard
+Expected ledger flags: `t|f|f|f`. Additionally, `kaori_runtime` has
+`SELECT` only (no `INSERT`/`UPDATE`/`DELETE`/`TRUNCATE`) on
+`public.alembic_version`: the application must not falsify migration state.
+Run the existing #1405 runtime guard
 and actual UI CRUD/audit/Capsule UAT before declaring PASS. Capture sanitized
 Docker logs, schema version and role/trigger evidence.
 
