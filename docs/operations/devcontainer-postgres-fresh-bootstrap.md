@@ -151,152 +151,107 @@ an unexpected volume. The current DevContainer `workspace` process
 may stay running, but keep **Flask Debug, workers and Beat stopped**.
 Fresh database creation uses private `POSTGRES_DB/USER/PASSWORD`.
 
-## 2a. Optional first-run UI checkpoint — schema deliberately absent
+## 2a. Ordinary fresh DevContainer opening — no manual Compose commands
 
-KAORI already ships a **read-only** `Database Setup Required` surface
-under `http://localhost:5000/auth/login`. To exercise the exact
-**Initialization Required** branch **before** Alembic migrations, the
-PostgreSQL instance and `kaori` database must exist, the non-owner
-`kaori_runtime` login must connect, and the schema tables must be absent.
-A missing database or missing login displays **Database Unavailable**,
-not the missing-schema state.
+When a developer uses **Dev Containers: Reopen in Container**, the
+existing `.devcontainer/devcontainer.json` `runServices` starts **all**
+services: PostgreSQL, Redis, workspace, ten workers and Beat. A new
+`db-role-bootstrap` one-shot Compose service is a startup dependency of
+workspace/workers/Beat. It creates `kaori_runtime` with a distinct
+password derived only from the private canonical `DATABASE_URL` and
+minimal database CONNECT/public schema USAGE on an **empty bundled
+PostgreSQL cluster**. It does **not** create schema, grant application
+table writes, run migration or create an administrator. On subsequent
+reopens it checks the existing role and login; it does not rotate
+passwords, mutate prior records, or drop a role. If it fails, inspect its
+logs before proceeding. Do not fall back to the PostgreSQL owner.
 
-After the scoped deletion in step 2, while all Celery workers and Beat
-are **stopped**, inspect the freshly initialized schema as the owner:
+Workers/Beat automatically start with `WAIT_FOR_SCHEMA=true`; until
+schema reaches current Alembic head they **wait without consuming jobs**.
+There is no need to manually stop/start 10 worker containers for normal
+first-run operation.
 
-```bash
-psql -h db -U kaori -W -d kaori -X -At \
-  -c "SELECT to_regclass('public.alembic_version') IS NULL,
-             to_regclass('public.users') IS NULL"
-# Expected: t|t
-```
-
-**Do not proceed** if either value is false: it is not an empty-schema
-first-run environment. There is no need to create a second database.
-
-The existing post-migration provisioning script rightly requires
-`audit_events` and the Capsule ledger tables; it **cannot run before
-migrations**. For the first-run preview only, pre-create the exact same
-non-owner PostgreSQL role *without table grants* using the owner
-connection:
+Read-only verification on WSL host (if diagnosing first-run):
 
 ```bash
-psql -h db -U kaori -W -d kaori -X
+kaori_dc ps db redis workspace db-role-bootstrap
+kaori_dc logs --tail=60 db-role-bootstrap
+kaori_dc exec -T db psql -X -At -U kaori -d kaori \
+  -c "SELECT current_database(),
+             to_regclass('public.alembic_version') IS NULL,
+             to_regclass('public.users') IS NULL,
+             EXISTS (SELECT 1 FROM pg_roles WHERE rolname='kaori_runtime')"
+# Expected before initialization: kaori|t|t|t
 ```
 
-Inside that owner psql session (no password literals):
+The same read-only check prior to Compose first-run would have returned
+`kaori|t|t|f`. The role's presence is expected **after** automatic
+one-shot login provisioning. The initial database and restricted role
+exist, but the KAORI application tables intentionally do not.
 
-```sql
-CREATE ROLE kaori_runtime
-  NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
-  NOREPLICATION NOBYPASSRLS INHERIT;
-GRANT CONNECT ON DATABASE kaori TO kaori_runtime;
-GRANT USAGE ON SCHEMA public TO kaori_runtime;
+Open `KAORI: Flask Debug` (F5) and browse to
+`http://localhost:5000/auth/login`. Expected **HTTP 503 —
+Database Setup Required / Initialization Required** with the missing
+authentication tables. This is KAORI's existing read-only readiness
+page, not an installer that accepts DBA credentials in the browser.
+Take UI evidence if a first-run checkpoint is required.
+
+## 3. One-time VS Code Initialize Fresh Database task
+
+Only on the first empty KAORI schema, choose
+**Terminal → Run Task → `KAORI: Initialize Fresh Database`**.
+The task runs `python -m scripts.devcontainer.initialize_database
+--bootstrap-admin` and deliberately delegates to existing
+`scripts/init_db.sh` and
+`scripts/devcontainer/provision_postgres_runtime_role.sql`.
+
+The workflow:
+
+1. Verifies the selected environment is the **local bundled** `kaori-dev`
+   database and the configured runtime role is not the PostgreSQL owner.
+2. Constructs an **ephemeral** `KAORI_DB_MIGRATION_URL` from
+   `POSTGRES_USER/PASSWORD/DB` for a child migration process, without
+   writing it to `.env` or passing it to workers.
+3. Runs owner-only Alembic upgrades, canonical RBAC seeding and the
+   explicit first administrator bootstrap. Developer-supplied
+   `ADMIN_*` and `INTEGRATION_CREDENTIAL_KEY` must be set in the
+   private development environment before using this task.
+4. Runs the existing transactionally guarded DevContainer role
+   provisioning/grant SQL using the PostgreSQL owner, preserving
+   `kaori_runtime` LOGIN/password and restricting immutable Capsule
+   ledger to SELECT/INSERT only.
+5. Reuses the existing Flask ORM Capsule PostgreSQL write-once
+   guard. If any stage fails, STOP and review logs; do not bypass grants,
+   turn off triggers, or start provider actions.
+
+Expected final output includes:
+
+```text
+PASS: explicit DevContainer PostgreSQL migration identity admitted
+Database migration and RBAC initialization completed.
+PASS: KAORI migrated; restricted runtime grants and Capsule ledger guard admitted.
 ```
 
-Then use interactive psql meta-command `\password kaori_runtime`
-(the runtime secret must match private `DATABASE_URL`), followed by:
+Refresh `/auth/login` after success to view KAORI sign-in.
+**The task is not run on ordinary container reopen**, so existing data,
+migrations, and credentials are not re-created repeatedly.
 
-```sql
-ALTER ROLE kaori_runtime LOGIN;
-```
+After intentional future Alembic migrations, use the existing
+**KAORI: Database Upgrade** VS Code task. It runs owner migration
+then refreshes restricted runtime table privileges. **KAORI: Seed RBAC**
+and **KAORI: Bootstrap Admin** also use the controlled owner path;
+bare `flask db upgrade` as `kaori_runtime` must not be used.
 
-Exit via `\q`. This preview role has **no application table grants**
-because the tables do not yet exist. If the role already exists,
-revisit the supposed fresh-volume reset rather than silently changing
-an existing role.
+## 4. Manual recovery only
 
-Check the non-owner session and missing schema:
-
-```bash
-psql -h db -U kaori_runtime -W -d kaori -X -At \
-  -c "SELECT current_user, to_regclass('public.users') IS NULL"
-# Expected: kaori_runtime|t
-```
-
-In a fresh VS Code terminal, verify the Flask ORM connects as
-`kaori_runtime`, then start `KAORI: Flask Debug` via F5 and browse to
-`http://localhost:5000/auth/login`. The expected response is
-**HTTP 503 — Database Setup Required / Initialization Required**,
-listing missing authentication tables. This is an operator-facing,
-read-only installation guidance page, **not** an interactive schema
-creation wizard. Stop Flask Debug after taking UI evidence and **before
-running migrations**; keep workers and Beat stopped.
-
-When continuing with step 3, owner Alembic creates the actual tables.
-Then the established provisioning SQL in step 4 recognizes the
-existing `kaori_runtime` role and grants the necessary DML while
-enforcing Capsule ledger negative ACL checks. **Do not re-create or
-rotate** the role/password if the preview already configured it
-correctly.
-
-## 3. Owner-only Alembic + RBAC/admin initialization (DevContainer)
-
-Inside `/workspace/kaori`, run the **existing** `scripts/init_db.sh`
-with a transient owner URL assembled from private bootstrap settings.
-The URL remains in a child-process environment; this prints neither
-password nor connection string, and does not write secrets to `.env`.
-
-```bash
-python - <<'PY'
-import os
-import subprocess
-from dotenv import dotenv_values
-from sqlalchemy.engine import URL
-
-values = dotenv_values(".env")
-assert values.get("POSTGRES_DB") == "kaori"
-assert values.get("POSTGRES_USER") == "kaori"
-assert values.get("POSTGRES_PASSWORD")
-assert values.get("DATABASE_URL", "").startswith("postgresql://kaori_runtime:")
-
-owner_url = URL.create(
-    "postgresql",
-    username="kaori",
-    password=values["POSTGRES_PASSWORD"],
-    host="db",
-    port=5432,
-    database="kaori",
-).render_as_string(hide_password=False)
-
-subprocess.run(
-    ["sh", "scripts/init_db.sh", "--bootstrap-admin"],
-    env={**os.environ, "KAORI_DB_MIGRATION_URL": owner_url},
-    check=True,
-)
-print("PASS: Owner-only migrations and admin/RBAC bootstrap completed")
-PY
-```
-
-Review reported Alembic migrations through the current `db heads`;
-do not run `flask db upgrade` unqualified as `kaori_runtime`.
-Verify the resulting schema with read-only owner `psql` if needed.
-Bootstrap-admin requires approved local `ADMIN_*` settings and
-must not be run against another database.
-
-## 4. Install restricted runtime role using the existing SQL
-
-Run as the trusted owner from the DevContainer terminal:
-
-```bash
-PGAPPNAME=kaori-devcontainer-role-provision \
-psql -h db -U kaori -W -d kaori -X -v ON_ERROR_STOP=1 \
-  -v kaori_devcontainer_confirm=1 \
-  -f scripts/devcontainer/provision_postgres_runtime_role.sql
-```
-
-After `COMMIT`, **if step 2a was skipped**, open
-`psql -h db -U kaori -W -d kaori -X`, run interactive
-`\\password kaori_runtime`, then
-`ALTER ROLE kaori_runtime LOGIN;` and `\\q`.
-Enter the independently generated runtime secret matching
-`DATABASE_URL`, without exposing it in chat or Git.
-If step 2a already created a working runtime login, **do not reset
-the credential**: the existing provisioning script grants permissions
-to that role without replacing its password. It grants normal table DML and sequence usage,
-but only SELECT/INSERT on `capsule_handoff_ledger_events`, no
-UPDATE/DELETE/TRUNCATE, and no `public` schema CREATE. The four
-ledger and three handback audit triggers come from Alembic migrations.
+For an advanced operator diagnosing a failed role or migration,
+the **existing** provisioning SQL and runbook under
+[DevContainer PostgreSQL runtime role](devcontainer-postgres-runtime-role.md)
+remain the approved recovery authorities. Do not manually create the
+runtime role, rotate owner credentials, or delete volumes during normal
+fresh-container opening. The one-shot Compose service cannot provision
+arbitrary DBA-owned production endpoints; these are governed by
+the production database lifecycle issues #621/#622.
 
 ## 5. Verify actual ORM, PostgreSQL guard and worker admission
 
