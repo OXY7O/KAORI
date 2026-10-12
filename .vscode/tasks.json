@@ -2,9 +2,15 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "KAORI: Initialize Fresh Database",
+      "type": "shell",
+      "command": "python -m scripts.devcontainer.initialize_database --bootstrap-admin",
+      "problemMatcher": []
+    },
+    {
       "label": "KAORI: Database Upgrade",
       "type": "shell",
-      "command": "flask --app run:app db upgrade",
+      "command": "python -m scripts.devcontainer.initialize_database",
       "problemMatcher": []
     },
     {
@@ -16,13 +22,13 @@
     {
       "label": "KAORI: Seed RBAC",
       "type": "shell",
-      "command": "flask --app run:app seed-rbac",
+      "command": "python -m scripts.devcontainer.initialize_database",
       "problemMatcher": []
     },
     {
       "label": "KAORI: Bootstrap Admin",
       "type": "shell",
-      "command": "flask --app run:app bootstrap-admin",
+      "command": "python -m scripts.devcontainer.initialize_database --bootstrap-admin",
       "problemMatcher": []
     },
     {
