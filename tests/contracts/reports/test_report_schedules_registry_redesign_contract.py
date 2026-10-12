@@ -53,7 +53,7 @@ def test_schedule_registry_and_run_lifecycle_use_framed_canonical_workspaces() -
 
     assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_select' in service
     assert 'paginate_sequence(' not in service
-    assert '_filter_schedule_statement(selected_filters).order_by(' in service
+    assert '_filter_schedule_statement(selected_filters, _get_delivery_channel_options()).order_by(' in service
     assert 'paginate_select(' in service
     assert "query_args.get('run_page', 1)" in service
     assert "query_args.get('run_per_page', PER_PAGE_OPTIONS[0])" in service
