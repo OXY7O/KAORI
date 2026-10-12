@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from celery import shared_task
+from flask import current_app
 
 from app.extensions.db import db
 from app.models.job import JobExecution
@@ -14,6 +15,7 @@ from app.platform_operations.notifications.feedback import OperationalDeliveryPo
 from app.platform_operations.notifications.service import record_operational_activity
 from app.reports.export.service import generate_report_artifact
 from app.reports.notifications import deliver_generated_report
+from app.reports.schedules.support import get_run_delivery_channel_ids
 
 
 def _notify(job: JobExecution, report: Report, *, success: bool, message: str) -> None:
@@ -69,12 +71,26 @@ def _finalize_schedule(
     run.finished_at = datetime.now(UTC)
     run.error_message = None if success else message
     schedule = db.session.get(ReportSchedule, run.schedule_id) if run.schedule_id else None
-    if schedule is not None:
+    delivery_channel_ids = get_run_delivery_channel_ids(run, schedule) if success else []
+    if schedule is not None and schedule.last_report_id == report.id:
         schedule.last_status = run.status
         schedule.last_run_at = run.finished_at
-        schedule.last_report_id = report.id
-        if success:
-            run.delivery_result = deliver_generated_report(report, schedule.notification_channel_ids_as_list())
+    db.session.commit()
+
+    if not success:
+        return
+    try:
+        run.delivery_result = deliver_generated_report(report, delivery_channel_ids)
+    except Exception:
+        current_app.logger.exception('Scheduled report %s delivery failed.', report.id)
+        run.delivery_result = {
+            'requested': len(delivery_channel_ids),
+            'successful': 0,
+            'failed': len(delivery_channel_ids),
+            'skipped': 0,
+            'duplicate': 0,
+            'results': [],
+        }
     db.session.commit()
 
 
