@@ -298,7 +298,7 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'Quota balance unavailable' in capacity_snapshot
     assert 'Capacity Decision Notes' not in capacity_snapshot
     assert "'label': 'Quota Left'" in presentation
-    assert "'Project quota forecasts remain outside warning thresholds.'" in presentation
+    assert "'Project quota forecasts remain outside warning thresholds, with sufficient headroom.'" in presentation
     assert 'Committed analytics snapshots' in forecast
     assert 'Projects with quota ETA' in forecast
     assert "'progress_label': 'Used'" in presentation
