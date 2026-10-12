@@ -32,7 +32,7 @@ def test_runtime_summary_uses_filtered_scope_and_runtime_health_is_not_inferred(
 
     assert "'runtime_global_stats': _runtime_stats(runtime_rows)" in workspace
     assert "'runtime_stats': _runtime_stats(filtered_runtime_rows)" in workspace
-    assert "'runtime_scope_label': runtime_scope_label" in workspace
+    assert "'runtime_scope_label': _runtime_scope_label(" in workspace
     assert "else ('healthy' if cluster.status == 'connected' else 'not_observed')" not in service
     assert "'health_status': observation.health_status if observation else 'not_observed'" in service
     assert "'observed_at': observation.observed_at if observation else None" in service

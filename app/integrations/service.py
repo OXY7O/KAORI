@@ -462,13 +462,17 @@ def _coverage(
     metrics_sources: list[MetricsSource],
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
+    provider_counts_override: dict[str, dict[str, int]] | None = None,
 ) -> list[dict[str, Any]]:
-    provider_counts = build_provider_portfolio_counts(
-        kubernetes_connections=kubernetes_connections,
-        metrics_sources=metrics_sources,
-        alertmanager_instances=alertmanager_instances,
-        extension_instances=extension_instances,
-    )
+    if provider_counts_override is None:
+        provider_counts = build_provider_portfolio_counts(
+            kubernetes_connections=kubernetes_connections,
+            metrics_sources=metrics_sources,
+            alertmanager_instances=alertmanager_instances,
+            extension_instances=extension_instances,
+        )
+    else:
+        provider_counts = provider_counts_override
     modules = registry.all()
     rows: list[dict[str, Any]] = []
     for domain in ordered_domain_definitions():
@@ -543,13 +547,17 @@ def _catalog(
     metrics_sources: list[MetricsSource],
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
+    provider_counts_override: dict[str, dict[str, int]] | None = None,
 ) -> list[dict[str, Any]]:
-    provider_counts = build_provider_portfolio_counts(
-        kubernetes_connections=kubernetes_connections,
-        metrics_sources=metrics_sources,
-        alertmanager_instances=alertmanager_instances,
-        extension_instances=extension_instances,
-    )
+    if provider_counts_override is None:
+        provider_counts = build_provider_portfolio_counts(
+            kubernetes_connections=kubernetes_connections,
+            metrics_sources=metrics_sources,
+            alertmanager_instances=alertmanager_instances,
+            extension_instances=extension_instances,
+        )
+    else:
+        provider_counts = provider_counts_override
     rows: list[dict[str, Any]] = []
     for module in registry.all():
         counts = provider_counts.get(module.integration_type, {})
