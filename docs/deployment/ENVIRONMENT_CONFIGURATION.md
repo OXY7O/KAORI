@@ -6,7 +6,7 @@ KAORI uses one canonical variable inventory with explicit ownership by runtime. 
 
 | Mode | Runtime configuration | Compose authority | Source behavior |
 | --- | --- | --- | --- |
-| Local development | Root `.env` copied from `.env.example` | `compose.yml` + `.devcontainer/compose.devcontainer.yml` | Bind-mounted working tree, VS Code debugger and automatic Tailwind watcher |
+| Local development | Root `.env` generated/updated from `.env.example`, plus two host-only PostgreSQL secret env files outside the repository | `compose.yml` + `.devcontainer/compose.devcontainer.yml` | Bind-mounted working tree, VS Code debugger, automatic Tailwind watcher and operator-triggered database bootstrap |
 | Governed server (UAT/production) | `/etc/kaori/app.env`, `secrets.env`, `deploy.env`, plus generated release state | `compose.production.yml` + `deploy/server/compose.server.yml` | Admitted immutable image digest; pre-migration backup and deployment verification |
 | Local standalone Docker | `example/kaori/.env` copied from its own example | `example/kaori/compose.yml` | Admitted RC image; **not** a live-source development build |
 
@@ -43,6 +43,60 @@ historical and is **not** the procedure to reset an existing cluster.
 See [DevContainer first-run and verification](../operations/devcontainer-postgres-first-run.md)
 and [historical owner-role cutover](../operations/devcontainer-postgres-runtime-role.md).
 
+### Concrete DevContainer environment-file ownership
+
+| File | Scope / consumed by | Active credential variables |
+| --- | --- | --- |
+| `<KAORI repo>/.env` (generated from `.env.example`) | Shared development config for VS Code Flask Debug, workspace, all Celery workers and Beat; one-off bootstrap also receives it for **application** operations | `DATABASE_URL=postgresql://kaori_runtime:<generated-runtime-password>@db:5432/kaori`, `SECRET_KEY`, `INTEGRATION_CREDENTIAL_KEY`, `ADMIN_*`. `POSTGRES_DB=kaori`, `POSTGRES_USER=postgres` and `POSTGRES_PORT=5432` are non-secret Compose infrastructure selectors, **not** Flask credentials |
+| `~/.config/kaori/devcontainer/postgres-bootstrap.env` | PostgreSQL `db` service **only**; generated and retained on the trusted WSL host | `POSTGRES_PASSWORD=<generated-postgres-superuser-password>`; `KAORI_RUNTIME_PASSWORD=<generated-runtime-role-password>` |
+| `~/.config/kaori/devcontainer/postgres-migrate.env` | PostgreSQL `db` initdb only on a fresh volume, and the **explicit, profiled** `db-bootstrap` migration service when invoked by the operator | `KAORI_MIGRATOR_PASSWORD=<generated-non-superuser-DDL-password>` |
+
+Both PostgreSQL-only files live **outside** the repository and bind-mounted
+workspace, with developer-owned parent mode `0700` and secret files mode
+`0600`. These are `env_file` inputs to their owning **containers**,
+not application config files, and are not automatically inherited by the
+Flask/workers/Beat processes. A trusted Docker host administrator can still
+inspect the database service's environment: this is local-development
+credential segregation, **not** a claim of production-grade secrets management.
+
+`.devcontainer/devcontainer.json` calls
+`python3 .devcontainer/prepare-postgres-env.py` on the WSL host **before**
+the Compose services start. If `.env` does not exist, this command copies
+`.env.example`; it generates both PostgreSQL-only files when there is
+no existing DevContainer volume, writes the distinct generated runtime
+password into the private `DATABASE_URL`, and fills missing development
+`SECRET_KEY`, `INTEGRATION_CREDENTIAL_KEY` and `ADMIN_PASSWORD`.
+The committed URL in `.env.example` is **only a placeholder**, never
+a working credential. Set `ADMIN_EMAIL` (and optionally
+`ADMIN_USERNAME`) for your local first administrator **before** running
+the explicit `db-bootstrap` command. Admin credentials are an
+application identity, not PostgreSQL superuser/migrator credentials.
+
+**Forbidden in the shared application `.env`:**
+`POSTGRES_PASSWORD`, `KAORI_MIGRATOR_PASSWORD`,
+`KAORI_RUNTIME_PASSWORD`, `PGPASSWORD`,
+`POSTGRES_PASSWORD_FILE`, `KAORI_DB_MIGRATION_URL`, and the retired
+`KAORI_DEV_RUNTIME_DATABASE_URL`. The initializer removes the legacy
+`POSTGRES_PASSWORD` / duplicate runtime URL, and refuses other
+privileged credential variables. It aborts on foreign/Docker-inaccessible
+volumes, missing paired host secrets, credential drift on existing data,
+unsafe permissions or non-development `APP_ENV`—it does not rotate
+established production or local database credentials.
+
+The explicit first-run command must be invoked from the **WSL host**:
+
+```bash
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
+```
+
+This is **not** part of DevContainer automatic start. It runs Alembic
+as `kaori_migrator`, refreshes grants (including runtime SELECT-only
+on `alembic_version` and immutable-ledger protections), and creates
+the first KAORI administrator as `kaori_runtime`. Existing-schema
+upgrades use `sh scripts/devcontainer/bootstrap-db.sh --upgrade-only`
+inside that one-off Compose service. See the
+[first-run operations runbook](../operations/devcontainer-postgres-first-run.md).
+
 ### Production database authority is separate
 
 Current `deploy/server` behavior is still bundled PostgreSQL + Redis
@@ -61,7 +115,7 @@ gates and UAT continue to apply.
 
 Use the template that owns the runtime you are configuring:
 
-- `.env.example` is the comprehensive **development / Dev Container** contract. Copy it to `.env` before opening the Dev Container.
+- `.env.example` is the comprehensive **development / Dev Container** application template. The WSL host `initializeCommand` creates `.env` automatically when absent; operators may copy it first to customize non-secret values and the first administrator email.
 - `example/kaori/.env.example` is the intentionally minimal **disposable RC-image** example. It may omit optional settings and relies on safe application defaults baked into the image where appropriate; it is not a production template.
 - `deploy/env/app.env.example` owns portable **production application configuration**.
 - `deploy/env/secrets.env.example` owns **production runtime secrets**. Example values must remain placeholders; real credentials must not be committed.
