@@ -461,6 +461,11 @@ def materialize_forecast(
     stale_grace_minutes: int,
     job_execution_id: int | None,
 ) -> ObjectStorageForecastSnapshot:
+    if system.inventory_observed_at is None:
+        raise RuntimeError(
+            'Object Storage Inventory Sync Required before forecasting; '
+            'unobserved inventory must not be interpreted as an empty bucket set.'
+        )
     snapshot = mark_forecast_pending(
         system_id=system.id,
         history_window=history_window,
