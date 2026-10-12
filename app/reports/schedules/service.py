@@ -46,7 +46,7 @@ from app.reports.schedules.presentation import DAY_OF_WEEK_OPTIONS
 from app.reports.schedules.presentation import serialize_run as _serialize_run
 from app.reports.schedules.presentation import serialize_schedule as _serialize_schedule
 from app.reports.schedules.presentation import title_case_period_options as _title_case_period_options
-from app.reports.schedules.registry import filter_schedule_rows as _filter_schedule_rows
+from app.reports.schedules.registry import filter_schedule_statement as _filter_schedule_statement
 from app.reports.schedules.registry import get_selected_filters as _get_selected_filters
 from app.reports.schedules.support import build_run_filter_options as _build_run_filter_options
 from app.reports.schedules.support import build_schedule_asset_filter_options as _build_schedule_asset_filter_options
@@ -123,36 +123,40 @@ def get_report_schedules_payload(
     edit_form_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     query_args = query_args or {}
-    all_schedules = _get_schedule_rows()
+    schedule_count, active_count = _get_schedule_counts()
+    filter_context = _get_schedule_filter_context()
     recent_runs = _get_recent_runs()
-    run_rows, run_pagination, run_selected_filters = _get_run_registry(
-        query_args,
-        all_schedules,
-    )
+    run_rows, run_pagination, run_selected_filters = _get_run_registry(query_args)
     cluster_options = _get_cluster_options()
     object_storage_system_options = _get_object_storage_system_options()
     artifact_registry_options = _get_artifact_registry_options()
     storage_context = _get_storage_context()
     worker_context = get_queue_readiness(get_reports_queue_name())
     selected_filters = _get_selected_filters(query_args)
-    filtered_schedules = _filter_schedule_rows(all_schedules, selected_filters)
-    schedules, pagination = paginate_sequence(
-        filtered_schedules,
+    schedule_records, pagination = paginate_select(
+        db.session,
+        _filter_schedule_statement(selected_filters).order_by(
+            ReportSchedule.created_at.desc(), ReportSchedule.id.desc()
+        ),
         page=query_args.get('page', 1),
         per_page=query_args.get('per_page', PER_PAGE_OPTIONS[0]),
     )
+    schedules = _serialize_schedule_rows(schedule_records)
 
     if form_state is None:
         form_state = build_default_schedule_form_state()
 
     if edit_schedule_id is None:
         edit_schedule_id = _parse_optional_int(query_args.get('edit_schedule_id'))
-    edit_schedule = next(
-        (item for item in all_schedules if item['id'] == edit_schedule_id),
-        None,
-    )
+    edit_schedule = next((item for item in schedules if item['id'] == edit_schedule_id), None)
+    if edit_schedule is None and edit_schedule_id is not None:
+        edit_record = db.session.get(ReportSchedule, edit_schedule_id)
+        if edit_record is not None:
+            edit_schedule = _serialize_schedule_rows([edit_record])[0]
     if edit_schedule is not None and edit_form_state is not None:
         edit_schedule = {**edit_schedule, 'edit_state': edit_form_state}
+    selected_form = edit_schedule['edit_state'] if edit_schedule is not None else form_state
+    selected_cluster_id = str(selected_form.get('cluster_id') or '')
 
     report_family_by_report_type = {
         item['value']: str(item.get('family') or 'analytics') for item in REPORT_TYPE_OPTIONS
@@ -174,16 +178,19 @@ def get_report_schedules_payload(
         'status_label': f'Reports Worker {worker_context["label"]}',
         'status_description': worker_context['description'],
         'summary_cards': get_summary_cards(
-            schedules=all_schedules,
+            total_schedules=schedule_count,
+            active_schedules=active_count,
             recent_runs=recent_runs,
         ),
         'schedules': schedules,
-        'all_schedule_count': len(all_schedules),
+        'all_schedule_count': schedule_count,
         'recent_runs': recent_runs,
         'run_rows': run_rows,
         'run_pagination': run_pagination,
         'run_selected_filters': run_selected_filters,
-        'run_filter_options': _build_run_filter_options(all_schedules, RUN_PERIOD_OPTIONS),
+        'run_filter_options': _build_run_filter_options(
+            _get_run_schedule_options(run_selected_filters['run_schedule']), RUN_PERIOD_OPTIONS
+        ),
         'run_registry_query_params': {
             'workspace': 'runs',
             **{key: value for key, value in run_selected_filters.items() if value},
@@ -192,7 +199,7 @@ def get_report_schedules_payload(
             'runs' if str(query_args.get('workspace', '') or '').strip().lower() == 'runs' else 'registry'
         ),
         'clusters': cluster_options,
-        'namespace_options_by_cluster': _get_namespace_options_by_cluster(),
+        'namespace_options_by_cluster': _get_namespace_options_by_cluster(selected_cluster_id),
         'object_storage_systems': object_storage_system_options,
         'artifact_registries': artifact_registry_options,
         'report_type_options': REPORT_TYPE_OPTIONS,
@@ -220,7 +227,7 @@ def get_report_schedules_payload(
         'recommended_actions': get_recommended_actions(),
         'delivery_channel_options': _get_delivery_channel_options(),
         'filter_options': _get_schedule_filter_options(
-            all_schedules,
+            filter_context,
             cluster_options,
             object_storage_system_options,
             artifact_registry_options,
@@ -241,17 +248,18 @@ def get_report_schedules_payload(
 
 def get_summary_cards(
     *,
-    schedules: list[dict[str, Any]],
+    total_schedules: int,
+    active_schedules: int,
     recent_runs: list[dict[str, Any]],
 ) -> list[dict[str, str]]:
-    active_count = sum(1 for item in schedules if item['is_enabled'])
-    paused_count = len(schedules) - active_count
+    active_count = active_schedules
+    paused_count = total_schedules - active_count
     successful_runs = sum(1 for item in recent_runs if item['status'] == 'success')
 
     return [
         {
             'label': 'Total Schedules',
-            'value': str(len(schedules)),
+            'value': str(total_schedules),
             'caption': 'Persisted recurring definitions',
             'icon': 'calendar-clock',
             'tone': 'blue',
@@ -827,7 +835,6 @@ def _create_report_from_schedule(schedule: ReportSchedule) -> Report:
 
 def _get_run_registry(
     query_args: Mapping[str, str],
-    schedules: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, str]]:
     selected_filters = _get_run_selected_filters(query_args)
     statement = (
@@ -869,14 +876,7 @@ def _get_run_registry(
         page=query_args.get('run_page', 1),
         per_page=query_args.get('run_per_page', PER_PAGE_OPTIONS[0]),
     )
-    schedule_context_map = {
-        int(item['id']): {
-            'name': str(item['name']),
-            'icon': str(item.get('report_icon') or 'calendar-clock'),
-        }
-        for item in schedules
-        if item.get('id') is not None
-    }
+    schedule_context_map = _get_schedule_context_map([item.schedule_id for item in runs if item.schedule_id])
     return (
         [_serialize_run(item, schedule_context_map) for item in runs],
         pagination,
@@ -932,23 +932,65 @@ def _get_schedule_filter_options(
             *[
                 {'value': item['value'], 'label': item['label']}
                 for item in delivery_catalog
-                if item.get('selectable')
-                or item.get('value')
-                in {str(channel) for schedule in schedules for channel in schedule['notification_channel_ids']}
+                if item.get('value')
             ],
         ],
     }
 
 
-def _get_schedule_rows() -> list[dict[str, Any]]:
-    schedules = db.session.scalars(
-        select(ReportSchedule).order_by(ReportSchedule.created_at.desc(), ReportSchedule.id.desc())
+def _get_schedule_counts() -> tuple[int, int]:
+    total, active = db.session.execute(
+        select(
+            func.count(ReportSchedule.id),
+            func.count(ReportSchedule.id).filter(ReportSchedule.is_enabled.is_(True)),
+        )
+    ).one()
+    return int(total or 0), int(active or 0)
+
+
+def _get_schedule_filter_context() -> list[dict[str, Any]]:
+    # Only distinct asset references are needed for historical/deleted filters.
+    keys = db.session.execute(
+        select(
+            ReportSchedule.scope_asset_type,
+            ReportSchedule.scope_asset_id,
+            ReportSchedule.cluster_id,
+            ReportSchedule.scope_asset_label_snapshot,
+        ).distinct()
     ).all()
+    result: list[dict[str, Any]] = []
+    for asset_type, asset_id, cluster_id, label in keys:
+        selected_type = str(asset_type or KUBERNETES_CLUSTER_ASSET_TYPE)
+        selected_id = str(asset_id or cluster_id or '')
+        if selected_id:
+            result.append({
+                'scope_asset_filter_key': f'{selected_type}:{selected_id}',
+                'scope_label': selected_type.replace('_', ' ').title(),
+                'scope': str(label or selected_id),
+            })
+    return result
+
+
+def _get_run_schedule_options(selected_id: str) -> list[dict[str, Any]]:
+    rows = db.session.execute(
+        select(ReportSchedule.id, ReportSchedule.name)
+        .order_by(ReportSchedule.created_at.desc(), ReportSchedule.id.desc())
+        .limit(200)
+    ).all()
+    options = [{'id': item_id, 'name': name} for item_id, name in rows]
+    selected = _parse_optional_int(selected_id)
+    if selected is not None and all(item['id'] != selected for item in options):
+        row = db.session.get(ReportSchedule, selected)
+        if row is not None:
+            options.append({'id': row.id, 'name': row.name})
+    return options
+
+
+def _serialize_schedule_rows(schedules: list[ReportSchedule]) -> list[dict[str, Any]]:
     cluster_map = _get_cluster_map([item.cluster_id for item in schedules if item.cluster_id])
     delivery_label_map = {
         int(item['channel_id']): f'{item["label"]} · {item["provider"]}' for item in _get_delivery_channel_options()
     }
-
     return [_serialize_schedule(item, cluster_map, delivery_label_map) for item in schedules]
 
 
