@@ -257,3 +257,26 @@ During review, record one disposition:
 - **DEFERRED** — only when the gap is explicitly bounded in a follow-up issue and does not require replacing canonical Registry/domain/UI contracts.
 
 A Harbor implementation that works functionally but fails this extension gate is not considered a fully locked Registry foundation.
+
+
+## 2026-10-12 review-only extension evidence (#1484)
+
+The synthetic `aws_ecr` **test fixture is not an installed provider** and
+does not authorize live AWS/ECR integration. The source contract now exercises:
+
+- kernel registration/resolution under `registry` without changing Harbor;
+- inventory collector lookup/dispatch by provider key, returning the shared
+  `RegistryInventoryEvidence` hierarchy and a stable OCI artifact digest;
+- independent security/governance optional collector dispatch and explicit
+  missing-collector failure, rather than falling back to Harbor;
+- existing downstream Registry Sync digest identity and Registry × Kubernetes
+  correlation source contracts without Harbor-specific branching.
+
+**Review-only disposition: source architecture coverage improved, runtime
+admission DEFERRED.** The synthetic fixture does not prove end-to-end persisted
+second-provider inventory, PostgreSQL transaction behavior, provider-native
+authentication, real Registry Runtime correlation or Visual QA.
+Those gates require focused integration tests and DevContainer PostgreSQL
+fixtures before full foundation lock. Do not claim a production-qualified
+ECR implementation or complete all eight architectural admission gates solely
+from contract source checks.
