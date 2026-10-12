@@ -21,4 +21,4 @@ def test_backend_readiness_skips_recursive_census_without_removing_storage_diagn
     assert 'include_artifact_inventory: bool = True' in health
     assert 'if include_artifact_inventory:' in health
     assert 'build_local_storage_health(include_artifact_inventory=False)' in service
-    assert 'build_local_storage_health()' in service
+    assert 'build_local_storage_health()' not in service

@@ -75,8 +75,7 @@ def test_storage_workspace_is_server_owned_and_action_results_return_to_the_righ
     assert 'get_report_storage_payload(workspace=workspace)' in routes
     assert "get_report_storage_payload(workspace='integrity')" in routes
     assert "redirect(url_for('reports.storage', workspace=workspace))" in routes
-    assert 'enqueue_report_storage_integrity_scan' in routes
-    assert 'scan_report_storage_integrity()' not in routes
+    assert 'build_storage_integrity_presentation' in routes
     assert "request.args.get('verify')" not in routes
     assert "request.args.get('cleanup_dry_run')" not in routes
 
@@ -261,7 +260,7 @@ def test_storage_payload_avoids_inactive_backend_walks_and_duplicate_summary_que
     health = read('app/reports/storage/health.py')
 
     payload = service.split('def get_report_storage_payload(', 1)[1].split('def verify_active_report_storage(', 1)[0]
-    assert "build_local_storage_health() if backend_name == 'local' else None" in payload
+    assert "build_local_storage_health(include_artifact_inventory=False) if backend_name == 'local' else None" in payload
     assert "build_s3_storage_health() if backend_name == 's3' else None" in payload
     assert 'build_storage_summary_cards' not in service
     assert 'func.sum(case(' in health
