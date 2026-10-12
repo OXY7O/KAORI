@@ -358,6 +358,7 @@
          data-schedule-scope-by-type="{{ payload.scope_asset_type_by_report_type | tojson | forceescape }}"
          data-schedule-domain-by-type="{{ payload.report_domain_by_report_type | tojson | forceescape }}"
          data-schedule-namespaces-by-cluster="{{ payload.namespace_options_by_cluster | tojson | forceescape }}"
+         data-schedule-namespace-options-url="{{ url_for('reports.schedule_namespace_options') }}"
          data-schedule-open-dialog="{{ 'true' if schedule_form_is_edit or payload.open_create_dialog else 'false' }}">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
