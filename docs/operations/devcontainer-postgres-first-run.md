@@ -45,6 +45,17 @@
    `--upgrade-only` command below. Do not delete database volumes or
    regenerate passwords as a troubleshooting shortcut.
 
+   When workers/Beat remain at the schema wait gate after bootstrap,
+   distinguish schema migration from restricted-runtime admission.
+   The latter checks the PostgreSQL `users.is_active` column (the mapped
+   Python attribute is `User.account_is_active`), active nondeleted
+   application admin, exact Alembic head, runtime grants and immutable
+   Capsule ledger triggers. A worker SQL `UndefinedColumn` is a source
+   contract defect, **not** permission to rerun migration, reset PGDATA,
+   bypass the gate or grant elevated database privileges. Inspect the
+   one-shot `db-bootstrap` output separately from worker and database
+   logs; successful migrations alone do not establish ready workers.
+
 
 ## One-time recovery after upgrading from Docker secret volumes (#1499 → #1500)
 

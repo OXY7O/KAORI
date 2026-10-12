@@ -218,7 +218,11 @@ def test_workers_and_beat_wait_for_runtime_immutable_ledger_admission() -> None:
     assert '_runtime_database_admitted(database_url)' in waiter
     assert "'kaori_migrator', 'MEMBER'" in waiter
     assert "'tr_capsule_ledger_deny_truncate'" in waiter
-    assert 'WHERE is_super_admin = TRUE AND account_is_active = TRUE' in waiter
+    assert 'WHERE is_super_admin = TRUE AND is_active = TRUE' in waiter
+    assert 'AND deleted_at IS NULL' in waiter
+    assert 'account_is_active = TRUE' not in waiter
+    user_model = (ROOT / 'app/models/user.py').read_text()
+    assert "account_is_active: Mapped[bool] = mapped_column('is_active'" in user_model
     assert "'public.capsule_handoff_ledger_events', 'UPDATE'" in waiter
     assert "NOT has_table_privilege(current_user, 'public.alembic_version', 'UPDATE')" in waiter
     assert 'if current_heads == expected_heads:' in waiter
