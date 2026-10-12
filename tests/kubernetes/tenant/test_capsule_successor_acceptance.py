@@ -279,7 +279,7 @@ def test_capsule_exact_plan_acceptance_explains_requester_vs_expiry_independentl
     expired['plan_sha256'] = _plan_hash(expired)
     review = _approval(expired)
     review['approved_at'] = (datetime.now(UTC) - timedelta(minutes=30)).isoformat()
-    with pytest.raises(ValueError, match='expired \(15 minutes\)'):
+    with pytest.raises(ValueError, match=r'expired \(15 minutes\)'):
         acceptance._require_capsule_plan(
             tenant_id='tenant-1', actor_user_id=44,
             plan_sha256=expired['plan_sha256'],
