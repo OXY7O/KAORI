@@ -19,7 +19,9 @@ def test_mutation_domain_rejects_missing_or_unsupported_domain(invalid_domain: s
 @pytest.mark.parametrize('valid_domain', ['operational_activity', 'job_execution', 'tenant_audit_evidence'])
 def test_mutation_domain_accepts_registered_domains(valid_domain: str) -> None:
     app = Flask(__name__)
-    with app.test_request_context('/platform-operations/data-lifecycle/run', method='POST', data={'domain': valid_domain}):
+    with app.test_request_context(
+        '/platform-operations/data-lifecycle/run', method='POST', data={'domain': valid_domain}
+    ):
         assert _mutation_domain() == valid_domain
 
 
