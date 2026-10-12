@@ -6,9 +6,14 @@ from typing import Any
 import pytest
 import requests
 
-from app.integrations.registry.providers.harbor.client import HarborClient
+from app.integrations.registry.providers.harbor.client import HarborClient, _direct_get
 from app.integrations.registry.providers.harbor.contracts import HarborRetryPolicy
 from app.integrations.registry.providers.harbor.exceptions import HarborAuthError, HarborConnectionError
+
+
+@pytest.fixture(autouse=True)
+def _approve_harbor_test_origin(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv('INTEGRATION_HARBOR_ALLOWED_ORIGINS', 'https://harbor.example.test')
 
 
 @dataclass
@@ -42,7 +47,7 @@ def test_harbor_client_discovers_identity_and_read_capabilities(monkeypatch) -> 
             return _Response(200, [])
         raise AssertionError(url)
 
-    monkeypatch.setattr('app.integrations.registry.providers.harbor.client.requests.get', fake_get)
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client._direct_get', fake_get)
 
     client = HarborClient(
         endpoint='https://harbor.example.test/',
@@ -79,7 +84,7 @@ def test_harbor_client_rejects_auth_without_leaking_secret(monkeypatch) -> None:
         calls += 1
         return _Response(401, {'errors': [{'code': 'UNAUTHORIZED'}]})
 
-    monkeypatch.setattr('app.integrations.registry.providers.harbor.client.requests.get', fake_get)
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client._direct_get', fake_get)
 
     client = HarborClient(
         endpoint='https://harbor.example.test',
@@ -105,7 +110,7 @@ def test_harbor_client_uses_get_only_for_foundation_probes(monkeypatch) -> None:
             return _Response(200, {'harbor_version': 'v2.15.2'})
         return _Response(200, [])
 
-    monkeypatch.setattr('app.integrations.registry.providers.harbor.client.requests.get', fake_get)
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client._direct_get', fake_get)
 
     client = HarborClient(endpoint='https://harbor.example.test')
     client.test_connection()
@@ -126,7 +131,7 @@ def test_harbor_client_retries_transient_transport_failure_with_bounded_backoff(
             raise requests.Timeout('temporary provider timeout')
         return _Response(200, {'status': 'healthy'})
 
-    monkeypatch.setattr('app.integrations.registry.providers.harbor.client.requests.get', fake_get)
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client._direct_get', fake_get)
     monkeypatch.setattr('app.integrations.registry.providers.harbor.client.sleep', delays.append)
 
     client = HarborClient(
@@ -145,7 +150,7 @@ def test_harbor_client_normalizes_transport_failure_without_exposing_raw_excepti
     def fake_get(url, **kwargs):
         raise requests.ConnectionError(f'connection failed while handling {secret}')
 
-    monkeypatch.setattr('app.integrations.registry.providers.harbor.client.requests.get', fake_get)
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client._direct_get', fake_get)
 
     client = HarborClient(
         endpoint='https://harbor.example.test',
@@ -167,3 +172,67 @@ def test_harbor_pagination_stops_on_identical_repeated_full_page() -> None:
         HarborClient._paged(lambda _page, _size: page, page_size=100)
 
     assert 'repeated an identical full page' in str(exc_info.value)
+
+
+@pytest.mark.parametrize('endpoint', [
+    'http://harbor.example.test',
+    'https://user:password@harbor.example.test',
+    'https://harbor.example.test/api/v2.0',
+    'https://harbor.example.test?x=y',
+    'https://127.0.0.1',
+])
+def test_harbor_rejects_insecure_or_unapproved_endpoints(endpoint: str) -> None:
+    with pytest.raises(ValueError):
+        HarborClient(endpoint=endpoint, username='robot', password='secret')
+
+
+def test_harbor_rejects_tls_bypass() -> None:
+    with pytest.raises(ValueError, match='TLS'):
+        HarborClient(endpoint='https://harbor.example.test', verify_ssl=False)
+
+
+def test_harbor_rejects_redirect_response(monkeypatch) -> None:
+    def redirect(_url, **_kwargs):
+        return _Response(302, None)
+
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client._direct_get', redirect)
+    from app.integrations.registry.providers.harbor.exceptions import HarborResponseError
+
+    with pytest.raises(HarborResponseError, match='redirect'):
+        HarborClient(endpoint='https://harbor.example.test').get_health()
+
+
+def test_harbor_transport_does_not_inherit_proxy_or_follow_redirect(monkeypatch) -> None:
+    observed: list[bool] = []
+
+    class _Session:
+        trust_env = True
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def get(self, _url, *, allow_redirects, **_kwargs):
+            observed.append(self.trust_env)
+            assert allow_redirects is False
+            return _Response(200, {'ok': True})
+
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client.requests.Session', _Session)
+    result = _direct_get('https://harbor.example.test/api/v2.0/health', timeout=5, verify=True)
+    assert result.status_code == 200
+    assert observed == [False]
+
+
+def test_harbor_client_uses_approved_ca_bundle(monkeypatch) -> None:
+    monkeypatch.setenv('INTEGRATION_HARBOR_CA_BUNDLE', '/trusted/harbor.pem')
+    captures = []
+
+    def fake_get(_url, **kwargs):
+        captures.append(kwargs)
+        return _Response(200, {'status': 'healthy'})
+
+    monkeypatch.setattr('app.integrations.registry.providers.harbor.client._direct_get', fake_get)
+    HarborClient(endpoint='https://harbor.example.test').get_health()
+    assert captures[0]['verify'] == '/trusted/harbor.pem'
