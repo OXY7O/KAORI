@@ -176,6 +176,8 @@ def test_devcontainer_operator_bootstrap_orders_schema_grants_and_app_admin() ->
     assert "has_table_privilege('kaori_runtime', 'public.alembic_version', 'UPDATE')" in grants
     assert "has_schema_privilege('kaori_runtime', 'public', 'CREATE')" in grants
     assert 'ALTER DEFAULT PRIVILEGES' not in grants
+    assert "config.get('APP_ENV') == 'development'" in auth
+    assert "config.get('DEBUG', false) and not config.get('TESTING', false)" not in auth
     assert 'docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap' in auth
 
 
