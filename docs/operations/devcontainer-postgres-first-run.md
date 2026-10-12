@@ -4,6 +4,38 @@
 **Scope:** developer-owned disposable `kaori-dev` PostgreSQL. This is NOT a DBA/external
 database provisioning procedure and must never be applied to production.
 
+## Windows host prerequisite — open as WSL Remote first
+
+The first-run initializer is **not** a Windows-native Python bootstrap.
+Its `initializeCommand` executes on the same host on which VS Code
+Dev Containers resolves the workspace. If you open
+`C:\\Users\\...\\KAORI` as a normal Windows folder, VS Code can
+try to run `python3` from Windows, and the Compose overlay expects
+Linux `$HOME` and external WSL secret files. That may fail before
+any PostgreSQL container starts, even when Docker has no running
+containers. A trailing Dev Containers `Exit code 1` alone is not
+the diagnostic error—look above it for the first failure.
+
+Run the Ubuntu WSL terminal, open the repository as WSL Remote with
+`code .` and confirm **WSL: Ubuntu** before Reopen in Container.
+For the Windows-mounted checkout used in local testing:
+
+```bash
+cd /mnt/c/Users/lethisa/OneDrive/Documents/Application/KAORI
+python3 --version
+docker info >/dev/null
+code .
+```
+
+No fresh-volume UAT should begin until the WSL host requirements
+pass. If `docker info` fails, enable Docker Desktop's WSL integration
+for Ubuntu. Do not delete named database volumes merely because the
+container is absent; `docker volume ls` is non-destructive.
+A Linux-native WSL working tree is preferable for performance and
+permission semantics, especially if the original workspace is
+OneDrive-synchronized. This project does not claim Windows-native
+DevContainer initialization support.
+
 ## Lifecycle: opening a zero-volume DevContainer
 
 1. Start VS Code in WSL, open this project, and choose **Reopen in Container**.
