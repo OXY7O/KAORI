@@ -19,6 +19,7 @@ from app.integrations.delivery.notification_channels.catalog import (
 )
 from app.integrations.delivery.notification_channels.config import (
     notification_delivery_max_attempts,
+    notification_delivery_recovery_enabled,
     notification_delivery_retry_delay_seconds,
     notification_delivery_timeout_seconds,
 )
@@ -229,7 +230,10 @@ def get_notification_channels_payload(
         ],
         'delivery_contract': {
             'events': f'{len(event_type_options())} governed event types',
-            'retry': f'Up to {notification_delivery_max_attempts()} attempts',
+            'retry': (
+                f'Up to {notification_delivery_max_attempts()} attempts; '
+                + ('recovery worker enabled' if notification_delivery_recovery_enabled() else 'recovery worker off')
+            ),
             'deduplication': 'Per channel and emitted event identity',
             'ownership': 'Consumers emit governed events; Notification Channels owns provider delivery.',
         },
@@ -610,7 +614,7 @@ def _begin_delivery_attempt(
 ) -> None:
     """Durably claim an attempt before any external transport call."""
     payload = dict(delivery.payload_json or {})
-    if _REPLAY_KEY not in payload:
+    if delivery.attempt_count == 0 or _REPLAY_KEY not in payload:
         payload[_REPLAY_KEY] = _transport_snapshot(channel, message)
         delivery.payload_json = payload
     delivery.status = 'queued'

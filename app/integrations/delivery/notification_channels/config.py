@@ -26,16 +26,22 @@ def notification_delivery_retry_delay_seconds() -> int:
     return _bounded_int('NOTIFICATION_DELIVERY_RETRY_DELAY_SECONDS', 180, 120, 86400)
 
 
+def notification_delivery_recovery_enabled() -> bool:
+    return str(os.getenv('NOTIFICATION_DELIVERY_RECOVERY_ENABLED', 'false')).strip().lower() in {
+        '1', 'true', 'yes', 'on'
+    }
+
+
 def build_notification_beat_schedule() -> dict[str, dict[str, object]]:
     queue = (os.getenv('JOB_MAINTENANCE_CELERY_QUEUE') or 'maintenance').strip() or 'maintenance'
     schedule: dict[str, dict[str, object]] = {}
     # Safe opt-in: never trigger outbound retries before governed UAT.
-    if str(os.getenv('NOTIFICATION_DELIVERY_RECOVERY_ENABLED', 'false')).strip().lower() in {
-        '1', 'true', 'yes', 'on'
-    }:
+    if notification_delivery_recovery_enabled():
         interval = _bounded_int('NOTIFICATION_DELIVERY_RECOVERY_INTERVAL_MINUTES', 1, 1, 60)
         schedule['notification-channel-delivery-recovery'] = {
-            'task': 'app.platform_operations.notifications.alert_delivery.tasks.recover_notification_channel_deliveries',
+            'task': (
+                'app.platform_operations.notifications.alert_delivery.tasks.recover_notification_channel_deliveries'
+            ),
             'schedule': crontab(minute=f'*/{interval}'),
             'options': {'queue': queue},
         }
@@ -44,7 +50,9 @@ def build_notification_beat_schedule() -> dict[str, dict[str, object]]:
     }:
         interval = _bounded_int('ALERT_INTELLIGENCE_NOTIFICATION_INTERVAL_MINUTES', 1, 1, 60)
         schedule['alert-intelligence-notification-dispatch'] = {
-            'task': 'app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications',
+            'task': (
+                'app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications'
+            ),
             'schedule': crontab(minute=f'*/{interval}'),
             'options': {'queue': queue},
         }
