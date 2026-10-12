@@ -15,6 +15,7 @@ from typing import Any
 import psycopg2
 from psycopg2 import sql
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
 
 _DATABASE = 'kaori'
 _MIGRATOR = 'kaori_migrator'
@@ -33,7 +34,7 @@ def _read_secret(name: str) -> str:
         secret = Path(filename).read_text(encoding='utf-8').rstrip('\r\n')
     except OSError:
         _abort(f'cannot read {name} Docker secret')
-    if not secret or len(secret) < 16:
+    if not secret or len(secret) < 16 or 'replace-with' in secret.lower():
         _abort(f'{name} must be a nonempty strong credential')
     return secret
 
@@ -55,14 +56,18 @@ def main() -> int:
         _abort('migration URL is forbidden in the one-shot bootstrap job')
     if os.getenv('POSTGRES_PASSWORD'):
         _abort('move legacy POSTGRES_PASSWORD out of the app .env before opening DevContainer')
-    url = make_url(os.getenv('DATABASE_URL', ''))
+    try:
+        url = make_url(os.getenv('DATABASE_URL', ''))
+    except ArgumentError:
+        _abort('canonical runtime DATABASE_URL is missing or malformed')
     if (
         url.drivername not in {'postgresql', 'postgresql+psycopg2'}
         or url.username != _RUNTIME
         or url.host != 'db'
         or (url.port or 5432) != 5432
         or url.database != _DATABASE
-        or not url.password
+        or not url.password or len(url.password) < 16
+        or 'replace-with' in url.password.lower()
     ):
         _abort('expected local kaori_runtime DATABASE_URL (no credentials logged)')
 
