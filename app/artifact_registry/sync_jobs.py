@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from datetime import UTC
+
 from app.artifact_registry.eligibility import registry_inventory_eligibility
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_INVENTORY_SYNC_OPERATION
 from app.models.integration import IntegrationInstance
+from app.models.registry import RegistryCollectionState, RegistryProject
 from app.models.job import JobExecution
 from app.platform_operations.jobs.constants import WORKLOAD_STANDARD
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
@@ -43,6 +46,7 @@ def enqueue_all_registry_inventory_sync(
     *,
     requested_by_user_id: int | None,
     trigger_type: str = 'manual',
+    confirm_empty_instance_id: int | None = None,
 ) -> tuple[JobExecution, bool]:
     from app.artifact_registry.tasks import sync_all_registry_task
 
@@ -51,9 +55,39 @@ def enqueue_all_registry_inventory_sync(
         raise NoEligibleRegistryTargets(
             'No Registry provider has an operationally eligible validated read contract for inventory synchronization.'
         )
+    reconciliation: dict[str, str | int] | None = None
+    if confirm_empty_instance_id is not None:
+        if trigger_type != 'manual' or requested_by_user_id is None:
+            raise NoEligibleRegistryTargets('Confirmed-empty Registry reconciliation requires an authenticated manual job.')
+        chosen = next(
+            (target for target in targets if int(target['integration_instance_id']) == confirm_empty_instance_id),
+            None,
+        )
+        if chosen is None:
+            raise NoEligibleRegistryTargets('The selected Registry provider is no longer eligible for Inventory Sync.')
+        state = RegistryCollectionState.query.filter_by(
+            integration_instance_id=confirm_empty_instance_id
+        ).first()
+        count = RegistryProject.query.filter_by(integration_instance_id=confirm_empty_instance_id).count()
+        if state is None or state.last_committed_at is None or count <= 0:
+            raise NoEligibleRegistryTargets('Only a previously committed, nonempty Registry may be confirmed empty.')
+        committed = state.last_committed_at
+        if committed.tzinfo is None:
+            committed = committed.replace(tzinfo=UTC)
+        reconciliation = {
+            'integration_instance_id': confirm_empty_instance_id,
+            'confirmed_by_user_id': requested_by_user_id,
+            'previous_project_count': count,
+            'previous_committed_at': committed.isoformat(),
+        }
+        targets = [chosen]
     return enqueue_canonical_job(
         task=sync_all_registry_task,
-        task_kwargs={'requested_by_user_id': requested_by_user_id, 'targets': targets},
+        task_kwargs={
+            'requested_by_user_id': requested_by_user_id,
+            'targets': targets,
+            'empty_reconciliation': reconciliation,
+        },
         job_type='artifact_registry_inventory',
         operation=ARTIFACT_REGISTRY_INVENTORY_SYNC_OPERATION,
         queue_name=INVENTORY_QUEUE,
@@ -64,8 +98,20 @@ def enqueue_all_registry_inventory_sync(
         scope_type='registry_fleet',
         scope_key='all',
         resource_group='artifact-registry-inventory:global',
-        parameters={'scope': 'all'},
-        payload={'total_count': len(targets), 'targets': targets, 'trigger_type': trigger_type},
+        parameters=(
+            {
+                'scope': 'provider',
+                'integration_instance_id': str(confirm_empty_instance_id),
+                'reconciliation': 'confirmed_empty',
+            }
+            if reconciliation else {'scope': 'all'}
+        ),
+        payload={
+            'total_count': len(targets),
+            'targets': targets,
+            'trigger_type': trigger_type,
+            'empty_reconciliation': reconciliation,
+        },
         max_attempts=3,
         dispatch_options=JobDispatchOptions(require_registered_worker=True),
     )
