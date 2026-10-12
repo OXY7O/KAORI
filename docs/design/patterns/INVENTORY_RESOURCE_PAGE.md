@@ -94,6 +94,7 @@ All resource template registry entries are rooted at `inventory/kubernetes/<reso
 ## Table and pagination contract
 
 - Use shared `components/table.html` primitives and the Inventory block header.
+- When the server-projected filtered total exists, pass it as `result_count=pagination.total_items` to `inventory_block_header` and render the compact `list-filter` Violet **0 Results / 1 Result / N Results** metadata indicator immediately beside the table title and one existing Info Tip. The badge is informational, not an action or operational-health status. Missing totals render no badge. Counts must follow the current committed scope, active filters, and HTMX workspace refresh, not just the displayed page. This standard also applies to Object Storage and Artifact Registry Inventory via the same shared UI helper.
 - Default page size is **5**; allowed values are **5 / 10 / 25 / 50**.
 - Resource services use SQL pagination through `app.common.pagination.paginate_query`; routes must not materialize all rows and slice them in Python.
 - Namespaced resources use the shared Namespace identity macro.

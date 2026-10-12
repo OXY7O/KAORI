@@ -104,3 +104,26 @@ def test_connection_registry_shared_header_preserves_filter_actions() -> None:
         "integrations/registry/providers/harbor/partials/_registry.html",
     ):
         assert "result_count=pagination.total_items" in _template(path)
+
+
+def test_additional_table_workspaces_use_filtered_results_badges() -> None:
+    cases = {
+        "integrations/delivery/notification_channels/partials/_channels_workspace.html": "payload.summary.total",
+        "reports/overview/partials/_recent_reports.html": "payload.recent_reports|length",
+        "intelligence/partials/_catalog_results.html": "payload.pagination.total_items",
+        "intelligence/partials/_recommendations_results.html": "payload.pagination.total_items",
+        "storage/object_storage/analytics/partials/_bucket_table.html": "bucket_table.pagination.total_items",
+        "storage/object_storage/analytics/partials/_bucket_forecast_table.html": "forecast_table.pagination.total_items",
+    }
+    for path, count in cases.items():
+        assert f"table_label.result_count({count})" in _template(path)
+
+
+def test_integration_binding_headers_are_title_adjacent() -> None:
+    for path in (
+        "integrations/observability/metrics_source/partials/_binding_registry.html",
+        "integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html",
+    ):
+        content = _template(path)
+        assert "table_label.result_count(binding_registry_pagination.total_items)" in content
+        assert "flex flex-wrap items-center gap-2" in content
