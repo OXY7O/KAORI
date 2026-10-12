@@ -75,10 +75,15 @@ def _providers() -> list[IntegrationInstance]:
     )
 
 
-def _capability_state(*, supported: bool, observed: bool, attempted: bool) -> dict[str, str]:
+def _capability_state(
+    *, supported: bool, observed: bool, attempted: bool,
+    observed_count: int | None = None, artifact_total: int | None = None,
+) -> dict[str, str]:
     if not supported:
         return {'key': 'unsupported', 'label': 'Unsupported', 'tone': 'unknown'}
     if observed:
+        if artifact_total and observed_count is not None and observed_count < artifact_total:
+            return {'key': 'supported_partial', 'label': 'Partial', 'tone': 'warning'}
         return {'key': 'supported_observed', 'label': 'Observed', 'tone': 'normal'}
     if attempted:
         return {'key': 'supported_unavailable', 'label': 'Unavailable', 'tone': 'warning'}
@@ -427,16 +432,22 @@ def _security_source_capabilities(
                 supported='vulnerability' in capabilities,
                 observed=bool(scan_ready),
                 attempted=bool(scan_attempted),
+                observed_count=scan_ready,
+                artifact_total=total,
             ),
             'signature': _capability_state(
                 supported='signature' in capabilities,
                 observed=bool(signature_ready),
                 attempted=bool(signature_attempted),
+                observed_count=signature_ready,
+                artifact_total=total,
             ),
             'sbom': _capability_state(
                 supported='sbom' in capabilities,
                 observed=bool(sbom_ready),
                 attempted=bool(sbom_attempted),
+                observed_count=sbom_ready,
+                artifact_total=total,
             ),
         })
     return rows
