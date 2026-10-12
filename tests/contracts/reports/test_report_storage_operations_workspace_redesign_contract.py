@@ -260,7 +260,7 @@ def test_storage_payload_avoids_inactive_backend_walks_and_duplicate_summary_que
     health = read('app/reports/storage/health.py')
 
     payload = service.split('def get_report_storage_payload(', 1)[1].split('def verify_active_report_storage(', 1)[0]
-    assert "build_local_storage_health() if backend_name == 'local' else None" in payload
+    assert "build_local_storage_health(include_artifact_inventory=False) if backend_name == 'local' else None" in payload
     assert "build_s3_storage_health() if backend_name == 's3' else None" in payload
     assert 'build_storage_summary_cards' not in service
     assert 'func.sum(case(' in health
