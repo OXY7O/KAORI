@@ -186,3 +186,7 @@ System templates remain definition-owned and first in the mixed registry. Custom
 ### Storage unsupported backend fail-closed (#1593)
 
 A blank backend defaults to local, but any nonempty unsupported REPORT_STORAGE_BACKEND remains unsupported. Its Storage workspace shows a degraded configuration and no new artifact may silently write to local. Historical stored URI access stays backend-specific.
+
+### Storage handoff permission (#1599)
+
+Reports Storage's Generated Reports link is visible only with destination `reports.view`; `reports.manage_storage` stays independent, and the destination RBAC remains authoritative.

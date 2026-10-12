@@ -61,11 +61,13 @@
                                     </button>
                                 {% endif %}
                             </form>
+                            {% if current_user.has_permission('reports.view') %}
                             <a href="{{ url_for('reports.generated_reports') }}"
                                class="{{ page_hero.context_action_classes() }}">
                                 <i data-lucide="files" class="h-4 w-4" aria-hidden="true"></i>
                                 Generated Reports
                             </a>
+                            {% endif %}
                         </div>
                     </div>
                 </aside>
