@@ -140,7 +140,7 @@ def test_platform_operations_overview_does_not_collapse_unknown_or_disabled_post
     assert "overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'" in presentation
     assert "status_label = str(kubernetes['administration_status_label'])" in presentation
     assert "status_tone = str(kubernetes['administration_status_tone'])" in presentation
-    assert "status_label, status_tone = 'Ready', 'normal'" not in presentation
+    assert 'elif ready_count < cluster_count:' not in presentation
 
 
 def test_platform_operations_operating_boundaries_are_permission_scoped() -> None:
