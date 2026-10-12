@@ -63,6 +63,7 @@ provider_implementation = IntegrationImplementation(
     adapter_key='alertmanager_api_v2',
     adapter=runtime_adapter,
     instance_loader=model_loader(AlertmanagerInstance),
+    record_model=AlertmanagerInstance,
     canonical_record_loader=canonical_model_loader(AlertmanagerInstance),
     module_path='app.integrations.observability.alert_source.providers.alertmanager',
     detail_url_builder=_detail_url,
