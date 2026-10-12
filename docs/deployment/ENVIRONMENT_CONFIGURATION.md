@@ -20,12 +20,21 @@ The workspace (including VS Code Flask Debug), all ten Celery workers and
 Beat receive the same effective variable. An elevated PostgreSQL bootstrap
 owner is not an application-runtime fallback.
 
-`POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` configure the
-**PostgreSQL service bootstrap**; they do not authorize ordinary
-Flask/worker sessions. `KAORI_DB_MIGRATION_URL` is a **transient owner
-connection** supplied only to `scripts/init_db.sh` for Alembic,
-RBAC, and admin bootstrap; the script refuses to run without it. Never
-persist that privileged URL in the root `.env` consumed by workers.
+For **DevContainer only**, the `postgres` bootstrap password and
+`kaori_migrator` migration password live in two Compose secret files
+outside the repository/workspace. `KAORI_DEV_DB_SECRETS_DIR` holds
+their absolute WSL host parent directory. The merged Compose overlay
+uses `POSTGRES_USER=postgres`, `POSTGRES_DB=kaori`,
+`POSTGRES_PASSWORD_FILE` and a one-shot `db-role-bootstrap` service.
+Only the app `DATABASE_URL` with `kaori_runtime` is in the shared
+`.env`. Do not store `POSTGRES_PASSWORD` or migration credentials
+there; all 12 app/workspace services read that shared file.
+
+The first operator-triggered DevContainer task prompts for
+`kaori_migrator` credentials and injects temporary
+`KAORI_DB_MIGRATION_URL` into the Alembic/RBAC child operation, with
+no PostgreSQL superuser rights. The normal runtime remains non-owner
+and cannot alter the protected Capsule ledger or Alembic version.
 
 For existing data, use the [role-isolation runbook](../operations/devcontainer-postgres-runtime-role.md)
 and retain all records. For explicitly authorized **disposable fresh
