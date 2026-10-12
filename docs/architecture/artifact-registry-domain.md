@@ -152,11 +152,13 @@ Security findings count only successful normalized scans. Governance configured
 and explicitly `not_configured` are independent from unsupported/unavailable/
 not-collected projects.
 
-The worker records committed Inventory and Governance generations plus runtime
-observation provenance in the snapshot's `evidence` payload, and rejects
-Inventory generation changes during a collection attempt. Read-model freshness
-compares committed inputs to source state and presents `Inputs Changed` or
-`Partial Evidence`, not clean Current. Historical or missing generation
+The worker records committed Inventory and Governance generations,
+latest Security scan-completion timestamp, and Registry-runtime binding
+observation timestamp in each snapshot's `evidence` payload. It rejects
+Inventory/Governance generation changes and provider deactivation during a
+collection attempt. Read-model freshness compares those committed inputs to
+current KAORI state using scoped SQL aggregations and presents `Inputs Changed`
+or `Partial Evidence`, not clean Current. Historical or missing generation
 markers are *not* proof of readiness. The external provider remains
 authoritative and normal page loads do not query provider APIs.
 
