@@ -224,8 +224,9 @@ Native-adopted / Capsule-provider-mirrored distinctions remain readable.
 
 After additional DevContainer visual feedback, the modal body follows one
 compact, left-aligned reading order: **Status / Ownership / Provider / Authority**
-in a single evidence strip; **Committed Allocation** as four consistently
-labelled frozen values; **Source Profile / Effective Snapshot** within that
+in a single evidence strip; **Committed Allocation** as six consistently
+labelled frozen values in a two-column mobile / three-column wider layout;
+**Source Profile / Effective Snapshot** within that
 allocation section; then the full **Reconciliation** message as an understated
 left-accented text block. Optional PVC/LimitRange controls stay collapsed
 below the operational facts. Removing redundant nested cards and repeated
