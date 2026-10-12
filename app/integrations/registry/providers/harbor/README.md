@@ -112,3 +112,30 @@ A Harbor implementation that passes its provider-specific tests but still requir
 Artifact inventory, vulnerability findings, webhook workflows, cross-domain Registry
 correlation, consumer bindings, and operational Registry mutation are outside issue #884.
 Those surfaces must not be inferred from this provider foundation.
+
+## Approved outbound Harbor HTTPS policy (#1480)
+
+Connection registration, Test Connection, Full Validation, Runtime Refresh and
+Registry collectors require **verified HTTPS** and an explicitly approved
+endpoint. Previously saved HTTP or `verify_ssl=false` connections fail
+closed until reconfigured to the approved HTTPS origin.
+
+Set `INTEGRATION_HARBOR_ALLOWED_ORIGINS` as comma-separated exact HTTPS origins
+in **both web application and validation/runtime/collection worker** environments.
+For example: `https://harbor.internal.example,https://harbor.example.com`.
+When unset or empty, the client refuses connections before transport.
+For internal PKI, make a trusted PEM CA bundle available to all these processes
+and set `INTEGRATION_HARBOR_CA_BUNDLE=/etc/ssl/harbor-ca.pem`. Default behavior
+uses normal certificate verification. No insecure TLS bypass is offered.
+
+Harbor must be reachable directly through its approved HTTPS origin, including
+when it is exposed through a reverse proxy. Client requests reject HTTP redirects,
+do not inherit shell proxies/netrc and reject unapproved origins. App-level origin
+allowlisting is **not DNS pinning or network egress isolation**. Restrict DNS and
+egress to sanctioned Harbor targets using operator-managed infrastructure policy.
+Private/internal addresses are allowed only when explicitly approved.
+
+Before promotion, verify good/bad internal certificates, blocked HTTP/unapproved
+hosts, redirect rejection, stored insecure-record behavior, secret-free evidence,
+browser edit/resave and web/worker environment parity. The provider's resources
+remain authoritative and are never modified by this change.
