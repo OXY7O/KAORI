@@ -413,7 +413,15 @@ and PVC bounds are `Unbounded`; object limits and defaults are `Not declared`.
 **Technical Details** uses one compact shared-workspace category switch
 (`Object Limits / Container Defaults / Advanced Controls`) instead of
 three accordion tiles. Only the selected category's short, read-only
-Current/Proposed table appears. Category tabs use native button/ARIA tab
+Current/Proposed table appears. The #1660 presentation refinement uses a
+quiet, icon-labelled, segmented category selector with a clearly selected
+KAORI Violet state, a constrained-width three-column comparison table with
+subtle row separators and distinct **Current · Frozen** /
+**Proposed · Profile** headings. Proposed text receives subtle violet
+emphasis only when the committed versus selected value actually differs;
+a displayed difference is not an admission decision. The same control
+evidence, empty-state semantics, and responsive light/dark design tokens
+remain authoritative. Category tabs use native button/ARIA tab
 patterns and keyboard Left/Right/Home/End navigation. Advanced Control
 states remain `Recorded` capability evaluation or `Supported`/
 `Unavailable` preflight, with no implied execution or verified read-back.
