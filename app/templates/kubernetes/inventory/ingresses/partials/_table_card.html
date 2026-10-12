@@ -21,6 +21,7 @@
         url_for('integrations.kubernetes') ,
     'Open Cluster Integrations',
     header_actions=inventory_header_actions,
+    result_count=pagination.total_items,
     title_extra=info_tip.render('k8s-inventory-ingresses-title', 'Ingress Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
         'TLS References: Secret or certificate references declared for HTTPS hosts. Their presence does not by itself prove certificate validity or a working TLS endpoint.',
         'Ingress Routing: HTTP host/path routing targets from committed Ingress rules. The actual controller and external reachability remain provider-owned.'
