@@ -264,7 +264,11 @@ class HarborClient:
     def _object_list(payload: Any, label: str) -> list[dict[str, Any]]:
         if not isinstance(payload, list):
             raise HarborResponseError(f'Harbor {label} response is not a list.')
-        return [item for item in payload if isinstance(item, dict)]
+        if any(not isinstance(item, dict) for item in payload):
+            raise HarborResponseError(
+                f'Harbor {label} contains a malformed item; refusing an incomplete inventory snapshot.'
+            )
+        return payload
 
     def _request_json(
         self,
