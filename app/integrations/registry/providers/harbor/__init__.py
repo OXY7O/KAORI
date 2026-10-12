@@ -11,6 +11,7 @@ from app.integrations.kernel.registry import (
 from app.integrations.registry.collectors import register_registry_collector
 from app.integrations.registry.governance_contracts import register_registry_governance_collector
 from app.integrations.registry.providers.harbor.adapter import runtime_adapter
+from app.integrations.registry.providers.harbor.runtime_overview import build_runtime_overview_rows
 from app.integrations.registry.providers.harbor.capabilities import (
     COMPATIBILITY_PROFILES,
     CORE_CAPABILITY_KEYS,
@@ -85,6 +86,7 @@ provider_implementation = IntegrationImplementation(
     module_path='app.integrations.registry.providers.harbor',
     detail_url_builder=_detail_url,
     failure_recorder=_record_failure,
+    runtime_overview_builder=build_runtime_overview_rows,
 )
 
 registry.register(integration_module)
