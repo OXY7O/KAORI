@@ -166,3 +166,7 @@ Custom Template create and update preserve the submitted report type and lifecyc
 ### Report Templates submitted section evidence (#1562)
 
 Custom Template POST preserves Analytics section keys, including empty/invalid selections, until server validation rejects them. Inventory sections must exactly match the definition's fixed workbook contract. Initial GET defaults and operator-driven Reset Sections are presentation only; no unsupported or duplicate section can be committed under the current catalog. Generate admission remains separately authoritative.
+
+### Historical custom Templates without catalog compatibility aliases (#1566)
+
+The registry must remain readable if a persisted custom template references a removed report type, unsupported format, invalid sections or lifecycle status. Such records are presented with Needs Review evidence; Generate and Duplicate are guarded until corrected using current catalog types through the existing Edit workspace. Historical record identity, source snapshot and ownership are never silently rewritten or removed on registry read.

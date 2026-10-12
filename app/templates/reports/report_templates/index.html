@@ -442,13 +442,18 @@
                                         {% if template.can_generate %}
                                             <a href="{{ template.generate_href }}"
                                                class="{{ table_ui.action_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>Generate Report</a>
+                                        {% elif template.source == 'custom' and not template.contract_valid %}
+                                            <span class="{{ table_ui.action_classes() }} cursor-not-allowed opacity-60"
+                                                  aria-disabled="true"
+                                                  title="{{ template.contract_errors|join(' ') }}"><i data-lucide="shield-alert" class="h-4 w-4" aria-hidden="true"></i>Contract Needs Review</span>
                                         {% else %}
                                             <span class="{{ table_ui.action_classes() }} cursor-not-allowed opacity-60"
                                                   aria-disabled="true"
                                                   title="Activate this custom template before using it to generate a report."><i data-lucide="pause" class="h-4 w-4" aria-hidden="true"></i>Activate to Generate</span>
                                         {% endif %}
                                         {% if template.source == 'system' %}
-                                            <form method="POST" action="{{ template.duplicate_href }}">
+                                            {% if template.can_duplicate %}
+                                                <form method="POST" action="{{ template.duplicate_href }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                 <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
                                                 <button type="submit"
@@ -456,9 +461,11 @@
                                                         data-loading-label="Creating Custom Template..."
                                                         class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
                                             </form>
+                                            {% endif %}
                                         {% else %}
                                             <a href="{{ template.edit_href }}"
                                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Template</a>
+                                            {% if template.can_duplicate %}
                                             <form method="POST" action="{{ template.duplicate_href }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                 <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
@@ -467,6 +474,7 @@
                                                         data-loading-label="Duplicating Template..."
                                                         class="{{ table_ui.action_classes() }}"><i data-lucide="copy" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Duplicate</span></button>
                                             </form>
+                                            {% endif %}
                                             <button type="button"
                                                     data-kaori-dialog-open
                                                     data-dialog-target="template-delete-{{ loop.index }}"
