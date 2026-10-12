@@ -29,6 +29,9 @@ from app.kubernetes.tenant.capsule_handoff_resource_consent import (
     inspect_capsule_resource_consent,
 )
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
+from app.kubernetes.tenant.release_handoff_inventory import (
+    capsule_spec_projects_namespace_tenant_label,
+)
 
 _CONTENT_TYPE = 'application/json-patch+json'
 
@@ -36,6 +39,7 @@ _CONTENT_TYPE = 'application/json-patch+json'
 def preview_capsule_namespace_handoff(
     core: Any, component: Mapping[str, Any], *, tenant_id: str,
     capsule_tenant_name: str, successor_owner: str,
+    capsule_spec: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Bound UID/RV conditional dryRun=All; independently reread unchanged live state."""
     _successor(successor_owner)
@@ -82,11 +86,21 @@ def preview_capsule_namespace_handoff(
         if not isinstance(expected_manager, str) or manager != expected_manager:
             raise ValueError('Observed Capsule Namespace manager changed since preflight.')
         if manager.lower() == 'kaori' or any(
-            key.startswith('kaori.io/') for key in before_labels
+            key.startswith('kaori.io/')
+            and not (
+                key == 'kaori.io/tenant'
+                and capsule_spec_projects_namespace_tenant_label(
+                    capsule_spec=capsule_spec,
+                    capsule_name=capsule_tenant_name,
+                    labels=before_labels,
+                )
+            )
+            for key in before_labels
         ):
             raise ValueError(
                 'Observed Capsule Namespace retains unclassified KAORI control '
-                'labels; investigate ownership before preview.'
+                'labels or mismatched Capsule spec projection; investigate '
+                'ownership before preview.'
             )
         # No-op read-back of an externally governed Capsule Namespace.
         # Original foreign manager, labels, spec and owners stay untouched.
@@ -135,6 +149,7 @@ def preview_capsule_handoff_scope(
         preview_capsule_namespace_handoff(
             core, component, tenant_id=tenant_id,
             capsule_tenant_name=cr['name'], successor_owner=successor_owner,
+            capsule_spec=live_cr.get('spec'),
         )
         for component in namespaces
     ]
@@ -263,7 +278,17 @@ def build_capsule_scope_patch_review(
             labels = _labels(before)
             if (
                 decision != 'preserve_existing_provider_namespace'
-                or any(key.startswith('kaori.io/') for key in labels)
+                or any(
+                    key.startswith('kaori.io/')
+                    and not (
+                        key == 'kaori.io/tenant'
+                        and capsule_spec_projects_namespace_tenant_label(
+                            capsule_spec=_get(current_capsule_cr, 'spec'),
+                            capsule_name=cr['name'], labels=labels,
+                        )
+                    )
+                    for key in labels
+                )
                 or labels.get('app.kubernetes.io/managed-by') == 'kaori'
             ):
                 raise ValueError('Capsule G2 cannot silently treat Namespace as provider owned.')
