@@ -202,18 +202,25 @@ if (canvas && form) {
         }
         if (cy) cy.destroy()
         const colors = {
-            artifact: token('--kaori-topology-domain-configuration-border', '#7c3aed'),
-            cluster: token('--kaori-topology-domain-scope-border', '#3b82f6'),
-            namespace: token('--kaori-topology-domain-scope-border', '#3b82f6'),
-            workload: token('--kaori-topology-domain-compute-border', '#10b981'),
-            pod: token('--kaori-topology-domain-compute-border', '#10b981'),
+            artifact: token('--kaori-topology-domain-configuration-border', 'CanvasText'),
+            cluster: token('--kaori-topology-domain-scope-border', 'CanvasText'),
+            namespace: token('--kaori-topology-domain-scope-border', 'CanvasText'),
+            workload: token('--kaori-topology-domain-compute-border', 'CanvasText'),
+            pod: token('--kaori-topology-domain-compute-border', 'CanvasText'),
         }
         const fills = {
-            artifact: token('--kaori-topology-domain-configuration-fill', '#ede9fe'),
-            cluster: token('--kaori-topology-domain-scope-fill', '#eff6ff'),
-            namespace: token('--kaori-topology-domain-scope-fill', '#eff6ff'),
-            workload: token('--kaori-topology-domain-compute-fill', '#ecfdf5'),
-            pod: token('--kaori-topology-domain-compute-fill', '#ecfdf5'),
+            artifact: token('--kaori-topology-domain-configuration-fill', 'Canvas'),
+            cluster: token('--kaori-topology-domain-scope-fill', 'Canvas'),
+            namespace: token('--kaori-topology-domain-scope-fill', 'Canvas'),
+            workload: token('--kaori-topology-domain-compute-fill', 'Canvas'),
+            pod: token('--kaori-topology-domain-compute-fill', 'Canvas'),
+        }
+        const textColors = {
+            artifact: token('--kaori-topology-domain-configuration-text', 'CanvasText'),
+            cluster: token('--kaori-topology-domain-scope-text', 'CanvasText'),
+            namespace: token('--kaori-topology-domain-scope-text', 'CanvasText'),
+            workload: token('--kaori-topology-domain-compute-text', 'CanvasText'),
+            pod: token('--kaori-topology-domain-compute-text', 'CanvasText'),
         }
         cy = renderer({
             container: canvas,
@@ -236,10 +243,10 @@ if (canvas && form) {
                         shape: 'round-rectangle',
                         width: 170,
                         height: 56,
-                        'background-color': (ele) => fills[ele.data('type')] || '#f3f4f6',
-                        'border-color': (ele) => colors[ele.data('type')] || '#64748b',
+                        'background-color': (ele) => fills[ele.data('type')] || 'Canvas',
+                        'border-color': (ele) => colors[ele.data('type')] || 'CanvasText',
                         'border-width': 1.5,
-                        color: token('--kaori-content-primary', '#1f2937'),
+                        color: (ele) => textColors[ele.data('type')] || 'CanvasText',
                         'font-size': 10,
                         'font-weight': 600,
                         'text-wrap': 'ellipsis',
@@ -255,10 +262,14 @@ if (canvas && form) {
                         width: 1.8,
                         'curve-style': 'taxi',
                         'taxi-direction': 'downward',
-                        'line-color': token('--kaori-topology-edge-contains', '#94a3b8'),
+                        'line-color': (ele) =>
+                            ele.data('relationship') === 'runtime_usage' &&
+                            ['medium', 'mixed'].includes(ele.data('confidence'))
+                                ? token('--kaori-status-warning', 'CanvasText')
+                                : token('--kaori-topology-edge-contains', 'CanvasText'),
                         'target-arrow-shape': 'none',
                         'line-style': (ele) =>
-                            ['medium', 'mixed'].includes(ele.data('confidence')) ? 'dashed' : 'solid',
+                            ele.data('relationship') === 'contains' ? 'dashed' : 'solid',
                         'overlay-opacity': 0,
                     },
                 },
@@ -266,7 +277,7 @@ if (canvas && form) {
                     selector: ':selected',
                     style: {
                         'border-width': 3,
-                        'border-color': token('--kaori-primary', '#7c3aed'),
+                        'border-color': token('--kaori-topology-domain-configuration-border', 'CanvasText'),
                     },
                 },
             ],
@@ -360,7 +371,7 @@ if (canvas && form) {
     }).run())
     $('registry-topology-export').addEventListener('click', () => {
         if (!cy) return
-        const output = cy.png({ full: true, scale: 2, bg: '#ffffff' })
+        const output = cy.png({ full: true, scale: 2, bg: window.getComputedStyle(document.body).backgroundColor })
         const a = document.createElement('a')
         a.href = output
         a.download = 'kaori-artifact-dependency-topology.png'
