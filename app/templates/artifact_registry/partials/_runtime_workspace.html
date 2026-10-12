@@ -229,7 +229,9 @@
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }}">
                                         <p class="font-semibold text-content-primary">{{ row.cluster_name }} · {{ row.namespace }}</p>
-                                        <p class="mt-0.5 text-xs text-content-muted">{{ row.workload_type }} · {{ row.workload_name }}</p>
+                                        <p class="mt-0.5 text-xs text-content-muted">
+                                            {{ row.workload_type }} · {{ row.workload_name }} · {{ row.container_count }} {{ 'Container' if row.container_count == 1 else 'Containers' }}
+                                        </p>
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }}">
                                         {{ table_label.status_indicator_label(row.match.label, row.match.tone) }}
