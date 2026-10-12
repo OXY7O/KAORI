@@ -120,8 +120,13 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     page = max(to_int(args.get('page'), 1), 1)
 
     catalog = decorate_catalog_rules([normalize_rule(rule) for rule in INTELLIGENCE_CATALOG])
+    evaluation_issues: list[str] = []
     source_items = (
-        catalog if page_mode == 'catalog' else decorate_recommendation_findings(get_active_recommendation_findings())
+        catalog if page_mode == 'catalog' else decorate_recommendation_findings(
+            get_active_recommendation_findings(
+                domain=filters['domain'] or None, evidence_issues=evaluation_issues,
+            )
+        )
     )
     filtered = [
         rule
@@ -172,6 +177,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     return {
         'page_mode': page_mode,
+        'evaluation_issues': evaluation_issues,
         'active_filter_count': active_filter_count,
         'filters': filters,
         'filter_options': {
@@ -239,7 +245,9 @@ def _finalize_recommendation_findings(findings: list[dict[str, Any]]) -> list[di
     return normalized
 
 
-def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _build_recommendation_findings(
+    catalog: list[dict[str, Any]], *, evidence_issues: list[str] | None = None,
+) -> list[dict[str, Any]]:
     """Evaluate currently available catalog rules into actionable findings.
 
     Catalog remains the rule registry. Recommendations should only show findings
@@ -250,15 +258,27 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     rules = {str(rule.get('rule_key')): rule for rule in catalog}
     findings: list[dict[str, Any]] = []
 
-    findings.extend(_build_namespace_quota_findings(rules))
-    findings.extend(_build_workload_resource_governance_findings(rules))
-    findings.extend(_build_latest_image_findings(rules))
-    findings.extend(build_kubernetes_runtime_recommendation_findings(rules))
-    findings.extend(_build_storage_binding_findings(rules))
-    findings.extend(_build_tls_certificate_findings(rules))
-    findings.extend(build_object_storage_recommendation_findings(rules))
-    findings.extend(build_registry_recommendation_findings(rules))
-    findings.extend(build_tenant_governance_recommendation_findings(rules))
+    def collect(label: str, evaluator: Any) -> None:
+        try:
+            findings.extend(evaluator(rules))
+        except SQLAlchemyError:
+            if evidence_issues is None:
+                raise  # Worker/reconciliation must never treat failed reads as no findings.
+            evidence_issues.append(label)
+
+    # Domain selection narrows evaluator execution before loading committed data.
+    if any(key.startswith('kubernetes.') for key in rules):
+        collect('Kubernetes Namespace', _build_namespace_quota_findings)
+        collect('Kubernetes Workload Governance', _build_workload_resource_governance_findings)
+        collect('Kubernetes Image', _build_latest_image_findings)
+        collect('Kubernetes Runtime', build_kubernetes_runtime_recommendation_findings)
+        collect('Kubernetes Storage Binding', _build_storage_binding_findings)
+        collect('Kubernetes TLS', _build_tls_certificate_findings)
+        collect('Tenant Governance', build_tenant_governance_recommendation_findings)
+    if any(key.startswith('object_storage.') for key in rules):
+        collect('Object Storage', build_object_storage_recommendation_findings)
+    if any(key.startswith('registry.') for key in rules):
+        collect('Artifact Registry', build_registry_recommendation_findings)
 
     return _finalize_recommendation_findings(findings)
 
@@ -279,6 +299,8 @@ def get_active_recommendation_findings(
     domain: str | None = None,
     asset_key: str | None = None,
     limit: int | None = None,
+    rule_keys: set[str] | None = None,
+    evidence_issues: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Return active catalog-backed findings for reusable product surfaces.
 
@@ -291,8 +313,10 @@ def get_active_recommendation_findings(
     selected_domain = clean(domain)
     if selected_domain:
         catalog = [rule for rule in catalog if clean(str(rule.get('domain'))) == selected_domain]
+    if rule_keys is not None:
+        catalog = [rule for rule in catalog if str(rule.get('rule_key')) in rule_keys]
 
-    findings = _build_recommendation_findings(catalog)
+    findings = _build_recommendation_findings(catalog, evidence_issues=evidence_issues)
 
     selected_asset = clean(asset_key)
     if selected_asset:
@@ -342,14 +366,23 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
         return []
 
     try:
-        from app.models import TLSCertificateInventory
+        from app.models import TLSCertificateCollectionState, TLSCertificateInventory
 
     except ImportError:
         return []
 
     try:
+        from datetime import UTC, datetime, timedelta
+
+        cutoff = datetime.now(UTC) - timedelta(hours=24)
         rows = (
-            TLSCertificateInventory.query.filter(
+            TLSCertificateInventory.query.join(
+                TLSCertificateCollectionState,
+                TLSCertificateCollectionState.cluster_id == TLSCertificateInventory.cluster_id,
+            ).filter(
+                TLSCertificateInventory.collected_at >= cutoff,
+                TLSCertificateCollectionState.collected_at >= cutoff,
+            ).filter(
                 TLSCertificateInventory.status.in_(['expired', 'critical', 'warning', 'invalid'])
             )
             .order_by(
@@ -361,7 +394,7 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
             .all()
         )
     except SQLAlchemyError:
-        return []
+        raise
 
     cluster_names = _cluster_name_map({str(row.cluster_id) for row in rows})
     findings: list[dict[str, Any]] = []
@@ -497,7 +530,8 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
     if not resolved_key:
         return None
 
-    for finding in get_active_recommendation_findings():
+    base_key = resolved_key.split(':', 1)[0]
+    for finding in get_active_recommendation_findings(rule_keys={base_key}):
         if clean(str(finding.get('rule_key'))) != resolved_key:
             continue
 
