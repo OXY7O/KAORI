@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import func, select
 
+from app.artifact_registry.correlation import runtime_input_signature
 from app.artifact_registry.analytics_history import (
     REGISTRY_HISTORY_WINDOWS,
     collect_registry_metric_history,
@@ -523,6 +524,7 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
             ),
             'governance_status': governance_state.status if governance_state else 'not_collected',
             'runtime_observed_at': latest_binding.isoformat() if latest_binding else None,
+            'correlation_input_signature': runtime_input_signature(db.session),
             'security_latest_scan_at': latest_scan.isoformat() if latest_scan else None,
             'security_assessed_count': counts['scanned_artifacts'],
         },
@@ -674,6 +676,8 @@ def materialize_registry_analytics(
     )
     if governance_generation != domain['evidence']['governance_committed_at']:
         raise RuntimeError('Registry Governance changed during Analytics materialization.')
+    if runtime_input_signature(db.session) != domain['evidence']['correlation_input_signature']:
+        raise RuntimeError('Registry or Kubernetes correlation inputs changed during Analytics materialization.')
 
     snapshot = RegistryAnalyticsSnapshot()
     snapshot.integration_instance_id = identity.id
