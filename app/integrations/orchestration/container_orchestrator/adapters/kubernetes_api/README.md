@@ -51,3 +51,15 @@ Coverage pagination windows (default five) **before** hydrating full provider
 records and reusable Metrics Source/Alertmanager bindings. The shared source
 lookup is limited to the visible cluster IDs and canonical source identities.
 All runtime operations and provider state remain Kubernetes-owned.
+
+### Legacy TLS import compatibility during DevContainer review
+
+The provider client is authoritative for any explicitly approved weak-TLS
+policy: it applies TLS configuration to its own urllib3 transport, never to
+process-wide TLS defaults. The retired `weak_tls_context(enabled=...)` symbol
+is temporarily retained as a **no-op import compatibility bridge** for any
+older callers not yet migrated. It does not change TLS behavior and must not
+be used by new code. Existing operations must build Kubernetes API clients via
+`container_orchestrator → client.build`, which reads the canonical connection
+`allow_weak_tls` flag. The import-regression contract scans application
+modules for old imports so this bridge can be removed after complete migration.
