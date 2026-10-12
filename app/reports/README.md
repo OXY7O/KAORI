@@ -206,3 +206,7 @@ Strong worker verification uses a per-run random object key and records successf
 ### Integrity Scan evidence contract (#1594)
 
 Integrity results expose checked, available, missing, error and full reference population counts, with explicit partial/empty/unknown semantics. A 500-object scan is a bounded sample, never proof of full-estate integrity. The UI renders success only when every selected reference has actually been scanned without exceptions.
+
+### Storage integrity scan worker ownership (#1595)
+
+A bounded reference integrity scan is dispatched through canonical report-storage JobExecution and the existing maintenance worker queue. The HTTP route only creates/attaches a job; the worker owns per-artifact storage checks. The page reads committed job results with active/failed states and HTMX refresh, without live provider I/O from the browser. Strong write-confirm-delete verification remains separate.

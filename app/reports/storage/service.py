@@ -767,7 +767,15 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
         readiness_monitor=readiness_monitor,
     )
 
+    integrity_execution = storage_check.get_report_storage_integrity_scan_presentation(backend_name)
+    integrity_result = (
+        build_storage_integrity_presentation(integrity_execution['last_result'])
+        if integrity_execution['last_result'] is not None
+        else None
+    )
     return {
+        'integrity_result': integrity_result,
+        'integrity_execution': integrity_execution,
         'page_title': 'Reports Storage',
         'page_subtitle': ('Review report storage readiness, integrity, and artifact lifecycle.'),
         'active_backend': backend_name,
