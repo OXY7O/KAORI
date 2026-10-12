@@ -1629,3 +1629,45 @@ def test_allocation_full_width_technical_workspace_and_readable_comparison() -> 
     assert 'renderContractPreview(current, proposed)' in script
     assert "cell.classList.toggle('text-kaori-primary', differs)" in script
     assert 'This preview never approves or applies changes.' in template
+
+
+def test_allocation_change_section_heading_icons_follow_kaori_hierarchy() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    Environment(autoescape=True).parse(template)
+
+    # Every major section uses the existing 9x9 KAORI Violet soft icon
+    # surface; nested Change Highlights uses an 8x8 icon surface.
+    major_sections = (
+        ('allocation-change-target-heading', 'crosshair'),
+        ('allocation-comparison-heading', 'git-compare-arrows'),
+        ('allocation-change-gates-heading', 'shield-check'),
+    )
+    for heading_id, icon in major_sections:
+        section = template.split(f'aria-labelledby="{heading_id}"', 1)[1]
+        next_heading = section.split('</section>', 1)[0]
+        assert f'data-lucide="{icon}"' in next_heading
+        assert 'h-9 w-9 shrink-0' in next_heading
+        assert 'bg-kaori-soft text-kaori-primary' in next_heading
+        assert 'aria-hidden="true"' in next_heading
+        assert f'id="{heading_id}"' in next_heading
+
+    highlight = template.split('aria-labelledby="allocation-change-highlights-heading"', 1)[1]
+    assert 'data-lucide="chart-no-axes-column-increasing"' in highlight
+    assert 'h-8 w-8 shrink-0' in highlight
+    assert 'id="allocation-change-highlights-heading"' in highlight
+
+    detail = template.split('>Technical Details</h4>', 1)[0].rsplit(
+        '<div class="border-t border-outline-subtle', 1
+    )[1]
+    assert 'data-lucide="sliders-horizontal"' in detail
+    assert 'h-9 w-9 shrink-0' in detail
+
+    # Icons convey navigation hierarchy only; the governed contract is still
+    # read from the same frozen and versioned quota bindings.
+    assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
+    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
+    assert "url_for('tenant.change_namespace_allocation_route')" in template
+    assert 'name="csrf_token"' in template
+    assert 'Preflight &amp; Apply' in template
