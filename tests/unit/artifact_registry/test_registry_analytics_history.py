@@ -101,3 +101,34 @@ def test_previous_snapshot_zero_is_not_treated_as_absent():
     assert elapsed == 1
     assert growth['artifact_delta'] == 8
     assert growth['size_delta_bytes'] == 4096
+
+
+def test_unobserved_history_growth_does_not_display_as_zero():
+    from app.artifact_registry.presentation_analytics import _analytics_growth_summary
+
+    growth = _analytics_growth_summary(
+        {'artifacts': 7, 'running_artifacts': 0},
+        [{'size_growth_bytes_per_day': 20.0, 'artifact_growth_per_day': None}],
+    )
+    assert growth['size_per_day'] == 20.0
+    assert growth['artifacts_per_day'] is None
+
+
+def test_empty_range_is_not_fabricated_as_zero_activity(monkeypatch):
+    class Consumer:
+        config = SimpleNamespace(name='Thanos')
+        binding = SimpleNamespace(id=21)
+
+        def query_range(self, expression, start, end, step, *, retry_count):
+            return {'status': 'success', 'data': {'resultType': 'matrix', 'result': []}}
+
+    monkeypatch.setattr(analytics_history.MetricsConsumer, 'for_asset', lambda **_kw: Consumer())
+    history, metrics, growth = analytics_history.collect_registry_metric_history(
+        SimpleNamespace(id=3, name='registry-3'),
+        '60d',
+        now=datetime(2026, 10, 12, tzinfo=UTC),
+    )
+    assert history['status'] == 'unavailable'
+    assert metrics['status'] == 'unavailable'
+    assert growth['artifact_growth_per_day'] is None
+    assert growth['size_growth_bytes_per_day'] is None
