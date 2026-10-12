@@ -1097,6 +1097,7 @@ def test_limit_exposure_uses_ratios_as_separate_operator_ceiling() -> None:
     assert healthy['threshold']['cpu'] == '15.00'
     assert healthy['threshold']['memory_bytes'] == format(Decimal('20') * gib, 'f')
     assert healthy['capacity_approval'] is False
+    assert healthy['planning_only'] is True
     assert report(CapacityVector(cpu=Decimal('15.1'), memory_bytes=quota.memory_bytes))['state'] == 'Overcommitted'
     assert report(CapacityVector(cpu=Decimal('12'), memory_bytes=Decimal('21') * gib))['state'] == 'Overcommitted'
     assert report(CapacityVector(cpu=None, memory_bytes=quota.memory_bytes))['state'] == 'Unknown'
@@ -1170,6 +1171,7 @@ def test_limit_enforce_allows_bounded_native_replacement_below_threshold(monkeyp
     assert report['projection'] == 'other_committed_plus_proposed'
     assert report['assessment']['state'] == 'Healthy'
     assert report['assessment']['capacity_approval'] is False
+    assert report['assessment']['planning_only'] is False
 
 
 def test_limit_enforce_blocks_overexposed_native_replacement(monkeypatch) -> None:

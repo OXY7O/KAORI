@@ -83,7 +83,7 @@ def assess_limit_exposure(
             'memory_threshold': _display_limit_memory(ceiling.memory_bytes),
         },
         'unknown_sources': list(unknown_sources or []),
-        'planning_only': True,
+        'planning_only': mode == 'observe',
         'capacity_approval': False,
     }
 
@@ -127,6 +127,6 @@ def _assess_known_limits(
             'memory_threshold': _display_limit_memory(ceiling.memory_bytes),
         },
         'unknown_sources': [],
-        'planning_only': True,
+        'planning_only': mode == 'observe',
         'capacity_approval': False,
     }
