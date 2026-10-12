@@ -1,26 +1,23 @@
 name: kaori-dev
 
-# #1427: The host initializeCommand provisions private PostgreSQL credentials
-# in ~/.config/kaori/devcontainer/, OUTSIDE the bind-mounted workspace.
-# PostgreSQL alone receives bootstrap and runtime provisioning secrets.
-# Optional pre-init env_file declarations let VS Code inspect Compose before
-# initializeCommand; PostgreSQL itself fails closed when secrets are absent.
-# The one-shot db-bootstrap service receives ONLY the migrator secret.
+# #1427: Cross-platform Windows/Linux VS Code host initializes credentials
+# through a short-lived Docker Python container (no host Python/WSL required).
+# Credentials persist in two dedicated Docker named volumes, NEVER in the
+# bind-mounted workspace or normal app/worker env. Only db gets both mounts;
+# the explicitly invoked db-bootstrap gets the migrator mount only.
 # All normal application processes use the canonical non-owner DATABASE_URL.
 
 services:
   db:
-    env_file:
-      - path: ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-bootstrap.env
-        required: false
-      - path: ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-migrate.env
-        required: false
     environment:
       POSTGRES_USER: postgres
       POSTGRES_DB: kaori
       POSTGRES_PASSWORD: !reset null
+      POSTGRES_PASSWORD_FILE: /run/kaori-admin/postgres_password
     volumes:
       - ./.devcontainer/postgres-init/01-kaori-roles.sh:/docker-entrypoint-initdb.d/01-kaori-roles.sh:ro
+      - kaori_dev_pg_admin_credentials:/run/kaori-admin:ro
+      - kaori_dev_pg_migrator_credentials:/run/kaori-migrator:ro
 
   workspace:
     build:
@@ -510,8 +507,6 @@ services:
       target: development
     env_file:
       - .env
-      - path: ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-migrate.env
-        required: false
     environment:
       APP_ENV: development
       DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
@@ -525,6 +520,7 @@ services:
     volumes:
       - .:/workspace/kaori
       - kaori_instance_data:/workspace/kaori/instance
+      - kaori_dev_pg_migrator_credentials:/run/kaori-migrator:ro
     depends_on:
       db:
         condition: service_healthy
@@ -534,3 +530,9 @@ services:
 volumes:
   kaori_instance_data:
   kaori_node_modules:
+  kaori_dev_pg_admin_credentials:
+    external: true
+    name: kaori-dev-pg-admin-secrets
+  kaori_dev_pg_migrator_credentials:
+    external: true
+    name: kaori-dev-pg-migrator-secrets
