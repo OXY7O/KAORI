@@ -51,9 +51,10 @@ container, **not on your Windows host or WSL**.
 # Optional before first open: cp .env.example .env
 # The Docker-based initializer creates .env when missing and generates
 # runtime kaori_runtime DATABASE_URL and application development keys.
-# postgres and migrator passwords persist outside the repo in two
-# private Docker volumes: kaori-dev-pg-admin-secrets and
-# kaori-dev-pg-migrator-secrets.
+# postgres and migrator passwords are generated in ignored local files:
+# secrets/devcontainer/postgres-bootstrap.env
+# secrets/devcontainer/postgres-migrate.env
+# See committed safe examples under .devcontainer/examples/.
 # Reopen in Container starts PostgreSQL, Redis, workspace and workers/Beat.
 # Press F5: an empty database shows Database Setup Required.
 # Run the copied command from Windows PowerShell on the host:
