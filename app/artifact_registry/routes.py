@@ -206,6 +206,21 @@ def inventory_artifact_details(artifact_id: int) -> ResponseReturnValue:
     )
 
 
+def _security_source_id(*, from_form: bool = False) -> int | None:
+    """Explicit malformed source filters must never widen Security to the fleet."""
+    values = request.form if from_form else request.args
+    raw = values.get('source_id')
+    if raw is None or not str(raw).strip():
+        return None
+    try:
+        source_id = int(raw)
+    except (TypeError, ValueError):
+        abort(404)
+    if source_id < 1:
+        abort(404)
+    return source_id
+
+
 def _security_response(kind: str) -> ResponseReturnValue:
     context = build_security(
         kind=kind,
@@ -213,7 +228,7 @@ def _security_response(kind: str) -> ResponseReturnValue:
         search=request.args.get('q', '', type=str),
         severity=request.args.get('severity', '', type=str),
         provider=request.args.get('provider', '', type=str),
-        source_id=request.args.get('source_id', type=int),
+        source_id=_security_source_id(),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
@@ -244,7 +259,7 @@ def _security_sync_context(kind: str) -> dict[str, object]:
         search=request.form.get('q', '', type=str),
         severity=request.form.get('severity', '', type=str),
         provider=request.form.get('provider', '', type=str),
-        source_id=request.form.get('source_id', type=int),
+        source_id=_security_source_id(from_form=True),
         page=request.form.get('page', 1, type=int) or 1,
         per_page=request.form.get('per_page', 5, type=int) or 5,
     )
@@ -253,6 +268,8 @@ def _security_sync_context(kind: str) -> dict[str, object]:
 @artifact_registry_bp.post('/security/sync')
 @permission_required('artifact_registry.sync')
 def security_sync() -> ResponseReturnValue:
+    # Validate the posted view scope before dispatching the fleet job.
+    _security_source_id(from_form=True)
     is_htmx = request.headers.get('HX-Request') == 'true'
     kind = 'supply_chain' if request.form.get('view') == 'supply_chain' else 'vulnerabilities'
     outcome = None
