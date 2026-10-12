@@ -284,10 +284,11 @@ class KubernetesDiscovery:
         try:
             response = AuthorizationV1Api(self.api_client).create_self_subject_access_review(review)
         except ApiException as exc:
-            # If authorization review itself is unavailable, actual inventory calls remain
-            # authoritative. Do not falsely block the feature at discovery time.
+            # A served API resource does not prove RBAC access. If this credential
+            # cannot obtain its own authorization review, the verb is unverified;
+            # never persist positive capability evidence from this path.
             if exc.status in {403, 404}:
-                return True
+                return False
             raise
         return bool(getattr(getattr(response, 'status', None), 'allowed', False))
 
