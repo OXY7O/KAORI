@@ -30,7 +30,7 @@ def _inventory_rows(instance: IntegrationInstance, projects: list[RegistryProjec
         if not project.repositories:
             rows.append(
                 {
-                    'record_type': 'project',
+                    'entity_type': 'project',
                     'registry': instance.name,
                     'environment': instance.environment or 'Not Set',
                     'project': project.name,
@@ -43,7 +43,7 @@ def _inventory_rows(instance: IntegrationInstance, projects: list[RegistryProjec
             if not repository.artifacts:
                 rows.append(
                     {
-                        'record_type': 'repository',
+                        'entity_type': 'repository',
                         'registry': instance.name,
                         'environment': instance.environment or 'Not Set',
                         'project': project.name,
@@ -56,7 +56,7 @@ def _inventory_rows(instance: IntegrationInstance, projects: list[RegistryProjec
                 summary = dict(artifact.vulnerability_summary or {})
                 rows.append(
                     {
-                        'record_type': 'artifact',
+                        'entity_type': 'artifact',
                         'registry': instance.name,
                         'environment': instance.environment or 'Not Set',
                         'project': project.name,
@@ -65,7 +65,11 @@ def _inventory_rows(instance: IntegrationInstance, projects: list[RegistryProjec
                         'tags': ', '.join(tag.name for tag in artifact.tags or ()) or 'Untagged',
                         'artifact_type': artifact.artifact_type or 'Not Available',
                         'media_type': artifact.media_type or 'Not Available',
-                        'size_mib': round(float(artifact.size_bytes or 0) / (1024.0 * 1024.0), 2),
+                        'size_mib': (
+                            round(float(artifact.size_bytes) / (1024.0 * 1024.0), 2)
+                            if artifact.size_bytes is not None
+                            else None
+                        ),
                         'scan_status': artifact.scan_status or 'not_collected',
                         'critical_findings': _severity_count(summary, 'critical'),
                         'high_findings': _severity_count(summary, 'high'),
