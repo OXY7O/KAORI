@@ -45,7 +45,9 @@ def test_harbor_foundation_exposes_no_provider_mutation_operations() -> None:
     assert 'requests.put(' not in client
     assert 'requests.patch(' not in client
     assert 'requests.delete(' not in client
-    assert 'requests.get(' in client
+    assert '_direct_get(' in client
+    assert 'allow_redirects=False' in client
+    assert 'session.trust_env = False' in client
 
 
 def test_harbor_credential_material_is_encrypted_and_not_part_of_validation_evidence() -> None:
