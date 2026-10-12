@@ -22,6 +22,7 @@ from app.models.registry import (
     RegistryProject,
     RegistryRepository,
     RegistryTag,
+    RegistryWorkloadBinding,
 )
 from app.models.report import Report, ReportSchedule, ReportTemplate
 
@@ -123,9 +124,33 @@ def _registry_analytics_inputs_changed(snapshot: RegistryAnalyticsSnapshot | Non
     actual = state.last_committed_at.isoformat() if state and state.last_committed_at else None
     if actual != evidence.get('inventory_committed_at'):
         return True
-    governance = db.session.get(RegistryGovernanceState, int(snapshot.integration_instance_id))
+    source_id = int(snapshot.integration_instance_id)
+    governance = db.session.get(RegistryGovernanceState, source_id)
     committed = governance.last_committed_at.isoformat() if governance and governance.last_committed_at else None
-    return committed != evidence.get('governance_committed_at')
+    if committed != evidence.get('governance_committed_at'):
+        return True
+
+    artifacts = RegistryArtifact.query.join(
+        RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
+    ).join(
+        RegistryProject, RegistryRepository.project_id == RegistryProject.id
+    ).filter(RegistryProject.integration_instance_id == source_id)
+    latest_scan = artifacts.with_entities(func.max(RegistryArtifact.scan_completed_at)).scalar()
+    scan_time = latest_scan.isoformat() if latest_scan else None
+    if scan_time != evidence.get('security_latest_scan_at'):
+        return True
+
+    latest_runtime = RegistryWorkloadBinding.query.join(
+        RegistryArtifact, RegistryWorkloadBinding.artifact_id == RegistryArtifact.id
+    ).join(
+        RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
+    ).join(
+        RegistryProject, RegistryRepository.project_id == RegistryProject.id
+    ).filter(
+        RegistryProject.integration_instance_id == source_id
+    ).with_entities(func.max(RegistryWorkloadBinding.observed_at)).scalar()
+    runtime_time = latest_runtime.isoformat() if latest_runtime else None
+    return runtime_time != evidence.get('runtime_observed_at')
 
 
 def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict[str, Any]:
