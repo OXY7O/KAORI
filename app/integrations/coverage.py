@@ -361,7 +361,14 @@ def bound_sources_for_scopes(
     source_maps = {
         provider: {
             instance.integration_instance_id: instance
-            for instance in _instances(provider)
+            for instance in _instances(
+                provider,
+                canonical_ids={
+                    binding.integration_instance_id
+                    for binding in bindings
+                    if provider_by_instance.get(binding.integration_instance_id) == provider
+                },
+            )
             if instance.integration_instance_id is not None
         }
         for provider in normalized_providers
@@ -417,28 +424,35 @@ def bound_source_for_scope(
     return source, binding
 
 
-def _instances(integration_type: str) -> list[Any]:
+def _instances(integration_type: str, *, canonical_ids: set[int] | None = None) -> list[Any]:
     """Batch registered provider models rather than resolving every canonical row."""
     from app.integrations.kernel.registry import get_integration, registry
 
+    if canonical_ids is not None and not canonical_ids:
+        return []
     module = get_integration(integration_type)
     records: list[Any] = []
     for implementation in registry.implementations_for_type(integration_type):
         model = implementation.record_model
         if model is not None:
-            records.extend(
+            query = (
                 model.query.join(model.integration_instance)
                 .filter(
                     IntegrationInstance.integration_type == integration_type,
                     IntegrationInstance.provider_key == implementation.provider_key,
                 )
-                .all()
             )
+            if canonical_ids is not None:
+                query = query.filter(model.integration_instance_id.in_(canonical_ids))
+            records.extend(query.all())
             continue
         # Future provider implementations without a batch mapping retain correctness.
-        identities = IntegrationInstance.query.filter_by(
+        identities_query = IntegrationInstance.query.filter_by(
             integration_type=integration_type, provider_key=implementation.provider_key,
-        ).with_entities(IntegrationInstance.id).all()
+        )
+        if canonical_ids is not None:
+            identities_query = identities_query.filter(IntegrationInstance.id.in_(canonical_ids))
+        identities = identities_query.with_entities(IntegrationInstance.id).all()
         for (identity_id,) in identities:
             record = module.get_record_for_canonical(identity_id)
             if record is not None:
