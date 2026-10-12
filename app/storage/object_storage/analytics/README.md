@@ -263,3 +263,7 @@ Alertmanager and Metrics Source remain independent evidence families inside the 
 ## Alert-source response integrity (#1394)
 
 A source connection alone does not prove an empty alert set. The Object Storage worker requires a successful Prometheus alert-query envelope with a complete `data.result` array and well-formed alert series; it also requires an explicit normalized Alertmanager `alerts` array. Missing or malformed results are committed as unavailable alert-source evidence rather than `No Active Alerts`. A valid empty array remains a legitimate observed zero. Alertmanager remains authoritative for alert lifecycle, while Metrics Source fallback is independently qualified.
+
+## Metrics-backed alert asset isolation (#1390)
+
+Prometheus `ALERTS` is a global metrics family even when its Metrics Source runtime is bound to an Object Storage system. Metrics-backed alert fallback therefore requires a positive exact-label binding selector, checks that the selector is disjoint from other Object Storage bindings sharing that runtime, and applies the canonical `apply_promql_scope` matcher to the worker query. Unscoped, regex-only, and overlapping identities are labeled `Metrics Alert Scope Unverified` rather than promoting arbitrary alerts or empty responses to verified current-system evidence. Configure and validate unique asset labels on each consumer binding. Alertmanager remains the preferred provider-owned lifecycle source.
