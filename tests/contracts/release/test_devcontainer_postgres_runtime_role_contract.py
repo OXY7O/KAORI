@@ -18,8 +18,8 @@ def _services(compose: str) -> dict[str, str]:
     import re
 
     values: dict[str, str] = {}
-    for section in re.split(r'(?=^  [a-z0-9-]+:\\n)', compose, flags=re.MULTILINE):
-        matched = re.match(r'^  ([a-z0-9-]+):\\n', section)
+    for section in re.split(r'(?=^  [a-z0-9-]+:\n)', compose, flags=re.MULTILINE):
+        matched = re.match(r'^  ([a-z0-9-]+):\n', section)
         if matched:
             values[matched.group(1)] = section
     return values
@@ -28,7 +28,7 @@ def _services(compose: str) -> dict[str, str]:
 def test_devcontainer_workspace_and_each_worker_use_single_optional_runtime_url() -> None:
     compose = COMPOSE.read_text()
     services = _services(compose)
-    assert compose.startswith('name: kaori-dev\\n')
+    assert compose.startswith('name: kaori-dev\n')
     assert len(services) >= 12
     expected = {
         'workspace', 'inventory-worker', 'registry-security-worker',
@@ -41,7 +41,10 @@ def test_devcontainer_workspace_and_each_worker_use_single_optional_runtime_url(
         section = services[service]
         assert section.count('KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://') == 1
         assert 'DATABASE_URL: postgresql://${POSTGRES_USER' not in section
-        assert 'WAIT_FOR_SCHEMA: "true"' in section if service != 'workspace' else 'WAIT_FOR_DB: "false"' in section
+        if service == 'workspace':
+            assert 'WAIT_FOR_DB: "false"' in section
+        else:
+            assert 'WAIT_FOR_SCHEMA: "true"' in section
     assert 'db' not in services  # infra DB is supplied by canonical compose.yml
 
 
@@ -66,11 +69,11 @@ def test_devcontainer_role_provisioning_is_transactional_and_not_data_destructiv
             f"'{denied}')"
         ) in sql
     assert "has_schema_privilege('kaori_runtime', 'public', 'CREATE')" in sql
-    assert 'ALTER DEFAULT PRIVILEGES' not in '\\n'.join(
+    assert 'ALTER DEFAULT PRIVILEGES' not in '\n'.join(
         line for line in sql.splitlines() if not line.lstrip().startswith('--')
     )
     for statement in ('DROP DATABASE', 'DROP TABLE', 'TRUNCATE TABLE', 'DELETE FROM'):
-        assert statement not in '\\n'.join(
+        assert statement not in '\n'.join(
             line for line in sql.splitlines() if not line.lstrip().startswith('--')
         )
 
@@ -90,7 +93,7 @@ def test_devcontainer_runbook_requires_backup_and_explicit_operator_cutover() ->
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL=' in example
     assert 'KAORI_DB_MIGRATION_URL' in example
     assert 'pg_dump' in guide and 'pg_restore --list' in guide
-    assert r'\\password kaori_runtime' in guide
+    assert r'\password kaori_runtime' in guide
     assert 'ALTER ROLE kaori_runtime LOGIN;' in guide
     assert 'postgresql://kaori_runtime:' in guide
     assert 'no blanket ALTER DEFAULT PRIVILEGES' in guide
