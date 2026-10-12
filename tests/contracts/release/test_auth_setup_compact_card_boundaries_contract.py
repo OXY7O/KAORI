@@ -32,7 +32,17 @@ def test_readiness_workspace_uses_compact_separate_violet_card_surfaces() -> Non
         assert 'bg-surface-' in card
         assert 'shadow-sm' in card
 
-    # No giant parent shell or duplicate readiness row; use existing Violet tokens.
+    # Exactly one responsive outer frame now groups all inner cards by approved
+    # operator feedback; do not reintroduce a second Hero or workspace shell.
+    assert source.count('data-kaori-setup-outer-frame') == 1
+    assert 'max-w-6xl' in source
+    assert 'border-kaori-outline bg-surface-hover' in source
+    assert 'rounded-2xl' in source
+    assert 'shadow-lg' in source
+    assert 'sm:space-y-4 sm:p-4 lg:p-5' in source
+    assert source.index('data-kaori-setup-outer-frame') < source.index(
+        'data-kaori-setup-identity-card'
+    )
     assert 'components/operational_section_card.html' not in source
     assert 'data-kaori-setup-readiness-summary' not in source
     assert 'border-status-warning-border' not in source
@@ -79,3 +89,46 @@ def test_security_accessibility_unavailable_and_advanced_contracts_survive() -> 
     assert 'Missing Schema Objects' in source
     assert "section_link_button.render(url_for('auth.login')" in source
     assert 'This readiness workspace is read-only.' in source
+
+
+def test_primary_bootstrap_and_semantic_callout_align_inside_shared_frame() -> None:
+    source = TEMPLATE.read_text(encoding='utf-8')
+
+    assert 'data-kaori-setup-console' in source
+    assert source.count('grid items-stretch gap-3 lg:grid-cols-3 lg:gap-4') == 2
+    assert source.count('data-kaori-setup-bootstrap-card') == 2
+    assert source.count('extra_classes="h-full"') == 2
+    assert 'bg-surface-card p-4 shadow-sm sm:p-5' in source
+    assert 'data-lucide="terminal"' in source
+    assert 'data-lucide="list-checks"' in source
+    assert 'operational_flow_steps.render(initialization_flow_rows' in source
+    assert 'view_more_content.render(' in source
+    assert 'terminal_command.render(bootstrap_command' in source
+    assert 'max-w-6xl' in source
+
+    # Both success-without-schema and disconnected-database states remain
+    # visible inside the same bounded surface without unsafe DB actions.
+    assert 'data-kaori-setup-readiness-strip' in source
+    assert 'PostgreSQL Is Unavailable' in source
+    assert 'Database Setup Required' in source
+    assert 'Retry Setup Check' in source
+    assert '<form' not in source
+    assert 'db.session' not in source
+
+
+def test_outer_frame_uses_only_violet_theme_tokens_and_responsive_geometry() -> None:
+    source = TEMPLATE.read_text(encoding='utf-8')
+    authority = (
+        ROOT / 'docs/design/KAORI_AUTHENTICATION_SURFACE_LOCK_V1.md'
+    ).read_text(encoding='utf-8')
+
+    assert 'single approved bounded frame' in authority
+    assert 'border-kaori-outline' in authority
+    assert 'bg-surface-hover' in authority
+    assert 'max-w-6xl' in authority
+    assert 'px-3 py-4 sm:px-5 sm:py-6 lg:py-8' in source
+    assert 'bg-surface-card px-4 py-4 shadow-sm sm:px-5' in source
+    assert 'bg-surface-card p-4 shadow-sm sm:p-5' in source
+    assert 'bg-surface-page' in source
+    assert 'style="' not in source
+    assert 'bg-[#' not in source
