@@ -44,3 +44,29 @@ def test_report_and_artifact_scope_use_actual_committed_snapshot_timestamps() ->
     assert 'artifact_freshness = _freshness(security_at)' in source
     assert "latest_success.completed_at" not in source
     assert "'snapshot_label': artifact_freshness['label']" in source
+
+
+def test_observed_empty_inventory_is_not_inventory_required() -> None:
+    snapshot = _snapshot_status(
+        artifact_total=0, evidence_count=0, latest_job=None,
+        latest_success=None, latest_evidence_at=None, inventory_committed=True,
+    )
+    assert snapshot['status'] == 'No Artifacts'
+    assert snapshot['tone'] == 'info'
+
+
+def test_unobserved_inventory_still_requires_collection() -> None:
+    snapshot = _snapshot_status(
+        artifact_total=0, evidence_count=0, latest_job=None,
+        latest_success=None, latest_evidence_at=None, inventory_committed=False,
+    )
+    assert snapshot['status'] == 'Inventory Required'
+
+
+def test_last_success_not_limited_to_last_50_attempts() -> None:
+    adapter = (
+        Path(__file__).resolve().parents[3] /
+        'app/artifact_registry/security/job_adapter.py'
+    ).read_text()
+    assert "jobs.filter(JobExecution.status.in_(_SUCCESS_STATUSES))" in adapter
+    assert "latest_success = next(" not in adapter
