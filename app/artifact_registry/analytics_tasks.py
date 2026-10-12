@@ -25,6 +25,7 @@ def materialize_registry_analytics_task(
     self,
     *,
     integration_instance_ids: list[int],
+    time_range: str = 'current',
     requested_by_user_id: int | None = None,
     job_execution_id: int | None = None,
 ) -> dict[str, Any]:
@@ -63,6 +64,7 @@ def materialize_registry_analytics_task(
             snapshot = materialize_registry_analytics(
                 identity,
                 job_execution_id=job_execution_id,
+                time_range=time_range,
             )
         except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
             db.session.rollback()
@@ -86,6 +88,7 @@ def materialize_registry_analytics_task(
         'failed_count': len(failures),
         'failure_evidence': failures,
         'snapshot_ids': snapshot_ids,
+        'time_range': time_range,
         'finished_at': datetime.now(UTC).isoformat(),
     }
     if not completed:
