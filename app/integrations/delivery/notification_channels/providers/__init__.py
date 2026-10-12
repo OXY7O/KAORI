@@ -9,6 +9,12 @@ from app.integrations.delivery.notification_channels.contracts import (
     NotificationChannelFormInput,
     NotificationMessage,
 )
+from app.integrations.delivery.notification_channels.providers.discord import (
+    form_view as discord_form_view,
+    parse_form as parse_discord_form,
+    send_discord_message,
+    validate_form as validate_discord_form,
+)
 from app.integrations.delivery.notification_channels.providers.email import (
     form_view as email_form_view,
 )
@@ -151,6 +157,40 @@ def _send_microsoft_teams(
 
 
 _PROVIDERS = {
+    'discord': NotificationProviderAdapter(
+        key='discord',
+        label='Discord',
+        icon='messages-square',
+        description='Channel-bound Discord Webhook delivery.',
+        transport='HTTPS Webhook',
+        configuration='Official Discord Webhook URL + human-readable destination label.',
+        setup_title='Configure Discord Webhook Delivery',
+        setup_summary='Send approved KAORI operational messages to an existing Discord channel.',
+        setup_requirements=(
+            'A Discord server with a channel where you can manage webhooks.',
+            'An Execute Webhook URL generated for that channel.',
+            'KAORI network access to the official Discord API over verified HTTPS.',
+        ),
+        setup_steps=(
+            'In the Discord channel, create a webhook with the minimum posting permissions.',
+            'Copy the secret Discord Webhook URL and give its target channel a recognizable label.',
+            'Enter the channel label and secret URL into KAORI and choose allowed event/domain policies.',
+            'Save and run Test Delivery; verify the alert appears only in the chosen channel.',
+        ),
+        security_note=(
+            'Webhook URL is a secret and is stored encrypted. Official HTTPS Discord endpoint only, '
+            'no redirects, no inherited proxy, and all user/role/everyone mentions disabled.'
+        ),
+        validation_note='Test Delivery checks acceptance by Discord, not human-read confirmation.',
+        form_partial='integrations/delivery/notification_channels/providers/discord/_form.html',
+        form_parser=parse_discord_form,
+        form_validator=validate_discord_form,
+        form_view=discord_form_view,
+        sender=lambda credentials, destination, provider_config, message, timeout: send_discord_message(
+            credentials=credentials, destination=destination, provider_config=provider_config,
+            message=message, timeout_seconds=timeout,
+        ),
+    ),
     'slack': NotificationProviderAdapter(
         key='slack',
         label='Slack',

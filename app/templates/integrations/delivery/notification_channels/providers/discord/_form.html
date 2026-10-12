@@ -1,0 +1,21 @@
+<div class="grid gap-4 sm:grid-cols-2">
+    <div>
+        <label for="discord-destination" class="{{ table_ui.filter_label_classes() }}">Destination Label</label>
+        <input id="discord-destination"
+               name="discord_destination"
+               value="{{ form_channel.discord_destination if form_channel else '' }}"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="KAORI / Platform Alerts">
+        <p class="mt-1 text-xs leading-5 text-content-muted">Human-readable name; the webhook decides which Discord channel receives messages.</p>
+    </div>
+    <div>
+        <label for="discord-webhook-url" class="{{ table_ui.filter_label_classes() }}">Discord Webhook URL</label>
+        <input id="discord-webhook-url"
+               name="discord_webhook_url"
+               type="password"
+               autocomplete="new-password"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="{{ 'Leave blank to keep current URL' if form_channel and form_channel.credential_configured else 'https://discord.com/api/webhooks/...' }}">
+        <p class="mt-1 text-xs leading-5 text-content-muted">Encrypted secret; mass mentions disabled on every message.</p>
+    </div>
+</div>
