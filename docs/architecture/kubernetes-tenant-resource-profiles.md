@@ -374,46 +374,23 @@ exact active Tenant generation/Namespace UID and committed/live evidence in
 DevContainer before any provider UAT write; source integration alone never
 reconfigures Kubernetes.
 
-**Allocation Change ResourceQuota comparison (#1577):** The preflight-only
-Managed Contract Comparison shows the frozen current Namespace and selected
-next Resource Profile side by side with six independent ResourceQuota
-dimensions: CPU Requests, CPU Limits, Memory Requests, Memory Limits, Pods
-and Total Storage, followed by the committed/proposed per-PVC storage bounds.
-Current values come only from `allocation_quota_json` committed evidence;
-proposed values come from the selected profile's versioned `quota_hard_json`,
-not live provider reads or mutable current-profile values. Missing controlled
-dimensions display `Unbounded` and never inherit a limit from a request
-or vice versa. CPU/memory **requests** govern the #654 committed capacity
-budget; CPU/memory **limits** are Kubernetes enforcement ceilings, not a
-substitute for requested commitments or physical reservation. This is a
-presentation expansion only; the existing three provider/admission/read-back
-gates and fail-closed execution are unchanged.
+**ResourceQuota and Advanced Control provenance (#1577 / #1590):**
+The approved contract includes CPU/Memory Requests and Limits, Pods,
+logical storage, per-PVC bounds, Object Limits, Container Defaults and
+Advanced Controls evaluation. CPU/memory requests remain committed capacity
+inputs; ResourceQuota limits are enforcement ceilings. Current quota and
+LimitRange values use only frozen Namespace allocation JSON and Proposed
+values use the selected versioned Resource Profile, never live provider
+reads or mutable current-profile values.
 
-**Advanced Allocation Change preview (#1590):** The compact Current/Proposed
-summary remains focused on six ResourceQuota compute/storage dimensions and
-per-PVC bounds. Beneath it, three default-collapsed, read-only disclosures
-compare **Object Limits** (PVC, Service, ConfigMap and Secret ResourceQuota
-counts), **Container Defaults** (LimitRange default CPU/Memory Requests and
-Limits), and **Advanced Controls** (recorded current capability evaluation
-versus proposed configured/capability-evaluated intent). Current quota and
-LimitRange values use only the Namespace's frozen allocation JSON; proposals
-use the selected enabled Resource Profile's versioned contract. Missing
-dimensions are **Not declared**, not zero or values borrowed from another
-source. Profile-selection changes rehydrate every field and never cause a
-provider write by themselves.
-
-Advanced current control evaluations are displayed as **Recorded** only
-when their source profile ID and version match the committed Namespace
-snapshot. They are not provider execution evidence. Proposed **Supported**
-or **Unavailable** is determined through the existing provider/capability
-evaluator using registered capability evidence; it describes *preflight
-support only*. Missing or mismatched evidence is **Not recorded**, and no
-profile selection, evaluation or data presentation may assert **Applied**
-or **Verified** without separately committed executor/read-back proof.
-Actual admission, mutation and read-back remain governed by the existing
-server-side workflow. Capability validation/recording does not prove that
-cross-domain Advanced Controls were executed by the Native allocation
-transaction; this is a distinct backend traceability finding.
+Current Advanced Control evaluation displays as **Recorded** only when the
+source Resource Profile ID and version match the committed Namespace.
+Proposed **Supported** or **Unavailable** is capability preflight only.
+Missing or mismatched evidence is **Not recorded**. Neither evaluation
+establishes external **Applied** or **Verified** state without authoritative
+executor/read-back evidence (#1591). The original #1590 disclosure and #1619
+card layout are superseded by the #1632 Contract Diff tabset below; their
+data provenance, control evidence boundaries and governance gates remain.
 
 **Allocation Change Contract Diff View (#1632, supersedes #1619 layout):**
 Preserve the governed selector and form-submit/read-back admission workflow while
