@@ -6,7 +6,7 @@
 -- psql \password and enable LOGIN only after reviewing the read-only checks.
 --
 -- Example from a trusted DevContainer terminal with owner psql connection:
---   PGAPPNAME=kaori-devcontainer-role-provision psql "$OWNER_DATABASE_URL" \
+--   PGAPPNAME=kaori-devcontainer-role-provision psql -h db -U kaori -W -d kaori \
 --     -X -v ON_ERROR_STOP=1 -v kaori_devcontainer_confirm=1 \
 --     -f scripts/devcontainer/provision_postgres_runtime_role.sql
 -- Then inside interactive owner psql: \password kaori_runtime
@@ -61,10 +61,12 @@ BEGIN
     IF current_role.rolsuper OR current_role.rolcreatedb
        OR current_role.rolcreaterole OR current_role.rolreplication
        OR current_role.rolbypassrls
-       OR pg_has_role('kaori_runtime', (
-           SELECT relowner FROM pg_class
-           WHERE oid = 'public.capsule_handoff_ledger_events'::regclass
-       ), 'MEMBER')
+       OR pg_has_role(
+           (SELECT oid FROM pg_roles WHERE rolname = 'kaori_runtime'),
+           (SELECT relowner FROM pg_class
+            WHERE oid = 'public.capsule_handoff_ledger_events'::regclass),
+           'MEMBER'
+       )
     THEN
         RAISE EXCEPTION 'Existing kaori_runtime role is elevated or is a member of immutable ledger owner';
     END IF;
