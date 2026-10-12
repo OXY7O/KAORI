@@ -1,4 +1,12 @@
+{% import "components/section_intro.html" as section_intro %}
 <div id="users-page-content" class="space-y-6">
     {% include "access/users/partials/_summary_cards.html" %}
-    {% include "access/users/partials/_directory.html" %}
+    <div class="space-y-3">
+        {{ section_intro.render(
+            'Account Directory',
+            'Find users by identity source, account state, and role assignment.',
+            id='user-directory-section-heading'
+        ) }}
+        {% include "access/users/partials/_directory.html" %}
+    </div>
 </div>
