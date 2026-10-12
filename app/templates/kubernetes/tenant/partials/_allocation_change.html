@@ -34,10 +34,18 @@
     <div class="space-y-4 p-4 sm:p-6">
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-elevated"
                  aria-labelledby="allocation-change-target-heading">
-            <div class="border-b border-outline-subtle px-4 py-3.5">
-                <h3 id="allocation-change-target-heading"
-                    class="text-sm font-semibold text-content-primary">Change Target</h3>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Select the managed Namespace and the Resource Profile version that should replace its current frozen allocation.</p>
+            <div class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="crosshair" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="allocation-change-target-heading"
+                            class="text-sm font-semibold text-content-primary">Change Target</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Select the managed Namespace and next Resource Profile version.</p>
+                    </div>
+                </div>
             </div>
             <div class="grid gap-4 p-4 lg:grid-cols-2">
                 <label class="block">
@@ -69,9 +77,15 @@
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  aria-labelledby="allocation-comparison-heading">
             <div class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5 sm:px-5">
-                <div class="min-w-0">
-                    <h3 id="allocation-comparison-heading" class="text-sm font-semibold text-content-primary">Managed Contract Comparison</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Compare the committed allocation with the selected next profile before admission.</p>
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="git-compare-arrows" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="allocation-comparison-heading" class="text-sm font-semibold text-content-primary">Managed Contract Comparison</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Compare committed and proposed allocations before admission.</p>
+                    </div>
                 </div>
                 {{ table_label.special_label('Preflight · Read Only', 'maintenance', 'shield-check') }}
             </div>
@@ -130,10 +144,16 @@
             </div>
             <div class="border-t border-outline-subtle bg-surface-elevated px-5 py-4 sm:px-6"
                  aria-labelledby="allocation-change-highlights-heading">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                        <h4 id="allocation-change-highlights-heading" class="text-sm font-semibold text-content-primary">Change Highlights</h4>
-                        <p class="mt-0.5 text-xs text-content-muted">Key differences only · Not an admission decision</p>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex min-w-0 items-start gap-2.5">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h4 id="allocation-change-highlights-heading" class="text-sm font-semibold text-content-primary">Change Highlights</h4>
+                            <p class="mt-0.5 text-xs text-content-muted">Key differences only · Not an admission decision</p>
+                        </div>
                     </div>
                     <span class="text-xs font-semibold text-content-secondary"
                           data-tenant-allocation-highlight-count aria-live="polite">Choose a contract</span>
@@ -295,10 +315,18 @@
         </section>
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  aria-labelledby="allocation-change-gates-heading">
-            <div class="border-b border-outline-subtle px-4 py-3.5">
-                <h3 id="allocation-change-gates-heading"
-                    class="text-sm font-semibold text-content-primary">Governance Gates</h3>
-                <p class="mt-1 text-xs leading-5 text-content-muted">The current contract stays effective until all three gates succeed.</p>
+            <div class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="allocation-change-gates-heading"
+                            class="text-sm font-semibold text-content-primary">Governance Gates</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">The current contract stays effective until all three gates succeed.</p>
+                    </div>
+                </div>
             </div>
             <ol class="grid gap-px bg-outline-subtle md:grid-cols-3">
                 {% for number, icon, title, detail in [
