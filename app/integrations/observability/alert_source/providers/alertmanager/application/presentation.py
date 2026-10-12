@@ -187,6 +187,23 @@ def build_instance_context(
         if binding_query is not None else paginate_sequence([], page=binding_page, per_page=binding_per_page)
     )
     binding_total = binding_registry_pagination['total_items']
+    validated_binding_total = int(db.session.query(func.count(IntegrationBinding.id)).filter(
+        IntegrationBinding.integration_instance_id == instance.integration_instance_id,
+        IntegrationBinding.validation_status == 'ready',
+    ).scalar() or 0) if instance else 0
+    operational_binding_total = (
+        int(db.session.query(func.count(IntegrationBinding.id)).filter(
+            IntegrationBinding.integration_instance_id == instance.integration_instance_id,
+            IntegrationBinding.validation_status == 'ready',
+            IntegrationBinding.enabled.is_(True),
+        ).scalar() or 0)
+        if instance and instance.enabled and instance.readiness_status == 'ready' else 0
+    )
+    resolution_scope_total = int(db.session.query(func.count()).select_from(
+        db.session.query(IntegrationBinding.asset_type, IntegrationBinding.asset_key)
+        .filter(IntegrationBinding.integration_instance_id == instance.integration_instance_id)
+        .distinct().subquery()
+    ).scalar() or 0) if instance else 0
     observed_capabilities = set(instance.capabilities or []) if instance else set()
     capability_rows = []
     for capability in CORE_CAPABILITIES:
@@ -260,6 +277,9 @@ def build_instance_context(
         'deletion_guard': deletion_guard,
         'binding_rows': binding_rows,
         'binding_total': binding_total,
+        'validated_binding_total': validated_binding_total,
+        'operational_binding_total': operational_binding_total,
+        'resolution_scope_total': resolution_scope_total,
         'binding_registry_rows': binding_registry_rows,
         'binding_registry_pagination': binding_registry_pagination,
         'consumer_asset_groups': consumer_asset_groups,
