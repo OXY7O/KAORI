@@ -31,6 +31,7 @@ from app.reports.schedules.routes import (
     create_schedule,
     delete_schedule,
     run_schedule,
+    schedule_namespace_options,
     schedules,
     toggle_schedule,
     update_schedule,
@@ -233,6 +234,13 @@ reports_bp.add_url_rule(
     methods=[
         'GET',
     ],
+)
+
+reports_bp.add_url_rule(
+    '/schedules/namespaces',
+    endpoint='schedule_namespace_options',
+    view_func=schedule_namespace_options,
+    methods=['GET'],
 )
 
 reports_bp.add_url_rule(

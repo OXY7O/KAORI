@@ -113,6 +113,12 @@ A ReportSchedule occurrence is claimed under a database row lock before artifact
 
 Each ReportScheduleRun captures selected Notification Channel identities on admission. The report worker uses this immutable selection after generation, including when the current schedule was edited or deleted. Shared Notification Channels still enforce send-time eligibility and event idempotency. Delivery outcomes remain separate from artifact generation success.
 
+## Schedule registry read model
+
+Schedule Registry applies search, status, cadence, published report type, infrastructure asset and channel filters in SQL before the canonical five-row pagination. Aggregate schedule counts use database counts, while dependency filter choices use compact identity-only queries. Run Schedule selection is capped to recent definitions with an explicit currently selected fallback; historical run text search remains available for older definitions.
+
+The Schedule form initially loads only the selected Kubernetes cluster's current committed namespaces; switching clusters uses the permission-scoped `/reports/schedules/namespaces` endpoint and verifies the returned cluster identity before exposing choices. A failed namespace request does not claim that an empty inventory is authoritative. These bounded read paths do not query external providers or change the Generate contract.
+
 ## Notification delivery
 
 Scheduled Reports use Integrations → Notification Channels. Schedules store selected channel IDs only; provider credentials and transport behavior remain owned by the shared notification integration. Legacy report-specific Telegram environment credentials are not supported.

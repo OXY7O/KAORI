@@ -51,8 +51,9 @@ def test_schedule_registry_and_run_lifecycle_use_framed_canonical_workspaces() -
     assert 'xl:grid-cols-6' not in template
     assert 'xl:grid-cols-5' not in template
 
-    assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence' in service
-    assert 'paginate_sequence(' in service
+    assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_select' in service
+    assert 'paginate_sequence(' not in service
+    assert '_filter_schedule_statement(selected_filters, _get_delivery_channel_options()).order_by(' in service
     assert 'paginate_select(' in service
     assert "query_args.get('run_page', 1)" in service
     assert "query_args.get('run_per_page', PER_PAGE_OPTIONS[0])" in service
@@ -71,7 +72,8 @@ def test_schedule_automation_posture_is_state_aware_for_storage_and_worker() -> 
     assert 'Artifact Storage Needs Review' in template
     assert "url_for('reports.storage')" in template
     assert "'automation_posture': get_automation_posture(storage_context, worker_context)" in service
-    assert 'def get_automation_posture(' in service
+    assert 'from app.reports.schedules.readiness import get_automation_posture' in service
+    assert 'def get_automation_posture(' in read(ROOT / 'app/reports/schedules/readiness.py')
     for label in [
         'Automation Ready',
         'Ready for Unattended Execution',
