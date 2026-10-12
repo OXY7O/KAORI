@@ -158,3 +158,7 @@ List pages remain metadata-first and must never treat a reachable backend plus r
 ### Generated Reports Registry scope identity (#1555)
 
 Registry's generic scope filter includes active IntegrationInstance Registry options through `get_active_registry_options()`, alongside Kubernetes and Object Storage. Each persisted report's immutable scope label snapshot remains authoritative for historical presentation even when an integration is unavailable; absent snapshots use a safe Registry Integration ID fallback without per-row provider or IntegrationInstance lookups. Registry rows/detail display `Artifact Registry` / `Integration Scope`, not Kubernetes/namespace metadata. Scope filters remain server-side committed SQL.
+
+### Historical custom Templates without catalog compatibility aliases (#1566)
+
+The registry must remain readable if a persisted custom template references a removed report type, unsupported format, invalid sections or lifecycle status. Such records are presented with Needs Review evidence; Generate and Duplicate are guarded until corrected using current catalog types through the existing Edit workspace. Historical record identity, source snapshot and ownership are never silently rewritten or removed on registry read.

@@ -159,11 +159,33 @@ def build_system_template_item(template: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def get_custom_template_contract_errors(template: ReportTemplate) -> list[str]:
+    """Evaluate historical records without rewriting removed catalog contracts."""
+    try:
+        spec = get_report_type_spec(template.report_type)
+    except ReportContractError:
+        return ['Report type is no longer published in the canonical catalog.']
+    errors: list[str] = []
+    if template.output_format not in spec.allowed_formats:
+        errors.append('Stored output format is not supported by this report type.')
+    sections = template.sections_as_list()
+    allowed = set(spec.default_sections)
+    if not sections or any(item not in allowed for item in sections) or len(sections) != len(set(sections)):
+        errors.append('Stored section selection no longer matches the canonical contract.')
+    elif spec.family == REPORT_FAMILY_INVENTORY and sections != list(spec.default_sections):
+        errors.append('Inventory sections no longer match the protected contract.')
+    if template.status not in {'draft', 'active'}:
+        errors.append('Stored template lifecycle status is unsupported.')
+    return errors
+
+
 def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
-    sections = sanitize_sections(template.report_type, template.sections_as_list())
+    contract_errors = get_custom_template_contract_errors(template)
+    contract_valid = not contract_errors
+    sections = template.sections_as_list()
     report_type_label = get_report_type_label(template.report_type)
     status = template.status or 'draft'
-    family = get_report_family(template.report_type)
+    family = get_report_family(template.report_type) if template.report_type in get_allowed_report_types() else 'unknown'
     return {
         'id': str(template.id),
         'template_key': f'custom:{template.id}',
@@ -175,22 +197,30 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         'report_type': template.report_type,
         'report_type_label': report_type_label,
         'family': family,
-        'family_label': get_report_family_label(family),
+        'family_label': get_report_family_label(family) if family != 'unknown' else 'Needs Review',
         'domain_label': REPORT_DOMAIN_LABELS.get(template.report_domain or DEFAULT_REPORT_DOMAIN, 'Unknown Domain'),
         'description': template.description or 'Custom report template.',
         'status': status,
-        'output_format': template.output_format.upper(),
-        'allowed_formats': [value.upper() for value in get_allowed_output_formats(template.report_type)],
+        'output_format': str(template.output_format or '').upper(),
+        'allowed_formats': (
+            [value.upper() for value in get_allowed_output_formats(template.report_type)]
+            if family != 'unknown' else []
+        ),
         'icon': get_report_type_icon(template.report_type),
         'sections': get_section_labels(sections),
         'section_values': sections,
         'section_count': len(sections),
-        'status_label': format_status_label(status),
-        'status_tone': get_status_tone(status),
-        'renderer_status': 'Ready',
-        'renderer_tone': 'green',
-        'renderer_label': 'Canonical artifact renderer ready',
-        'generate_href': build_generate_href(template.report_type, sections, template.name, template.output_format),
+        'status_label': format_status_label(status) if contract_valid else 'Needs Review',
+        'status_tone': get_status_tone(status) if contract_valid else 'warning',
+        'renderer_status': 'Ready' if contract_valid else 'Needs Review',
+        'renderer_tone': 'green' if contract_valid else 'warning',
+        'renderer_label': 'Canonical artifact renderer ready' if contract_valid else 'Contract requires review',
+        'contract_valid': contract_valid,
+        'contract_errors': contract_errors,
+        'generate_href': (
+            build_generate_href(template.report_type, sections, template.name, template.output_format)
+            if contract_valid else ''
+        ),
         'duplicate_href': url_for('reports.duplicate_custom_template', template_id=template.id),
         'edit_href': url_for('reports.report_templates', edit_template_id=template.id),
         'delete_href': url_for('reports.delete_report_template', template_id=template.id),
@@ -202,15 +232,17 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         or 'Unknown user',
         'can_edit': True,
         'can_delete': True,
-        'can_duplicate': True,
-        'can_generate': status == 'active',
+        'can_duplicate': contract_valid,
+        'can_generate': contract_valid and status == 'active',
     }
 
 
 def get_template_form_context(template: ReportTemplate | None = None) -> dict[str, Any]:
     report_type = template.report_type if template else 'analytics_overview'
     sections = (
-        sanitize_sections(report_type, template.sections_as_list()) if template else get_default_sections(report_type)
+        (sanitize_sections(report_type, template.sections_as_list()) if report_type in get_allowed_report_types()
+         else template.sections_as_list())
+        if template else get_default_sections(report_type)
     )
     return {
         'id': template.id if template else None,
@@ -347,6 +379,10 @@ def duplicate_custom_template(template_id: int, user_id: int | None) -> tuple[bo
     source = db.session.get(ReportTemplate, template_id)
     if source is None:
         return False, 'Custom template was not found.', None
+
+    contract_errors = get_custom_template_contract_errors(source)
+    if contract_errors:
+        return False, 'Custom template must be repaired before duplication.', None
 
     template = ReportTemplate()
     template.name = build_copy_name(source.name)
