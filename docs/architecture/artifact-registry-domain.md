@@ -153,10 +153,11 @@ and explicitly `not_configured` are independent from unsupported/unavailable/
 not-collected projects.
 
 The worker records committed Inventory and Governance generations,
-latest Security scan-completion timestamp, and Registry-runtime binding
-observation timestamp in each snapshot's `evidence` payload. It rejects
-Inventory/Governance generation changes and provider deactivation during a
-collection attempt. Read-model freshness compares those committed inputs to
+latest Security scan-completion timestamp, Registry-runtime binding
+observation timestamp, and the canonical Registry/Kubernetes
+`runtime_input_signature` in each snapshot's `evidence` payload. It rejects
+Inventory/Governance/Kubernetes generation changes and provider deactivation
+during a collection attempt. Read-model freshness compares those committed inputs to
 current KAORI state using scoped SQL aggregations and presents `Inputs Changed`
 or `Partial Evidence`, not clean Current. Historical or missing generation
 markers are *not* proof of readiness. The external provider remains
