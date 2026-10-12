@@ -108,6 +108,29 @@ def test_registry_analytics_materializes_operational_harbor_metric_profile() -> 
     assert "scope_type='registry_instance'" in analytics
 
 
+def test_registry_historical_snapshots_use_measured_source_range_and_scope() -> None:
+    history = (ROOT / 'app/artifact_registry/analytics_history.py').read_text()
+    analytics = (ROOT / 'app/artifact_registry/analytics.py').read_text()
+    adapter = (ROOT / 'app/artifact_registry/analytics_job_adapter.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    common = (ROOT / 'app/artifact_registry/presentation_common.py').read_text()
+
+    assert 'consumer.query_range(' in history
+    assert "'60d': timedelta(days=60)" in history
+    assert 'MAX_HISTORY_POINTS = 240' in history
+    assert 'MAX_HISTORY_SERIES = 250' in history
+    assert "snapshot.time_range = time_range" in analytics
+    assert "'history': history" not in presentation
+    assert "time_range=normalize_registry_analytics_window(snapshot_window)" in presentation
+    assert "RegistryAnalyticsSnapshot.time_range == normalized_window" in adapter
+    assert "RegistryAnalyticsSnapshot.time_range == 'current'" in common
+    assert "parameters={'snapshot_window': window}" in routes
+    assert "scope_key=f'all:{time_range}'" in adapter
+    assert 'artifact_growth_per_day' in history
+    assert 'size_growth_bytes_per_day' in history
+
+
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
@@ -200,7 +223,7 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'All Registries' in registry
     assert 'analytics.time_range_options' in registry
     assert "'time_range_options': get_allowed_time_ranges()" in presenter
-    assert "legacy_label='Latest Snapshot (Any Age)'" in registry
+    assert "legacy_label='Current (Instant)'" in registry
     assert 'Registry Source Status' in registry
     assert 'icon=none' in registry
     assert "'bg-status-normal'" in common
