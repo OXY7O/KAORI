@@ -9,6 +9,49 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## G0/G2 marker-origin consistency: orphan `kaori.io/tenant` (#1227)
+
+Local Capsule `kaori-demo` / Namespace `kaori-demo-dev` read-only
+evidence shows `capsule.clastix.io/tenant=kaori-demo` and
+`kaori.io/tenant=kaori-demo`, but **not** the current KAORI
+`app.kubernetes.io/managed-by=kaori` plus
+`kaori.io/tenant-id=<canonical database Tenant ID>` claim.
+The unrelated `cluster`, `kubernetes.io/metadata.name`, and
+`pod-security.kubernetes.io/enforce` labels do not establish KAORI
+metadata handoff authority.
+
+`kaori.io/tenant` is not among the documented provisioning and
+recovery marker keys or the Capsule ownership-label keys. Its matching
+*value* with the Capsule Tenant name is **not** controller-origin,
+governance, or mutation consent evidence. The runtime G2 preview
+properly refused the unknown `kaori.io/*` label; G0 previously marked
+the same Namespace as `external_or_unattributed / observe_only`,
+then let users prepare/approve a plan that could not pass preview.
+
+G0 now marks any `kaori.io/*` label **without the independently
+verifiable canonical KAORI manager/tenant-id pair** as
+`marker_conflict / owner_review_required`, and records a clear
+blocking reason at the earliest preflight. It preserves three distinct
+cases: complete canonical KAORI pair → governed transfer candidate;
+foreign/external manager without KAORI-scoped labels → read-only
+preservation; unverified KAORI-scoped residue → **FAIL**. No new
+allowlist, relabeling, resource deletion or replacement provider
+authority was introduced.
+
+Operator next must inspect **read-only** Capsule Tenant
+`spec.namespaceOptions` (including additionalMetadata if present)
+and Namespace managedFields or trusted apiserver audit/committed
+provisioning history. ManagedFields alone is *not* authoritative
+controller provenance. Only when the label's actual origin and
+governance purpose are established may a separate reviewed,
+issue-authorized reconciliation or strictly source-proven preservation
+rule be considered. Do not remove `kaori.io/tenant` just to bypass G2.
+
+Existing G1 reviewer and X.509 acceptance receipts do not confer
+permission to mutate the provider. The changed G0 scope also means
+the old prepared plan is not automatically renewed/approved. Tests
+are source-authored but have **not** run under the standing HOLD.
+
 ## G1 accepted → G2 Capsule provider scope preview: observed Namespace boundary (#1229)
 
 Local DevContainer: the independent second-operator review and exact

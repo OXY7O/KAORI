@@ -189,6 +189,67 @@ def test_capsule_namespace_requires_proven_tenant_claim_and_immutable_uid():
         )
 
 
+def test_capsule_g0_refuses_orphan_kaori_tenant_label_before_independent_approval():
+    """Real kaori-demo pattern: Capsule ownership != KAORI manager authority."""
+    record = SimpleNamespace(namespace='sandbox', provider_reference='ns-uid')
+    observed = SimpleNamespace(metadata=SimpleNamespace(
+        name='sandbox', uid='ns-uid', resource_version='14',
+        labels={
+            'capsule.clastix.io/tenant': 'tenant-capsule',
+            'cluster': 'kaori-local',
+            'kaori.io/tenant': 'tenant-capsule',
+            'pod-security.kubernetes.io/enforce': 'restricted',
+        },
+    ))
+    component, blockers = capsule_namespace_handoff_evidence(
+        record=record, namespace=observed,
+        tenant_name='tenant-capsule', tenant_id='actual-kaori-db-id',
+        status_namespace_names={'sandbox'},
+    )
+    assert component['authority'] == 'capsule'
+    assert component['uid'] == 'ns-uid'
+    assert component['ownership'] == 'marker_conflict'
+    assert component['handoff'] == 'owner_review_required'
+    assert any('canonical verified ownership' in reason for reason in blockers)
+    assert not any('no verifiable Tenant ownership' in reason for reason in blockers)
+
+    # Do not downgrade the known canonical pair to "unattributed".
+    canonical = SimpleNamespace(metadata=SimpleNamespace(
+        name='sandbox', uid='ns-uid', resource_version='14',
+        labels={
+            'capsule.clastix.io/tenant': 'tenant-capsule',
+            'app.kubernetes.io/managed-by': 'kaori',
+            'kaori.io/tenant-id': 'actual-kaori-db-id',
+        },
+    ))
+    controlled, controlled_blockers = capsule_namespace_handoff_evidence(
+        record=record, namespace=canonical,
+        tenant_name='tenant-capsule', tenant_id='actual-kaori-db-id',
+        status_namespace_names={'sandbox'},
+    )
+    assert controlled['ownership'] == 'kaori_marker_correlated'
+    assert controlled['handoff'] == 'external_acceptance_required'
+    assert controlled_blockers == []
+
+    # A provider-owned Namespace with no KAORI-scoped keys is still
+    # preserved/observed (not a valid source for a fabricated KAORI PATCH).
+    external = SimpleNamespace(metadata=SimpleNamespace(
+        name='sandbox', uid='ns-uid', resource_version='14',
+        labels={
+            'capsule.clastix.io/tenant': 'tenant-capsule',
+            'app.kubernetes.io/managed-by': 'capsule-controller',
+        },
+    ))
+    preserved, preserved_blockers = capsule_namespace_handoff_evidence(
+        record=record, namespace=external,
+        tenant_name='tenant-capsule', tenant_id='actual-kaori-db-id',
+        status_namespace_names={'sandbox'},
+    )
+    assert preserved['ownership'] == 'external_or_unattributed'
+    assert preserved['handoff'] == 'observe_only'
+    assert preserved_blockers == []
+
+
 def test_capsule_spec_fingerprint_is_canonical_and_binds_all_provider_controls():
     """#1227: provider quota, limits, owner and RBAC changes invalidate handoff."""
     from copy import deepcopy

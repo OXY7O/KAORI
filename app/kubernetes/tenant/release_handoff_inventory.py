@@ -209,7 +209,22 @@ def capsule_namespace_handoff_evidence(
         labels=labels, tenant_id=tenant_id,
     )
     component['authority'] = 'capsule'
-    if component['ownership'] == 'marker_conflict':
+    # G0 must not mark an object "Observed / External" when it still
+    # carries a kaori.io/* control label without the complete, canonical
+    # manager=kaori + kaori.io/tenant-id=<DB Tenant ID> source claim.
+    # In particular kaori.io/tenant=<Capsule name> is NOT the canonical
+    # KAORI tenant-id key. Do not infer ownership from its matching value.
+    if (
+        component['ownership'] == 'external_or_unattributed'
+        and any(key.startswith('kaori.io/') for key in labels)
+    ):
+        component['ownership'] = 'marker_conflict'
+        component['handoff'] = 'owner_review_required'
+        blockers.append(
+            f'Capsule Namespace/{name} retains KAORI-scoped metadata without '
+            'canonical verified ownership; review label origin before handoff.'
+        )
+    elif component['ownership'] == 'marker_conflict':
         blockers.append(f'Capsule Namespace/{name} has inconsistent KAORI ownership markers.')
     return component, blockers
 
