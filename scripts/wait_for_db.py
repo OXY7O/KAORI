@@ -78,6 +78,11 @@ def _runtime_database_admitted(database_url: str) -> bool:
                     NOT has_table_privilege(current_user, 'public.capsule_handoff_ledger_events', 'UPDATE'),
                     NOT has_table_privilege(current_user, 'public.capsule_handoff_ledger_events', 'DELETE'),
                     NOT has_table_privilege(current_user, 'public.capsule_handoff_ledger_events', 'TRUNCATE'),
+                    EXISTS (
+                        SELECT 1 FROM public.users
+                        WHERE is_super_admin = TRUE AND account_is_active = TRUE
+                          AND deleted_at IS NULL
+                    ),
                     (
                         SELECT count(*) = 4
                         FROM pg_trigger t
