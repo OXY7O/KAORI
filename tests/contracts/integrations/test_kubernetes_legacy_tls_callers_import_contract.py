@@ -32,6 +32,7 @@ def test_sensitive_kubernetes_operations_and_inventory_import_without_retired_tl
         "app.kubernetes.operations.secrets.reveal_service",
         "app.kubernetes.operations.configmaps.runtime",
         "app.kubernetes.inventory.synchronization",
+        "app.kubernetes.governance.tls_certificates.collector",
     ):
         module = importlib.import_module(module_name)
         assert module is not None
