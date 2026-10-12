@@ -729,3 +729,8 @@ Harbor coverage guard: when provider-reported `repo_count` or `artifact_count` i
 ### Registry vulnerability-report completeness (#1423)
 
 A provider scan-overview status of `completed` is **not** proof that KAORI successfully collected vulnerability report detail. On a failed, malformed or contradictorily empty report, the collector does **not** create a newer empty `RegistryScanSnapshot`, does not advance its committed scan identity, retains the previous findings and scan summary for the existing digest, and records a source-scoped report warning in canonical Security JobExecution evidence. Next refresh retries the changed scan. An explicitly well-formed empty vulnerability report with no positive overview findings remains a legitimate observed zero. No Harbor scan trigger or provider mutation is added.
+
+
+### Registry Security operational source scope (#1422)
+
+Security Vulnerabilities, Supply Chain, source choices and evidence aggregation use only enabled/active Registry integrations with committed Inventory identity. The existence of configured active integrations without committed inventory still drives the Inventory Required setup posture, rather than leaking disabled/retired or unobserved artifacts. Empty eligible membership produces an explicitly empty SQL predicate, never unrestricted fleet evidence. Explicit unavailable or malformed `source_id` on GET and Sync POST fails closed; an omitted ID intentionally means the eligible fleet. The Security Sync dispatch remains a separate fleet JobExecution, not a provider mutation.
