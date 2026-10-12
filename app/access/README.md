@@ -74,6 +74,10 @@ The Hero left metadata communicates domain-owned composition, permission scope a
 
 Control Boundaries expose the same authoritative posture as their source workspace instead of static architecture copy alone. This composition rule is protected by `scripts/verify_access_final_lock.py`.
 
+## Administrative Evidence — Job archive handoff
+
+Administrative Evidence remains a permission-scoped hot `AuditEvent` source. `Open Job` appears only when `jobs.view` is granted and the referenced `JobExecution.public_id` exists in the live registry. When the job is absent, readers granted **both** `jobs.view` and `platform_operations.view_data_lifecycle` may **Browse Job Archives** in Data Lifecycle → Archive History filtered to `job_execution`; the UI explicitly states that this is an archive-bundle browser and **does not verify whether the job is archived**. Without lifecycle access the action says **Job unavailable**; non-job records retain **Source-owned**. The presentation batches the lookup across one paginated AuditEvent page; it does not scan compressed archives, reconstruct identity from actor FK, or expand permission grants. Verified single-job archive deep links need a separate immutable correlation index and permissioned reader.
+
 ## Activity Audit detail review status
 
 Activity Audit Detail remains a **read-only, content-driven shared resource modal** over the Notification-backed Activity Register, not a consolidated audit store or new authority. The recorded status, title, immutable actor snapshot, target, category, timestamp, and sanitized metadata remain authoritative. The first content section for warning/error events emphasizes the **recorded outcome**, followed by recorded failure-context fields when present; the original message is retained as a separate impact note where distinct. The UI **does not infer a list of blockers from a freeform count** or claim unseen provider changes/root causes. Without failure-context fields, it says so and points readers to trace and permissioned committed source links; next-step copy is review guidance, not operational authorization.

@@ -30,6 +30,7 @@ def index() -> ResponseReturnValue:
     target = request.headers.get('HX-Target') if is_htmx else None
     can_view_jobs = current_user.has_permission('jobs.view')
     can_manage_tenants = current_user.has_permission('tenant.manage')
+    can_browse_job_archives = current_user.has_permission('platform_operations.view_data_lifecycle')
     has_administrative_sources = can_view_jobs or can_manage_tenants
     requested_view = request.args.get('view')
     # Previously published administrative source URLs carried admin_scope only.
@@ -55,6 +56,7 @@ def index() -> ResponseReturnValue:
             time_range=request.args.get('admin_time_range', 'all'),
             can_view_jobs=can_view_jobs,
             can_manage_tenants=can_manage_tenants,
+            can_browse_job_archives=can_browse_job_archives,
         )
         if evidence is None:
             abort(403)
@@ -99,6 +101,7 @@ def index() -> ResponseReturnValue:
             time_range=request.args.get('admin_time_range', 'all'),
             can_view_jobs=can_view_jobs,
             can_manage_tenants=can_manage_tenants,
+            can_browse_job_archives=can_browse_job_archives,
         )
     return render_template('access/activity_audit/index.html', **context)
 
@@ -133,6 +136,7 @@ def administrative_evidence() -> ResponseReturnValue:
         time_range=request.args.get('admin_time_range', 'all'),
         can_view_jobs=current_user.has_permission('jobs.view'),
         can_manage_tenants=current_user.has_permission('tenant.manage'),
+        can_browse_job_archives=current_user.has_permission('platform_operations.view_data_lifecycle'),
     )
     if evidence is None:
         abort(403)

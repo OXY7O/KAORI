@@ -71,6 +71,7 @@ def build_administrative_evidence_context(
     time_range: str = 'all',
     can_view_jobs: bool,
     can_manage_tenants: bool,
+    can_browse_job_archives: bool = False,
 ) -> dict[str, Any] | None:
     """Browse explicit administrative AuditEvent sources without copying evidence."""
     available = _available_scopes(
@@ -114,6 +115,17 @@ def build_administrative_evidence_context(
             AuditEvent.created_at >= datetime.now(UTC) - _TIME_DELTA[normalized_time_range]
         )
     events, pagination = paginate_query(query, page=page, per_page=normalized_per_page)
+    # One permission-scoped lookup across the visible AuditEvent page.
+    job_ids = {
+        str(event.target_id)
+        for event in events
+        if event.target_type == 'job_execution' and event.target_id
+    }
+    hot_jobs = (
+        {job.public_id: job for job in JobExecution.query.filter(JobExecution.public_id.in_(job_ids)).all()}
+        if can_view_jobs and job_ids
+        else {}
+    )
     rows: list[dict[str, Any]] = []
     for event in events:
         action_suffix = event.action.removeprefix(specification['prefix'])
@@ -132,17 +144,27 @@ def build_administrative_evidence_context(
         # The administrative model has only a nullable actor FK, never a
         # committed identity/role/auth-source snapshot: do not reconstruct it.
         job_url = None
-        # Prefer the canonical job-operation label when the matching committed
-        # execution is authorized. The AuditEvent action alone (e.g.
-        # automatic_job_succeeded) does not identify which job actually ran.
+        archive_history_url = None
+        # Missing from hot storage does not prove a verified cold archive contains this job.
+        job_unavailable = bool(
+            can_view_jobs and event.target_type == 'job_execution' and event.target_id
+        )
+        # The AuditEvent action alone does not identify the actual job operation.
         display_action = f"{specification['label']} · {action_suffix.replace('_', ' ').title()}"
-        if can_view_jobs and event.target_type == 'job_execution' and event.target_id:
-            job = JobExecution.query.filter_by(public_id=event.target_id).first()
+        if job_unavailable:
+            job = hot_jobs.get(str(event.target_id))
             if job is not None:
                 display_action = redact_operational_text(
                     job_operation_label(job.operation), limit=120
                 ) or display_action
                 job_url = url_for('jobs.executions', execution_tab='registry', search=job.public_id)
+                job_unavailable = False
+            elif can_browse_job_archives:
+                archive_history_url = url_for(
+                    'platform_operations.data_lifecycle.index',
+                    tab='history',
+                    archive_domain='job_execution',
+                )
         rows.append({
             'id': event.id,
             'action': redact_operational_text(event.action, limit=120),
@@ -160,6 +182,8 @@ def build_administrative_evidence_context(
                 else 'No human actor recorded'
             ),
             'job_url': job_url,
+            'archive_history_url': archive_history_url,
+            'job_unavailable': job_unavailable,
         })
     return {
         'scope': selected,
