@@ -21,6 +21,18 @@ def test_secret_reveal_htmx_save_returns_workspace_without_redirect(monkeypatch)
     )
     monkeypatch.setattr(
         routes,
+        'build_kubernetes_administration_summary',
+        lambda: {
+            'cluster_count': 1,
+            'ready_cluster_count': 1,
+            'enabled_namespace_count': 1,
+            'eligible_policy_count': 1,
+            'administration_status_label': 'Verification Required',
+            'administration_status_tone': 'warning',
+        },
+    )
+    monkeypatch.setattr(
+        routes,
         'render_template',
         lambda template, **context: '<div id="secret-reveal-cluster-workspace"></div>',
     )
