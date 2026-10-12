@@ -142,3 +142,7 @@ Reports Generate bootstraps current committed namespace choices for only the sel
 ### Reports job integration ownership (#1544)
 
 Canonical Report JobExecution `integration_type` and `integration_instance_id` come from the report's selected asset type: Kubernetes cluster → `kubernetes`, Object Storage system → `object_storage`, Registry IntegrationInstance → `registry` plus its numeric instance ID. Unknown future scope types must not be mislabeled as Kubernetes. The existing Report scope key, queue identity, idempotent resource group and renderer remain unchanged. Historical completed job evidence is not rewritten during this remediation.
+
+### Generate report naming boundary (#1545)
+
+Operator report names are optional, trimmed, and bounded at 255 Unicode code points before report persistence to match `Report.name`'s existing VARCHAR(255) contract. Over-limit names render actionable validation feedback. The wizard input uses the corresponding HTML maxlength as convenience only; server-side checks remain authoritative. No schema migration is necessary.
