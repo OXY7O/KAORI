@@ -87,7 +87,9 @@ Uses `components/resource_detail_modal.html` and Unified Resource Sheet V10 prim
 - Inventory Signals;
 - Operational Context;
 
-The summary includes total objects, populated asset categories, and largest inventory segment. The Inventory Breakdown subtitle stays concise: `Committed inventory by Kubernetes resource type.` The final Operational Context section explains that the data is a committed database snapshot and provides one state-aware next step.
+The summary includes total objects, populated asset categories, and largest inventory segment. The Inventory Breakdown subtitle stays concise: `Committed objects by resource type.` The final Operational Context section explains that the data is a committed database snapshot and provides one state-aware next step.
+
+The four section subtitles should remain compact and usually fit one desktop line: Cluster Identity — `Cluster registration, version, and connection.`; Snapshot Context — `Collection time, source, freshness, and state.`; Inventory Breakdown — `Committed objects by resource type.`; Inventory Signals — `Collection and operational signals.` Keep natural wrapping on narrow screens rather than enforcing `whitespace-nowrap`. For a current committed snapshot with no active signals, the state-aware action description is `Snapshot current; no active signals. Review assets.`; disconnected, stale, incomplete, and signalled branches retain their distinct meanings.
 
 ## Data Contract
 
