@@ -90,19 +90,17 @@
                 {% for item in dashboard.forecast_snapshot.items %}
                     {% set risk_key = item.risk|lower %}
                     {% set risk_tone = 'critical' if risk_key in ['critical', 'high'] else ('warning' if risk_key in ['warning', 'medium'] else ('normal' if risk_key in ['healthy', 'normal', 'low'] else 'unknown')) %}
-                    <article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-3">
-                        <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-                            <div class="min-w-0 flex-1 basis-28">
-                                <div class="flex min-w-0 items-center gap-2">
-                                    {{ resource_series_legend.swatch(item.key) }}
-                                    <p class="min-w-0 break-words text-sm font-semibold text-content-primary">{{ item.label }}</p>
-                                </div>
-                                <p class="mt-0.5 text-xs text-content-muted">{{ item.trend }}</p>
-                            </div>
+                    <article class="flex min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <div class="flex min-w-0 items-center gap-2">
+                            {{ resource_series_legend.swatch(item.key) }}
+                            <p class="min-w-0 break-words text-sm font-semibold text-content-primary">{{ item.label }}</p>
+                        </div>
+                        <div class="mt-1 flex min-w-0 items-center justify-between gap-2">
+                            <p class="min-w-0 text-xs text-content-muted">{{ item.trend }}</p>
                             <div class="shrink-0">{{ table_label.status_label(item.risk, risk_tone) }}</div>
                         </div>
-                        <div class="mt-3 flex items-center justify-between gap-3 text-xs">
-                            <div>
+                        <div class="mt-auto grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 pt-3 text-xs">
+                            <div class="min-w-0">
                                 <p class="text-content-muted">Current</p>
                                 <p class="mt-1 text-base font-semibold text-content-primary">
                                     {% if item.latest_daily_average_percent is not none %}
@@ -113,9 +111,9 @@
                                 </p>
                             </div>
                             <i data-lucide="arrow-right"
-                               class="h-4 w-4 text-content-disabled"
+                               class="h-4 w-4 shrink-0 self-center text-content-disabled"
                                aria-hidden="true"></i>
-                            <div class="text-right">
+                            <div class="min-w-0 text-right">
                                 <p class="text-content-muted">Projected</p>
                                 <p class="mt-1 text-base font-semibold text-content-primary">
                                     {% if item.projected_percent is not none %}

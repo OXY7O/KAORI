@@ -192,8 +192,8 @@ def test_kubernetes_dashboard_forecast_cards_fill_peer_width_without_clipping() 
     # Forecast occupies half the desktop dashboard: cards size to the actual panel, not the viewport.
     assert 'grid-cols-[repeat(auto-fit,minmax(min(100%,11.5rem),1fr))]' in forecast
     assert 'md:grid-cols-2 xl:grid-cols-4' not in forecast
-    assert 'flex flex-wrap items-start justify-between gap-x-3 gap-y-2' in forecast
-    assert 'min-w-0 flex-1 basis-28' in forecast
+    assert 'flex min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-card p-3' in forecast
+    assert 'mt-auto grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 pt-3 text-xs' in forecast
     assert 'min-w-0 break-words text-sm font-semibold text-content-primary' in forecast
     assert 'truncate text-sm font-semibold text-content-primary' not in forecast
     assert '<div class="shrink-0">{{ table_label.status_label(item.risk, risk_tone) }}</div>' in forecast
