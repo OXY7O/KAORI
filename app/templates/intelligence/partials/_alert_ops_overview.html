@@ -9,8 +9,8 @@
                 <h3 class="{{ table_ui.block_title_classes() }}">Alert Operations Snapshot</h3>
                 <p class="{{ table_ui.block_description_classes() }}">Current operator workload across alert lifecycle, delivery, verification, and postmortem governance.</p>
             </div>
-            {{ table_label.status_label('Attention Required' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'Operationally Clear',
-                        'warning' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'normal',
+            {{ table_label.status_label('Attention Required' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required else 'No Open Cases Observed' if payload.snapshot.available else 'Evidence Review Required',
+                        'warning' if payload.summary.active or payload.summary.delivery_failures or payload.summary.postmortem_required or not payload.snapshot.available else 'info',
                         size='compact') }}
         </header>
         {% set open_case_tone = 'critical' if payload.summary.critical else 'warning' if payload.summary.active else 'normal' %}
@@ -47,7 +47,7 @@
                 {% for icon, label, value, supporting, tone in [
                     ('user-check', 'Acknowledged', payload.summary.acknowledged, 'Ownership accepted', 'info'),
                     ('bell-off', 'Silenced', payload.summary.silenced, 'KAORI delivery paused', 'warning' if payload.summary.silenced else 'normal'),
-                    ('circle-check-big', 'Resolved Today', payload.summary.resolved_today, 'Verified and closed', 'normal'),
+                    ('circle-check-big', 'Resolved Today', payload.summary.resolved_today, 'Source resolved; closure may still be pending', 'normal'),
                     ('route', 'Routing Policies', payload.summary.routing_policies, 'Governed delivery rules', 'info')
                     ] %}
                     <article class="bg-surface-card p-4">
@@ -117,6 +117,13 @@
         icon='shield',
         tone='info',
         variant='semantic') }}
+    {% if not payload.snapshot.available %}
+        {{ operational_callout.render('Committed Evidence Review Required',
+                'One or more managed assets have no committed inventory observation within 24 hours. Zero open cases does not prove source health or worker reconciliation success.',
+                icon='circle-help',
+                tone='warning',
+                variant='semantic') }}
+    {% endif %}
     {% if payload.snapshot.serving_last_good %}
         {{ operational_callout.render('Last Good Snapshot Active',
                 'The latest provider refresh is stale or failed. Existing alert cases remain available from committed KAORI evidence while workers retry collection.',
