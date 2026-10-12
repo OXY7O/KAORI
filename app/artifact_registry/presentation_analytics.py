@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+
+from werkzeug.exceptions import NotFound
 from typing import Any
 
 from app.artifact_registry.analytics_job_adapter import (
@@ -49,7 +51,11 @@ def _registry_analytics_scope(
     provider_id: int | None,
     identities: list[Any],
 ) -> int | None:
-    return provider_id if provider_id is not None and any(row.id == provider_id for row in identities) else None
+    if provider_id is None:
+        return None
+    if not any(int(row.id) == provider_id for row in identities):
+        raise NotFound('The selected Registry instance is not active or is unavailable.')
+    return provider_id
 
 
 def build_analytics_shell(
@@ -119,6 +125,8 @@ def _analytics_aggregate() -> dict[str, Any]:
         'governance_projects_assessed': 0,
         'retention_configured': 0,
         'immutability_configured': 0,
+        'retention_not_configured': 0,
+        'immutability_not_configured': 0,
         'metrics_ready': 0,
         'healthy_providers': 0,
         'component_up_providers': 0,
@@ -168,6 +176,8 @@ def _accumulate_domain_counts(aggregate: dict[str, Any], sections: dict[str, dic
         'governance_projects_assessed': (governance, 'projects_assessed'),
         'retention_configured': (governance, 'retention_configured'),
         'immutability_configured': (governance, 'immutability_configured'),
+        'retention_not_configured': (governance, 'retention_not_configured'),
+        'immutability_not_configured': (governance, 'immutability_not_configured'),
     }
     for aggregate_key, (source, source_key) in mappings.items():
         aggregate[aggregate_key] += int(source.get(source_key) or 0)
