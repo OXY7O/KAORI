@@ -75,6 +75,13 @@ def _work_items(
     requested_history_window: str | None = None,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     eligible, diagnostics = _eligible_systems()
+    pending_inventory = [system.name for system in eligible if system.inventory_observed_at is None]
+    if pending_inventory:
+        diagnostics.extend(
+            f'{name}: Object Storage Inventory Sync Required before forecasting.'
+            for name in pending_inventory
+        )
+    eligible = [system for system in eligible if system.inventory_observed_at is not None]
     if requested_system_id:
         eligible = [system for system in eligible if str(system.id) == requested_system_id]
     configuration = policy.configuration_json or {}
@@ -362,6 +369,13 @@ def dispatch_object_storage_forecast_materialization(
 
 def build_object_storage_forecast_materialization_context(policy: JobPolicy) -> dict[str, Any]:
     eligible, diagnostics = _eligible_systems()
+    pending_inventory = [system.name for system in eligible if system.inventory_observed_at is None]
+    if pending_inventory:
+        diagnostics.extend(
+            f'{name}: Object Storage Inventory Sync Required before forecasting.'
+            for name in pending_inventory
+        )
+    eligible = [system for system in eligible if system.inventory_observed_at is not None]
     windows = _configured_windows(policy)
     states: list[dict[str, Any]] = []
     for system in eligible:
