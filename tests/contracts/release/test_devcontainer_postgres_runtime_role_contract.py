@@ -133,3 +133,18 @@ def test_fresh_bootstrap_contract_reuses_owner_only_migration_and_scoped_reset()
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in init
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in compose
     assert 'DATABASE_URL=postgresql://kaori_runtime:' in EXAMPLE.read_text()
+
+
+def test_existing_setup_workspace_describes_transient_owner_migration_and_pre_schema_preview() -> None:
+    setup = (ROOT / 'app' / 'templates' / 'access' / 'authentication' / 'setup_required.html').read_text()
+    guide = (ROOT / 'docs' / 'operations' / 'devcontainer-postgres-fresh-bootstrap.md').read_text()
+    assert 'Database Setup Required' in setup
+    assert 'KAORI_DB_MIGRATION_URL' in setup
+    assert 'docs/operations/devcontainer-postgres-fresh-bootstrap.md' in setup
+    assert 'flask --app run:app db upgrade' not in setup
+    assert 'Database Setup Required' in guide
+    assert 'HTTP 503' in guide
+    assert 'to_regclass(\'public.users\') IS NULL' in guide
+    assert 'CREATE ROLE kaori_runtime' in guide
+    assert 'kaori_runtime' in guide
+    assert 'no application table grants' in guide
