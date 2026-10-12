@@ -93,6 +93,85 @@ workspace was independently recreated. PostgreSQL must show healthy
 before moving on. Fresh cluster initialization consumes the existing
 `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` private values.
 
+## 2a. Optional first-run UI checkpoint — schema deliberately absent
+
+KAORI already ships a **read-only** `Database Setup Required` surface
+under `http://localhost:5000/auth/login`. To exercise the exact
+**Initialization Required** branch **before** Alembic migrations, the
+PostgreSQL instance and `kaori` database must exist, the non-owner
+`kaori_runtime` login must connect, and the schema tables must be absent.
+A missing database or missing login displays **Database Unavailable**,
+not the missing-schema state.
+
+After the scoped deletion in step 2, while all Celery workers and Beat
+are **stopped**, inspect the freshly initialized schema as the owner:
+
+```bash
+psql -h db -U kaori -W -d kaori -X -At \
+  -c "SELECT to_regclass('public.alembic_version') IS NULL,
+             to_regclass('public.users') IS NULL"
+# Expected: t|t
+```
+
+**Do not proceed** if either value is false: it is not an empty-schema
+first-run environment. There is no need to create a second database.
+
+The existing post-migration provisioning script rightly requires
+`audit_events` and the Capsule ledger tables; it **cannot run before
+migrations**. For the first-run preview only, pre-create the exact same
+non-owner PostgreSQL role *without table grants* using the owner
+connection:
+
+```bash
+psql -h db -U kaori -W -d kaori -X
+```
+
+Inside that owner psql session (no password literals):
+
+```sql
+CREATE ROLE kaori_runtime
+  NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
+  NOREPLICATION NOBYPASSRLS INHERIT;
+GRANT CONNECT ON DATABASE kaori TO kaori_runtime;
+GRANT USAGE ON SCHEMA public TO kaori_runtime;
+```
+
+Then use interactive psql meta-command `\\password kaori_runtime`
+(the runtime secret must match private `DATABASE_URL`), followed by:
+
+```sql
+ALTER ROLE kaori_runtime LOGIN;
+```
+
+Exit via `\\q`. This preview role has **no application table grants**
+because the tables do not yet exist. If the role already exists,
+revisit the supposed fresh-volume reset rather than silently changing
+an existing role.
+
+Check the non-owner session and missing schema:
+
+```bash
+psql -h db -U kaori_runtime -W -d kaori -X -At \
+  -c "SELECT current_user, to_regclass('public.users') IS NULL"
+# Expected: kaori_runtime|t
+```
+
+In a fresh VS Code terminal, verify the Flask ORM connects as
+`kaori_runtime`, then start `KAORI: Flask Debug` via F5 and browse to
+`http://localhost:5000/auth/login`. The expected response is
+**HTTP 503 — Database Setup Required / Initialization Required**,
+listing missing authentication tables. This is an operator-facing,
+read-only installation guidance page, **not** an interactive schema
+creation wizard. Stop Flask Debug after taking UI evidence and **before
+running migrations**; keep workers and Beat stopped.
+
+When continuing with step 3, owner Alembic creates the actual tables.
+Then the established provisioning SQL in step 4 recognizes the
+existing `kaori_runtime` role and grants the necessary DML while
+enforcing Capsule ledger negative ACL checks. **Do not re-create or
+rotate** the role/password if the preview already configured it
+correctly.
+
 ## 3. Owner-only Alembic + RBAC/admin initialization (DevContainer)
 
 Inside `/workspace/kaori`, run the **existing** `scripts/init_db.sh`
@@ -148,18 +227,15 @@ psql -h db -U kaori -W -d kaori -X -v ON_ERROR_STOP=1 \
   -f scripts/devcontainer/provision_postgres_runtime_role.sql
 ```
 
-After `COMMIT`, open `psql -h db -U kaori -W -d kaori -X` and enter:
-
-```text
-\password kaori_runtime
-ALTER ROLE kaori_runtime LOGIN;
-\q
-```
-
-Enter the **same independently generated** runtime secret used in
-the `DATABASE_URL` connection string, without sending it to chat.
-The script deliberately provisions `NOLOGIN` first; never enable login
-with an empty password. It grants normal table DML and sequence usage,
+After `COMMIT`, **if step 2a was skipped**, open
+`psql -h db -U kaori -W -d kaori -X`, run interactive
+`\\password kaori_runtime`, then
+`ALTER ROLE kaori_runtime LOGIN;` and `\\q`.
+Enter the independently generated runtime secret matching
+`DATABASE_URL`, without exposing it in chat or Git.
+If step 2a already created a working runtime login, **do not reset
+the credential**: the existing provisioning script grants permissions
+to that role without replacing its password. It grants normal table DML and sequence usage,
 but only SELECT/INSERT on `capsule_handoff_ledger_events`, no
 UPDATE/DELETE/TRUNCATE, and no `public` schema CREATE. The four
 ledger and three handback audit triggers come from Alembic migrations.
