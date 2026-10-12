@@ -268,9 +268,9 @@
                 const selected = button.dataset.tenantAllocationDetailTab === name
                 button.setAttribute('aria-selected', String(selected))
                 button.tabIndex = selected ? 0 : -1
-                button.classList.toggle('border-kaori-primary', selected)
+                button.classList.toggle('bg-surface-card', selected)
+                button.classList.toggle('shadow-sm', selected)
                 button.classList.toggle('text-kaori-primary', selected)
-                button.classList.toggle('border-transparent', !selected)
                 button.classList.toggle('text-content-muted', !selected)
                 if (selected && focus) button.focus()
             })
@@ -428,7 +428,12 @@
             form.querySelectorAll('[data-tenant-allocation-tech-proposed]').forEach((cell) => {
                 const [source, ...parts] = cell.dataset.tenantAllocationTechProposed.split('.')
                 const key = parts.join('.')
-                cell.textContent = proposed ? displayValue(source, key, contractValue(proposed, source, key)) : '—'
+                const beforeValue = contractValue(current, source, key)
+                const afterValue = contractValue(proposed, source, key)
+                const differs = !!current && !!proposed && classifyChange(beforeValue, afterValue) !== null
+                cell.textContent = proposed ? displayValue(source, key, afterValue) : '—'
+                cell.classList.toggle('text-kaori-primary', differs)
+                cell.classList.toggle('text-content-primary', !differs)
             })
 
             const changed = current && proposed ? highlightDimensions.flatMap(([label, source, key]) => {
