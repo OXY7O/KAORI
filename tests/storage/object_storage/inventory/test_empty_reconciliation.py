@@ -16,7 +16,7 @@ class _Session:
         self.deleted: list[object] = []
 
     def refresh(self, _system, attribute_names=None) -> None:
-        assert attribute_names == ['inventory_observed_at']
+        assert attribute_names in (None, ['inventory_observed_at'], ['metadata_json', 'readiness_status', 'enabled'])
 
     def expire(self, _system, fields=None) -> None:
         assert fields == ['buckets']
@@ -61,7 +61,7 @@ def setup(monkeypatch):
 
 def _instance(system):
     return SimpleNamespace(
-        integration_instance=SimpleNamespace(enabled=True, lifecycle_status='active'),
+        integration_instance=SimpleNamespace(enabled=True, lifecycle_status='active', metadata_json={}),
         readiness_status='ready', object_storage_system=system,
     )
 
@@ -172,3 +172,38 @@ def test_incomplete_bucket_discovery_is_not_authoritative_empty(payload) -> None
     with pytest.raises(MinioConnectionError, match='incomplete or malformed'):
         _bucket_inventory(payload)
     assert _bucket_inventory({'Buckets': []}) == ()
+
+
+def test_successful_inventory_sync_commits_current_source_generation(
+    setup: _Session, monkeypatch,
+) -> None:
+    system = _system(previously_collected=False)
+    instance = _instance(system)
+    instance.integration_instance.metadata_json = {
+        'object_storage_connection_generation': 3,
+        'object_storage_inventory_generation': 2,
+    }
+    monkeypatch.setattr(sync, 'collect_instance_bucket_inventory', lambda *_a, **_kw: _snapshot())
+
+    sync.sync_object_storage_inventory(instance)
+
+    assert setup.commits == 1
+    assert instance.integration_instance.metadata_json['object_storage_inventory_generation'] == 3
+
+
+def test_failed_inventory_sync_does_not_promote_previous_source_generation(
+    setup: _Session, monkeypatch,
+) -> None:
+    system = _system()
+    instance = _instance(system)
+    instance.integration_instance.metadata_json = {
+        'object_storage_connection_generation': 3,
+        'object_storage_inventory_generation': 2,
+    }
+    monkeypatch.setattr(sync, 'collect_instance_bucket_inventory', lambda *_a, **_kw: _snapshot())
+
+    with pytest.raises(RuntimeError, match='preserved the previous committed snapshot'):
+        sync.sync_object_storage_inventory(instance)
+
+    assert setup.rollbacks == 1
+    assert instance.integration_instance.metadata_json['object_storage_inventory_generation'] == 2
