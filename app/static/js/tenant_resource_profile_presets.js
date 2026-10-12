@@ -254,6 +254,7 @@
 
         const profiles = readJson('tenant-namespace-allocation-profiles')
         const namespaces = readJson('tenant-namespace-allocation-state')
+        const advancedPreflight = readJson('tenant-namespace-allocation-advanced-preflight')
         const namespaceSelect = form.querySelector('[data-tenant-allocation-change-namespace]')
         const profileSelect = form.querySelector('[data-tenant-allocation-change-profile]')
 
@@ -279,6 +280,60 @@
         const requestValue = (valueSet, resource) => valueSet?.quota?.[`requests.${resource}`] || 'Unbounded'
         const quotaValue = (valueSet, field) => valueSet?.quota?.[field] || 'Unbounded'
         const storageValue = (valueSet, field) => valueSet?.storage_policy?.[field] || 'Unbounded'
+        const detailValue = (valueSet, field) => {
+            if (!valueSet) return '—'
+            const [source, ...parts] = field.split('.')
+            return parts.reduce((value, key) => value?.[key], valueSet[source]) ?? 'Not declared'
+        }
+
+        const renderAdvancedComparison = (current, profile, namespaceId, profileId) => {
+            const recorded = current?.advanced_evidence
+            const recordedControls = recorded?.recorded ? recorded.controls || {} : {}
+            const proposedControls = profileId === 'adopted_baseline' ? recordedControls : profile?.advanced_controls || {}
+            const evaluated = advancedPreflight[namespaceId]?.[profileId] || {}
+            let visible = 0
+
+            form.querySelectorAll('[data-tenant-allocation-advanced-row]').forEach((row) => {
+                const key = row.dataset.tenantAllocationAdvancedRow
+                const currentControl = recordedControls[key]
+                const proposedControl = evaluated[key]
+                const requested = proposedControl?.requested || proposedControls[key]?.enabled === true
+                const show = currentControl?.requested || requested
+                row.hidden = !show
+                if (!show) return
+                visible += 1
+                const currentCell = row.querySelector('[data-tenant-allocation-advanced-current]')
+                const proposedCell = row.querySelector('[data-tenant-allocation-advanced-proposed]')
+                const currentStatus = !recorded?.recorded
+                    ? 'Not recorded'
+                    : !currentControl?.requested
+                      ? 'Not configured'
+                      : currentControl.state === 'enabled'
+                        ? 'Supported · Recorded'
+                        : currentControl.state === 'unsupported'
+                          ? 'Unavailable · Recorded'
+                          : 'Configured · Recorded'
+                const proposedStatus = profileId === 'adopted_baseline'
+                    ? 'Same as current · Not verified'
+                    : !requested
+                      ? 'Not configured'
+                      : proposedControl?.state === 'enabled'
+                        ? 'Supported · Preflight'
+                        : proposedControl?.state === 'unsupported'
+                          ? 'Unavailable · Preflight'
+                          : 'Configured · Preflight pending'
+                if (currentCell) {
+                    currentCell.textContent = currentStatus
+                    currentCell.title = currentControl?.reason || 'No verified provider execution evidence.'
+                }
+                if (proposedCell) {
+                    proposedCell.textContent = proposedStatus
+                    proposedCell.title = proposedControl?.reason || 'Provider execution not verified.'
+                }
+            })
+            const empty = form.querySelector('[data-tenant-allocation-advanced-empty]')
+            if (empty) empty.hidden = visible > 0
+        }
 
         const renderAllocationChange = ({ preferCurrentProfile = false } = {}) => {
             const current = namespaces[namespaceSelect?.value] || null
@@ -317,6 +372,13 @@
             if (proposedStorage) proposedStorage.textContent = proposed ? requestValue(proposed, 'storage') : '—'
             if (proposedPvcMin) proposedPvcMin.textContent = proposed ? storageValue(proposed, 'min') : '—'
             if (proposedPvcMax) proposedPvcMax.textContent = proposed ? storageValue(proposed, 'max') : '—'
+            form.querySelectorAll('[data-tenant-allocation-detail-current]').forEach((cell) => {
+                cell.textContent = detailValue(current, cell.dataset.tenantAllocationDetailCurrent)
+            })
+            form.querySelectorAll('[data-tenant-allocation-detail-proposed]').forEach((cell) => {
+                cell.textContent = detailValue(proposed, cell.dataset.tenantAllocationDetailProposed)
+            })
+            renderAdvancedComparison(current, proposed, namespaceSelect?.value, profileSelect?.value)
         }
 
         namespaceSelect?.addEventListener('change', () => renderAllocationChange({ preferCurrentProfile: true }))

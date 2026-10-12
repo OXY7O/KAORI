@@ -1461,3 +1461,60 @@ def test_allocation_change_shows_request_and_limit_evidence_for_both_contracts()
     assert 'data-tenant-allocation-current-pvc-min' in template
     assert 'data-tenant-allocation-proposed-pvc-max' in template
 
+
+def test_allocation_change_advanced_readonly_contract_and_evidence_boundaries() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    registry = read('app/kubernetes/tenant/registry_context.py')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    service = read('app/kubernetes/tenant/service.py')
+
+    assert template.count('<details class="group') == 2
+    assert template.count('data-tenant-allocation-detail-group') == 2
+    assert 'data-tenant-allocation-detail-group="advanced-controls"' in template
+    assert 'Advanced Contract Comparison' in template
+    assert 'Current · Frozen' in template
+    assert 'Proposed · Profile' in template
+    assert 'Not declared' in script
+    assert 'Capability evaluation is not proof of provider execution or read-back.' in template
+    assert 'do not infer that their external enforcement has been verified.' in template
+    assert 'reconciles its complete managed ResourceQuota' not in template
+    assert 'tenant-namespace-allocation-advanced-preflight' in page
+    assert 'def _recorded_allocation_advanced_controls(' in registry
+    assert "recorded.get('source_profile_id') != record.resource_profile.public_id" in registry
+    assert "recorded.get('source_profile_version') != record.resource_profile_version" in registry
+    assert "'quota': record.allocation_quota_json or {}" in registry
+    assert "'limits': record.allocation_limit_defaults_json or {}" in registry
+    assert "'quota': profile.quota_hard_json or {}" in registry
+    assert "'limits': profile.limit_defaults_json or {}" in registry
+    assert '_tenant_capability_statuses(tenant)' in registry
+    assert 'evaluate_resource_profile_advanced_controls(' in registry
+    assert "'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS" in registry
+    assert 'advancedPreflight[namespaceId]?.[profileId]' in script
+    assert "const current = namespaces[namespaceSelect?.value] || null" in script
+    assert "profileSelect?.value === 'adopted_baseline' ? current" in script
+    assert 'form.querySelectorAll(\'[data-tenant-allocation-detail-current]\')' in script
+    assert 'form.querySelectorAll(\'[data-tenant-allocation-detail-proposed]\')' in script
+    assert 'row.hidden = !show' in script
+    assert 'empty.hidden = visible > 0' in script
+    assert 'Supported · Preflight' in script
+    assert 'Unavailable · Preflight' in script
+    assert 'Not recorded' in script
+    assert 'Same as current · Not verified' in script
+    assert 'attachment_controls = _validate_resource_profile_attachment_controls(' in service
+
+    fragment = template.split('data-tenant-allocation-detail-group="{{ title', 1)[0]
+    assert 'Object Limits' in fragment and 'Container Defaults' in fragment
+    # Existing, shared Jinja grammar renders all 8 independent detail rows.
+    details = template.split('{% for title, description, rows in [', 1)[1]
+    details = '{% for title, description, rows in [' + details.split('{% endfor %}', 2)[0]
+    assert "('PVCs', 'quota', 'persistentvolumeclaims')" in details
+    assert "('Services', 'quota', 'services')" in details
+    assert "('ConfigMaps', 'quota', 'configmaps')" in details
+    assert "('Secrets', 'quota', 'secrets')" in details
+    for resource in ('default_request.cpu', 'default.cpu',
+                     'default_request.memory', 'default.memory'):
+        assert f"'limits', '{resource}'" in details
+    Environment(autoescape=True).parse(template)
