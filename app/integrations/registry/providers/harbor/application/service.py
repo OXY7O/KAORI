@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions.db import db
 from app.integrations.deletion import DeletionBlocked, asset_owner_deletion_guard
 from app.integrations.registry.providers.harbor.application.contracts import HarborRegistrationInput
+from app.integrations.registry.providers.harbor.transport_policy import validate_harbor_endpoint
 from app.integrations.registry.providers.harbor.client import HarborClient
 from app.integrations.registry.providers.harbor.contracts import HarborConnectionResult
 from app.models.harbor import HarborInstance
@@ -31,6 +32,7 @@ def test_harbor_connection(values: HarborRegistrationInput) -> HarborConnectionR
 
 
 def create_harbor_instance(values: HarborRegistrationInput) -> HarborInstance:
+    validate_harbor_endpoint(values.endpoint, verify_ssl=values.verify_ssl)
     if IntegrationInstance.query.filter_by(integration_type='registry', name=values.name).first() is not None:
         raise ValueError('A Registry connection with this name already exists.')
 
@@ -74,6 +76,7 @@ def create_harbor_instance(values: HarborRegistrationInput) -> HarborInstance:
 
 
 def update_harbor_instance(instance: HarborInstance, values: HarborRegistrationInput) -> HarborInstance:
+    validate_harbor_endpoint(values.endpoint, verify_ssl=values.verify_ssl)
     duplicate = IntegrationInstance.query.filter(
         IntegrationInstance.integration_type == 'registry',
         IntegrationInstance.name == values.name,
