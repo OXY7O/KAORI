@@ -600,7 +600,14 @@ Adopted → KAORI Managed and Managed Allocation Change. The read-only table
 only compares provider-observed or committed authoritative quota values
 with selected Resource Profile intent; absence appears **Unbounded**, not
 zero or permission to write. The summary counts changed display dimensions
-and is not an admission/eligibility result.
+and is not an admission/eligibility result. To preserve Current/Proposed
+vertical alignment (#1673), both sides of both Tenant CR comparisons use
+matching identity and secondary quota-summary slots ahead of the six-field
+ResourceQuota grid. The proposed managed-change summary is derived from the
+selected versioned profile; blank selection shows the same dash placeholder
+as Current. A minimum header height is a presentation aid only, never a
+data constraint or evidence substitute. The Native adopted-cutover footer
+uses shorter fail-closed text without changing admission or read-back.
 
 These surfaces are **visually consistent, not functionally interchangeable**:
 GRQ ownership, applicable/non-applicable authority mismatch, source count
