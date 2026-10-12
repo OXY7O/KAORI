@@ -267,3 +267,7 @@ A source connection alone does not prove an empty alert set. The Object Storage 
 ## Metrics-backed alert asset isolation (#1390)
 
 Prometheus `ALERTS` is a global metrics family even when its Metrics Source runtime is bound to an Object Storage system. Metrics-backed alert fallback therefore requires a positive exact-label binding selector, checks that the selector is disjoint from other Object Storage bindings sharing that runtime, and applies the canonical `apply_promql_scope` matcher to the worker query. Unscoped, regex-only, and overlapping identities are labeled `Metrics Alert Scope Unverified` rather than promoting arbitrary alerts or empty responses to verified current-system evidence. Configure and validate unique asset labels on each consumer binding. Alertmanager remains the preferred provider-owned lifecycle source.
+
+## Bounded Analytics page selectors (#1391)
+
+Ordinary Analytics GET, filter updates and HTMX record fragments load only lightweight Object Storage system identity and committed inventory-observation fields for selector choices. The read path no longer eagerly loads every bucket from the entire registered fleet. Worker collection remains the only path that reads selected-system per-bucket inventory; provider calls never occur in the normal page request. Validate large-fleet SQL statement/object counts and six-page browser regressions during DevContainer UAT.
