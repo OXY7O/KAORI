@@ -1,6 +1,7 @@
 import logging
 
 from flask import (
+    jsonify,
     redirect,
     render_template,
     request,
@@ -13,13 +14,25 @@ from werkzeug.exceptions import HTTPException
 from app.access.rbac.decorators import permission_required
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import queue_transient_feedback, record_operational_activity
-from app.reports.generate.service import create_report_request, get_form_state_from_form, get_generate_report_payload
+from app.reports.generate.service import (
+    create_report_request,
+    get_form_state_from_form,
+    get_generate_namespace_options,
+    get_generate_report_payload,
+)
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
 from app.reports.reference import build_report_reference
 from app.reports.repository import mark_report_queue_failure
 from app.reports.web import render_reports_unavailable
 
 logger = logging.getLogger(__name__)
+
+
+@permission_required('reports.generate')
+def generate_namespace_options() -> ResponseReturnValue:
+    """Small permissioned option response; never dump other clusters' namespaces."""
+    cluster_id = str(request.args.get('cluster_id') or '').strip()
+    return jsonify({'cluster_id': cluster_id, 'namespaces': get_generate_namespace_options(cluster_id)})
 
 
 @permission_required('reports.generate')

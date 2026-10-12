@@ -124,7 +124,12 @@ def get_generate_report_payload(
     cluster_options = _get_cluster_options()
     object_storage_system_options = _get_object_storage_system_options()
     artifact_registry_options = get_active_registry_options()
-    namespace_options_by_cluster = _get_namespace_options_by_cluster()
+    selected_cluster_id = str(form_state.get('cluster_id') or '').strip()
+    namespace_options_by_cluster = (
+        _get_namespace_options_by_cluster(selected_cluster_id)
+        if selected_report_type['scope_asset_type'] == KUBERNETES_CLUSTER_ASSET_TYPE and selected_cluster_id
+        else {}
+    )
     scope_ready = _scope_is_ready(form_state, selected_report_type)
 
     return {
@@ -751,8 +756,18 @@ def _scope_is_ready(form_state: dict[str, Any], report_context: dict[str, Any]) 
     return bool(str(form_state.get('cluster_id') or '').strip())
 
 
-def _get_namespace_options_by_cluster() -> dict[str, list[str]]:
-    return get_report_namespace_options_by_cluster()
+def _get_namespace_options_by_cluster(cluster_id: str) -> dict[str, list[str]]:
+    return get_report_namespace_options_by_cluster(cluster_id)
+
+
+def get_generate_namespace_options(cluster_id: str) -> list[str]:
+    """Serve only current committed namespaces for one registered Kubernetes cluster."""
+    selected_cluster_id = str(cluster_id or '').strip()
+    if not selected_cluster_id:
+        return []
+    if db.session.scalar(select(Cluster.id).where(Cluster.id == selected_cluster_id)) is None:
+        return []
+    return _get_namespace_options_by_cluster(selected_cluster_id).get(selected_cluster_id, [])
 
 
 def _parse_cluster_id(

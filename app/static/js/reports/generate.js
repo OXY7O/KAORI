@@ -32,6 +32,9 @@
         const sectionOptionsByReportType = bootstrap.section_options_by_report_type || {}
         const reportTypeOptions = bootstrap.report_type_options || []
         const namespaceOptionsByCluster = bootstrap.namespace_options_by_cluster || {}
+        const namespaceOptionsUrl = bootstrap.namespace_options_url || ''
+        const namespaceRequests = new Set()
+        const namespaceFailures = new Set()
         const hasRegisteredClusters = Boolean(bootstrap.has_clusters)
         const hasObjectStorageSystems = Boolean(bootstrap.has_object_storage_systems)
         const hasArtifactRegistries = Boolean(bootstrap.has_artifact_registries)
@@ -575,6 +578,7 @@
 
         function updateNamespaceOptions(selectedValue) {
             const clusterId = clusterSelect.value
+            const known = Object.prototype.hasOwnProperty.call(namespaceOptionsByCluster, clusterId)
             const namespaces = namespaceOptionsByCluster[clusterId] || []
             const normalizedSelectedValue = selectedValue || ''
             namespaceSelect.replaceChildren()
@@ -588,21 +592,50 @@
                 option.textContent = namespace
                 namespaceSelect.appendChild(option)
             })
-            if (!clusterId) {
-                namespaceSelect.disabled = true
-                namespaceSelect.value = ''
-                if (namespaceOptionCount) {
-                    namespaceOptionCount.textContent = ''
-                    namespaceOptionCount.classList.add('hidden')
-                }
+            namespaceSelect.value = namespaces.includes(normalizedSelectedValue) ? normalizedSelectedValue : ''
+            namespaceSelect.disabled = !clusterId || !known
+            if (namespaceOptionCount) {
+                namespaceOptionCount.classList.toggle('hidden', !clusterId)
+                namespaceOptionCount.textContent = !clusterId
+                    ? ''
+                    : !known
+                      ? namespaceFailures.has(clusterId)
+                          ? 'Unable to load · select another cluster and retry'
+                          : 'Loading namespaces…'
+                      : namespaces.length + ' available'
+            }
+            if (!clusterId || known || !namespaceOptionsUrl || namespaceRequests.has(clusterId)) {
                 return
             }
-            namespaceSelect.disabled = false
-            namespaceSelect.value = namespaces.includes(normalizedSelectedValue) ? normalizedSelectedValue : ''
-            if (namespaceOptionCount) {
-                namespaceOptionCount.textContent = namespaces.length + ' available'
-                namespaceOptionCount.classList.remove('hidden')
-            }
+            namespaceFailures.delete(clusterId)
+            namespaceRequests.add(clusterId)
+            fetch(namespaceOptionsUrl + '?cluster_id=' + encodeURIComponent(clusterId), {
+                credentials: 'same-origin',
+            })
+                .then(function (response) {
+                    if (!response.ok) throw new Error('Namespace options unavailable')
+                    return response.json()
+                })
+                .then(function (payload) {
+                    if (payload.cluster_id !== clusterId || !Array.isArray(payload.namespaces)) {
+                        throw new Error('Invalid namespace response')
+                    }
+                    namespaceOptionsByCluster[clusterId] = payload.namespaces
+                    if (clusterSelect.value === clusterId) {
+                        updateNamespaceOptions('')
+                        syncClusterGuard()
+                    }
+                })
+                .catch(function () {
+                    namespaceFailures.add(clusterId)
+                    if (clusterSelect.value === clusterId) {
+                        updateNamespaceOptions('')
+                        syncClusterGuard()
+                    }
+                })
+                .finally(function () {
+                    namespaceRequests.delete(clusterId)
+                })
         }
 
         function scopeSelectionIsReady() {
@@ -663,7 +696,11 @@
             setElementVisibility(artifactRegistryScopeFields, artifactRegistryScope)
             if (clusterSelect) clusterSelect.disabled = objectStorageScope || artifactRegistryScope
             if (namespaceSelect)
-                namespaceSelect.disabled = objectStorageScope || artifactRegistryScope || !clusterSelect.value
+                namespaceSelect.disabled =
+                    objectStorageScope ||
+                    artifactRegistryScope ||
+                    !clusterSelect.value ||
+                    !Object.prototype.hasOwnProperty.call(namespaceOptionsByCluster, clusterSelect.value)
             if (objectStorageSystemSelect) objectStorageSystemSelect.disabled = !objectStorageScope
             if (artifactRegistrySelect) artifactRegistrySelect.disabled = !artifactRegistryScope
 

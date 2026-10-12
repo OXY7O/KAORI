@@ -9,7 +9,7 @@ from app.reports.export.routes import (
     download_report_artifact,
     generate_report_output,
 )
-from app.reports.generate.routes import generate_report
+from app.reports.generate.routes import generate_namespace_options, generate_report
 from app.reports.generated.routes import (
     archive_generated_report,
     bulk_archive_generated_reports,
@@ -163,6 +163,13 @@ reports_bp.add_url_rule(
         'GET',
         'POST',
     ],
+)
+
+reports_bp.add_url_rule(
+    '/generate/namespaces',
+    endpoint='generate_namespace_options',
+    view_func=generate_namespace_options,
+    methods=['GET'],
 )
 
 reports_bp.add_url_rule(

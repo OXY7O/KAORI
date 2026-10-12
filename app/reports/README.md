@@ -134,3 +134,7 @@ Generate distinguishes a UI catalog fallback from the submitted report type. Unk
 ### Generate strict submitted sections and period (#1542)
 
 GET navigation may display canonical default sections and period. On POST, analytics section selection must remain exactly the operator's requested values until server-side validation; missing/invalid sections are rejected, never silently rewritten to defaults. Inventory sections remain contract-locked and tampering fails closed. Analytics snapshot and Inventory time ranges are invalid, not silently converted. This boundary is enforced before Report/JobExecution persistence; the wizard remains advisory.
+
+### Generate bounded namespace choices (#1543)
+
+Reports Generate bootstraps current committed namespace choices for only the selected Kubernetes cluster. On cluster switch, its existing wizard requests an authorized lightweight `GET /reports/generate/namespaces?cluster_id=...` list with `reports.generate` permission, then renders options only when response cluster identity still matches selection. Object Storage and Registry report types do not query Kubernetes namespace inventory on page load; registered asset option lists remain available for the existing in-wizard contract switcher. The server independently validates namespace membership within the selected cluster before report persistence. No live provider request or custom cache architecture is introduced.
