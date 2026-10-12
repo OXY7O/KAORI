@@ -39,7 +39,7 @@ BEGIN
         OR has_table_privilege('kaori_runtime', 'public.capsule_handoff_ledger_events', 'TRUNCATE')
         OR NOT has_table_privilege('kaori_runtime', 'public.capsule_handoff_ledger_events', 'SELECT')
         OR NOT has_table_privilege('kaori_runtime', 'public.capsule_handoff_ledger_events', 'INSERT')
-        OR has_table_privilege('kaori_runtime', 'public', 'CREATE')
+        OR has_schema_privilege('kaori_runtime', 'public', 'CREATE')
         OR has_table_privilege('kaori_runtime', 'public.audit_events', 'TRUNCATE')
     THEN
         RAISE EXCEPTION 'Runtime immutable-ledger privileges denied; transaction rolled back';
