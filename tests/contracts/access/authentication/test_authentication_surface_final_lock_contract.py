@@ -119,3 +119,85 @@ def test_setup_devcontainer_commands_are_environment_gated() -> None:
     assert 'data-kaori-setup-production-guidance' in setup
     assert '{% if readiness.setup_required %}' in setup
     assert 'This readiness workspace is read-only.' in setup
+
+
+def _render_setup_for_environment(*, development: bool, reachable: bool) -> str:
+    """Render the public authentication page without a live PostgreSQL server."""
+    from types import SimpleNamespace
+
+    from flask import Blueprint, Flask, render_template
+
+    app = Flask(
+        __name__,
+        template_folder=str(ROOT / 'app/templates'),
+        static_folder=str(ROOT / 'app/static'),
+    )
+    app.config.update(APP_ENV='development' if development else 'production', TESTING=False)
+    auth = Blueprint('auth', __name__)
+
+    @auth.route('/login')
+    def login() -> str:
+        return 'login'
+
+    app.register_blueprint(auth, url_prefix='/auth')
+    app.jinja_env.globals['load_operational_feedback'] = lambda: None
+    readiness = SimpleNamespace(
+        setup_required=reachable,
+        missing_tables=('users', 'roles') if reachable else (),
+    )
+    with app.test_request_context('/auth/login'):
+        return render_template(
+            'access/authentication/setup_required.html',
+            readiness=readiness,
+        )
+
+
+def test_production_setup_render_leaks_no_command_or_schema_detail() -> None:
+    for reachable in (True, False):
+        rendered = _render_setup_for_environment(
+            development=False,
+            reachable=reachable,
+        )
+        assert rendered.count('data-kaori-setup-production-guidance') == 1
+        assert 'Retry Setup Check' in rendered
+        assert 'Database Setup Required' in rendered
+        assert 'data-kaori-terminal-command' not in rendered
+        assert 'data-kaori-setup-advanced' not in rendered
+        for forbidden in (
+            'DevContainer',
+            'docker compose',
+            'db-bootstrap',
+            'pg_isready',
+            'scripts/init_db.sh',
+            'flask --app',
+            'DATABASE_URL',
+            'INTEGRATION_CREDENTIAL_KEY',
+            'Missing Schema Objects',
+            'Manual Initialization Commands',
+            'Copy Command',
+        ):
+            assert forbidden not in rendered
+
+        if reachable:
+            assert 'Complete Authorized Database Initialization' in rendered
+            assert 'Database Connection Unavailable' not in rendered
+        else:
+            assert 'Database Connection Unavailable' in rendered
+            assert 'Complete Authorized Database Initialization' not in rendered
+
+
+def test_devcontainer_setup_render_preserves_existing_recovery_path() -> None:
+    ready_to_initialize = _render_setup_for_environment(
+        development=True,
+        reachable=True,
+    )
+    missing_connection = _render_setup_for_environment(
+        development=True,
+        reachable=False,
+    )
+    assert 'run --rm db-bootstrap' in ready_to_initialize
+    assert 'Manual Initialization Commands' in ready_to_initialize
+    assert 'Missing Schema Objects' in ready_to_initialize
+    assert 'pg_isready -h db -p 5432' in missing_connection
+    assert 'data-kaori-setup-production-guidance' not in ready_to_initialize
+    assert 'data-kaori-setup-production-guidance' not in missing_connection
