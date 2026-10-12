@@ -527,7 +527,7 @@ def test_storage_budget_ui_accepts_numeric_gib_and_persists_canonical_quantity()
     assert _quantity_gib_text('2048Gi') == '2048'
 
 
-def test_capacity_policy_post_persists_explicit_gib_and_preserves_optional_blank(monkeypatch) -> None:
+def test_capacity_policy_persists_explicit_gib_and_optional_blank(monkeypatch) -> None:
     policy = SimpleNamespace(cluster_id='cluster-1', tenant_storage_budget=None)
     commits = []
 
