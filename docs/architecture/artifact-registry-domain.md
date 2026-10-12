@@ -345,6 +345,9 @@ Configured`; fully unsupported, unavailable, partially observed, and never
 collected states have separate truthful empty-state language. Filtered zero
 results still use the canonical clear-filter guidance. JobExecution terminal
 `partially_succeeded` is presented as `Partial Evidence`, not `Ready`.
+A failed latest Governance JobExecution overrides optimistic snapshot status with
+`Refresh Failed` or `Collection Failed` while retaining last committed evidence.
+This is an execution exception, not deletion of provider evidence.
 
 The existing Governance Sync POST retains `artifact_registry.sync`.
 Its GET progress endpoint uses `artifact_registry.view` because polling is
