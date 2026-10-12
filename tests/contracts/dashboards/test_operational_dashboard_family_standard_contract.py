@@ -184,6 +184,24 @@ def test_kubernetes_capacity_decision_notes_and_forecast_helpers() -> None:
     assert forecast.count('mt-1 truncate text-xs text-content-muted') == 3
 
 
+def test_kubernetes_dashboard_forecast_cards_fill_peer_width_without_clipping() -> None:
+    forecast = read('app/templates/kubernetes/dashboard/partials/_forecast_risk.html')
+    capacity = read('app/templates/kubernetes/dashboard/partials/_capacity.html')
+
+    assert "peer_content_grid.column_classes('secondary')" in capacity
+    # Forecast occupies half the desktop dashboard: cards size to the actual panel, not the viewport.
+    assert 'grid-cols-[repeat(auto-fit,minmax(min(100%,11.5rem),1fr))]' in forecast
+    assert 'md:grid-cols-2 xl:grid-cols-4' not in forecast
+    assert 'flex flex-wrap items-start justify-between gap-x-3 gap-y-2' in forecast
+    assert 'min-w-0 flex-1 basis-28' in forecast
+    assert 'min-w-0 break-words text-sm font-semibold text-content-primary' in forecast
+    assert 'truncate text-sm font-semibold text-content-primary' not in forecast
+    assert '<div class="shrink-0">{{ table_label.status_label(item.risk, risk_tone) }}</div>' in forecast
+    assert 'resource_series_legend.swatch(item.key)' in forecast
+    assert 'item.latest_daily_average_percent' in forecast
+    assert 'item.projected_percent' in forecast
+
+
 def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
     kubernetes = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
     storage = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
