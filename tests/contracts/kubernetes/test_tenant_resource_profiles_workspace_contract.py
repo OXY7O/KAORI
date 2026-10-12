@@ -1519,27 +1519,30 @@ def test_allocation_technical_details_are_one_accessible_switch_not_expandables(
     assert 'data-tenant-allocation-detail-tab="{{ key }}"' in template
     assert 'data-tenant-allocation-detail-panel="{{ key }}"' in template
     assert 'data-tenant-allocation-detail-panel="advanced"' in template
-    assert "('objects', 'Object Limits', 'boxes')" in template
-    assert "('defaults', 'Container Defaults', 'container')" in template
-    assert "('advanced', 'Advanced Controls', 'shield-check')" in template
+    assert "('objects', 'Object Limits', 'boxes', 'ResourceQuota counts')" in template
+    assert "('defaults', 'Container Defaults', 'container', 'LimitRange defaults')" in template
+    assert "('advanced', 'Advanced Controls', 'shield-check', 'Capability evidence')" in template
     assert 'aria-controls="allocation-detail-panel-{{ key }}"' in template
     assert "selectDetail('objects')" in script
     assert "button.setAttribute('aria-selected', String(selected))" in script
     assert "button.tabIndex = selected ? 0 : -1" in script
-    assert "button.classList.toggle('bg-surface-card', selected)" in script
-    assert "button.classList.toggle('shadow-sm', selected)" in script
+    assert "button.classList.toggle('border-kaori-primary', selected)" in script
+    assert "button.classList.toggle('bg-kaori-soft', selected)" in script
     assert "button.classList.toggle('text-kaori-primary', selected)" in script
-    assert "event.key === 'ArrowRight'" in script
-    assert "event.key === 'ArrowLeft'" in script
+    assert "button.classList.toggle('border-transparent', !selected)" in script
+    assert "['ArrowRight', 'ArrowDown'].includes(event.key)" in script
+    assert "['ArrowLeft', 'ArrowUp'].includes(event.key)" in script
     assert "event.key === 'Home'" in script
     assert "event.key === 'End'" in script
     assert 'details class=' not in template
     assert 'data-tenant-allocation-advanced-empty' in template
     assert 'No configured Advanced Controls in either contract.' in template
-    assert 'max-w-5xl' in template
-    assert 'bg-surface-elevated p-1' in template
-    assert 'bg-surface-card text-kaori-primary shadow-sm' in template
-    assert 'table-fixed text-left text-xs' in template
+    assert 'max-w-5xl' not in template
+    assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in template
+    assert 'lg:border-l lg:border-outline-subtle lg:pl-6' in template
+    assert 'aria-orientation="vertical"' in template
+    assert 'border-kaori-primary bg-kaori-soft text-kaori-primary' in template
+    assert 'table-fixed text-left text-sm' in template
     assert 'Current · Frozen' in template
     assert 'Proposed · Profile' in template
     assert 'aria-label="{{ \'Object Limits\' if key == \'objects\' else \'Container Defaults\' }} current and proposed comparison"' in template
@@ -1596,3 +1599,33 @@ def test_allocation_highlights_are_bounded_conservative_and_selection_sensitive(
     assert 'renderAdvancedComparison(current, proposed' in script
     assert "namespaceSelect?.addEventListener('change'," in script
     assert "profileSelect?.addEventListener('change', () => renderAllocationChange())" in script
+
+
+def test_allocation_full_width_technical_workspace_and_readable_comparison() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    Environment(autoescape=True).parse(template)
+
+    assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in template
+    assert 'mx-auto max-w-5xl' not in template
+    assert 'role="tablist"' in template
+    assert 'aria-orientation="vertical"' in template
+    assert 'aria-controls="allocation-detail-panel-{{ key }}"' in template
+    assert 'role="tabpanel"' in template
+    assert 'lg:border-l lg:border-outline-subtle lg:pl-6' in template
+    assert 'w-full min-w-[26rem] table-fixed text-left text-sm' in template
+    assert "('objects', 'Object Limits', 'boxes', 'ResourceQuota counts')" in template
+    assert "('defaults', 'Container Defaults', 'container', 'LimitRange defaults')" in template
+    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
+    assert 'data-tenant-allocation-advanced-row="{{ control_key }}"' in template
+    assert 'data-tenant-allocation-highlight-item hidden' in template
+    assert 'border-l-2 border-kaori-primary/20 pl-3' in template
+    assert 'data-tenant-allocation-change-namespace' in template
+    assert 'data-tenant-allocation-change-profile' in template
+    assert "['ArrowRight', 'ArrowDown'].includes(event.key)" in script
+    assert "['ArrowLeft', 'ArrowUp'].includes(event.key)" in script
+    assert 'renderContractPreview(current, proposed)' in script
+    assert "cell.classList.toggle('text-kaori-primary', differs)" in script
+    assert 'This preview never approves or applies changes.' in template
