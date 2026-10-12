@@ -11,7 +11,9 @@ from app.extensions.db import db
 from app.models.object_storage import ObjectStorageSystem
 from app.platform_operations.jobs.execution import JobExecutionContext
 from app.storage.object_storage.analytics.materialization import (
+    SnapshotSupersededError,
     fail_analytics_snapshot,
+    mark_analytics_pending,
     materialize_forecast,
     store_analytics_snapshot,
 )
@@ -83,7 +85,15 @@ def materialize_object_storage_analytics(
                     'time_range': time_range,
                 },
             )
+            claimed_at = None
             try:
+                claimed_at = mark_analytics_pending(
+                    system_id=system.id,
+                    time_range=time_range,
+                    freshness_minutes=freshness_minutes,
+                    stale_grace_minutes=stale_grace_minutes,
+                    job_execution_id=job_execution_id,
+                ).last_attempt_at
                 payload = build_analytics_snapshot_payload(system=system, time_range=time_range)
                 store_analytics_snapshot(
                     system_id=system.id,
@@ -92,6 +102,7 @@ def materialize_object_storage_analytics(
                     freshness_minutes=freshness_minutes,
                     stale_grace_minutes=stale_grace_minutes,
                     job_execution_id=job_execution_id,
+                    claimed_at=claimed_at,
                 )
                 succeeded += 1
             except (MetricsSourceError, RuntimeError, SQLAlchemyError, TypeError, ValueError) as exc:
@@ -101,18 +112,25 @@ def materialize_object_storage_analytics(
                     system.name,
                     time_range,
                 )
-                try:
-                    fail_analytics_snapshot(
-                        system_id=system.id,
-                        time_range=time_range,
-                        error=exc,
-                        freshness_minutes=freshness_minutes,
-                        stale_grace_minutes=stale_grace_minutes,
-                        job_execution_id=job_execution_id,
-                    )
-                except SQLAlchemyError:
-                    db.session.rollback()
-                    logger.exception('Could not persist Object Storage analytics failure state.')
+                if claimed_at is not None:
+                    try:
+                        fail_analytics_snapshot(
+                            system_id=system.id,
+                            time_range=time_range,
+                            error=exc,
+                            freshness_minutes=freshness_minutes,
+                            stale_grace_minutes=stale_grace_minutes,
+                            job_execution_id=job_execution_id,
+                            claimed_at=claimed_at,
+                        )
+                    except SnapshotSupersededError:
+                        db.session.rollback()
+                        logger.info(
+                            'Suppressed obsolete Analytics failure for %s (%s).', system.id, time_range
+                        )
+                    except SQLAlchemyError:
+                        db.session.rollback()
+                        logger.exception('Could not persist Object Storage analytics failure state.')
                 failures.append(
                     {
                         'system_id': system_id,
