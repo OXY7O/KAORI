@@ -280,11 +280,16 @@ def get_reporting_coverage_summary() -> list[dict[str, Any]]:
     return [groups[REPORT_FAMILY_ANALYTICS], groups[REPORT_FAMILY_INVENTORY]]
 
 
-def get_artifact_statistics(report_counts: dict[str, int]) -> list[dict[str, str]]:
+def format_all_time_completion_rate(report_counts: dict[str, int]) -> str:
+    """Only terminal report requests participate in the lifetime completion rate."""
     completed = int(report_counts.get('ready', 0)) + int(report_counts.get('archived', 0))
     failed = int(report_counts.get('failed', 0))
     resolved = completed + failed
-    completion_rate = f'{round((completed / resolved) * 100)}%' if resolved else '—'
+    return f'{round((completed / resolved) * 100)}%' if resolved else '—'
+
+
+def get_artifact_statistics(report_counts: dict[str, int]) -> list[dict[str, str]]:
+    completion_rate = format_all_time_completion_rate(report_counts)
     footprint_bytes = int(
         db.session.scalar(
             select(func.coalesce(func.sum(Report.file_size_bytes), 0)).where(
