@@ -41,3 +41,10 @@ def test_malformed_registry_inventory_source_filter_does_not_expand_scope() -> N
     for raw, expected in (('', None), ('?source_id=', None), ('?source_id=3', 3)):
         with flask.test_request_context('/artifact-registry/inventory/projects' + raw):
             assert _inventory_source_id() == expected
+
+
+def test_detail_scope_predicate_is_shared_across_resources() -> None:
+    source = (Path(__file__).resolve().parents[3] / 'app/artifact_registry/presentation_inventory.py').read_text()
+    assert source.count('_inventory_detail_in_active_committed_scope(') == 4
+    assert "IntegrationInstance.enabled.is_(True)" in source
+    assert 'RegistryCollectionState.last_committed_at.is_not(None)' in source
