@@ -786,6 +786,7 @@ def _install_atomic_replacement_test_evidence(
     monkeypatch, *,
     other_cpu='2', other_memory_gib='4', other_pods='20', other_storage_gib='100',
     other_unknown=None, snapshot_stale=False, has_policy=True,
+    limit_mode='observe', other_limit_cpu='2', other_limit_memory_gib='4',
 ):
     """Set up the same contracted admission components, without a provider write."""
     gib = Decimal(1024**3)
@@ -794,6 +795,7 @@ def _install_atomic_replacement_test_evidence(
         safety_headroom_percent=10, unmanaged_commitment_cpu='0',
         unmanaged_commitment_memory='0', unmanaged_commitment_pods=0,
         tenant_storage_budget='2048Gi',
+        limit_exposure_mode=limit_mode, cpu_limit_ratio='1.50', memory_limit_ratio='1.00',
     )
     monkeypatch.setattr(
         capacity_governance, 'TenantCapacityPolicy',
@@ -820,9 +822,16 @@ def _install_atomic_replacement_test_evidence(
     )
     reads = []
 
-    def fake_committed(cluster_id, *, replace_namespace=None):
+    def fake_committed(cluster_id, *, replace_namespace=None, quota_vector_factory=None):
         assert cluster_id == 'cluster-1'
         reads.append(replace_namespace is not None)
+        if quota_vector_factory is capacity_governance.quota_limit_vector:
+            limit_other = CapacityVector(
+                cpu=Decimal(other_limit_cpu) if other_limit_cpu is not None else None,
+                memory_bytes=Decimal(other_limit_memory_gib) * gib if other_limit_memory_gib is not None else None,
+                pods=Decimal('0'), storage_bytes=Decimal('0'),
+            )
+            return limit_other, 2, list(other_unknown or [])
         return (other, 2, list(other_unknown or [])) if replace_namespace else (
             unknown, 2, ['tenant-adopt-quota-uat'],
         )
@@ -865,6 +874,8 @@ def _atomic_native_request(*, proposed_cpu='1', proposed_storage='50Gi'):
         proposed=quota_request_vector(proposed),
         operation='increase',
         replacement_namespace=target,
+        current_limits=capacity_governance.quota_limit_vector(current),
+        proposed_limits=capacity_governance.quota_limit_vector(proposed),
     )
 
 
