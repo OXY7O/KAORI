@@ -1,0 +1,257 @@
+{% extends "layouts/app.html" %}
+{% block title %}Artifact Registry Dependency Topology{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/page_hero.html" as page_hero %}
+    {% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
+    {% import "components/section_intro.html" as section_intro %}
+    {% import "components/visualization_workspace.html" as visualization %}
+    {% import "components/table.html" as table_ui %}
+    <div class="space-y-5">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('git-fork', 'Artifact Registry / Runtime Usage', 'waypoints') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Dependency Topology</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Trace committed artifact-to-Kubernetes usage and explain match confidence,
+                            security exposure and runtime impact.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('link-2', runtime.total ~ ' Runtime Bindings') }}
+                            {{ page_hero.meta_label('fingerprint', runtime.digest_matches ~ ' Digest Matches') }}
+                            {{ page_hero.meta_label('tags', runtime.tag_matches ~ ' Tag Matches') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                {{ page_hero.context_card('Cross-Domain Evidence',
+                    'Registry × Kubernetes',
+                    'Correlation Snapshot',
+                    runtime.snapshot.status,
+                    runtime.snapshot.tone,
+                    [
+                        ('database', 'Registry Scope', runtime.scope.source_label, 'Committed registry inventory'),
+                        ('boxes', 'Kubernetes Scope', runtime.scope.cluster_label, 'Committed Pod inventory')
+                    ],
+                    'Runtime Bindings',
+                    url_for('artifact_registry.runtime',
+                        q=runtime.filters.search,
+                        source_id=runtime.filters.source_id,
+                        cluster_id=runtime.filters.cluster_id,
+                        namespace=runtime.filters.namespace,
+                        match_type=runtime.filters.match_type,
+                        exposure=runtime.filters.exposure,
+                        artifact_id=runtime.filters.artifact_id),
+                    action_icon='list',
+                    blocked=runtime.setup.is_blocked,
+                    blocked_info=runtime.setup.description,
+                    blocked_label='Correlation Prerequisites') }}
+            </div>
+        </section>
+        {{ snapshot_context_bar.render(source_label=runtime.snapshot.source_label,
+            status=runtime.snapshot.status,
+            tone=runtime.snapshot.tone,
+            description=runtime.snapshot.description,
+            latest_collected=runtime.snapshot.latest_collected_at|user_datetime if runtime.snapshot.latest_collected_at else 'Not Materialized',
+            scope_label=runtime.snapshot.scope_label,
+            coverage_label=runtime.snapshot.coverage_label,
+            exceptions_label=runtime.snapshot.exceptions_label,
+            icon='waypoints',
+            title='Correlation Snapshot',
+            latest_supporting='Last successful Runtime Correlation.',
+            scope_supporting='Committed Registry × Kubernetes.',
+            coverage_supporting=runtime.snapshot.coverage_supporting,
+            exceptions_supporting=runtime.snapshot.exceptions_supporting,
+            coverage_tone=runtime.snapshot.coverage_tone,
+            exceptions_tone=runtime.snapshot.exceptions_tone,
+            metric_icon_palette='brand',
+            latest_label='Last Correlated',
+            scope_metric_label='Active Scope',
+            coverage_metric_label='Runtime Coverage',
+            exceptions_metric_label='Correlation Exceptions') }}
+        <section class="space-y-3" aria-labelledby="registry-topology-section-title">
+            {{ section_intro.render('Artifact Dependency Mapping',
+                'Inspect one bounded committed relationship graph at a time; explore the same slice in Resource List.',
+                'registry-topology-section-title') }}
+            {% call visualization.render(
+                'registry-topology-workspace',
+                'Artifact-to-Runtime Explorer',
+                'No live provider reads. Edge confidence follows committed digest and tag correlation.',
+                icon='git-compare-arrows',
+                action_id='registry-topology-reload',
+                action_label='Reload Snapshot',
+                action_icon='refresh-cw',
+                loading_id='registry-topology-loading',
+                action_classes=table_ui.action_classes()
+            ) %}
+                <form id="registry-topology-filters"
+                      action="{{ url_for('artifact_registry.runtime_topology') }}"
+                      method="get"
+                      class="border-b border-outline-subtle bg-surface-elevated px-5 py-4">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        <label class="min-w-0">
+                            <span class="{{ table_ui.filter_label_classes() }}">Registry Source</span>
+                            <select name="source_id" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All Registry Sources</option>
+                                {% for source in runtime.source_options %}
+                                    <option value="{{ source.id }}" {% if runtime.filters.source_id == source.id %}selected{% endif %}>{{ source.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="min-w-0">
+                            <span class="{{ table_ui.filter_label_classes() }}">Kubernetes Cluster</span>
+                            <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All Kubernetes Clusters</option>
+                                {% for cluster in runtime.cluster_options %}
+                                    <option value="{{ cluster.id }}" {% if runtime.filters.cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="min-w-0">
+                            <span class="{{ table_ui.filter_label_classes() }}">Namespace</span>
+                            <select name="namespace" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All Namespaces</option>
+                                {% for namespace in runtime.namespace_options %}
+                                    <option value="{{ namespace }}" {% if runtime.filters.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="min-w-0">
+                            <span class="{{ table_ui.filter_label_classes() }}">Match Type</span>
+                            <select name="match_type" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All Match Types</option>
+                                {% for option in runtime.match_options %}
+                                    <option value="{{ option.value }}" {% if runtime.filters.match_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="min-w-0">
+                            <span class="{{ table_ui.filter_label_classes() }}">Security Exposure</span>
+                            <select name="exposure" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All Exposure States</option>
+                                {% for option in runtime.exposure_options %}
+                                    <option value="{{ option.value }}" {% if runtime.filters.exposure == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="min-w-0">
+                            <span class="{{ table_ui.filter_label_classes() }}">Artifact / Workload Search</span>
+                            <input name="q"
+                                   type="search"
+                                   value="{{ runtime.filters.search }}"
+                                   placeholder="Repository, digest, workload..."
+                                   class="{{ table_ui.filter_input_classes() }}">
+                        </label>
+                    </div>
+                    {% if runtime.filters.artifact_id %}
+                        <input type="hidden" name="artifact_id" value="{{ runtime.filters.artifact_id }}">
+                        <p class="mt-2 text-xs text-content-muted">
+                            Focused on {{ runtime.artifact_filter_label }}.
+                            <a class="font-semibold text-kaori-primary underline"
+                               href="{{ url_for('artifact_registry.runtime_topology') }}">Clear artifact focus</a>
+                        </p>
+                    {% endif %}
+                    <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+                        <p class="text-xs text-content-muted">Changing a filter reloads the committed graph slice.</p>
+                        <div class="flex gap-2">
+                            <a href="{{ url_for('artifact_registry.runtime_topology') }}"
+                               class="{{ table_ui.action_classes() }}">Clear Filters</a>
+                            <button type="submit" class="{{ table_ui.action_classes() }}">Apply Filters</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-5 py-3">
+                    <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Topology view">
+                        <button id="registry-topology-graph-tab"
+                                type="button"
+                                aria-pressed="true"
+                                class="{{ table_ui.action_classes() }}">Graph</button>
+                        <button id="registry-topology-list-tab"
+                                type="button"
+                                aria-pressed="false"
+                                class="{{ table_ui.action_classes() }}">Resource List</button>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="registry-topology-fit" type="button" class="{{ table_ui.action_classes() }}">Fit</button>
+                        <button id="registry-topology-reset" type="button" class="{{ table_ui.action_classes() }}">Reset</button>
+                        <button id="registry-topology-export" type="button" class="{{ table_ui.action_classes() }}">Export PNG</button>
+                    </div>
+                </div>
+                <div id="registry-topology-status"
+                     role="status"
+                     aria-live="polite"
+                     class="border-b border-outline-subtle bg-surface-elevated px-5 py-2 text-sm text-content-secondary">
+                    Loading committed dependency evidence…
+                </div>
+                <div id="registry-topology-warning"
+                     role="alert"
+                     class="hidden border-b border-outline-subtle px-5 py-3 text-sm text-status-warning-text"></div>
+                <div id="registry-topology-error"
+                     role="alert"
+                     class="hidden border-b border-outline-subtle px-5 py-3 text-sm text-status-critical-text"></div>
+                <div id="registry-topology-canvas-shell" class="relative min-h-[36rem]">
+                    <div id="registry-topology-canvas"
+                         role="img"
+                         aria-label="Artifact to Kubernetes committed dependency graph. Use Resource List for accessible navigation."
+                         data-url="{{ url_for('artifact_registry.runtime_topology_data') }}"
+                         data-renderer-url="{{ url_for('static', filename='vendor/cytoscape/cytoscape.esm.min.js') }}"
+                         class="{{ visualization.canvas_classes() }} h-[36rem] w-full"></div>
+                    <div id="registry-topology-empty"
+                         class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8 text-center text-sm text-content-muted">
+                        No committed relationships in this selected graph scope. Check evidence readiness before interpreting absence.
+                    </div>
+                </div>
+                <div id="registry-topology-list-shell" class="hidden">
+                    <div class="overflow-x-auto">
+                        <table class="{{ table_ui.table_classes('min-w-[55rem]') }}">
+                            <caption class="sr-only">Visible committed artifact to runtime binding slice</caption>
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Runtime Scope</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Match</th>
+                                    <th class="{{ table_ui.header_cell_classes() }}">Security</th>
+                                    <th class="{{ table_ui.header_cell_classes(true) }}">Inspect</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registry-topology-resource-rows" class="{{ table_ui.body_classes() }}"></tbody>
+                        </table>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle px-5 py-3">
+                        <p id="registry-topology-list-count" class="text-xs text-content-muted"></p>
+                        <div class="flex gap-2">
+                            <button type="button" id="registry-topology-prev" class="{{ table_ui.action_classes() }}">Previous</button>
+                            <button type="button" id="registry-topology-next" class="{{ table_ui.action_classes() }}">Next</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-x-5 gap-y-2 border-t border-outline-subtle bg-surface-elevated px-5 py-3 text-xs text-content-muted">
+                    <span>◆ Artifact</span><span>◇ Cluster / Namespace</span>
+                    <span>□ Workload / Pod</span>
+                    <span>Solid edge: digest match</span><span>Dashed edge: tag match</span>
+                    <span>Unknown/stale evidence is not a verified negative</span>
+                </div>
+                <div id="registry-topology-backdrop" class="fixed inset-0 z-40 hidden bg-black/40"></div>
+                <aside id="registry-topology-inspector"
+                       role="dialog"
+                       aria-modal="true"
+                       aria-labelledby="registry-topology-inspector-title"
+                       class="{{ visualization.drawer_pane_classes('right') }}">
+                    <div class="flex items-center justify-between border-b border-outline-subtle px-5 py-4">
+                        <h3 id="registry-topology-inspector-title" class="font-semibold text-content-primary">
+                            Topology Inspector
+                        </h3>
+                        <button id="registry-topology-inspector-close"
+                                type="button"
+                                class="{{ table_ui.action_classes() }}"
+                                aria-label="Close topology inspector">Close</button>
+                    </div>
+                    <div id="registry-topology-inspector-content" class="space-y-4 px-5 py-5"></div>
+                </aside>
+            {% endcall %}
+        </section>
+    </div>
+{% endblock dashboard_content %}
+{% block scripts %}
+    <script type="module"
+            src="{{ url_for('static', filename='js/artifact_registry/topology.js') }}"></script>
+{% endblock scripts %}
