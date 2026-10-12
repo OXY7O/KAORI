@@ -136,14 +136,14 @@ GRANT CONNECT ON DATABASE kaori TO kaori_runtime;
 GRANT USAGE ON SCHEMA public TO kaori_runtime;
 ```
 
-Then use interactive psql meta-command `\\password kaori_runtime`
+Then use interactive psql meta-command `\password kaori_runtime`
 (the runtime secret must match private `DATABASE_URL`), followed by:
 
 ```sql
 ALTER ROLE kaori_runtime LOGIN;
 ```
 
-Exit via `\\q`. This preview role has **no application table grants**
+Exit via `\q`. This preview role has **no application table grants**
 because the tables do not yet exist. If the role already exists,
 revisit the supposed fresh-volume reset rather than silently changing
 an existing role.
