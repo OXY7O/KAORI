@@ -161,6 +161,9 @@ def test_devcontainer_operator_bootstrap_orders_schema_grants_and_app_admin() ->
     assert 'unset migration_password KAORI_DB_MIGRATION_URL' in command
     assert "db.engine.url.username == 'kaori_runtime'" in command
     assert 'REVOKE ALL PRIVILEGES ON TABLE public.capsule_handoff_ledger_events' in grants
+    assert 'REVOKE ALL PRIVILEGES ON TABLE public.alembic_version' in grants
+    assert 'GRANT SELECT ON TABLE public.alembic_version TO kaori_runtime' in grants
+    assert "has_table_privilege('kaori_runtime', 'public.alembic_version', 'UPDATE')" in grants
     assert "has_schema_privilege('kaori_runtime', 'public', 'CREATE')" in grants
     assert 'ALTER DEFAULT PRIVILEGES' not in grants
     assert 'docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap' in auth
@@ -173,4 +176,5 @@ def test_workers_and_beat_wait_for_runtime_immutable_ledger_admission() -> None:
     assert "'tr_capsule_ledger_deny_truncate'" in waiter
     assert 'WHERE is_super_admin = TRUE AND account_is_active = TRUE' in waiter
     assert "'public.capsule_handoff_ledger_events', 'UPDATE'" in waiter
+    assert "NOT has_table_privilege(current_user, 'public.alembic_version', 'UPDATE')" in waiter
     assert 'if current_heads == expected_heads:' in waiter
