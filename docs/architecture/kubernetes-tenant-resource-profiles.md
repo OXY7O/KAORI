@@ -389,6 +389,32 @@ substitute for requested commitments or physical reservation. This is a
 presentation expansion only; the existing three provider/admission/read-back
 gates and fail-closed execution are unchanged.
 
+**Advanced Allocation Change preview (#1590):** The compact Current/Proposed
+summary remains focused on six ResourceQuota compute/storage dimensions and
+per-PVC bounds. Beneath it, three default-collapsed, read-only disclosures
+compare **Object Limits** (PVC, Service, ConfigMap and Secret ResourceQuota
+counts), **Container Defaults** (LimitRange default CPU/Memory Requests and
+Limits), and **Advanced Controls** (recorded current capability evaluation
+versus proposed configured/capability-evaluated intent). Current quota and
+LimitRange values use only the Namespace's frozen allocation JSON; proposals
+use the selected enabled Resource Profile's versioned contract. Missing
+dimensions are **Not declared**, not zero or values borrowed from another
+source. Profile-selection changes rehydrate every field and never cause a
+provider write by themselves.
+
+Advanced current control evaluations are displayed as **Recorded** only
+when their source profile ID and version match the committed Namespace
+snapshot. They are not provider execution evidence. Proposed **Supported**
+or **Unavailable** is determined through the existing provider/capability
+evaluator using registered capability evidence; it describes *preflight
+support only*. Missing or mismatched evidence is **Not recorded**, and no
+profile selection, evaluation or data presentation may assert **Applied**
+or **Verified** without separately committed executor/read-back proof.
+Actual admission, mutation and read-back remain governed by the existing
+server-side workflow. Capability validation/recording does not prove that
+cross-domain Advanced Controls were executed by the Native allocation
+transaction; this is a distinct backend traceability finding.
+
 **Allocation workflow target lifecycle (#1159):** Resource Profiles → Allocation Change
 offers only `kaori_managed` Native Namespace allocations belonging to a
 `ready` Tenant and a non-terminal Namespace generation. Adopted / Observed
