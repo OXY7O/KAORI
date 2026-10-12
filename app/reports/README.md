@@ -130,3 +130,7 @@ Requests This Month counts Report records whose created_at belongs to the half-o
 ### Generate invalid report type admission (#1541)
 
 Generate distinguishes a UI catalog fallback from the submitted report type. Unknown, blank, and removed report type values are rejected during POST validation before scope queries or Report creation, even when the view normalizer can display a safe default report card. The canonical Reports catalog remains the only source of valid report types.
+
+### Generate strict submitted sections and period (#1542)
+
+GET navigation may display canonical default sections and period. On POST, analytics section selection must remain exactly the operator's requested values until server-side validation; missing/invalid sections are rejected, never silently rewritten to defaults. Inventory sections remain contract-locked and tampering fails closed. Analytics snapshot and Inventory time ranges are invalid, not silently converted. This boundary is enforced before Report/JobExecution persistence; the wizard remains advisory.

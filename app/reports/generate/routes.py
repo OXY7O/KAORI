@@ -91,7 +91,7 @@ def generate_report() -> ResponseReturnValue:
             )
             return redirect(generated_url)
 
-        form_state = get_form_state_from_form(request.form)
+        form_state = get_form_state_from_form(request.form, for_submission=True)
         payload = get_generate_report_payload(form_state=form_state, errors=errors)
         queue_transient_feedback(
             status='error',

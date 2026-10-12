@@ -171,7 +171,7 @@ def create_report_request(
     user_id: int | None,
 ) -> tuple[bool, list[str], Report | None]:
     form_state = get_form_state_from_form(
-        form,
+        form, for_submission=True,
     )
 
     errors = validate_form_state(
@@ -444,6 +444,8 @@ def _get_storage_generation_context() -> dict[str, Any]:
 
 def get_form_state_from_form(
     form: MultiDict[str, str] | ImmutableMultiDict[str, str],
+    *,
+    for_submission: bool = False,
 ) -> dict[str, Any]:
     report_type = normalize_report_type(
         form.get(
@@ -452,43 +454,29 @@ def get_form_state_from_form(
         )
     )
 
-    sections = form.getlist(
-        'sections',
-    )
-
-    if not sections:
-        sections = _get_default_sections(
-            report_type,
-        )
-
-    allowed_sections_for_report = _get_allowed_sections_for_report_type(
-        report_type,
-    )
-
-    sections = [section for section in sections if section in allowed_sections_for_report]
-
+    submitted_sections = form.getlist('sections')
     report_context = _get_report_type_context(report_type)
-    if report_context.get('family') == 'inventory':
-        sections = _get_default_sections(report_type)
-    elif not sections:
-        sections = _get_default_sections(
-            report_type,
-        )
+    defaults = _get_default_sections(report_type)
+    allowed_sections = _get_allowed_sections_for_report_type(report_type)
 
-    period = str(
-        form.get(
-            'period',
-            _get_default_period(report_type),
-        )
-        or ''
-    ).strip()
-    if _get_default_period(report_type) == 'snapshot':
-        period = 'snapshot'
-    elif period == 'snapshot':
-        period = '30d'
+    if report_context.get('family') == 'inventory':
+        # Inventory content is contract-locked, never user-selectable.
+        sections = defaults
+    elif for_submission:
+        # Do not discard invalid/empty requested sections before validation.
+        sections = submitted_sections
+    else:
+        sections = [value for value in submitted_sections if value in allowed_sections] or defaults
+
+    period = str(form.get('period', _get_default_period(report_type)) or '').strip()
+    if not for_submission:
+        if _get_default_period(report_type) == 'snapshot':
+            period = 'snapshot'
+        elif period == 'snapshot':
+            period = '30d'
 
     return {
-        # Keep the raw posted type so validation cannot accept a silent catalog fallback.
+        '_submitted_sections': submitted_sections if for_submission else None,
         '_submitted_report_type': str(form.get('report_type') or '').strip(),
         'name': form.get(
             'name',
@@ -601,6 +589,11 @@ def _validate_period_and_format(form_state: dict[str, Any], report_type: str) ->
 
     if form_state['period'] not in allowed_periods:
         errors.append('Please select a valid report period.')
+    elif get_report_type_spec(report_type).period_mode == 'snapshot':
+        if form_state['period'] != 'snapshot':
+            errors.append('Inventory reports require the committed snapshot period.')
+    elif form_state['period'] == 'snapshot':
+        errors.append('Analytics reports require an explicit time range.')
     if form_state['output_format'] not in allowed_output_formats:
         errors.append('Please select a valid output format.')
 
@@ -627,6 +620,13 @@ def _validate_sections(form_state: dict[str, Any], report_type: str) -> list[str
     allowed_sections_for_report = _get_allowed_sections_for_report_type(report_type)
     if any(section not in allowed_sections_for_report for section in selected_sections):
         errors.append('One or more selected sections are not available for this report type.')
+    submitted = form_state.get('_submitted_sections')
+    if (
+        get_report_type_spec(report_type).family == 'inventory'
+        and submitted
+        and submitted != _get_default_sections(report_type)
+    ):
+        errors.append('Inventory report sections are fixed by the published contract.')
     return errors
 
 
