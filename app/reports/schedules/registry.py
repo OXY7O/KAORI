@@ -3,6 +3,11 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from sqlalchemy import and_, func, or_, select
+
+from app.extensions.db import db
+from app.models.report import ReportSchedule
+
 from app.reports.scope import KUBERNETES_CLUSTER_ASSET_TYPE
 
 
@@ -66,3 +71,89 @@ def filter_schedule_rows(
                 continue
         filtered.append(schedule)
     return filtered
+
+
+def _delivery_id_predicate(channel_id: int) -> Any:
+    # Normalize serialized JSON arrays before an exact numeric token match.
+    # Filtering stays in SQL and works across PostgreSQL and SQLite test DBs.
+    normalized = func.replace(
+        func.replace(
+            func.replace(func.cast(ReportSchedule.notification_channel_ids, db.String), '[', ','),
+            ']',
+            ',',
+        ),
+        ' ',
+        '',
+    )
+    return normalized.like(f'%,{channel_id},%')
+
+
+def _schedule_search_predicate(search: str) -> Any:
+    value = search.casefold()
+    pattern = f'%{value}%'
+    fields = (
+        ReportSchedule.name,
+        ReportSchedule.description,
+        ReportSchedule.report_type,
+        ReportSchedule.scope_asset_label_snapshot,
+        ReportSchedule.namespace,
+        ReportSchedule.cadence,
+    )
+    return or_(*(func.lower(func.coalesce(field, '')).like(pattern) for field in fields))
+
+
+def filter_schedule_statement(selected_filters: dict[str, str]) -> Any:
+    """Apply registry filters before SQL pagination; do not hydrate whole schedules."""
+    statement = select(ReportSchedule)
+    status = selected_filters['status']
+    if status == 'active':
+        statement = statement.where(ReportSchedule.is_enabled.is_(True))
+    elif status == 'paused':
+        statement = statement.where(ReportSchedule.is_enabled.is_(False))
+    elif status:
+        statement = statement.where(False)
+
+    for key, column in (
+        ('cadence', ReportSchedule.cadence),
+        ('report_type', ReportSchedule.report_type),
+    ):
+        if selected_filters[key]:
+            statement = statement.where(column == selected_filters[key])
+
+    asset = selected_filters['asset']
+    if asset:
+        asset_type, separator, asset_id = asset.partition(':')
+        if not separator or not asset_id:
+            statement = statement.where(False)
+        else:
+            statement = statement.where(
+                or_(
+                    and_(
+                        ReportSchedule.scope_asset_type == asset_type,
+                        ReportSchedule.scope_asset_id == asset_id,
+                    ),
+                    and_(
+                        ReportSchedule.scope_asset_type.is_(None),
+                        ReportSchedule.cluster_id == asset_id,
+                        asset_type == KUBERNETES_CLUSTER_ASSET_TYPE,
+                    ),
+                )
+            )
+
+    delivery = selected_filters['delivery']
+    if delivery == 'none':
+        statement = statement.where(
+            or_(
+                ReportSchedule.notification_channel_ids.is_(None),
+                func.cast(ReportSchedule.notification_channel_ids, db.String) == '[]',
+            )
+        )
+    elif delivery:
+        if delivery.isdigit() and int(delivery) > 0:
+            statement = statement.where(_delivery_id_predicate(int(delivery)))
+        else:
+            statement = statement.where(False)
+
+    if selected_filters['search']:
+        statement = statement.where(_schedule_search_predicate(selected_filters['search']))
+    return statement
