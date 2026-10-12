@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.extensions.db import db
@@ -403,7 +403,7 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
         RegistryArtifact.sbom_status,
         RegistryArtifact.pull_time,
         RegistryArtifact.push_time,
-        RegistryArtifact.id.in_(runtime_ids).label('used_at_runtime'),
+        RegistryArtifact.id.in_(select(runtime_ids.c.artifact_id)).label('used_at_runtime'),
     ).yield_per(250)
 
     counts = {
@@ -603,13 +603,16 @@ def materialize_registry_analytics(
     # An Inventory refresh racing with materialization must not bless the
     # earlier generation as current. Preserve the previously committed snapshot.
     inventory_state = db.session.get(RegistryCollectionState, int(identity.id))
-    db.session.refresh(inventory_state) if inventory_state is not None else None
+    if inventory_state is not None:
+        db.session.refresh(inventory_state)
     current_generation = (
         inventory_state.last_committed_at.isoformat()
         if inventory_state and inventory_state.last_committed_at else None
     )
     if current_generation != domain['evidence']['inventory_committed_at']:
         raise RuntimeError('Registry inventory generation changed during Analytics materialization.')
+    if current_generation is None:
+        raise RuntimeError('Registry Inventory has no usable committed generation for Analytics.')
 
     snapshot = RegistryAnalyticsSnapshot()
     snapshot.integration_instance_id = identity.id
