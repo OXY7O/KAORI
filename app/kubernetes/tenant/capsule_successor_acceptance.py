@@ -101,11 +101,24 @@ def _require_capsule_plan(
         or approval.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
         or approval.get('provider_handoff_verified') is not False
         or approval.get('release_authorized') is not False
-        or not _checked_recently(plan.get('requested_at'))
-        or not _checked_recently(approval.get('approved_at'))
-        or actor_user_id == plan.get('requested_by')
     ):
         raise ValueError('Current independently approved exact Capsule Release plan is required.')
+    # Distinct failure reasons after validating the immutable plan/approval
+    # contract. Do not confuse a plan-requester self-acceptance with a stale
+    # independently approved plan or imply either can be bypassed.
+    if actor_user_id == plan.get('requested_by'):
+        raise ValueError(
+            'Capsule Platform Admin acceptance requires another authorized '
+            'operator, different from the original plan requester.'
+        )
+    if not _checked_recently(plan.get('requested_at')) or not _checked_recently(
+        approval.get('approved_at')
+    ):
+        raise ValueError(
+            'Capsule Release plan or independent review expired (15 minutes). '
+            'The original requester must use governed expired-plan restart; '
+            'new independent review and X.509 consent are required.'
+        )
 
 
 def accept_capsule_successor_handoff_committed(

@@ -258,6 +258,42 @@ def test_capsule_receipt_must_be_exact_current_plan_not_a_native_or_old_acceptan
             )
 
 
+def test_capsule_exact_plan_acceptance_explains_requester_vs_expiry_independently():
+    """Both conditions are hard denials, with actionable non-secret UI messages."""
+    from copy import deepcopy
+
+    plan = _plan()
+    approval = _approval(plan)
+    acceptance._require_capsule_plan(
+        tenant_id='tenant-1', actor_user_id=44,
+        plan_sha256=plan['plan_sha256'], plan=plan, approval=approval,
+    )
+    with pytest.raises(ValueError, match='different from the original plan requester'):
+        acceptance._require_capsule_plan(
+            tenant_id='tenant-1', actor_user_id=42,
+            plan_sha256=plan['plan_sha256'], plan=plan, approval=approval,
+        )
+
+    expired = deepcopy(plan)
+    expired['requested_at'] = (datetime.now(UTC) - timedelta(minutes=30)).isoformat()
+    expired['plan_sha256'] = _plan_hash(expired)
+    review = _approval(expired)
+    review['approved_at'] = (datetime.now(UTC) - timedelta(minutes=30)).isoformat()
+    with pytest.raises(ValueError, match=r'expired \(15 minutes\)'):
+        acceptance._require_capsule_plan(
+            tenant_id='tenant-1', actor_user_id=44,
+            plan_sha256=expired['plan_sha256'],
+            plan=expired, approval=review,
+        )
+    # An unrelated SHA or forged independent review remains generic and denied:
+    # explain actor/expiry only after exact source bindings have been checked.
+    with pytest.raises(ValueError, match='exact Capsule Release plan'):
+        acceptance._require_capsule_plan(
+            tenant_id='tenant-1', actor_user_id=44,
+            plan_sha256='0' * 64, plan=plan, approval=approval,
+        )
+
+
 def test_capsule_acceptance_requires_explicit_confirmation_and_fresh_independent_plan(monkeypatch):
     plan = _plan()
     approval = _approval(plan)
