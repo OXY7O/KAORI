@@ -18,3 +18,15 @@ def test_unknown_connection_guidance_requires_verification_not_reconnection() ->
     assert "'Verify Cluster Connection'" in source
     assert "'Not Observed', 'unknown'" in source
     assert "else 'Check provider readiness: the cluster connection state has not been observed.'" in source
+
+
+def test_current_cluster_snapshot_guidance_is_concise_and_state_scoped() -> None:
+    source = read('app/kubernetes/inventory/overview.py')
+    guidance = source.split('def _inventory_guidance(', 1)[1].split('def get_cluster_by_id(', 1)[0]
+
+    assert "'title': 'Snapshot Ready for Review'" in guidance
+    assert "'description': 'Snapshot current; no active signals. Review assets.'" in guidance
+    assert "'title': 'Review Collection Coverage'" in guidance
+    assert "'title': 'Review Inventory Signals'" in guidance
+    assert "'title': 'Refresh the Inventory Snapshot'" in guidance
+    assert 'The committed snapshot is current and no inventory signals require immediate' not in guidance
