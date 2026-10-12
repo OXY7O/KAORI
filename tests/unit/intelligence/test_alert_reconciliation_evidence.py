@@ -135,7 +135,7 @@ def test_active_recommendation_state_reader_uses_bounded_keyset_pages(monkeypatc
         after = 0
         limit_size = 0
         def filter(self, *criteria):
-            self.after = next((value for op, value in criteria if isinstance(op, str) and op == 'after'), 0)
+            self.after = next((item[1] for item in criteria if isinstance(item, tuple) and item[0] == 'after'), 0)
             return self
         def order_by(self, *_columns):
             return self
