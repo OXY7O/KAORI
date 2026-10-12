@@ -39,7 +39,7 @@ def test_inventory_resource_sheet_bands_align_with_four_column_summary_header() 
         assert 'p-4 sm:p-5 lg:p-6' in source, resource
 
 
-def test_inventory_copy_controls_are_shared_and_used_for_identifiers_and_addresses() -> None:
+def test_inventory_copy_controls_are_shared_while_node_identifiers_are_read_only() -> None:
     shared = read('app/templates/components/details/_detail_content.html')
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
     namespace = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
@@ -63,10 +63,34 @@ def test_inventory_copy_controls_are_shared_and_used_for_identifiers_and_address
     assert "inventory_technical_row('Kubernetes UID', item.uid, copyable=true)" in storage
     assert "macro inspector_technical_row(label, value='-', nowrap=false, class_name='', copyable=false)" in shared
     assert "inspector_technical_row('System UUID', node.system_uuid" in node
-    assert 'copyable=true' in node
+    assert 'copyable=true' not in node
+    assert "inspector_technical_row('Internal IP', node.internal_ip or 'Not Reported', nowrap=true)" in node
+    assert "inspector_technical_row('External IP', node.external_ip or 'Not Reported', nowrap=true)" in node
     assert "'label': 'Pod IP', 'value': pod.pod_ip or unknown, 'copyable': True" in pod_detail
     assert "'label': 'Host IP', 'value': details.get('host_ip') or unknown, 'copyable': True" in pod_detail
     assert "{'label': 'Cluster IP', 'value': service.cluster_ip, 'copyable': true}" in service
+
+
+def test_cluster_and_node_detail_section_descriptions_are_concise() -> None:
+    cluster = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
+    node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
+
+    assert 'Committed inventory by Kubernetes resource type.' in cluster
+    for description in (
+        'Node identity, cluster, age, and committed snapshot.',
+        'Internal/external IP, hostname, and network scope.',
+        'CPU, memory, and ephemeral storage capacity.',
+        'OS, kernel, container runtime, and Kubernetes versions.',
+        'Readiness, scheduling, pressure, and taints.',
+    ):
+        assert description in node
+
+    assert 'Committed object coverage across the Kubernetes inventory domains' not in cluster
+    assert 'Canonical node identity, cluster placement, lifecycle age' not in node
+    assert 'Node addressing, hostname, and network-scope evidence' not in node
+    assert 'Reported compute, memory, and ephemeral storage capacity;' not in node
+    assert 'Host OS, kernel, container runtime, and Kubernetes component versions' not in node
+    assert 'Placement eligibility, readiness, pressure conditions' not in node
 
 
 def test_namespace_control_copy_and_reported_quota_presentation_are_concise() -> None:
