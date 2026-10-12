@@ -6,7 +6,7 @@ KAORI uses one canonical variable inventory with explicit ownership by runtime. 
 
 | Mode | Runtime configuration | Compose authority | Source behavior |
 | --- | --- | --- | --- |
-| Local development | Root `.env` and ignored `secrets/devcontainer/{postgres-bootstrap,postgres-migrate}.env` (templates tracked under `.devcontainer/examples/`) | `compose.yml` + `.devcontainer/compose.devcontainer.yml` | Bind-mounted working tree, VS Code debugger, automatic Tailwind watcher and operator-triggered database bootstrap |
+| Local development | Root `.env` and ignored `secrets/devcontainer/{postgres-bootstrap,postgres-migrate}.env` (templates tracked under `.devcontainer/examples/`) | `compose.yml` + `.devcontainer/compose.devcontainer.yml` | Bind-mounted working tree, VS Code debugger, automatic Tailwind watcher and guarded virgin-only database bootstrap |
 | Governed server (UAT/production) | `/etc/kaori/app.env`, `secrets.env`, `deploy.env`, plus generated release state | `compose.production.yml` + `deploy/server/compose.server.yml` | Admitted immutable image digest; pre-migration backup and deployment verification |
 | Local standalone Docker | `example/kaori/.env` copied from its own example | `example/kaori/compose.yml` | Admitted RC image; **not** a live-source development build |
 
@@ -25,7 +25,7 @@ checked using `PG_VERSION`, rather than by counting running containers.
 | --- | --- | --- |
 | App runtime | Ignored root `.env` from tracked `.env.example`; canonical `DATABASE_URL=postgresql://kaori_runtime:<secret>@db:5432/kaori`; application keys, `ADMIN_*`, integrations, Redis | Flask, workspace, workers, Beat |
 | DB initial admin and runtime provisioning | Ignored `secrets/devcontainer/postgres-bootstrap.env`; contains `POSTGRES_PASSWORD` and `KAORI_RUNTIME_PASSWORD` | `db` service only |
-| DB schema migration | Ignored `secrets/devcontainer/postgres-migrate.env`; contains `KAORI_MIGRATOR_PASSWORD` | `db` at initial PostgreSQL role creation, `db-bootstrap` when the operator explicitly requests it |
+| DB schema migration | Ignored `secrets/devcontainer/postgres-migrate.env`; contains `KAORI_MIGRATOR_PASSWORD` | `db` at initial role creation; guarded `db-first-run` for virgin schema; operator-only `db-bootstrap` for recovery/upgrade |
 
 The existing root `.gitignore` excludes `/secrets/`, and
 `.dockerignore` excludes that directory from images. Safe tracked
@@ -45,20 +45,21 @@ exists or an existing secret file mismatches `.env`, the initializer
 automatic migration.
 
 The PostgreSQL image creates local `postgres` (bootstrap superuser),
-`kaori_migrator` (non-superuser schema owner) and `kaori_runtime`
-(non-owner restricted DML). Normal app processes retain only canonical
-`DATABASE_URL`. Empty schema displays existing HTTP 503
-**Database Setup Required / Initialization Required**. Operator runs
-the existing copied command from **Windows PowerShell host**:
+`kaori_migrator` (non-superuser schema owner), and restricted
+`kaori_runtime`. The guarded `db-first-run` job automatically invokes
+the existing schema/immutable-ledger-grants/RBAC/first-admin bootstrap
+**only for a demonstrably virgin local application schema**. Existing or
+partially initialized schema never auto-upgrades; first-run failure retains
+the existing HTTP 503 **Database Setup Required** operator recovery action:
 
 ```powershell
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml logs db-first-run
 docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
 ```
 
-This migrates as `kaori_migrator`, refreshes runtime/immutable-ledger
-grants, and creates first **KAORI application** admin as runtime.
-Workers/Beat wait until schema head, ledger and permissions are admitted.
-Reopens never implicitly run Alembic or recreate an application admin.
+Workers/Beat remain blocked until schema, grants, and first admin are
+admitted. Later schema upgrades still require explicit `--upgrade-only`.
+
 
 **Security boundary:** these development files are ignored by Git and
 Docker build but physically inside a **bind-mounted full repository**;

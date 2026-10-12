@@ -9,6 +9,7 @@
     "workspace",
     "db",
     "redis",
+    "db-first-run",
     "inventory-worker",
     "registry-security-worker",
     "maintenance-worker",

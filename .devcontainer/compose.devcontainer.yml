@@ -4,7 +4,8 @@ name: kaori-dev
 # /secrets/devcontainer/*.env, ignored by the existing root .gitignore.
 # Runtime .env retains only DATABASE_URL=kaori_runtime. Because the full
 # worktree is bind-mounted, these files are NOT a production isolation boundary.
-# No Alembic or KAORI admin bootstrap runs automatically.
+# A guarded db-first-run job initializes only a virgin database; existing schemas
+# are never implicitly migrated or provisioned.
 
 services:
   db:
@@ -494,6 +495,35 @@ services:
     depends_on:
       workspace:
         condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db-first-run:
+    # Started with the DevContainer, exits once. Existing schemas are read-only.
+    restart: "no"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    env_file:
+      - .env
+      - path: secrets/devcontainer/postgres-migrate.env
+        required: false
+    environment:
+      APP_ENV: development
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
+      WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "false"
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/3
+    command: ["sh", "scripts/devcontainer/auto-bootstrap-db.sh"]
+    volumes:
+      - .:/workspace/kaori
+      - kaori_instance_data:/workspace/kaori/instance
+    depends_on:
       db:
         condition: service_healthy
       redis:

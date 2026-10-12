@@ -9,7 +9,8 @@ processes to read the files, so they are not production-grade isolation.
 
 An explicitly mounted, read-only kaori-dev PostgreSQL data volume is the
 first-install authority. NEVER rotate/replace credentials for populated data.
-Alembic and the first application administrator remain operator-triggered.
+Schema and first administrator are initialized only by the guarded virgin
+schema Compose job; existing database upgrades remain operator-triggered.
 """
 from __future__ import annotations
 
@@ -207,7 +208,7 @@ def main() -> None:
     elif APP_ENV.read_text(encoding='utf-8') != source:
         APP_ENV.write_text(source, encoding='utf-8')
     print('KAORI DevContainer: private local database ENV ready; runtime remains kaori_runtime')
-    print('KAORI DevContainer: schema migration and first admin require explicit db-bootstrap')
+    print('KAORI DevContainer: virgin schema bootstrap delegated to guarded db-first-run')
 
 
 if __name__ == '__main__':

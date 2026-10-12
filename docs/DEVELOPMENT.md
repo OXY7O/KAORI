@@ -48,43 +48,39 @@ data is absent. Do not delete volumes as a troubleshooting shortcut.
 
 ## First setup — new DevContainer PostgreSQL volume
 
-1. Open the project in **VS Code on Windows** (or another supported
-   Docker-CLI host), with Docker Desktop running Linux containers.
-   No host Python, WSL Remote, host virtualenv or manual
-   `docker compose up` is required.
-2. Optionally copy `.env.example` to ignored `.env` to set your intended
-   `ADMIN_EMAIL`, `ADMIN_USERNAME`, or other development configuration
-   **before the first application administrator is created**.
-   If `.env` is missing, the DevContainer host initializer creates it
-   automatically. It generates a secure runtime `DATABASE_URL`, application
-   encryption keys and `ADMIN_PASSWORD` when those have placeholders.
-   **Do not copy in real PostgreSQL bootstrap/migrator passwords.**
-3. Choose **Dev Containers → Rebuild and Reopen in Container**. A
-   Docker-based `initializeCommand` creates/validates two ignored local
-   PostgreSQL ENV files and private `.env` after inspecting PGDATA. The normal Compose startup
-   automatically creates PostgreSQL, Redis, workspace, ten workers and Beat.
-   PostgreSQL creates non-superuser `kaori_migrator` and `kaori_runtime`
-   on an empty volume, but does **not** run Alembic or create KAORI admin.
-4. Select **KAORI: Flask Debug** (F5) and open
-   `http://localhost:5000/auth/login`. Empty schema should show
-   **HTTP 503 Database Setup Required / Initialization Required**.
-5. Copy the bootstrap command on that page and run it from the **VS Code
-   Windows PowerShell terminal (outside the DevContainer)** at the
-   repository root. The same `docker compose` CLI also works on Linux:
+1. Open the project directly in VS Code Windows (or supported Linux/macOS
+   Docker host) and choose **Dev Containers → Rebuild and Reopen in Container**.
+   The Docker-based host initializer prepares ignored development-only
+   credentials and checks PGDATA without host Python or WSL Remote.
+2. On empty PGDATA, PostgreSQL 16 creates the separated `postgres`,
+   `kaori_migrator` and `kaori_runtime` roles. The automatic `db-first-run`
+   one-shot service inspects the local database as migrator and invokes the
+   existing guarded `db-bootstrap` only when schema is genuinely virgin.
+   It creates Alembic schema, restricted grants, RBAC and first administrator.
+3. Press F5 → **KAORI: Flask Debug** and visit `http://localhost:5000/auth/login`.
+   When bootstrap succeeds, log in with `ADMIN_USERNAME` and private
+   `ADMIN_PASSWORD` in the ignored `.env`. Workers and Beat begin only after
+   schema head, immutable-ledger grants and first-admin admission pass.
+4. If auto bootstrap fails or finds a non-virgin/partial schema, no data is
+   removed or automatically migrated. Inspect from the **host terminal**:
+
+   ```bash
+   docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml logs db-first-run
+   ```
+
+   For an interrupted first install, diagnose the failure and use the
+   **Database Setup Required** Copy Command (run from Windows PowerShell
+   at the repository root):
 
    ```bash
    docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
    ```
 
-   The one-off job receives the separate migrator credential, migrates the
-   schema, refreshes runtime grants, and creates the first KAORI admin
-   after grants succeed. The 10 workers and Beat unblock only after
-   Alembic head, runtime-privilege/immutable-ledger and administrator
-   admission pass.
-6. Refresh the browser, log in as the `ADMIN_USERNAME` configured in
-   private `.env`, and verify first-run/worker evidence. For the frontend
-   watcher, allow **Automatic Tasks** for this trusted workspace;
-   otherwise launch **KAORI: Watch Tailwind CSS** from VS Code Tasks.
+   Future migration upgrades remain **explicit** and must use
+   `sh scripts/devcontainer/bootstrap-db.sh --upgrade-only`, never
+   automatic first-run migration.
+
+
 
 **Local ENV layout:** private ignored `.env` stays the normal
 application configuration and uses only `kaori_runtime`
@@ -119,8 +115,10 @@ data-preserving, opt-in procedure is documented in
 For a **new** PostgreSQL volume, use the [three-role first-run runbook](operations/devcontainer-postgres-first-run.md).
 It automatically provisions `postgres` (local bootstrap), `kaori_migrator`
 (non-superuser DDL owner) and `kaori_runtime` (restricted application login)
-without creating application tables. The existing database setup page remains
-operator-driven; privileged credentials stay outside the workspace and workers.
+without creating application tables in PostgreSQL initdb. The guarded
+one-shot first-run service initializes virgin schema/admin, and the existing
+setup page remains the failure-recovery path. Privileged credentials must
+not be loaded into normal worker/Flask environments.
 
 The historical #1405 data-preserving cutover runbook is only for old owner-role
 clusters. Its `KAORI_DEV_RUNTIME_DATABASE_URL` override is **not** the active
@@ -140,7 +138,7 @@ docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml down --r
 
 Do not use plain `docker compose down` to manage the Dev Container. The plain root Compose project is a separate `kaori` boundary; the supported development runtime is `kaori-dev` through the merged files above. Never use `down --volumes` during normal development: a destructive reset requires separate scope and operator authorization.
 
-On a fresh or reset PostgreSQL volume, the workspace remains available immediately, while every Celery worker and Beat waits at the shared database entrypoint until the database reaches the current Alembic migration head. DevContainer creates roles but does not apply Alembic automatically. Press F5 to view **Initialization Required**, then run `docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap` from Windows PowerShell on the host. Workers/Beat remain gated until schema, immutable-ledger grants and first-admin readiness pass. Future schema upgrades use the same one-off service with `sh scripts/devcontainer/bootstrap-db.sh --upgrade-only`, without recreating the administrator.
+On a fresh or reset PostgreSQL volume, the workspace remains available immediately, while every Celery worker and Beat waits at the shared database entrypoint until the database reaches the current Alembic migration head. DevContainer creates roles and the guarded db-first-run job applies Alembic **only when the application schema is virgin**. On failed/partial initialization press F5 to view **Initialization Required**, then run `docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap` from Windows PowerShell on the host. Workers/Beat remain gated until schema, immutable-ledger grants and first-admin readiness pass. Future schema upgrades use the same one-off service with `sh scripts/devcontainer/bootstrap-db.sh --upgrade-only`, without recreating the administrator.
 
 Equivalent terminal launch inside the Dev Container:
 

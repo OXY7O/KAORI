@@ -4,28 +4,47 @@
 
 ## Standard operator workflow
 
-1. Open the existing Windows or Linux checkout directly in **VS Code**, with Docker Desktop running **Linux containers**. Choose **Dev Containers → Rebuild and Reopen in Container**. No WSL Remote or host Python is required, and no manual per-service startup is needed.
-2. The VS Code `initializeCommand` invokes `docker run --rm python:3.12-alpine` and mounts the checkout plus the dedicated `kaori-dev_kaori_postgres_data` Docker volume read-only at `/pgdata`. The initializer validates existing `PG_VERSION` before generating database credentials. Absence of a running container is **not** evidence of an empty database volume.
-3. On genuinely empty PostgreSQL data, a private root `.env` is generated from `.env.example` if missing. When an **existing local** `.env` already contains a legacy `postgres`/`kaori`/`kaori_runtime` URL to **db:5432/kaori**, it is backed up verbatim to `secrets/devcontainer/application-env-before-three-role.bak`; the connection is replaced with a new restricted `kaori_runtime` URL. All unrelated keys (including integration/provider and admin preferences) are preserved. External/prod URLs are never adopted or rewritten. This step does **not** reset or alter any database.
-4. The initializer writes two ignored repo-local credential files. Both are generated automatically, and neither is loaded by a normal Flask/worker/Beat service environment:
+1. Open the Windows or Linux checkout in VS Code and run **Dev Containers →
+   Rebuild and Reopen in Container** with Docker Desktop Linux containers.
+   Host Python and WSL Remote are not needed.
+2. The host `initializeCommand` reads the dedicated
+   `kaori-dev_kaori_postgres_data` volume read-only. Only when PGDATA is
+   genuinely empty can it create fresh ignored `.env` and
+   `secrets/devcontainer/{postgres-bootstrap,postgres-migrate}.env`.
+   Existing/mismatched data and credentials still fail closed.
+3. PostgreSQL `initdb.d/01-kaori-roles.sh` provisions `postgres`,
+   non-superuser `kaori_migrator` and restricted `kaori_runtime`.
+   It does not create application tables.
+4. Compose starts a separate `db-first-run` service automatically.
+   Before mutation, it verifies the canonical development `DATABASE_URL`
+   and checks as migrator that the schema has **no public relations,
+   functions, custom types, nondefault extensions or custom schemas**.
+   Only that virgin state invokes the existing `db-bootstrap` script for
+   Alembic schema, immutable-ledger grants, RBAC and first admin.
+   Existing/partial databases are logged as skipped; no auto migration,
+   grant refresh or administrator recreation occurs.
+5. Press **F5 → KAORI: Flask Debug**, open
+   `http://localhost:5000/auth/login` and sign in. Workers and Beat wait
+   until current schema, restricted privileges and first admin are admitted.
+   If bootstrap fails, the existing **HTTP 503 Database Setup Required**
+   remains the manual recovery surface.
+6. Inspect the first-run job from **Windows PowerShell on the host**:
 
-   | Local path | Contents | Compose recipient |
-   | --- | --- | --- |
-   | `<repo>/.env` | `APP_ENV=development`, `POSTGRES_DB=kaori`, `POSTGRES_USER=postgres`, `POSTGRES_PORT=5432`, `DATABASE_URL=postgresql://kaori_runtime:<generated>@db:5432/kaori`, existing KAORI/Redis/integration config, app admin | Workspace/web/10 workers/Beat |
-   | `<repo>/secrets/devcontainer/postgres-bootstrap.env` | `POSTGRES_PASSWORD`, `KAORI_RUNTIME_PASSWORD` | PostgreSQL `db` only |
-   | `<repo>/secrets/devcontainer/postgres-migrate.env` | `KAORI_MIGRATOR_PASSWORD` | PostgreSQL `db` during first initdb, and explicit `db-bootstrap` only |
+   ```powershell
+   docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml logs db-first-run
+   ```
 
-   The root `.gitignore` already ignores `/secrets/`, and `.dockerignore` also excludes that directory. Safe tracked templates are `.devcontainer/examples/postgres-bootstrap.env.example` and `postgres-migrate.env.example`. **Actual credentials are never committed or printed.** The entire source tree is bind-mounted into DevContainer, so repo-local ignored files may still be readable to processes with source access. This accepted convenience is limited to trusted local development and must **not** be described as production secrets isolation.
-5. Normal Compose starts PostgreSQL, Redis, workspace, ten Celery workers and Beat automatically. The official PostgreSQL 16 entrypoint executes `.devcontainer/postgres-init/01-kaori-roles.sh` **only on an empty PGDATA**: `postgres` bootstrap superuser, `kaori_migrator` non-superuser schema owner, `kaori_runtime` restricted non-owner login. No Alembic application tables or KAORI administrator are created automatically.
-6. Press **F5 → KAORI: Flask Debug**, open `http://localhost:5000/auth/login`. Expect **HTTP 503 Database Setup Required / Initialization Required** while the database schema is empty. Worker and Beat services exist but wait for committed Alembic head and runtime permissions.
-7. Click **Copy Command** on the existing setup page; execute from **Windows PowerShell on the host at repository root** (or equivalent host terminal):
+   After diagnosing a partial/failed first-run, use **Copy Command** in
+   Database Setup Required or run the original operator-only service:
 
    ```powershell
    docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
    ```
 
-   This explicit, profiled one-off `db-bootstrap` uses `kaori_migrator` only for `flask --app run:app db upgrade` and reviewed runtime-grant refresh; it then creates the first KAORI **application administrator** as `kaori_runtime`. It enforces Capsule immutable ledger negative ACLs and read-only `alembic_version` runtime. The application administrator is not a PostgreSQL superuser.
-8. Refresh the page, log in with `ADMIN_USERNAME` and private `ADMIN_PASSWORD` in `.env`, and collect real browser/worker/Beat/UAT evidence. **Do not consider a copied command or successful CI alone UAT acceptance.**
+   Future schema upgrades still require the explicit operator
+   `--upgrade-only` command below. Do not delete database volumes or
+   regenerate passwords as a troubleshooting shortcut.
+
 
 ## One-time recovery after upgrading from Docker secret volumes (#1499 → #1500)
 
