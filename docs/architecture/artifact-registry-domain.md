@@ -744,3 +744,8 @@ Security evidence freshness comes from the latest successful committed `Registry
 ### Provider-neutral Security capability meanings (#1425)
 
 Capability Matrix `Observed` requires usable committed evidence of the corresponding capability: a completed scan with committed scan report history, a reported signed signature, or an available SBOM. A failed/not-scanned scan and `not_observed` signature/SBOM do not become green by virtue of non-null status. Each capability's attempted/unavailable state is evaluated independently, and numeric qualifying evidence/total artifact coverage is shown alongside the state. Unsupported provider capabilities are N/A and are excluded from fixable Supply Chain coverage-gap totals. Signature presence is not cryptographic trust-policy evaluation; unsigned/unknown remains explicit.
+
+
+### Bounded Registry Security Capability Matrix (#1426)
+
+Capability Matrix projects provider capabilities only for the active Supply Chain → Capabilities section. Active source filters/search are applied before canonical 5/10/25/50 provider pagination; one SQL `GROUP BY RegistryProject.integration_instance_id` computes qualifying scan/signature/SBOM numerator and attempted/total denominators for the visible source page. Vulnerabilities and Supply Chain Evidence no longer perform an N-provider capability projection on every GET. Vulnerability/Artifact Evidence lists retain SQL pagination and use escaped literal LIKE search with deterministic ID tie-break ordering, without provider GETs or cache forks. High-cardinality query-count, provider/filter parity and light/dark/mobile/HTMX UAT still require execution.
