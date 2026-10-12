@@ -708,3 +708,8 @@ The operational Registry Inventory fleet uses the same enabled/active provider i
 ### Bounded Registry Inventory list reads (#1409)
 
 Projects, Repositories and Artifacts query only enabled/active committed Registry provider identities. Source/environment/visibility/search predicates execute in SQL **before** canonical `paginate_query` applies 5/10/25/50 limits. Artifact tag search uses a correlated relationship `EXISTS` rather than joining tags and duplicating artifact rows; related tag collections are loaded only after the artifact page is selected. SQL aggregates provide whole-scope resource posture and distinct small provider/environment selectors, independently of the visible page. Optional missing provider-reported project/repository child counts use bounded per-visible-row database counts instead of loading child collections. No live Harbor calls and no new pagination framework. Real PostgreSQL explain/statement-count, fulltext equivalence and HTMX pagination UAT remain required.
+
+
+### Bounded Registry Inventory detail sheets (#1411)
+
+The Full Workspace Modal and Unified Resource Sheet use separate SQL row counts and stable 25-item LIMIT previews instead of ORM hydration of all project repositories, repository artifacts or artifact tags. Repository artifact preview batches tag counts and selects only the first three tags per previewed artifact through a per-artifact window-rank query. Artifact details fetch up to 25 tag rows with an independent count. Project details never load every nested artifact simply to display repository counts. The modal remains provider-neutral, read-only and committed; longer collections belong in the dedicated Inventory resource pages.
