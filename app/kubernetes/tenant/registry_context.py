@@ -484,6 +484,16 @@ def get_tenant_registry_context(
             capsule_consent = row['release_capsule_successor_acceptance'] or {}
             approved_capsule_plan = row['release_handoff_plan'] or {}
             capsule_review = row['release_handoff_approval'] or {}
+            row['capsule_approved_plan_expired'] = bool(
+                item.provider_key == 'capsule'
+                and approved_capsule_plan.get('provider') == 'capsule'
+                and row['release_handoff_preparation_state'] == 'acknowledged'
+                and capsule_review.get('plan_sha256') == approved_capsule_plan.get('plan_sha256')
+                and (
+                    not _checked_recently(approved_capsule_plan.get('requested_at'))
+                    or not _checked_recently(capsule_review.get('approved_at'))
+                )
+            )
             row['capsule_successor_acceptance_current'] = bool(
                 item.provider_key == 'capsule'
                 and approved_capsule_plan.get('provider') == 'capsule'
