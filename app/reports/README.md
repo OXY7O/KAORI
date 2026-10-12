@@ -110,3 +110,7 @@ Raw S3 exceptions, access keys, secret keys, tokens, and credential values are n
 ## Notification delivery
 
 Scheduled Reports use Integrations → Notification Channels. Schedules store selected channel IDs only; provider credentials and transport behavior remain owned by the shared notification integration. Legacy report-specific Telegram environment credentials are not supported.
+
+### Reports Overview metric cohorts (#1533)
+
+Requests This Month counts Report records whose created_at belongs to the half-open current **UTC calendar-month** interval [month start, next month start). Completion Rate is deliberately **all-time**, calculated from Ready + Archived as successful resolved requests over Ready + Archived + Failed; requested/generating records are not in this denominator. Empty resolved cohorts display unavailable (—), not a fabricated 100% or 0% success. UI copy names the distinct temporal cohorts; neither metric is a current-provider health signal.
