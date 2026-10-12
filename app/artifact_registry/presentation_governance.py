@@ -81,7 +81,11 @@ def _governance_capability_counts(
         counts = {'observed': 0, 'unavailable': 0, 'unsupported': 0, 'unknown': 0}
         for source_id in source_ids:
             state = governance_states.get(source_id)
-            raw = (state.capability_states or {}).get(capability) if state and isinstance(state.capability_states, dict) else None
+            raw = (
+                (state.capability_states or {}).get(capability)
+                if state and isinstance(state.capability_states, dict)
+                else None
+            )
             status = str(raw.get('status') or 'unknown') if isinstance(raw, dict) else 'unknown'
             counts[status if status in counts else 'unknown'] += 1
         result[capability] = counts
@@ -243,7 +247,9 @@ def _governance_snapshot_context(summary: dict[str, Any]) -> dict[str, Any]:
         'scope_label': f'{provider_count} Registry Provider' + ('' if provider_count == 1 else 's'),
         'coverage_label': f'{ready_count}/{provider_count} Providers Committed',
         'coverage_supporting': 'Provider-neutral Governance snapshots.',
-        'coverage_tone': 'normal' if provider_count and ready_count == provider_count and not exception_count else 'warning',
+        'coverage_tone': (
+            'normal' if provider_count and ready_count == provider_count and not exception_count else 'warning'
+        ),
         'exception_count': exception_count,
         'exceptions_label': (
             'No Exceptions'
