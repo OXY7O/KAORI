@@ -130,6 +130,18 @@ authority. Concurrent source tasks publish monotonic aggregate progress through 
 metadata. A slow or failed source cannot consume the inventory worker and does not invalidate committed
 inventory or another source's committed security evidence.
 
+### Analytics snapshot and worker-failure semantics (#1464)
+
+Registry Analytics uses the canonical committed snapshot validity contract: a ready
+status alone is insufficient without a dictionary payload and valid generation and
+expiry timestamps. Stale committed snapshots remain readable but must never be
+reported as Current or Evidence Ready. A failed latest refresh is disclosed even
+if older committed evidence remains. A worker execution that committed zero
+provider snapshots is failed, not a partially successful fleet materialization;
+partial success requires at least one committed provider dataset. Metrics Source
+instant-vector transport success is validated structurally, and per-query errors
+are recorded as partial or unavailable metrics evidence, never silently ready.
+
 ## Governance Contract
 
 Registry governance collection is read-only and independent from inventory. It may collect retention,

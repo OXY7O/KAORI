@@ -280,11 +280,11 @@ def build_registry_analytics_readiness(
         row for row in snapshots if analytics_snapshot_matches_window(row, snapshot_window)
     ]
 
-    now = datetime.now(UTC)
+    from app.artifact_registry.presentation_common import _analytics_snapshot_view
+
     current = [
         item for item in snapshots
-        if item.expires_at is None
-        or (item.expires_at.replace(tzinfo=UTC) if item.expires_at.tzinfo is None else item.expires_at) > now
+        if _analytics_snapshot_view(item)['is_current']
     ]
     label, tone, helper = _analytics_snapshot_posture(
         eligible_count=len(eligible_ids),
@@ -316,6 +316,10 @@ def build_registry_analytics_readiness(
         execution_helper = 'Analytics data will be materialized by the registered worker when scheduled or requested.'
 
     latest_snapshot = max(snapshots, key=lambda item: item.generated_at) if snapshots else None
+    if latest is not None and latest.status in {'failed', 'canceled', 'expired'} and active is None:
+        if label == 'Current Snapshot':
+            label, tone = 'Refresh Failed', 'warning'
+        helper = 'Latest Analytics refresh failed; prior committed snapshot validity is shown separately.'
     return {
         'label': label,
         'tone': tone,

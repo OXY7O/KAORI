@@ -31,7 +31,19 @@ from app.models.registry import (
 def _vector(payload: dict[str, Any]) -> list[dict[str, Any]]:
     data = payload.get('data') if isinstance(payload, dict) else None
     result = data.get('result') if isinstance(data, dict) else None
-    return [item for item in (result or []) if isinstance(item, dict)]
+    return [item for item in result if isinstance(item, dict)] if isinstance(result, list) else []
+
+
+def _valid_instant_vector(payload: Any) -> bool:
+    if not isinstance(payload, dict) or payload.get('status') != 'success':
+        return False
+    data = payload.get('data')
+    return (
+        isinstance(data, dict)
+        and data.get('resultType') == 'vector'
+        and isinstance(data.get('result'), list)
+        and all(isinstance(item, dict) for item in data['result'])
+    )
 
 
 def _sample_value(item: dict[str, Any]) -> float | None:
@@ -69,7 +81,10 @@ def _metric_payload(
     key: str,
 ) -> tuple[dict[str, Any] | None, str | None]:
     try:
-        return consumer.query(get_registry_query_expression(key)), None
+        result = consumer.query(get_registry_query_expression(key))
+        if not _valid_instant_vector(result):
+            return None, 'Invalid or unsupported Metrics Source instant-vector result.'
+        return result, None
     except MetricsSourceError as exc:
         return None, str(exc)
 
@@ -124,8 +139,9 @@ def _metrics_evidence(identity: IntegrationInstance) -> dict[str, Any]:
         if error:
             gaps[key] = error
 
+    observed = len(project_queries) + len(scalar_queries) - len(gaps)
     return {
-        'status': 'ready',
+        'status': 'unavailable' if not observed else ('partial' if gaps else 'ready'),
         'metrics_source': consumer.config.name,
         'binding_id': consumer.binding.id,
         'capability_gaps': gaps,

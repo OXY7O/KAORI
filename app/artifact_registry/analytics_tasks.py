@@ -43,7 +43,12 @@ def materialize_registry_analytics_task(
     snapshot_ids: list[int] = []
     for index, identity_id in enumerate(ids, start=1):
         identity = db.session.get(IntegrationInstance, identity_id)
-        if identity is None or identity.integration_type != 'registry':
+        if (
+            identity is None
+            or identity.integration_type != 'registry'
+            or not identity.enabled
+            or identity.lifecycle_status != 'active'
+        ):
             failures.append({'integration_instance_id': str(identity_id), 'message': 'Registry instance not found.'})
             continue
         context.checkpoint(
@@ -83,9 +88,14 @@ def materialize_registry_analytics_task(
         'snapshot_ids': snapshot_ids,
         'finished_at': datetime.now(UTC).isoformat(),
     }
-    context.succeed(
-        result_summary=result,
-        result_type='artifact_registry_analytics_materialization',
-        partial=bool(failures),
-    )
+    if not completed:
+        # A zero-commit fleet attempt is a failed JobExecution, not a
+        # partially succeeded collection. Preserve previous snapshots.
+        context.fail('No Registry Analytics provider produced a committed snapshot.')
+    else:
+        context.succeed(
+            result_summary=result,
+            result_type='artifact_registry_analytics_materialization',
+            partial=bool(failures),
+        )
     return result
