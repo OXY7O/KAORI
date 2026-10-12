@@ -172,10 +172,7 @@ def verify_archive_artifact(archive_id: str) -> dict[str, Any]:
 
     artifact.verified_at = datetime.now(UTC)
     if artifact.status == ARCHIVE_STATUS_FAILED:
-        if (
-            artifact.operation_mode == 'archive_and_cleanup'
-            and artifact.cleanup_deleted_count < artifact.record_count
-        ):
+        if artifact.operation_mode == 'archive_and_cleanup' and artifact.cleanup_deleted_count < artifact.record_count:
             artifact.status = ARCHIVE_STATUS_CLEANUP_PARTIAL
             artifact.error_message = (
                 'Archive integrity verified, but hot cleanup is incomplete; no cleanup was retried.'
