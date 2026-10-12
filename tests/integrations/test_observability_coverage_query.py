@@ -82,6 +82,13 @@ def test_coverage_sql_pagination_preserves_counts_filter_and_lifecycle(monkeypat
         )
         assert blocked['pagination']['total_items'] == 1
         assert blocked['rows'][0]['asset_key'] == 'asset-1'
+
+        source.enabled = True
+        session.delete(session.get(MetricsSource, 1))
+        session.flush()
+        orphaned = coverage_query.paged_coverage_scopes('metrics_source', page=1, per_page=5)
+        assert orphaned['stats']['ready'] == 0
+        assert orphaned['rows'][0]['coverage_status'] == 'blocked'
     engine.dispose()
 
 
