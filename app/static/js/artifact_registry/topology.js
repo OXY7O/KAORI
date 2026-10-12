@@ -424,6 +424,18 @@ if (canvas && form) {
                 },
             },
             {
+                selector: 'edge[relationship = "contains"]',
+                style: {
+                    'curve-style': 'taxi',
+                    'taxi-direction': 'horizontal',
+                    'taxi-turn': 24,
+                    'line-style': 'dashed',
+                    'line-opacity': 0.38,
+                    'target-arrow-shape': 'none',
+                    width: 1,
+                },
+            },
+            {
                 selector: 'edge.edge-label-visible',
                 style: {
                     label: (edge) => edge.data('relationship') === 'runtime_usage'
