@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from app.integrations.binding_selectors import BindingSelectorError, apply_promql_scope, parse_matchers
 from app.integrations.observability.alert_source.providers.alertmanager.application.consumer import (
     list_alerts_for_scope,
 )
@@ -354,6 +355,37 @@ def _load_alertmanager(system: ObjectStorageSystem, *, selected_source: str) -> 
     )
 
 
+def _scoped_metrics_alert_expression(consumer: MetricsConsumer) -> str:
+    """Require a unique positive asset binding, not merely a shared Metrics Source."""
+    binding = consumer.binding
+    matchers = parse_matchers(binding.selector_json)
+    exact = {matcher.label: matcher.value for matcher in matchers if matcher.operator == '='}
+    if not exact:
+        raise BindingSelectorError(
+            'The selected Object Storage metrics binding needs an exact asset label selector '
+            'before it can supply system-scoped alert evidence.'
+        )
+
+    peers = IntegrationBinding.query.filter(
+        IntegrationBinding.integration_instance_id == binding.integration_instance_id,
+        IntegrationBinding.asset_type == _OBJECT_STORAGE_SCOPE,
+        IntegrationBinding.enabled.is_(True),
+        IntegrationBinding.id != binding.id,
+    ).all()
+    for peer in peers:
+        peer_exact = {
+            matcher.label: matcher.value
+            for matcher in parse_matchers(peer.selector_json)
+            if matcher.operator == '='
+        }
+        if not any(key in peer_exact and peer_exact[key] != value for key, value in exact.items()):
+            raise BindingSelectorError(
+                'Metrics Source asset selectors overlap another Object Storage binding; '
+                'alerts cannot be uniquely attributed to this system.'
+            )
+    return apply_promql_scope(ACTIVE_ALERTS_EXPRESSION, binding.selector_json)
+
+
 def _load_metrics_source(system: ObjectStorageSystem, *, selected_source: str) -> dict[str, Any]:
     configured = _provider_bound(system.id, 'metrics_source')
     try:
@@ -362,7 +394,22 @@ def _load_metrics_source(system: ObjectStorageSystem, *, selected_source: str) -
             scope_key=system.id,
             scope_name=system.name,
         )
-        payload = consumer.query(ACTIVE_ALERTS_EXPRESSION, retry_count=0)
+        expression = _scoped_metrics_alert_expression(consumer)
+        payload = consumer.query(expression, retry_count=0)
+    except BindingSelectorError as exc:
+        return _source_view(
+            selected_source=selected_source,
+            resolved_source='none',
+            runtime=AlertSourceRuntime(
+                configured=configured,
+                connected=False,
+                label='Metrics Alert Scope Unverified',
+                tone='warning',
+                detail=str(exc),
+            ),
+            rows=[],
+            instance_name=None,
+        )
     except MetricsSourceAuthenticationError as exc:
         return _source_view(
             selected_source=selected_source,
