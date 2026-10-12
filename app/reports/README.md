@@ -146,3 +146,7 @@ Canonical Report JobExecution `integration_type` and `integration_instance_id` c
 ### Generate report naming boundary (#1545)
 
 Operator report names are optional, trimmed, and bounded at 255 Unicode code points before report persistence to match `Report.name`'s existing VARCHAR(255) contract. Over-limit names render actionable validation feedback. The wizard input uses the corresponding HTML maxlength as convenience only; server-side checks remain authoritative. No schema migration is necessary.
+
+### Generated Reports artifact evidence honesty (#1556)
+
+List pages remain metadata-first and must never treat a reachable backend plus retained storage URI as proof an individual artifact exists. Unprobed retained URIs are surfaced as **Artifact Referenced / Reference Not Verified**. The list may offer a protected download handoff when the reference is reachable; the download route and detail separately perform authoritative per-object probing, with unavailable/missing feedback. No per-row HEAD and no provider-live dependency is introduced into normal registry polling.
