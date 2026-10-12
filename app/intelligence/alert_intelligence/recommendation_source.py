@@ -178,13 +178,32 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
     return stats
 
 
+def _active_recommendation_state_batches():
+    """Read active finding states in bounded stable ID order during reconciliation."""
+    last_id = 0
+    while True:
+        page = (
+            RecommendationAlertState.query.filter(
+                RecommendationAlertState.active.is_(True),
+                RecommendationAlertState.id > last_id,
+            )
+            .order_by(RecommendationAlertState.id.asc())
+            .limit(200)
+            .all()
+        )
+        if not page:
+            return
+        yield from page
+        last_id = int(page[-1].id)
+
+
 def _reconcile_missing_recommendation_states(
     *,
     fresh_keys: set[str],
     now: datetime,
     stats: dict[str, int],
 ) -> None:
-    for state in RecommendationAlertState.query.filter_by(active=True).all():
+    for state in _active_recommendation_state_batches():
         if state.finding_key in fresh_keys:
             continue
         available, source_reason = _source_evidence_posture_for_state(state)
