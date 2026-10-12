@@ -739,3 +739,8 @@ Security Vulnerabilities, Supply Chain, source choices and evidence aggregation 
 ### Scoped Registry Security evidence age (#1424)
 
 Security evidence freshness comes from the latest successful committed `RegistryScanSnapshot.observed_at` for the selected enabled/committed providers, **not** a fleet JobExecution finish timestamp. Current usable scan coverage requires a successful latest artifact scan generation and evidence within the freshness window. A mixed-age fleet is Partial; old evidence is Stale; unsupported/unverified ages are not silently Ready. Fleet Security Sync attempt progress/failure lives in its dedicated JobExecution state, independently from committed provider evidence. Supply Chain Artifact Evidence rows show their own committed per-artifact scan age, or `Age Unverified` when presence-only metadata lacks dated security observation; no shared fleet timestamp is assigned to every row.
+
+
+### Provider-neutral Security capability meanings (#1425)
+
+Capability Matrix `Observed` requires usable committed evidence of the corresponding capability: a completed scan with committed scan report history, a reported signed signature, or an available SBOM. A failed/not-scanned scan and `not_observed` signature/SBOM do not become green by virtue of non-null status. Each capability's attempted/unavailable state is evaluated independently, and numeric qualifying evidence/total artifact coverage is shown alongside the state. Unsupported provider capabilities are N/A and are excluded from fixable Supply Chain coverage-gap totals. Signature presence is not cryptographic trust-policy evaluation; unsigned/unknown remains explicit.
