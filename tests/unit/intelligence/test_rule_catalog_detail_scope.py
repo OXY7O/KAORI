@@ -47,3 +47,22 @@ def test_catalog_rule_detail_fail_closed_when_evaluation_partial(monkeypatch) ->
     assert result is not None
     assert result['rule_exceptions']['evaluation_issues'] == ['Kubernetes Namespace']
     assert captured['include_owner_options'] is False
+
+
+def test_general_kubernetes_rule_does_not_evaluate_tenant_governance(monkeypatch) -> None:
+    rule = next(item for item in INTELLIGENCE_CATALOG if item['rule_key'] == 'kubernetes.namespace.missing_quota')
+
+    def unrelated(_rules):
+        raise AssertionError('Tenant Governance must not be evaluated for a non-Tenant rule')
+
+    monkeypatch.setattr(service, 'build_tenant_governance_recommendation_findings', unrelated)
+    for evaluator_name in (
+        '_build_namespace_quota_findings',
+        '_build_workload_resource_governance_findings',
+        '_build_latest_image_findings',
+        'build_kubernetes_runtime_recommendation_findings',
+        '_build_storage_binding_findings',
+        '_build_tls_certificate_findings',
+    ):
+        monkeypatch.setattr(service, evaluator_name, lambda _rules: [])
+    assert service._build_recommendation_findings([service.normalize_rule(dict(rule))]) == []
