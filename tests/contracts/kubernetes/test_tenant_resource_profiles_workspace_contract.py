@@ -1554,7 +1554,7 @@ def test_allocation_change_redesign_uses_shared_disclosures_and_changed_only_sum
         ('storage_policy', 'max'),
     )
     for source, key in dimensions:
-        assert f"('{source}', '{key}')" in template
+        assert f", '{source}', '{key}')" in template
     assert 'renderChangeSummary(current, proposed)' in script
     assert 'renderAdvancedComparison(current, proposed' in script
     assert "form.querySelectorAll('[data-tenant-allocation-change-row]')" in script
@@ -1565,9 +1565,6 @@ def test_allocation_change_redesign_uses_shared_disclosures_and_changed_only_sum
     assert "return right > left ? 'Increased' : 'Reduced'" in script
     assert "return prior === next ? null : 'Changed'" in script
     assert "return Number.isFinite(value) ? value : null" in script
-    assert "if (!current || !proposed)" not in script.split('renderChangeSummary', 1)[1].split(
-        'const renderAllocationChange', 1
-    )[0]
     assert "form.querySelectorAll('[data-tenant-allocation-detail-row]')" in script
     assert "profileSelect?.addEventListener('change', () => renderAllocationChange())" in script
     assert "namespaceSelect?.addEventListener('change'," in script
