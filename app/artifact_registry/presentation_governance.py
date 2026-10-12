@@ -211,22 +211,27 @@ def _governance_summary(
         _governance_inventory_changed(states.get(source_id), inventory_states.get(source_id))
         for source_id in source_ids
     )
-    exception_count = sum(
-        1 for view in state_views
-        if view['status'] != 'ready' or view.get('is_stale') or view.get('refresh_failed')
-    )
-    # Do not double-count one source if it is both stale and input-invalid.
-    exception_count = sum(
-        1 for source_id, view in zip(source_ids, state_views, strict=True)
-        if view['status'] != 'ready' or view.get('is_stale') or view.get('refresh_failed')
-        or _governance_inventory_changed(states.get(source_id), inventory_states.get(source_id))
-        or any(
-            isinstance(value, dict) and value.get('status') == 'unavailable'
-            for value in (
-                states[source_id].capability_states or {}
-            ).values()
-        ) if source_id in states else True
-    )
+    exception_count = 0
+    for source_id, view in zip(source_ids, state_views, strict=True):
+        source_state = states.get(source_id)
+        capabilities = (
+            source_state.capability_states
+            if source_state is not None and isinstance(source_state.capability_states, dict)
+            else {}
+        )
+        capability_incomplete = any(
+            not isinstance(capabilities.get(name), dict)
+            or capabilities[name].get('status') in {'unavailable', 'unknown'}
+            for name in ('retention', 'immutability', 'replication')
+        )
+        if (
+            view['status'] != 'ready'
+            or view.get('is_stale')
+            or view.get('refresh_failed')
+            or capability_incomplete
+            or _governance_inventory_changed(source_state, inventory_states.get(source_id))
+        ):
+            exception_count += 1
     latest_committed_at = max(
         (
             committed_at
