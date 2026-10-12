@@ -23,6 +23,6 @@ npm --version
 printf '\nKAORI development container is ready.\n'
 printf 'Frontend vendor assets and Tailwind CSS were rebuilt and validated locally.\n'
 printf 'For a NEW database, use docs/operations/devcontainer-postgres-fresh-bootstrap.md.\n'
-printf 'Provision the restricted runtime login before the read-only Setup Required UI preview.\n'
-printf 'Alembic/RBAC/admin bootstrap requires a transient KAORI_DB_MIGRATION_URL; do not migrate as the runtime.\n'
+printf 'PostgreSQL restricted runtime login is bootstrapped automatically by Compose.\n'
+printf 'On a new empty schema, use Terminal > Run Task > KAORI: Initialize Fresh Database once.\n'
 printf 'Press F5 after the runtime connection is ready (schema may still be empty).\n'
