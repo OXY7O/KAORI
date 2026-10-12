@@ -970,3 +970,84 @@ def test_atomic_native_preflight_evidence_keeps_raw_unknown_and_other_committed(
     assert allocation['atomic_replacement']['target_namespace_id'] == 8
     assert allocation['atomic_replacement']['other_committed']['cpu'] == '2'
     assert allocation['atomic_replacement']['projection'] == 'other_committed_plus_proposed'
+
+
+def test_atomic_replacement_keeps_other_unbounded_sources_unknown() -> None:
+    from app.kubernetes.tenant.capacity_allocation_state import _other_committed_for_namespace_replacement
+
+    target = _replacement_row('native', 'target', 1, {})
+    other = _replacement_row(
+        'another-native', 'unbounded-other', 2,
+        {'requests.memory': '2Gi', 'pods': '10', 'requests.storage': '1Gi'},
+    )
+    committed, count, unknown = _other_committed_for_namespace_replacement(
+        [target, other], target=target,
+        shared_quota_by_tenant={}, ambiguous_shared_tenants=[],
+    )
+    assert count == 2
+    assert committed.cpu is None
+    assert unknown == ['unbounded-other']
+
+
+def test_atomic_replacement_is_not_used_for_bounded_or_observed_preflight(monkeypatch) -> None:
+    import pytest
+
+    from app.kubernetes.tenant.capacity_governance import TenantCapacityBlockedError
+
+    reads, decisions, commits = _install_atomic_replacement_test_evidence(monkeypatch)
+    environment, request = _atomic_native_request()
+    bounded_request = capacity_governance._AllocationRequest(
+        profile=request.profile,
+        namespace=request.namespace,
+        current=quota_request_vector({
+            'requests.cpu': '1', 'requests.memory': '2Gi',
+            'pods': '10', 'requests.storage': '1Gi',
+        }),
+        proposed=request.proposed,
+        operation='increase',
+        replacement_namespace=request.replacement_namespace,
+    )
+    with pytest.raises(TenantCapacityBlockedError, match='Unbounded or missing governed'):
+        capacity_governance._enforce_allocation_preflight(
+            tenant_environment=environment, request=bounded_request,
+        )
+    assert reads == [False]
+    assert decisions[0]['evidence'].replacement_other_committed is None
+    assert commits == [True]
+
+    reads.clear()
+    decisions.clear()
+    commits.clear()
+    observed_request = capacity_governance._AllocationRequest(
+        profile=request.profile,
+        namespace=request.namespace,
+        current=request.current,
+        proposed=request.proposed,
+        operation='increase',
+        # Observed initial cutover has no replacement-authority flag.
+    )
+    with pytest.raises(TenantCapacityBlockedError, match='Unbounded or missing governed'):
+        capacity_governance._enforce_allocation_preflight(
+            tenant_environment=environment, request=observed_request,
+        )
+    assert reads == [False]
+    assert decisions[0]['evidence'].replacement_other_committed is None
+    assert commits == [True]
+
+
+def test_managed_native_service_wires_atomic_replacement_only_after_managed_checks() -> None:
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    service = (root / 'app/kubernetes/tenant/service.py').read_text(encoding='utf-8')
+    governance = (root / 'app/kubernetes/tenant/capacity_governance.py').read_text(encoding='utf-8')
+    state = (root / 'app/kubernetes/tenant/capacity_allocation_state.py').read_text(encoding='utf-8')
+    assert "allocation_control_state(record) != 'kaori_managed'" in service
+    assert "record.environment.tenant.provider_key != 'native_kubernetes'" in service
+    assert "capacity_decision = enforce_existing_namespace_allocation_preflight(" in service
+    assert "capacity_decision = enforce_observed_namespace_allocation_preflight(" not in service
+    assert "replacement_namespace=record" in governance
+    assert "replace_namespace=request.replacement_namespace" in governance
+    assert "shared_overrides: Mapping[str, Mapping[str, object]] | None = None" in state
+    assert "_canonical_shared_allocation_quota(cluster_id)" in state
+    assert state.count("_active_namespace_allocation_query()") == 3
