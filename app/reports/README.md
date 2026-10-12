@@ -158,3 +158,7 @@ List pages remain metadata-first and must never treat a reachable backend plus r
 ### Generated Reports Registry scope identity (#1555)
 
 Registry's generic scope filter includes active IntegrationInstance Registry options through `get_active_registry_options()`, alongside Kubernetes and Object Storage. Each persisted report's immutable scope label snapshot remains authoritative for historical presentation even when an integration is unavailable; absent snapshots use a safe Registry Integration ID fallback without per-row provider or IntegrationInstance lookups. Registry rows/detail display `Artifact Registry` / `Integration Scope`, not Kubernetes/namespace metadata. Scope filters remain server-side committed SQL.
+
+### Report Templates bounded registry query (#1563)
+
+System templates remain definition-owned and first in the mixed registry. Custom template filtering, counting, and retrieval are database-side: shared KAORI pagination selects at most the current page size (default five) and a grouped type/status query supplies all-estate KPI counts without materializing the full custom estate. Search uses committed template metadata and catalog labels, not provider-live calls. No custom pagination abstraction is introduced.
