@@ -1519,13 +1519,16 @@ def test_allocation_technical_details_are_one_accessible_switch_not_expandables(
     assert 'data-tenant-allocation-detail-tab="{{ key }}"' in template
     assert 'data-tenant-allocation-detail-panel="{{ key }}"' in template
     assert 'data-tenant-allocation-detail-panel="advanced"' in template
-    assert "('objects', 'Object Limits')" in template
-    assert "('defaults', 'Container Defaults')" in template
-    assert "('advanced', 'Advanced Controls')" in template
+    assert "('objects', 'Object Limits', 'boxes')" in template
+    assert "('defaults', 'Container Defaults', 'container')" in template
+    assert "('advanced', 'Advanced Controls', 'shield-check')" in template
     assert 'aria-controls="allocation-detail-panel-{{ key }}"' in template
     assert "selectDetail('objects')" in script
     assert "button.setAttribute('aria-selected', String(selected))" in script
     assert "button.tabIndex = selected ? 0 : -1" in script
+    assert "button.classList.toggle('bg-surface-card', selected)" in script
+    assert "button.classList.toggle('shadow-sm', selected)" in script
+    assert "button.classList.toggle('text-kaori-primary', selected)" in script
     assert "event.key === 'ArrowRight'" in script
     assert "event.key === 'ArrowLeft'" in script
     assert "event.key === 'Home'" in script
@@ -1533,6 +1536,19 @@ def test_allocation_technical_details_are_one_accessible_switch_not_expandables(
     assert 'details class=' not in template
     assert 'data-tenant-allocation-advanced-empty' in template
     assert 'No configured Advanced Controls in either contract.' in template
+    assert 'max-w-5xl' in template
+    assert 'bg-surface-elevated p-1' in template
+    assert 'bg-surface-card text-kaori-primary shadow-sm' in template
+    assert 'table-fixed text-left text-xs' in template
+    assert 'Current · Frozen' in template
+    assert 'Proposed · Profile' in template
+    assert 'aria-label="{{ \'Object Limits\' if key == \'objects\' else \'Container Defaults\' }} current and proposed comparison"' in template
+    assert 'data-tenant-allocation-tech-row' in template
+    assert "const differs = !!current && !!proposed && classifyChange(beforeValue, afterValue) !== null" in script
+    assert "cell.classList.toggle('text-kaori-primary', differs)" in script
+    assert "cell.classList.toggle('text-content-primary', !differs)" in script
+    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
+    assert 'This preview never approves or applies changes.' in template
 
 
 def test_allocation_comparison_keeps_advanced_execution_evidence_boundaries() -> None:
