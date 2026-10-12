@@ -76,6 +76,8 @@ from app.reports.scope import (
 from app.reports.scope import get_active_registry_options as _get_artifact_registry_options
 from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
+FAILED_REPORT_SCHEDULE_RETRY_MINUTES = 5
+
 CADENCE_OPTIONS: list[dict[str, str]] = [
     {
         'value': 'daily',
@@ -432,11 +434,12 @@ def run_due_schedules(
             continue
 
         success, message, report_id = execute_schedule(schedule, trigger_source='scheduler')
+        skipped = success and report_id is None
         results.append(
             {
                 'schedule_id': schedule.id,
                 'name': schedule.name,
-                'status': 'success' if success else 'failed',
+                'status': 'skipped' if skipped else 'success' if success else 'failed',
                 'message': message,
                 'report_id': report_id,
             }
@@ -452,11 +455,51 @@ def run_due_schedules(
     }
 
 
+def _retry_unadmitted_schedule(
+    schedule: ReportSchedule, *, failed_at: datetime, trigger_source: str
+) -> None:
+    # A manual request never changes the automated cadence. Only work that was
+    # not admitted to the report queue is eligible for a bounded scheduled retry.
+    if trigger_source == 'scheduler' and schedule.is_enabled:
+        schedule.next_run_at = failed_at + timedelta(minutes=FAILED_REPORT_SCHEDULE_RETRY_MINUTES)
+
+
 def execute_schedule(
     schedule: ReportSchedule,
     *,
     trigger_source: str,
 ) -> tuple[bool, str, int | None]:
+    # Refresh under a database row lock: the due-query is advisory only.
+    # Other scheduler batches and manual runs must recheck persisted state here.
+    locked_schedule = db.session.scalar(
+        select(ReportSchedule)
+        .where(ReportSchedule.id == schedule.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if locked_schedule is None:
+        db.session.rollback()
+        return False, 'Schedule not found.', None
+    schedule = locked_schedule
+    if trigger_source == 'scheduler' and (
+        not schedule.is_enabled
+        or schedule.next_run_at is None
+        or _ensure_utc(schedule.next_run_at) > datetime.now(UTC)
+    ):
+        db.session.rollback()
+        return True, 'Schedule is no longer due; no report was queued.', None
+    active_run = db.session.scalar(
+        select(ReportScheduleRun.id)
+        .where(
+            ReportScheduleRun.schedule_id == schedule.id,
+            ReportScheduleRun.status.in_(('started', 'queued')),
+        )
+        .limit(1)
+    )
+    if active_run is not None:
+        db.session.rollback()
+        return True, 'An earlier occurrence is still active; no duplicate report was queued.', None
+
     run = ReportScheduleRun()
     run.schedule_id = schedule.id
     run.status = 'started'
@@ -472,7 +515,7 @@ def execute_schedule(
         run.error_message = 'Artifact storage is unavailable. Scheduled report generation was not started.'
         schedule.last_status = 'failed'
         schedule.last_run_at = run.finished_at
-        schedule.next_run_at = calculate_next_run_at(schedule, base=run.finished_at)
+        _retry_unadmitted_schedule(schedule, failed_at=run.finished_at, trigger_source=trigger_source)
         db.session.commit()
         return False, 'Artifact storage is unavailable. The scheduled report was not created.', None
 
@@ -490,7 +533,7 @@ def execute_schedule(
         run.error_message = str(exc)
         schedule.last_status = 'failed'
         schedule.last_run_at = run.finished_at
-        schedule.next_run_at = calculate_next_run_at(schedule, base=run.finished_at)
+        _retry_unadmitted_schedule(schedule, failed_at=run.finished_at, trigger_source=trigger_source)
         db.session.commit()
         return False, str(exc), None
 
@@ -500,7 +543,8 @@ def execute_schedule(
     run.report_id = report.id
     schedule.last_run_at = run.started_at
     schedule.last_report_id = report.id
-    schedule.next_run_at = calculate_next_run_at(schedule, base=run.started_at)
+    if trigger_source == 'scheduler':
+        schedule.next_run_at = calculate_next_run_at(schedule, base=run.started_at)
     db.session.commit()
 
     try:
@@ -537,10 +581,12 @@ def execute_schedule(
     run = db.session.get(ReportScheduleRun, run.id)
     if run is not None:
         run.job_execution_id = dispatch_job.id
-        run.status = 'queued'
+        if run.status == 'started':
+            run.status = 'queued'
     refreshed_schedule = db.session.get(ReportSchedule, schedule.id)
-    if refreshed_schedule is not None:
-        refreshed_schedule.last_status = 'queued'
+    if refreshed_schedule is not None and refreshed_schedule.last_report_id == report.id:
+        if refreshed_schedule.last_status not in {'success', 'failed'}:
+            refreshed_schedule.last_status = 'queued'
     db.session.commit()
     return True, dispatch.message, report.id
 
