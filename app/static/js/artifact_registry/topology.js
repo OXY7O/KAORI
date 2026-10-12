@@ -410,7 +410,7 @@ if (canvas && form) {
                     label: (edge) => {
                         if (!edgeLabelsToggle.checked && payload.edges.length > 8) return ''
                         return edge.data('relationship') === 'runtime_usage'
-                            ? 'uses artifact' : edge.data('relationship') === 'owns' ? 'owns' : 'contains'
+                            ? 'used at runtime' : edge.data('relationship') === 'owns' ? 'owns' : 'contains'
                     },
                     'font-family': 'Inter, sans-serif',
                     'font-size': 9,
@@ -476,7 +476,6 @@ if (canvas && form) {
         cy.fit(bbox, padding)
         // Cap over-magnification of small graphs while keeping them centered.
         if (cy.zoom() > 1.6) cy.zoom({ level: 1.6, renderedPosition: { x: rect.width / 2, y: rect.height / 2 } })
-        cy.center(nodes)
     }
     const applyVisibility = () => {
         if (!cy) return
