@@ -74,7 +74,7 @@
                        hx-push-url="true"
                        hx-indicator="#alert-operations-active-loading"
                        class="{{ table_ui.action_classes() }}">Acknowledged</a>
-                    <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity='unknown') }}"
+                    <a href="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, source_state='unknown') }}"
                        hx-get="{{ url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity='unknown') }}"
                        hx-target="#alert-operations-active-registry"
                        hx-select="#alert-operations-active-registry"
@@ -86,7 +86,7 @@
             </div>
         </div>
     </section>
-    {% set active_registry_url = url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
+    {% set active_registry_url = url_for('alert_intelligence.index', tab='active', domain=payload.domain, asset=payload.selected_asset_key, severity=payload.filters.severity, workflow=payload.filters.workflow, source=payload.filters.source, source_state=payload.filters.source_state, q=payload.filters.q, page=payload.active_pagination.page, per_page=payload.active_pagination.per_page) %}
     <section id="alert-operations-active-registry"
              class="{{ table_ui.block_classes() }}"
              hx-get="{{ active_registry_url }}"
@@ -158,6 +158,15 @@
                         {% for value, label in [('all','All Severities'),('critical','Critical'),('warning','Warning'),('info','Info'),('unknown','Unknown')] %}
                             <option value="{{ value }}"
                                     {% if payload.filters.severity == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span class="{{ table_ui.filter_label_classes() }}">Source State</span>
+                    <select name="source_state" class="{{ table_ui.filter_select_classes() }}">
+                        {% for value, label in [('all','All Source States'),('firing','Firing'),('unknown','Source Unknown')] %}
+                            <option value="{{ value }}"
+                                    {% if payload.filters.source_state == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </label>
