@@ -44,7 +44,7 @@
                     </dl>
                     {{ detail.inventory_note('This resource sheet reads the latest committed Kubernetes inventory generation for the selected cluster.', 'database') }}
                 {% endcall %}
-                {% call detail.inventory_section('Inventory Breakdown', 'boxes', description='Committed object coverage across the Kubernetes inventory domains collected for this cluster.') %}
+                {% call detail.inventory_section('Inventory Breakdown', 'boxes', description='Committed inventory by Kubernetes resource type.') %}
                     <dl class="grid min-w-0 gap-x-10 sm:grid-cols-2">
                         {{ detail.inventory_row('Nodes', cluster.counts.nodes) }}
                         {{ detail.inventory_row('Namespaces', cluster.counts.namespaces) }}
