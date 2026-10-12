@@ -10,7 +10,7 @@ from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchR
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 from app.reports.storage.service import get_configured_storage_backend_name
 from app.reports.storage.state import get_storage_config_fingerprint
-from app.reports.storage.tasks import verify_report_storage_task
+from app.reports.storage.tasks import scan_report_storage_integrity_task, verify_report_storage_task
 
 JOB_TYPE = 'report_storage'
 OPERATION = 'verify_backend'
@@ -73,6 +73,47 @@ def enqueue_report_storage_verification(*, requested_by_user_id: int | None) -> 
             if created
             else 'Strong report storage verification is already active.'
         ),
+        job=job,
+        created=created,
+    )
+
+
+def enqueue_report_storage_integrity_scan(*, requested_by_user_id: int | None) -> RegisteredJobDispatchResult:
+    """Queue bounded read-only reference verification through canonical JobExecution."""
+    backend = get_configured_storage_backend_name()
+    fingerprint = get_storage_config_fingerprint(backend)
+    parameters = {'backend': backend, 'config_fingerprint': fingerprint, 'max_items': 500}
+    try:
+        job, created = enqueue_canonical_job(
+            task=scan_report_storage_integrity_task,
+            task_kwargs={
+                'backend_name': backend,
+                'config_fingerprint': fingerprint,
+                'requested_by_user_id': requested_by_user_id,
+            },
+            job_type='report_storage',
+            operation='scan_integrity',
+            queue_name=get_report_storage_verification_queue_name(),
+            workload_class='standard',
+            requested_by_user_id=requested_by_user_id,
+            scope_type='report_storage_backend',
+            scope_key=backend,
+            resource_group=f'report-storage-integrity:{backend}',
+            parameters=parameters,
+            payload=parameters,
+            max_attempts=1,
+            dispatch_options=JobDispatchOptions(
+                soft_time_limit_seconds=180,
+                hard_time_limit_seconds=240,
+                require_registered_worker=True,
+            ),
+        )
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError) as exc:
+        db.session.rollback()
+        raise ReportStorageVerificationEnqueueError('Integrity scan dispatch failed.') from exc
+    return RegisteredJobDispatchResult(
+        status='queued' if created else 'reused',
+        message='Artifact integrity scan queued.' if created else 'Artifact integrity scan already active.',
         job=job,
         created=created,
     )
