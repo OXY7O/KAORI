@@ -7,7 +7,7 @@ from app.intelligence.registry_recommendations import _artifact_evidence, _ident
 
 
 def _identity_row(*, enabled=True):
-    return SimpleNamespace(id=17, name='Registry A', enabled=enabled, provider_key='harbor', metadata_json={})
+    return SimpleNamespace(id=17, name='Registry A', enabled=enabled, lifecycle_status='active', provider_key='harbor', metadata_json={})
 
 
 def _project():
@@ -48,5 +48,6 @@ def test_usable_scan_preserves_normalized_findings() -> None:
 def test_unknown_or_disabled_provider_does_not_widen_registry_finding_scope() -> None:
     project = _project()
     assert _identity(project, {})[0] is None
+    assert _identity(project, {17: _identity_row(enabled=False)})[0] is None
     provider = _identity_row()
     assert _identity(project, {17: provider})[0] is provider

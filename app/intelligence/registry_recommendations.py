@@ -60,7 +60,7 @@ def _identity(
     if identities is None:
         identities = _active_registry_instances()
     identity = identities.get(int(project.integration_instance_id))
-    if identity is None:
+    if identity is None or not identity.enabled or identity.lifecycle_status != 'active':
         return None, '', 'Registry'
     metadata = identity.metadata_json if isinstance(identity.metadata_json, dict) else {}
     provider_key = str(identity.provider_key or '').strip().lower()
