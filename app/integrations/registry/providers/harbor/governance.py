@@ -50,7 +50,8 @@ def _project_detail(client: Any, summary: dict[str, Any], states: dict[str, dict
             observed=False,
             detail=f'Project policy metadata unavailable: {type(exc).__name__}.',
         )
-        return summary
+        # Failed detail collection cannot prove that retention is not configured.
+        return {'name': project_name, '_kaori_project_detail_unavailable': True}
 
 
 def _retention_evidence(
@@ -136,7 +137,11 @@ def _project_governance_record(
     if not project_name:
         return None
     project = _project_detail(client, summary, states)
-    retention_status, retention_ref, retention_summary = _retention_evidence(client, project, states)
+    if project.get('_kaori_project_detail_unavailable'):
+        retention_status, retention_ref = 'unavailable', None
+        retention_summary = {'collection_state': 'project_detail_unavailable'}
+    else:
+        retention_status, retention_ref, retention_summary = _retention_evidence(client, project, states)
     immutability_status, immutable_rules = _immutability_evidence(client, project_name, states)
     return ProjectGovernanceRecord(
         project_name=project_name,
