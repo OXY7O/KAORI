@@ -245,13 +245,13 @@ def _normalize_artifact_statistics(raw: Any) -> list[dict[str, Any]]:
         {
             'label': 'Requests This Month',
             'value': '0',
-            'caption': 'Report requests created this calendar month',
+            'caption': 'Requests created this UTC calendar month',
             'icon': 'calendar-range',
         },
         {
             'label': 'Completion Rate',
             'value': '—',
-            'caption': 'Ready or archived among resolved requests',
+            'caption': 'All-time: ready or archived among resolved requests',
             'icon': 'badge-check',
         },
         {
