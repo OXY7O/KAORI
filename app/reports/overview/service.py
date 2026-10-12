@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from flask import current_app, url_for
@@ -136,11 +136,24 @@ def count_reports_by_status(statuses: list[str]) -> int:
     return int(db.session.scalar(select(func.count(Report.id)).where(Report.status.in_(statuses))) or 0)
 
 
-def count_reports_generated_this_month() -> int:
-    now = datetime.now(UTC)
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+def current_utc_month_bounds(now: datetime) -> tuple[datetime, datetime]:
+    """Return [start, next start) for a UTC calendar month, including December rollover."""
+    utc_now = now.astimezone(UTC)
+    month_start = utc_now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    return month_start, next_month
 
-    return int(db.session.scalar(select(func.count(Report.id)).where(Report.created_at >= month_start)) or 0)
+
+def count_reports_generated_this_month() -> int:
+    month_start, next_month = current_utc_month_bounds(datetime.now(UTC))
+    return int(
+        db.session.scalar(
+            select(func.count(Report.id)).where(
+                Report.created_at >= month_start,
+                Report.created_at < next_month,
+            )
+        ) or 0
+    )
 
 
 def count_report_schedules() -> int:
@@ -288,11 +301,16 @@ def get_reporting_coverage_summary() -> list[dict[str, Any]]:
     return [groups[REPORT_FAMILY_ANALYTICS], groups[REPORT_FAMILY_INVENTORY]]
 
 
-def get_artifact_statistics(report_counts: dict[str, int]) -> list[dict[str, str]]:
+def format_all_time_completion_rate(report_counts: dict[str, int]) -> str:
+    """Only terminal report requests participate in the lifetime completion rate."""
     completed = int(report_counts.get('ready', 0)) + int(report_counts.get('archived', 0))
     failed = int(report_counts.get('failed', 0))
     resolved = completed + failed
-    completion_rate = f'{round((completed / resolved) * 100)}%' if resolved else '—'
+    return f'{round((completed / resolved) * 100)}%' if resolved else '—'
+
+
+def get_artifact_statistics(report_counts: dict[str, int]) -> list[dict[str, str]]:
+    completion_rate = format_all_time_completion_rate(report_counts)
     footprint_bytes = int(
         db.session.scalar(
             select(func.coalesce(func.sum(Report.file_size_bytes), 0)).where(
@@ -306,13 +324,13 @@ def get_artifact_statistics(report_counts: dict[str, int]) -> list[dict[str, str
         {
             'label': 'Requests This Month',
             'value': str(report_counts.get('generated_this_month', 0)),
-            'caption': 'Report requests created this calendar month',
+            'caption': 'Requests created this UTC calendar month',
             'icon': 'calendar-range',
         },
         {
             'label': 'Completion Rate',
             'value': completion_rate,
-            'caption': 'Ready or archived among resolved requests',
+            'caption': 'All-time: ready or archived among resolved requests',
             'icon': 'badge-check',
         },
         {

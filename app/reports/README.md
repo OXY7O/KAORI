@@ -122,3 +122,7 @@ Overview is readable by `reports.view`, but links to Generate, Templates, Schedu
 ### Reports Overview bounded storage read path (#1532)
 
 The landing page reads selected-backend shared storage readiness and never walks the local artifact file tree. Local readiness uses inexpensive path existence/writability checks; filesystem count/size scanning remains an opt-in diagnostic operation in the authorized Storage workspace. S3 readiness remains worker/Redis authoritative under the existing monitor and fallback guardrails. No provider mutation or new state cache is introduced.
+
+### Reports Overview metric cohorts (#1533)
+
+Requests This Month counts Report records whose created_at belongs to the half-open current **UTC calendar-month** interval [month start, next month start). Completion Rate is deliberately **all-time**, calculated from Ready + Archived as successful resolved requests over Ready + Archived + Failed; requested/generating records are not in this denominator. Empty resolved cohorts display unavailable (—), not a fabricated 100% or 0% success. UI copy names the distinct temporal cohorts; neither metric is a current-provider health signal.
