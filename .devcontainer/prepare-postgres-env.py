@@ -58,7 +58,8 @@ def write_private(path: Path, value: str) -> None:
     fd = os.open(path, flags, 0o600)
     with os.fdopen(fd, 'w', encoding='utf-8') as handle:
         handle.write(value)
-    os.chown(path, POSTGRES_UID, POSTGRES_GID)
+    if (path.stat().st_uid, path.stat().st_gid) != (POSTGRES_UID, POSTGRES_GID):
+        os.chown(path, POSTGRES_UID, POSTGRES_GID)
     path.chmod(0o600)
 
 
@@ -70,7 +71,8 @@ def verify_private_volumes() -> None:
             fail('Docker secret volume has an unexpected owner')
         # Docker creates the volume root-owned, but the postgres:16 entrypoint
         # switches to the dedicated postgres Unix user before running initdb SQL.
-        os.chown(directory, POSTGRES_UID, POSTGRES_GID)
+        if (directory.stat().st_uid, directory.stat().st_gid) != (POSTGRES_UID, POSTGRES_GID):
+            os.chown(directory, POSTGRES_UID, POSTGRES_GID)
         directory.chmod(0o700)
     for path in ROLE_SECRETS:
         if path.is_symlink():
