@@ -297,9 +297,9 @@ card shells** provide operator context:
   `states/_empty_state.html` fallback and `registry.footer` pagination.
   The previous redundant freeform Policy Evidence / Resilience Evidence
   headers do not return. Search and filters operate against committed
-  provider-neutral rows before the existing sequence pagination; Policy/Retention/
-  Immutability/Replication Coverage in the summary still uses the unfiltered
-  estate totals. The current tab and active filters round-trip through GET,
+  provider-neutral rows in SQL before canonical query pagination; Policy/Retention/
+  Immutability/Replication Coverage remains SQL-aggregated over the active, unfiltered
+  Registry instance scope. The current tab and active filters round-trip through GET,
   HTMX updates, page size changes, Governance Sync and terminal refresh.
   Switching tabs intentionally opens that tab's unfiltered page 1.
   HTMX targets/selects only `#artifact-registry-governance-registry` and
@@ -315,6 +315,26 @@ layouts, Policies/
 Replication transitions, back/forward navigation, sync completion refresh,
 and the shared pagination footer. CI/CD, Full Admission, staging/UAT and
 promotion remain **HOLD**.
+
+### Governance SQL identity and inventory-generation authority (#1452)
+
+The Governance Policies and Replication tables now use `paginate_query` over
+the scoped SQLAlchemy query, not in-memory whole-estate `paginate_sequence`.
+Provider selection is keyed by the canonical `IntegrationInstance.id`,
+displaying instance name and provider type together, so multiple Harbor
+instances remain independently filterable. The table counts, four evidence
+coverage measures, capability/exception aggregation, and latest committed
+timestamp all exclude inactive/disabled Registry sources. No live provider
+request is introduced on normal GET.
+
+Each successful Governance collector commit records the corresponding
+`RegistryCollectionState.last_committed_at` in Governance committed metadata.
+If inventory generation changes, or legacy committed governance evidence has
+no generation proof, the snapshot displays `Inputs Changed` until Governance
+Sync rematerializes evidence. Committed previous evidence remains visible.
+Partial capability statuses and missing capability proof are never presented
+as unqualified Current/No Exceptions. These evidence states do not dispatch
+an Inventory Sync automatically; Governance remains an independent job.
 
 ### Registry grouped summary adoption (#1087, superseded for Dashboard Overview)
 
