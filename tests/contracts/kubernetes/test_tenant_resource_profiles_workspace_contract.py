@@ -384,6 +384,42 @@ def test_namespace_provisioning_rows_separate_identity_allocation_and_state() ->
     assert "hx-post" not in template
 
 
+def test_namespace_allocation_dialog_renders_resourcequota_limits_not_container_defaults() -> None:
+    import re
+
+    from jinja2 import Environment
+
+    source = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    marker = '<dl class="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">'
+    begin = source.index(marker)
+    end = source.index('</dl>', begin) + len('</dl>')
+    render = Environment(autoescape=True).from_string(source[begin:end]).render
+
+    observed = render(quota={
+        'limits.cpu': '4',
+        'limits.memory': '8Gi',
+        'pods': '10',
+        'requests.storage': '1Gi',
+    })
+    expected = (
+        ('CPU Requests', 'Not declared'),
+        ('CPU Limits', '4'),
+        ('Memory Requests', 'Not declared'),
+        ('Memory Limits', '8Gi'),
+        ('Pod Slots', '10'),
+        ('Logical Storage', '1Gi'),
+    )
+    for label, value in expected:
+        pattern = rf'>{re.escape(label)}</dt>\\s*<dd[^>]*>\\s*{re.escape(value)}\\s*</dd>'
+        assert re.search(pattern, observed)
+
+    # Container default LimitRange values must not appear as quota limits.
+    assert '250m' not in observed
+    assert '512Mi' not in observed
+    empty = render(quota={})
+    assert empty.count('Not declared') == 6
+
+
 def test_namespace_registry_uses_existing_compact_profile_naming_rules() -> None:
     from jinja2 import Environment
 
