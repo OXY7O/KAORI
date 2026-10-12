@@ -5,7 +5,9 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_registered_tenant_audit_domain_has_operator_coverage_and_exclusion() -> None:
-    registry = (ROOT / 'app/platform_operations/data_lifecycle/retention/domains/__init__.py').read_text(encoding='utf-8')
+    registry = (
+        ROOT / 'app/platform_operations/data_lifecycle/retention/domains/__init__.py'
+    ).read_text(encoding='utf-8')
     presentation = (ROOT / 'app/platform_operations/data_lifecycle/retention/presentation.py').read_text(
         encoding='utf-8'
     )

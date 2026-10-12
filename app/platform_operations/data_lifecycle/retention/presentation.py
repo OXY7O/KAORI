@@ -347,7 +347,7 @@ def _domain_description(name: str) -> str:
         'analytics_snapshot': 'Reusable analytics and forecast materialization snapshots.',
         'generated_report': generated_report_ui.GENERATED_REPORT_DESCRIPTION,
         'alert_incident': 'Closed Alert Operations cases, operator evidence, notification delivery, and postmortem records.',
-        'tenant_audit_evidence': 'Normalized Kubernetes Tenant audit correlation and source-linked operation evidence.',
+        'tenant_audit_evidence': 'Normalized Tenant audit correlation and operation evidence.',
     }.get(name, 'KAORI operational data domain.')
 
 
@@ -462,7 +462,7 @@ def _domain_coverage_note(name: str) -> str | None:
         'analytics_snapshot': 'Cleanup applies only after a snapshot is outside both its stale-serve window and the configured hot-retention boundary.',
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE,
         'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',
-        'tenant_audit_evidence': 'Lifecycle-managed evidence is the normalized, committed Tenant audit correlation row; the external Kubernetes audit source remains authoritative.',
+        'tenant_audit_evidence': 'Committed Tenant audit correlation; Kubernetes remains authoritative for raw logs.',
     }.get(name)
 
 
@@ -474,7 +474,7 @@ def _domain_exclusion_note(name: str) -> str | None:
         'analytics_snapshot': 'Pending or still-serveable snapshots are protected from archive cleanup.',
         'generated_report': generated_report_ui.GENERATED_REPORT_EXCLUSION_NOTE,
         'alert_incident': 'Open, acknowledged, mitigating, and verification-pending cases are never selected for archive cleanup.',
-        'tenant_audit_evidence': 'Raw Kubernetes audit logs and provider request/response bodies are not archived by KAORI.',
+        'tenant_audit_evidence': 'Raw Kubernetes audit logs and provider request/response bodies stay external.',
     }.get(name)
 
 
