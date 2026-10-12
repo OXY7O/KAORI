@@ -276,6 +276,7 @@ def build_access_overview() -> dict[str, Any]:
         )
 
     workspace_count = len(workspaces)
+    critical_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'critical')
     warning_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'warning')
     unknown_workspace_count = sum(1 for workspace in workspaces if workspace['status_tone'] == 'unknown')
     attention_workspace_count = warning_workspace_count + critical_workspace_count
