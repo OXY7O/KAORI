@@ -4,7 +4,11 @@ from typing import Any
 
 from sqlalchemy import case, func
 
-from app.artifact_registry.observability import RegistryMetricsReadiness, registry_metrics_readiness
+from app.artifact_registry.observability import (
+    RegistryMetricsReadiness,
+    registry_metrics_readiness,
+    registry_metrics_ready_provider_ids,
+)
 from app.artifact_registry.presentation_common import (
     _analytics_snapshot_view,
     _fmt_bytes,
@@ -89,6 +93,12 @@ def _provider_health_projection(
     dict[int, dict[str, int]],
 ]:
     state_by_provider = {int(state.integration_instance_id): state for state in states}
+    # Page *before* per-provider source resolution and grouped inventory reads.
+    visible_providers, pagination = paginate_sequence(
+        scoped_providers,
+        page=provider_health_page,
+        per_page=provider_health_per_page,
+    )
 
     project_counts_query = RegistryProject.query.with_entities(
         RegistryProject.integration_instance_id,
@@ -142,7 +152,7 @@ def _provider_health_projection(
             ),
         )
     )
-    scoped_provider_ids = [int(provider.id) for provider in scoped_providers]
+    scoped_provider_ids = [int(provider.id) for provider in visible_providers]
     project_counts_query = project_counts_query.filter(
         RegistryProject.integration_instance_id.in_(scoped_provider_ids)
     )
@@ -173,9 +183,12 @@ def _provider_health_projection(
         ).all()
     }
 
-    metrics_by_provider = {int(provider.id): registry_metrics_readiness(provider) for provider in scoped_providers}
+    metrics_by_provider = {
+        int(provider.id): registry_metrics_readiness(provider)
+        for provider in visible_providers
+    }
     provider_rows: list[dict[str, Any]] = []
-    for provider in scoped_providers:
+    for provider in visible_providers:
         key = int(provider.id)
         state = state_by_provider.get(key)
         snapshot = _state_view(state)
@@ -228,12 +241,22 @@ def _provider_health_projection(
             }
         )
 
-    visible_rows, pagination = paginate_sequence(
-        provider_rows,
-        page=provider_health_page,
-        per_page=provider_health_per_page,
+    return provider_rows, pagination, metrics_by_provider, security_counts
+
+
+def _fleet_successfully_scanned_artifacts(committed_provider_ids: list[int]) -> int:
+    """Count qualifying scan evidence across *all* committed providers, not the visible page."""
+    if not committed_provider_ids:
+        return 0
+    return (
+        RegistryArtifact.query.join(RegistryRepository)
+        .join(RegistryProject)
+        .filter(
+            RegistryProject.integration_instance_id.in_(committed_provider_ids),
+            func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
+        )
+        .count()
     )
-    return visible_rows, pagination, metrics_by_provider, security_counts
 
 
 def _overview_inventory_evidence(
@@ -525,12 +548,13 @@ def _overview_operations_projection(
     total_size_bytes, public_project_count, latest_security_at = _overview_inventory_evidence(committed_provider_ids)
     state_by_provider = {int(state.integration_instance_id): state for state in states}
     artifact_total = counts['artifacts']
-    committed_id_set = set(committed_provider_ids)
-    scanned_count = sum(
-        item['scanned'] for provider_id, item in security_counts.items() if provider_id in committed_id_set
-    )
+    scanned_count = _fleet_successfully_scanned_artifacts(committed_provider_ids)
     analytics_by_provider = _latest_registry_analytics(scoped_providers)
-    metrics_ready_count = sum(metrics.get('status') == 'ready' for metrics in metrics_by_provider.values())
+    metrics_ready_count = len(registry_metrics_ready_provider_ids(scoped_providers))
+    if selected_provider is not None and int(selected_provider.id) not in metrics_by_provider:
+        # A selected provider remains the evidence scope even for an out-of-range
+        # health-page bookmark; never substitute another provider's readiness.
+        metrics_by_provider[int(selected_provider.id)] = registry_metrics_readiness(selected_provider)
     analytics_views = {
         provider_id: _analytics_snapshot_view(snapshot)
         for provider_id, snapshot in analytics_by_provider.items()
