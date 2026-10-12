@@ -4,8 +4,13 @@ from typing import Any
 
 from sqlalchemy.orm import joinedload
 
-from app.artifact_registry.presentation_common import _fmt_bytes, _overview_kpi_values, _state_view
-from app.artifact_registry.presentation_overview import build_overview
+from app.artifact_registry.presentation_common import (
+    _fmt_bytes,
+    _overview_inventory_kpi_evidence,
+    _overview_kpi_values,
+    _overview_scope_context,
+    _state_view,
+)
 from app.common.pagination import paginate_sequence
 from app.models.integration import IntegrationInstance
 from app.models.registry import (
@@ -226,8 +231,9 @@ def _inventory_fleet_readings(overview: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _inventory_base_context() -> dict[str, Any]:
-    overview = build_overview()
-    counts = _overview_kpi_values(None)
+    overview, _providers, _selected, scoped_providers, states = _overview_scope_context()
+    committed_provider_ids, _coverage = _overview_inventory_kpi_evidence(scoped_providers, states)
+    counts = _overview_kpi_values(committed_provider_ids)
     overview = {
         **overview,
         'project_count': counts['projects'],
