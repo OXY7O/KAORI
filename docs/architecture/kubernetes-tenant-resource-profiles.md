@@ -415,6 +415,29 @@ server-side workflow. Capability validation/recording does not prove that
 cross-domain Advanced Controls were executed by the Native allocation
 transaction; this is a distinct backend traceability finding.
 
+**Allocation Change comparison redesign (#1619):** Preserve the same
+Current frozen Namespace and proposed versioned Resource Profile evidence and
+exact admission/provider/read-back gates, but present them as quieter peer cards
+with standard KAORI surfaces and responsive stat grids. A separate **Change
+Summary** displays only differing values from the six primary ResourceQuota
+dimensions plus per-PVC min/max. It refreshes whenever the Namespace or proposed
+profile selection changes. Known Kubernetes quantities can be classified as
+`Increased` or `Reduced` after unit-aware comparison; values moving from/to
+an unspecified value are `Now defined` or `No longer defined`; unknown
+formats remain simply `Changed`. The summary is read-only and **never**
+claims a headroom gain, provider execution or admission approval. Equal values
+and empty/unknown selections are handled explicitly without stale cards.
+
+The **Advanced Contract Comparison** uses the existing
+`components/view_more_content.html` disclosure, with three default-collapsed
+read-only areas: Object Limits, Container Defaults and Advanced Controls. Each
+opens to a compact three-column Current/Proposed comparison with restrained
+row emphasis where values change. Empty Advanced Controls provide a real
+explanation, not a blank data table. Recorded capability support still never
+implies provider execution/read-back; #1591 owns that backend audit. All
+light/dark and narrow-screen layouts retain semantic labels, keyboard disclosure
+behavior, and original committed evidence provenance.
+
 **Allocation workflow target lifecycle (#1159):** Resource Profiles → Allocation Change
 offers only `kaori_managed` Native Namespace allocations belonging to a
 `ready` Tenant and a non-terminal Namespace generation. Adopted / Observed

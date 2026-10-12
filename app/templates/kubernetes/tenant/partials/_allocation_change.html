@@ -2,6 +2,7 @@
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/view_more_content.html" as view_more_content %}
 <form method="post"
       action="{{ url_for('tenant.change_namespace_allocation_route') }}"
       data-tenant-allocation-change-form
@@ -75,13 +76,13 @@
                 </div>
                 {{ table_label.special_label('Preflight · Read Only', 'maintenance', 'shield-check') }}
             </div>
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2">
-                <section class="min-w-0 bg-surface-card p-4 sm:p-5"
+            <div class="grid gap-3 bg-surface-hover p-3 lg:grid-cols-2 sm:p-4">
+                <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5"
                          aria-label="Current allocation">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Current Contract</p>
-                            <p class="mt-1 truncate text-sm font-semibold text-content-primary"
+                            <p class="mt-1 break-words text-sm font-semibold text-content-primary"
                                data-tenant-allocation-current-profile>—</p>
                         </div>
                         {{ table_label.special_label('Active', 'normal', 'circle-check') }}
@@ -89,7 +90,7 @@
                     <div class="mt-4 space-y-3">
                         <div>
                             <p class="text-xs font-semibold text-content-primary">ResourceQuota · Requests &amp; Limits</p>
-                            <dl class="mt-2 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle lg:grid-cols-3">
+                            <dl class="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-3">
                                 {% for label, attribute in [
                                     ('CPU Requests', 'data-tenant-allocation-current-cpu'),
                                     ('CPU Limits', 'data-tenant-allocation-current-cpu-limit'),
@@ -98,7 +99,7 @@
                                     ('Pods', 'data-tenant-allocation-current-pods'),
                                     ('Total Storage', 'data-tenant-allocation-current-storage')
                                     ] %}
-                                    <div class="bg-surface-elevated px-3 py-3">
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">{{ label }}</dt>
                                         <dd class="mt-1.5 text-sm font-semibold text-content-primary"
                                             {{ attribute }}>—
@@ -109,15 +110,15 @@
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-content-primary">Per-PVC Policy</p>
-                            <dl class="mt-2 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
-                                <div class="bg-surface-elevated px-3 py-3">
+                            <dl class="mt-2 grid grid-cols-2 gap-2">
+                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                                     <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Min PVC Size</dt>
                                     <dd class="mt-1.5 text-sm font-semibold text-content-primary"
                                         data-tenant-allocation-current-pvc-min>
                                         —
                                     </dd>
                                 </div>
-                                <div class="bg-surface-elevated px-3 py-3">
+                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                                     <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Max PVC Size</dt>
                                     <dd class="mt-1.5 text-sm font-semibold text-content-primary"
                                         data-tenant-allocation-current-pvc-max>
@@ -128,12 +129,12 @@
                         </div>
                     </div>
                 </section>
-                <section class="min-w-0 bg-surface-card p-4 sm:p-5"
+                <section class="min-w-0 rounded-xl border border-kaori-primary/20 bg-surface-card p-4 sm:p-5"
                          aria-label="Proposed allocation">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Proposed Contract</p>
-                            <p class="mt-1 truncate text-sm font-semibold text-content-primary"
+                            <p class="mt-1 break-words text-sm font-semibold text-content-primary"
                                data-tenant-allocation-proposed-profile>—</p>
                         </div>
                         {{ table_label.special_label('Pending Admission', 'maintenance', 'gauge') }}
@@ -141,7 +142,7 @@
                     <div class="mt-4 space-y-3">
                         <div>
                             <p class="text-xs font-semibold text-content-primary">ResourceQuota · Requests &amp; Limits</p>
-                            <dl class="mt-2 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle lg:grid-cols-3">
+                            <dl class="mt-2 grid grid-cols-2 gap-2 lg:grid-cols-3">
                                 {% for label, attribute in [
                                     ('CPU Requests', 'data-tenant-allocation-proposed-cpu'),
                                     ('CPU Limits', 'data-tenant-allocation-proposed-cpu-limit'),
@@ -150,7 +151,7 @@
                                     ('Pods', 'data-tenant-allocation-proposed-pods'),
                                     ('Total Storage', 'data-tenant-allocation-proposed-storage')
                                     ] %}
-                                    <div class="bg-surface-elevated px-3 py-3">
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">{{ label }}</dt>
                                         <dd class="mt-1.5 text-sm font-semibold text-content-primary"
                                             {{ attribute }}>—
@@ -161,15 +162,15 @@
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-content-primary">Per-PVC Policy</p>
-                            <dl class="mt-2 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
-                                <div class="bg-surface-elevated px-3 py-3">
+                            <dl class="mt-2 grid grid-cols-2 gap-2">
+                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                                     <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Min PVC Size</dt>
                                     <dd class="mt-1.5 text-sm font-semibold text-content-primary"
                                         data-tenant-allocation-proposed-pvc-min>
                                         —
                                     </dd>
                                 </div>
-                                <div class="bg-surface-elevated px-3 py-3">
+                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
                                     <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Max PVC Size</dt>
                                     <dd class="mt-1.5 text-sm font-semibold text-content-primary"
                                         data-tenant-allocation-proposed-pvc-max>
@@ -181,98 +182,157 @@
                     </div>
                 </section>
             </div>
-            <div class="border-t border-outline-subtle bg-surface-card px-4 py-4">
-                <div class="mb-3">
-                    <h4 class="text-sm font-semibold text-content-primary">Advanced Contract Comparison</h4>
+            <section class="border-t border-outline-subtle bg-surface-card px-4 py-4 sm:px-5"
+                     aria-labelledby="allocation-change-summary-heading"
+                     data-tenant-allocation-change-summary>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="git-compare-arrows" class="h-4 w-4"></i>
+                        </span>
+                        <div>
+                            <h4 id="allocation-change-summary-heading" class="text-sm font-semibold text-content-primary">Change Summary</h4>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Only changed ResourceQuota and PVC dimensions. Read-only; not an admission result.</p>
+                        </div>
+                    </div>
+                    <span class="rounded-full border border-outline-subtle bg-surface-elevated px-3 py-1 text-xs font-semibold text-content-secondary"
+                          data-tenant-allocation-change-count aria-live="polite">Choose a contract</span>
+                </div>
+                <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3"
+                     role="list"
+                     data-tenant-allocation-change-list>
+                    {% for label, source, key in [
+                        ('CPU Requests', 'quota', 'requests.cpu'),
+                        ('CPU Limits', 'quota', 'limits.cpu'),
+                        ('Memory Requests', 'quota', 'requests.memory'),
+                        ('Memory Limits', 'quota', 'limits.memory'),
+                        ('Pods', 'quota', 'pods'),
+                        ('Total Storage', 'quota', 'requests.storage'),
+                        ('Min PVC Size', 'storage_policy', 'min'),
+                        ('Max PVC Size', 'storage_policy', 'max')
+                    ] %}
+                        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3"
+                                 role="listitem"
+                                 data-tenant-allocation-change-row
+                                 data-tenant-allocation-change-source="{{ source }}"
+                                 data-tenant-allocation-change-key="{{ key }}"
+                                 hidden>
+                            <div class="flex flex-wrap items-start justify-between gap-2">
+                                <p class="text-xs font-semibold text-content-secondary">{{ label }}</p>
+                                <span class="rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-medium text-kaori-primary"
+                                      data-tenant-allocation-change-direction>Changed</span>
+                            </div>
+                            <div class="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-sm">
+                                <span class="min-w-0 break-all text-content-muted"
+                                      data-tenant-allocation-change-before>—</span>
+                                <i data-lucide="arrow-right" class="h-3.5 w-3.5 shrink-0 text-content-muted" aria-hidden="true"></i>
+                                <span class="min-w-0 break-all font-semibold text-content-primary"
+                                      data-tenant-allocation-change-after>—</span>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+                <p class="mt-3 rounded-lg border border-dashed border-outline-subtle px-3 py-3 text-xs leading-5 text-content-muted"
+                   data-tenant-allocation-change-empty>Choose a Namespace and Resource Profile to compare.</p>
+            </section>
+            <div class="border-t border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
+                <div class="mb-3 flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="list-tree" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <h4 class="text-sm font-semibold text-content-primary">Advanced Contract Comparison</h4>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Read-only current evidence vs selected versioned profile. Expand a category to inspect governed dimensions before applying.</p>
                 </div>
-                {% for title, description, rows in [
-                    ('Object Limits', 'ResourceQuota object counts, independent of compute requests.', [
+                {% for title, description, icon, rows in [
+                    ('Object Limits', '4 ResourceQuota object dimensions', 'boxes', [
                         ('PVCs', 'quota', 'persistentvolumeclaims'),
                         ('Services', 'quota', 'services'),
                         ('ConfigMaps', 'quota', 'configmaps'),
                         ('Secrets', 'quota', 'secrets')
                     ]),
-                    ('Container Defaults', 'LimitRange defaults, not ResourceQuota CPU or memory ceilings.', [
+                    ('Container Defaults', '4 LimitRange defaults · separate from quota ceilings', 'container', [
                         ('CPU Request', 'limits', 'default_request.cpu'),
                         ('CPU Limit', 'limits', 'default.cpu'),
                         ('Memory Request', 'limits', 'default_request.memory'),
                         ('Memory Limit', 'limits', 'default.memory')
                     ])
                 ] %}
-                    <details class="group mt-2 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
-                             data-tenant-allocation-detail-group="{{ title|lower|replace(' ', '-') }}">
-                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
-                            <span class="min-w-0">
-                                <span class="block text-xs font-semibold text-content-primary">{{ title }}</span>
-                                <span class="mt-0.5 block text-xs text-content-muted">{{ description }}</span>
-                            </span>
-                            <i data-lucide="chevron-down"
-                               class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
-                               aria-hidden="true"></i>
-                        </summary>
-                        <div class="overflow-x-auto border-t border-outline-subtle">
+                    <div class="mt-2" data-tenant-allocation-detail-group="{{ title|lower|replace(' ', '-') }}">
+                        {% call view_more_content.render(title, description, icon=icon, compact_action=true) %}
+                            <div class="overflow-x-auto rounded-lg border border-outline-subtle">
+                                <table class="w-full min-w-[24rem] text-left text-xs">
+                                    <thead class="bg-surface-elevated text-content-muted">
+                                        <tr>
+                                            <th scope="col" class="px-4 py-2.5 font-semibold">Dimension</th>
+                                            <th scope="col" class="px-4 py-2.5 font-semibold">Current · Frozen</th>
+                                            <th scope="col" class="px-4 py-2.5 font-semibold">Proposed · Profile</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-outline-subtle">
+                                        {% for label, source, key in rows %}
+                                            <tr data-tenant-allocation-detail-row>
+                                                <th scope="row" class="px-4 py-3 font-medium text-content-secondary">{{ label }}</th>
+                                                <td class="px-4 py-3 text-content-secondary"
+                                                    data-tenant-allocation-detail-current="{{ source }}.{{ key }}">—</td>
+                                                <td class="px-4 py-3 font-semibold text-content-primary"
+                                                    data-tenant-allocation-detail-proposed="{{ source }}.{{ key }}">—</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endcall %}
+                    </div>
+                {% endfor %}
+                <div class="mt-2" data-tenant-allocation-detail-group="advanced-controls">
+                    {% call view_more_content.render(
+                        'Advanced Controls',
+                        'Configured intent and capability evidence · not execution proof',
+                        icon='shield-check',
+                        compact_action=true
+                    ) %}
+                        <div class="overflow-x-auto rounded-lg border border-outline-subtle">
                             <table class="w-full min-w-[24rem] text-left text-xs">
                                 <thead class="bg-surface-elevated text-content-muted">
                                     <tr>
-                                        <th scope="col" class="px-4 py-2 font-semibold">Dimension</th>
-                                        <th scope="col" class="px-4 py-2 font-semibold">Current · Frozen</th>
-                                        <th scope="col" class="px-4 py-2 font-semibold">Proposed · Profile</th>
+                                        <th scope="col" class="px-4 py-2.5 font-semibold">Control</th>
+                                        <th scope="col" class="px-4 py-2.5 font-semibold">Current · Recorded</th>
+                                        <th scope="col" class="px-4 py-2.5 font-semibold">Proposed · Preflight</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-outline-subtle">
-                                    {% for label, source, key in rows %}
-                                        <tr>
-                                            <th scope="row" class="px-4 py-2 font-medium text-content-secondary">{{ label }}</th>
-                                            <td class="px-4 py-2 font-semibold text-content-primary"
-                                                data-tenant-allocation-detail-current="{{ source }}.{{ key }}">—</td>
-                                            <td class="px-4 py-2 font-semibold text-content-primary"
-                                                data-tenant-allocation-detail-proposed="{{ source }}.{{ key }}">—</td>
+                                    {% for key, contract in resource_profile_advanced_controls.items() %}
+                                        <tr data-tenant-allocation-advanced-row="{{ key }}" hidden>
+                                            <th scope="row" class="px-4 py-3 font-medium text-content-secondary">{{ contract.label }}</th>
+                                            <td class="px-4 py-3 text-content-secondary"
+                                                data-tenant-allocation-advanced-current="{{ key }}">—</td>
+                                            <td class="px-4 py-3 font-semibold text-content-primary"
+                                                data-tenant-allocation-advanced-proposed="{{ key }}">—</td>
                                         </tr>
                                     {% endfor %}
+                                    <tr data-tenant-allocation-advanced-empty>
+                                        <td colspan="3" class="px-4 py-5 text-content-secondary">
+                                            <div class="flex items-start gap-3">
+                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                                      aria-hidden="true">
+                                                    <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                                </span>
+                                                <div>
+                                                    <p class="text-xs font-semibold text-content-primary">No configured Advanced Controls</p>
+                                                    <p class="mt-1 text-xs leading-5 text-content-muted">Current and proposed contracts have no advanced intent to compare.</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
-                    </details>
-                {% endfor %}
-                <details class="group mt-2 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
-                         data-tenant-allocation-detail-group="advanced-controls">
-                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
-                        <span class="min-w-0">
-                            <span class="block text-xs font-semibold text-content-primary">Advanced Controls</span>
-                            <span class="mt-0.5 block text-xs text-content-muted">Capability evaluation is not proof of provider execution or read-back.</span>
-                        </span>
-                        <i data-lucide="chevron-down"
-                           class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
-                           aria-hidden="true"></i>
-                    </summary>
-                    <div class="overflow-x-auto border-t border-outline-subtle">
-                        <table class="w-full min-w-[24rem] text-left text-xs">
-                            <thead class="bg-surface-elevated text-content-muted">
-                                <tr>
-                                    <th scope="col" class="px-4 py-2 font-semibold">Control</th>
-                                    <th scope="col" class="px-4 py-2 font-semibold">Current · Recorded</th>
-                                    <th scope="col" class="px-4 py-2 font-semibold">Proposed · Preflight</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-outline-subtle">
-                                {% for key, contract in resource_profile_advanced_controls.items() %}
-                                    <tr data-tenant-allocation-advanced-row="{{ key }}" hidden>
-                                        <th scope="row" class="px-4 py-2 font-medium text-content-secondary">{{ contract.label }}</th>
-                                        <td class="px-4 py-2 text-content-primary"
-                                            data-tenant-allocation-advanced-current="{{ key }}">—</td>
-                                        <td class="px-4 py-2 text-content-primary"
-                                            data-tenant-allocation-advanced-proposed="{{ key }}">—</td>
-                                    </tr>
-                                {% endfor %}
-                                <tr data-tenant-allocation-advanced-empty>
-                                    <td colspan="3" class="px-4 py-3 text-content-muted">No configured Advanced Controls in these contracts.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <p class="border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted">Supported means capability preflight only. Recorded means KAORI has stored evaluation evidence; neither status establishes execution or verified provider read-back.</p>
-                </details>
+                        <p class="mt-3 text-xs leading-5 text-content-muted">Capability evaluation is not proof of provider execution or read-back. Supported means preflight only; Recorded means KAORI stored evaluation evidence.</p>
+                    {% endcall %}
+                </div>
             </div>
             <div class="border-t border-kaori-primary/15 bg-kaori-soft px-4 py-3">
                 <p class="text-xs leading-5 text-content-secondary">Requests govern capacity admission; limits enforce ResourceQuota ceilings. ResourceQuota and LimitRange changes require provider read-back. Advanced Controls are capability-evaluated and recorded separately; do not infer that their external enforcement has been verified.</p>
