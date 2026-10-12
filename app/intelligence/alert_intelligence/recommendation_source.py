@@ -38,17 +38,20 @@ from app.intelligence.alert_signals.service import alert_signal_source_posture
 from app.intelligence.recommendation_alerting import base_rule_key, catalog_rule, effective_alert_policy
 from app.intelligence.rule_exceptions import active_rule_exceptions, matching_rule_exception
 from app.intelligence.service import get_active_recommendation_findings
+from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
 from app.models.alert_ops import AlertCase, RecommendationAlertState, RuleException
 from app.models.cluster import Cluster
-from app.models.inventory import ClusterInventory
 from app.models.governance import TLSCertificateCollectionState
-from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
+from app.models.integration import IntegrationInstance
+from app.models.inventory import ClusterInventory
+from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.registry import (
-    RegistryArtifact, RegistryCollectionState, RegistryProject, RegistryRepository,
+    RegistryArtifact,
+    RegistryCollectionState,
+    RegistryProject,
+    RegistryRepository,
     RegistryWorkloadBinding,
 )
-from app.models.integration import IntegrationInstance
-from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 
 _GROUPED_ASSET_TYPES = {
     'kubernetes': 'kubernetes_cluster',
