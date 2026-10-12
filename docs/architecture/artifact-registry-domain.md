@@ -724,3 +724,8 @@ Ordinary/manual fleet and scheduled Registry Inventory Sync preserve the last-go
 Direct Project, Repository and Artifact Inventory detail URLs apply the same enabled/active and committed Registry provider boundary as their owning resource list. Unavailable historical-provider detail returns 404 rather than mixing archived records into operational Inventory. Database history is preserved.
 
 Harbor coverage guard: when provider-reported `repo_count` or `artifact_count` is available, an actual discovered child list shorter than that reported count is treated as incomplete and cannot become destructive absence evidence. Explicit tag inventory is required when the Harbor client requested tags; a missing tag field is not silently normalized into an empty set. Counts unavailable from the provider stay unknown, not fabricated. Count drift may arise during provider mutation; it fails closed for operator review rather than guessing that committed children are gone.
+
+
+### Registry vulnerability-report completeness (#1423)
+
+A provider scan-overview status of `completed` is **not** proof that KAORI successfully collected vulnerability report detail. On a failed, malformed or contradictorily empty report, the collector does **not** create a newer empty `RegistryScanSnapshot`, does not advance its committed scan identity, retains the previous findings and scan summary for the existing digest, and records a source-scoped report warning in canonical Security JobExecution evidence. Next refresh retries the changed scan. An explicitly well-formed empty vulnerability report with no positive overview findings remains a legitimate observed zero. No Harbor scan trigger or provider mutation is added.
