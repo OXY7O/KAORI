@@ -647,11 +647,7 @@ def build_inventory(
 
 
 def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
-    project = (
-        RegistryProject.query.options(joinedload(RegistryProject.repositories).joinedload(RegistryRepository.artifacts))
-        .filter(RegistryProject.id == int(project_id))
-        .first()
-    )
+    project = RegistryProject.query.filter(RegistryProject.id == int(project_id)).first()
     if project is None:
         return None
 
@@ -669,17 +665,24 @@ def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
     else:
         visibility_state = {'label': 'Not Observed', 'tone': 'unknown', 'icon': 'circle-help'}
 
+    repository_total = RegistryRepository.query.filter_by(project_id=project.id).count()
+    repository_items = (
+        RegistryRepository.query.filter_by(project_id=project.id)
+        .order_by(func.lower(RegistryRepository.name).asc(), RegistryRepository.id.asc())
+        .limit(25).all()
+    )
     repositories = [
         {
             'id': int(repository.id),
             'name': repository.name,
             'artifact_count': (
-                int(repository.artifact_count) if repository.artifact_count is not None else len(repository.artifacts)
+                int(repository.artifact_count) if repository.artifact_count is not None
+                else RegistryArtifact.query.filter_by(repository_id=repository.id).count()
             ),
             'pull_count': repository.pull_count,
             'observed_at': repository.observed_at,
         }
-        for repository in sorted(project.repositories, key=lambda item: item.name.lower())
+        for repository in repository_items
     ]
 
     provider_key = str(provider.provider_key or 'registry') if provider is not None else 'registry'
@@ -691,7 +694,7 @@ def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
         'provider_native_id': project.provider_native_id or 'Not Collected',
         'visibility': visibility_state,
         'repository_count': (
-            int(project.repository_count) if project.repository_count is not None else len(project.repositories)
+            int(project.repository_count) if project.repository_count is not None else repository_total
         ),
         'provider_id': int(project.integration_instance_id),
         'provider_name': (provider.name if provider is not None else f'Registry #{project.integration_instance_id}'),
@@ -703,7 +706,7 @@ def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
         'snapshot': snapshot,
         'repositories': repositories,
         'repository_preview': repositories[:25],
-        'repository_truncated': len(repositories) > 25,
+        'repository_truncated': repository_total > 25,
         'provider_metadata': provider_metadata,
     }
 
