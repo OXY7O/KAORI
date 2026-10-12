@@ -175,20 +175,20 @@ def test_runtime_read_and_materialization_bounded_projection() -> None:
 
 
 def test_runtime_binding_detail_template_compiles_and_handles_optional_containers() -> None:
-    from types import SimpleNamespace
-
     from jinja2 import Environment
 
     source = (
         ROOT / 'app/templates/artifact_registry/partials/_runtime_binding_detail.html'
     ).read_text()
     env = Environment(autoescape=True)
-    # Compile the actual partial, not just count control-flow tokens. This
-    # catches malformed closers such as {% endif %> before a modal is opened.
+    # Plain Jinja lacks application filters; register stubs for compilation.
+    env.filters['environment_name'] = lambda value, empty='Not Set': value
+    env.filters['user_datetime'] = lambda value: value
+    # Compile the entire partial to catch malformed template delimiters.
     env.from_string(source)
     assert '{% if binding.containers %}' in source
     assert '{% endif %}' in source
-    assert '{% endif %>' not in source.replace('{% endif %}', '')
+    assert 'endif %>' not in source
 
     start = source.index('{% if binding.containers %}')
     end = source.index("{{ detail.inventory_technical_row('Image Reference'", start)
