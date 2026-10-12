@@ -128,6 +128,10 @@ def get_report_artifact_registry_analysis_payload(report: Report) -> dict[str, A
     if error is not None or instance_id is None or instance is None:
         return {'_error': error or 'The selected Artifact Registry integration no longer exists.'}
 
+    state = db.session.get(RegistryCollectionState, instance_id)
+    if state is None or state.last_committed_at is None:
+        return {'_error': 'Selected Artifact Registry has no committed inventory evidence.'}
+
     # The Fast Shell no longer includes committed dashboard sections.
     # Reports resolve the established source-scoped projections explicitly.
     overview = build_overview_section('overview', provider_id=instance_id)
@@ -141,7 +145,6 @@ def get_report_artifact_registry_analysis_payload(report: Report) -> dict[str, A
         'alerts': signals_view.get('alerts') or {},
         'recommended_actions': signals_view.get('recommended_actions') or [],
     }
-    state = db.session.get(RegistryCollectionState, instance_id)
     artifacts = _query_artifacts(instance_id)
     capacity = dict(overview.get('capacity') or {})
     alerts = dict(overview.get('alerts') or {})
