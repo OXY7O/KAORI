@@ -14,11 +14,11 @@ from app.intelligence.alert_intelligence.lifecycle import active_delivery_silenc
 from app.intelligence.alert_intelligence.notifications import case_delivery_rows
 from app.intelligence.alert_intelligence.routing import notification_channel_options, routing_policy_rows
 from app.intelligence.alert_intelligence.templates import built_in_templates
+from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationInstance
 from app.models.inventory import ClusterInventory
 from app.models.registry import RegistryCollectionState
-from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
 from app.models.notification_channel import NotificationDelivery
 from app.models.object_storage import ObjectStorageSystem
 from app.models.user import User
@@ -674,7 +674,10 @@ def _active_silence_rows(
         query = query.filter(AlertCase.asset_key == asset_key)
     if severity != 'all':
         query = query.filter(AlertCase.severity == severity)
-    rows = query.order_by(AlertSilence.ends_at.asc()).all()
+    rows = (
+        query.options(selectinload(AlertSilence.case), selectinload(AlertSilence.created_by))
+        .order_by(AlertSilence.ends_at.asc()).all()
+    )
     result = [
         {
             'id': row.id,
