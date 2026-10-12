@@ -25,7 +25,7 @@ def _services(compose: str) -> dict[str, str]:
     return values
 
 
-def test_devcontainer_workspace_and_each_worker_use_single_optional_runtime_url() -> None:
+def test_devcontainer_workspace_and_each_worker_use_canonical_runtime_url() -> None:
     compose = COMPOSE.read_text()
     services = _services(compose)
     assert compose.startswith('name: kaori-dev\n')
@@ -39,13 +39,16 @@ def test_devcontainer_workspace_and_each_worker_use_single_optional_runtime_url(
     assert expected <= services.keys()
     for service in expected:
         section = services[service]
-        assert section.count('KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://') == 1
+        assert section.count('DATABASE_URL: ${DATABASE_URL:?') == 1
+        assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in section
+        assert '${POSTGRES_USER' not in section
         assert 'DATABASE_URL: postgresql://${POSTGRES_USER' not in section
         if service == 'workspace':
             assert 'WAIT_FOR_DB: "false"' in section
         else:
             assert 'WAIT_FOR_SCHEMA: "true"' in section
     assert 'db' not in services  # infra DB is supplied by canonical compose.yml
+    assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in compose
 
 
 def test_devcontainer_role_provisioning_is_transactional_and_not_data_destructive() -> None:
@@ -88,7 +91,8 @@ def test_postgresql_provisioning_role_record_does_not_shadow_current_role() -> N
 
 def test_post_cutover_initialization_requires_ephemeral_owner_database_url() -> None:
     source = INIT_DB.read_text()
-    assert 'KAORI_DEV_RUNTIME_DATABASE_URL' in source
+    assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in source
+    assert 'if [ -z "${KAORI_DB_MIGRATION_URL:-}" ]; then' in source
     assert 'KAORI_DB_MIGRATION_URL' in source
     assert 'DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app db upgrade' in source
     assert 'Do not run database migrations with kaori_runtime' in source
@@ -98,7 +102,8 @@ def test_post_cutover_initialization_requires_ephemeral_owner_database_url() -> 
 def test_devcontainer_runbook_requires_backup_and_explicit_operator_cutover() -> None:
     example = EXAMPLE.read_text()
     guide = RUNBOOK.read_text()
-    assert 'KAORI_DEV_RUNTIME_DATABASE_URL=' in example
+    assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in example
+    assert 'DATABASE_URL=postgresql://kaori_runtime:' in example
     assert 'KAORI_DB_MIGRATION_URL' in example
     assert 'pg_dump' in guide and 'pg_restore --list' in guide
     assert r'\password kaori_runtime' in guide
@@ -108,4 +113,23 @@ def test_devcontainer_runbook_requires_backup_and_explicit_operator_cutover() ->
     assert 'read-only' in guide
     assert 'down --volumes' in guide
     assert 'compromised' in guide.lower()
-    assert 'No migration, provisioning SQL or runtime cutover was executed' in guide
+    assert 'Local operator evidence' in guide
+
+
+def test_fresh_bootstrap_contract_reuses_owner_only_migration_and_scoped_reset() -> None:
+    guide = (ROOT / 'docs' / 'operations' / 'devcontainer-postgres-fresh-bootstrap.md').read_text()
+    compose = COMPOSE.read_text()
+    init = INIT_DB.read_text()
+    assert 'kaori-dev' in guide
+    assert 'com.docker.compose.project' in guide
+    assert 'com.docker.compose.service' in guide
+    assert 'kaori-dev_kaori_postgres_data' in guide
+    assert 'docker volume rm "$PG_VOLUME"' in guide
+    assert 'kaori_dc rm -f db' in guide
+    assert 'down -v' in guide
+    assert 'redis' in guide.lower() and 'DBSIZE' in guide
+    assert 'KAORI_DB_MIGRATION_URL' in init
+    assert 'KAORI_DB_MIGRATION_URL=' in guide
+    assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in init
+    assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in compose
+    assert 'DATABASE_URL=postgresql://kaori_runtime:' in EXAMPLE.read_text()
