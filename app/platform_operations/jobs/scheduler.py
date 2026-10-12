@@ -17,6 +17,22 @@ from app.platform_operations.jobs.policies.service import ensure_registered_job_
 logger = logging.getLogger(__name__)
 
 
+FAILED_DISPATCH_RETRY_MINUTES = 5
+
+
+def _record_failed_dispatch(
+    policy: JobPolicy, *, claim_next_run_at: datetime, now: datetime, message: str
+) -> bool:
+    """Retry only a claim still owned by this dispatch; preserve concurrent policy edits."""
+    if policy.last_dispatch_status != 'dispatching' or policy.next_run_at != claim_next_run_at:
+        return False
+    policy.last_dispatch_status = 'failed'
+    policy.last_dispatch_message = message[:255]
+    if policy.enabled:
+        policy.next_run_at = now + timedelta(minutes=FAILED_DISPATCH_RETRY_MINUTES)
+    return True
+
+
 def _advance_due_policy(policy: JobPolicy, now: datetime) -> None:
     interval_minutes = int(policy.interval_minutes or 0)
     if interval_minutes < 1:
@@ -56,6 +72,7 @@ def dispatch_due_job_policies(*, limit: int = 25) -> dict[str, object]:
         job_key = policy.job_key
         try:
             _advance_due_policy(policy, now)
+            claim_next_run_at = policy.next_run_at
             db.session.commit()
         except ValueError as exc:
             db.session.rollback()
@@ -88,10 +105,14 @@ def dispatch_due_job_policies(*, limit: int = 25) -> dict[str, object]:
             db.session.rollback()
             logger.exception('Scheduled job dispatch failed for %s.', job_key)
             current = db.session.get(JobPolicy, policy_id)
-            if current is not None:
-                current.last_dispatch_status = 'failed'
-                current.last_dispatch_message = str(exc)[:255]
-                db.session.commit()
+            if current is not None and claim_next_run_at is not None:
+                if _record_failed_dispatch(
+                    current,
+                    claim_next_run_at=claim_next_run_at,
+                    now=now,
+                    message=str(exc),
+                ):
+                    db.session.commit()
             results.append({'job_key': job_key, 'status': 'failed'})
             continue
 
