@@ -8,8 +8,8 @@
 {% import "integrations/components/_binding_readiness_boundary.html" as binding_readiness_boundary %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% set validated_binding_count = binding_rows|selectattr('validation_status', 'equalto', 'ready')|list|length %}
-{% set operational_binding_count = binding_rows|selectattr('operational_status', 'equalto', 'ready')|list|length %}
+{% set validated_binding_count = validated_binding_total %}
+{% set operational_binding_count = operational_binding_total %}
 {% set lifecycle_blocked = bindings or (deletion_guard and deletion_guard.blocked) %}
 {% set active_binding_id = binding_validation_job.get('binding_id') if binding_validation_job else none %}
 {% set active_binding_task_id = binding_validation_job.get('task_id') if binding_validation_job else none %}
@@ -62,7 +62,7 @@
             </div>
             <div class="px-5 py-4 sm:px-6">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Assets</p>
-                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ source_resolution_rows|length }}</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ resolution_scope_total }}</p>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Consumer assets evaluated</p>
             </div>
         </div>
@@ -87,7 +87,7 @@
                 <div>
                     <h3 id="alertmanager-consumer-resolution-title"
                         class="text-base font-semibold leading-6 text-content-primary">Effective Consumer Resolution</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Alert Intelligence and silence operations resolve independently against required capability contracts.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Alert Intelligence and silence resolution reflect the visible binding page; use pagination for other assets.</p>
                 </div>
             </div>
         </header>
