@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from app.reports.overview.service import current_utc_month_bounds, get_artifact_statistics
+from app.reports.overview.service import current_utc_month_bounds, format_all_time_completion_rate
 
 
 def test_month_window_has_exclusive_end_across_year_boundary() -> None:
@@ -14,3 +14,9 @@ def test_month_window_uses_utc_not_browser_local_timezone() -> None:
     start, end = current_utc_month_bounds(datetime(2026, 11, 1, 0, 30, tzinfo=ZoneInfo('Asia/Jakarta')))
     assert start == datetime(2026, 10, 1, tzinfo=UTC)
     assert end == datetime(2026, 11, 1, tzinfo=UTC)
+
+
+def test_completion_rate_excludes_pending_and_uses_all_history() -> None:
+    assert format_all_time_completion_rate({'ready': 2, 'archived': 1, 'failed': 1, 'pending': 50}) == '75%'
+    assert format_all_time_completion_rate({'ready': 0, 'archived': 0, 'failed': 0, 'pending': 7}) == '—'
+    assert format_all_time_completion_rate({'ready': 0, 'archived': 0, 'failed': 5}) == '0%'
