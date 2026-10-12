@@ -268,9 +268,10 @@
                 const selected = button.dataset.tenantAllocationDetailTab === name
                 button.setAttribute('aria-selected', String(selected))
                 button.tabIndex = selected ? 0 : -1
-                button.classList.toggle('bg-surface-card', selected)
-                button.classList.toggle('shadow-sm', selected)
+                button.classList.toggle('border-kaori-primary', selected)
+                button.classList.toggle('bg-kaori-soft', selected)
                 button.classList.toggle('text-kaori-primary', selected)
+                button.classList.toggle('border-transparent', !selected)
                 button.classList.toggle('text-content-muted', !selected)
                 if (selected && focus) button.focus()
             })
@@ -281,7 +282,8 @@
         detailTabs.forEach((button, index) => {
             button.addEventListener('click', () => selectDetail(button.dataset.tenantAllocationDetailTab))
             button.addEventListener('keydown', (event) => {
-                const move = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
+                const move = ['ArrowRight', 'ArrowDown'].includes(event.key) ? 1
+                    : ['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 0
                 if (!move && event.key !== 'Home' && event.key !== 'End') return
                 event.preventDefault()
                 const next = event.key === 'Home' ? 0
