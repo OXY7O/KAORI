@@ -331,7 +331,7 @@ def test_harbor_frontpage_matches_canonical_provider_workspace_hierarchy() -> No
     assert 'No Consumer Binding Surface Yet' not in index
     assert 'committed Registry inventory' in index
     assert 'Metrics Source bindings' in index
-    assert 'webhook readiness' in index
+    assert 'and Webhook. Core readiness is separate.' in index
 
 
 def test_harbor_coverage_keeps_independent_registry_readiness_planes() -> None:
@@ -341,11 +341,11 @@ def test_harbor_coverage_keeps_independent_registry_readiness_planes() -> None:
     for label in ('Harbor API', 'Inventory', 'Metrics Source', 'Webhook', 'Coverage'):
         assert label in coverage or label in read('app/templates/integrations/components/_provider_registry.html')
     assert '_provider_status(instance)' in presentation
-    assert 'inventory_eligibility = registry_inventory_eligibility(identity)' in presentation
-    assert '_inventory_status(collection, eligibility=inventory_eligibility)' in presentation
+    assert "registry_inventory_eligibility(row['identity'])" in presentation
+    assert "row['inventory_status'] = _inventory_status(" in presentation
     assert '_metrics_status(metrics)' in presentation
     assert '_webhook_status(webhook)' in presentation
-    assert "coverage_label = 'Complete' if complete else 'Partial'" in presentation
+    assert "'Full Coverage' if complete else 'Partial Coverage'" in presentation
 
 
 def test_harbor_coverage_does_not_force_desktop_horizontal_scroll() -> None:
