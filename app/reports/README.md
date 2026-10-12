@@ -174,3 +174,7 @@ The registry must remain readable if a persisted custom template references a re
 ### Report Templates validation recovery (#1565)
 
 Invalid custom-template create/edit submissions render the same existing native modal with submitted values and an accessible server-owned validation summary (`422`). No unbounded session or cross-user flash store is introduced; the safe registry query/pagination return boundary remains intact. Valid mutations still perform canonical feedback and redirect to the edited template. The externally owned form JavaScript under merged #394/#435 remains unchanged.
+
+### Report Templates generation permission (#1564)
+
+The Templates management workspace owns draft/active lifecycle and system/custom duplication. A Template manager may open Generate only if they independently have `reports.generate`; draft templates remain unavailable regardless of RBAC. The Generate route remains authoritative for admission and scope validation.
