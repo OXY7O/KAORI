@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy import func
+
 from app.artifact_registry.sync_jobs import (
     NoEligibleRegistryTargets,
     build_registry_inventory_targets,
@@ -10,6 +12,7 @@ from app.artifact_registry.sync_jobs import (
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_INVENTORY_SYNC_OPERATION
 from app.common.job_execution_presentation import present_job_execution
 from app.models.integration import IntegrationInstance
+from app.models.registry import RegistryCollectionState, RegistryProject
 from app.models.job import JobExecution, JobPolicy
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
@@ -22,11 +25,29 @@ def dispatch_registry_inventory_sync(
     trigger_type: str,
     parameters: dict[str, Any] | None = None,
 ) -> RegisteredJobDispatchResult:
-    del parameters
+    confirmation_instance_id: int | None = None
+    if parameters and parameters.get('empty_reconciliation'):
+        if (
+            trigger_type != 'manual'
+            or requested_by_user_id is None
+            or parameters.get('empty_reconciliation') != 'confirm'
+            or parameters.get('confirmation_phrase') != 'CONFIRM EMPTY'
+        ):
+            return RegisteredJobDispatchResult(
+                status='blocked',
+                message='Explicit manual confirmation (CONFIRM EMPTY) is required to reconcile an empty Registry.',
+            )
+        try:
+            confirmation_instance_id = int(parameters.get('confirm_empty_instance_id') or 0)
+        except (TypeError, ValueError):
+            confirmation_instance_id = None
+        if not confirmation_instance_id or confirmation_instance_id <= 0:
+            return RegisteredJobDispatchResult(status='blocked', message='Select the Registry provider to reconcile.')
     try:
         job, created = enqueue_all_registry_inventory_sync(
             requested_by_user_id=requested_by_user_id,
             trigger_type=trigger_type,
+            confirm_empty_instance_id=confirmation_instance_id,
         )
     except NoEligibleRegistryTargets as exc:
         return RegisteredJobDispatchResult(status='blocked', message=str(exc))
@@ -50,6 +71,27 @@ def build_registry_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
     registered_count = IntegrationInstance.query.filter_by(integration_type='registry').count()
     eligible_targets = build_registry_inventory_targets()
     eligible_count = len(eligible_targets)
+    eligible_ids = [int(row['integration_instance_id']) for row in eligible_targets]
+    nonempty = (
+        RegistryProject.query.with_entities(
+            RegistryProject.integration_instance_id, func.count(RegistryProject.id)
+        )
+        .join(
+            RegistryCollectionState,
+            RegistryCollectionState.integration_instance_id == RegistryProject.integration_instance_id,
+        )
+        .filter(
+            RegistryProject.integration_instance_id.in_(eligible_ids),
+            RegistryCollectionState.last_committed_at.is_not(None),
+        )
+        .group_by(RegistryProject.integration_instance_id).all()
+        if eligible_ids else []
+    )
+    count_by_id = {int(pid): int(count) for pid, count in nonempty}
+    empty_reconciliation_targets = [
+        {**target, 'previous_project_count': count_by_id[int(target['integration_instance_id'])]}
+        for target in eligible_targets if int(target['integration_instance_id']) in count_by_id
+    ]
     blocked_count = max(registered_count - eligible_count, 0)
     jobs = JobExecution.query.filter(
         JobExecution.job_type == 'artifact_registry_inventory',
@@ -68,6 +110,7 @@ def build_registry_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
         'eligible_target_count': eligible_count,
         'blocked_system_count': blocked_count,
         'eligible_targets': eligible_targets,
+        'empty_reconciliation_targets': empty_reconciliation_targets,
         'interval_label': present_interval(policy.interval_minutes),
         'active_job': _present(active_job),
         'latest_job': _present(latest_job),
