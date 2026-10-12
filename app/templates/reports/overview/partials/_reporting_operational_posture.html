@@ -58,7 +58,7 @@
                         </div>
                         <div class="flex shrink-0 items-center gap-3 pl-11 sm:pl-0">
                             {{ table_label.status_indicator_label(item.status, item.tone, none, 'detail') }}
-                            {% if current_user.has_permission(item.permission) %}
+                            {% if item.permission is defined and current_user.has_permission(item.permission) %}
                                 <a href="{{ item.href }}"
                                    class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-dark">
                                     {{ item.action_label }}
