@@ -68,6 +68,9 @@ from app.kubernetes.tenant.live_connection import get_live_tenant_connection_con
 from app.kubernetes.tenant.capsule_successor_acceptance import (
     accept_capsule_successor_handoff_committed,
 )
+from app.kubernetes.tenant.capsule_handoff_restart import (
+    restart_expired_capsule_handoff_plan_committed,
+)
 from app.kubernetes.tenant.capsule_handoff_preview_service import (
     preview_capsule_release_namespace_committed,
 )
@@ -993,6 +996,41 @@ def restart_expired_tenant_release_handoff_route(tenant_id: str):
             message=f"New plan {result['plan_sha256'][:12]} requires a fresh independent review.",
             detail='Previous approval and external reference are historical only; no provider transfer occurred.',
             metadata={'tenant_id': tenant_id, 'operation': 'restart_expired_release_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/capsule-restart-expired')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def restart_expired_capsule_handoff_route(tenant_id: str):
+    """Original-requester-only G1 restart, with zero attempt ledger evidence."""
+    try:
+        _csrf()
+        receipt = restart_expired_capsule_handoff_plan_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_capsule_handoff_restart') == 'restart',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_handoff_restart_blocked',
+            status='warning',
+            title='Capsule Handoff Restart Blocked',
+            message=str(exc),
+            detail='Prior approved scope and provider resources were not changed. A START/attempt requires independent recovery.',
+            metadata={'tenant_id': tenant_id, 'operation': 'restart_expired_capsule_handoff'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_handoff_plan_restarted',
+            status='info',
+            title='Fresh Capsule Handoff Plan Prepared',
+            message=f"Plan {receipt['plan_sha256'][:12]} requires another independent review.",
+            detail='Old acceptance/previews remain historical and cannot authorize provider mutations under the new SHA.',
+            metadata={'tenant_id': tenant_id, 'operation': 'restart_expired_capsule_handoff'},
         )
     return _tenant_section_redirect('registry')
 
