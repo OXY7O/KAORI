@@ -1424,7 +1424,7 @@ def test_allocation_change_shows_request_and_limit_evidence_for_both_contracts()
     script = read('app/static/js/tenant_resource_profile_presets.js')
     context = read('app/kubernetes/tenant/registry_context.py')
     assert template.count('ResourceQuota · Requests &amp; Limits') == 2
-    assert 'Requests drive capacity admission; limits enforce ceilings.' in template
+    assert 'Requests govern capacity admission; limits enforce ResourceQuota ceilings.' in template
 
     expected = (
         ('CPU Requests', 'cpu'),
@@ -1473,7 +1473,7 @@ def test_allocation_change_advanced_readonly_contract_and_evidence_boundaries() 
 
     assert template.count('view_more_content.render(') == 2
     assert 'components/view_more_content.html' in template
-    assert template.count('data-tenant-allocation-detail-group') == 3
+    assert template.count('data-tenant-allocation-detail-group') == 2
     assert 'data-tenant-allocation-detail-group="advanced-controls"' in template
     assert 'Advanced Contract Comparison' in template
     assert 'Current · Frozen' in template
