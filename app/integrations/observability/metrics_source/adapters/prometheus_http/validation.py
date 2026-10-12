@@ -29,17 +29,21 @@ def _valid_core_response(key: str, payload: Any) -> bool:
         if not isinstance(data, dict):
             return False
         kind = 'vector' if key == 'instant_query' else 'matrix'
-        if data.get('resultType') != kind or not isinstance(data.get('result'), list):
+        if data.get('resultType') != kind or not isinstance(data.get('result'), list) or not data['result']:
             return False
         for item in data['result']:
             if not isinstance(item, dict) or not isinstance(item.get('metric'), dict):
                 return False
             samples = item.get('value' if kind == 'vector' else 'values')
             if kind == 'vector':
-                if not isinstance(samples, list) or len(samples) != 2:
+                if (not isinstance(samples, list) or len(samples) != 2
+                    or not isinstance(samples[0], (int, float))
+                    or not isinstance(samples[1], str)):
                     return False
             elif not isinstance(samples, list) or not all(
-                isinstance(sample, list) and len(sample) == 2 for sample in samples
+                isinstance(sample, list) and len(sample) == 2
+                and isinstance(sample[0], (int, float))
+                and isinstance(sample[1], str) for sample in samples
             ):
                 return False
         return True
