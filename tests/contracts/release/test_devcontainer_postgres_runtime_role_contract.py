@@ -94,6 +94,11 @@ def test_post_cutover_initialization_requires_ephemeral_owner_database_url() -> 
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in source
     assert 'if [ -z "${KAORI_DB_MIGRATION_URL:-}" ]; then' in source
     assert 'KAORI_DB_MIGRATION_URL' in source
+    assert 'migration.username == runtime.username' in source
+    assert 'migration.host != runtime.host or migration.database != runtime.database' in source
+    assert 'SELECT current_user, current_database()' in source
+    assert 'actual_owner != expected_owner or actual_database != expected_database' in source
+    assert 'PASS: explicit DevContainer PostgreSQL migration identity admitted' in source
     assert 'DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app db upgrade' in source
     assert 'Do not run database migrations with kaori_runtime' in source
     assert 'DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app seed-rbac' in source
