@@ -1,10 +1,11 @@
-"""Docker-based first-run initializer checks; no Docker or database calls."""
+"""Pure regression tests for #1427 repo-local ignored DevContainer DB env.
+
+No PostgreSQL/database or Docker daemon is contacted.
+"""
 from __future__ import annotations
 
 import json
-import os
 import runpy
-import stat
 from pathlib import Path
 
 import pytest
@@ -14,126 +15,171 @@ PREPARE = ROOT / '.devcontainer' / 'prepare-postgres-env.py'
 
 
 def _sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    namespace = runpy.run_path(str(PREPARE), run_name='kaori_docker_initializer_test')
+    namespace = runpy.run_path(str(PREPARE), run_name='kaori_first_run_contract')
     scope = namespace['main'].__globals__
-    checkout = tmp_path / 'checkout'
-    checkout.mkdir()
-    admin = tmp_path / 'admin_volume'
-    migrator = tmp_path / 'migrator_volume'
-    admin.mkdir()
-    migrator.mkdir()
+    workspace = tmp_path / 'checkout'
+    workspace.mkdir()
+    pgdata = tmp_path / 'pgdata'
+    pgdata.mkdir()
+    secret_dir = workspace / 'secrets' / 'devcontainer'
     scope.update({
-        'ROOT': checkout,
-        'APP_ENV': checkout / '.env',
-        'ADMIN_DIR': admin,
-        'MIGRATOR_DIR': migrator,
-        'ADMIN_SECRET': admin / 'postgres_password',
-        'RUNTIME_SECRET': admin / 'runtime_password',
-        'MIGRATOR_SECRET': migrator / 'password',
-        'POSTGRES_UID': os.getuid(),
-        'POSTGRES_GID': os.getgid(),
+        'ROOT': workspace,
+        'APP_ENV': workspace / '.env',
+        'PG_DATA': pgdata,
+        'SECRET_DIR': secret_dir,
+        'ADMIN_ENV': secret_dir / 'postgres-bootstrap.env',
+        'MIGRATOR_ENV': secret_dir / 'postgres-migrate.env',
+        'BACKUP_ENV': secret_dir / 'application-env-before-three-role.bak',
     })
-    scope['ROLE_SECRETS'] = (
-        scope['ADMIN_SECRET'], scope['RUNTIME_SECRET'], scope['MIGRATOR_SECRET'],
-    )
-    (checkout / '.env.example').write_text(
+    (workspace / '.env.example').write_text(
         'APP_ENV=development\n'
         'POSTGRES_DB=kaori\n'
         'POSTGRES_USER=postgres\n'
         'DATABASE_URL=postgresql://kaori_runtime:generated-by-devcontainer-initialize-command@db:5432/kaori\n'
-        'SECRET_KEY=replace-with-placeholder\n'
+        'SECRET_KEY=replace-placeholder\n'
         'INTEGRATION_CREDENTIAL_KEY=\n'
-        'ADMIN_PASSWORD=replace-with-placeholder\n',
+        'ADMIN_PASSWORD=replace-placeholder\n',
+        encoding='utf-8',
     )
     monkeypatch.setenv('KAORI_DEV_DOCKER_INIT', '1')
     return namespace['main'], scope
 
 
-def test_three_passwords_and_reopen_stability(
+def test_fresh_volume_generates_repo_ignored_credentials_and_runtime_url(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    main, scope = _sandbox(tmp_path, monkeypatch)
+    main, s = _sandbox(tmp_path, monkeypatch)
     main()
-    env = scope['APP_ENV'].read_text()
-    assert 'DATABASE_URL=postgresql://kaori_runtime:' in env
-    assert 'POSTGRES_PASSWORD=' not in env
-    assert 'generated-by-devcontainer-initialize-command' not in env
-    passwords = {scope[p].read_text() for p in (
-        'ADMIN_SECRET', 'RUNTIME_SECRET', 'MIGRATOR_SECRET',
-    )}
-    assert len(passwords) == 3
-    for p in ('ADMIN_SECRET', 'RUNTIME_SECRET', 'MIGRATOR_SECRET'):
-        assert stat.S_IMODE(scope[p].stat().st_mode) == 0o600
+    runtime = s['APP_ENV'].read_text()
+    bootstrap = s['ADMIN_ENV'].read_text()
+    migrator = s['MIGRATOR_ENV'].read_text()
+    assert 'DATABASE_URL=postgresql://kaori_runtime:' in runtime
+    assert 'generated-by-devcontainer-initialize-command' not in runtime
+    assert 'POSTGRES_PASSWORD=' not in runtime
+    assert 'POSTGRES_PASSWORD=' in bootstrap
+    assert 'KAORI_RUNTIME_PASSWORD=' in bootstrap
+    assert 'KAORI_MIGRATOR_PASSWORD=' in migrator
     main()
-    assert scope['APP_ENV'].read_text() == env
+    assert s['APP_ENV'].read_text() == runtime
+    assert s['ADMIN_ENV'].read_text() == bootstrap
+    assert s['MIGRATOR_ENV'].read_text() == migrator
 
 
-def test_missing_app_env_or_migrator_secret_refuses_recovery(
+def test_old_local_db_url_with_empty_pg_volume_is_backed_up_before_reconciliation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    main, scope = _sandbox(tmp_path, monkeypatch)
+    main, s = _sandbox(tmp_path, monkeypatch)
+    old = (
+        'APP_ENV=development\n'
+        'DATABASE_URL=postgresql://kaori:old-owner-secret@db:5432/kaori\n'
+        'ADMIN_EMAIL=custom@example.invalid\n'
+        'SECRET_KEY=preserve-me\n'
+    )
+    s['APP_ENV'].write_text(old)
     main()
-    env = scope['APP_ENV'].read_text()
-    scope['APP_ENV'].unlink()
-    with pytest.raises(SystemExit, match='missing app .env'):
-        main()
-    scope['APP_ENV'].write_text(env)
-    scope['MIGRATOR_SECRET'].unlink()
-    with pytest.raises(SystemExit, match='incomplete persistent PostgreSQL secrets'):
-        main()
+    assert s['BACKUP_ENV'].read_text() == old
+    updated = s['APP_ENV'].read_text()
+    assert 'ADMIN_EMAIL=custom@example.invalid' in updated
+    assert 'SECRET_KEY=preserve-me' in updated
+    assert 'DATABASE_URL=postgresql://kaori_runtime:' in updated
+    assert 'old-owner-secret' not in updated
 
 
-def test_runtime_credential_drift_aborts(
+def test_preexisting_postgresql_data_never_gets_new_login_credentials(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    main, scope = _sandbox(tmp_path, monkeypatch)
-    main()
-    tampered = scope['APP_ENV'].read_text().replace('kaori_runtime:', 'postgres:')
-    scope['APP_ENV'].write_text(tampered)
-    with pytest.raises(SystemExit, match='runtime URL does not match'):
+    main, s = _sandbox(tmp_path, monkeypatch)
+    (s['PG_DATA'] / 'PG_VERSION').write_text('16\n')
+    with pytest.raises(SystemExit, match='existing PostgreSQL data'):
         main()
-    assert scope['APP_ENV'].read_text() == tampered
+    assert not s['ADMIN_ENV'].exists()
+    assert not s['MIGRATOR_ENV'].exists()
 
 
-@pytest.mark.parametrize('key', [
+def test_partial_cluster_directory_fails_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, s = _sandbox(tmp_path, monkeypatch)
+    (s['PG_DATA'] / 'global').mkdir()
+    with pytest.raises(SystemExit, match='nonempty but uninitialized'):
+        main()
+
+
+def test_partial_secrets_and_missing_app_env_are_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, s = _sandbox(tmp_path, monkeypatch)
+    main()
+    s['MIGRATOR_ENV'].unlink()
+    with pytest.raises(SystemExit, match='incomplete repo-local'):
+        main()
+    s['MIGRATOR_ENV'].write_text('KAORI_MIGRATOR_PASSWORD=recovered-original-secret\n')
+    s['APP_ENV'].unlink()
+    with pytest.raises(SystemExit, match='application .env is absent'):
+        main()
+
+
+def test_existing_mismatched_runtime_url_aborts_without_replacement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    main, s = _sandbox(tmp_path, monkeypatch)
+    main()
+    modified = s['APP_ENV'].read_text().replace('kaori_runtime:', 'postgres:')
+    s['APP_ENV'].write_text(modified)
+    with pytest.raises(SystemExit, match='mismatches existing secrets'):
+        main()
+    assert s['APP_ENV'].read_text() == modified
+
+
+@pytest.mark.parametrize('name', [
     'KAORI_MIGRATOR_PASSWORD', 'KAORI_RUNTIME_PASSWORD',
     'KAORI_DB_MIGRATION_URL', 'PGPASSWORD', 'POSTGRES_PASSWORD_FILE',
 ])
-def test_app_env_rejects_database_privileges(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, key: str,
+def test_privileged_credentials_refused_in_shared_app_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str,
 ) -> None:
-    main, scope = _sandbox(tmp_path, monkeypatch)
-    scope['APP_ENV'].write_text(f'APP_ENV=development\n{key}=elevated\n')
-    with pytest.raises(SystemExit, match='must not be present'):
+    main, s = _sandbox(tmp_path, monkeypatch)
+    s['APP_ENV'].write_text(f'APP_ENV=development\n{name}=secret\n')
+    with pytest.raises(SystemExit, match='must not be present in shared application'):
         main()
-    assert not scope['ADMIN_SECRET'].exists()
+    assert not s['ADMIN_ENV'].exists()
 
 
-def test_non_development_app_env_or_untrusted_entrypoint_aborts(
+def test_untrusted_external_database_url_cannot_be_overwritten(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    main, scope = _sandbox(tmp_path, monkeypatch)
-    scope['APP_ENV'].write_text('APP_ENV=production\n')
-    with pytest.raises(SystemExit, match='development-only'):
+    main, s = _sandbox(tmp_path, monkeypatch)
+    s['APP_ENV'].write_text(
+        'APP_ENV=development\nDATABASE_URL=postgresql://owner:secret@external.example:5432/prod\n'
+    )
+    with pytest.raises(SystemExit, match='outside the approved local'):
         main()
-    monkeypatch.delenv('KAORI_DEV_DOCKER_INIT')
-    with pytest.raises(SystemExit, match='isolated Docker initializeCommand'):
-        main()
+    assert not s['ADMIN_ENV'].exists()
 
 
-def test_native_windows_docker_works_without_python_or_wsl_host() -> None:
+def test_native_windows_docker_command_checks_actual_db_volume() -> None:
     spec = json.loads((ROOT / '.devcontainer/devcontainer.json').read_text())
-    command = spec['initializeCommand']
-    assert command[:3] == ['docker', 'run', '--rm']
-    assert 'python:3.12-alpine' in command
-    assert 'KAORI_DEV_DOCKER_INIT=1' in command
-    assert 'type=bind,source=' + chr(36) + '{localWorkspaceFolder},target=/workspace' in command
+    cmd = spec['initializeCommand']
+    assert cmd[:3] == ['docker', 'run', '--rm']
+    assert 'python:3.12-alpine' in cmd
+    assert 'KAORI_DEV_DOCKER_INIT=1' in cmd
+    assert any('kaori-dev_kaori_postgres_data' in value for value in cmd)
     assert 'db-bootstrap' not in spec['runServices']
     compose = (ROOT / '.devcontainer/compose.devcontainer.yml').read_text()
-    assert chr(36) + '{HOME:' not in compose
-    assert 'POSTGRES_PASSWORD_FILE: /run/kaori-admin/postgres_password' in compose
-    assert 'kaori_dev_pg_admin_credentials:/run/kaori-admin:ro' in compose
-    assert 'kaori_dev_pg_migrator_credentials:/run/kaori-migrator:ro' in compose
-    bootstrap = compose.split('\n  db-bootstrap:\n', 1)[1].split('\nvolumes:', 1)[0]
-    assert 'kaori_dev_pg_admin_credentials:' not in bootstrap
-    assert 'kaori_dev_pg_migrator_credentials:/run/kaori-migrator:ro' in bootstrap
+    assert 'postgres-bootstrap.env' in compose
+    assert 'postgres-migrate.env' in compose
+    assert 'external: true' in compose
+    assert 'kaori-dev_kaori_postgres_data' in compose
+    assert 'kaori_dev_pg_admin_credentials' not in compose
+    assert 'kaori_dev_pg_migrator_credentials' not in compose
+
+
+def test_live_secret_directory_ignored_by_git_and_docker_build() -> None:
+    assert '/secrets/' in (ROOT / '.gitignore').read_text()
+    assert '/secrets/' in (ROOT / '.dockerignore').read_text()
+    assert (
+        ROOT / '.devcontainer/examples/postgres-bootstrap.env.example'
+    ).is_file()
+    assert (
+        ROOT / '.devcontainer/examples/postgres-migrate.env.example'
+    ).is_file()
