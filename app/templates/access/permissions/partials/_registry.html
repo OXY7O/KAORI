@@ -8,12 +8,14 @@
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-tree" class="h-5 w-5"></i></span>
             <div class="min-w-0">
-                <h2 class="{{ table_ui.block_title_classes() }}">Permission Registry</h2>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="{{ table_ui.block_title_classes() }}">Permission Registry</h2>
+                    {{ table_label.result_count(matching_count) }}
+                </div>
                 <p class="{{ table_ui.block_description_classes() }}">Inspect code-owned contracts, dependencies, role coverage, and registry alignment.</p>
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            {{ table_label.metadata_label(matching_count ~ ' Matching ' ~ ('Permission' if matching_count == 1 else 'Permissions') , 'key-round') }}
             {% if filters.search or filters.module != 'all' or filters.coverage != 'all' or filters.delegation != 'all' %}
                 {{ registry_ui.clear_filters_link(
                     'access.permissions.index',

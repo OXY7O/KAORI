@@ -143,6 +143,7 @@
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2 class="{{ table_ui.block_title_classes() }}">Artifact Registry</h2>
+                                {{ table_label.result_count(payload.pagination.total_items) }}
                                 {% if payload.has_pending_reports %}
                                     {{ table_label.status_indicator_label('Live Updates', 'info') }}
                                 {% endif %}
