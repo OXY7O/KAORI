@@ -24,7 +24,7 @@ def test_inventory_retains_empty_project_and_repository_with_real_artifact_rows(
     ]
     instance = SimpleNamespace(name='registry', environment='uat')
     rows = _inventory_rows(instance, projects)
-    assert [row['record_type'] for row in rows] == ['project', 'repository', 'artifact']
+    assert [row['entity_type'] for row in rows] == ['project', 'repository', 'artifact']
     assert rows[0]['project'] == 'empty-project'
     assert rows[0]['repository'] is None and rows[0]['digest'] is None
     assert rows[1]['repository'] == 'empty-repository' and rows[1]['digest'] is None
@@ -39,7 +39,7 @@ def test_inventory_artifact_kpi_does_not_count_empty_container_identities() -> N
     metric = profile.overview_metrics[0]
     assert metric.label == 'Artifacts'
     assert metric.aggregation == 'count'
-    assert metric.key == 'record_type'
+    assert metric.key == 'entity_type'
     assert metric.match_values == ('artifact',)
     assert profile.identity_columns == ('registry', 'environment', 'project', 'repository', 'digest')
-    assert 'record_type' in {column.key for column in profile.columns}
+    assert 'entity_type' in {column.key for column in profile.columns}
