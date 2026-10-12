@@ -116,21 +116,55 @@ def dispatch_due_job_policies(*, limit: int = 25) -> dict[str, object]:
             results.append({'job_key': job_key, 'status': 'failed'})
             continue
 
-        if outcome.job is not None and outcome.created:
-            record_automatic_job_event(
-                outcome.job,
-                action='automatic_job_queued',
-                summary=f'Automatic {job_key} execution was queued.',
-                metadata={'job_key': job_key, 'dispatch_status': outcome.status},
-            )
-        current = db.session.get(JobPolicy, policy_id)
-        if current is not None:
-            current.last_dispatch_status = outcome.status
-            current.last_dispatch_message = outcome.message[:255]
-            if outcome.job is not None:
-                current.last_dispatched_at = now
-                current.last_job_execution_id = outcome.job.id
+        # The dispatch is already committed to the canonical JobExecution.
+        # Commit the queued audit event and policy outcome together so an audit
+        # persistence failure cannot kill the rest of the scheduler batch.
+        try:
+            if outcome.job is not None and outcome.created:
+                record_automatic_job_event(
+                    outcome.job,
+                    action='automatic_job_queued',
+                    summary=f'Automatic {job_key} execution was queued.',
+                    metadata={'job_key': job_key, 'dispatch_status': outcome.status},
+                    commit=False,
+                )
+            current = db.session.get(JobPolicy, policy_id)
+            if current is not None:
+                current.last_dispatch_status = outcome.status
+                current.last_dispatch_message = outcome.message[:255]
+                if outcome.job is not None:
+                    current.last_dispatched_at = now
+                    current.last_job_execution_id = outcome.job.id
             db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            logger.exception(
+                'Scheduled job %s was dispatched, but its audit/policy evidence failed to persist.', job_key
+            )
+            # The job may be running: never re-dispatch it to repair audit evidence.
+            # Persist a degraded policy marker as a best effort for operator review.
+            try:
+                current = db.session.get(JobPolicy, policy_id)
+                if current is not None and current.last_dispatch_status == 'dispatching':
+                    current.last_dispatch_status = 'evidence_failed'
+                    current.last_dispatch_message = (
+                        'Dispatch outcome evidence failed; inspect canonical JobExecution before retry.'
+                    )
+                    if outcome.job is not None:
+                        current.last_dispatched_at = now
+                        current.last_job_execution_id = outcome.job.id
+                    db.session.commit()
+            except SQLAlchemyError:
+                db.session.rollback()
+                logger.exception('Could not persist degraded dispatch evidence for %s.', job_key)
+            results.append(
+                {
+                    'job_key': job_key,
+                    'status': 'evidence_failed',
+                    'job_execution_id': outcome.job.id if outcome.job is not None else None,
+                }
+            )
+            continue
         results.append(
             {
                 'job_key': job_key,
