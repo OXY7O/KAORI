@@ -297,3 +297,19 @@ def test_topology_adaptive_relationship_labels_and_legend() -> None:
     assert 'Small graphs display labels automatically.' in workspace
     assert 'Relationship Visibility' in workspace
     assert '1–8 visible relationships' in palette
+
+
+def test_topology_compact_layout_fits_external_labels_and_resize() -> None:
+    script = _read('app/static/js/kubernetes/inventory/topology.js')
+    pattern = _read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
+
+    assert "const visibleCount = cy ? cy.nodes(':visible').length : 0" in script
+    assert 'spacingFactor: visibleCount <= 8 ? 1.18 : visibleCount <= 35 ? 1.48 : 1.88' in script
+    assert 'visible.boundingBox({ includeLabels: true, includeOverlays: false })' in script
+    assert 'cy.fit(bounds, padding)' in script
+    assert 'cy.center(visible)' not in script
+    assert "if (!cy || activeView !== 'graph') return" in script
+    assert 'visible.renderedBoundingBox({ includeLabels: true, includeOverlays: false })' in script
+    assert 'window.requestAnimationFrame(fitGraphToCanvas)' in script
+    assert '## Compact Hierarchy and Viewport Safety' in pattern
+    assert 'Dependency View remains independent' in pattern

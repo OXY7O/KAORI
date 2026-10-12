@@ -59,6 +59,10 @@ A truncated graph uses a warning callout with omitted counts. Renderer errors pr
 
 The canonical graph uses compact rounded domain badges with a resource-type glyph and semantic status dot. The object name is rendered below the badge as one external line with bounded ellipsis, while the complete name and type remain available in Resource List and Details. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.
 
+## Compact Hierarchy and Viewport Safety
+
+Hierarchy View retains the existing Cytoscape breadth-first layout, but node spacing adapts to the visible graph: compact at 8 or fewer nodes, intermediate through 35, and the established wide spacing for larger views. Layout fitting uses the visible graph's bounding box including external node labels and a bounded canvas safety margin. Resize only re-fits when visible evidence is clipped by the resized viewport; normal operator pan/zoom remains under the user's control. Dependency View remains independent, preserving its existing COSE geometry. Namespace grouping, list fallback and snapshot read boundary do not change.
+
 ## Canonical Server Architecture
 
 Topology does not use one monolithic service or an internal compatibility wrapper. Ownership is split by responsibility:

@@ -610,6 +610,7 @@ const startTopologyWorkspace = () => {
                 randomize: true,
             }
         }
+        const visibleCount = cy ? cy.nodes(':visible').length : 0
         return {
             name: 'breadthfirst',
             animate: false,
@@ -619,8 +620,8 @@ const startTopologyWorkspace = () => {
             grid: true,
             maximal: false,
             nodeDimensionsIncludeLabels: true,
-            padding: 64,
-            spacingFactor: 1.88,
+            padding: visibleCount <= 8 ? 72 : 64,
+            spacingFactor: visibleCount <= 8 ? 1.18 : visibleCount <= 35 ? 1.48 : 1.88,
         }
     }
 
@@ -681,9 +682,10 @@ const startTopologyWorkspace = () => {
         cy.resize()
         const rect = canvas.getBoundingClientRect()
         const shortest = Math.min(rect.width || 0, rect.height || 0)
+        if (rect.width < 120 || rect.height < 120) return
         const padding = Math.max(48, Math.min(88, Math.round(shortest * 0.08)))
-        cy.fit(visible, padding)
-        cy.center(visible)
+        const bounds = visible.boundingBox({ includeLabels: true, includeOverlays: false })
+        cy.fit(bounds, padding)
     }
 
     const setRuntimeStatus = (message = '') => {
@@ -2005,8 +2007,18 @@ const startTopologyWorkspace = () => {
 
     if (window.ResizeObserver && canvasShell) {
         const observer = new ResizeObserver(() => {
-            if (!cy) return
+            if (!cy || activeView !== 'graph') return
             cy.resize()
+            const visible = visibleGraphElements()
+            const rect = canvas.getBoundingClientRect()
+            if (visible?.nodes().length && rect.width >= 120 && rect.height >= 120) {
+                const box = visible.renderedBoundingBox({ includeLabels: true, includeOverlays: false })
+                const margin = 20
+                if (box.x1 < margin || box.y1 < margin || box.x2 > rect.width - margin ||
+                    box.y2 > rect.height - margin) {
+                    window.requestAnimationFrame(fitGraphToCanvas)
+                }
+            }
             scheduleBoundaryUpdate()
             scheduleDrawerMiniMapUpdate()
         })
