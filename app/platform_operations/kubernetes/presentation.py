@@ -11,6 +11,7 @@ def _administration_posture(
     ready_cluster_count: int,
     enabled_namespace_count: int,
     global_reveal_enabled: bool,
+    eligible_policy_count: int = 0,
 ) -> tuple[str, str, str]:
     if cluster_count == 0:
         return (
@@ -34,7 +35,7 @@ def _administration_posture(
         return (
             'Partial Readiness',
             'warning',
-            f'{ready_cluster_count} of {cluster_count} connected clusters satisfy reveal prerequisites.',
+            f'{ready_cluster_count} of {cluster_count} registered clusters have configured Reveal prerequisites.',
         )
     if enabled_namespace_count == 0:
         return (
@@ -42,10 +43,16 @@ def _administration_posture(
             'warning',
             'Cluster prerequisites are ready; enable at least one namespace policy to admit protected reveal.',
         )
+    if eligible_policy_count == 0:
+        return (
+            'Policy Scope Review',
+            'warning',
+            'Enabled namespace policies are not attached to a cluster with configured Reveal prerequisites.',
+        )
     return (
-        'Operational',
-        'normal',
-        'Protected Secret Reveal has ready cluster and namespace policy coverage.',
+        'Verification Required',
+        'warning',
+        'Cluster prerequisites and eligible namespace policies are configured. Live Namespace presence, Kubernetes RBAC, and Secret identity are verified only at execution.',
     )
 
 
@@ -59,6 +66,7 @@ def build_kubernetes_administration_summary() -> dict[str, object]:
         ready_cluster_count=counts['ready_cluster_count'],
         enabled_namespace_count=counts['enabled_namespace_count'],
         global_reveal_enabled=global_reveal_enabled,
+        eligible_policy_count=counts['eligible_policy_count'],
     )
     return {
         'cluster_count': counts['cluster_count'],
