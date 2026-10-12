@@ -158,3 +158,7 @@ List pages remain metadata-first and must never treat a reachable backend plus r
 ### Generated Reports Registry scope identity (#1555)
 
 Registry's generic scope filter includes active IntegrationInstance Registry options through `get_active_registry_options()`, alongside Kubernetes and Object Storage. Each persisted report's immutable scope label snapshot remains authoritative for historical presentation even when an integration is unavailable; absent snapshots use a safe Registry Integration ID fallback without per-row provider or IntegrationInstance lookups. Registry rows/detail display `Artifact Registry` / `Integration Scope`, not Kubernetes/namespace metadata. Scope filters remain server-side committed SQL.
+
+### Report Templates submitted section evidence (#1562)
+
+Custom Template POST preserves Analytics section keys, including empty/invalid selections, until server validation rejects them. Inventory sections must exactly match the definition's fixed workbook contract. Initial GET defaults and operator-driven Reset Sections are presentation only; no unsupported or duplicate section can be committed under the current catalog. Generate admission remains separately authoritative.
