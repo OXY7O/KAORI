@@ -259,3 +259,7 @@ Object Storage Alerts & Anomalies keeps two different evidence families explicit
 2. **KAORI metric-derived signals** evaluate Object Storage capacity, request error, queue-pressure, and node-health operating boundaries from the metrics collected in the same operational snapshot. These signals are not duplicated Alertmanager records and do not claim routing, silence, inhibition, or receiver evidence.
 
 Alertmanager and Metrics Source remain independent evidence families inside the snapshot. A collection failure for one stream must not fabricate evidence for the other, and the UI preserves the committed fallback semantics until the next successful worker refresh.
+
+## Alert-source response integrity (#1394)
+
+A source connection alone does not prove an empty alert set. The Object Storage worker requires a successful Prometheus alert-query envelope with a complete `data.result` array and well-formed alert series; it also requires an explicit normalized Alertmanager `alerts` array. Missing or malformed results are committed as unavailable alert-source evidence rather than `No Active Alerts`. A valid empty array remains a legitimate observed zero. Alertmanager remains authoritative for alert lifecycle, while Metrics Source fallback is independently qualified.
