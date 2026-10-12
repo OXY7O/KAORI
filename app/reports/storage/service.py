@@ -85,6 +85,13 @@ def build_storage_operations_posture(
             'Connectivity has recovered, but write readiness is still guarded. Use Verify Storage to '
             'confirm the write, existence, and cleanup path before retrying generation.'
         )
+    elif backend_status.get('state') == 'unsupported':
+        status_label = 'Needs Review'
+        status_tone = 'warning'
+        title = 'Unsupported Artifact Storage Backend'
+        description = 'The configured artifact backend is unsupported. All new artifact writes remain paused.'
+        tip_title = 'Correct Storage Configuration'
+        tip_text = 'Use the supported local or s3 backend and verify readiness before generating artifacts.'
     elif reachable:
         status_label = 'Needs Review'
         status_tone = 'warning'
@@ -596,10 +603,11 @@ def get_configured_storage_backend_name() -> str:
 
     if backend_name not in SUPPORTED_REPORT_STORAGE_BACKENDS:
         current_app.logger.warning(
-            'Unsupported REPORT_STORAGE_BACKEND=%s. Falling back to local.',
+            'Unsupported REPORT_STORAGE_BACKEND=%s. Artifact writes disabled.',
             backend_name,
         )
-        return 'local'
+        # Do not silently route S3-intended writes onto local filesystem.
+        return backend_name
 
     return backend_name
 

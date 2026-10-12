@@ -182,3 +182,7 @@ The Templates management workspace owns draft/active lifecycle and system/custom
 ### Report Templates bounded registry query (#1563)
 
 System templates remain definition-owned and first in the mixed registry. Custom template filtering, counting, and retrieval are database-side: shared KAORI pagination selects at most the current page size (default five) and a grouped type/status query supplies all-estate KPI counts without materializing the full custom estate. Search uses committed template metadata and catalog labels, not provider-live calls. No custom pagination abstraction is introduced.
+
+### Storage unsupported backend fail-closed (#1593)
+
+A blank backend defaults to local, but any nonempty unsupported REPORT_STORAGE_BACKEND remains unsupported. Its Storage workspace shows a degraded configuration and no new artifact may silently write to local. Historical stored URI access stays backend-specific.
