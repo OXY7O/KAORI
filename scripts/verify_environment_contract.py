@@ -32,6 +32,10 @@ INHERITED_OPTIONAL_KEYS = {
     'ARCHIVE_S3_FORCE_PATH_STYLE',
 }
 COMPOSE_COMPAT_KEYS = {'KAORI_ENV_FILE', 'KAORI_BIND_ADDRESS', 'KAORI_PORT', 'KAORI_RELEASE_ENV_FILE'}
+# The generic root Compose still supports other local consumers; the
+# DevContainer overlay owns these three PostgreSQL initialization values.
+# They MUST NOT live in the shared .env.example passed to app/workers.
+DEV_DB_BOOTSTRAP_ONLY_KEYS = {'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD'}
 
 RC_REQUIRED_KEYS = {
     'KAORI_IMAGE',
@@ -208,7 +212,15 @@ def verify() -> None:
         assert_no_duplicates(relative)
 
     development_keys = documented_env_keys('.env.example')
-    missing_development = sorted((common_keys | development_compose_keys) - development_keys)
+    if DEV_DB_BOOTSTRAP_ONLY_KEYS & development_keys:
+        raise AssertionError('DevContainer bootstrap-only PostgreSQL keys must not be in app .env.example')
+    if DEV_DB_BOOTSTRAP_ONLY_KEYS & common_keys:
+        raise AssertionError('Application runtime config reads PostgreSQL bootstrap-only keys')
+    if not DEV_DB_BOOTSTRAP_ONLY_KEYS <= development_compose_keys:
+        raise AssertionError('Expected root PostgreSQL bootstrap variables are absent')
+    missing_development = sorted(
+        (common_keys | development_compose_keys) - development_keys - DEV_DB_BOOTSTRAP_ONLY_KEYS
+    )
     if missing_development:
         raise AssertionError('.env.example is missing environment contract keys: ' + ', '.join(missing_development))
 
