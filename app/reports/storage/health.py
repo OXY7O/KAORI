@@ -100,7 +100,7 @@ def build_local_storage_health(*, include_artifact_inventory: bool = True) -> di
     staging_path = get_render_staging_path()
     cache_path = get_download_cache_path()
 
-    health = {
+    health: dict[str, Any] = {
         'root_path': str(root_path),
         'reports_path': str(reports_path),
         'render_staging_path': str(staging_path),
