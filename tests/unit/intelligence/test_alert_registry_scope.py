@@ -182,7 +182,7 @@ def test_registry_case_lifecycle_and_selected_detail_stay_in_provider_scope(monk
     def case_record(identifier: str, state: str, workflow: str) -> SimpleNamespace:
         return SimpleNamespace(
             public_id=identifier, source_state=state, workflow_state=workflow,
-            severity='warning', source_resolved_at=None, closure_reason='resolved',
+            source_type='recommendation', severity='warning', source_resolved_at=None, closure_reason='resolved',
             postmortem_status='complete',
         )
 
@@ -197,6 +197,10 @@ def test_registry_case_lifecycle_and_selected_detail_stay_in_provider_scope(monk
         return scoped_cases
 
     monkeypatch.setattr(service, '_case_rows', scoped_query)
+    monkeypatch.setattr(
+        service, '_snapshot_context',
+        lambda **_kwargs: {'available': True, 'serving_last_good': False, 'label': 'Test'},
+    )
     monkeypatch.setattr(service, '_serialize_case', lambda case: {'public_id': case.public_id})
     monkeypatch.setattr(service, '_serialize_case_detail', lambda case: {'public_id': case.public_id})
     monkeypatch.setattr(service, '_active_silence_rows', lambda **_kwargs: [])
