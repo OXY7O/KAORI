@@ -308,6 +308,9 @@ def build_registry_analytics_readiness(
     elif latest is not None and latest.status in {'failed', 'canceled', 'expired'}:
         execution_label, execution_tone = 'Last Attempt Failed', 'critical'
         execution_helper = 'The previous committed snapshots remain available; review the JobExecution failure.'
+    elif latest is not None and latest.status == 'partially_succeeded':
+        execution_label, execution_tone = 'Partial Evidence', 'warning'
+        execution_helper = 'One or more Registry sources or optional Metrics Source datasets were unavailable.'
     elif success is not None:
         execution_label, execution_tone = 'Last Collection Completed', 'normal'
         execution_helper = 'New analytical evidence becomes available after the worker commits its snapshots.'
