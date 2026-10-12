@@ -126,3 +126,7 @@ The landing page reads selected-backend shared storage readiness and never walks
 ### Reports Overview metric cohorts (#1533)
 
 Requests This Month counts Report records whose created_at belongs to the half-open current **UTC calendar-month** interval [month start, next month start). Completion Rate is deliberately **all-time**, calculated from Ready + Archived as successful resolved requests over Ready + Archived + Failed; requested/generating records are not in this denominator. Empty resolved cohorts display unavailable (—), not a fabricated 100% or 0% success. UI copy names the distinct temporal cohorts; neither metric is a current-provider health signal.
+
+### Generate invalid report type admission (#1541)
+
+Generate distinguishes a UI catalog fallback from the submitted report type. Unknown, blank, and removed report type values are rejected during POST validation before scope queries or Report creation, even when the view normalizer can display a safe default report card. The canonical Reports catalog remains the only source of valid report types.
