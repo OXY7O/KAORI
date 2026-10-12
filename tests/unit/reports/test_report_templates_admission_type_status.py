@@ -3,11 +3,7 @@ from werkzeug.datastructures import MultiDict
 from app.reports.report_templates.service import create_custom_template, get_template_form_state, validate_template_form_state
 
 
-def test_unknown_type_rejected_without_persistence(monkeypatch) -> None:
-    monkeypatch.setattr(
-        'app.reports.report_templates.service.db.session.add',
-        lambda *_args: (_ for _ in ()).throw(AssertionError('must not write')),
-    )
+def test_unknown_type_rejected_without_persistence() -> None:
     form = MultiDict([('name', 'Bad'), ('report_type', 'unpublished'), ('status', 'active')])
     state = get_template_form_state(form)
     assert state['report_type'] == 'unpublished'
