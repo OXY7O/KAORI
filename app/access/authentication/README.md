@@ -105,6 +105,19 @@ Authentication responsiveness follows the canonical KAORI viewport matrix (1440Ã
 
 ## Database Setup Workspace
 
+The approved read-only Setup Required page preserves its current design
+contract. In **DevContainer development only**, its copyable bootstrap
+command now invokes the same explicit `KAORI: Initialize Fresh Database`
+VS Code task implementation. The one-shot DevContainer Compose dependency
+admits the non-owner database login automatically, but does **not**
+run Alembic or create a user on application startup. Migration/RBAC/admin
+bootstrap is still explicitly authorized once using a temporary owner
+connection; worker/Beat consumers remain gated until both schema and
+restricted ledger grants are ready. Production setup commands keep their
+previous presentation in this dev-scoped issue; controlled production
+credential/migration flow is governed separately by #621/#622.
+
+
 When PostgreSQL is reachable but the KAORI schema is missing, `access/authentication/setup_required.html` renders the release-aligned initialization workspace. The surface stays read-only: it explains the encryption boundary, presents the canonical bootstrap sequence, exposes missing schema evidence, and returns the operator to the normal login readiness check.
 
 Executable bootstrap and recovery instructions must use `components/terminal_command.html`. Copy behavior is owned by the shared `app/static/js/clipboard.js` runtime; authentication templates must not add inline clipboard handlers or page-local terminal chrome. The authenticated and unauthenticated layouts both load this runtime so the command component has one cross-shell interaction contract.
