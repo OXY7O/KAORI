@@ -6,6 +6,7 @@ from typing import Any
 
 from sqlalchemy import or_
 
+from app.artifact_registry.correlation import runtime_correlation_evidence_readiness
 from app.extensions.db import db
 from app.integrations.registry.security_contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.intelligence.alert_intelligence.case_state import (
@@ -61,10 +62,37 @@ _GROUPED_ASSET_TYPES = {
 }
 
 
+
+_REGISTRY_RUNTIME_RULES = frozenset({
+    'registry.security.critical_runtime_vulnerability',
+    'registry.security.scan_evidence_missing',
+    'registry.runtime.tag_only_correlation',
+})
+
+
+def _registry_runtime_source_posture(
+    rule_key: str,
+    *,
+    readiness_cache: dict[str, str] | None = None,
+) -> tuple[bool, str]:
+    """Missing runtime findings cannot imply recovery with superseded correlation."""
+    if base_rule_key(rule_key) not in _REGISTRY_RUNTIME_RULES:
+        return True, ''
+    if readiness_cache is None:
+        status = runtime_correlation_evidence_readiness(db.session)['status']
+    else:
+        status = readiness_cache.get('status')
+        if status is None:
+            status = runtime_correlation_evidence_readiness(db.session)['status']
+            readiness_cache['status'] = status
+    return (True, '') if status == 'ready' else (False, 'source_unavailable')
+
+
 def reconcile_recommendation_alert_cases() -> dict[str, int]:
     """Evaluate fresh findings while preserving Unknown state when source evidence is unavailable."""
 
     now = datetime.now(UTC)
+    runtime_readiness_cache: dict[str, str] = {}
     findings = get_active_recommendation_findings()
     fresh_keys: set[str] = set()
     active_exceptions = active_rule_exceptions(
@@ -86,7 +114,7 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         if not finding_key:
             stats['skipped'] += 1
             continue
-        available, source_reason = _source_evidence_posture_for_finding(finding)
+        available, source_reason = _source_evidence_posture_for_finding(finding, readiness_cache=runtime_readiness_cache)
         if not available:
             state = RecommendationAlertState.query.filter_by(finding_key=finding_key).first()
             if state is not None and state.alert_case_id is not None:
@@ -173,7 +201,9 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         _ensure_alert_case(finding, state=state, policy=policy, actor_user_id=None, now=now, automatic=True)
         stats['promoted'] += 1
 
-    _reconcile_missing_recommendation_states(fresh_keys=fresh_keys, now=now, stats=stats)
+    _reconcile_missing_recommendation_states(
+        fresh_keys=fresh_keys, now=now, stats=stats, readiness_cache=runtime_readiness_cache,
+    )
     db.session.commit()
     return stats
 
@@ -202,11 +232,12 @@ def _reconcile_missing_recommendation_states(
     fresh_keys: set[str],
     now: datetime,
     stats: dict[str, int],
+    readiness_cache: dict[str, str],
 ) -> None:
     for state in _active_recommendation_state_batches():
         if state.finding_key in fresh_keys:
             continue
-        available, source_reason = _source_evidence_posture_for_state(state)
+        available, source_reason = _source_evidence_posture_for_state(state, readiness_cache=readiness_cache)
         case = db.session.get(AlertCase, state.alert_case_id) if state.alert_case_id else None
         if not available:
             if case is not None and case.workflow_state != 'closed':
@@ -735,7 +766,9 @@ def _refresh_grouped_case(case: AlertCase, *, grouping_mode: str, now: datetime)
     case.evidence_json = evidence
 
 
-def _source_evidence_posture_for_finding(finding: dict[str, Any]) -> tuple[bool, str]:
+def _source_evidence_posture_for_finding(
+    finding: dict[str, Any], *, readiness_cache: dict[str, str] | None = None,
+) -> tuple[bool, str]:
     evidence = _finding_evidence(finding)
     asset_key = str(
         evidence.get('asset_key')
@@ -744,15 +777,20 @@ def _source_evidence_posture_for_finding(finding: dict[str, Any]) -> tuple[bool,
         or evidence.get('registry_instance_id')
         or ''
     ).strip()
-    return _source_evidence_posture(
+    source = _source_evidence_posture(
         domain=str(finding.get('domain') or ''),
         asset_key=asset_key,
         signal_source=str(finding.get('signal_source') or ''),
         alert_signal_profile=str(finding.get('alert_signal_profile') or ''),
     )
+    if not source[0]:
+        return source
+    return _registry_runtime_source_posture(str(finding.get('rule_key') or ''), readiness_cache=readiness_cache)
 
 
-def _source_evidence_posture_for_state(state: RecommendationAlertState) -> tuple[bool, str]:
+def _source_evidence_posture_for_state(
+    state: RecommendationAlertState, *, readiness_cache: dict[str, str] | None = None,
+) -> tuple[bool, str]:
     rule = catalog_rule(state.rule_key) or {}
     source = _source_evidence_posture(
         domain=state.domain,
@@ -762,6 +800,9 @@ def _source_evidence_posture_for_state(state: RecommendationAlertState) -> tuple
     )
     if not source[0]:
         return source
+    correlation_source = _registry_runtime_source_posture(state.rule_key, readiness_cache=readiness_cache)
+    if not correlation_source[0]:
+        return correlation_source
     cutoff = datetime.now(UTC) - timedelta(hours=24)
     rule_key = str(state.rule_key or '')
     # Missing TLS findings cannot imply recovery after a partial/failed
