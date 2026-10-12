@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from flask import url_for
+from sqlalchemy import case, func
 
-from app.common.pagination import paginate_sequence
+from app.common.pagination import paginate_query
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
@@ -24,7 +25,7 @@ from app.integrations.observability.metrics_source.capabilities import PROVIDER_
 from app.integrations.observability.metrics_source.capabilities import definition as capability_definition
 from app.integrations.observability.metrics_source.providers import provider_definition
 from app.integrations.observability.metrics_source.routing import normalize_routing_policy, recent_window_hours
-from app.integrations.observability.metrics_source.scope import KUBERNETES_CLUSTER_SCOPE, bindings_for_instance
+from app.integrations.observability.metrics_source.scope import KUBERNETES_CLUSTER_SCOPE
 from app.integrations.readiness import resolve_binding_operational_status
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -144,7 +145,36 @@ def build_instance_context(
     binding_page: int = 1,
     binding_per_page: int = 5,
 ) -> dict[str, Any]:
-    bindings = bindings_for_instance(instance)
+    binding_query = IntegrationBinding.query.filter_by(
+        integration_instance_id=instance.integration_instance_id,
+    ).order_by(
+        IntegrationBinding.asset_type.asc(),
+        IntegrationBinding.priority.asc(),
+        IntegrationBinding.id.asc(),
+    )
+    bindings, binding_registry_pagination = paginate_query(
+        binding_query, page=binding_page, per_page=binding_per_page,
+    )
+    binding_total = binding_registry_pagination['total_items']
+    validated_total, gap_total = db.session.query(
+        func.sum(case((IntegrationBinding.validation_status == 'ready', 1), else_=0)),
+        func.sum(case((IntegrationBinding.validation_status.in_(('blocked', 'degraded')), 1), else_=0)),
+    ).filter(
+        IntegrationBinding.integration_instance_id == instance.integration_instance_id,
+    ).one()
+    operational_binding_total = (
+        int(db.session.query(func.count(IntegrationBinding.id)).filter(
+            IntegrationBinding.integration_instance_id == instance.integration_instance_id,
+            IntegrationBinding.enabled.is_(True),
+            IntegrationBinding.validation_status == 'ready',
+        ).scalar() or 0)
+        if instance.enabled and instance.readiness_status == 'ready' else 0
+    )
+    resolution_scope_total = int(db.session.query(func.count()).select_from(
+        db.session.query(IntegrationBinding.asset_type, IntegrationBinding.asset_key)
+        .filter(IntegrationBinding.integration_instance_id == instance.integration_instance_id)
+        .distinct().subquery()
+    ).scalar() or 0)
     consumer_asset_groups = build_consumer_asset_groups(
         lambda asset_type: get_binding_validation_profile(instance.adapter_key, asset_type)
     )
@@ -184,11 +214,7 @@ def build_instance_context(
     )
     binding_rows = [_binding_row(binding, instance) for binding in bindings]
     capability_rows = provider_capability_rows
-    binding_registry_rows, binding_registry_pagination = paginate_sequence(
-        binding_rows,
-        page=binding_page,
-        per_page=binding_per_page,
-    )
+    binding_registry_rows = binding_rows
 
     return {
         'instance': instance,
@@ -198,6 +224,10 @@ def build_instance_context(
         'bindings': bindings,
         'deletion_guard': deletion_guard,
         'binding_rows': binding_rows,
+        'binding_total': binding_total,
+        'validated_binding_total': int(validated_total or 0),
+        'operational_binding_total': operational_binding_total,
+        'resolution_scope_total': resolution_scope_total,
         'binding_registry_rows': binding_registry_rows,
         'binding_registry_pagination': binding_registry_pagination,
         'consumer_asset_groups': consumer_asset_groups,
@@ -212,15 +242,15 @@ def build_instance_context(
             ),
         },
         'consumer_validation_summary': {
-            'validated_bindings': sum(row['validation_status'] == 'ready' for row in binding_rows),
-            'gap_count': sum(row['validation_status'] in {'blocked', 'degraded'} for row in binding_rows),
+            'validated_bindings': int(validated_total or 0),
+            'gap_count': int(gap_total or 0),
         },
         'module_readiness_rows': _module_readiness_rows(instance, available_capabilities),
         'source_resolution_rows': _source_resolution_rows(instance, bindings),
         'runtime_state': runtime_state,
         'runtime_history': runtime_history_view(rows, pagination=pagination),
         'stats': {
-            'bindings': len(bindings),
+            'bindings': binding_total,
             'capabilities': len(available_capabilities),
             'ready': instance.readiness_status == 'ready',
         },

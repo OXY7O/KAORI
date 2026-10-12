@@ -48,6 +48,8 @@ class IntegrationImplementation:
     detail_url_builder: DetailUrlBuilder | None = None
     failure_recorder: FailureRecorder | None = None
     runtime_overview_builder: RuntimeOverviewBuilder | None = None
+    # Optional provider-owned ORM mapping for bounded fleet reads; mutation stays adapter-owned.
+    record_model: type[Any] | None = None
 
     def get_record(self, record_id: int) -> Any:
         record = self.instance_loader(int(record_id))

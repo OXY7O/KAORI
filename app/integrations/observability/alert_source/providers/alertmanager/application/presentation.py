@@ -3,7 +3,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from app.common.pagination import paginate_sequence
+from sqlalchemy import case, func, or_
+
+from app.common.pagination import paginate_query, paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
@@ -13,8 +15,6 @@ from app.integrations.deletion import provider_deletion_guard
 from app.integrations.kernel.registry import get_integration
 from app.integrations.observability.alert_source.providers.alertmanager.application.repository import (
     count_bindings_by_scope_type,
-    list_bindings_for_instance,
-    list_instances,
 )
 from app.integrations.observability.alert_source.providers.alertmanager.application.resolver import (
     AlertmanagerSourceResolution,
@@ -34,7 +34,7 @@ from app.integrations.runtime.presentation import runtime_history_view, runtime_
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
-from app.models.integration import IntegrationBinding
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
 
 
@@ -52,25 +52,79 @@ def build_inventory_context(
     coverage_page: int = 1,
     coverage_per_page: int = 5,
 ) -> dict[str, Any]:
-    instances = list_instances()
-    rows = [_instance_row(instance) for instance in instances]
-    filtered = rows
-    normalized_query = query.strip().lower()
-    if normalized_query:
-        filtered = [row for row in filtered if normalized_query in row['search_text']]
-    if readiness:
-        filtered = [row for row in filtered if row['readiness'] == readiness]
-    if compatibility:
-        filtered = [row for row in filtered if row['compatibility'] == compatibility]
-
-    page_rows, pagination = _paginate(filtered, page=page, per_page=per_page)
+    configured = (AlertmanagerInstance.endpoint.is_not(None)) & (AlertmanagerInstance.endpoint != '')
+    readiness_key = func.coalesce(IntegrationInstance.readiness_status, 'validation_required')
+    totals = (
+        db.session.query(
+            func.count(AlertmanagerInstance.id),
+            func.sum(case((configured, 1), else_=0)),
+            func.sum(case((readiness_key == 'ready', 1), else_=0)),
+            func.sum(case((configured & (readiness_key != 'ready'), 1), else_=0)),
+        )
+        .join(AlertmanagerInstance.integration_instance)
+        .one()
+    )
+    binding_total = int(
+        db.session.query(func.count(IntegrationBinding.id))
+        .join(IntegrationInstance)
+        .filter(IntegrationInstance.integration_type == 'alert_source')
+        .scalar() or 0
+    )
     stats = {
-        'total': len(rows),
-        'configured': sum(1 for row in rows if row['configured']),
-        'ready': sum(1 for row in rows if row['readiness'] == 'ready'),
-        'attention': sum(1 for row in rows if row['configured'] and row['readiness'] != 'ready'),
-        'bindings': sum(row['binding_count'] for row in rows),
+        'total': int(totals[0] or 0),
+        'configured': int(totals[1] or 0),
+        'ready': int(totals[2] or 0),
+        'attention': int(totals[3] or 0),
+        'bindings': binding_total,
     }
+    registry = AlertmanagerInstance.query.join(AlertmanagerInstance.integration_instance)
+    if query.strip():
+        term = f'%{query.strip()}%'
+        registry = registry.filter(or_(
+            IntegrationInstance.name.ilike(term),
+            IntegrationInstance.description.ilike(term),
+            AlertmanagerInstance.endpoint.ilike(term),
+            AlertmanagerInstance.detected_version.ilike(term),
+            AlertmanagerInstance.compatibility_profile.ilike(term),
+        ))
+    if readiness:
+        registry = registry.filter(readiness_key == readiness)
+    if compatibility:
+        registry = registry.filter(
+            func.coalesce(AlertmanagerInstance.compatibility_status, 'validation_required') == compatibility
+        )
+    registry = registry.order_by(IntegrationInstance.name.asc(), AlertmanagerInstance.id.asc())
+    page_instances, pagination = paginate_query(registry, page=page, per_page=per_page)
+    canonical_ids = [instance.integration_instance_id for instance in page_instances]
+    visible_bindings = (
+        db.session.query(
+            IntegrationBinding.integration_instance_id,
+            IntegrationBinding.asset_type,
+            IntegrationBinding.enabled,
+        )
+        .filter(IntegrationBinding.integration_instance_id.in_(canonical_ids))
+        .all()
+        if canonical_ids else []
+    )
+    binding_summary: dict[int, tuple[int, set[str]]] = {
+        identity: (0, set()) for identity in canonical_ids
+    }
+    for identity, asset_type, enabled in visible_bindings:
+        count, asset_types = binding_summary[identity]
+        if enabled:
+            asset_types.add(asset_type)
+        binding_summary[identity] = (count + 1, asset_types)
+    page_rows = [_instance_row(instance, binding_summary=binding_summary) for instance in page_instances]
+    readiness_options = sorted({
+        value or 'validation_required'
+        for (value,) in db.session.query(IntegrationInstance.readiness_status)
+        .join(AlertmanagerInstance, AlertmanagerInstance.integration_instance_id == IntegrationInstance.id)
+        .distinct().all()
+    })
+    compatibility_options = sorted({
+        value or 'validation_required'
+        for (value,) in db.session.query(AlertmanagerInstance.compatibility_status).distinct().all()
+    })
     coverage_context = build_provider_coverage(
         'alert_source',
         page=coverage_page,
@@ -87,8 +141,8 @@ def build_inventory_context(
         'selected_query': query,
         'selected_compatibility': compatibility,
         'selected_readiness': readiness,
-        'readiness_options': sorted({row['readiness'] for row in rows}),
-        'compatibility_options': sorted({row['compatibility'] for row in rows}),
+        'readiness_options': readiness_options,
+        'compatibility_options': compatibility_options,
         'binding_scope_counts': count_bindings_by_scope_type(),
         **coverage_context,
     }
@@ -125,7 +179,31 @@ def build_instance_context(
     binding_per_page: int = 5,
 ) -> dict[str, Any]:
     consumer_asset_groups = build_consumer_asset_groups(get_alert_consumer_profile)
-    bindings = list_bindings_for_instance(instance.id) if instance else []
+    binding_query = IntegrationBinding.query.filter_by(
+        integration_instance_id=instance.integration_instance_id,
+    ).order_by(IntegrationBinding.priority.asc(), IntegrationBinding.id.asc()) if instance else None
+    bindings, binding_registry_pagination = (
+        paginate_query(binding_query, page=binding_page, per_page=binding_per_page)
+        if binding_query is not None else paginate_sequence([], page=binding_page, per_page=binding_per_page)
+    )
+    binding_total = binding_registry_pagination['total_items']
+    validated_binding_total = int(db.session.query(func.count(IntegrationBinding.id)).filter(
+        IntegrationBinding.integration_instance_id == instance.integration_instance_id,
+        IntegrationBinding.validation_status == 'ready',
+    ).scalar() or 0) if instance else 0
+    operational_binding_total = (
+        int(db.session.query(func.count(IntegrationBinding.id)).filter(
+            IntegrationBinding.integration_instance_id == instance.integration_instance_id,
+            IntegrationBinding.validation_status == 'ready',
+            IntegrationBinding.enabled.is_(True),
+        ).scalar() or 0)
+        if instance and instance.enabled and instance.readiness_status == 'ready' else 0
+    )
+    resolution_scope_total = int(db.session.query(func.count()).select_from(
+        db.session.query(IntegrationBinding.asset_type, IntegrationBinding.asset_key)
+        .filter(IntegrationBinding.integration_instance_id == instance.integration_instance_id)
+        .distinct().subquery()
+    ).scalar() or 0) if instance else 0
     observed_capabilities = set(instance.capabilities or []) if instance else set()
     capability_rows = []
     for capability in CORE_CAPABILITIES:
@@ -192,23 +270,23 @@ def build_instance_context(
         else None
     )
     binding_rows = [_binding_row(binding, instance) for binding in bindings] if instance is not None else []
-    binding_registry_rows, binding_registry_pagination = paginate_sequence(
-        binding_rows,
-        page=binding_page,
-        per_page=binding_per_page,
-    )
+    binding_registry_rows = binding_rows
     return {
         'instance': instance,
         'bindings': bindings,
         'deletion_guard': deletion_guard,
         'binding_rows': binding_rows,
+        'binding_total': binding_total,
+        'validated_binding_total': validated_binding_total,
+        'operational_binding_total': operational_binding_total,
+        'resolution_scope_total': resolution_scope_total,
         'binding_registry_rows': binding_registry_rows,
         'binding_registry_pagination': binding_registry_pagination,
         'consumer_asset_groups': consumer_asset_groups,
         'capability_rows': capability_rows,
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
         'capability_summary': _core_capability_summary(observed_capabilities),
-        'source_resolution_rows': _source_resolution_rows(instance) if instance else [],
+        'source_resolution_rows': _source_resolution_rows(instance, bindings) if instance else [],
         'runtime_state': runtime_state_view(get_integration('alert_source').runtime_state(instance))
         if instance
         else None,
@@ -223,15 +301,18 @@ def build_instance_context(
             'global': 'Global operational scope',
         },
         'stats': {
-            'bindings': len(bindings),
+            'bindings': binding_total,
             'ready': bool(instance and instance.readiness_status == 'ready'),
             'capabilities': len(observed_capabilities),
         },
     }
 
 
-def _instance_row(instance: AlertmanagerInstance) -> dict[str, Any]:
+def _instance_row(
+    instance: AlertmanagerInstance, *, binding_summary: dict[int, tuple[int, set[str]]],
+) -> dict[str, Any]:
     readiness = instance.readiness_status or ('validation_required' if instance.endpoint else 'not_configured')
+    binding_count, scope_types = binding_summary.get(instance.integration_instance_id, (0, set()))
     return {
         'instance': instance,
         'configured': bool(instance.endpoint),
@@ -241,10 +322,8 @@ def _instance_row(instance: AlertmanagerInstance) -> dict[str, Any]:
         'readiness': readiness,
         'profile': instance.compatibility_profile,
         'validated_at': present_user_datetime(instance.last_validated_at, empty='Not validated'),
-        'binding_count': len(list_bindings_for_instance(instance.id)),
-        'scope_types': sorted(
-            {binding.asset_type for binding in list_bindings_for_instance(instance.id) if binding.enabled}
-        ),
+        'binding_count': binding_count,
+        'scope_types': sorted(scope_types),
         'search_text': ' '.join(
             filter(
                 None,
@@ -336,10 +415,12 @@ def _paginate(
     }
 
 
-def _source_resolution_rows(instance: AlertmanagerInstance) -> list[dict[str, Any]]:
+def _source_resolution_rows(
+    instance: AlertmanagerInstance, bindings: list[IntegrationBinding],
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     seen_scopes: set[tuple[str, str]] = set()
-    for binding in list_bindings_for_instance(instance.id):
+    for binding in bindings:
         scope = (binding.asset_type, binding.asset_key)
         if scope in seen_scopes:
             continue

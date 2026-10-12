@@ -84,6 +84,7 @@ for provider_key in ('prometheus', 'thanos'):
             adapter_key='prometheus_http',
             adapter=runtime_adapter,
             instance_loader=model_loader(MetricsSource),
+            record_model=MetricsSource,
             canonical_record_loader=canonical_model_loader(MetricsSource),
             module_path='app.integrations.observability.metrics_source',
             detail_url_builder=_detail_url,

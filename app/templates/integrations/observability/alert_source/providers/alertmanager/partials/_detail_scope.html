@@ -8,8 +8,8 @@
 {% import "integrations/components/_binding_readiness_boundary.html" as binding_readiness_boundary %}
 {% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% set validated_binding_count = binding_rows|selectattr('validation_status', 'equalto', 'ready')|list|length %}
-{% set operational_binding_count = binding_rows|selectattr('operational_status', 'equalto', 'ready')|list|length %}
+{% set validated_binding_count = validated_binding_total %}
+{% set operational_binding_count = operational_binding_total %}
 {% set lifecycle_blocked = bindings or (deletion_guard and deletion_guard.blocked) %}
 {% set active_binding_id = binding_validation_job.get('binding_id') if binding_validation_job else none %}
 {% set active_binding_task_id = binding_validation_job.get('task_id') if binding_validation_job else none %}
@@ -47,7 +47,7 @@
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             <div class="px-5 py-4 sm:px-6">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Bindings</p>
-                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ binding_rows|length }}</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ binding_total }}</p>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Managed assets using this source</p>
             </div>
             <div class="px-5 py-4 sm:px-6">
@@ -62,7 +62,7 @@
             </div>
             <div class="px-5 py-4 sm:px-6">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Assets</p>
-                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ source_resolution_rows|length }}</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ resolution_scope_total }}</p>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Consumer assets evaluated</p>
             </div>
         </div>
@@ -70,7 +70,7 @@
     {% include "integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html" %}
     {{ binding_readiness_boundary.render('Alertmanager',
         instance.readiness_status or 'validation_required',
-        binding_rows|length,
+        binding_total,
         validated_binding_count,
         operational_binding_count,
         title='Binding Decision',
@@ -87,7 +87,7 @@
                 <div>
                     <h3 id="alertmanager-consumer-resolution-title"
                         class="text-base font-semibold leading-6 text-content-primary">Effective Consumer Resolution</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Alert Intelligence and silence operations resolve independently against required capability contracts.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Alert Intelligence and silence resolution reflect the visible binding page; use pagination for other assets.</p>
                 </div>
             </div>
         </header>
@@ -199,8 +199,8 @@
     ) }}
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}
-    {{ framed_workspace_tabs.badge_oob('alertmanager', 'scope', (binding_rows|length|string) ~ ' Bindings') }}
-    <span id="alertmanager-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (bindings|length|string) ~ ' Bindings' }}</span>
+    {{ framed_workspace_tabs.badge_oob('alertmanager', 'scope', (binding_total|string) ~ ' Bindings') }}
+    <span id="alertmanager-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (binding_total|string) ~ ' Bindings' }}</span>
 {% endif %}
 {% if not scope_oob|default(false) %}
     {% include "components/operation_feedback_oob.html" %}
