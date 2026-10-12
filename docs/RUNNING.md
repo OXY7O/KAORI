@@ -64,8 +64,7 @@ Flask actually uses. An owner/superuser DevContainer database connection
 does not satisfy the write-once ledger role boundary even when triggers
 and WAL settings are valid.
 
-Use the [existing-database DevContainer PostgreSQL role runbook]
-(operations/devcontainer-postgres-runtime-role.md) before changing
+Use the [existing-database DevContainer PostgreSQL role runbook](operations/devcontainer-postgres-runtime-role.md) before changing
 `DATABASE_URL`. It retains the current `kaori` database, existing tables,
 and data; creates one restricted `kaori_runtime` login; and explains
 interactive credential setup, PostgreSQL permissions, backup, the opt-in
