@@ -1,6 +1,13 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
+{% if request.headers.get('HX-Request') == 'true' %}
+    <input type="hidden"
+           id="recommendation-filter-page-size"
+           name="per_page"
+           value="{{ payload.pagination.per_page }}"
+           hx-swap-oob="outerHTML">
+{% endif %}
 {% if recommendation_summary_oob|default(false) %}
     {% include 'intelligence/partials/_recommendation_hero_posture.html' %}
     {% include 'intelligence/partials/_recommendation_workspace_info.html' %}

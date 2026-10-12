@@ -158,7 +158,11 @@
                         <p class="border-t border-outline-subtle px-3 py-2.5 text-xs leading-5 text-content-muted">Info findings remain recommendation-only below the rule-owned Alert Severity Floor. Manual promotion is allowed only after that floor is met; Automatic mode additionally enforces the Stability Window and Minimum Observations.</p>
                     </div>
                 </div>
-                {% if current_user.has_permission('intelligence.decisions.create') %}
+                {% if item.status != 'available' %}
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-4 text-sm leading-6 text-content-muted" role="status">
+                        {{ item.status_label }} rules are read-only. Alert escalation can be configured only for Available rules with an implemented evaluator boundary.
+                    </div>
+                {% elif current_user.has_permission('intelligence.decisions.create') %}
                     <form method="post"
                           action="{{ url_for('alert_intelligence.save_recommendation_alert_policy', rule_key=item.rule_key) }}"
                           class="rounded-lg border border-outline-subtle bg-surface-card p-4">
