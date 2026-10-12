@@ -127,6 +127,7 @@ Jobs & Executions is intentionally server-backed and demand-loaded. The page mus
 
 - The parent **Executions** and **Job Configuration** workspaces use server-owned navigation; only the selected workspace is built on a request.
 - Execution **Active Work**, **Registry**, and **Queues** are demand-loaded. Registry pagination never triggers Celery topology inspection, and queue inspection runs only when the Queues view is opened.
+- **Queues** lists registered JobDefinition queue names together with committed JobExecution queue history. A registered queue appears even before its first job so unavailable/unverified workers are visible; zero history does not prove a healthy worker. Live topology is inspected only on the Queues view.
 - Global execution counters come from one conditional aggregate query. Queue activity comes from one grouped aggregate query plus one short-lived shared Celery topology snapshot.
 - Active Work polls every 15 seconds and carries the overview counters in the same response. Registry and Queues use one compact overview heartbeat every 30 seconds.
 - Job Configuration has no idle polling; active execution status refreshes every 10 seconds.
