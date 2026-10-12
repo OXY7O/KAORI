@@ -39,7 +39,7 @@ from app.artifact_registry.security.job_adapter import (
     build_registry_security_sync_state,
     get_registry_security_sync_job,
 )
-from app.artifact_registry.security.presentation import build_security
+from app.artifact_registry.security.presentation import _providers as _eligible_security_sources, build_security
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
 from app.artifact_registry.webhooks import RegistryWebhookAuthError, ingest_webhook
 from app.dashboards.common.operational import (
@@ -217,6 +217,9 @@ def _security_source_id(*, from_form: bool = False) -> int | None:
     except (TypeError, ValueError):
         abort(404)
     if source_id < 1:
+        abort(404)
+    if from_form and not any(int(item.id) == source_id for item in _eligible_security_sources()):
+        # Reject unavailable selected-view context *before* dispatching a fleet job.
         abort(404)
     return source_id
 
