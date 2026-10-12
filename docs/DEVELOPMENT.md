@@ -12,17 +12,57 @@ containers. A host `.venv` is not required.
 - Visual Studio Code.
 - VS Code Dev Containers extension.
 - Git.
+- Python 3 on the WSL host (DevContainer `initializeCommand` prepares private first-run credentials before Compose).
 
-## First setup
+## First setup — new DevContainer PostgreSQL volume
 
-1. Copy `.env.example` to `.env`.
-   The canonical variable contract is documented in `docs/deployment/ENVIRONMENT_CONFIGURATION.md`.
-2. Review `ADMIN_*` and development secret values.
-3. Open the repository in VS Code.
-4. Run `Dev Containers: Rebuild and Reopen in Container`.
-5. Run `bash scripts/init_db.sh --bootstrap-admin` in the Dev Container terminal.
-6. After the Dev Container reports frontend assets are ready, allow VS Code **Automatic Tasks** for this trusted workspace. The existing `KAORI: Watch Tailwind CSS` task starts on folder open, with at most one instance. If disabled, start it from **Terminal → Run Task**.
-7. Press `F5` and select `KAORI: Flask Debug`.
+1. Open the project from **WSL** in VS Code. The host needs Python 3,
+   Docker/Compose, and the Dev Containers extension. No host virtualenv or
+   manual `docker compose up` is required.
+2. Optionally copy `.env.example` to ignored `.env` to set your intended
+   `ADMIN_EMAIL`, `ADMIN_USERNAME`, or other development configuration
+   **before the first application administrator is created**.
+   If `.env` is missing, the DevContainer host initializer creates it
+   automatically. It generates a secure runtime `DATABASE_URL`, application
+   encryption keys and `ADMIN_PASSWORD` when those have placeholders.
+   **Do not copy in real PostgreSQL bootstrap/migrator passwords.**
+3. Choose **Dev Containers → Reopen in Container**. Host
+   `initializeCommand` creates or validates the two external WSL
+   credential files and private `.env`. The normal Compose startup
+   automatically creates PostgreSQL, Redis, workspace, ten workers and Beat.
+   PostgreSQL creates non-superuser `kaori_migrator` and `kaori_runtime`
+   on an empty volume, but does **not** run Alembic or create KAORI admin.
+4. Select **KAORI: Flask Debug** (F5) and open
+   `http://localhost:5000/auth/login`. Empty schema should show
+   **HTTP 503 Database Setup Required / Initialization Required**.
+5. Copy the bootstrap command on that page, then run it from a **WSL
+   HOST terminal at the repository root**, not from the DevContainer terminal:
+
+   ```bash
+   docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
+   ```
+
+   The one-off job receives the separate migrator credential, migrates the
+   schema, refreshes runtime grants, and creates the first KAORI admin
+   after grants succeed. The 10 workers and Beat unblock only after
+   Alembic head, runtime-privilege/immutable-ledger and administrator
+   admission pass.
+6. Refresh the browser, log in as the `ADMIN_USERNAME` configured in
+   private `.env`, and verify first-run/worker evidence. For the frontend
+   watcher, allow **Automatic Tasks** for this trusted workspace;
+   otherwise launch **KAORI: Watch Tailwind CSS** from VS Code Tasks.
+
+**Three-file environment contract:**
+`<repo>/.env` (app runtime only, including `DATABASE_URL` as
+`kaori_runtime`), `~/.config/kaori/devcontainer/postgres-bootstrap.env`
+(local PostgreSQL `postgres` + runtime-role setup) and
+`~/.config/kaori/devcontainer/postgres-migrate.env`
+(`kaori_migrator`). The two latter files are generated on the WSL host
+**outside the repository** and must never be mounted into Flask/workers/Beat.
+See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
+and [the first-run runbook](operations/devcontainer-postgres-first-run.md).
+Reopening an initialized DevContainer does not re-create accounts, rotate
+secrets, or automatically run schema migrations.
 
 A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend verification before the watcher can work. The `postCreate` lifecycle no longer forces an unconditional global npm upgrade, and `postStart` avoids rebuilding unchanged assets. If lifecycle startup fails, resolve that failure before treating the watcher as ready.
 
@@ -37,16 +77,15 @@ that role must not perform the Capsule restart/provider handoff. The
 data-preserving, opt-in procedure is documented in
 [`DevContainer PostgreSQL runtime-role cutover`](operations/devcontainer-postgres-runtime-role.md).
 
-Provision one `kaori_runtime` login in the **same** `kaori` database,
-then set the private `KAORI_DEV_RUNTIME_DATABASE_URL` before recreating
-app/worker services. Owner-only migrations must use an ephemeral
-`KAORI_DB_MIGRATION_URL` through `scripts/init_db.sh`, never the runtime
-URL. Take a backup first and verify the immutable ledger privileges;
-**do not recreate/delete the database or run `down --volumes`**. The
-legacy Compose URL fallback is for pre-cutover startup only and remains
-blocked by the Capsule evidence guards.
+For a **new** PostgreSQL volume, use the [three-role first-run runbook](operations/devcontainer-postgres-first-run.md).
+It automatically provisions `postgres` (local bootstrap), `kaori_migrator`
+(non-superuser DDL owner) and `kaori_runtime` (restricted application login)
+without creating application tables. The existing database setup page remains
+operator-driven; privileged credentials stay outside the workspace and workers.
 
-
+The historical #1405 data-preserving cutover runbook is only for old owner-role
+clusters. Its `KAORI_DEV_RUNTIME_DATABASE_URL` override is **not** the active
+DevContainer Compose contract. Never delete a database to fix grants.
 
 ### Dev Container Compose lifecycle
 
@@ -60,9 +99,9 @@ docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml logs --t
 docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml down --remove-orphans
 ```
 
-Do not use plain `docker compose down` to manage the Dev Container. The plain root Compose project is a separate `kaori` boundary; the supported development runtime is `kaori-dev` through the merged files above. To intentionally reset the development database and all development volumes, use the same merged command with `down --volumes --remove-orphans`.
+Do not use plain `docker compose down` to manage the Dev Container. The plain root Compose project is a separate `kaori` boundary; the supported development runtime is `kaori-dev` through the merged files above. Never use `down --volumes` during normal development: a destructive reset requires separate scope and operator authorization.
 
-On a fresh or reset PostgreSQL volume, the workspace remains available immediately, while every Celery worker and Beat waits at the shared database entrypoint until the database reaches the current Alembic migration head. Run `bash scripts/init_db.sh --bootstrap-admin` from the workspace as usual; background services continue automatically after migration completes. Workers and Beat never own migration or RBAC/bootstrap mutation.
+On a fresh or reset PostgreSQL volume, the workspace remains available immediately, while every Celery worker and Beat waits at the shared database entrypoint until the database reaches the current Alembic migration head. DevContainer creates roles but does not apply Alembic automatically. Press F5 to view **Initialization Required**, then run `docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap` from the WSL host. Workers/Beat remain gated until schema, immutable-ledger grants and first-admin readiness pass. Future schema upgrades use the same one-off service with `sh scripts/devcontainer/bootstrap-db.sh --upgrade-only`, without recreating the administrator.
 
 Equivalent terminal launch inside the Dev Container:
 
@@ -78,7 +117,7 @@ only after changing the Dockerfile or Python dependency files.
 
 Useful VS Code tasks:
 
-- `KAORI: Database Upgrade`
+- `KAORI: Database Upgrade` — now fails closed inside the DevContainer; use the guarded WSL-host migrator command
 - `KAORI: Database Current`
 - `KAORI: Ruff Check`
 - `KAORI: djLint Check`
