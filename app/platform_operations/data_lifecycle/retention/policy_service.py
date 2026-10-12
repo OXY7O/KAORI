@@ -62,8 +62,9 @@ def get_or_create_policy(domain: str, fallback: RetentionPolicy) -> DataLifecycl
     stored.protect_unreviewed = fallback.protect_unreviewed
     stored.protected_max_days = fallback.protected_max_days
     stored.settings_json = dict(fallback.settings or {})
+    # Keep insertion and operator values in the caller's single transaction.
+    # A crash before update_policy() commits must not persist fallback defaults.
     db.session.add(stored)
-    db.session.commit()
     return stored
 
 
