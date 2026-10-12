@@ -82,6 +82,7 @@ class _DecisionEvidenceContext:
     committed_count: int
     snapshot_result: SnapshotResult
     replacement_other_committed: CapacityVector | None = None
+    limit_exposure_evidence: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,6 +94,9 @@ class _AllocationRequest:
     operation: str
     allocation_scope: str = 'namespace'
     replacement_namespace: TenantNamespace | None = None
+    current_limits: CapacityVector | None = None
+    proposed_limits: CapacityVector | None = None
+    limit_committed_state: tuple[CapacityVector, int, list[str]] | None = None
 
 
 def _operator_limit_ratio(value: object, *, name: str, upper: str) -> str:
@@ -332,6 +336,8 @@ def enforce_namespace_allocation_preflight(
             current=CapacityVector(cpu=_ZERO, memory_bytes=_ZERO, pods=_ZERO, storage_bytes=_ZERO),
             proposed=quota_request_vector(quota_hard),
             operation='create',
+            current_limits=CapacityVector(cpu=_ZERO, memory_bytes=_ZERO),
+            proposed_limits=quota_limit_vector(quota_hard),
         ),
     )
 
@@ -354,6 +360,8 @@ def enforce_existing_namespace_allocation_preflight(
             proposed=proposed,
             operation=operation,
             replacement_namespace=record,
+            current_limits=quota_limit_vector(record.allocation_quota_json or {}),
+            proposed_limits=quota_limit_vector(quota_hard),
         ),
     )
 
@@ -376,6 +384,8 @@ def enforce_observed_namespace_allocation_preflight(
             current=current,
             proposed=proposed,
             operation=operation,
+            current_limits=quota_limit_vector(current_quota_hard),
+            proposed_limits=quota_limit_vector(proposed_quota_hard),
         ),
     )
 
@@ -406,6 +416,13 @@ def enforce_shared_tenant_allocation_preflight(
             proposed=proposed,
             operation=operation,
             allocation_scope='tenant_shared',
+            current_limits=quota_limit_vector(current_quota_hard),
+            proposed_limits=quota_limit_vector(proposed_quota_hard),
+            limit_committed_state=_committed_tenant_allocation(
+                tenant.cluster_id,
+                shared_overrides={tenant.id: current_quota_hard},
+                quota_vector_factory=quota_limit_vector,
+            ),
         ),
         committed_state=committed_state,
     )
@@ -444,12 +461,13 @@ def _capsule_tenant_quota_vector(
     *,
     scope: str,
     namespace_count: int,
+    quota_vector_factory: Any = quota_request_vector,
 ) -> CapacityVector:
     normalized_scope = str(scope or 'Tenant')
     if normalized_scope not in {'Tenant', 'Namespace'}:
         raise ValueError('Capsule Tenant resource quota scope must be Tenant or Namespace.')
     factor = 1 if normalized_scope == 'Tenant' else max(int(namespace_count), 0)
-    return _scale_capacity_vector(quota_request_vector(quota_hard), factor)
+    return _scale_capacity_vector(quota_vector_factory(quota_hard), factor)
 
 
 def _committed_allocation_with_tenant_override(
@@ -458,6 +476,7 @@ def _committed_allocation_with_tenant_override(
     quota_hard: Mapping[str, object],
     scope: str,
     namespace_count: int,
+    quota_vector_factory: Any = quota_request_vector,
 ) -> tuple[CapacityVector, int, list[str]]:
     rows = (
         TenantNamespace.query.filter(
@@ -478,11 +497,13 @@ def _committed_allocation_with_tenant_override(
         other_rows,
         shared_quota_by_tenant=shared,
         ambiguous_shared_tenants=ambiguous,
+        quota_vector_factory=quota_vector_factory,
     )
     override = _capsule_tenant_quota_vector(
         quota_hard,
         scope=scope,
         namespace_count=namespace_count,
+        quota_vector_factory=quota_vector_factory,
     )
     committed = _add_capacity_vectors(committed, override)
     if any(value is None for value in (override.cpu, override.memory_bytes, override.pods)):
@@ -530,6 +551,19 @@ def enforce_capsule_tenant_resource_quota_preflight(
             operation=operation,
             allocation_scope=(
                 'tenant_shared' if str(proposed_scope or 'Tenant') == 'Tenant' else 'tenant_namespace_template'
+            ),
+            current_limits=_capsule_tenant_quota_vector(
+                current_quota_hard, scope=current_scope, namespace_count=namespace_count,
+                quota_vector_factory=quota_limit_vector,
+            ),
+            proposed_limits=_capsule_tenant_quota_vector(
+                proposed_quota_hard, scope=proposed_scope, namespace_count=namespace_count,
+                quota_vector_factory=quota_limit_vector,
+            ),
+            limit_committed_state=_committed_allocation_with_tenant_override(
+                tenant=tenant, quota_hard=current_quota_hard,
+                scope=current_scope, namespace_count=namespace_count,
+                quota_vector_factory=quota_limit_vector,
             ),
         ),
         committed_state=committed_state,
