@@ -202,6 +202,7 @@ def get_reporting_operations(
             ),
             'action_label': 'Generate Report',
             'href': url_for('reports.generate_report'),
+            'permission': 'reports.generate',
         },
         {
             'label': 'Active Schedules',
@@ -212,6 +213,7 @@ def get_reporting_operations(
             'caption': f'{int(report_counts.get("schedules", 0))} total schedule definition(s).',
             'action_label': 'Open Schedules',
             'href': url_for('reports.schedules'),
+            'permission': 'reports.manage_schedules',
         },
         {
             'label': 'Artifact Storage',
@@ -222,6 +224,7 @@ def get_reporting_operations(
             'caption': f'{storage_context.get("checked_label", "Readiness checked")} · shared readiness state.',
             'action_label': 'Open Storage',
             'href': url_for('reports.storage'),
+            'permission': 'reports.manage_storage',
         },
     ]
 
