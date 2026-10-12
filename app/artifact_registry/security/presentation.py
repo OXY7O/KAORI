@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import case, false, func, or_
+from sqlalchemy import and_, case, false, func, or_
 from sqlalchemy.orm import joinedload
 from werkzeug.exceptions import NotFound
 
@@ -226,13 +226,35 @@ def _security_scope_evidence(
     sbom_available = (
         artifact_scope.filter(func.lower(RegistryArtifact.sbom_status) == 'available').order_by(None).count()
     )
+    supported = {
+        collector.provider_key: collector.capabilities
+        for collector in registered_registry_security_collectors()
+    }
+    signature_ids = [
+        int(source.id) for source in scoped_sources
+        if 'signature' in supported.get(source.provider_key, ())
+    ]
+    sbom_ids = [
+        int(source.id) for source in scoped_sources
+        if 'sbom' in supported.get(source.provider_key, ())
+    ]
     coverage_gaps = (
         artifact_scope.filter(
             or_(
-                RegistryArtifact.signature_status.is_(None),
-                func.lower(RegistryArtifact.signature_status) != 'signed',
-                RegistryArtifact.sbom_status.is_(None),
-                func.lower(RegistryArtifact.sbom_status) != 'available',
+                and_(
+                    RegistryProject.integration_instance_id.in_(signature_ids),
+                    or_(
+                        RegistryArtifact.signature_status.is_(None),
+                        func.lower(RegistryArtifact.signature_status) != 'signed',
+                    ),
+                ),
+                and_(
+                    RegistryProject.integration_instance_id.in_(sbom_ids),
+                    or_(
+                        RegistryArtifact.sbom_status.is_(None),
+                        func.lower(RegistryArtifact.sbom_status) != 'available',
+                    ),
+                ),
             )
         )
         .order_by(None)
@@ -340,6 +362,7 @@ def _security_source_capabilities(
     *,
     evidence_filter: Any,
 ) -> list[dict[str, Any]]:
+    """Capability presence is not evidence usability or full coverage."""
     collectors = {collector.provider_key: collector for collector in registered_registry_security_collectors()}
     rows: list[dict[str, Any]] = []
     for source in scoped_sources:
@@ -351,37 +374,55 @@ def _security_source_capabilities(
             .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
             .filter(RegistryProject.integration_instance_id == int(source.id))
         )
-        attempted = bool(source_artifacts.filter(evidence_filter).order_by(None).count())
+        artifact_count = source_artifacts.order_by(None).count()
+        scan_ready = source_artifacts.filter(
+            func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
+            RegistryArtifact.scan_snapshots.any(
+                func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)
+            ),
+        ).order_by(None).count()
+        scan_attempted = source_artifacts.filter(
+            RegistryArtifact.scan_status.isnot(None)
+        ).order_by(None).count()
+        signature_ready = source_artifacts.filter(
+            func.lower(RegistryArtifact.signature_status) == 'signed'
+        ).order_by(None).count()
+        signature_attempted = source_artifacts.filter(
+            RegistryArtifact.signature_status.isnot(None)
+        ).order_by(None).count()
+        sbom_ready = source_artifacts.filter(
+            func.lower(RegistryArtifact.sbom_status) == 'available'
+        ).order_by(None).count()
+        sbom_attempted = source_artifacts.filter(
+            RegistryArtifact.sbom_status.isnot(None)
+        ).order_by(None).count()
         collector = collectors.get(source.provider_key)
         capabilities = collector.capabilities if collector is not None else frozenset()
-        rows.append(
-            {
-                'source_name': source.name,
-                'provider_label': source.provider_key.replace('_', ' ').title(),
-                'artifact_count': source_artifacts.order_by(None).count(),
-                'vulnerability': _capability_state(
-                    supported='vulnerability' in capabilities,
-                    observed=bool(
-                        source_artifacts.filter(RegistryArtifact.scan_status.isnot(None)).order_by(None).count()
-                    ),
-                    attempted=attempted,
-                ),
-                'signature': _capability_state(
-                    supported='signature' in capabilities,
-                    observed=bool(
-                        source_artifacts.filter(RegistryArtifact.signature_status.isnot(None)).order_by(None).count()
-                    ),
-                    attempted=attempted,
-                ),
-                'sbom': _capability_state(
-                    supported='sbom' in capabilities,
-                    observed=bool(
-                        source_artifacts.filter(RegistryArtifact.sbom_status.isnot(None)).order_by(None).count()
-                    ),
-                    attempted=attempted,
-                ),
-            }
-        )
+        rows.append({
+            'source_name': source.name,
+            'provider_label': source.provider_key.replace('_', ' ').title(),
+            'artifact_count': artifact_count,
+            'coverage': {
+                'vulnerability': scan_ready,
+                'signature': signature_ready,
+                'sbom': sbom_ready,
+            },
+            'vulnerability': _capability_state(
+                supported='vulnerability' in capabilities,
+                observed=bool(scan_ready),
+                attempted=bool(scan_attempted),
+            ),
+            'signature': _capability_state(
+                supported='signature' in capabilities,
+                observed=bool(signature_ready),
+                attempted=bool(signature_attempted),
+            ),
+            'sbom': _capability_state(
+                supported='sbom' in capabilities,
+                observed=bool(sbom_ready),
+                attempted=bool(sbom_attempted),
+            ),
+        })
     return rows
 
 
