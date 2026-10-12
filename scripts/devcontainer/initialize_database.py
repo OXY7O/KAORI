@@ -50,6 +50,20 @@ def main() -> int:
     if runtime.password == os.environ['POSTGRES_PASSWORD']:
         _abort('runtime and owner passwords must differ')
 
+    # Reject incomplete first-admin credentials BEFORE writing schema.
+    if args.bootstrap_admin:
+        username = (os.getenv('ADMIN_USERNAME') or '').strip()
+        email = (os.getenv('ADMIN_EMAIL') or '').strip()
+        password = os.getenv('ADMIN_PASSWORD') or ''
+        encryption_key = os.getenv('INTEGRATION_CREDENTIAL_KEY') or ''
+        if (
+            not username or not email or '@' not in email
+            or len(password) < 12 or 'replace-with' in password.lower()
+            or not encryption_key or 'replace-with' in encryption_key.lower()
+        ):
+            _abort('configure valid private ADMIN_* and INTEGRATION_CREDENTIAL_KEY '
+                   'before first schema migration')
+
     # Owner authority is never saved in .env or inherited by workers.
     migration_url = URL.create(
         'postgresql',
