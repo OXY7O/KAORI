@@ -195,7 +195,8 @@ def get_delivery_channel_options() -> list[dict[str, Any]]:
     from app.reports.notifications import get_report_notification_channel_options
 
     by_channel: dict[int, dict[str, Any]] = {}
-    for domain in ('kubernetes', 'object_storage'):
+    supported_domains = sorted({str(item.get('domain') or 'kubernetes') for item in REPORT_TYPE_OPTIONS})
+    for domain in supported_domains:
         for option in get_report_notification_channel_options(domain=domain):
             channel_id = int(option['channel_id'])
             existing = by_channel.setdefault(
