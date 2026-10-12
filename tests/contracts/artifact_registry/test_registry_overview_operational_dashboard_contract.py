@@ -595,8 +595,9 @@ def test_registry_dashboard_kpi_projection_respects_active_committed_scope_and_e
     )[0]
     assert '_overview_inventory_kpi_evidence(scoped_providers, states)' in ops
     assert '_overview_inventory_evidence(committed_provider_ids)' in ops
-    assert 'committed_id_set = set(committed_provider_ids)' in ops
-    assert 'if provider_id in committed_id_set' in ops
+    assert '_fleet_successfully_scanned_artifacts(committed_provider_ids)' in ops
+    assert 'registry_metrics_ready_provider_ids(scoped_providers)' in ops
+    assert 'scanned_count = sum(' not in ops
     inventory = projection.split('def _overview_inventory_evidence(', 1)[1].split(
         'def _overview_inventory_items(', 1
     )[0]
@@ -635,3 +636,26 @@ def test_registry_operations_inventory_snapshot_500_regression_and_relative_upda
     assert "'Updated ' ~ dashboard.last_updated" in object_signal
     assert "'Updated ' ~ dashboard.last_updated" in kubernetes_signal
     assert "else 'Not Collected'" in signal
+
+
+def test_registry_provider_health_limits_per_provider_source_reads_to_visible_page() -> None:
+    projection = read('app/artifact_registry/presentation_overview.py')
+    health = projection.split('def _provider_health_projection(', 1)[1].split(
+        'def _fleet_successfully_scanned_artifacts(', 1
+    )[0]
+    assert 'visible_providers, pagination = paginate_sequence(' in health
+    assert 'scoped_provider_ids = [int(provider.id) for provider in visible_providers]' in health
+    assert 'for provider in visible_providers' in health
+    assert 'for provider in scoped_providers' not in health
+    assert 'return provider_rows, pagination, metrics_by_provider, security_counts' in health
+    assert 'func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)' in health
+    batch = read('app/integrations/registry/observability.py')
+    assert 'def registry_metrics_ready_provider_ids(' in batch
+    assert '_evaluate_binding(' in batch
+    assert "required_technical_capabilities=('instant_query',)" in batch
+    common = read('app/artifact_registry/presentation_common.py')
+    latest = common.split('def _latest_registry_analytics(', 1)[1]
+    assert 'func.row_number().over(' in latest
+    assert 'RegistryAnalyticsSnapshot.integration_instance_id.in_(provider_ids)' in latest
+    assert 'for provider in scoped_providers:' not in latest
+    assert 'snapshot.integration_instance_id' in latest
