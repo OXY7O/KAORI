@@ -178,9 +178,9 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-outline-subtle">
-                                {% for label, field, ratio, source in [
-                                    ('CPU Limits', 'cpu', exposure.cpu_ratio, 'cpu'),
-                                    ('Memory Limits', 'memory', exposure.memory_ratio, 'memory')
+                                {% for label, field, ratio in [
+                                    ('CPU Limits', 'cpu', exposure.cpu_ratio),
+                                    ('Memory Limits', 'memory', exposure.memory_ratio)
                                 ] %}
                                     <tr class="hover:bg-surface-elevated">
                                         <th scope="row" class="px-4 py-3 font-medium text-content-primary">{{ label }}</th>
