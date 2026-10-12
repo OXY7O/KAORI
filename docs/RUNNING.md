@@ -19,7 +19,7 @@ Review at minimum:
 
 - `SECRET_KEY`
 - `DATABASE_URL`
-- `POSTGRES_*`
+- `KAORI_DEV_DB_SECRETS_DIR` (external WSL host files `postgres_admin_password` and `migrator_password`)
 - `REDIS_URL`
 - `CELERY_BROKER_URL`
 - `CELERY_RESULT_BACKEND`
@@ -42,43 +42,39 @@ Do not create or use a host `.venv`; the supported Python runtime is inside the 
 
 ### 3. Initialize or upgrade the database
 
-Normal Flask/worker sessions use only the **non-owner** `DATABASE_URL`.
-`POSTGRES_*` supplies the PostgreSQL bootstrap owner; a schema migration
-or RBAC/admin seed must be explicitly run as that owner. The existing
-`scripts/init_db.sh` requires temporary `KAORI_DB_MIGRATION_URL`
-(owner connection) rather than trying to run DDL with the app runtime.
-**Do not store `KAORI_DB_MIGRATION_URL` in `.env`.** Do not invoke
-`flask db upgrade` from a runtime-only VS Code terminal without
-an explicit owner migration context.
+Normal Flask, Celery workers and Beat use only canonical
+`DATABASE_URL` as `kaori_runtime`. The DevContainer PostgreSQL image
+uses `postgres` with an **external host-side Docker secret**;
+its one-shot dependency provisions `kaori_migrator` (non-superuser
+database/schema owner) and the runtime login. All containers come up
+automatically through VS Code, but **no schema migration or administrator
+bootstrap runs on startup**.
 
-For routine VS Code DevContainer opening, the existing `runServices`
-automatically starts database, Redis, workspace, all workers and Beat,
-and the new one-shot `db-role-bootstrap` admits a non-owner login without
-running migrations. Workers/Beat remain gated on schema readiness **and** the
-DevContainer-only restricted ledger-grants checkpoint.
-For an actually empty schema, observe the read-only setup page, then
-run `KAORI: Initialize Fresh Database` **once** from VS Code Tasks.
-That task injects the owner migration identity only into controlled child
-processes, refreshes runtime table grants and checks the Capsule ledger
-guard. Subsequent container opens need no manual database commands.
+For an empty schema the existing read-only **Database Setup Required**
+page is expected. Choose **Terminal → Run Task →
+KAORI: Initialize Fresh Database**. The task securely prompts for
+the migrator password, runs Alembic and RBAC seed only under the
+`kaori_migrator` identity, refreshes restricted grants/immutable
+Capsule ledger permissions, then creates the first KAORI administrator
+using the app runtime connection. Do not put `KAORI_DB_MIGRATION_URL`
+or `POSTGRES_PASSWORD` in app `.env` or run bare
+`flask db upgrade` as the runtime login.
 
-For a fresh, disposable DevContainer PostgreSQL database, follow the
-[scoped fresh-bootstrap runbook](operations/devcontainer-postgres-fresh-bootstrap.md):
-DB-only volume confirmation/reset → Alembic and admin/RBAC with owner →
-`kaori_runtime` provisioning and login → restricted app/workers/Beat.
+Before first opening, configure the two 0600 PostgreSQL secret files
+outside the repo, and canonical root `.env` including
+`KAORI_DEV_DB_SECRETS_DIR` and `DATABASE_URL`; follow the
+[three-role first-run guide](operations/devcontainer-postgres-fresh-bootstrap.md).
+Later opens preserve existing data and require **no** database task.
+For approved schema upgrades, run **KAORI: Database Upgrade** and
+enter the migrator secret again. Workers/Beat wait for the Alembic
+head **and** current restricted runtime grants; do not force-start jobs
+while setup is incomplete.
 
-For an existing database with records, use the
-[data-preserving runtime-role runbook](operations/devcontainer-postgres-runtime-role.md).
-Never delete the database in this existing-data procedure.
-After approved migrations, the owner must refresh restricted role grants
-before starting workers; the immutable ledger trigger/ACL checks remain
-authoritative.
-
-On a fresh or migration-behind development database, workers and Beat
-wait for the exact current Alembic migration head. A fresh bootstrap
-must finish role/login provisioning and consider old Redis job state
-before workers/Beat are resumed. `WAIT_FOR_SCHEMA` is not a substitute
-for runtime role security.
+The prior [#1405 data-preserving role cutover](operations/devcontainer-postgres-runtime-role.md)
+is a historical procedure for old two-role datasets, not a fresh
+three-role install. Never use the local superuser bootstrap procedure
+against provider-owned production PostgreSQL; those duties are governed
+by #621, #622, #1439 and #1440.
 
 ### 4. Build or watch frontend assets
 
