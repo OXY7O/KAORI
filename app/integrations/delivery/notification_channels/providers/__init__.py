@@ -156,6 +156,45 @@ def _send_microsoft_teams(
     )
 
 
+def _send_ntfy(
+    credentials: Mapping[str, str],
+    destination: str,
+    provider_config: Mapping[str, Any],
+    message: NotificationMessage,
+    timeout_seconds: int,
+) -> DeliveryResult:
+    return send_ntfy_message(
+        credentials=credentials, destination=destination, provider_config=provider_config,
+        message=message, timeout_seconds=timeout_seconds,
+    )
+
+
+def _send_slack(
+    credentials: Mapping[str, str],
+    destination: str,
+    provider_config: Mapping[str, Any],
+    message: NotificationMessage,
+    timeout_seconds: int,
+) -> DeliveryResult:
+    return send_slack_message(
+        credentials=credentials, destination=destination, provider_config=provider_config,
+        message=message, timeout_seconds=timeout_seconds,
+    )
+
+
+def _send_discord(
+    credentials: Mapping[str, str],
+    destination: str,
+    provider_config: Mapping[str, Any],
+    message: NotificationMessage,
+    timeout_seconds: int,
+) -> DeliveryResult:
+    return send_discord_message(
+        credentials=credentials, destination=destination, provider_config=provider_config,
+        message=message, timeout_seconds=timeout_seconds,
+    )
+
+
 _PROVIDERS = {
     'discord': NotificationProviderAdapter(
         key='discord',
@@ -186,10 +225,7 @@ _PROVIDERS = {
         form_parser=parse_discord_form,
         form_validator=validate_discord_form,
         form_view=discord_form_view,
-        sender=lambda credentials, destination, provider_config, message, timeout: send_discord_message(
-            credentials=credentials, destination=destination, provider_config=provider_config,
-            message=message, timeout_seconds=timeout,
-        ),
+        sender=_send_discord,
     ),
     'slack': NotificationProviderAdapter(
         key='slack',
@@ -220,10 +256,7 @@ _PROVIDERS = {
         form_parser=parse_slack_form,
         form_validator=validate_slack_form,
         form_view=slack_form_view,
-        sender=lambda credentials, destination, provider_config, message, timeout: send_slack_message(
-            credentials=credentials, destination=destination, provider_config=provider_config,
-            message=message, timeout_seconds=timeout,
-        ),
+        sender=_send_slack,
     ),
     'ntfy': NotificationProviderAdapter(
         key='ntfy',
@@ -257,13 +290,7 @@ _PROVIDERS = {
         form_parser=parse_ntfy_form,
         form_validator=validate_ntfy_form,
         form_view=ntfy_form_view,
-        sender=lambda credentials, destination, provider_config, message, timeout: send_ntfy_message(
-            credentials=credentials,
-            destination=destination,
-            provider_config=provider_config,
-            message=message,
-            timeout_seconds=timeout,
-        ),
+        sender=_send_ntfy,
     ),
     'telegram': NotificationProviderAdapter(
         key='telegram',

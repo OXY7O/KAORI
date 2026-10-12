@@ -334,12 +334,14 @@ or global delivery worker change is required.
 
 ## Notification Channels — approved hybrid provider roadmap (#1456)
 
-**Status: approved roadmap, NOT implemented provider availability.**
+**Status: Phase 1 provider source merged to review; runtime UAT/admission pending.**
 KAORI's delivery capability is **hybrid**: internal/self-hosted operational push
 and popular team collaboration endpoints use one existing
 `Integrations → Delivery → Notification Channels` governance surface.
-The three **currently implemented** adapters are Telegram (including Telegram
-Forum Topic ID), Email/SMTP, and Microsoft Teams Workflows. GitHub Actions'
+The three **pre-Phase-1** adapters are Telegram (including Telegram
+Forum Topic ID), Email/SMTP, and Microsoft Teams Workflows. Phase 1 adapter
+code for **ntfy, Slack, and Discord** is now merged on
+`kaori/review/staging-uat`, but has not completed runtime UAT or staging admission. GitHub Actions'
 trusted-branch Telegram notifier retains its separate GitHub ownership (#64);
 a second application-based CI notifier must not duplicate those messages.
 
@@ -435,7 +437,59 @@ DevContainer safe destination UAT, permission and secret-redaction checks,
 desktop/mobile/light-dark accessibility evidence and human acceptance. For
 self-hosted ntfy include trusted internal CA and blocked unsafe endpoint cases;
 for Slack/Discord include redirect/revocation/429/secret-leak cases.
-**This roadmap does not implement or enable any new provider**. Under the
+**Three new Phase 1 adapters are integrated to the review branch only; this does not authorize deployment or live provider use**. Under the
 current review session, CI/CD, Developer Check, Full Admission, DAST,
 `kaori/staging`, `main`, deployment and release are **HOLD** pending explicit
 authorization. A review-only documentation merge is not staging UAT acceptance.
+
+
+### Phase 1 provider setup and UAT notes (#1473)
+
+**Status:** review-only adapter source integrated via ntfy PR #1468, Slack PR
+#1471 and Discord PR #1472. Existing three providers are unchanged.
+Provider availability on the review UI is **not** proof of live connectivity,
+permissioned destination ownership, UAT acceptance or release readiness.
+
+**ntfy, self-hosted:** Set \`NOTIFICATION_NTFY_ALLOWED_ORIGINS\` on the KAORI
+web process and Celery worker to explicit comma-separated HTTPS server origins,
+for example \`https://notify.internal.example\`; when unset, destination
+validation and delivery fail closed. Optionally provide a trusted PEM bundle
+using \`NOTIFICATION_NTFY_CA_BUNDLE\` for your internal PKI. Never disable TLS
+certificate verification. Explicitly restrict DNS resolution and network
+egress at infrastructure policy: the application origin allowlist plus
+redirect denial does **not** protect against all malicious DNS changes.
+Create a protected topic and optional publish-scoped access token, configure
+the channel with that approved origin and topic, then Test Delivery to an
+operator-owned subscriber. Server acknowledgement does not prove mobile
+receipt or human reading.
+
+**Slack:** Configure an official, channel-bound Incoming Webhook on
+\`hooks.slack.com\` (or approved GovSlack host), store its secret URL only in
+the password field, and assign a human destination label. Webhook ownership
+determines the Slack channel; do not assume the label changes the destination.
+Credentials are encrypted and never rendered back. Validate the destination
+and Test Delivery against a sanctioned sandbox, then confirm channel receipt.
+
+**Discord:** Configure an official \`https://discord.com/api/webhooks/...\`
+Execute Webhook with minimum privileges. Store its secret URL through the
+password field; Test Delivery before enabling the channel. The payload
+includes \`allowed_mentions: {"parse": []}\` to suppress accidental user,
+role and mass mentions. No Discord bot, chat history, guild discovery or
+subscriber-read status is replicated.
+
+**Reliability boundary:** Slack and Discord classify HTTP 429 with sanitized
+provider failures. The existing opt-in journal recovery currently uses the
+KAORI bounded retry delay; it does **not yet honor provider-specific
+\`Retry-After\` scheduling deadlines**. Do not claim rate-limit-compliant
+retry, exactly-once remote delivery, or production readiness. Governed
+follow-up work must address provider-specific deadlines and concurrent
+claims before enabling \`NOTIFICATION_DELIVERY_RECOVERY_ENABLED=true\`.
+Keep \`NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false\` during DevContainer
+review.
+
+**UAT still pending:** run existing regression suites, provider mocked
+transport tests (2xx, 4xx, 429, redirects, timeouts, TLS, invalid secret),
+explicit ntfy internal network/CA tests, Flask permission/CSRF checks,
+responsive/light-dark/keyboard Visual QA, and permitted sandbox Test Delivery
+on authorized destinations. Do not advance staging/main promotion or claim
+human acceptance without evidence.
