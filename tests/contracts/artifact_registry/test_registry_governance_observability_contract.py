@@ -227,13 +227,13 @@ def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
     assert "Project Governance</h2>" not in evidence
     assert "Resilience Evidence</p>" not in evidence
 
-    assert 'def _filter_governance_rows(' in presentation
-    assert 'filtered_rows = _filter_governance_rows(' in presentation
-    assert 'paginate_sequence(filtered_rows, page=page, per_page=per_page)' in presentation
+    assert 'def _governance_filtered_query(' in presentation
+    assert 'query = _governance_filtered_query(' in presentation
+    assert 'items, pagination = paginate_query(query, page=page, per_page=per_page)' in presentation
     assert "'filter_query': filter_query" in presentation
     assert "'has_filters': filters_active" in presentation
-    assert "'provider_options': sorted(" in presentation
-    assert 'search_key not in' in presentation
+    assert "'provider_options': [" in presentation
+    assert 'func.lower(RegistryProject.name).like(pattern)' in presentation
     assert "'retention_label'" in presentation
     assert "'immutability_label'" in presentation
     assert "observed_state = 'enabled' if enabled is True" in presentation
@@ -249,46 +249,46 @@ def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
     assert 'artifactRegistryGovernanceSyncFinished from:body' in workspace
 
 
-def test_governance_evidence_filter_matches_committed_rows_before_pagination() -> None:
-    from app.artifact_registry.presentation_governance import _filter_governance_rows
+def test_governance_table_filter_and_pagination_use_active_sql_scope() -> None:
+    presenter = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
+    query = presenter.split('def _governance_filtered_query(', 1)[1].split('def build_governance(', 1)[0]
+    builder = presenter.split('def build_governance(', 1)[1]
 
-    policies = [
-        {'project': 'library', 'provider_label': 'Harbor', 'retention_label': 'Not Configured',
-         'immutability_label': 'Configured'},
-        {'project': 'demo', 'provider_label': 'Harbor', 'retention_label': 'Configured',
-         'immutability_label': 'Not Configured'},
-        {'project': 'archive', 'provider_label': 'Another Registry', 'retention_label': 'Unavailable',
-         'immutability_label': 'Not Collected'},
-    ]
-    def filter_rows(rows, *, tab='policies', search='', provider='', retention='', immutability='', state=''):
-        return _filter_governance_rows(
-            rows, active_tab=tab, search=search, provider=provider, retention=retention,
-            immutability=immutability, state=state,
-        )
+    assert 'paginate_query(query, page=page, per_page=per_page)' in builder
+    assert 'paginate_sequence(' not in builder
+    assert '_filter_governance_rows(' not in presenter
+    assert 'RegistryProject.integration_instance_id.in_(source_ids)' in query
+    assert 'RegistryReplicationPolicy.integration_instance_id.in_(source_ids)' in query
+    assert 'selected in source_ids' in query
+    assert 'RegistryProjectGovernance.retention_status == retention' in query
+    assert 'RegistryProjectGovernance.immutability_status == immutability' in query
+    assert 'RegistryReplicationPolicy.enabled.is_(None)' in query
+    assert 'func.lower(RegistryReplicationPolicy.name).like(pattern)' in query
+    assert 'RegistryReplicationPolicy.name.asc()' in query
+    assert 'RegistryProjectGovernance.observed_at.desc()' in query
+    assert "row['provider_label']" not in query
+    assert "identity_by_id = {int(item.id): item for item in identities}" in builder
+    assert "'provider_options': [" in builder
+    assert "'id': int(identity.id)" in builder
 
-    assert len(filter_rows(policies)) == 3
-    assert [row['project'] for row in filter_rows(policies, search='LIBRARY')] == ['library']
-    assert [row['project'] for row in filter_rows(policies, provider='harbor')] == ['library', 'demo']
-    assert [row['project'] for row in filter_rows(policies, retention='not_configured')] == ['library']
-    assert [row['project'] for row in filter_rows(policies, immutability='not_collected')] == ['archive']
-    assert filter_rows(policies, provider='Harbor', retention='unavailable') == []
 
-    replication = [
-        {'name': 'primary-copy', 'provider_label': 'Harbor', 'enabled': True,
-         'trigger_type': 'event', 'source_registry': 'local', 'destination_registry': 'remote-a',
-         'destination_namespace': 'library'},
-        {'name': 'standby-copy', 'provider_label': 'Harbor', 'enabled': False,
-         'trigger_type': None, 'source_registry': None, 'destination_registry': 'remote-b',
-         'destination_namespace': None},
-        {'name': 'legacy-copy', 'provider_label': 'Another Registry', 'enabled': None,
-         'trigger_type': None, 'source_registry': None, 'destination_registry': None,
-         'destination_namespace': None},
-    ]
-    assert [row['name'] for row in filter_rows(replication, tab='replication', state='enabled')] == ['primary-copy']
-    assert [row['name'] for row in filter_rows(replication, tab='replication', state='disabled')] == ['standby-copy']
-    assert [row['name'] for row in filter_rows(replication, tab='replication', state='unknown')] == ['legacy-copy']
-    assert [row['name'] for row in filter_rows(replication, tab='replication', search='remote-b')] == ['standby-copy']
-    assert [row['name'] for row in filter_rows(replication, tab='replication', search='LIBRARY')] == ['primary-copy']
+def test_governance_inventory_commit_changes_invalidate_freshness() -> None:
+    from datetime import UTC, datetime, timedelta
+    from types import SimpleNamespace
+
+    from app.artifact_registry.presentation_governance import _governance_inventory_changed
+
+    original = datetime(2026, 10, 12, tzinfo=UTC)
+    state = SimpleNamespace(
+        last_committed_at=original,
+        metadata_json={'inventory_committed_at': original.isoformat()},
+    )
+    inventory = SimpleNamespace(last_committed_at=original)
+    assert not _governance_inventory_changed(state, inventory)
+    inventory.last_committed_at += timedelta(minutes=1)
+    assert _governance_inventory_changed(state, inventory)
+    state.metadata_json = {}
+    assert _governance_inventory_changed(state, inventory)
 
 
 def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> None:
