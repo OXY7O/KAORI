@@ -127,36 +127,63 @@ def verify_archive_artifact(archive_id: str) -> dict[str, Any]:
     artifact = db.session.get(ArchiveArtifact, archive_id)
     if artifact is None:
         raise LookupError('Archive record was not found.')
-    if not artifact.storage_backend or not artifact.data_object_key or not artifact.manifest_object_key:
-        raise ArchiveVerificationError('Archive storage metadata is incomplete.')
-    if not artifact.checksum_sha256 or artifact.size_bytes is None:
-        raise ArchiveVerificationError('Archive checksum metadata is incomplete.')
+    if not artifact.is_verifiable:
+        raise ArchiveVerificationError('Archive status or integrity metadata does not permit verification.')
 
-    backend = build_artifact_storage_for_backend(
-        'archive',
-        artifact.storage_backend,
-        locator=archive_support.artifact_storage_locator(artifact),
-    )
-    _verify_stored_file(
-        backend=backend,
-        object_key=artifact.data_object_key,
-        expected_size=artifact.size_bytes,
-        expected_checksum=artifact.checksum_sha256,
-    )
-    if artifact.manifest_size_bytes is None or not artifact.manifest_checksum_sha256:
-        raise ArchiveVerificationError('Archive manifest checksum metadata is incomplete.')
-    _verify_stored_file(
-        backend=backend,
-        object_key=artifact.manifest_object_key,
-        expected_size=artifact.manifest_size_bytes,
-        expected_checksum=artifact.manifest_checksum_sha256,
-    )
-    _verify_supplemental_artifacts(backend=backend, artifact=artifact)
+    try:
+        if not artifact.storage_backend or not artifact.data_object_key or not artifact.manifest_object_key:
+            raise ArchiveVerificationError('Archive storage metadata is incomplete.')
+        if not artifact.checksum_sha256 or artifact.size_bytes is None:
+            raise ArchiveVerificationError('Archive checksum metadata is incomplete.')
+
+        backend = build_artifact_storage_for_backend(
+            'archive',
+            artifact.storage_backend,
+            locator=archive_support.artifact_storage_locator(artifact),
+        )
+        _verify_stored_file(
+            backend=backend,
+            object_key=artifact.data_object_key,
+            expected_size=artifact.size_bytes,
+            expected_checksum=artifact.checksum_sha256,
+        )
+        if artifact.manifest_size_bytes is None or not artifact.manifest_checksum_sha256:
+            raise ArchiveVerificationError('Archive manifest checksum metadata is incomplete.')
+        _verify_stored_file(
+            backend=backend,
+            object_key=artifact.manifest_object_key,
+            expected_size=artifact.manifest_size_bytes,
+            expected_checksum=artifact.manifest_checksum_sha256,
+        )
+        _verify_supplemental_artifacts(backend=backend, artifact=artifact)
+    except Exception:
+        # A previously downloadable archive must no longer appear verified if
+        # its current stored evidence cannot be read and checksum-validated.
+        db.session.rollback()
+        failed_artifact = db.session.get(ArchiveArtifact, archive_id)
+        if failed_artifact is not None:
+            failed_artifact.status = ARCHIVE_STATUS_FAILED
+            failed_artifact.verified_at = None
+            failed_artifact.error_message = (
+                'Archive integrity re-verification failed; download is blocked until verification succeeds.'
+            )
+            db.session.commit()
+        raise
 
     artifact.verified_at = datetime.now(UTC)
     if artifact.status == ARCHIVE_STATUS_FAILED:
-        artifact.status = ARCHIVE_STATUS_CLEANUP_PARTIAL if artifact.cleanup_deleted_count > 0 else ARCHIVE_STATUS_READY
-    artifact.error_message = None
+        if artifact.operation_mode == 'archive_and_cleanup' and artifact.cleanup_deleted_count < artifact.record_count:
+            artifact.status = ARCHIVE_STATUS_CLEANUP_PARTIAL
+            artifact.error_message = (
+                'Archive integrity verified, but hot cleanup is incomplete; no cleanup was retried.'
+            )
+        else:
+            artifact.status = ARCHIVE_STATUS_READY
+            artifact.error_message = None
+    elif artifact.status == ARCHIVE_STATUS_READY:
+        artifact.error_message = None
+    # A pre-existing cleanup_partial remains partial even after successful
+    # verification; verification does not authorize a cleanup retry.
     db.session.commit()
 
     return {
