@@ -59,11 +59,16 @@
                                 {% if row.security_not_applicable %}
                                     <p class="text-sm font-semibold text-content-disabled">N/A</p>
                                     <p class="mt-1 text-xs text-status-info-text">No Artifacts</p>
-                                {% elif row.security_ready %}
-                                    <p class="text-sm font-semibold {% if row.critical_findings > 0 %}text-status-critical-text{% elif row.high_findings > 0 %}text-status-warning-text{% else %}text-status-normal-text{% endif %}">
+                                {% elif row.security_ready or row.security_partial %}
+                                    <p class="text-sm font-semibold {% if row.critical_findings > 0 %}text-status-critical-text{% elif row.high_findings > 0 or row.security_partial %}text-status-warning-text{% else %}text-status-normal-text{% endif %}">
                                         {{ row.critical_findings }} Critical
                                     </p>
                                     <p class="mt-1 text-xs text-content-muted">{{ row.high_findings }} High</p>
+                                    {% if row.security_partial %}
+                                        <p class="mt-1 text-xs text-status-warning-text">
+                                            Partial Scans · {{ row.scanned_count }} / {{ row.artifact_count }} assessed
+                                        </p>
+                                    {% endif %}
                                 {% else %}
                                     <p class="text-sm font-semibold text-content-disabled">N/A</p>
                                     <p class="mt-1 text-xs text-status-unknown-text">
