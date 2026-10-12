@@ -296,6 +296,12 @@ def build_detail_context(
     )
 
     inventory_observed_at = instance.object_storage_system.inventory_observed_at
+    source_metadata = instance.integration_instance.metadata_json or {}
+    source_changed = (
+        int(source_metadata.get('object_storage_connection_generation') or 0)
+        != int(source_metadata.get('object_storage_inventory_generation') or 0)
+    )
+    inventory_current = inventory_observed_at is not None and not source_changed
 
     return {
         'instance': instance,
@@ -319,8 +325,14 @@ def build_detail_context(
         'validated_at_display': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
         'bucket_count': len(instance.object_storage_system.buckets or ()),
-        'inventory_status': 'ready' if inventory_observed_at else 'unknown',
-        'inventory_status_label': ('Committed Snapshot' if inventory_observed_at else 'No Committed Inventory'),
+        'inventory_status': 'ready' if inventory_current else 'unknown',
+        'inventory_status_label': (
+            'Current Source Snapshot' if inventory_current
+            else 'Source Changed · Sync Required' if source_changed and inventory_observed_at
+            else 'No Committed Inventory'
+        ),
+        'inventory_source_changed': source_changed,
+        'inventory_current': inventory_current,
         'inventory_observed_at_display': present_user_datetime(
             inventory_observed_at,
             empty='Not Collected',
