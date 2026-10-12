@@ -13,7 +13,7 @@ def _snapshot(*, expired: bool = False, payload: bool = True, expiry: bool = Tru
     now = datetime.now(UTC)
     return SimpleNamespace(
         status='ready',
-        payload_json={'metrics': {}} if payload else None,
+        payload_json={'metrics': {'status': 'ready'}} if payload else None,
         generated_at=now - timedelta(hours=3) if expired else now - timedelta(minutes=5),
         expires_at=(now - timedelta(minutes=1) if expired else now + timedelta(minutes=20)) if expiry else None,
     )
@@ -30,8 +30,13 @@ def _snapshot(*, expired: bool = False, payload: bool = True, expiry: bool = Tru
     ],
 )
 def test_selected_analytics_evidence_requires_usable_ready_payload(
-    snapshot, label, current, stale,
+    snapshot, label, current, stale, monkeypatch,
 ) -> None:
+    from app.artifact_registry import presentation_common
+
+    # This fixture tests local expiry/state classification in isolation.
+    # Source generation comparisons have dedicated, DB-backed tests.
+    monkeypatch.setattr(presentation_common, '_registry_analytics_inputs_changed', lambda _snapshot: False)
     view = _analytics_snapshot_view(snapshot)
     assert view['label'] == label
     assert view['is_current'] is current
