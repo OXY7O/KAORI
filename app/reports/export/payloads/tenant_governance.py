@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import and_, or_
+from sqlalchemy import or_
 
 from app.intelligence.service import get_active_recommendation_findings
 from app.models import (
