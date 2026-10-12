@@ -283,7 +283,7 @@ def test_registry_project_inventory_reuses_canonical_filters_and_detail_modal() 
     assert 'resource_detail_modal.inventory_host' in page
     assert "@artifact_registry_bp.get('/inventory/projects/<int:project_id>/details')" in routes
     assert 'def build_inventory_project_detail(project_id: int)' in presentation
-    assert 'RegistryProject.query.options' in presentation
+    assert 'RegistryProject.query.filter(RegistryProject.id == int(project_id)).first()' in presentation
     assert 'HarborClient' not in presentation
     assert 'components/details/_detail_content.html' in detail
     assert 'Committed Snapshot Boundary' in detail
@@ -302,8 +302,8 @@ def test_registry_repository_and_artifact_inventory_reuse_full_workspace_detail_
     assert 'def build_inventory_repository_detail(repository_id: int)' in presentation
     assert 'def build_inventory_artifact_detail(artifact_id: int)' in presentation
     assert 'build_client' not in presentation
-    assert 'RegistryRepository.query.options(' in presentation
-    assert 'RegistryArtifact.query.options(' in presentation
+    assert 'RegistryRepository.query.filter(RegistryRepository.id == int(repository_id)).first()' in presentation
+    assert 'RegistryArtifact.query.filter(RegistryArtifact.id == int(artifact_id)).first()' in presentation
 
     assert "@artifact_registry_bp.get('/inventory/repositories/<int:repository_id>/details')" in routes
     assert "@artifact_registry_bp.get('/inventory/artifacts/<int:artifact_id>/details')" in routes
