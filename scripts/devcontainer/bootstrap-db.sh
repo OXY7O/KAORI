@@ -8,6 +8,12 @@ if [ "${APP_ENV:-}" != development ] || [ -z "${KAORI_MIGRATOR_PASSWORD:-}" ]; t
     echo 'ABORT: DevContainer migrator secret or development boundary unavailable' >&2
     exit 1
 fi
+case "${1:-}" in
+    "") bootstrap_admin=true ;;
+    --upgrade-only) bootstrap_admin=false ;;
+    *) echo 'Usage: bootstrap-db.sh [--upgrade-only]' >&2; exit 2 ;;
+esac
+
 migration_password="$KAORI_MIGRATOR_PASSWORD"
 KAORI_DB_MIGRATION_URL="$(python - <<'PY'
 import os
@@ -40,7 +46,11 @@ unset migration_password KAORI_DB_MIGRATION_URL
 
 # First KAORI administrator and RBAC catalog are application-domain operations.
 # This Flask process uses canonical DATABASE_URL as kaori_runtime, not migrator.
-flask --app run:app bootstrap-admin
+if [ "$bootstrap_admin" = true ]; then
+  flask --app run:app bootstrap-admin
+else
+  flask --app run:app seed-rbac
+fi
 
 python - <<'PY'
 from run import app
