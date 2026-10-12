@@ -432,12 +432,22 @@ _REGISTRY_ANALYTICS_DETAIL_ROUTES = {
 }
 
 
+def _analytics_provider_id() -> int | None:
+    """Explicit scope is fail-closed; invalid IDs must not expand to the fleet."""
+    value = request.args.get('provider_id')
+    if value is None or value == '':
+        return None
+    if not value.isdecimal() or int(value) <= 0:
+        abort(404)
+    return int(value)
+
+
 def _render_registry_analytics_page(section: str) -> ResponseReturnValue:
     return render_template(
         'artifact_registry/analytics.html',
         analytics=build_analytics_shell(
             active_tab=section,
-            provider_id=request.args.get('provider_id', type=int),
+            provider_id=_analytics_provider_id(),
             snapshot_window=request.args.get('snapshot_window', '24h', type=str),
             alert_search=request.args.get('alert_q', '', type=str),
             alert_severity=request.args.get('alert_severity', 'all', type=str),
@@ -515,7 +525,7 @@ def analytics_materialization_resolve() -> ResponseReturnValue:
     section = request.args.get('section', 'overview', type=str)
     if section not in _REGISTRY_ANALYTICS_DETAIL_ROUTES:
         section = 'overview'
-    provider_id = request.args.get('provider_id', type=int)
+    provider_id = _analytics_provider_id()
     window = request.args.get('snapshot_window', '24h', type=str)
     alert_params = {
         'alert_search': request.args.get('alert_q', '', type=str),
@@ -604,7 +614,7 @@ def analytics_section(section: str) -> ResponseReturnValue:
         abort(404)
     context = build_analytics(
         active_tab='growth' if section == 'summary' else section,
-        provider_id=request.args.get('provider_id', type=int),
+        provider_id=_analytics_provider_id(),
         snapshot_window=request.args.get('snapshot_window', '24h', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
         alert_severity=request.args.get('alert_severity', 'all', type=str),
@@ -631,7 +641,7 @@ def analytics_alerts_table() -> ResponseReturnValue:
 
     context = build_analytics(
         active_tab='alerts',
-        provider_id=request.args.get('provider_id', type=int),
+        provider_id=_analytics_provider_id(),
         snapshot_window=request.args.get('snapshot_window', '24h', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
         alert_severity=request.args.get('alert_severity', 'all', type=str),
