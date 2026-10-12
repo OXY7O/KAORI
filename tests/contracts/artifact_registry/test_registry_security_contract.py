@@ -145,7 +145,7 @@ def test_registry_scan_evidence_semantics_are_shared_by_dashboard_and_intelligen
 
     assert "SUCCESSFUL_REGISTRY_SCAN_STATUSES = frozenset({'success', 'finished', 'completed'})" in contracts
     assert 'SUCCESSFUL_REGISTRY_SCAN_STATUSES' in presentation
-    assert 'func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)' in presentation
+    assert 'func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)' in presentation
     assert 'registry_scan_evidence_ready(artifact.scan_status)' in evaluator
     assert 'if not registry_scan_evidence_ready(artifact.scan_status):' in evaluator
 
@@ -154,7 +154,7 @@ def test_registry_security_finding_states_use_usable_scan_coverage() -> None:
     presentation = read('app/artifact_registry/security/presentation.py')
     template = read('app/templates/artifact_registry/partials/_security_workspace.html')
 
-    assert "coverage_count = scanned_artifacts if view == 'vulnerabilities' else evidence_count" in presentation
+    assert "coverage_count = current_scanned_artifacts if view == 'vulnerabilities' else evidence_count" in presentation
     assert "'Security Evidence Not Collected'" in presentation
     assert "'No Provider Scan Evidence'" in presentation
     assert "'Partial Scan Coverage'" in presentation
