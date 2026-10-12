@@ -77,3 +77,65 @@ def test_retry_stale_threshold_exceeds_transport_timeout(monkeypatch: pytest.Mon
     monkeypatch.setenv('NOTIFICATION_DELIVERY_TIMEOUT_SECONDS', '60')
     assert config.notification_delivery_retry_delay_seconds() >= 120
     assert config.notification_delivery_timeout_seconds() == 60
+
+
+def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[str] = []
+    item = SimpleNamespace(
+        attempt_count=1, status='failed', channel=channel(), domain='kubernetes',
+        event_type='report.generated', severity='info', updated_at=None,
+    )
+
+    class Column:
+        def __le__(self, _value: object) -> Column:
+            return self
+
+        def __lt__(self, _value: object) -> Column:
+            return self
+
+        def __eq__(self, _value: object) -> Column:  # type: ignore[override]
+            return self
+
+        def in_(self, _value: object) -> Column:
+            return self
+
+        def asc(self) -> Column:
+            return self
+
+    class Query:
+        def filter(self, *_args: object) -> Query:
+            return self
+
+        def order_by(self, *_args: object) -> Query:
+            return self
+
+        def with_for_update(self, *, skip_locked: bool) -> Query:
+            assert skip_locked is True
+            calls.append('locked')
+            return self
+
+        def first(self) -> SimpleNamespace | None:
+            return item if calls.count('locked') == 1 else None
+
+    columns = SimpleNamespace(query=Query(), status=Column(), updated_at=Column(),
+                              attempt_count=Column(), id=Column())
+    monkeypatch.setattr(service, 'NotificationDelivery', columns)
+    monkeypatch.setattr(service, 'or_', lambda *_: True)
+    monkeypatch.setattr(service, '_replay_message', lambda *_: message())
+    monkeypatch.setattr(service, '_channel_matches_event', lambda *_, **__: True)
+
+    def claim(*_: object) -> None:
+        calls.append('committed-claim')
+        item.attempt_count += 1
+
+    def send(*_: object) -> service.DeliveryResult:
+        assert calls.index('committed-claim') < len(calls)
+        calls.append('provider')
+        return service.DeliveryResult(True, 'accepted')
+
+    monkeypatch.setattr(service, '_begin_delivery_attempt', claim)
+    monkeypatch.setattr(service, '_deliver', send)
+    monkeypatch.setattr(service, '_record_delivery_outcome', lambda *_: calls.append('result-commit'))
+    result = service.recover_notification_deliveries(limit=1)
+    assert result == {'claimed': 1, 'sent': 1, 'failed': 0, 'skipped': 0}
+    assert calls == ['locked', 'committed-claim', 'provider', 'result-commit']
