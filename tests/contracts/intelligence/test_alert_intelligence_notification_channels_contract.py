@@ -58,4 +58,5 @@ def test_resolved_delivery_targets_only_channels_that_received_firing() -> None:
     assert 'for channel_id in pending:' in notifications
     assert 'def _successful_resolved_channels(' in notifications
     assert 'expected.issubset(delivered | _successful_resolved_channels(case))' in notifications
-    assert "case.source_state == 'resolved' and case.workflow_state == 'closed'" in notifications
+    assert "AlertCase.source_state == 'resolved'" in notifications
+    assert "AlertCase.workflow_state == 'closed'" in notifications
