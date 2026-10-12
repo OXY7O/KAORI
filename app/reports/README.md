@@ -118,3 +118,7 @@ The Overview Hero posture comes from the same Reports queue-worker evidence and 
 ### Reports Overview permission-aware navigation (#1531)
 
 Overview is readable by `reports.view`, but links to Generate, Templates, Schedules, and Storage are displayed only for users with the corresponding existing target-route permissions. The Hero falls back to the readable Generated Reports registry when the user cannot access the relevant action. Server-side decorators remain authoritative; navigation never grants permissions. Legacy/partial operation payloads with no permission key are rendered without actionable links.
+
+### Reports Overview bounded storage read path (#1532)
+
+The landing page reads selected-backend shared storage readiness and never walks the local artifact file tree. Local readiness uses inexpensive path existence/writability checks; filesystem count/size scanning remains an opt-in diagnostic operation in the authorized Storage workspace. S3 readiness remains worker/Redis authoritative under the existing monitor and fallback guardrails. No provider mutation or new state cache is introduced.

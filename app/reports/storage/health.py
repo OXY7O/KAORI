@@ -93,39 +93,26 @@ def get_download_cache_path() -> Path:
     )
 
 
-def build_local_storage_health() -> dict[str, Any]:
+def build_local_storage_health(*, include_artifact_inventory: bool = True) -> dict[str, Any]:
+    """Check local readiness without recursive artifact census on hot read paths."""
     root_path = get_local_storage_root_path()
     reports_path = root_path / 'reports'
     staging_path = get_render_staging_path()
     cache_path = get_download_cache_path()
 
-    return {
-        'root_path': str(
-            root_path,
-        ),
-        'reports_path': str(
-            reports_path,
-        ),
-        'render_staging_path': str(
-            staging_path,
-        ),
-        'download_cache_path': str(
-            cache_path,
-        ),
+    health: dict[str, Any] = {
+        'root_path': str(root_path),
+        'reports_path': str(reports_path),
+        'render_staging_path': str(staging_path),
+        'download_cache_path': str(cache_path),
         'root_exists': root_path.exists(),
         'reports_path_exists': reports_path.exists(),
-        'root_writable': is_path_writable(
-            root_path,
-        ),
-        'reports_file_count': count_files_safe(
-            reports_path,
-        ),
-        'reports_total_size': format_file_size(
-            sum_files_size_safe(
-                reports_path,
-            )
-        ),
+        'root_writable': is_path_writable(root_path),
     }
+    if include_artifact_inventory:
+        health['reports_file_count'] = count_files_safe(reports_path)
+        health['reports_total_size'] = format_file_size(sum_files_size_safe(reports_path))
+    return health
 
 
 def build_s3_storage_health() -> dict[str, Any]:
