@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, overload
 
 from sqlalchemy import or_
+from werkzeug.exceptions import NotFound
 
 from app.common.pagination import paginate_sequence
 from app.dashboards.common.operational import normalize_operational_tab
@@ -43,6 +44,7 @@ def _providers() -> list[IntegrationInstance]:
         IntegrationInstance.query.filter(
             IntegrationInstance.integration_type == 'registry',
             IntegrationInstance.lifecycle_status == 'active',
+            IntegrationInstance.enabled.is_(True),
         )
         .order_by(IntegrationInstance.name.asc())
         .all()
@@ -535,6 +537,10 @@ def _overview_scope_context(
         (provider for provider in providers if provider_id is not None and int(provider.id) == int(provider_id)),
         None,
     )
+    if provider_id is not None and selected_provider is None:
+        # A disabled, retired or unknown bookmarked scope must not silently
+        # expand to all eligible providers (or expose their committed evidence).
+        raise NotFound('The selected active Registry provider is unavailable.')
     scoped_providers = [selected_provider] if selected_provider is not None else providers
 
     scoped_provider_ids = [int(provider.id) for provider in scoped_providers]
