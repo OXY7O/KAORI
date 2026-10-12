@@ -182,9 +182,44 @@ def capsule_tenant_handoff_evidence(
     return [component], blockers
 
 
+# This key is *not* a KAORI ownership or handoff marker. In Capsule it may
+# instead be provider-declared Namespace additionalMetadata; preserve it only
+# when the current full Capsule Tenant spec declares the exact scoped value.
+_CAPSULE_SPEC_TENANT_PROJECTION = 'kaori.io/tenant'
+
+
+def capsule_spec_projects_namespace_tenant_label(
+    *, capsule_spec: Any, capsule_name: str, labels: Mapping[str, Any],
+) -> bool:
+    """Recognize one exact Capsule-spec projection for GET-only preservation.
+
+    Not a controller-origin assertion, proof of historical author, successor
+    consent, KAORI ownership or authority to remove/modify this label.
+    """
+    if (
+        not isinstance(capsule_spec, Mapping)
+        or not isinstance(capsule_name, str) or not capsule_name
+        or not isinstance(labels, Mapping)
+        or labels.get(_CAPSULE_SPEC_TENANT_PROJECTION) != capsule_name
+    ):
+        return False
+    options = capsule_spec.get('namespaceOptions')
+    if not isinstance(options, Mapping):
+        return False
+    metadata = options.get('additionalMetadata')
+    if not isinstance(metadata, Mapping):
+        return False
+    declared = metadata.get('labels')
+    return (
+        isinstance(declared, Mapping)
+        and declared.get(_CAPSULE_SPEC_TENANT_PROJECTION) == capsule_name
+    )
+
+
 def capsule_namespace_handoff_evidence(
     *, record: Any, namespace: Any, tenant_name: str,
     status_namespace_names: set[str], tenant_id: str,
+    capsule_spec: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, str], list[str]]:
     """Verify a Namespace still belongs to the authoritative Capsule Tenant."""
     meta = _field(namespace, 'metadata')
@@ -214,16 +249,25 @@ def capsule_namespace_handoff_evidence(
     # manager=kaori + kaori.io/tenant-id=<DB Tenant ID> source claim.
     # In particular kaori.io/tenant=<Capsule name> is NOT the canonical
     # KAORI tenant-id key. Do not infer ownership from its matching value.
-    if (
-        component['ownership'] == 'external_or_unattributed'
-        and any(key.startswith('kaori.io/') for key in labels)
-    ):
-        component['ownership'] = 'marker_conflict'
-        component['handoff'] = 'owner_review_required'
-        blockers.append(
-            f'Capsule Namespace/{name} retains KAORI-scoped metadata without '
-            'canonical verified ownership; review label origin before handoff.'
-        )
+    if component['ownership'] == 'external_or_unattributed':
+        unknown_kaori = {
+            key for key in labels if key.startswith('kaori.io/')
+            and not (
+                key == _CAPSULE_SPEC_TENANT_PROJECTION
+                and capsule_spec_projects_namespace_tenant_label(
+                    capsule_spec=capsule_spec, capsule_name=tenant_name,
+                    labels=labels,
+                )
+            )
+        }
+        if unknown_kaori:
+            component['ownership'] = 'marker_conflict'
+            component['handoff'] = 'owner_review_required'
+            blockers.append(
+                f'Capsule Namespace/{name} retains KAORI-scoped metadata without '
+                'canonical verified ownership or exact Capsule spec projection; '
+                'review label origin before handoff.'
+            )
     elif component['ownership'] == 'marker_conflict':
         blockers.append(f'Capsule Namespace/{name} has inconsistent KAORI ownership markers.')
     return component, blockers
