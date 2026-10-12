@@ -51,6 +51,8 @@ def test_overview_warns_on_dispatch_failure_without_execution(monkeypatch):
         'triangle-alert', 'Execution / Policy Alerts', '0 / 1'
     )
     assert context['review_workspace_count'] == 1
+    assert context['workspaces'][0]['action_endpoint'] == 'jobs.configuration'
+    assert context['workspaces'][0]['action_label'] == 'Review Job Configuration'
 
 
 def test_overview_does_not_query_jobs_for_unauthorized_user(monkeypatch):
@@ -63,3 +65,18 @@ def test_overview_does_not_query_jobs_for_unauthorized_user(monkeypatch):
         can_jobs=False, can_data_lifecycle=False, can_kubernetes_admin=False
     )
     assert context['workspaces'] == []
+
+
+def test_execution_attention_keeps_canonical_executions_handoff(monkeypatch):
+    monkeypatch.setattr(
+        presentation,
+        'build_job_execution_status_context',
+        lambda: {'job_stats': {'attention': 1, 'active': 0, 'completed_24h': 0}},
+    )
+    monkeypatch.setattr(presentation, 'build_job_configuration_attention_summary', lambda: 1)
+
+    context = presentation.build_platform_operations_overview_context(
+        can_jobs=True, can_data_lifecycle=False, can_kubernetes_admin=False
+    )
+    assert context['workspaces'][0]['action_endpoint'] == 'jobs.executions'
+    assert context['workspaces'][0]['action_label'] == 'Open Jobs & Executions'
