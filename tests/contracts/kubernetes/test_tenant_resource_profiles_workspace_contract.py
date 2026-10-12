@@ -1516,7 +1516,7 @@ def test_allocation_contract_diff_shares_all_frozen_and_proposed_dimensions() ->
     assert "'storage_policy': record.allocation_storage_policy_json or {}" in registry
     assert "'quota': profile.quota_hard_json or {}" in registry
     assert "'limits': profile.limit_defaults_json or {}" in registry
-    assert "'storage_policy': profile.storage_policy_json or {}" in registry
+    assert "'storage_policy': getattr(profile, 'storage_policy_json', {}) or {}" in registry
     assert 'data-tenant-allocation-diff-empty' in template
     assert "row.hidden = mode === 'changes' && !direction" in script
     assert "direction || (current && proposed ? 'Unchanged' : '—')" in script
