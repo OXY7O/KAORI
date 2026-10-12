@@ -628,6 +628,19 @@ def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[s
     )
 
 
+def classify_recommendation_readiness(
+    *, total: int, recent: int, issues: list[str], has_findings: bool,
+) -> str:
+    """Missing observations or evaluator failure never imply a healthy empty set."""
+    if issues:
+        return 'partial' if has_findings else 'unavailable'
+    if total == 0:
+        return 'not_collected'
+    if recent < total:
+        return 'partial'
+    return 'baseline_recent'
+
+
 def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = 'recommendations') -> dict[str, Any]:
     payload = _base_payload(args, page_mode=page_mode)
     catalog = payload['catalog']
@@ -655,14 +668,9 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
         total = sum(inventory[key]['total'] for key in scopes)
         recent = sum(inventory[key]['recent'] for key in scopes)
         issues = payload['evaluation_issues']
-        if issues:
-            state = 'partial' if findings else 'unavailable'
-        elif total == 0:
-            state = 'not_collected'
-        elif recent < total:
-            state = 'partial'
-        else:
-            state = 'baseline_recent'
+        state = classify_recommendation_readiness(
+            total=total, recent=recent, issues=issues, has_findings=bool(findings),
+        )
         payload['evidence_readiness'] = {
             'status': state,
             'total_sources': total,
