@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
 
 from app.artifact_registry.correlation import runtime_input_signature
@@ -66,16 +66,30 @@ def _runtime_security_state(
     }
 
 
-def _runtime_security_index() -> tuple[dict[int, dict[str, Any]], set[int], set[int], set[int]]:
+def _runtime_security_index(
+    *, source_ids: list[int]
+) -> tuple[dict[int, dict[str, Any]], set[int], set[int], set[int]]:
     security_by_artifact: dict[int, dict[str, Any]] = {}
     critical_ids: set[int] = set()
     high_ids: set[int] = set()
     scanned_ids: set[int] = set()
-    rows = RegistryArtifact.query.with_entities(
-        RegistryArtifact.id,
-        RegistryArtifact.scan_status,
-        RegistryArtifact.vulnerability_summary,
-    ).all()
+    # Project only the committed security evidence used by current runtime
+    # bindings. Unused Registry artifacts must not enter normal page hydration.
+    bound_artifact_ids = select(RegistryWorkloadBinding.artifact_id).distinct()
+    rows = (
+        RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(
+            RegistryProject.integration_instance_id.in_(source_ids),
+            RegistryArtifact.id.in_(bound_artifact_ids),
+        )
+        .with_entities(
+            RegistryArtifact.id,
+            RegistryArtifact.scan_status,
+            RegistryArtifact.vulnerability_summary,
+        )
+        .yield_per(250)
+    )
     for artifact_id, scan_status, vulnerability_summary in rows:
         state = _runtime_security_state(scan_status, vulnerability_summary)
         normalized_id = int(artifact_id)
@@ -616,7 +630,9 @@ def _build_runtime_usage(request: RuntimeUsageRequest) -> dict[str, Any]:
     clusters = Cluster.query.order_by(Cluster.name.asc()).all()
     cluster_by_id = {str(item.id): item for item in clusters}
     prerequisites = correlation_prerequisites()
-    security_by_artifact, critical_ids, high_ids, scanned_ids = _runtime_security_index()
+    security_by_artifact, critical_ids, high_ids, scanned_ids = _runtime_security_index(
+        source_ids=list(source_by_id)
+    )
     query, filters = _runtime_filtered_query(
         request,
         sources=sources,
