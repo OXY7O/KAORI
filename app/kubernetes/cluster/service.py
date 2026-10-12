@@ -594,6 +594,19 @@ def run_test_cluster(cluster: Cluster) -> dict[str, Any]:
 
     else:
         cluster.status = ClusterStatus.FAILED.value
+        # A failed Full Validation supersedes historical Ready evidence.
+        # Runtime Refresh retains the independent last-good Core contract.
+        connection.readiness_status = 'blocked'
+        connection.compatibility_status = 'validation_failed'
+        connection.compatibility_profile = None
+        connection.lifecycle_status = None
+        connection.discovery_summary = None
+        connection.validation_message = str(
+            result.get('error')
+            or result.get('reason')
+            or 'Kubernetes Full Validation failed. Review the provider connection.'
+        )[:1000]
+        connection.last_validated_at = datetime.now(UTC)
 
     _sync_kubernetes_runtime(cluster)
     db.session.commit()
