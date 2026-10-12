@@ -693,3 +693,8 @@ The Overview Fast Shell and lazy tabs remain separate. Registry Provider Health 
 ### Fail-closed Registry Inventory collection (#1412)
 
 The Harbor adapter must reject malformed list member envelopes and projects without names, repositories without identities, artifacts without digests and malformed tag lists. Silent filtering of incomplete discovery is unsafe because provider-scoped committed reconciliation removes stale child identities and their dependent evidence. Provider-native optional metadata remains optional, and a genuine valid empty response remains representable. An invalid observation raises a provider-qualified error before reconciliation and preserves previous committed rows; the existing zero-project protection is unchanged. Source negative-path tests do not substitute for PostgreSQL transactional and real worker UAT.
+
+
+### Committed Inventory Overview asset counts (#1408)
+
+Registry Inventory Hero, Fleet, and Project/Repository/Artifact Asset Catalog counts must use the same explicit list of enabled active providers with committed RegistryCollectionState evidence as the Overview operational read model. A missing provider, never-collected provider or disabled/retired historical record does not contribute to these active-scope totals. The safe `_overview_kpi_values([])` zero result is preserved; passing `None` is not a request to count all inventory. A valid observed-empty inventory is a different evidence state from never collected.
