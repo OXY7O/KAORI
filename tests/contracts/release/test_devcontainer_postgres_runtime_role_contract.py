@@ -47,7 +47,7 @@ def test_devcontainer_workspace_and_each_worker_use_canonical_runtime_url() -> N
             assert 'WAIT_FOR_DB: "false"' in section
         else:
             assert 'WAIT_FOR_SCHEMA: "true"' in section
-    assert 'db' not in services  # infra DB is supplied by canonical compose.yml
+    assert 'db' in services  # override only the bundled DevContainer PostgreSQL authority
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in compose
 
 
@@ -57,8 +57,8 @@ def test_devcontainer_role_provisioning_is_transactional_and_not_data_destructiv
     assert "current_database() <> 'kaori'" in sql
     assert "application_name" in sql
     assert "kaori-devcontainer-role-provision" in sql
-    assert 'CREATE ROLE kaori_runtime' in sql
-    assert 'NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE' in sql
+    assert 'CREATE ROLE' not in sql  # only empty-volume provisioning creates principals
+    assert "current_user <> 'kaori_migrator'" in sql
     assert 'GRANT SELECT, INSERT, UPDATE, DELETE' in sql
     assert 'ON ALL TABLES IN SCHEMA public' in sql
     assert 'ON ALL SEQUENCES IN SCHEMA public' in sql
@@ -84,7 +84,7 @@ def test_devcontainer_role_provisioning_is_transactional_and_not_data_destructiv
 def test_postgresql_provisioning_role_record_does_not_shadow_current_role() -> None:
     sql = PROVISION.read_text()
     assert 'v_role_flags record;' in sql
-    assert sql.count('INTO v_role_flags FROM pg_roles') == 2
+    assert sql.count('INTO v_role_flags FROM pg_roles') == 1
     assert 'current_role record;' not in sql
     assert 'current_role.' not in sql
 
@@ -147,8 +147,8 @@ def test_fresh_bootstrap_documents_existing_read_only_first_run_view() -> None:
     assert 'HTTP 503' in guide
     assert "to_regclass('public.users') IS NULL" in guide
     assert 'db-role-bootstrap' in guide
-    assert 'kaori|t|t|t' in guide
-    assert 'does **not** create schema, grant application' in guide
+    assert 'kaori|t|t|t|t' in guide
+    assert 'does not create KAORI application tables' in guide
 
 
 def test_post_create_guides_transient_owner_bootstrap_for_empty_database() -> None:
@@ -174,8 +174,8 @@ def test_devcontainer_first_open_automatically_admits_non_owner_login() -> None:
     assert 'CREATE ROLE' in bootstrap
     assert 'KAORI_DB_MIGRATION_URL' in bootstrap
     assert 'to_regclass(\'public.alembic_version\')' in bootstrap
-    assert 'existing application role has elevated attributes' in bootstrap
-    assert 'runtime and owner secrets must differ' in bootstrap
+    assert 'is elevated or cannot log in' in bootstrap
+    assert 'must have different secrets' in bootstrap
     assert 'GRANT USAGE ON SCHEMA' in bootstrap
     assert 'flask --app run:app db upgrade' not in bootstrap
     assert 'scripts.init_db' not in bootstrap
@@ -221,3 +221,59 @@ def test_first_run_authentication_setup_uses_one_dev_task_without_changing_produ
     assert 'bash scripts/init_db.sh --bootstrap-admin' in setup
     assert 'flask --app run:app db upgrade' in setup
     assert 'flask --app run:app seed-rbac' in setup
+
+def test_three_postgresql_identities_keep_privileged_files_out_of_application_env() -> None:
+    compose = COMPOSE.read_text()
+    sections = _services(compose)
+    example = EXAMPLE.read_text()
+    bootstrap = (ROOT / 'scripts/devcontainer/bootstrap_runtime_role.py').read_text()
+    initializer = (ROOT / 'scripts/devcontainer/initialize_database.py').read_text()
+    assert 'POSTGRES_USER: postgres' in sections['db']
+    assert 'POSTGRES_PASSWORD_FILE: /run/secrets/kaori_dev_pg_admin' in sections['db']
+    assert 'environment: !override' in sections['db']
+    assert 'KAORI_DB_BOOTSTRAP_PASSWORD_FILE: /run/secrets/kaori_dev_pg_admin' in sections['db-role-bootstrap']
+    assert 'KAORI_DB_MIGRATOR_PASSWORD_FILE: /run/secrets/kaori_dev_pg_migrator' in sections['db-role-bootstrap']
+    assert 'KAORI_DEV_DB_SECRETS_DIR:?' in compose
+    for service in (
+        'workspace', 'inventory-worker', 'registry-security-worker',
+        'maintenance-worker', 'runtime-worker', 'validation-worker',
+        'analytics-worker', 'reports-worker', 'forecasting-worker',
+        'resolver-execution-worker', 'resolver-maintenance-worker', 'beat',
+    ):
+        section = sections[service]
+        assert 'secrets:' not in section
+        assert 'POSTGRES_PASSWORD' not in section
+        assert 'KAORI_DB_MIGRATOR_PASSWORD_FILE' not in section
+        assert 'KAORI_DB_BOOTSTRAP_PASSWORD_FILE' not in section
+    assert 'KAORI_DEV_DB_SECRETS_DIR=' in example
+    assert 'POSTGRES_PASSWORD=' not in example
+    assert 'POSTGRES_USER=' not in example
+    assert 'POSTGRES_DB=' not in example
+    assert 'DATABASE_URL=postgresql://kaori_runtime:' in example
+    assert "'_MIGRATOR = 'kaori_migrator'" not in bootstrap
+    assert "_MIGRATOR = 'kaori_migrator'" in bootstrap
+    assert "_RUNTIME = 'kaori_runtime'" in bootstrap
+    assert "user='postgres'" in bootstrap
+    assert "ALTER DATABASE kaori OWNER TO kaori_migrator" in bootstrap
+    assert "ALTER SCHEMA public OWNER TO kaori_migrator" in bootstrap
+    assert 'KAORI_DB_MIGRATION_URL' in initializer
+    assert 'getpass.getpass' in initializer
+    assert "user='kaori_migrator'" in initializer
+    assert "['flask', '--app', 'run:app', 'bootstrap-admin']" in initializer
+
+
+def test_migrator_is_non_superuser_and_app_admin_follows_grant_refresh() -> None:
+    init = INIT_DB.read_text()
+    initializer = (ROOT / 'scripts/devcontainer/initialize_database.py').read_text()
+    sql = PROVISION.read_text()
+    assert "expected_owner = 'kaori_migrator'" in init
+    assert 'if any(flags)' in init
+    assert 'owned != expected_owner' in init
+    assert 'DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app db upgrade' in init
+    assert 'DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app seed-rbac' in init
+    assert 'trusted non-superuser' in sql.lower()
+    assert 'REVOKE ALL PRIVILEGES' in sql
+    assert "'PGPASSWORD': migrator_password" in initializer
+    assert initializer.index('provision_postgres_runtime_role.sql') < initializer.index(
+        "['flask', '--app', 'run:app', 'bootstrap-admin']"
+    )
