@@ -12,14 +12,16 @@ def test_long_identity_context_uses_shared_responsive_summary_variant() -> None:
     shared = read('app/templates/components/details/_detail_content.html')
     modal = read('app/static/js/detail_rows.js')
 
-    assert "layout='target-wide', pinned=false" in detail
+    assert "layout='unified', pinned=false" in detail
     assert "('Target', item.target_name, item.target_type)" in detail
     assert "('Recorded', item.created_at|user_datetime, item.created_label)" in detail
     assert "('Evidence', 'Activity Register', 'Notification-backed')" in detail
     assert "layout='default', pinned=true" in shared
+    assert "data-kaori-summary-layout=\"unified\"" in shared
+    assert 'gap-x-6 gap-y-4 rounded-xl border border-outline-subtle bg-surface-card' in shared
+    assert "'lg:col-span-2' if unified and loop.index0 == 1" in shared
+    assert "'min-w-0' if unified else" in shared
     assert "data-kaori-summary-layout=\"target-wide\"" in shared
-    assert "sm:grid-cols-2 lg:mt-6 xl:grid-cols-5" in shared
-    assert "'xl:col-span-2' if target_wide and loop.index0 == 1 else ''" in shared
     assert '{% if pinned %}data-resource-detail-summary{% endif %}' in shared
     assert '[overflow-wrap:anywhere]' in shared
     assert "shell.querySelector(':scope > [data-resource-detail-summary]')" in modal
@@ -40,21 +42,29 @@ def test_failure_summary_uses_labelled_rows_without_nested_card() -> None:
     assert 'Next Review Step' in outcome
 
 
-def test_context_stacks_left_aligned_values_without_table_right_alignment() -> None:
+def test_context_uses_compact_grouped_facts_without_heading_underlines() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
     shared = read('app/templates/components/details/_detail_content.html')
     start = detail.index('<section data-activity-audit-context')
     end = detail.index('{% if item.additional_evidence %}', start)
     context = detail[start:end]
-    assert 'gap-x-10 gap-y-6 p-4 sm:p-5 md:grid-cols-2' in context
+    assert 'gap-x-8 gap-y-5 p-4 sm:p-5 md:grid-cols-5' in context
+    assert 'md:col-span-3' in context
+    assert 'md:col-span-2' in context
+    assert 'sm:grid-cols-3' in context
+    assert 'sm:grid-cols-2' in context
+    assert 'Actor & Access' in context
+    assert 'Target Context' in context
+    assert 'user-round' in context
+    assert 'crosshair' in context
+    assert 'border-b border-outline-subtle pb-2' not in context
     assert "detail_ui.stacked_detail_row('Email', item.user_email or 'Not recorded')" in context
     assert "detail_ui.stacked_detail_row('Role', item.user_role)" in context
     assert "detail_ui.stacked_detail_row('Authentication', item.user_auth_source)" in context
     assert "detail_ui.stacked_detail_row('Target Type', item.target_type)" in context
     assert "detail_ui.stacked_detail_row('Module', item.module_label)" in context
     assert 'detail_ui.detail_row(' not in context
-    assert "overflow-wrap:anywhere" in shared
-
+    assert 'overflow-wrap:anywhere' in shared
 
 def test_optional_metadata_displays_long_fields_as_open_two_column_rows() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
