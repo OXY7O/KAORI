@@ -547,6 +547,7 @@ def materialize_forecast(
         stale_grace_minutes=stale_grace_minutes,
         job_execution_id=job_execution_id,
     )
+    claimed_at = snapshot.last_attempt_at
     try:
         source = resolve_object_storage_metrics_source(system, execution_mode='background')
         if not required_contract_ready(source):
@@ -563,6 +564,8 @@ def materialize_forecast(
             source=source,
             history_window=history_window,
         )
+        snapshot = _locked_forecast_snapshot(system_id=system.id, history_window=history_window)
+        _verify_snapshot_claim(snapshot, job_execution_id=job_execution_id, claimed_at=claimed_at)
         now = datetime.now(UTC)
         snapshot.payload_json = {
             'method': FORECAST_METHOD,
@@ -588,7 +591,10 @@ def materialize_forecast(
         return snapshot
     except (MetricsSourceError, RuntimeError, SQLAlchemyError) as exc:
         db.session.rollback()
-        snapshot = get_forecast_snapshot(system_id=system.id, history_window=history_window) or snapshot
+        if isinstance(exc, SnapshotSupersededError):
+            raise
+        snapshot = _locked_forecast_snapshot(system_id=system.id, history_window=history_window)
+        _verify_snapshot_claim(snapshot, job_execution_id=job_execution_id, claimed_at=claimed_at)
         snapshot.status = 'failed'
         snapshot.last_attempt_at = datetime.now(UTC)
         snapshot.last_error = str(exc)[:2000]
