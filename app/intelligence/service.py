@@ -627,9 +627,9 @@ def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[s
                 'warning': warning,
                 'domains': len(active_domains),
                 'object_storage': sum(1 for item in scoped_findings if item.get('domain') == 'object_storage'),
-                'alert_eligible': sum(1 for item in findings if (item.get('alert_handling') or {}).get('eligible')),
+                'alert_eligible': sum(1 for item in scoped_findings if (item.get('alert_handling') or {}).get('eligible')),
                 'alert_open': sum(
-                    1 for item in findings if (item.get('alert_handling') or {}).get('status') == 'escalated'
+                    1 for item in scoped_findings if (item.get('alert_handling') or {}).get('status') == 'escalated'
                 ),
             },
             'posture': {
