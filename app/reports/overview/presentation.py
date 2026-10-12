@@ -97,7 +97,12 @@ def normalize_reports_overview_payload(payload: Mapping[str, Any] | None) -> dic
         'Review reporting readiness, artifacts, automation, and coverage.',
     )
     normalized.setdefault('selected_cluster_label', 'All Infrastructure Scopes')
-    normalized.setdefault('report_engine_status', 'Ready')
+    # Legacy/partial payloads may lack worker evidence: fail closed, never imply Ready.
+    normalized.setdefault('report_engine_status', 'Unknown')
+    normalized.setdefault(
+        'reporting_posture',
+        {'label': 'Needs Review', 'tone': 'warning', 'reason': 'unverified'},
+    )
     normalized.setdefault('storage_status', 'Storage Review')
     normalized['summary_cards'] = _normalize_summary_cards(normalized.get('summary_cards'))
     normalized['reporting_operations'] = _normalize_reporting_operations(
