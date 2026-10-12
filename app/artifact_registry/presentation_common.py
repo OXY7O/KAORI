@@ -4,9 +4,11 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, overload
 
 from sqlalchemy import func, or_
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 from werkzeug.exceptions import NotFound
 
-from app.artifact_registry.correlation import runtime_input_signature
+from app.artifact_registry.correlation import runtime_correlation_evidence_readiness, runtime_input_signature
 from app.common.pagination import paginate_sequence
 from app.extensions.db import db
 from app.dashboards.common.operational import normalize_operational_tab
@@ -510,7 +512,17 @@ def _registry_alerts(selected_provider: IntegrationInstance | None) -> dict[str,
         domain='registry',
         asset_key=str(selected_provider.id),
     )
+    try:
+        with Session(db.engine) as evidence_session:
+            runtime_evidence = runtime_correlation_evidence_readiness(evidence_session)
+    except SQLAlchemyError:
+        runtime_evidence = {
+            'status': 'unavailable',
+            'title': 'Registry Runtime Evidence Unavailable',
+            'description': 'Committed runtime evidence could not be qualified. Review Runtime Usage and Job Executions.',
+        }
     return {
+        'runtime_evidence': runtime_evidence,
         'available': True,
         'critical': sum(str(case.severity or '').lower() == 'critical' for case in cases),
         'warning': sum(str(case.severity or '').lower() == 'warning' for case in cases),

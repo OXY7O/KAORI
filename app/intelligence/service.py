@@ -5,8 +5,10 @@ from math import ceil
 from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 from werkzeug.datastructures import MultiDict
 
+from app.artifact_registry.correlation import runtime_correlation_evidence_readiness
 from app.extensions.db import db
 
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
@@ -700,6 +702,19 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
         total = sum(inventory[key]['total'] for key in scopes)
         recent = sum(inventory[key]['recent'] for key in scopes)
         issues = payload['evaluation_issues']
+        if domain in ('', 'registry'):
+            try:
+                with Session(db.engine) as evidence_session:
+                    runtime_evidence = runtime_correlation_evidence_readiness(evidence_session)
+            except SQLAlchemyError:
+                runtime_evidence = {
+                    'status': 'unavailable',
+                    'title': 'Registry Runtime Evidence Unavailable',
+                    'description': 'The committed correlation readiness check failed; do not infer remediation.',
+                }
+            payload['registry_runtime_evidence'] = runtime_evidence
+            if runtime_evidence['status'] != 'ready':
+                issues.append('Registry Runtime: ' + runtime_evidence['title'])
         state = classify_recommendation_readiness(
             total=total, recent=recent, issues=issues, has_findings=bool(findings),
         )

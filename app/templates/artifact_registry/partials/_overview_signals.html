@@ -8,6 +8,18 @@
         {% set blocked_state_tone = "warning" %}
         {% include 'components/states/_blocked_state.html' %}
     {% else %}
+        {% if overview.alerts.runtime_evidence is defined and overview.alerts.runtime_evidence.status != 'ready' %}
+            {% import 'components/operational_callout.html' as operational_callout %}
+            {{ operational_callout.render(
+                overview.alerts.runtime_evidence.title,
+                overview.alerts.runtime_evidence.description,
+                icon='waypoints',
+                tone='warning',
+                variant='semantic',
+                action_href=url_for('artifact_registry.runtime'),
+                action_label='Review Runtime Usage'
+            ) }}
+        {% endif %}
         <div class="{{ peer_content_grid.layout_classes() }}">
             <div class="{{ peer_content_grid.column_classes('primary') }}">
                 {% include "artifact_registry/partials/_overview_alerts_summary.html" %}
