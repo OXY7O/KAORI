@@ -290,9 +290,9 @@ def build_detail_context(
         fallback_capabilities=tuple(instance.capabilities or ()),
     )
 
-    all_binding_rows = _asset_binding_rows(instance)
-    binding_rows, binding_pagination = paginate_sequence(
-        all_binding_rows,
+    binding_rows, binding_pagination = paginate_bound_observability_source_rows(
+        asset_type='object_storage_system',
+        asset_key=instance.object_storage_system_id,
         page=query.binding_page,
         per_page=query.binding_per_page,
     )
@@ -326,7 +326,7 @@ def build_detail_context(
         'alert_source': alert_source,
         'alert_status': _source_binding_status(alert_source, alert_binding),
         'binding_rows': binding_rows,
-        'binding_total': len(all_binding_rows),
+        'binding_total': binding_pagination['total_items'],
         'binding_pagination': binding_pagination,
         'capability_registry': capability_registry,
         'compatibility_policy': compatibility_policy_view(
@@ -334,7 +334,9 @@ def build_detail_context(
         ),
         'validated_at_display': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
-        'bucket_count': len(instance.object_storage_system.buckets or ()),
+        'bucket_count': ObjectStorageBucket.query.filter_by(
+            object_storage_system_id=instance.object_storage_system_id
+        ).count(),
         'inventory_status': 'ready' if inventory_current else 'unknown',
         'inventory_status_label': (
             'Current Source Snapshot' if inventory_current
@@ -462,13 +464,6 @@ def build_minio_capability_registry(
         'required_count': sum(1 for item in API_CAPABILITIES if item.required),
         'optional_count': sum(1 for item in API_CAPABILITIES if not item.required),
     }
-
-
-def _asset_binding_rows(instance: MinioInstance) -> list[dict[str, Any]]:
-    return build_bound_observability_source_rows(
-        asset_type='object_storage_system',
-        asset_key=instance.object_storage_system_id,
-    )
 
 
 def _provider_status(instance: MinioInstance) -> dict[str, str]:
