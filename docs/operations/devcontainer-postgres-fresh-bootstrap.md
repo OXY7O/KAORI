@@ -166,8 +166,11 @@ reopens it checks the existing role and login; it does not rotate
 passwords, mutate prior records, or drop a role. If it fails, inspect its
 logs before proceeding. Do not fall back to the PostgreSQL owner.
 
-Workers/Beat automatically start with `WAIT_FOR_SCHEMA=true`; until
-schema reaches current Alembic head they **wait without consuming jobs**.
+Workers/Beat automatically start with `WAIT_FOR_SCHEMA=true` and
+`WAIT_FOR_RUNTIME_GRANTS=true`; until schema reaches current Alembic
+head **and** the restricted ledger ACLs have been provisioned they
+**wait without consuming jobs**. This preliminary worker gate is not a
+substitute for the Capsule START transaction's independent full guard.
 There is no need to manually stop/start 10 worker containers for normal
 first-run operation.
 
