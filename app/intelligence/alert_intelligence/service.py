@@ -257,7 +257,8 @@ def _filter_case_query(query, *, severity: str, workflow: str, source_type: str,
     if source_type != 'all':
         query = query.filter(AlertCase.source_type == source_type)
     if search:
-        pattern = f'%{search.replace("%", r"\\%").replace("_", r"\\_")}%'
+        escaped = search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        pattern = '%' + escaped + '%'
         query = query.filter(or_(
             AlertCase.public_id.ilike(pattern, escape='\\'),
             AlertCase.alert_name.ilike(pattern, escape='\\'),
@@ -367,7 +368,12 @@ def _filter_cases(
     return rows
 
 
-def _serialize_case(case: AlertCase, *, silence: AlertSilence | None = None) -> dict[str, Any]:
+_SILENCE_UNLOADED = object()
+
+
+def _serialize_case(case: AlertCase, *, silence: AlertSilence | None | object = _SILENCE_UNLOADED) -> dict[str, Any]:
+    if silence is _SILENCE_UNLOADED:
+        silence = active_delivery_silence(case)
     duration_end = case.closed_at or case.source_resolved_at or datetime.now(UTC)
     duration_seconds = max(int((_as_utc(duration_end) - _as_utc(case.first_seen_at)).total_seconds()), 0)
     owner = case.owner
