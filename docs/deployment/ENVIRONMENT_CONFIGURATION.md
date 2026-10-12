@@ -12,26 +12,27 @@ KAORI uses one canonical variable inventory with explicit ownership by runtime. 
 
 The two local modes have separate Compose project names and persistent volumes. Neither local `.env` is a production/server authority. The server has no single monolithic runtime `.env` file.
 
-## Local development PostgreSQL role boundary (#1405)
+## Local development PostgreSQL role boundary (#1405 / #1427)
 
-In `kaori-dev`, `POSTGRES_DB` and `POSTGRES_USER` continue to define
-the **existing database and privileged bootstrap owner**. After a
-non-owner `kaori_runtime` login is explicitly provisioned with immutable
-ledger SELECT/INSERT-only rights, developers may set
-`KAORI_DEV_RUNTIME_DATABASE_URL` in the private root `.env`.
-Only the DevContainer Compose override reads this optional key; it
-replaces `DATABASE_URL` for the workspace, every Celery worker and Beat.
-If unset, the legacy owner URL remains for backward-compatible setup but
-**must not pass** the Capsule write-once ledger runtime gate.
+The `kaori-dev` Compose project has a **single canonical application
+`DATABASE_URL`**: a restricted, non-owner `kaori_runtime` connection.
+The workspace (including VS Code Flask Debug), all ten Celery workers and
+Beat receive the same effective variable. An elevated PostgreSQL bootstrap
+owner is not an application-runtime fallback.
 
-`KAORI_DB_MIGRATION_URL` is a **transient shell-only owner connection** for
-`scripts/init_db.sh` after the runtime cutover. Never persist it in the
-root `.env` consumed by workers. Owner/admin credentials and schema DDL
-are not authorized for the runtime role. This feature is **not** the
-server/staging role contract; governed deployment secrets remain on their
-existing separate authority. See
-[`DevContainer role cutover`](../operations/devcontainer-postgres-runtime-role.md)
-for existing-data preservation, backup, privileges, verification and rollback.
+`POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` configure the
+**PostgreSQL service bootstrap**; they do not authorize ordinary
+Flask/worker sessions. `KAORI_DB_MIGRATION_URL` is a **transient owner
+connection** supplied only to `scripts/init_db.sh` for Alembic,
+RBAC, and admin bootstrap; the script refuses to run without it. Never
+persist that privileged URL in the root `.env` consumed by workers.
+
+For existing data, use the [role-isolation runbook](../operations/devcontainer-postgres-runtime-role.md)
+and retain all records. For explicitly authorized **disposable fresh
+databases**, use the [scoped PostgreSQL-only reset and bootstrap runbook](../operations/devcontainer-postgres-fresh-bootstrap.md).
+The DevContainer duplicate `KAORI_DEV_RUNTIME_DATABASE_URL` is removed
+from the supported active contract in #1427. This change does not
+modify staging/production or their governed split secret authorities.
 
 ## Environment authorities
 
