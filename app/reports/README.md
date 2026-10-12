@@ -110,3 +110,7 @@ Raw S3 exceptions, access keys, secret keys, tokens, and credential values are n
 ## Notification delivery
 
 Scheduled Reports use Integrations → Notification Channels. Schedules store selected channel IDs only; provider credentials and transport behavior remain owned by the shared notification integration. Legacy report-specific Telegram environment credentials are not supported.
+
+### Reports Overview permission-aware navigation (#1531)
+
+Overview is readable by `reports.view`, but links to Generate, Templates, Schedules, and Storage are displayed only for users with the corresponding existing target-route permissions. The Hero falls back to the readable Generated Reports registry when the user cannot access the relevant action. Server-side decorators remain authoritative; navigation never grants permissions. Legacy/partial operation payloads with no permission key are rendered without actionable links.
