@@ -28,9 +28,9 @@
                                                 'server-cog') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('blocks', 'Managed Controls', 1, 'Protected administration workspace') }}
-                            <span id="kubernetes-admin-context-ready">{{ page_hero.context_metric('badge-check', 'Configured Clusters', ready_cluster_count ~ ' / ' ~ cluster_count, 'Attestations and canonical binding present') }}</span>
+                            <div id="kubernetes-admin-context-ready">{{ page_hero.context_metric('badge-check', 'Configured Clusters', ready_cluster_count ~ ' / ' ~ cluster_count, 'Attestations and canonical binding present') }}</div>
                         </div>
-                        <span id="kubernetes-admin-context-status">{{ page_hero.context_info('shield-check' if administration_status_tone == 'normal' else 'shield-alert', 'Control Status: ' ~ administration_status_label) }}</span>
+                        <div id="kubernetes-admin-context-status">{{ page_hero.context_info('shield-check' if administration_status_tone == 'normal' else 'shield-alert', 'Control Status: ' ~ administration_status_label) }}</div>
                     </div>
                 </aside>
             </div>
