@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from hashlib import sha256
+from json import dumps
 from datetime import UTC, datetime
 from typing import Any
 
@@ -65,6 +67,26 @@ def _identity(
     provider_key = str(identity.provider_key or '').strip().lower()
     provider_label = str(metadata.get('provider_label') or provider_key.replace('_', ' ').title() or 'Registry')
     return identity, provider_key, provider_label
+
+
+
+def _tag_only_finding_key(
+    rule_key: str,
+    artifact: RegistryArtifact,
+    identity: IntegrationInstance,
+    binding: RegistryWorkloadBinding,
+) -> str:
+    """Stable provider/source/artifact/Pod/image identity, independent of binding PK."""
+    parts = [
+        int(identity.id),
+        artifact.digest,
+        binding.cluster_id,
+        binding.namespace,
+        binding.pod_name,
+        binding.image_reference,
+    ]
+    fingerprint = sha256(dumps(parts, separators=(',', ':')).encode('utf-8')).hexdigest()[:32]
+    return f'{rule_key}:{fingerprint}'
 
 
 def _artifact_evidence(
@@ -225,7 +247,7 @@ def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
             findings.append(
                 _finding(
                     tag_rule,
-                    finding_key=f'{tag_rule["rule_key"]}:{binding.id}',
+                    finding_key=_tag_only_finding_key(tag_rule['rule_key'], artifact, identity, binding),
                     title=f'{binding.namespace}/{binding.pod_name} resolves Registry identity through a tag',
                     summary=(
                         f'Runtime image reference {binding.image_reference} matched the Registry artifact with '
