@@ -21,3 +21,15 @@ def test_valid_current_type_is_not_flagged() -> None:
         status='active', sections_as_list=lambda: list(spec.default_sections),
     )
     assert get_custom_template_contract_errors(record) == []
+
+
+def test_malformed_sections_are_recorded_as_invalid_without_runtime_crash() -> None:
+    from app.reports.catalog import REPORT_TYPE_SPECS
+    spec = REPORT_TYPE_SPECS[0]
+    record = SimpleNamespace(
+        report_type=spec.value, output_format=spec.default_format,
+        status='active', sections_as_list=lambda: [{'non_string': True}],
+    )
+    assert 'Stored section selection no longer matches the canonical contract.' in (
+        get_custom_template_contract_errors(record)
+    )
