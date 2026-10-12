@@ -80,7 +80,7 @@ def _coverage_statement(integration_type: str):
         (and_(winner.c.sharing_count > 1, missing_selector), 'blocked'),
         (winner.c.validation_status == 'blocked', 'blocked'),
         (winner.c.validation_status == 'degraded', 'degraded'),
-        (winner.c.validation_status != 'ready', 'validation_required'),
+        (func.coalesce(winner.c.validation_status, 'validation_required') != 'ready', 'validation_required'),
         (source.readiness_status == 'ready', 'ready'),
         (source.readiness_status == 'degraded', 'degraded'),
         (source.readiness_status == 'blocked', 'blocked'),
@@ -158,6 +158,11 @@ def paged_coverage_scopes(
             func.lower(func.coalesce(scope.c.source_name, '')).like(term),
             func.lower(scope.c.hint).like(term),
             func.lower(func.replace(scope.c.coverage_status, '_', ' ')).like(term),
+            func.lower(case(
+                (scope.c.coverage_status == 'uncovered', 'Not Bound'),
+                (scope.c.coverage_status == 'validation_required', 'Binding Validation Required'),
+                else_=scope.c.coverage_status,
+            )).like(term),
         ))
     filtered_count = int(session.scalar(
         select(func.count()).select_from(statement.order_by(None).subquery())
