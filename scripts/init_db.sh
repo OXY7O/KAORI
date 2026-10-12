@@ -1,40 +1,27 @@
 #!/bin/sh
 set -eu
 
-# Database DDL/RBAC bootstrap remains owner-only after the DevContainer
-# application and workers switch to a non-owner runtime login. The owner
-# connection must be supplied only for this command, not stored in the
-# environment file loaded by Celery workers.
-if [ -n "${KAORI_DEV_RUNTIME_DATABASE_URL:-}" ] && [ -z "${KAORI_DB_MIGRATION_URL:-}" ]; then
-    echo "KAORI DevContainer runtime DB role is active. Supply a temporary" >&2
-    echo "KAORI_DB_MIGRATION_URL using the migration/owner account." >&2
+# #1427: one canonical non-owner DATABASE_URL serves Flask/Celery/Beat.
+# Schema migrations, RBAC seed and bootstrap-admin are owner-only operations.
+# Never inherit the application runtime URL for DDL or persist the owner URL
+# in .env (the latter is passed to DevContainer workers and Beat).
+if [ -z "${KAORI_DB_MIGRATION_URL:-}" ]; then
+    echo "A temporary KAORI_DB_MIGRATION_URL (PostgreSQL owner) is required." >&2
     echo "Do not run database migrations with kaori_runtime." >&2
     exit 1
 fi
 
-if [ -n "${KAORI_DB_MIGRATION_URL:-}" ]; then
-    DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app db upgrade
-else
-    flask --app run:app db upgrade
-fi
+DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app db upgrade
 
 if [ "${1:-}" = "--bootstrap-admin" ]; then
-    # bootstrap-admin seeds the default RBAC catalog before creating the user.
-    if [ -n "${KAORI_DB_MIGRATION_URL:-}" ]; then
-        DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app bootstrap-admin
-    else
-        flask --app run:app bootstrap-admin
-    fi
+    # bootstrap-admin seeds the canonical RBAC catalog first.
+    DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app bootstrap-admin
 else
-    if [ -n "${KAORI_DB_MIGRATION_URL:-}" ]; then
-        DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app seed-rbac
-    else
-        flask --app run:app seed-rbac
-    fi
+    DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app seed-rbac
 fi
 
 echo "Database migration and RBAC initialization completed."
 
 if [ "${1:-}" != "--bootstrap-admin" ]; then
-    echo "Run 'flask --app run:app bootstrap-admin' when the first administrator is required."
+    echo "Run bootstrap-admin with the same temporary KAORI_DB_MIGRATION_URL when the first administrator is required."
 fi
