@@ -10,6 +10,7 @@ from sqlalchemy.orm import aliased
 from app.common.pagination import build_pagination_window, pagination_payload
 from app.extensions.db import db
 from app.integrations.consumer_assets import registered_consumer_asset_definitions
+from app.integrations.kernel.registry import registry
 from app.kubernetes.cluster.constants import ENVIRONMENTS, get_environment_label
 from app.models.integration import IntegrationBinding, IntegrationInstance
 
@@ -65,6 +66,15 @@ def _coverage_statement(integration_type: str):
     )
     source = aliased(IntegrationInstance)
     winner = bindings
+    provider_checks = [
+        select(implementation.record_model.id)
+        .where(implementation.record_model.integration_instance_id == source.id)
+        .exists()
+        for implementation in registry.implementations_for_type(integration_type)
+        if implementation.record_model is not None
+    ]
+    # An orphaned canonical source may retain old Ready state; never count it.
+    provider_record_exists = or_(*provider_checks) if provider_checks else literal(True)
     missing_selector = or_(
         winner.c.selector_json.is_(None),
         winner.c.selector_json['matchers'][0]['label'].as_string().is_(None),
@@ -75,6 +85,7 @@ def _coverage_statement(integration_type: str):
     state = case(
         (winner.c.binding_id.is_(None), 'uncovered'),
         (source.id.is_(None), 'blocked'),
+        (~provider_record_exists, 'blocked'),
         (source.enabled.is_(False), 'blocked'),
         (source.lifecycle_status != 'active', 'blocked'),
         (and_(winner.c.sharing_count > 1, missing_selector), 'blocked'),
