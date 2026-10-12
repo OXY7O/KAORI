@@ -129,7 +129,7 @@ def test_fresh_bootstrap_contract_reuses_owner_only_migration_and_scoped_reset()
     assert 'down -v' in guide
     assert 'redis' in guide.lower() and 'DBSIZE' in guide
     assert 'KAORI_DB_MIGRATION_URL' in init
-    assert 'KAORI_DB_MIGRATION_URL=' in guide
+    assert '"KAORI_DB_MIGRATION_URL": owner_url' in guide
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in init
     assert 'KAORI_DEV_RUNTIME_DATABASE_URL' not in compose
     assert 'DATABASE_URL=postgresql://kaori_runtime:' in EXAMPLE.read_text()
