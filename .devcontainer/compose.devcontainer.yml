@@ -98,6 +98,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
@@ -141,6 +142,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
@@ -184,6 +186,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
@@ -226,6 +229,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
@@ -267,6 +271,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
@@ -308,6 +313,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
@@ -349,6 +355,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
@@ -391,6 +398,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
@@ -432,6 +440,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
@@ -473,6 +482,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
@@ -514,6 +524,7 @@ services:
       POSTGRES_INTERNAL_PORT: 5432
       WAIT_FOR_DB: "true"
       WAIT_FOR_SCHEMA: "true"
+      WAIT_FOR_RUNTIME_GRANTS: "true"
     command:
       - sh
       - -c
