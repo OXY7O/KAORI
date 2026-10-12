@@ -143,6 +143,14 @@ def test_devcontainer_role_init_and_secret_preparation_are_non_elevated() -> Non
     assert 'CREATE ROLE kaori_runtime LOGIN NOSUPERUSER' in init
     assert 'ALTER DATABASE kaori OWNER TO kaori_migrator' in init
     assert 'ALTER SCHEMA public OWNER TO kaori_migrator' in init
+    # PostgreSQL 16 psql must consume role passwords inside its process,
+    # not via -v command-line arguments discoverable from process lists.
+    assert '\\getenv migrator_password KAORI_MIGRATOR_PASSWORD' in init
+    assert '\\getenv runtime_password KAORI_RUNTIME_PASSWORD' in init
+    assert '-v "migrator_password=' not in init
+    assert '-v "runtime_password=' not in init
+    assert "--set=ON_ERROR_STOP=1" in init
+    assert 'PASSWORD %L' in init
     assert 'GRANT CONNECT ON DATABASE kaori TO kaori_runtime' in init
     assert 'GRANT USAGE ON SCHEMA public TO kaori_runtime' in init
     assert 'flask' not in init and 'alembic' not in init.lower()
