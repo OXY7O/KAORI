@@ -10,7 +10,6 @@ import base64
 import os
 import secrets
 import subprocess
-import sys
 from pathlib import Path
 from urllib.parse import quote
 
