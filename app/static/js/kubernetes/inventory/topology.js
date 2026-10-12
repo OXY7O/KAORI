@@ -881,6 +881,7 @@ const startTopologyWorkspace = () => {
         const smallGraph = visibleEdges.length > 0 && visibleEdges.length <= 8
         if (workspaceState.edgeLabels || smallGraph) visibleEdges.addClass('edge-label-visible')
         cy.edges('.path-active').addClass('edge-label-visible')
+        cy.edges(':selected').addClass('edge-label-visible')
         if (selectedNodeId && !pathHighlightActive) {
             const node = cy.getElementById(selectedNodeId)
             if (node?.length) node.connectedEdges(':visible').addClass('edge-label-visible')
