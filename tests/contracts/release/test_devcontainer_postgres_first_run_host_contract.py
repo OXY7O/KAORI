@@ -101,9 +101,8 @@ def test_existing_database_rejects_runtime_credential_drift(tmp_path: Path) -> N
 
 
 def test_docker_inspect_missing_volume_is_the_only_allowed_fresh_state(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _, state = _initialization(tmp_path, volume_exists={'value': False})
     namespace = runpy.run_path(str(PREPARE), run_name='kaori_first_run_inspect')
     inspect_volume = namespace['database_volume_exists']
     module = namespace['subprocess']
