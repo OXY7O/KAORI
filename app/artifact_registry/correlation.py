@@ -7,7 +7,7 @@ import json
 from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.common.inventory_generation import filter_current_generation
@@ -162,10 +162,32 @@ def _match(
     return None
 
 
+@dataclass(frozen=True, slots=True)
+class IndexedArtifact:
+    id: int
+    repository: str
+    digest: str
+    tag: str | None
+    host: str | None
+    observed_at: datetime
+
+
+def _match_indexed(image: ImageReference, candidate: IndexedArtifact) -> tuple[str, str] | None:
+    if image.repository != candidate.repository:
+        return None
+    expected_host = _normalized_registry_host(candidate.host)
+    if not expected_host or _normalized_registry_host(image.host) != expected_host:
+        return None
+    if image.digest:
+        return ('digest', 'strong') if image.digest == candidate.digest else None
+    return ('tag', 'medium') if image.tag and image.tag == candidate.tag else None
+
+
 def _container_rows(pod: PodInventory) -> Iterable[tuple[str, str, str, int]]:
     names = list(pod.container_names or [])
     for index, image in enumerate(pod.container_images or []):
-        yield str(image), str(names[index] or f'Container {index + 1}') if index < len(names) else f'Container {index + 1}', 'container', index
+        name = str(names[index]) if index < len(names) and names[index] else f'Container {index + 1}'
+        yield str(image), name, 'container', index
     for index, image in enumerate(pod.init_container_images or []):
         # PodInventory does not persist init-container names; retain their
         # stable position instead of pretending that their names are known.
@@ -190,45 +212,50 @@ def refresh_registry_workload_bindings(
     with Session(db.engine) as materialization_session, materialization_session.begin():
         input_signature = runtime_input_signature(materialization_session)
         active_source_ids = _active_registry_source_ids(materialization_session)
+        target_source_ids = (
+            [source_id for source_id in active_source_ids if source_id == int(integration_instance_id)]
+            if integration_instance_id is not None
+            else active_source_ids
+        )
         artifact_query = materialization_session.query(RegistryArtifact).filter(
             RegistryArtifact.repository.has(
                 RegistryRepository.project.has(
-                    RegistryProject.integration_instance_id.in_(active_source_ids)
+                    RegistryProject.integration_instance_id.in_(target_source_ids)
                 )
             )
         ).options(
             joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
             selectinload(RegistryArtifact.tags),
         )
-        if integration_instance_id is not None:
-            artifact_query = artifact_query.join(
-                RegistryRepository,
-                RegistryArtifact.repository_id == RegistryRepository.id,
-            ).filter(RegistryRepository.project.has(integration_instance_id=integration_instance_id))
-        artifacts = artifact_query.all()
-        artifact_ids = [artifact.id for artifact in artifacts]
-
-        digest_index: dict[
-            tuple[str, str],
-            list[tuple[RegistryArtifact, str | None]],
-        ] = {}
-        tag_index: dict[
-            tuple[str, str],
-            list[tuple[RegistryArtifact, str | None]],
-        ] = {}
-        for artifact in artifacts:
-            integration_id = artifact.repository.project.integration_instance_id
-            registry_host = _registry_host(materialization_session, integration_id)
+        digest_index: dict[tuple[str, str], list[IndexedArtifact]] = {}
+        tag_index: dict[tuple[str, str], list[IndexedArtifact]] = {}
+        host_by_source: dict[int, str | None] = {}
+        for artifact in artifact_query.yield_per(normalized_batch_size):
+            integration_id = int(artifact.repository.project.integration_instance_id)
+            if integration_id not in host_by_source:
+                host_by_source[integration_id] = _registry_host(materialization_session, integration_id)
+            registry_host = host_by_source[integration_id]
             repository_path = _artifact_repository_path(artifact)
-            digest_index.setdefault(
-                (repository_path, artifact.digest),
-                [],
-            ).append((artifact, registry_host))
+            candidate = IndexedArtifact(
+                id=int(artifact.id),
+                repository=repository_path,
+                digest=artifact.digest,
+                tag=None,
+                host=registry_host,
+                observed_at=artifact.observed_at,
+            )
+            digest_index.setdefault((repository_path, artifact.digest), []).append(candidate)
             for tag in artifact.tags:
-                tag_index.setdefault(
-                    (repository_path, tag.name),
-                    [],
-                ).append((artifact, registry_host))
+                tag_index.setdefault((repository_path, tag.name), []).append(
+                    IndexedArtifact(
+                        id=candidate.id,
+                        repository=repository_path,
+                        digest=candidate.digest,
+                        tag=tag.name,
+                        host=registry_host,
+                        observed_at=candidate.observed_at,
+                    )
+                )
 
         pod_query = filter_current_generation(
             materialization_session.query(PodInventory),
@@ -238,10 +265,15 @@ def refresh_registry_workload_bindings(
         if progress_callback is not None:
             progress_callback(0, pod_total, 'Committed Pod Inventory')
 
-        if artifact_ids:
-            materialization_session.query(RegistryWorkloadBinding).filter(
-                RegistryWorkloadBinding.artifact_id.in_(artifact_ids)
-            ).delete(synchronize_session=False)
+        artifact_id_scope = (
+            select(RegistryArtifact.id)
+            .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+            .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+            .where(RegistryProject.integration_instance_id.in_(target_source_ids))
+        )
+        materialization_session.query(RegistryWorkloadBinding).filter(
+            RegistryWorkloadBinding.artifact_id.in_(artifact_id_scope)
+        ).delete(synchronize_session=False)
 
         pending_bindings: list[dict[str, object]] = []
         for pod_index, pod in enumerate(
@@ -259,16 +291,16 @@ def refresh_registry_workload_bindings(
                     else (tag_index.get((image.repository, image.tag), ()) if image.tag else ())
                 )
                 resolved = [
-                    (artifact, registry_host, match)
-                    for artifact, registry_host in candidates
-                    if (match := _match(image, artifact, registry_host=registry_host)) is not None
+                    (candidate, match)
+                    for candidate in candidates
+                    if (match := _match_indexed(image, candidate)) is not None
                 ]
                 # Two Registry instances claiming the same image authority
                 # cannot be distinguished from committed image evidence.
                 if len(resolved) != 1:
                     continue
-                artifact, registry_host, match = resolved[0]
-                binding_identity = (int(artifact.id), image.raw)
+                candidate, match = resolved[0]
+                binding_identity = (candidate.id, image.raw)
                 usage = {
                     'name': container_name,
                     'source_kind': source_kind,
@@ -282,7 +314,7 @@ def refresh_registry_workload_bindings(
                     continue
                 match_type, confidence = match
                 binding: dict[str, object] = {
-                    'artifact_id': artifact.id,
+                    'artifact_id': candidate.id,
                     'pod_inventory_id': pod.id,
                     'image_reference': image.raw,
                     'match_type': match_type,
@@ -296,9 +328,9 @@ def refresh_registry_workload_bindings(
                     'details': {
                         'source_kind': source_kind,
                         'containers': [usage],
-                        'registry_observed_at': artifact.observed_at.isoformat(),
+                        'registry_observed_at': candidate.observed_at.isoformat(),
                         'pod_collected_at': pod.collected_at.isoformat(),
-                        'registry_host': registry_host,
+                        'registry_host': candidate.host,
                     },
                     'observed_at': observed_at,
                 }
