@@ -127,3 +127,17 @@ def test_integration_binding_headers_are_title_adjacent() -> None:
         content = _template(path)
         assert "table_label.result_count(binding_registry_pagination.total_items)" in content
         assert "flex flex-wrap items-center gap-2" in content
+
+
+def test_tenant_operations_tables_have_filtered_result_counts() -> None:
+    pagination_by_template = {
+        "_operations_namespace_registry.html": "operations_namespace_pagination.total_items",
+        "_operations_evidence_registry.html": "operations_evidence_pagination.total_items",
+        "_operations_drift_registry.html": "operations_drift_pagination.total_items",
+        "_operations_provider_registry.html": "operations_provider_pagination.total_items",
+        "_operations_access_reconciliation_registry.html": "operations_access_pagination.total_items",
+    }
+    for name, pagination in pagination_by_template.items():
+        source = _template(f"kubernetes/tenant/partials/{name}")
+        assert f"result_count={pagination}" in source
+        assert "table_ui.inventory_block_header(" in source

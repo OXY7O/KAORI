@@ -47,7 +47,8 @@
         'Refreshing Provider Authority',
         none,
         none,
-        header_actions=header_actions) }}
+        header_actions=header_actions,
+        result_count=operations_provider_pagination.total_items) }}
     {% endif %}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
