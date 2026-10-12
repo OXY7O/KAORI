@@ -3,14 +3,18 @@ name: kaori-dev
 # #1427: The host initializeCommand provisions private PostgreSQL credentials
 # in ~/.config/kaori/devcontainer/, OUTSIDE the bind-mounted workspace.
 # PostgreSQL alone receives bootstrap and runtime provisioning secrets.
+# Optional pre-init env_file declarations let VS Code inspect Compose before
+# initializeCommand; PostgreSQL itself fails closed when secrets are absent.
 # The one-shot db-bootstrap service receives ONLY the migrator secret.
 # All normal application processes use the canonical non-owner DATABASE_URL.
 
 services:
   db:
     env_file:
-      - ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-bootstrap.env
-      - ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-migrate.env
+      - path: ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-bootstrap.env
+        required: false
+      - path: ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-migrate.env
+        required: false
     environment:
       POSTGRES_USER: postgres
       POSTGRES_DB: kaori
@@ -506,7 +510,8 @@ services:
       target: development
     env_file:
       - .env
-      - ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-migrate.env
+      - path: ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-migrate.env
+        required: false
     environment:
       APP_ENV: development
       DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
