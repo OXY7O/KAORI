@@ -76,7 +76,13 @@ def test_cluster_and_node_detail_section_descriptions_are_concise() -> None:
     cluster = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
-    assert 'Committed inventory by Kubernetes resource type.' in cluster
+    for description in (
+        'Cluster registration, version, and connection.',
+        'Collection time, source, freshness, and state.',
+        'Committed objects by resource type.',
+        'Collection and operational signals.',
+    ):
+        assert f"description='{description}'" in cluster
     for description in (
         'Node identity, cluster, age, and committed snapshot.',
         'Internal/external IP, hostname, and network scope.',
