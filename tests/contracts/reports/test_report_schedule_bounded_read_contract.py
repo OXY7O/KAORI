@@ -58,3 +58,13 @@ def test_schedule_registry_materializes_only_the_selected_page() -> None:
     assert '_get_schedule_rows()' not in service
     assert '_get_schedule_counts()' in service
     assert '.limit(200)' in service
+
+
+def test_stale_namespace_remains_explicit_and_loading_failure_blocks_submit() -> None:
+    script = (ROOT / 'app/static/js/report_schedules.js').read_text(encoding='utf-8')
+    template = (ROOT / 'app/templates/reports/schedules/index.html').read_text(encoding='utf-8')
+    assert 'const initialNamespace = namespaceSelect?.value' in script
+    assert "unavailable.textContent = initialNamespace + ' · unavailable in current inventory'" in script
+    assert 'namespaceSelect?.disabled' in script
+    assert 'namespaceError?.classList.remove' in script
+    assert 'data-schedule-namespace-error' in template
