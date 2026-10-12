@@ -576,6 +576,28 @@ Tenant Sync remains observation-only. GlobalResourceQuota resourceVersion change
 
 #771 does not admit `Tenant.spec.resourceQuotas`; #773 is the separate bounded authority for that legacy Capsule compatibility path. KAORI never substitutes a Native ResourceQuota write for a Capsule-owned contract.
 
+**Capsule Allocation Governance UI parity (#1670):** The
+`GlobalResourceQuota` and `Tenant.spec.resourceQuotas` cutover paths
+use the approved Allocation Change visual grammar: an explicit target/profile
+selection, side-by-side **Observed Current / Proposed Governed** quota
+contracts, six supported quota dimensions (CPU/Memory Requests and Limits,
+Pods, logical storage) and a compact factual **Change Highlights** count.
+The Tenant CR workspace continues to present *two separate* governed forms:
+Adopted → KAORI Managed and Managed Allocation Change. The read-only table
+only compares provider-observed or committed authoritative quota values
+with selected Resource Profile intent; absence appears **Unbounded**, not
+zero or permission to write. The summary counts changed display dimensions
+and is not an admission/eligibility result.
+
+These surfaces are **visually consistent, not functionally interchangeable**:
+GRQ ownership, applicable/non-applicable authority mismatch, source count
+and served API evidence remain visible under #771/#1172; Tenant CR scope,
+schema admission and external Namespace LimitRange constraints stay
+independent under #773. Each existing POST route, CSRF, eligibility gates,
+capacity admission, resourceVersion checks, authoritative Capsule write,
+read-back and audit contract remains unchanged. Neither form can substitute
+Native ResourceQuota mutation for Capsule authority.
+
 ### Capsule Tenant resource-quota authority
 
 #773 admits an unambiguous Capsule `Tenant.spec.resourceQuotas` contract into the same canonical allocation lifecycle without merging it with GlobalResourceQuota authority.
