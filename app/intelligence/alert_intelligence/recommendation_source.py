@@ -45,6 +45,7 @@ from app.models.governance import TLSCertificateCollectionState
 from app.models.integration import IntegrationInstance
 from app.models.inventory import ClusterInventory
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
+from app.models.object_storage_analytics import ObjectStorageForecastSnapshot
 from app.models.registry import (
     RegistryArtifact,
     RegistryCollectionState,
@@ -761,6 +762,24 @@ def _source_evidence_posture_for_state(state: RecommendationAlertState) -> tuple
             ObjectStorageBucket.observed_at < cutoff,
         ).first()
         if stale_bucket is not None:
+            return False, 'source_unavailable'
+    if rule_key.startswith('object_storage.forecast.'):
+        # A missing capacity warning is not a recovery signal if the
+        # forecast worker has no currently usable committed projection.
+        forecast = ObjectStorageForecastSnapshot.query.filter(
+            ObjectStorageForecastSnapshot.object_storage_system_id == state.asset_key,
+            ObjectStorageForecastSnapshot.history_window == '30d',
+            ObjectStorageForecastSnapshot.method == 'linear-v1',
+            ObjectStorageForecastSnapshot.status == 'ready',
+            ObjectStorageForecastSnapshot.expires_at > datetime.now(UTC),
+        ).first()
+        if forecast is None or not isinstance(forecast.payload_json, dict):
+            return False, 'source_unavailable'
+        values = forecast.payload_json.get('forecast')
+        if not isinstance(values, dict) or not all(
+            isinstance(values.get(key), (int, float))
+            for key in ('days_to_capacity', 'growth_per_day')
+        ):
             return False, 'source_unavailable'
     if rule_key.startswith('registry.security.critical_runtime_vulnerability'):
         runtime_artifacts = db.session.query(RegistryWorkloadBinding.artifact_id).distinct()
