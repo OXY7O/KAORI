@@ -75,7 +75,8 @@ def test_storage_workspace_is_server_owned_and_action_results_return_to_the_righ
     assert 'get_report_storage_payload(workspace=workspace)' in routes
     assert "get_report_storage_payload(workspace='integrity')" in routes
     assert "redirect(url_for('reports.storage', workspace=workspace))" in routes
-    assert 'build_storage_integrity_presentation' in routes
+    assert 'enqueue_report_storage_integrity_scan' in routes
+    assert 'scan_report_storage_integrity()' not in routes
     assert "request.args.get('verify')" not in routes
     assert "request.args.get('cleanup_dry_run')" not in routes
 

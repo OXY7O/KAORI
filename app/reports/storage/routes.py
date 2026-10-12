@@ -9,13 +9,12 @@ from app.access.rbac.decorators import permission_required
 from app.platform_operations.notifications.service import record_operational_activity
 from app.reports.storage.jobs import (
     ReportStorageVerificationEnqueueError,
+    enqueue_report_storage_integrity_scan,
     enqueue_report_storage_verification,
 )
 from app.reports.storage.service import (
-    build_storage_integrity_presentation,
     get_report_storage_payload,
     normalize_storage_workspace,
-    scan_report_storage_integrity,
 )
 from app.reports.storage.verification import get_report_storage_verification_presentation
 from app.reports.web import render_reports_unavailable
@@ -110,14 +109,34 @@ def storage_verification_status() -> ResponseReturnValue:
 def scan_storage_integrity() -> ResponseReturnValue:
     try:
         payload = get_report_storage_payload(workspace='integrity')
-        if payload['integrity_actions_enabled']:
-            payload['integrity_result'] = build_storage_integrity_presentation(scan_report_storage_integrity())
-    except Exception:
-        logger.exception('Report storage integrity scan failed.')
-        return render_reports_unavailable(
-            page_title='Reports Storage',
-            description='Review artifact storage, integrity, lifecycle, and recovery.',
-            reason='KAORI could not complete the artifact integrity scan. No report artifacts were changed.',
-            retry_url=url_for('reports.storage', workspace='integrity'),
+        if not payload['integrity_actions_enabled']:
+            return redirect(url_for('reports.storage', workspace='integrity'))
+        outcome = enqueue_report_storage_integrity_scan(requested_by_user_id=int(current_user.id))
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='report_storage_integrity_scan_requested',
+            status='success' if outcome.created else 'info',
+            title='Artifact Integrity Scan Queued' if outcome.created else 'Artifact Scan Already Active',
+            message=outcome.message,
+            action_url=url_for('reports.storage', workspace='integrity'),
+            action_label='View scan',
+            action_icon='scan-search',
+            metadata={'job_execution_id': outcome.job.id},
+            queue_feedback=True,
         )
-    return render_template('reports/storage/index.html', payload=payload)
+    except ReportStorageVerificationEnqueueError:
+        logger.exception('Report artifact integrity scan dispatch failed.')
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='report_storage_integrity_scan_dispatch_failed',
+            status='error',
+            title='Artifact Integrity Scan Could Not Start',
+            message='KAORI could not dispatch the read-only scan to the storage worker.',
+            detail='Check the worker and broker then retry.',
+            action_url=url_for('reports.storage', workspace='integrity'),
+            action_label='View storage',
+            action_icon='scan-search',
+            metadata={'outcome': 'dispatch_failed'},
+            queue_feedback=True,
+        )
+    return redirect(url_for('reports.storage', workspace='integrity'))
