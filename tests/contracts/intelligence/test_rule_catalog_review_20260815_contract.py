@@ -62,7 +62,9 @@ def test_rule_catalog_detail_uses_stacked_evaluation_logic_not_three_cards():
 
 def test_rule_catalog_hero_is_provider_neutral():
     page = read('app/templates/intelligence/rule_catalog.html')
-    assert 'Canonical Definitions' in page
-    assert "'Asset Domains', payload.summary.domains" in page
-    assert 'MinIO-Covered Rules' not in page
-    assert 'payload.summary.minio' not in page
+    hero = read('app/templates/intelligence/partials/_catalog_hero_posture.html')
+    assert "include 'intelligence/partials/_catalog_hero_posture.html'" in page
+    assert 'Canonical Definitions' in hero
+    assert "'Asset Domains', payload.summary.domains" in hero
+    assert 'MinIO-Covered Rules' not in hero
+    assert 'payload.summary.minio' not in hero
