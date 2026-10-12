@@ -547,7 +547,7 @@
                 <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
                 {% if payload.get('form_errors') %}
                     <div role="alert" aria-live="assertive" data-template-server-validation
-                         class="rounded-lg border border-status-critical-border bg-status-critical-soft px-4 py-3 text-sm text-status-critical-text">
+                         class="rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft px-4 py-3 text-sm text-status-critical-text">
                         <p class="font-semibold">Report Template Validation Failed</p>
                         <ul class="mt-2 list-disc space-y-1 pl-5">
                             {% for error in payload.form_errors %}<li>{{ error }}</li>{% endfor %}
