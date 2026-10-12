@@ -188,8 +188,28 @@ def _build_capacity_governance_summary_from_inputs(
     policy: TenantCapacityPolicy | None,
     snapshot_result: SnapshotResult,
     committed_state: tuple[CapacityVector, int, list[str]],
+    limits_state: tuple[CapacityVector, int, list[str]] | None = None,
 ) -> dict[str, Any]:
     committed, committed_count, unbounded_namespaces = committed_state
+    limits, _, unknown_limits = limits_state or (CapacityVector(cpu=None, memory_bytes=None), 0, [])
+    exposure_mode = getattr(policy, 'limit_exposure_mode', 'observe') if policy is not None else 'observe'
+    cpu_ratio = Decimal(getattr(policy, 'cpu_limit_ratio', '1.50') or '1.50') if policy is not None else Decimal('1.50')
+    memory_ratio = (
+        Decimal(getattr(policy, 'memory_limit_ratio', '1.00') or '1.00')
+        if policy is not None else Decimal('1.00')
+    )
+
+    def exposure(budget: CapacityVector | None, *, ready: bool) -> dict[str, Any]:
+        return assess_limit_exposure(
+            committed=limits,
+            budget=budget,
+            mode=exposure_mode,
+            cpu_ratio=cpu_ratio,
+            memory_ratio=memory_ratio,
+            evidence_ready=ready,
+            unknown_sources=unknown_limits,
+        )
+
 
     if policy is None:
         return {
@@ -197,6 +217,7 @@ def _build_capacity_governance_summary_from_inputs(
             'state': 'Unknown',
             'reason': 'Tenant Capacity Governance policy is not configured.',
             'policy': None,
+            'limit_exposure': exposure(None, ready=False),
             'snapshot_state': snapshot_result.state,
             'data_cutoff': _snapshot_cutoff(snapshot_result),
             'committed_namespace_count': committed_count,
@@ -219,6 +240,7 @@ def _build_capacity_governance_summary_from_inputs(
             'state': 'Unknown',
             'reason': capacity_reason,
             'policy': _policy_json(policy),
+            'limit_exposure': exposure(None, ready=False),
             'snapshot_state': snapshot_result.state,
             'data_cutoff': _snapshot_cutoff(snapshot_result),
             'committed_namespace_count': committed_count,
@@ -244,6 +266,7 @@ def _build_capacity_governance_summary_from_inputs(
         'state': state,
         'reason': commitment_reason or _state_reason(state),
         'policy': _policy_json(policy),
+        'limit_exposure': exposure(budget.available, ready=True),
         'snapshot_state': snapshot_result.state,
         'data_cutoff': _snapshot_cutoff(snapshot_result),
         'committed_namespace_count': committed_count,
@@ -264,6 +287,7 @@ def build_capacity_governance_summary(cluster_id: str) -> dict[str, Any]:
         policy=TenantCapacityPolicy.query.filter_by(cluster_id=cluster_id).first(),
         snapshot_result=_read_capacity_snapshot(cluster_id),
         committed_state=_committed_tenant_allocation(cluster_id),
+        limits_state=_committed_tenant_allocation(cluster_id, quota_vector_factory=quota_limit_vector),
     )
 
 
@@ -279,6 +303,7 @@ def build_capacity_governance_summaries(cluster_ids: list[str]) -> dict[str, dic
         for policy in TenantCapacityPolicy.query.filter(TenantCapacityPolicy.cluster_id.in_(normalized_ids)).all()
     }
     committed_states = _committed_tenant_allocations(normalized_ids)
+    limits_states = _committed_tenant_allocations(normalized_ids, quota_vector_factory=quota_limit_vector)
     snapshots = _read_capacity_snapshots(normalized_ids)
     return {
         cluster_id: _build_capacity_governance_summary_from_inputs(
@@ -286,6 +311,7 @@ def build_capacity_governance_summaries(cluster_ids: list[str]) -> dict[str, dic
             policy=policies.get(cluster_id),
             snapshot_result=snapshots[cluster_id],
             committed_state=committed_states[cluster_id],
+            limits_state=limits_states[cluster_id],
         )
         for cluster_id in normalized_ids
     }
