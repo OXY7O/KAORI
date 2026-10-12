@@ -415,28 +415,43 @@ server-side workflow. Capability validation/recording does not prove that
 cross-domain Advanced Controls were executed by the Native allocation
 transaction; this is a distinct backend traceability finding.
 
-**Allocation Change comparison redesign (#1619):** Preserve the same
-Current frozen Namespace and proposed versioned Resource Profile evidence and
-exact admission/provider/read-back gates, but present them as quieter peer cards
-with standard KAORI surfaces and responsive stat grids. A separate **Change
-Summary** displays only differing values from the six primary ResourceQuota
-dimensions plus per-PVC min/max. It refreshes whenever the Namespace or proposed
-profile selection changes. Known Kubernetes quantities can be classified as
-`Increased` or `Reduced` after unit-aware comparison; values moving from/to
-an unspecified value are `Now defined` or `No longer defined`; unknown
-formats remain simply `Changed`. The summary is read-only and **never**
-claims a headroom gain, provider execution or admission approval. Equal values
-and empty/unknown selections are handled explicitly without stale cards.
+**Allocation Change Contract Diff View (#1632, supersedes #1619 layout):**
+Preserve the governed selector and form-submit/read-back admission workflow while
+replacing duplicate Current/Proposed metric cards, Change Summary cards and
+three Advanced disclosures with a compact **Current → Proposed** identity strip
+and a single accessible `Changes | Full Contract | Advanced Controls` tabset.
+Changes is the initial tab and displays only changed values; Full Contract
+displays every recorded value grouped as **ResourceQuota**, **PVC Storage
+Guardrails**, **Object Limits** and **Container Defaults**. Each uses one
+semantic four-column comparison table, rather than repeating the same values in
+multiple cards. Advanced Controls has its own tab and an unboxed informative
+empty state. Tab buttons remain part of the read-only comparison, have
+keyboard Home/End and Left/Right navigation, and never submit the form.
 
-The **Advanced Contract Comparison** uses the existing
-`components/view_more_content.html` disclosure, with three default-collapsed
-read-only areas: Object Limits, Container Defaults and Advanced Controls. Each
-opens to a compact three-column Current/Proposed comparison with restrained
-row emphasis where values change. Empty Advanced Controls provide a real
-explanation, not a blank data table. Recorded capability support still never
-implies provider execution/read-back; #1591 owns that backend audit. All
-light/dark and narrow-screen layouts retain semantic labels, keyboard disclosure
-behavior, and original committed evidence provenance.
+Both table views use the **same 16 canonical dimensions**, from frozen
+`TenantNamespace` quota/storage/LimitRange JSON for Current and the selected
+versioned `TenantResourceProfile` for Proposed. The committed Native
+`adopted_baseline` choice continues to use Current as Proposed. Switching
+Namespace/profile refreshes every visible value, changed-only filtering and
+summary, without provider requests or stale values. Missing CPU/memory/Pod
+quotas and PVC bounds display **Unbounded**, while absent object limits and
+Container Defaults display **Not declared**. Unit-aware comparison only
+classifies known Kubernetes quantities as `Increased` or `Reduced`; a
+previously absent constraint becomes `Now defined`, a removed constraint
+`No longer defined`, and unknown non-equivalent values remain `Changed`.
+Semantic equality such as 1000m and 1 does not create a spurious change.
+The count includes all changed dimensions represented in Full Contract,
+not only the eight headline capacity fields.
+
+Capacity admission still uses only committed **requests**, Pods and logical
+storage; ResourceQuota **limits** remain enforcement ceilings. No comparison
+result claims free headroom, permission to apply, mutation, or read-back.
+Advanced Controls continue to show only version-matched **Recorded**
+capability evaluation for Current and **Supported / Unavailable / Pending
+Preflight** for Proposed; none imply executed or verified provider state.
+The separate executor/read-back evidence audit #1591 remains authoritative.
+The three original governance gates, submit authorization, backend route and
+fail-closed mutation path are not changed by this presentation-only UX revision.
 
 **Allocation workflow target lifecycle (#1159):** Resource Profiles → Allocation Change
 offers only `kaori_managed` Native Namespace allocations belonging to a
