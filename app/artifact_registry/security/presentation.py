@@ -362,46 +362,62 @@ def _security_source_capabilities(
     *,
     evidence_filter: Any,
 ) -> list[dict[str, Any]]:
-    """Capability presence is not evidence usability or full coverage."""
+    """One grouped committed-artifact aggregation for the visible capability page."""
     collectors = {collector.provider_key: collector for collector in registered_registry_security_collectors()}
+    ids = [int(source.id) for source in scoped_sources]
+    if not ids:
+        return []
+    scan_ready_predicate = and_(
+        func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
+        RegistryArtifact.scan_snapshots.any(
+            func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)
+        ),
+    )
+
+    def count_if(predicate: Any) -> Any:
+        return func.coalesce(func.sum(case((predicate, 1), else_=0)), 0)
+
+    grouped = (
+        RegistryArtifact.query.join(
+            RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
+        )
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(RegistryProject.integration_instance_id.in_(ids))
+        .with_entities(
+            RegistryProject.integration_instance_id,
+            func.count(RegistryArtifact.id),
+            count_if(scan_ready_predicate),
+            count_if(RegistryArtifact.scan_status.isnot(None)),
+            count_if(func.lower(RegistryArtifact.signature_status) == 'signed'),
+            count_if(RegistryArtifact.signature_status.isnot(None)),
+            count_if(func.lower(RegistryArtifact.sbom_status) == 'available'),
+            count_if(RegistryArtifact.sbom_status.isnot(None)),
+        )
+        .group_by(RegistryProject.integration_instance_id)
+        .all()
+    )
+    counts = {
+        int(provider_id): (
+            int(total), int(scan_ready), int(scan_attempted),
+            int(signature_ready), int(signature_attempted),
+            int(sbom_ready), int(sbom_attempted),
+        )
+        for (
+            provider_id, total, scan_ready, scan_attempted,
+            signature_ready, signature_attempted, sbom_ready, sbom_attempted,
+        ) in grouped
+    }
     rows: list[dict[str, Any]] = []
     for source in scoped_sources:
-        source_artifacts = (
-            RegistryArtifact.query.join(
-                RegistryRepository,
-                RegistryArtifact.repository_id == RegistryRepository.id,
-            )
-            .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
-            .filter(RegistryProject.integration_instance_id == int(source.id))
+        total, scan_ready, scan_attempted, signature_ready, signature_attempted, sbom_ready, sbom_attempted = (
+            counts.get(int(source.id), (0, 0, 0, 0, 0, 0, 0))
         )
-        artifact_count = source_artifacts.order_by(None).count()
-        scan_ready = source_artifacts.filter(
-            func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
-            RegistryArtifact.scan_snapshots.any(
-                func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)
-            ),
-        ).order_by(None).count()
-        scan_attempted = source_artifacts.filter(
-            RegistryArtifact.scan_status.isnot(None)
-        ).order_by(None).count()
-        signature_ready = source_artifacts.filter(
-            func.lower(RegistryArtifact.signature_status) == 'signed'
-        ).order_by(None).count()
-        signature_attempted = source_artifacts.filter(
-            RegistryArtifact.signature_status.isnot(None)
-        ).order_by(None).count()
-        sbom_ready = source_artifacts.filter(
-            func.lower(RegistryArtifact.sbom_status) == 'available'
-        ).order_by(None).count()
-        sbom_attempted = source_artifacts.filter(
-            RegistryArtifact.sbom_status.isnot(None)
-        ).order_by(None).count()
         collector = collectors.get(source.provider_key)
         capabilities = collector.capabilities if collector is not None else frozenset()
         rows.append({
             'source_name': source.name,
             'provider_label': source.provider_key.replace('_', ' ').title(),
-            'artifact_count': artifact_count,
+            'artifact_count': total,
             'coverage': {
                 'vulnerability': scan_ready,
                 'signature': signature_ready,
@@ -426,6 +442,12 @@ def _security_source_capabilities(
     return rows
 
 
+def _security_search_pattern(value: str) -> str:
+    """Escape SQL LIKE metacharacters for literal Registry evidence search."""
+    literal = value.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+    return f'%{literal}%'
+
+
 def _security_vulnerability_page(
     finding_scope: Any,
     *,
@@ -444,15 +466,15 @@ def _security_vulnerability_page(
     if severity_value:
         query = query.filter(func.lower(RegistryVulnerability.severity) == severity_value)
     if search_value:
-        pattern = f'%{search_value}%'
+        pattern = _security_search_pattern(search_value)
         query = query.filter(
             or_(
-                func.lower(RegistryVulnerability.vulnerability_id).like(pattern),
-                func.lower(RegistryVulnerability.package).like(pattern),
-                func.lower(func.coalesce(RegistryVulnerability.fixed_version, '')).like(pattern),
-                func.lower(RegistryArtifact.digest).like(pattern),
-                func.lower(RegistryRepository.name).like(pattern),
-                func.lower(RegistryProject.name).like(pattern),
+                func.lower(RegistryVulnerability.vulnerability_id).like(pattern, escape='\\'),
+                func.lower(RegistryVulnerability.package).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryVulnerability.fixed_version, '')).like(pattern, escape='\\'),
+                func.lower(RegistryArtifact.digest).like(pattern, escape='\\'),
+                func.lower(RegistryRepository.name).like(pattern, escape='\\'),
+                func.lower(RegistryProject.name).like(pattern, escape='\\'),
             )
         )
     severity_rank = case(
@@ -464,7 +486,7 @@ def _security_vulnerability_page(
         else_=5,
     )
     page_items, pagination = paginate_query(
-        query.order_by(severity_rank.asc(), RegistryVulnerability.vulnerability_id.asc()),
+        query.order_by(severity_rank.asc(), RegistryVulnerability.vulnerability_id.asc(), RegistryVulnerability.id.asc()),
         page=page,
         per_page=per_page,
     )
@@ -529,12 +551,12 @@ def _security_supply_evidence_page(
 ) -> tuple[list[dict[str, Any]], Any]:
     query = artifact_scope
     if search_value:
-        pattern = f'%{search_value}%'
+        pattern = _security_search_pattern(search_value)
         query = query.filter(
             or_(
-                func.lower(RegistryArtifact.digest).like(pattern),
-                func.lower(RegistryRepository.name).like(pattern),
-                func.lower(RegistryProject.name).like(pattern),
+                func.lower(RegistryArtifact.digest).like(pattern, escape='\\'),
+                func.lower(RegistryRepository.name).like(pattern, escape='\\'),
+                func.lower(RegistryProject.name).like(pattern, escape='\\'),
             )
         )
     page_items, pagination = paginate_query(
@@ -542,6 +564,7 @@ def _security_supply_evidence_page(
             RegistryProject.name.asc(),
             RegistryRepository.name.asc(),
             RegistryArtifact.digest.asc(),
+            RegistryArtifact.id.asc(),
         ),
         page=page,
         per_page=per_page,
@@ -729,20 +752,21 @@ def build_security(
         source_label=source_label,
         view=view,
     )
-    source_capabilities = _security_source_capabilities(
-        scoped_sources,
-        evidence_filter=evidence['evidence_filter'],
-    )
-    capability_filtered = [
-        row
-        for row in source_capabilities
-        if not search_value or search_value in f'{row["source_name"]} {row["provider_label"]}'.lower()
-    ]
-    capability_rows, capability_pagination = paginate_sequence(
-        capability_filtered,
+    capability_sources = [
+        source for source in scoped_sources
+        if not search_value
+        or search_value in f'{source.name} {source.provider_key.replace("_", " ")}'.lower()
+    ] if view == 'supply_chain' and supply_section == 'capabilities' else []
+    visible_capability_sources, capability_pagination = paginate_sequence(
+        capability_sources,
         page=page,
         per_page=per_page,
     )
+    capability_rows = _security_source_capabilities(
+        visible_capability_sources,
+        evidence_filter=evidence['evidence_filter'],
+    ) if visible_capability_sources else []
+    source_capabilities = capability_rows
 
     rows: list[dict[str, Any]] = []
     if view == 'vulnerabilities':
