@@ -1,12 +1,11 @@
 #!/bin/sh
 set -eu
 
-# #1427: one canonical non-owner DATABASE_URL serves Flask/Celery/Beat.
-# Schema migrations, RBAC seed and bootstrap-admin are owner-only operations.
-# Never inherit the application runtime URL for DDL or persist the owner URL
-# in .env (the latter is passed to DevContainer workers and Beat).
+# #1427: Alembic runs only as non-superuser kaori_migrator.
+# Runtime DATABASE_URL stays exclusively kaori_runtime for Flask and workers.
+# This script never creates PostgreSQL roles or uses the postgres superuser.
 if [ -z "${KAORI_DB_MIGRATION_URL:-}" ]; then
-    echo "A temporary KAORI_DB_MIGRATION_URL (PostgreSQL owner) is required." >&2
+    echo "A temporary KAORI_DB_MIGRATION_URL (kaori_migrator) is required." >&2
     echo "Do not run database migrations with kaori_runtime." >&2
     exit 1
 fi
@@ -22,8 +21,8 @@ from sqlalchemy.engine import make_url
 
 migration_dsn = os.environ["KAORI_DB_MIGRATION_URL"]
 runtime_dsn = os.getenv("DATABASE_URL", "")
-expected_owner = os.getenv("POSTGRES_USER", "kaori")
-expected_database = os.getenv("POSTGRES_DB", "kaori")
+expected_owner = 'kaori_migrator'
+expected_database = 'kaori'
 migration = make_url(migration_dsn)
 
 if migration.username != expected_owner or migration.database != expected_database:
@@ -47,22 +46,33 @@ except Exception:
     print("ABORT: cannot authenticate/connect using the declared migration identity.", file=sys.stderr)
     sys.exit(1)
 if actual_owner != expected_owner or actual_database != expected_database:
-    print("ABORT: PostgreSQL effective owner or database differs from approved DevContainer target.", file=sys.stderr)
+    print("ABORT: PostgreSQL effective migration identity/database mismatch.", file=sys.stderr)
+    sys.exit(1)
+
+with create_engine(migration_dsn).connect() as connection:
+    flags = connection.execute(text(
+        "SELECT rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls "
+        "FROM pg_roles WHERE rolname = current_user"
+    )).one()
+    owned = connection.execute(text(
+        "SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = 'kaori'"
+    )).scalar()
+    can_create = connection.execute(text(
+        "SELECT has_schema_privilege(current_user, 'public', 'CREATE')"
+    )).scalar()
+if any(flags) or owned != expected_owner or not can_create:
+    print("ABORT: migration principal is elevated or lacks approved schema ownership.", file=sys.stderr)
     sys.exit(1)
 print("PASS: explicit DevContainer PostgreSQL migration identity admitted")
 PY
 
 DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app db upgrade
 
+# RBAC seed is migration-owned data. Application administrator is created
+# AFTER runtime grants, by the explicit initialize_database.py workflow.
 if [ "${1:-}" = "--bootstrap-admin" ]; then
-    # bootstrap-admin seeds the canonical RBAC catalog first.
-    DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app bootstrap-admin
-else
-    DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app seed-rbac
+    echo "ABORT: use the explicit DevContainer initialize_database task for first-admin setup." >&2
+    exit 1
 fi
-
+DATABASE_URL="$KAORI_DB_MIGRATION_URL" flask --app run:app seed-rbac
 echo "Database migration and RBAC initialization completed."
-
-if [ "${1:-}" != "--bootstrap-admin" ]; then
-    echo "Run bootstrap-admin with the same temporary KAORI_DB_MIGRATION_URL when the first administrator is required."
-fi
