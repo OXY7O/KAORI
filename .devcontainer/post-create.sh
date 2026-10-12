@@ -22,5 +22,6 @@ npm --version
 
 printf '\nKAORI development container is ready.\n'
 printf 'Frontend vendor assets and Tailwind CSS were rebuilt and validated locally.\n'
-printf 'Run "bash scripts/init_db.sh --bootstrap-admin" for the first clean database setup.\n'
+printf 'First-run schema setup remains manual: use the Copy Command on Database Setup Required.\n'
+printf 'Execute the copied Docker Compose bootstrap command in the WSL HOST terminal, not the container terminal.\n'
 printf 'Press F5 to start Flask with the debugger.\n'
