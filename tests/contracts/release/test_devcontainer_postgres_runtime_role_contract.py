@@ -127,7 +127,7 @@ def test_new_devcontainer_three_role_initialization_keeps_ddl_off_automatic_star
     compose = COMPOSE.read_text()
     db_block = _services(compose)['db']
     operator_block = _services(compose)['db-bootstrap']
-    assert 'POSTGRES_PASSWORD: !reset null' in db_block
+    assert 'POSTGRES_PASSWORD: !reset null' not in db_block
     assert 'postgres-bootstrap.env' in db_block
     assert 'postgres-migrate.env' in db_block
     assert 'environment: !override' in db_block
