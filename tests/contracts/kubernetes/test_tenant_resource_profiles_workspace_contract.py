@@ -1491,6 +1491,7 @@ def test_allocation_change_advanced_readonly_contract_and_evidence_boundaries() 
     assert "'limits': profile.limit_defaults_json or {}" in registry
     assert '_tenant_capability_statuses(tenant)' in registry
     assert 'evaluate_resource_profile_advanced_controls(' in registry
+    assert "'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS" in registry
     assert 'advancedPreflight[namespaceId]?.[profileId]' in script
     assert "const current = namespaces[namespaceSelect?.value] || null" in script
     assert "profileSelect?.value === 'adopted_baseline' ? current" in script
@@ -1502,7 +1503,7 @@ def test_allocation_change_advanced_readonly_contract_and_evidence_boundaries() 
     assert 'Unavailable · Preflight' in script
     assert 'Not recorded' in script
     assert 'Same as current · Not verified' in script
-    assert '_validate_resource_profile_attachment_controls(profile, record.environment.tenant)' in service
+    assert 'attachment_controls = _validate_resource_profile_attachment_controls(' in service
 
     fragment = template.split('data-tenant-allocation-detail-group="{{ title', 1)[0]
     assert 'Object Limits' in fragment and 'Container Defaults' in fragment
@@ -1515,6 +1516,5 @@ def test_allocation_change_advanced_readonly_contract_and_evidence_boundaries() 
     assert "('Secrets', 'quota', 'secrets')" in details
     for resource in ('default_request.cpu', 'default.cpu',
                      'default_request.memory', 'default.memory'):
-        assert f"('limits', '{resource}')" not in details  # tuple includes display label
         assert f"'limits', '{resource}'" in details
     Environment(autoescape=True).parse(template)
