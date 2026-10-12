@@ -110,6 +110,7 @@ def _state_view(state: RegistryCollectionState | RegistryGovernanceState | None)
 
 
 def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict[str, Any]:
+    """Evaluate usable committed evidence, not merely a row with status=ready."""
     if snapshot is None:
         return {
             'status': 'not_materialized',
@@ -117,15 +118,26 @@ def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict
             'tone': 'unknown',
             'generated_at': None,
             'is_stale': False,
+            'is_current': False,
         }
+    generated_at = _aware_datetime(snapshot.generated_at)
     expires_at = _aware_datetime(snapshot.expires_at)
-    stale = bool(expires_at is not None and datetime.now(UTC) > expires_at)
+    valid = bool(
+        snapshot.status == 'ready'
+        and isinstance(snapshot.payload_json, dict)
+        and generated_at is not None
+        and expires_at is not None
+        and expires_at >= generated_at
+    )
+    stale = bool(valid and datetime.now(UTC) > expires_at)
+    current = bool(valid and not stale)
     return {
         'status': snapshot.status,
-        'label': 'Stale Snapshot' if stale else 'Current Snapshot',
-        'tone': 'warning' if stale else 'normal',
+        'label': 'Current Snapshot' if current else ('Stale Snapshot' if stale else 'Unavailable'),
+        'tone': 'normal' if current else ('warning' if stale else 'unknown'),
         'generated_at': snapshot.generated_at,
         'is_stale': stale,
+        'is_current': current,
     }
 
 
