@@ -553,10 +553,11 @@ if (canvas && form) {
     const reload = async () => {
         if (controller) controller.abort()
         controller = new AbortController()
+        status.classList.remove('hidden')
         status.textContent = 'Loading committed dependency evidence…'
         warning.classList.add('hidden')
         errorPanel.classList.add('hidden')
-        closeInspector()
+        closePane()
         const params = new URLSearchParams(new FormData(form))
         const dataUrl = new URL(canvas.dataset.url, window.location.origin)
         dataUrl.search = params.toString()
@@ -572,7 +573,8 @@ if (canvas && form) {
             renderList()
             const summary = payload.summary
             const evidence = payload.evidence
-            status.textContent = `${summary.artifacts_visible} artifacts · ${summary.workloads_visible} workloads · ${summary.pods_visible} pods · ${summary.displayed_bindings}/${summary.total_bindings} bindings. Evidence: ${evidence.title}.`
+            scopeSummary.textContent = `${summary.artifacts_visible} artifacts · ${summary.workloads_visible} workloads · ${summary.pods_visible} pods · ${summary.displayed_bindings}/${summary.total_bindings} bindings · ${evidence.title}`
+            status.classList.add('hidden')
             if (evidence.status !== 'ready' || summary.truncated) {
                 warning.classList.remove('hidden')
                 const qualification = evidence.status === 'ready' ? '' : `${evidence.description} `
@@ -594,7 +596,8 @@ if (canvas && form) {
             console.error('Dependency topology data load failed:', requestError)
             errorPanel.textContent = 'Unable to load committed dependency evidence. Try Reload Snapshot or return to Runtime Bindings.'
             errorPanel.classList.remove('hidden')
-            status.textContent = 'Topology unavailable — no evidence conclusion can be drawn.'
+            status.classList.add('hidden')
+            scopeSummary.textContent = 'Topology unavailable — no evidence conclusion can be drawn.'
         }
     }
 
@@ -611,22 +614,64 @@ if (canvas && form) {
         select.addEventListener('change', () => form.requestSubmit())
     })
     $('registry-topology-reload').addEventListener('click', reload)
-    $('registry-topology-fit').addEventListener('click', () => cy?.fit(undefined, 36))
-    $('registry-topology-reset').addEventListener('click', () => cy?.layout({
-        name: 'breadthfirst',
-        directed: true,
-        roots: payload.nodes.filter((n) => n.data.type === 'artifact').map((n) => n.data.id),
-        padding: 42,
-        spacingFactor: 1.35,
-    }).run())
+    $('registry-topology-fit').addEventListener('click', fitGraph)
+    $('registry-topology-reset').addEventListener('click', () => {
+        if (!cy) return
+        cy.elements().removeClass('kaori-topology-muted')
+        graphHasLayout = false
+        runLayout()
+    })
+    const updateDisplay = (relayout = false) => {
+        if (!cy) return
+        cy.style().fromJson(graphStyle()).update()
+        cy.elements().removeClass('kaori-topology-muted')
+        if (relayout) {
+            graphHasLayout = false
+            runLayout()
+        } else fitGraph()
+    }
+    labelsToggle.addEventListener('change', () => updateDisplay())
+    edgeLabelsToggle.addEventListener('change', () => updateDisplay())
+    layoutSelect.addEventListener('change', () => {
+        const url = new URL(window.location.href)
+        if (layoutSelect.value === 'dependency') url.searchParams.set('layout', 'dependency')
+        else url.searchParams.delete('layout')
+        window.history.replaceState({}, '', url)
+        updateDisplay(true)
+    })
+    resourceToggles.forEach((toggle) => toggle.addEventListener('change', () => {
+        if (!cy) return
+        applyVisibility()
+        empty.classList.toggle('hidden', cy.nodes(':visible').length > 0)
+        empty.classList.toggle('flex', cy.nodes(':visible').length === 0)
+        updateDisplay(true)
+    }))
     $('registry-topology-export').addEventListener('click', () => {
         if (!cy) return
-        const output = cy.png({ full: true, scale: 2, bg: window.getComputedStyle(document.body).backgroundColor })
-        const a = document.createElement('a')
-        a.href = output
-        a.download = 'kaori-artifact-dependency-topology.png'
-        a.click()
+        const output = cy.png({
+            full: true,
+            scale: 2,
+            bg: token('--kaori-surface-card', 'Canvas'),
+        })
+        const anchor = document.createElement('a')
+        anchor.href = output
+        anchor.download = 'kaori-artifact-dependency-topology.png'
+        anchor.click()
     })
+    $('registry-topology-export-json').addEventListener('click', () => {
+        const bytes = JSON.stringify({
+            ...payload,
+            export_scope: 'bounded committed graph slice; omitted records are not negative evidence',
+        }, null, 2)
+        const objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/json' }))
+        const anchor = document.createElement('a')
+        anchor.href = objectUrl
+        anchor.download = 'kaori-artifact-dependency-topology.json'
+        anchor.click()
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    })
+    const initialLayout = new URL(window.location.href).searchParams.get('layout')
+    layoutSelect.value = initialLayout === 'dependency' ? 'dependency' : 'hierarchy'
     setView(view)
     reload()
 }
