@@ -320,7 +320,25 @@ def _load_alertmanager(system: ObjectStorageSystem, *, selected_source: str) -> 
             instance_name=selected.instance.name,
         )
 
-    rows = _deduplicate(_alertmanager_rows(result.get('alerts') or []))
+    raw_alerts = result.get('alerts')
+    if (
+        not isinstance(raw_alerts, list)
+        or any(not isinstance(item, dict) for item in raw_alerts)
+    ):
+        return _source_view(
+            selected_source=selected_source,
+            resolved_source='none',
+            runtime=AlertSourceRuntime(
+                configured=True,
+                connected=False,
+                label='Alertmanager Evidence Incomplete',
+                tone='warning',
+                detail='Alertmanager returned missing or malformed alert records; zero alerts cannot be confirmed.',
+            ),
+            rows=[],
+            instance_name=selected.instance.name,
+        )
+    rows = _deduplicate(_alertmanager_rows(raw_alerts))
     return _source_view(
         selected_source=selected_source,
         resolved_source='alertmanager',
@@ -389,7 +407,22 @@ def _load_metrics_source(system: ObjectStorageSystem, *, selected_source: str) -
         )
 
     provider = provider_definition(consumer.config.provider_key)
-    rows = _deduplicate(_metrics_source_rows(payload, source_label=provider.label))
+    try:
+        rows = _deduplicate(_metrics_source_rows(payload, source_label=provider.label))
+    except ValueError as exc:
+        return _source_view(
+            selected_source=selected_source,
+            resolved_source='none',
+            runtime=AlertSourceRuntime(
+                configured=configured,
+                connected=False,
+                label='Metrics Alert Evidence Incomplete',
+                tone='warning',
+                detail=str(exc),
+            ),
+            rows=[],
+            instance_name=consumer.config.name,
+        )
     return _source_view(
         selected_source=selected_source,
         resolved_source='metrics_source',
@@ -473,16 +506,23 @@ def _alertmanager_rows(items: list[Any]) -> list[dict[str, Any]]:
 
 
 def _metrics_source_rows(payload: dict[str, Any], *, source_label: str) -> list[dict[str, Any]]:
-    data = payload.get('data') if isinstance(payload, dict) else None
+    if not isinstance(payload, dict) or payload.get('status') != 'success':
+        raise ValueError('Metrics Source did not return a successful Prometheus alert query envelope.')
+    data = payload.get('data')
     result = data.get('result') if isinstance(data, dict) else None
     if not isinstance(result, list):
-        return []
+        raise ValueError('Metrics Source alert response is missing its complete data.result array.')
     rows: list[dict[str, Any]] = []
     for item in result:
-        if not isinstance(item, dict):
-            continue
-        raw_labels = item.get('metric')
-        labels: dict[str, Any] = dict(raw_labels) if isinstance(raw_labels, dict) else {}
+        if not isinstance(item, dict) or not isinstance(item.get('metric'), dict):
+            raise ValueError('Metrics Source alert response contains malformed alert series.')
+        raw_labels = item['metric']
+        if not str(raw_labels.get('alertname') or '').strip() or not str(raw_labels.get('alertstate') or '').strip():
+            raise ValueError('Metrics Source alert response has a series without alertname or alertstate.')
+        sample = item.get('value')
+        if not isinstance(sample, (list, tuple)) or len(sample) < 2:
+            raise ValueError('Metrics Source alert response has an incomplete sample.')
+        labels: dict[str, Any] = dict(raw_labels)
         rows.append(
             {
                 'name': str(labels.get('alertname') or 'Unknown Alert'),
