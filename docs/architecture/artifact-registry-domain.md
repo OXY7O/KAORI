@@ -672,3 +672,7 @@ in normal page rendering.
 Every asynchronous operation uses the canonical Job Execution lifecycle, shared progress contract,
 worker-registration preflight, audit trail, and scheduler policy. Provider-specific collectors remain behind
 provider-neutral Artifact Registry contracts.
+
+### Operational Overview active scope (#1403)
+
+`Artifact Registry → Overview` includes only enabled Registry `IntegrationInstance` records with active lifecycle in its operational selector, fleet evidence denominators and selected-provider scope. Disabled and retired providers retain their committed historical Registry records but are **not** part of active operational health. A bookmark with an unknown/disabled/retired `provider_id` fails closed with HTTP 404 instead of silently widening to `All Registry Providers`. The worker's independent inventory-contract eligibility remains authoritative for collection; no user-facing GET triggers a provider query.
