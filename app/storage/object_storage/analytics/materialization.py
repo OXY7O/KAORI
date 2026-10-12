@@ -73,7 +73,16 @@ def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) ->
         else None
     )
     has_payload = isinstance(snapshot.payload_json, dict) and generated_at is not None
-    if snapshot.status == 'pending':
+    # Hard expiration dominates the worker attempt state. Last-known payloads
+    # remain persisted for audit, but cannot be advertised as available.
+    if has_payload and stale_deadline is not None and now > stale_deadline:
+        label, tone = (
+            'Expired · Refreshing' if snapshot.status == 'pending'
+            else 'Expired · Worker Failed' if snapshot.status == 'failed'
+            else 'Expired',
+            'critical',
+        )
+    elif snapshot.status == 'pending':
         label, tone = ('Refreshing · Last Snapshot Available', 'info') if has_payload else ('Refreshing', 'pending')
     elif snapshot.status == 'failed':
         label, tone = ('Stale · Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
@@ -338,7 +347,15 @@ def forecast_snapshot_state(snapshot: ObjectStorageForecastSnapshot | None) -> d
         else None
     )
     has_payload = isinstance(snapshot.payload_json, dict) and generated_at is not None
-    if snapshot.status == 'pending':
+    # The validity boundary takes precedence over a pending/failed attempt.
+    if has_payload and stale_deadline is not None and now > stale_deadline:
+        label, tone = (
+            'Expired · Refreshing' if snapshot.status == 'pending'
+            else 'Expired · Worker Failed' if snapshot.status == 'failed'
+            else 'Expired',
+            'critical',
+        )
+    elif snapshot.status == 'pending':
         label, tone = 'Refreshing', 'pending'
     elif snapshot.status == 'failed':
         label, tone = ('Stale · Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
