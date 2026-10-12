@@ -440,6 +440,10 @@ def _artifact_security_record(
                 reference=target.digest,
             )
             vulnerabilities, report_summary, report_meta = _normalize_vulnerabilities(payload)
+            if not vulnerabilities and any(count > 0 for count in scan_summary.values()):
+                raise HarborResponseError(
+                    'Harbor vulnerability detail is empty despite positive scan overview counts.'
+                )
         except HarborError as exc:
             report_error = f'{type(exc).__name__}: {exc}'[:1000]
             # Do not advance the committed scan identity or create a false-clean
