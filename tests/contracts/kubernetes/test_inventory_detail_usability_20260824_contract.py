@@ -77,8 +77,8 @@ def test_cluster_and_node_detail_section_descriptions_are_concise() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
 
     for description in (
-        'Cluster registration, version, and connection.',
-        'Collection time, source, freshness, and state.',
+        'Cluster name, version, connection.',
+        'Collection, source, freshness.',
         'Committed objects by resource type.',
         'Collection and operational signals.',
     ):
@@ -99,6 +99,25 @@ def test_cluster_and_node_detail_section_descriptions_are_concise() -> None:
     assert 'Host OS, kernel, container runtime, and Kubernetes component versions' not in node
     assert 'Placement eligibility, readiness, pressure conditions' not in node
 
+
+
+
+def test_cluster_breakdown_uses_existing_metadata_badge_without_health_claim() -> None:
+    cluster = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
+    shared = read('app/templates/components/details/_detail_content.html')
+
+    assert (
+        "detail.inventory_section('Inventory Breakdown', 'boxes', "
+        "cluster.populated_asset_types ~ '/8 Types', "
+        "description='Committed objects by resource type.')"
+    ) in cluster
+    assert "macro inventory_section(title, icon, badge=None, badge_type='metadata'" in shared
+    assert "table_label.metadata_label(badge, none, false, badge_size)" in shared
+    assert "Cluster name, version, connection." in cluster
+    assert "Collection, source, freshness." in cluster
+    assert 'whitespace-nowrap' not in cluster.split(
+        "{% call detail.inventory_section('Cluster Identity'", 1
+    )[1].split("{% endcall %}", 1)[0].split("description=", 1)[0]
 
 def test_namespace_detail_context_is_compact_and_uid_has_no_clipboard_control() -> None:
     from jinja2 import Environment, FileSystemLoader
