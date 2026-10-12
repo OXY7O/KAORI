@@ -373,6 +373,19 @@ conditional PATCH, authoritative complete post-mutation read-back and
 manual partial recovery remain outstanding. No tests, CI/CD or actual
 provider operations were executed for this source slice.
 
+## Capsule Platform Admin acceptance error specificity (#1228)
+
+`Current independently approved exact Capsule Release plan is required.`
+previously conflated an invalid plan hash/approval, an original requester
+trying to act as the separate Platform Admin, and a valid but expired
+900-second plan/review. The service now validates the original immutable
+plan and reviewer contract **first**, then explicitly rejects (1) the
+same original requester and (2) expired plan or reviewer evidence with
+distinct safe UI errors. An unrelated or forged plan SHA remains a generic
+invalid-exact-plan rejection. No authorization bypass, provider resource
+mutation or change to the two-operator separation requirement is introduced.
+Regression source authored only; CI/CD and UAT remain under HOLD.
+
 ## Expired acknowledged Capsule G1 review — governed zero-attempt restart (#1228)
 
 Local DevContainer screenshots show that `kaori-demo` still displayed
