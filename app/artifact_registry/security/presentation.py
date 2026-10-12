@@ -131,11 +131,9 @@ def _snapshot_status(
     latest_success: JobExecution | None,
     latest_evidence_at: datetime | None,
 ) -> dict[str, Any]:
-    successful_at = (
-        latest_success.completed_at
-        if latest_success is not None and latest_success.completed_at is not None
-        else latest_evidence_at
-    )
+    # A fleet JobExecution completed_at is an attempt timestamp, not proof
+    # that selected Registry sources refreshed committed security evidence.
+    successful_at = latest_evidence_at
     successful_at = _aware_datetime(successful_at)
     latest_status = str(latest_job.status or '') if latest_job is not None else ''
     refresh_failed = bool(
@@ -150,6 +148,9 @@ def _snapshot_status(
     if artifact_total == 0:
         label, tone = 'Inventory Required', 'warning'
         description = 'Committed artifact inventory is required before security evidence can be evaluated.'
+    elif evidence_count > 0 and successful_at is None:
+        label, tone = 'Age Unverified', 'warning'
+        description = 'Security presence is committed, but no qualifying security evidence timestamp is available.'
     elif evidence_count == 0 and successful_at is None:
         label, tone = 'Not Collected', 'unknown'
         description = 'No committed security evidence for this Registry scope.'
@@ -289,19 +290,9 @@ def _security_scope_evidence(
         runtime_scope.with_entities(func.count(func.distinct(RegistryWorkloadBinding.id))).scalar() or 0
     )
 
-    latest_job = (
-        JobExecution.query.filter(JobExecution.job_type == 'artifact_registry_security')
-        .order_by(JobExecution.created_at.desc())
-        .first()
-    )
-    latest_success = (
-        JobExecution.query.filter(
-            JobExecution.job_type == 'artifact_registry_security',
-            JobExecution.status.in_(('succeeded', 'partially_succeeded')),
-        )
-        .order_by(JobExecution.completed_at.desc(), JobExecution.created_at.desc())
-        .first()
-    )
+    # JobExecution.job_type == 'artifact_registry_security' is fleet authority.
+    # Its last-success/last-failure belongs to sync_state, not a provider's
+    # security evidence age. Never substitute a global job timestamp here.
     latest_scan_query = (
         RegistryScanSnapshot.query.join(
             RegistryArtifact,
@@ -316,8 +307,8 @@ def _security_scope_evidence(
     snapshot = _snapshot_status(
         artifact_total=artifact_total,
         evidence_count=coverage_count,
-        latest_job=latest_job,
-        latest_success=latest_success,
+        latest_job=None,
+        latest_success=None,
         latest_evidence_at=latest_evidence_at,
     )
     return {
@@ -510,8 +501,24 @@ def _security_supply_evidence_page(
         page=page,
         per_page=per_page,
     )
+    artifact_ids = [int(artifact.id) for artifact in page_items]
+    latest_security_at = dict(
+        RegistryScanSnapshot.query.with_entities(
+            RegistryScanSnapshot.artifact_id,
+            func.max(RegistryScanSnapshot.observed_at),
+        )
+        .filter(RegistryScanSnapshot.artifact_id.in_(artifact_ids))
+        .group_by(RegistryScanSnapshot.artifact_id)
+        .all()
+    ) if artifact_ids else {}
     rows: list[dict[str, Any]] = []
     for artifact in page_items:
+        security_at = latest_security_at.get(int(artifact.id))
+        artifact_freshness = _freshness(security_at)
+        if security_at is None and (
+            artifact.signature_status is not None or artifact.sbom_status is not None
+        ):
+            artifact_freshness = {'label': 'Age Unverified', 'tone': 'warning'}
         repository = artifact.repository
         project = repository.project
         source = source_by_id.get(int(project.integration_instance_id))
@@ -529,9 +536,9 @@ def _security_supply_evidence_page(
                 'signature': _evidence_state(artifact.signature_status, evidence='signature'),
                 'trust': {'label': 'Not Evaluated', 'tone': 'unknown'},
                 'sbom': _evidence_state(artifact.sbom_status, evidence='sbom'),
-                'snapshot_label': snapshot['status'],
-                'snapshot_tone': snapshot['tone'],
-                'observed_at': snapshot['latest_collected_at'],
+                'snapshot_label': artifact_freshness['label'],
+                'snapshot_tone': artifact_freshness['tone'],
+                'observed_at': security_at,
             }
         )
     return rows, pagination
