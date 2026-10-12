@@ -150,7 +150,10 @@ def _inventory_guidance(row: dict[str, Any], signals: list[dict[str, str]]) -> d
     if 'Source Changed' in labels:
         return {
             'title': 'Revalidate Storage Source',
-            'description': 'Run provider Full Validation and Object Storage Inventory Sync before treating retained inventory as current.',
+            'description': (
+                'Run provider Full Validation and Object Storage Inventory Sync '
+                'before treating retained inventory as current.'
+            ),
             'icon': 'refresh-cw',
             'tone': 'warning',
         }
