@@ -62,6 +62,7 @@ def test_schedule_registry_and_run_lifecycle_use_framed_canonical_workspaces() -
 def test_schedule_automation_posture_is_state_aware_for_storage_and_worker() -> None:
     template = read(TEMPLATE)
     service = read(SERVICE)
+    readiness = read(ROOT / 'app/reports/schedules/readiness.py')
 
     assert 'data-schedule-posture="automation-v2"' in template
     assert 'data-schedule-control-boundary="true"' in template
@@ -80,7 +81,7 @@ def test_schedule_automation_posture_is_state_aware_for_storage_and_worker() -> 
         'Artifact Execution Paused',
         'Dispatcher Needs Attention',
     ]:
-        assert label in service
+        assert label in readiness
 
 
 def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
