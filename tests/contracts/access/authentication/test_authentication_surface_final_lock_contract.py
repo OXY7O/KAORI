@@ -85,3 +85,37 @@ def test_setup_bootstrap_neutral_copy_and_full_width() -> None:
     )
     assert 'no Violet left-edge stripe' in lock
     assert 'full-width Manual Bootstrap command' in lock
+
+
+
+def test_setup_production_is_operator_guidance_without_public_migration_commands() -> None:
+    setup = read('app/templates/access/authentication/setup_required.html')
+    lock = read('docs/design/KAORI_AUTHENTICATION_SURFACE_LOCK_V1.md')
+
+    assert 'data-kaori-setup-production-guidance' in setup
+    assert 'Complete Authorized Database Initialization' in setup
+    assert 'Database Connection Unavailable' in setup
+    assert 'Application initialization is pending.' in setup
+    assert 'Contact your deployment administrator.' in setup
+    assert 'bash scripts/init_db.sh --bootstrap-admin' not in setup
+    assert 'flask --app run:app db upgrade' not in setup
+    assert 'flask --app run:app seed-rbac' not in setup
+    assert 'Production/non-development' in lock
+    assert 'never exposes migration commands' in lock
+
+
+def test_setup_devcontainer_commands_are_environment_gated() -> None:
+    setup = read('app/templates/access/authentication/setup_required.html')
+    source_start = setup.index('{% set devcontainer_setup =')
+    first_guard = setup.index('{% if devcontainer_setup %}', source_start)
+    first_guard_end = setup.index('{% endif %}', first_guard)
+    dev_context = setup[first_guard:first_guard_end]
+
+    assert 'APP_ENV' in setup[source_start:first_guard]
+    assert "not config.get('TESTING', false)" in setup[source_start:first_guard]
+    assert 'run --rm db-bootstrap' in dev_context
+    assert 'pg_isready -h db -p 5432' in dev_context
+    assert 'INTEGRATION_CREDENTIAL_KEY' in dev_context
+    assert 'data-kaori-setup-production-guidance' in setup
+    assert '{% if readiness.setup_required %}' in setup
+    assert 'This readiness workspace is read-only.' in setup
