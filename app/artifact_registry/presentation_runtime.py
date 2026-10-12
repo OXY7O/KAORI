@@ -376,6 +376,9 @@ def _runtime_usage_rows(
         project = repository.project
         source = source_by_id.get(int(project.integration_instance_id))
         cluster = cluster_by_id.get(str(binding.cluster_id))
+        binding_details = binding.details if isinstance(binding.details, dict) else {}
+        container_usages = binding_details.get('containers')
+        container_count = len(container_usages) if isinstance(container_usages, list) and container_usages else 1
         security = security_by_artifact.get(
             int(artifact.id),
             _runtime_security_state(artifact.scan_status, artifact.vulnerability_summary),
@@ -401,6 +404,7 @@ def _runtime_usage_rows(
                 'workload_name': binding.workload_name or 'Not Resolved',
                 'pod_name': binding.pod_name,
                 'container_name': binding.container_name or 'Container',
+                'container_count': container_count,
                 'image_reference': binding.image_reference,
                 'match': _runtime_match_state(binding.match_type, binding.confidence),
                 'match_type': binding.match_type,
