@@ -521,14 +521,33 @@ def build_governance(
         filter_query.update({'retention': retention_value, 'immutability': immutability_value})
     else:
         filter_query['state'] = state_value
+    sync_state = build_registry_governance_sync_state()
+    snapshot_context = _governance_snapshot_context(summary)
+    posture = _governance_posture(summary)
+    if sync_state['label'] == 'Sync Failed':
+        # A failed fleet refresh must be visible even if earlier committed
+        # evidence is still fresh and readable.
+        snapshot_context.update({
+            'status': 'Refresh Failed' if summary['ready_count'] else 'Collection Failed',
+            'tone': 'warning',
+            'description': (
+                'The latest Governance Sync failed; the previous committed evidence '
+                'remains available where collected.'
+            ),
+            'exception_count': max(snapshot_context['exception_count'], 1),
+            'exceptions_label': 'Latest Sync Failed',
+            'exceptions_supporting': 'Review JobExecution errors before trusting freshness.',
+            'exceptions_tone': 'warning',
+        })
+        posture = {'label': 'Evidence Attention', 'tone': 'warning'}
     return {
         'setup': overview['setup'],
         'provider_count': summary['provider_count'],
         'project_count': evidence_counts['policy_rows'],
         'replication_count': evidence_counts['replication_rows'],
         'governance_ready_count': summary['ready_count'],
-        'posture': _governance_posture(summary),
-        'snapshot_context': _governance_snapshot_context(summary),
+        'posture': posture,
+        'snapshot_context': snapshot_context,
         'posture_cards': _governance_posture_cards(summary, capability_counts=capability_counts),
         'capability_counts': capability_counts,
         'replication_empty': _governance_replication_empty_state(
@@ -551,5 +570,5 @@ def build_governance(
             {'id': int(identity.id), 'name': _governance_source_name(identity)}
             for identity in identities
         ],
-        'sync_state': build_registry_governance_sync_state(),
+        'sync_state': sync_state,
     }
