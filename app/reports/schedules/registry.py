@@ -88,7 +88,7 @@ def _delivery_id_predicate(channel_id: int) -> Any:
     return normalized.like(f'%,{channel_id},%')
 
 
-def _schedule_search_predicate(search: str) -> Any:
+def _schedule_search_predicate(search: str, channel_options: list[dict[str, Any]]) -> Any:
     value = search.casefold()
     pattern = f'%{value}%'
     fields = (
@@ -99,10 +99,19 @@ def _schedule_search_predicate(search: str) -> Any:
         ReportSchedule.namespace,
         ReportSchedule.cadence,
     )
-    return or_(*(func.lower(func.coalesce(field, '')).like(pattern) for field in fields))
+    predicates = [func.lower(func.coalesce(field, '')).like(pattern) for field in fields]
+    predicates.append(func.lower(func.replace(ReportSchedule.report_type, '_', ' ')).like(pattern))
+    for channel in channel_options:
+        label = f'{channel.get("label", "")} {channel.get("provider", "")}'.casefold()
+        channel_id = str(channel.get('channel_id') or '')
+        if value in label and channel_id.isdigit():
+            predicates.append(_delivery_id_predicate(int(channel_id)))
+    return or_(*predicates)
 
 
-def filter_schedule_statement(selected_filters: dict[str, str]) -> Any:
+def filter_schedule_statement(
+    selected_filters: dict[str, str], channel_options: list[dict[str, Any]] | None = None
+) -> Any:
     """Apply registry filters before SQL pagination; do not hydrate whole schedules."""
     statement = select(ReportSchedule)
     status = selected_filters['status']
@@ -155,5 +164,5 @@ def filter_schedule_statement(selected_filters: dict[str, str]) -> Any:
             statement = statement.where(False)
 
     if selected_filters['search']:
-        statement = statement.where(_schedule_search_predicate(selected_filters['search']))
+        statement = statement.where(_schedule_search_predicate(selected_filters['search'], channel_options or []))
     return statement
