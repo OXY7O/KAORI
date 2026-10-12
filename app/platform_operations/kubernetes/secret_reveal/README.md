@@ -143,3 +143,23 @@ Dark mode for both workspaces follows the neutral-first KAORI contract: informat
 Namespace Policy enablement and the Protected Reveal deployment kill switch are intentionally separate controls. A Namespace can be configured as `step_up` or `approval_required` while Protected Reveal remains unavailable. Runtime target selection is enabled only after `KUBERNETES_SECRET_REVEAL_ENABLED=true` is loaded by the KAORI web application. Restart or redeploy KAORI after changing the environment value.
 
 This is not exposed as an in-page toggle. Platform Operations owns readiness and Namespace Policy configuration; deployment configuration owns the global kill switch.
+
+
+## Overview evidence taxonomy (KAD-01 / #1550)
+
+Normal Kubernetes Admin GET uses committed canonical binding, credential-presence
+metadata and manually verified encryption/audit attestations. They are
+**configured prerequisites**, not current proof of successful Kubernetes API
+requests. Enabled policy counts include configured namespace entries, while
+`eligible_policy_count` requires the *same* registered cluster to have these
+prerequisites and an enabled policy. Kubernetes Admin must not advertise
+`Operational` solely from these counters; where eligible configuration exists,
+show `Verification Required` until the live Namespace GET, Secret UID and
+Kubernetes RBAC checks are completed by the actual Protected Reveal operation.
+Normal Overview reads must never list namespaces or materialize fleet kubeconfig
+plaintext. The global deployment kill switch remains authoritative.
+
+High-risk readiness and namespace policy saves stage their source-linked
+Activity Audit evidence inside the same database transaction; failure of the
+evidence write rolls back the policy mutation. Routine toast/notification
+transport may still use the standard best-effort path elsewhere.

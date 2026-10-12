@@ -25,7 +25,7 @@ def test_kubernetes_administration_posture_is_factual_not_hardcoded_available() 
         'Readiness Review',
         'Partial Readiness',
         'Policy Required',
-        'Operational',
+        'Verification Required',
     ):
         assert label in presentation
     assert "'administration_status_label': status_label" in presentation
