@@ -100,3 +100,35 @@ def test_authentication_design_authority_and_existing_verifier_are_updated() -> 
     assert "data-kaori-setup-design=\"command-first\"" in verifier
     assert "data-kaori-setup-outer-frame' not in setup" in verifier
     assert "variant='inline'" in verifier
+
+
+def test_normal_zoom_has_one_light_canvas_without_rejected_heavy_frame() -> None:
+    source = TEMPLATE.read_text(encoding='utf-8')
+    doc = AUTH_LOCK.read_text(encoding='utf-8')
+
+    # One quiet surface for content readability at default 100% zoom.
+    assert source.count('data-kaori-setup-canvas="light"') == 1
+    assert 'max-w-6xl rounded-2xl border border-outline-subtle bg-surface-card' in source
+    assert 'px-4 py-5 shadow-sm sm:px-6 sm:py-6 lg:px-8 lg:py-7' in source
+    assert 'bg-surface-page px-3 py-5 sm:px-5 sm:py-6 lg:py-8' in source
+    assert source.index('data-kaori-setup-canvas="light"') < source.index(
+        'data-kaori-setup-readiness-strip'
+    )
+    # The inline rail and warning do not become more peer cards.
+    assert 'data-kaori-setup-identity-card' not in source
+    assert 'data-kaori-setup-outer-frame' not in source
+    assert 'lg:col-span-2' not in source
+    assert 'bg-surface-card shadow-lg' in source  # Only the action is elevated.
+    assert 'neutral white content surface' in doc
+
+
+def test_requested_copy_is_shorter_without_changing_bootstrap_semantics() -> None:
+    source = TEMPLATE.read_text(encoding='utf-8')
+
+    assert 'PostgreSQL is ready. Run setup to enable sign-in and background jobs.' in source
+    assert 'Keep INTEGRATION_CREDENTIAL_KEY unchanged.' in source
+    assert 'Verify INTEGRATION_CREDENTIAL_KEY before bootstrap.' in source
+    assert 'PostgreSQL is connected. Complete the one-time database setup' not in source
+    assert 'Check INTEGRATION_CREDENTIAL_KEY; keep it unchanged.' not in source
+    assert 'Windows PowerShell · Repository Root' in source
+    assert 'terminal_command.render(bootstrap_command' in source

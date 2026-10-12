@@ -26,15 +26,17 @@
         docker compose ps
         pg_isready -h db -p 5432
     {%- endset %}
-    {% set initialization_flow_rows = [[('key-round', 'Confirm the Encryption Boundary', 'Check INTEGRATION_CREDENTIAL_KEY; keep it unchanged.'), ('database-zap', 'Run the Initial KAORI Database Bootstrap', 'Create the schema, grants, and first administrator.'), ('refresh-cw', 'Return to the Readiness Check', 'Refresh the page, then sign in when ready.')]] %}
-    <main class="min-h-screen bg-surface-page px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
-        <div class="mx-auto w-full max-w-5xl"
+    {% set initialization_flow_rows = [[('key-round', 'Confirm the Encryption Boundary', 'Keep INTEGRATION_CREDENTIAL_KEY unchanged.'), ('database-zap', 'Run the Initial KAORI Database Bootstrap', 'Create the schema, grants, and first administrator.'), ('refresh-cw', 'Return to the Readiness Check', 'Refresh the page, then sign in when ready.')]] %}
+    <main class="min-h-screen bg-surface-page px-3 py-5 sm:px-5 sm:py-6 lg:py-8">
+        <div class="mx-auto w-full max-w-6xl rounded-2xl border border-outline-subtle bg-surface-card px-4 py-5 shadow-sm sm:px-6 sm:py-6 lg:px-8 lg:py-7"
              data-kaori-setup-workspace="release-v4"
+             data-kaori-setup-canvas="light"
              data-kaori-setup-design="command-first"
              aria-labelledby="setup-required-title">
 
-            {# Page identity is deliberately unboxed. The primary bootstrap is the
-               sole elevated large surface; secondary diagnostics stay quiet. #}
+            {# A single quiet white workspace surface separates the page from its
+               background. Sections remain unboxed; bootstrap owns the only
+               prominent action card. Do not revive the rejected heavy frame. #}
             <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
                     data-kaori-setup-identity>
                 <div class="min-w-0">
@@ -50,7 +52,7 @@
                         class="text-xl font-semibold leading-7 text-content-primary">Database Setup Required</h1>
                     <p class="mt-2 max-w-2xl text-sm leading-6 text-content-muted">
                         {% if readiness.setup_required %}
-                            PostgreSQL is connected. Complete the one-time database setup to enable KAORI sign-in and background jobs.
+                            PostgreSQL is ready. Run setup to enable sign-in and background jobs.
                         {% else %}
                             KAORI cannot reach PostgreSQL. Restore the database connection before continuing.
                         {% endif %}
@@ -133,7 +135,7 @@
 
                 <div class="mt-4" data-kaori-setup-security>
                     {{ operational_callout.render("Encryption Key Requirement",
-                                            "Check INTEGRATION_CREDENTIAL_KEY before bootstrap. Keep the same key afterward to protect saved integration credentials.",
+                                            "Verify INTEGRATION_CREDENTIAL_KEY before bootstrap. Keep it unchanged afterward.",
                                             icon="key-round",
                                             tone="warning",
                                             variant="semantic") }}

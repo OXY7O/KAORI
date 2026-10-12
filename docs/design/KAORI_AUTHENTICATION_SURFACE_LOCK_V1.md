@@ -89,6 +89,21 @@ nested outer frame are explicitly **REJECTED** by human review. Do not
 reintroduce either layout. The operational page should explain one next
 action clearly instead of assigning equal visual weight to many panels.
 
+**100% zoom refinement (#744, operator screenshot review):** retain the
+command-first composition, but present all sections on **one quiet,
+light `bg-surface-card` workspace canvas** with `border-outline-subtle`
+and `shadow-sm`. The workspace uses `max-w-6xl`, responsive
+horizontal padding, and light/dark surface tokens so the content is
+visibly distinct from `bg-surface-page` at normal browser zoom.
+This is a **neutral white content surface**, not the previously rejected
+thick Violet outer frame or nested multi-card dashboard.
+The title/status, step rail and footer remain **unboxed within that
+canvas**; the one bootstrap action keeps visual priority.
+The key-flow instruction is **"Keep INTEGRATION_CREDENTIAL_KEY
+unchanged."** and the hero description is **"PostgreSQL is ready. Run
+setup to enable sign-in and background jobs."** The encryption
+preflight callout continues to state verification before bootstrap.
+
 **Approved composition for local Visual UAT:**
 
 1. **Unboxed identity header:** KAORI initialization context, one main
