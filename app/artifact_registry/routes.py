@@ -782,7 +782,7 @@ def governance_sync() -> ResponseReturnValue:
 
 
 @artifact_registry_bp.get('/governance/sync/status/<string:public_id>')
-@permission_required('artifact_registry.sync')
+@permission_required('artifact_registry.view')
 def governance_sync_status(public_id: str) -> ResponseReturnValue:
     job = get_registry_governance_sync_job(public_id)
     if job is None:

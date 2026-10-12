@@ -85,6 +85,33 @@ def test_governance_sync_uses_registered_jobexecution_boundary() -> None:
 
 
 
+def test_governance_latest_failed_refresh_never_looks_current() -> None:
+    presenter = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
+    builder = presenter.split('def build_governance(', 1)[1]
+    assert "if sync_state['label'] == 'Sync Failed':" in builder
+    assert "'status': 'Refresh Failed' if summary['ready_count'] else 'Collection Failed'" in builder
+    assert "'exceptions_label': 'Latest Sync Failed'" in builder
+    assert "'snapshot_context': snapshot_context" in builder
+    assert "'posture': posture" in builder
+
+
+def test_read_only_governance_sync_poll_preserves_mutating_sync_permission() -> None:
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    sync = routes.split("def governance_sync() -> ResponseReturnValue:", 1)[0]
+    poll = routes.split("def governance_sync_status(public_id: str) -> ResponseReturnValue:", 1)[0]
+    assert "@artifact_registry_bp.post('/governance/sync')" in sync
+    assert "@permission_required('artifact_registry.sync')" in sync.rsplit(
+        "@artifact_registry_bp.post('/governance/sync')", 1
+    )[1]
+    assert "@artifact_registry_bp.get('/governance/sync/status/<string:public_id>')" in poll
+    assert "@permission_required('artifact_registry.view')" in poll.rsplit(
+        "@artifact_registry_bp.get('/governance/sync/status/<string:public_id>')", 1
+    )[1]
+    adapter = (ROOT / 'app/artifact_registry/governance_job_adapter.py').read_text()
+    assert "latest_job.status == 'partially_succeeded'" in adapter
+    assert "'Partial Evidence', 'warning'" in adapter
+
+
 def test_governance_sync_matches_security_htmx_workspace_contract() -> None:
     from jinja2 import Environment
 
@@ -188,7 +215,10 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
 
     assert workspace.count("include 'components/states/_empty_state.html'") == 2
     assert 'No Policy Evidence Collected' in workspace
-    assert 'No Replication Evidence Collected' in workspace
+    assert 'governance.replication_empty.title' in workspace
+    assert 'governance.replication_empty.description' in workspace
+    presenter = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
+    assert 'No Replication Evidence Collected' in presenter
     assert 'row.retention_tone' in workspace and 'row.immutability_tone' in workspace
     assert "row.enabled is not none else 'Unknown'" in workspace
     assert "row.destination_namespace" in workspace
@@ -233,7 +263,7 @@ def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
     assert "'filter_query': filter_query" in presentation
     assert "'has_filters': filters_active" in presentation
     assert "'provider_options': [" in presentation
-    assert 'func.lower(RegistryProject.name).like(pattern)' in presentation
+    assert 'func.lower(RegistryProject.name).like(pattern,' in presentation
     assert "'retention_label'" in presentation
     assert "'immutability_label'" in presentation
     assert "observed_state = 'enabled' if enabled is True" in presentation
@@ -260,10 +290,12 @@ def test_governance_table_filter_and_pagination_use_active_sql_scope() -> None:
     assert 'RegistryProject.integration_instance_id.in_(source_ids)' in query
     assert 'RegistryReplicationPolicy.integration_instance_id.in_(source_ids)' in query
     assert 'selected in source_ids' in query
+    assert "escaped = search.casefold().replace(" in query
+    assert "escape=" in query
     assert 'RegistryProjectGovernance.retention_status == retention' in query
     assert 'RegistryProjectGovernance.immutability_status == immutability' in query
     assert 'RegistryReplicationPolicy.enabled.is_(None)' in query
-    assert 'func.lower(RegistryReplicationPolicy.name).like(pattern)' in query
+    assert 'func.lower(RegistryReplicationPolicy.name).like(pattern,' in query
     assert 'RegistryReplicationPolicy.name.asc()' in query
     assert 'RegistryProjectGovernance.observed_at.desc()' in query
     assert "row['provider_label']" not in query

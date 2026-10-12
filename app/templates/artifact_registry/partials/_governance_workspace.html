@@ -334,8 +334,8 @@
                                     <td colspan="7" class="p-0">
                                         {% set empty_state_icon = 'git-compare-arrows' %}
                                         {% set empty_state_label = 'Committed Governance' %}
-                                        {% set empty_state_title = 'No Replication Policies Match Your Filters' if governance.has_filters else 'No Replication Evidence Collected' %}
-                                        {% set empty_state_description = 'Adjust or clear filters to review other committed replication evidence.' if governance.has_filters else 'No committed replication policy records are available in this scope. Run Governance Sync to collect provider evidence.' %}
+                                        {% set empty_state_title = 'No Replication Policies Match Your Filters' if governance.has_filters else governance.replication_empty.title %}
+                                        {% set empty_state_description = 'Adjust or clear filters to review other committed replication evidence.' if governance.has_filters else governance.replication_empty.description %}
                                         {% set empty_state_min_height = 'min-h-[190px]' %}
                                         {% include 'components/states/_empty_state.html' %}
                                     </td>

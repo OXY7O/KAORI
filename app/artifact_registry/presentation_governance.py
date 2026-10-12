@@ -81,7 +81,11 @@ def _governance_capability_counts(
         counts = {'observed': 0, 'unavailable': 0, 'unsupported': 0, 'unknown': 0}
         for source_id in source_ids:
             state = governance_states.get(source_id)
-            raw = (state.capability_states or {}).get(capability) if state and isinstance(state.capability_states, dict) else None
+            raw = (
+                (state.capability_states or {}).get(capability)
+                if state and isinstance(state.capability_states, dict)
+                else None
+            )
             status = str(raw.get('status') or 'unknown') if isinstance(raw, dict) else 'unknown'
             counts[status if status in counts else 'unknown'] += 1
         result[capability] = counts
@@ -243,7 +247,9 @@ def _governance_snapshot_context(summary: dict[str, Any]) -> dict[str, Any]:
         'scope_label': f'{provider_count} Registry Provider' + ('' if provider_count == 1 else 's'),
         'coverage_label': f'{ready_count}/{provider_count} Providers Committed',
         'coverage_supporting': 'Provider-neutral Governance snapshots.',
-        'coverage_tone': 'normal' if provider_count and ready_count == provider_count and not exception_count else 'warning',
+        'coverage_tone': (
+            'normal' if provider_count and ready_count == provider_count and not exception_count else 'warning'
+        ),
         'exception_count': exception_count,
         'exceptions_label': (
             'No Exceptions'
@@ -375,23 +381,24 @@ def _governance_filtered_query(
             else RegistryReplicationPolicy.enabled.is_(None)
         )
     if search:
-        pattern = f'%{search.casefold()}%'
+        escaped = search.casefold().replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        pattern = f'%{escaped}%'
         matched_sources = [
             int(identity.id) for identity in identities
             if search.casefold() in _governance_source_name(identity).casefold()
         ]
         clauses = (
             [
-                func.lower(RegistryProject.name).like(pattern),
+                func.lower(RegistryProject.name).like(pattern, escape='\\'),
                 RegistryProject.integration_instance_id.in_(matched_sources),
             ]
             if active_tab == 'policies'
             else [
-                func.lower(RegistryReplicationPolicy.name).like(pattern),
-                func.lower(func.coalesce(RegistryReplicationPolicy.trigger_type, '')).like(pattern),
-                func.lower(func.coalesce(RegistryReplicationPolicy.source_registry, '')).like(pattern),
-                func.lower(func.coalesce(RegistryReplicationPolicy.destination_registry, '')).like(pattern),
-                func.lower(func.coalesce(RegistryReplicationPolicy.destination_namespace, '')).like(pattern),
+                func.lower(RegistryReplicationPolicy.name).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryReplicationPolicy.trigger_type, '')).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryReplicationPolicy.source_registry, '')).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryReplicationPolicy.destination_registry, '')).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryReplicationPolicy.destination_namespace, '')).like(pattern, escape='\\'),
                 RegistryReplicationPolicy.integration_instance_id.in_(matched_sources),
             ]
         )
@@ -401,6 +408,50 @@ def _governance_filtered_query(
         if active_tab == 'policies'
         else query.order_by(RegistryReplicationPolicy.name.asc(), RegistryReplicationPolicy.id.asc())
     )
+
+
+def _governance_replication_empty_state(
+    *, provider_count: int, capability_counts: dict[str, int]
+) -> dict[str, str]:
+    observed = capability_counts.get('observed', 0)
+    unavailable = capability_counts.get('unavailable', 0)
+    unsupported = capability_counts.get('unsupported', 0)
+    if provider_count and observed == provider_count:
+        return {
+            'title': 'No Replication Policies Configured',
+            'description': (
+                'The current committed governance snapshot successfully observed '
+                'an empty replication policy inventory across the active Registry sources.'
+            ),
+        }
+    if provider_count and unsupported == provider_count:
+        return {
+            'title': 'Replication Not Supported',
+            'description': 'The active Registry providers report replication as unsupported.',
+        }
+    if unavailable:
+        return {
+            'title': 'Replication Evidence Unavailable',
+            'description': (
+                'Replication collection was unavailable for one or more Registry sources. '
+                'Review Governance Sync diagnostics; absence of rows does not prove no policies.'
+            ),
+        }
+    if observed:
+        return {
+            'title': 'No Replication Policies in Available Evidence',
+            'description': (
+                'Observed sources report no replication policies, but the remaining Registry '
+                'sources are unsupported or have no usable committed evidence.'
+            ),
+        }
+    return {
+        'title': 'No Replication Evidence Collected',
+        'description': (
+            'No committed replication evidence is available for this scope. '
+            'Run Governance Sync to collect supported provider evidence.'
+        ),
+    }
 
 
 def build_governance(
@@ -471,16 +522,39 @@ def build_governance(
         filter_query.update({'retention': retention_value, 'immutability': immutability_value})
     else:
         filter_query['state'] = state_value
+    sync_state = build_registry_governance_sync_state()
+    snapshot_context = _governance_snapshot_context(summary)
+    posture = _governance_posture(summary)
+    if sync_state['label'] == 'Sync Failed':
+        # A failed fleet refresh must be visible even if earlier committed
+        # evidence is still fresh and readable.
+        snapshot_context.update({
+            'status': 'Refresh Failed' if summary['ready_count'] else 'Collection Failed',
+            'tone': 'warning',
+            'description': (
+                'The latest Governance Sync failed; the previous committed evidence '
+                'remains available where collected.'
+            ),
+            'exception_count': max(snapshot_context['exception_count'], 1),
+            'exceptions_label': 'Latest Sync Failed',
+            'exceptions_supporting': 'Review JobExecution errors before trusting freshness.',
+            'exceptions_tone': 'warning',
+        })
+        posture = {'label': 'Evidence Attention', 'tone': 'warning'}
     return {
         'setup': overview['setup'],
         'provider_count': summary['provider_count'],
         'project_count': evidence_counts['policy_rows'],
         'replication_count': evidence_counts['replication_rows'],
         'governance_ready_count': summary['ready_count'],
-        'posture': _governance_posture(summary),
-        'snapshot_context': _governance_snapshot_context(summary),
+        'posture': posture,
+        'snapshot_context': snapshot_context,
         'posture_cards': _governance_posture_cards(summary, capability_counts=capability_counts),
         'capability_counts': capability_counts,
+        'replication_empty': _governance_replication_empty_state(
+            provider_count=summary['provider_count'],
+            capability_counts=capability_counts['replication'],
+        ),
         'active_tab': normalized_tab,
         'rows': rows,
         'pagination': pagination,
@@ -497,5 +571,5 @@ def build_governance(
             {'id': int(identity.id), 'name': _governance_source_name(identity)}
             for identity in identities
         ],
-        'sync_state': build_registry_governance_sync_state(),
+        'sync_state': sync_state,
     }

@@ -89,6 +89,9 @@ def build_registry_governance_sync_state(*, policy: JobPolicy | None = None) -> 
     elif latest_job is not None and latest_job.status == 'failed':
         label, tone, icon = 'Sync Failed', 'critical', 'circle-x'
         helper = 'The latest Governance Sync failed. Previous committed governance evidence remains readable.'
+    elif latest_job is not None and latest_job.status == 'partially_succeeded':
+        label, tone, icon = 'Partial Evidence', 'warning', 'shield-alert'
+        helper = 'Governance Sync completed with failed sources or unavailable provider capabilities.'
     elif latest_success is None:
         label, tone, icon = 'Not Collected', 'warning', 'clock-alert'
         helper = 'Run Governance Sync to collect committed provider policy and replication evidence.'

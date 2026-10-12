@@ -336,6 +336,26 @@ Partial capability statuses and missing capability proof are never presented
 as unqualified Current/No Exceptions. These evidence states do not dispatch
 an Inventory Sync automatically; Governance remains an independent job.
 
+### Capability-aware empty evidence and view-only job polling (#1453)
+
+Policies/Replication remain committed evidence tables under the existing
+`#artifact-registry-governance-registry` HTMX swap target. On the Replication
+tab, an observed-empty committed policy list is labeled `No Replication Policies
+Configured`; fully unsupported, unavailable, partially observed, and never
+collected states have separate truthful empty-state language. Filtered zero
+results still use the canonical clear-filter guidance. JobExecution terminal
+`partially_succeeded` is presented as `Partial Evidence`, not `Ready`.
+A failed latest Governance JobExecution overrides optimistic snapshot status with
+`Refresh Failed` or `Collection Failed` while retaining last committed evidence.
+This is an execution exception, not deletion of provider evidence.
+
+The existing Governance Sync POST retains `artifact_registry.sync`.
+Its GET progress endpoint uses `artifact_registry.view` because polling is
+read-only, and viewers must not gain dispatch permissions. Shared progress,
+CSRF, operational toasts, URL/HTMX owned tabs, and five-row tables remain
+unchanged. Human DevContainer Visual QA must check view-only polling,
+partial/failed/successful sync and each replication empty-state case.
+
 ### Registry grouped summary adoption (#1087, superseded for Dashboard Overview)
 
 The 2026-10-10 human feedback adopted the Kubernetes Tenant Estate grouped

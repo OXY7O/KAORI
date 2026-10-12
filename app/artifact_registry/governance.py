@@ -54,6 +54,11 @@ def sync_registry_governance(
     if not eligibility.eligible:
         raise RuntimeError(eligibility.reason)
 
+    inventory_state = db.session.get(RegistryCollectionState, int(identity.id))
+    if inventory_state is None or inventory_state.last_committed_at is None:
+        raise RuntimeError('Committed Registry inventory is required before Governance Sync.')
+    inventory_committed_at = inventory_state.last_committed_at.isoformat()
+
     collector = get_registry_governance_collector(identity.provider_key)
     observed_at = datetime.now(UTC)
     evidence = (
@@ -85,14 +90,15 @@ def sync_registry_governance(
     capability_states = evidence.capability_states if isinstance(evidence.capability_states, dict) else {}
     unavailable = {
         name
-        for name, capability in capability_states.items()
-        if isinstance(capability, dict) and capability.get('status') == 'unavailable'
+        for name in ('retention', 'immutability', 'replication')
+        if not isinstance(capability_states.get(name), dict)
+        or capability_states[name].get('status') in {'unknown', 'unavailable'}
     }
 
     # Collectors may fail individual capability APIs. Retain previous records
     # for unavailable evidence rather than replacing them with invented empty
     # policy sets. A successful observed-empty replication result is different.
-    if 'replication' not in unavailable:
+    if (capability_states.get('replication') or {}).get('status') == 'observed':
         RegistryReplicationPolicy.query.filter_by(integration_instance_id=identity.id).delete(
             synchronize_session=False
         )
@@ -112,12 +118,10 @@ def sync_registry_governance(
             db.session.add(policy)
 
     committed_projects = 0
-    observed_project_ids: set[int] = set()
     for record in evidence.projects:
         project = project_by_name.get(record.project_name)
         if project is None:
             continue
-        observed_project_ids.add(project.id)
         previous = previous_by_project_id.pop(project.id, None)
         governance = previous if previous is not None else RegistryProjectGovernance(project_id=project.id)
         if previous is None:
@@ -153,8 +157,15 @@ def sync_registry_governance(
     for previous in previous_by_project_id.values():
         db.session.delete(previous)
 
-    inventory_state = db.session.get(RegistryCollectionState, int(identity.id))
-    committed_inventory_at = inventory_state.last_committed_at if inventory_state is not None else None
+    # Re-read the committed inventory generation: a concurrent Inventory Sync
+    # invalidates the provider observation rather than stamping new inventory
+    # provenance onto evidence collected from the previous generation.
+    db.session.refresh(inventory_state, attribute_names=['last_committed_at'])
+    if (
+        inventory_state.last_committed_at is None
+        or inventory_state.last_committed_at.isoformat() != inventory_committed_at
+    ):
+        raise RuntimeError('Registry Inventory changed during Governance Sync; previous evidence preserved.')
     state.status = 'partial' if unavailable else 'ready'
     state.capability_states = capability_states
     state.last_observed_at = observed_at
@@ -167,12 +178,16 @@ def sync_registry_governance(
     state.metadata_json = {
         **evidence.provider_metadata,
         'provider_key': identity.provider_key,
-        'inventory_committed_at': committed_inventory_at.isoformat() if committed_inventory_at else None,
+        'inventory_committed_at': inventory_committed_at,
     }
     db.session.commit()
     return {
         'projects': committed_projects,
-        'replication_policies': len(evidence.replication_policies) if 'replication' not in unavailable else 0,
+        'replication_policies': (
+            len(evidence.replication_policies)
+            if (capability_states.get('replication') or {}).get('status') == 'observed'
+            else 0
+        ),
         'status': state.status,
         'capability_states': evidence.capability_states,
         'observed_at': observed_at.isoformat(),

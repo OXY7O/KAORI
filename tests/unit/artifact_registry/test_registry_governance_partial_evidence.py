@@ -75,3 +75,32 @@ def test_failed_sources_remain_failure_even_with_partial_counter():
         started=0,
     )
     assert result['status'] == 'error'
+
+
+def test_malformed_harbor_project_discovery_fails_instead_of_deleting_prior_evidence(monkeypatch):
+    import pytest
+
+    from app.integrations.registry.providers.harbor import governance as harbor
+
+    class Client:
+        def list_all_projects(self):
+            return [{'project_id': 42}]
+
+    monkeypatch.setattr(harbor, 'build_client', lambda _instance: Client())
+    with pytest.raises(harbor.HarborResponseError, match='without a name'):
+        harbor.collect_harbor_governance(object())
+
+
+def test_malformed_replication_record_is_unavailable_not_observed_empty(monkeypatch):
+    from app.integrations.registry.providers.harbor import governance as harbor
+
+    class Client:
+        def list_all_projects(self):
+            return []
+
+        def list_all_replication_policies(self):
+            return [{'name': 'invalid-without-policy-id'}]
+
+    monkeypatch.setattr(harbor, 'build_client', lambda _instance: Client())
+    result = harbor.collect_harbor_governance(object())
+    assert result.capability_states['replication']['status'] == 'unavailable'
