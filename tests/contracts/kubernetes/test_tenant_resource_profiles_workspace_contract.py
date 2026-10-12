@@ -311,10 +311,21 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
     assert 'hx-post' not in template
     assert '<form method="post"' not in template
 
-    # The four request dimensions read frozen Namespace quota, never current
-    # reusable profile values or raw provider JSON.
-    for key in ("requests.cpu", "requests.memory", "pods", "requests.storage"):
-        assert f"quota.get('{key}')" in template
+    # All six primary ResourceQuota dimensions use committed Namespace
+    # snapshot values, not mutable profiles or Container LimitRange defaults.
+    for label, key in (
+        ('CPU Requests', 'requests.cpu'),
+        ('CPU Limits', 'limits.cpu'),
+        ('Memory Requests', 'requests.memory'),
+        ('Memory Limits', 'limits.memory'),
+        ('Pod Slots', 'pods'),
+        ('Logical Storage', 'requests.storage'),
+    ):
+        assert f"('{label}', quota.get('{key}'))" in template
+    assert 'Frozen Namespace ResourceQuota · Not live utilization' in template
+    assert 'grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3' in template
+    assert "('CPU Limit', (limit_defaults.get('default') or {}).get('cpu'))" in template
+    assert "('Memory Limit', (limit_defaults.get('default') or {}).get('memory'))" in template
     assert 'item.allocation_quota_json or {}' in template
     assert 'item.allocation_limit_defaults_json or {}' in template
     assert 'item.allocation_storage_policy_json or {}' in template
