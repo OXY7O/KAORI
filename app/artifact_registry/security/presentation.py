@@ -135,6 +135,7 @@ def _snapshot_status(
     latest_job: JobExecution | None,
     latest_success: JobExecution | None,
     latest_evidence_at: datetime | None,
+    inventory_committed: bool = False,
 ) -> dict[str, Any]:
     # A fleet JobExecution completed_at is an attempt timestamp, not proof
     # that selected Registry sources refreshed committed security evidence.
@@ -151,8 +152,12 @@ def _snapshot_status(
     stale = bool(successful_at is not None and successful_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS))
 
     if artifact_total == 0:
-        label, tone = 'Inventory Required', 'warning'
-        description = 'Committed artifact inventory is required before security evidence can be evaluated.'
+        if inventory_committed:
+            label, tone = 'No Artifacts', 'info'
+            description = 'The committed Registry inventory is observed empty; there are no artifacts to scan.'
+        else:
+            label, tone = 'Inventory Required', 'warning'
+            description = 'Committed artifact inventory is required before security evidence can be evaluated.'
     elif evidence_count > 0 and successful_at is None:
         label, tone = 'Age Unverified', 'warning'
         description = 'Security presence is committed, but no qualifying security evidence timestamp is available.'
@@ -340,6 +345,7 @@ def _security_scope_evidence(
         latest_job=None,
         latest_success=None,
         latest_evidence_at=latest_evidence_at,
+        inventory_committed=bool(scoped_sources),
     )
     return {
         'artifact_scope': artifact_scope,
@@ -628,6 +634,13 @@ def _security_finding_interpretation(evidence: dict[str, Any]) -> dict[str, str]
     scanned_artifacts = evidence['scanned_artifacts']
     artifact_total = evidence['artifact_total']
     finding_total = evidence['finding_total']
+    if snapshot['status'] == 'No Artifacts':
+        return {
+            'title': 'No Artifacts to Scan',
+            'description': 'The selected Registry inventory has a committed empty snapshot.',
+            'tone': 'info',
+            'icon': 'package',
+        }
     if snapshot['status'] == 'Not Collected':
         return {
             'title': 'Security Evidence Not Collected',
@@ -684,6 +697,12 @@ def _security_finding_empty_state(
             'label': 'Filtered Security Evidence',
             'title': 'No Findings Match This View',
             'description': 'Adjust the active filters to review other committed vulnerability findings.',
+        }
+    if evidence['snapshot']['status'] == 'No Artifacts':
+        return {
+            'label': 'Committed Security',
+            'title': 'No Artifacts to Scan',
+            'description': 'The selected Registry has a committed empty inventory; no security findings are expected.',
         }
     if evidence['snapshot']['status'] == 'Not Collected':
         return {
