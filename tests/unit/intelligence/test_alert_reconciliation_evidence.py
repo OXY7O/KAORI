@@ -117,3 +117,39 @@ def test_capacity_forecast_can_clear_only_after_usable_fresh_projection(monkeypa
     assert source._source_evidence_posture_for_state(state) == (True, '')
     query.row = SimpleNamespace(payload_json={'forecast': {'days_to_capacity': None}})
     assert source._source_evidence_posture_for_state(state) == (False, 'source_unavailable')
+
+
+def test_active_recommendation_state_reader_uses_bounded_keyset_pages(monkeypatch) -> None:
+    rows = [SimpleNamespace(id=i) for i in range(1, 206)]
+    pages = []
+
+    class Column:
+        def is_(self, _value):
+            return True
+        def __gt__(self, value):
+            return ('after', value)
+        def asc(self):
+            return self
+
+    class Query:
+        after = 0
+        limit_size = 0
+        def filter(self, *criteria):
+            self.after = next((value for op, value in criteria if isinstance(op, str) and op == 'after'), 0)
+            return self
+        def order_by(self, *_columns):
+            return self
+        def limit(self, count):
+            self.limit_size = count
+            return self
+        def all(self):
+            page = [row for row in rows if row.id > self.after][:self.limit_size]
+            pages.append(len(page))
+            return page
+
+    monkeypatch.setattr(
+        source, 'RecommendationAlertState',
+        SimpleNamespace(query=Query(), active=Column(), id=Column()),
+    )
+    assert len(list(source._active_recommendation_state_batches())) == 205
+    assert pages == [200, 5, 0]
