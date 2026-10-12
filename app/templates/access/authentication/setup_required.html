@@ -7,14 +7,13 @@
 {% import "components/view_more_content.html" as view_more_content %}
 {% block title %}Database Setup Required · KAORI{% endblock title %}
 {% block content %}
-    {% set bootstrap_command = "bash scripts/init_db.sh --bootstrap-admin" %}
+    {% set bootstrap_command = "sh scripts/init_db.sh --bootstrap-admin" %}
     {% set manual_bootstrap_commands -%}
-        flask --app run:app db upgrade
-        flask --app run:app seed-rbac
+        sh scripts/init_db.sh
     {%- endset %}
     {% set database_checks -%}
-        docker compose ps
-        pg_isready -h db -p 5432
+        docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml ps db
+        pg_isready -h db -U kaori -d kaori
     {%- endset %}
     {% set initialization_flow_rows = [[('key-round', 'Confirm the Encryption Boundary', 'Set INTEGRATION_CREDENTIAL_KEY before migration; keep it unchanged.'), ('database-zap', 'Run the Initial KAORI Database Bootstrap', 'Apply migrations, seed canonical RBAC, and create the first local administrator.'), ('refresh-cw', 'Return to the Readiness Check', 'Retry after bootstrap. Sign-in stays blocked until the required schema exists.')]] %}
     <main class="min-h-screen bg-surface-page px-3 py-3 sm:px-4 lg:py-4">
@@ -102,7 +101,7 @@
                             <div class="min-w-0">
                                 <h2 id="development-bootstrap-title"
                                     class="text-sm font-semibold text-content-primary">Development Bootstrap</h2>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Initialize the schema, seed canonical RBAC, and create the first local administrator.</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Initialize schema, seed canonical RBAC, and create the first administrator using temporary owner-only KAORI_DB_MIGRATION_URL. Follow docs/operations/devcontainer-postgres-fresh-bootstrap.md before copying the command.</p>
                             </div>
                             {{ table_label.metadata_label('KAORI Dev Container', icon='container') }}
                         </div>
@@ -111,7 +110,7 @@
                             <i data-lucide="shield-check"
                                class="mt-0.5 h-3.5 w-3.5 shrink-0"
                                aria-hidden="true"></i>
-                            <span>Workers remain gated until migration readiness is established.</span>
+                            <span>Run bootstrap only after supplying ephemeral KAORI_DB_MIGRATION_URL as the PostgreSQL owner. The canonical app DATABASE_URL stays non-owner; workers remain gated until schema and runtime-role admission.</span>
                         </p>
                     </section>
                     <aside class="min-w-0" aria-label="Database setup security boundary">
@@ -144,7 +143,7 @@
                         <section aria-labelledby="manual-initialization-title">
                             <h3 id="manual-initialization-title"
                                 class="text-xs font-semibold text-content-secondary">Manual Initialization Commands</h3>
-                            <p class="mt-0.5 mb-2 text-xs leading-5 text-content-muted">Use only when migration and RBAC seed steps must run separately.</p>
+                            <p class="mt-0.5 mb-2 text-xs leading-5 text-content-muted">Owner-only migration and RBAC seed without creating an administrator. Requires a temporary KAORI_DB_MIGRATION_URL; do not run bare Flask DDL as kaori_runtime.</p>
                             {{ terminal_command.render(manual_bootstrap_commands, label='Manual Bootstrap', prompt='', copy_label='Copy Commands', compact=true) }}
                         </section>
                         <section aria-labelledby="missing-schema-title">
