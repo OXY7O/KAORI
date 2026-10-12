@@ -7,11 +7,14 @@ from typing import Any
 from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 
+from app.artifact_registry.correlation import runtime_input_signature
 from app.artifact_registry.correlation_sync_jobs import correlation_prerequisites
 from app.artifact_registry.presentation_common import FRESHNESS_HOURS, _aware_datetime, _providers
 from app.artifact_registry.presentation_inventory import _inventory_detail_provider_context
 from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.common.pagination import paginate_query
+from app.extensions.db import db
+from sqlalchemy.orm import Session
 from app.models.cluster import Cluster
 from app.models.job import JobExecution
 from app.models.registry import (
@@ -241,6 +244,7 @@ def _runtime_filtered_query(
         'match': str(request.match_type or '').strip().lower(),
         'exposure': str(request.exposure or '').strip().lower(),
     }
+    active_source_ids = [int(source.id) for source in sources]
     query = (
         RegistryWorkloadBinding.query.join(
             RegistryArtifact,
@@ -261,8 +265,14 @@ def _runtime_filtered_query(
             .joinedload(RegistryRepository.project)
         )
     )
+    # Filter active/enabled source identity at the SQL boundary even for
+    # bookmarked artifact IDs, empty fleets and forged filters.
+    query = query.filter(RegistryProject.integration_instance_id.in_(active_source_ids))
     if request.source_id is not None:
-        query = query.filter(RegistryProject.integration_instance_id == int(request.source_id))
+        if int(request.source_id) not in active_source_ids:
+            query = query.filter(RegistryWorkloadBinding.id == -1)
+        else:
+            query = query.filter(RegistryProject.integration_instance_id == int(request.source_id))
     if filters['cluster']:
         query = query.filter(RegistryWorkloadBinding.cluster_id == filters['cluster'])
     if filters['namespace']:
@@ -411,6 +421,18 @@ def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
         else latest_binding_at
     )
     latest_correlated_at = _aware_datetime(latest_correlated_at)
+    with Session(db.engine) as signature_session:
+        current_signature = runtime_input_signature(signature_session)
+    committed_summary = (
+        latest_success.result_summary_json
+        if latest_success is not None and isinstance(latest_success.result_summary_json, dict)
+        else {}
+    )
+    committed_signature = committed_summary.get('input_signature')
+    inputs_changed = bool(
+        latest_correlated_at is not None
+        and (not committed_signature or committed_signature != current_signature)
+    )
     setup = _runtime_prerequisite_guidance(
         prerequisites,
         has_committed_snapshot=latest_correlated_at is not None,
@@ -437,6 +459,12 @@ def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
     elif refresh_failed:
         status, tone = 'Refresh Failed', 'warning'
         description = 'The latest rebuild failed; the previous committed correlation remains readable.'
+    elif inputs_changed:
+        status, tone = 'Inputs Changed', 'warning'
+        description = (
+            'Committed Registry or Kubernetes inventory changed since materialization, '
+            'or the previous correlation has no input-generation proof. Rebuild required.'
+        )
     elif stale:
         status, tone = 'Stale', 'warning'
         description = 'Committed runtime correlation is older than the current freshness window.'
@@ -446,6 +474,7 @@ def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
     return {
         'setup': setup,
         'latest_correlated_at': latest_correlated_at,
+        'inputs_changed': inputs_changed,
         'status': status,
         'tone': tone,
         'description': description,
@@ -561,11 +590,18 @@ def _runtime_empty_state(
     )
 
 
-def _runtime_namespace_options() -> list[str]:
+def _runtime_namespace_options(*, source_ids: list[int]) -> list[str]:
     return [
         value
         for (value,) in (
-            RegistryWorkloadBinding.query.with_entities(RegistryWorkloadBinding.namespace)
+            RegistryWorkloadBinding.query.join(
+                RegistryArtifact,
+                RegistryWorkloadBinding.artifact_id == RegistryArtifact.id,
+            )
+            .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+            .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+            .filter(RegistryProject.integration_instance_id.in_(source_ids))
+            .with_entities(RegistryWorkloadBinding.namespace)
             .distinct()
             .order_by(RegistryWorkloadBinding.namespace.asc())
             .all()
@@ -653,7 +689,7 @@ def _build_runtime_usage(request: RuntimeUsageRequest) -> dict[str, Any]:
         },
         'source_options': sources,
         'cluster_options': clusters,
-        'namespace_options': _runtime_namespace_options(),
+        'namespace_options': _runtime_namespace_options(source_ids=list(source_by_id)),
         'match_options': [
             {'value': 'digest', 'label': 'Digest Match'},
             {'value': 'tag', 'label': 'Tag Match'},
@@ -710,6 +746,8 @@ def build_runtime_binding_detail(binding_id: int) -> dict[str, Any] | None:
     artifact = binding.artifact
     repository = artifact.repository
     project = repository.project
+    if int(project.integration_instance_id) not in {int(item.id) for item in _providers()}:
+        return None
     source = _inventory_detail_provider_context(project.integration_instance_id)
     cluster = Cluster.query.filter(Cluster.id == str(binding.cluster_id)).first()
     match = _runtime_match_state(binding.match_type, binding.confidence)
