@@ -1,12 +1,23 @@
 name: kaori-dev
 
-# Dev-only opt-in: after provisioning the non-owner DB role, set
-# KAORI_DEV_RUNTIME_DATABASE_URL in root .env for workspace AND every worker.
-# Until configured, legacy owner URL remains for backward-compatible startup,
-# but immutable Capsule ledger guards MUST continue to reject that role.
-# Never use this interpolation fallback for staging/production.
+# #1427: The host initializeCommand provisions private PostgreSQL credentials
+# in ~/.config/kaori/devcontainer/, OUTSIDE the bind-mounted workspace.
+# PostgreSQL alone receives bootstrap and runtime provisioning secrets.
+# The one-shot db-bootstrap service receives ONLY the migrator secret.
+# All normal application processes use the canonical non-owner DATABASE_URL.
 
 services:
+  db:
+    env_file:
+      - ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-bootstrap.env
+      - ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-migrate.env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: kaori
+      POSTGRES_PASSWORD: !reset null
+    volumes:
+      - ./.devcontainer/postgres-init/01-kaori-roles.sh:/docker-entrypoint-initdb.d/01-kaori-roles.sh:ro
+
   workspace:
     build:
       context: .
@@ -29,7 +40,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -61,7 +72,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -102,7 +113,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -143,7 +154,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -183,7 +194,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -222,7 +233,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -261,7 +272,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -300,7 +311,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -340,7 +351,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -379,7 +390,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -418,7 +429,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -457,7 +468,7 @@ services:
       - .env
     environment:
       APP_ENV: development
-      DATABASE_URL: ${KAORI_DEV_RUNTIME_DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-kaori}}
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/3
@@ -482,6 +493,34 @@ services:
     depends_on:
       workspace:
         condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db-bootstrap:
+    profiles: [operator-bootstrap]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    env_file:
+      - .env
+      - ${HOME:?HOME must point to the WSL developer home}/.config/kaori/devcontainer/postgres-migrate.env
+    environment:
+      APP_ENV: development
+      DATABASE_URL: ${DATABASE_URL:?Set the non-owner KAORI runtime DATABASE_URL}
+      WAIT_FOR_DB: "true"
+      WAIT_FOR_SCHEMA: "false"
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/3
+      RATELIMIT_STORAGE_URI: redis://redis:6379/2
+    command: ["sh", "scripts/devcontainer/bootstrap-db.sh"]
+    volumes:
+      - .:/workspace/kaori
+      - kaori_instance_data:/workspace/kaori/instance
+    depends_on:
       db:
         condition: service_healthy
       redis:
