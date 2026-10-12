@@ -1,5 +1,14 @@
 # DevContainer PostgreSQL role separation — local, data-preserving procedure
 
+> **Historical data-preserving #1405 authority only.** This runbook
+> describes the prior two-role PostgreSQL owner `kaori` and its
+> remediation without losing records. It is **not** the current
+> first-volume DevContainer provisioning model. For the approved
+> three-role `postgres` / `kaori_migrator` / `kaori_runtime`
+> installation, use
+> [the #1427 first-run runbook](devcontainer-postgres-fresh-bootstrap.md).
+> Do not transplant old owner grants or URLs into the new cluster.
+
 **Scope:** KAORI `kaori-dev` Compose project, **existing data preservation** only. Issue #1405, blocked
 Capsule G1 restart #1228/#1229. **No new database, no data move, no DROP,
 TRUNCATE, role-owner change, or provider mutation.** The database remains
