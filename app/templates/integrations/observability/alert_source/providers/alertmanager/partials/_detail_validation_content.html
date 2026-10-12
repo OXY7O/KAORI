@@ -22,7 +22,7 @@
 {% if capability_summary.required_missing %}
     {% set next_action = "Restore Alertmanager API v2 access, then rerun Full Validation." %}
 {% else %}
-    {% set next_action = "Validate consumer bindings for asset-specific alert evidence." %}
+    {% set next_action = "Validate consumer bindings to establish current asset-specific alert evidence." %}
 {% endif %}
 <section id="alertmanager-validation-workspace"
          class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
