@@ -130,10 +130,29 @@
         {% endfor %}
     </div>
 {% else %}
-    {% set empty_state_icon = "search-x" %}
-    {% set empty_state_label = "No Results" %}
-    {% set empty_state_title = "No Recommendations Match the Current Filters" %}
-    {% set empty_state_description = "Adjust the filters or continue monitoring current inventory and signal evidence." %}
+    {% set readiness = payload.evidence_readiness|default({}) %}
+    {% set readiness_status = readiness.status|default('not_collected') %}
+    {% if readiness_status == 'unavailable' %}
+        {% set empty_state_icon = "shield-alert" %}
+        {% set empty_state_label = "Evidence Unavailable" %}
+        {% set empty_state_title = "Recommendation Evaluation Unavailable" %}
+        {% set empty_state_description = "One or more committed evidence evaluators failed. Do not interpret this empty result as healthy; review collection and worker evidence." %}
+    {% elif payload.active_filter_count|default(0) > 0 %}
+        {% set empty_state_icon = "search-x" %}
+        {% set empty_state_label = "No Matching Findings" %}
+        {% set empty_state_title = "No Recommendations Match the Current Filters" %}
+        {% set empty_state_description = "Adjust the filters. This does not prove that the underlying asset or source evidence is healthy." %}
+    {% elif readiness_status in ['partial', 'not_collected'] %}
+        {% set empty_state_icon = "shield-alert" %}
+        {% set empty_state_label = "Evidence Review Required" %}
+        {% set empty_state_title = "Current Evidence Is Incomplete" %}
+        {% set empty_state_description = "No matching finding was projected, but recent inventory or evaluation coverage is incomplete. Review owning domain collection status." %}
+    {% else %}
+        {% set empty_state_icon = "list-checks" %}
+        {% set empty_state_label = "No Active Findings" %}
+        {% set empty_state_title = "No Active Recommendations From Current Evidence" %}
+        {% set empty_state_description = "No rule match is projected from the recent committed inventory baseline. This is not a provider-health guarantee." %}
+    {% endif %}
     {% set empty_state_variant = "panel" %}
     {% set empty_state_min_height = "min-h-[170px]" %}
     {% include 'components/states/_empty_state.html' %}
