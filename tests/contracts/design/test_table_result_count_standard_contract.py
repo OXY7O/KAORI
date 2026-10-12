@@ -141,3 +141,14 @@ def test_tenant_operations_tables_have_filtered_result_counts() -> None:
         source = _template(f"kubernetes/tenant/partials/{name}")
         assert f"result_count={pagination}" in source
         assert "table_ui.inventory_block_header(" in source
+
+
+def test_special_registry_headers_share_one_result_badge() -> None:
+    users = _template("access/users/partials/_directory.html")
+    assert "table_label.result_count(pagination.total_items)" in users
+    assert "Matching {{ 'User'" not in users
+
+    alerts = _template("storage/object_storage/analytics/partials/_alert_records.html")
+    assert "table_label.result_count(alert_table.pagination.total_items)" in alerts
+    assert "alert_table.pagination.total_items ~ ' Alerts'" not in alerts
+    assert "table_label.status_label(alert_source.label, alert_source.tone)" in alerts
