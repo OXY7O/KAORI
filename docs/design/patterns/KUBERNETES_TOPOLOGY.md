@@ -31,7 +31,7 @@ Compact segmented tabs must render the configured `data-*` attribute with the ta
 - Header actions own explicit committed-snapshot reload and the canonical conditional Clear Filters action. Both are peer utilities and use the same compact header-action geometry; Reload Snapshot is not styled as a dominant primary CTA.
 - Filter Bar owns graph data scope.
 - Canvas Toolbar owns local presentation and export actions.
-- Inspector owns selected resource or relationship context.
+- Inspector owns selected resource or relationship context. The existing Details inspector shows a compact **Relationship Summary**, grouped by visible committed edge type and direction; a keyboard-accessible **View Relationships** action opens the existing full Relationships tab without duplicating the graph or making live provider requests.
 
 The hero must not repeat exact sync time or snapshot source.
 
@@ -58,6 +58,10 @@ A truncated graph uses a warning callout with omitted counts. Renderer errors pr
 ## Readable Graph Node Refinement
 
 The canonical graph uses compact rounded domain badges with a resource-type glyph and semantic status dot. The object name is rendered below the badge as one external line with bounded ellipsis, while the complete name and type remain available in Resource List and Details. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.
+
+## Relationship Focus and Namespace Grouping
+
+Selecting a graph resource uses the existing one-hop neighborhood focus to foreground its related resources and their operational edges, while quiet containment links stay subordinate. The Details inspector presents bounded, direction-aware counts from the **visible committed edges** and delegates full navigation to the existing Relationships tab. Namespace boundary overlays appear only when their scope has visible non-Namespace resources; their labels report the visible resource count, without implying unseen or live Kubernetes resources.
 
 ## Compact Hierarchy and Viewport Safety
 

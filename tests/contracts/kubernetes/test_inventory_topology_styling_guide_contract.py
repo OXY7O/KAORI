@@ -313,3 +313,27 @@ def test_topology_compact_layout_fits_external_labels_and_resize() -> None:
     assert 'window.requestAnimationFrame(fitGraphToCanvas)' in script
     assert '## Compact Hierarchy and Viewport Safety' in pattern
     assert 'Dependency View remains independent' in pattern
+
+
+def test_topology_relationship_summary_reuses_existing_inspector() -> None:
+    inspector = _read('app/templates/kubernetes/inventory/topology/partials/_inspector_templates.html')
+    script = _read('app/static/js/kubernetes/inventory/topology.js')
+    pattern = _read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
+
+    assert 'data-node-relationship-summary' in inspector
+    assert 'topology-relationship-summary-item-template' in inspector
+    assert 'data-open-relationships' in inspector
+    assert 'role="list"' in inspector
+    assert 'aria-label="View all visible relationships for this resource"' in inspector
+    assert "const edges = node.connectedEdges(':visible')" in script
+    assert 'const renderRelationshipSummary = (view, node) =>' in script
+    assert 'renderRelationshipSummary(view, node)' in script
+    assert "activateTab('relationships')" in script
+    assert "edgeColor(relationship)" in script
+    assert 'Relationship Summary' in pattern
+    assert "selector: 'edge.focused'" in script
+    assert "edge.focused[relationship" in script
+    assert "const resourceCount = nodes.filter((node) => node.data('type') !== 'namespace').length" in script
+    assert "if (!resourceCount) return" in script
+    assert 'Namespace boundary overlays appear only' in pattern
+    assert 'visible committed edge type and direction' in pattern

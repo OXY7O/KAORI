@@ -556,6 +556,8 @@ const startTopologyWorkspace = () => {
             { selector: 'edge.edge-label-visible', style: { label: 'data(label)' } },
             { selector: '.dimmed', style: { opacity: 0.1, 'text-opacity': 0.06 } },
             { selector: '.focused', style: { opacity: 1, 'text-opacity': 1, 'z-index': 999 } },
+            { selector: 'edge.focused', style: { 'line-opacity': 1, width: 2.8 } },
+            { selector: 'edge.focused[relationship = "contains"]', style: { 'line-opacity': 0.6, width: 1.5 } },
             {
                 selector: '.path-active',
                 style: {
@@ -1048,6 +1050,45 @@ const startTopologyWorkspace = () => {
         })
     }
 
+    const relationshipSummaryLabels = {
+        contains: ['Contains', 'Contained in'],
+        owns: ['Owns', 'Owned by'],
+        scheduled_on: ['Scheduled on', 'Hosts'],
+        selects: ['Selects', 'Selected by'],
+        routes_to: ['Routes to', 'Receives route from'],
+        uses: ['Uses configuration', 'Used by'],
+        mounts: ['Mounts claim', 'Mounted by'],
+        binds: ['Binds volume', 'Bound to claim'],
+    }
+
+    const renderRelationshipSummary = (view, node) => {
+        const panel = view.querySelector('[data-node-relationship-summary]')
+        const container = view.querySelector('[data-node-relationship-summary-items]')
+        const edges = node.connectedEdges(':visible')
+        panel?.classList.toggle('hidden', !edges.length)
+        container?.replaceChildren()
+        if (!edges.length || !container) return
+
+        const counts = new Map()
+        edges.forEach((edge) => {
+            const relationship = edge.data('relationship')
+            const outbound = edge.source().id() === node.id()
+            const key = relationship + (outbound ? ':out' : ':in')
+            const entry = counts.get(key) || { relationship, outbound, count: 0 }
+            entry.count += 1
+            counts.set(key, entry)
+        })
+        counts.forEach(({ relationship, outbound, count }) => {
+            const chip = cloneTemplate('topology-relationship-summary-item-template')
+            if (!chip) return
+            const labels = relationshipSummaryLabels[relationship] || [titleCaseText(relationship), titleCaseText(relationship)]
+            text(chip, '[data-summary-label]', `${labels[outbound ? 0 : 1]} · ${count}`)
+            const swatch = chip.querySelector('[data-summary-swatch]')
+            if (swatch) swatch.style.backgroundColor = edgeColor(relationship)
+            container.appendChild(chip)
+        })
+    }
+
     const renderRelationshipRows = (container, node) => {
         container?.replaceChildren()
         const edges = node.connectedEdges(':visible')
@@ -1271,6 +1312,7 @@ const startTopologyWorkspace = () => {
             { label: 'Collected At', value: formatDateTime(data.collected_at) },
         ]
         renderValueRows(view.querySelector('[data-node-fields]'), fields)
+        renderRelationshipSummary(view, node)
 
         const minimap = view.querySelector('[data-node-minimap]')
         minimap?.classList.toggle('hidden', data.type !== 'cluster')
@@ -1306,6 +1348,7 @@ const startTopologyWorkspace = () => {
             button.addEventListener('click', () => activateTab(button.dataset.kaoriSegmentedTab))
         )
         bindSegmentedKeyboard(tabButtons, (button) => activateTab(button.dataset.kaoriSegmentedTab))
+        view.querySelector('[data-open-relationships]')?.addEventListener('click', () => activateTab('relationships'))
         view.querySelector('#topology-highlight-path-button')?.addEventListener('click', () => {
             if (pathHighlightActive) {
                 clearPathHighlight()
@@ -1667,9 +1710,10 @@ const startTopologyWorkspace = () => {
             groups.get(key).nodes = groups.get(key).nodes.union(node)
         })
         groups.forEach(({ namespace, nodes }) => {
-            if (!nodes.length) return
+            const resourceCount = nodes.filter((node) => node.data('type') !== 'namespace').length
+            if (!resourceCount) return
             const box = nodes.renderedBoundingBox({ includeLabels: true, includeOverlays: false })
-            const padding = 20
+            const padding = 16
             const boundary = document.createElement('div')
             boundary.className = 'absolute rounded-xl border border-dashed border-outline-focus bg-kaori-soft/40'
             boundary.style.left = `${box.x1 - padding}px`
@@ -1679,7 +1723,7 @@ const startTopologyWorkspace = () => {
             const label = document.createElement('span')
             label.className =
                 'absolute -top-3 left-3 rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-xs font-semibold text-kaori-primary shadow-sm'
-            label.textContent = namespace
+            label.textContent = `${namespace} · ${resourceCount} ${resourceCount === 1 ? 'resource' : 'resources'}`
             boundary.appendChild(label)
             boundaryLayer.appendChild(boundary)
         })
