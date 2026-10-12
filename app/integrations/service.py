@@ -27,6 +27,7 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 )
 from app.integrations.overview_extensions import (
     build_provider_portfolio_counts,
+    effective_runtime_readiness,
     portfolio_posture,
     sort_runtime_rows,
 )
@@ -712,7 +713,7 @@ def _kubernetes_runtime_row(
     cluster = connection.cluster
     canonical = connection.integration_instance
     observation = latest.get(('container_orchestrator', str(connection.id)))
-    readiness = connection.readiness_status or 'validation_required'
+    readiness = effective_runtime_readiness(connection, kubernetes=True)
     capability_attention = 0 if readiness == 'ready' else 1
     provider = provider_kind('container_orchestrator', canonical.provider_key)
     return {
@@ -761,7 +762,7 @@ def _metrics_source_runtime_row(
         'query_language': instance.query_language,
         'connection_status': instance.last_status or 'not_observed',
         **_runtime_observation_fields(observation),
-        'readiness': instance.readiness_status or 'validation_required',
+        'readiness': effective_runtime_readiness(instance),
         'validation_at_display': present_user_datetime(
             instance.last_checked_at or instance.last_validated_at,
             empty='Not validated',
@@ -795,7 +796,7 @@ def _alertmanager_runtime_row(
         'endpoint_product': 'Alertmanager',
         'connection_status': instance.last_status or 'not_observed',
         **_runtime_observation_fields(observation),
-        'readiness': instance.readiness_status or 'validation_required',
+        'readiness': effective_runtime_readiness(instance),
         'validation_at_display': present_user_datetime(
             instance.last_checked_at or instance.last_validated_at,
             empty='Not validated',
