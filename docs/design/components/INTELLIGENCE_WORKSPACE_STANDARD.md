@@ -88,6 +88,14 @@ and route/model scaffolding alone must never be interpreted as execution readine
 - Rule definitions use a generic `evidence_boundary` contract. Metrics Source, Alertmanager, provider APIs, committed inventory, and worker-materialized artifacts are evidence sources; no single backend owns the catalog schema.
 - Object Storage metric-signal definitions must stay aligned with the thresholds used by Object Storage Analytics. Threshold changes require coordinated updates to analysis behavior, catalog definition, recommendation semantics where applicable, and contract tests.
 
+### Alert Intelligence source-aware read model and posture (#1513)
+
+Active and resolved queues are paginated by the shared SQL pagination utility **before** case serialization (default 5, options 5/10/25/50). Owner relationships and active-silence evidence are fetched in bounded page batches; aggregate counts are source-state scoped SQL projections. Read-only detail access is constrained to the selected domain and asset, not a fleet scan. Silence registries must include only recommendation-origin AlertCases.
+
+Source State is an **independent** filter from Severity. The Source Unknown shortcut, form, URL and HTMX pagination must all carry `source_state=unknown`, never `severity=unknown`. Resolved Today means **source recovery recorded**, not necessarily verified case closure. Alert Intelligence delivery failures and Intelligence Overview attention use the same current 24-hour failed-delivery window, retaining older failures in the immutable journal.
+
+The overview must never state Operationally Clear solely because active cases are zero. A conservative 24-hour committed-inventory readiness label is not proof that all recommendation, scan or alert workers completed successfully. Missing/partial source evidence warrants Evidence Review Required; complete inventory with zero cases is merely No Open Cases Observed. Continue to use the shared Violet Hero, Resource Detail Modal, access gates, contextual HTMX and accessible feedback components.
+
 ## Alert Intelligence and outbound notification ownership
 
 Alert Intelligence is a read-oriented, asset-scoped interpretation workspace. Kubernetes and Object Storage consume their existing alert-source contracts: Automatic mode prefers Alertmanager and may fall back to Metrics Source alert evidence. Provider alert lifecycle, KAORI recommendations, and catalog rules must remain distinguishable; contextual correlation must never be presented as causal attribution without evidence.
