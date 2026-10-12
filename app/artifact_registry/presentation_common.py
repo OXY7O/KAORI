@@ -110,6 +110,22 @@ def _state_view(state: RegistryCollectionState | RegistryGovernanceState | None)
     }
 
 
+def _registry_analytics_inputs_changed(snapshot: RegistryAnalyticsSnapshot | None) -> bool:
+    """Compare committed Analytics input generation, without requesting provider state."""
+    if snapshot is None or not isinstance(snapshot.payload_json, dict):
+        return True
+    evidence = snapshot.payload_json.get('evidence')
+    if not isinstance(evidence, dict) or not evidence.get('inventory_committed_at'):
+        return True
+    state = db.session.get(RegistryCollectionState, int(snapshot.integration_instance_id))
+    actual = state.last_committed_at.isoformat() if state and state.last_committed_at else None
+    if actual != evidence.get('inventory_committed_at'):
+        return True
+    governance = db.session.get(RegistryGovernanceState, int(snapshot.integration_instance_id))
+    committed = governance.last_committed_at.isoformat() if governance and governance.last_committed_at else None
+    return committed != evidence.get('governance_committed_at')
+
+
 def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict[str, Any]:
     """Evaluate usable committed evidence, not merely a row with status=ready."""
     if snapshot is None:
@@ -131,13 +147,19 @@ def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict
         and expires_at >= generated_at
     )
     stale = bool(valid and datetime.now(UTC) > expires_at)
-    current = bool(valid and not stale)
+    inputs_changed = _registry_analytics_inputs_changed(snapshot) if valid else True
+    current = bool(valid and not stale and not inputs_changed)
     return {
         'status': snapshot.status,
-        'label': 'Current Snapshot' if current else ('Stale Snapshot' if stale else 'Unavailable'),
-        'tone': 'normal' if current else ('warning' if stale else 'unknown'),
+        'label': (
+            'Current Snapshot' if current else
+            'Inputs Changed' if valid and inputs_changed else
+            'Stale Snapshot' if stale else 'Unavailable'
+        ),
+        'tone': 'normal' if current else ('warning' if stale or inputs_changed else 'unknown'),
         'generated_at': snapshot.generated_at,
         'is_stale': stale,
+        'inputs_changed': inputs_changed,
         'is_current': current,
     }
 
