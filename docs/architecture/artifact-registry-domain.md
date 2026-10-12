@@ -772,3 +772,24 @@ retains all observed ordinary/init container usages (name or positional fallback
 kind and index) even when several containers share the same image. Legacy
 bindings without this evidence remain readable using the existing single
 container projection. The derived binding schema/identity is unchanged.
+
+
+### Runtime committed input generation and active scope (#1442)
+
+Correlation materialization captures a compact signature of the *active/enabled*
+Registry instance identities and their committed inventory timestamps together
+with Kubernetes cluster inventory generation timestamps. The worker rechecks
+the signature before transaction completion; a mid-run input change aborts
+atomic binding replacement, leaving the prior committed set readable.
+
+The canonical JobExecution success summary retains the input signature. Runtime
+Usage compares the last successful signature with the current committed source
+generations; superseded or legacy unverified snapshots are presented as
+`Inputs Changed`, not Ready. A failed refresh retains its own warning state,
+and missing collection prerequisites do not discard previous bindings.
+
+Normal Runtime Usage queries, filter options, prerequisites and direct binding
+detail access use active/enabled Registry source identity. Disabled/retired
+source evidence may remain stored for audit but does not contribute to active
+operational counts. Malformed/disabled bookmarked source filters return 404
+rather than silently expanding scope.
