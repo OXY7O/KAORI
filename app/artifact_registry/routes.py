@@ -35,6 +35,7 @@ from app.artifact_registry.presentation import (
     build_runtime_binding_detail,
     build_runtime_usage,
 )
+from app.artifact_registry.presentation_topology import build_dependency_topology
 from app.artifact_registry.presentation_common import _providers as _active_registry_sources
 from app.artifact_registry.security.job_adapter import (
     build_registry_security_sync_state,
@@ -407,6 +408,34 @@ def runtime() -> ResponseReturnValue:
         else 'artifact_registry/runtime.html'
     )
     return render_template(template, runtime=context)
+
+
+def _runtime_topology_filters() -> dict[str, Any]:
+    return {
+        'search': request.args.get('q', '', type=str),
+        'source_id': _runtime_scope_id('source_id'),
+        'cluster_id': request.args.get('cluster_id', '', type=str),
+        'namespace': request.args.get('namespace', '', type=str),
+        'match_type': request.args.get('match_type', '', type=str),
+        'exposure': request.args.get('exposure', '', type=str),
+        'artifact_id': _runtime_scope_id('artifact_id'),
+    }
+
+
+@artifact_registry_bp.get('/runtime/topology')
+@permission_required('artifact_registry.view')
+def runtime_topology() -> ResponseReturnValue:
+    filters = _runtime_topology_filters()
+    return render_template(
+        'artifact_registry/topology.html',
+        runtime=build_runtime_usage(**filters),
+    )
+
+
+@artifact_registry_bp.get('/runtime/topology/data')
+@permission_required('artifact_registry.view')
+def runtime_topology_data() -> ResponseReturnValue:
+    return jsonify(build_dependency_topology(**_runtime_topology_filters()))
 
 
 @artifact_registry_bp.get('/runtime/<int:binding_id>/details')
