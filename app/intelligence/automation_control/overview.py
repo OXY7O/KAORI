@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from typing import Any
 
-from datetime import UTC, datetime
-
 from app.extensions.db import db
-from app.intelligence.verification import verification_outcome_counts
 from app.intelligence.automation_control.notifications import DECISION_NOTIFICATION_EVENTS
 from app.intelligence.resolver.notifications import EXECUTION_NOTIFICATION_EVENTS
 from app.intelligence.resolver.production_readiness import ProductionReadinessError, assess_readiness
+from app.intelligence.verification import verification_outcome_counts
 from app.models.intelligence import (
     IntelligenceDecision,
     IntelligenceDecisionCandidate,

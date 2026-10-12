@@ -7,9 +7,9 @@ from sqlalchemy import and_, case, func
 
 from app.common.alert_case_source_state import active_alert_case_filters
 from app.common.automation_execution import execution_enabled
-from app.intelligence.verification import verification_outcome_counts
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
+from app.intelligence.verification import verification_outcome_counts
 from app.intelligence.rule_presentation import normalize_rule
 from app.intelligence.service import get_active_recommendation_findings
 from app.models.alert_ops import AlertCase, AlertSilence
@@ -238,9 +238,10 @@ def _alert_operations_summary() -> dict[str, int]:
         NotificationDelivery.status == 'failed',
         NotificationDelivery.updated_at >= now - timedelta(days=1),
     ).count()
-    active_count, critical, warning, source_unknown, acknowledged, verification_pending, closed_24h, postmortem_required = (
-        int(value or 0) for value in alert_counts
-    )
+    (
+        active_count, critical, warning, source_unknown, acknowledged,
+        verification_pending, closed_24h, postmortem_required,
+    ) = (int(value or 0) for value in alert_counts)
     return {
         'active': active_count,
         'critical': critical,
@@ -291,15 +292,6 @@ def _overview_posture(
                 'currently require operator attention.'
             ),
         }
-    if summary['findings'] or alerts['active']:
-        return {
-            'label': 'Active Intelligence',
-            'tone': 'info',
-            'helper': (
-                f'{summary["findings"]} recommendation finding(s) and {alerts["active"]} active alert case(s) '
-                'are available for operational review.'
-            ),
-        }
     if summary['registered_assets'] == 0:
         return {
             'label': 'No Managed Assets',
@@ -313,12 +305,27 @@ def _overview_posture(
         return {
             'label': 'Evidence Review Required',
             'tone': 'warning',
-            'helper': 'No active finding is projected, but committed inventory coverage is missing or older than 24 hours.',
+            'helper': (
+                'Committed inventory coverage is missing or older than 24 hours; '
+                'current Intelligence findings may be incomplete.'
+            ),
+        }
+    if summary['findings'] or alerts['active']:
+        return {
+            'label': 'Active Intelligence',
+            'tone': 'info',
+            'helper': (
+                f'{summary["findings"]} recommendation finding(s) and {alerts["active"]} active alert case(s) '
+                'are available for operational review.'
+            ),
         }
     return {
         'label': 'No Active Findings',
         'tone': 'info',
-        'helper': 'No active Intelligence finding or AlertCase is projected from the evaluated committed evidence; this is not a provider-health claim.',
+        'helper': (
+            'No active Intelligence finding or AlertCase is projected from the evaluated '
+            'committed evidence; this is not a provider-health claim.'
+        ),
     }
 
 
@@ -341,7 +348,10 @@ def _kpi_cards(
         {
             'label': 'Active Alerts',
             'value': alerts['active'],
-            'supporting': f'{alerts["critical"]} critical · {alerts["warning"]} warning · {alerts["source_unknown"]} unknown',
+            'supporting': (
+                f'{alerts["critical"]} critical · {alerts["warning"]} warning · '
+                f'{alerts["source_unknown"]} unknown'
+            ),
             'icon': 'bell-ring',
             'tone': (
                 'critical'
@@ -397,7 +407,11 @@ def _posture_items(
         {
             'label': 'Evidence Freshness',
             'value': f'{(evidence or {}).get("recent", 0)} / {(evidence or {}).get("total", 0)} Recent Inventory',
-            'supporting': '24h committed inventory baseline only; security/metrics/analytics evidence is separately qualified. Overview is database-backed; provider collection and refresh stay worker-owned.',
+            'supporting': (
+                '24h committed inventory baseline only; security/metrics/analytics evidence is '
+                'separately qualified. Overview is database-backed; provider collection and refresh '
+                'stay worker-owned.'
+            ),
             'icon': 'shield-check',
             'tone': 'normal' if evidence and evidence['complete'] else 'warning',
             'href_endpoint': 'alert_intelligence.index',
@@ -441,7 +455,15 @@ def _workspace_rows(
             'title': 'Alert Intelligence',
             'description': 'Alert cases, acknowledgement, routing, silences, resolution evidence, and history.',
             'icon': 'bell-ring',
-            'tone': 'critical' if alerts['critical'] else ('warning' if alerts['warning'] or alerts['source_unknown'] or alerts['verification_pending'] or alerts['postmortem_required'] else 'info'),
+            'tone': (
+                'critical' if alerts['critical']
+                else (
+                    'warning' if any((
+                        alerts['warning'], alerts['source_unknown'],
+                        alerts['verification_pending'], alerts['postmortem_required'],
+                    )) else 'info'
+                )
+            ),
             'primary_value': alerts['active'],
             'primary_label': 'active',
             'secondary_value': alerts['verification_pending'],
