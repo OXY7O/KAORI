@@ -71,7 +71,7 @@ Real-device UAT may add evidence, but physical device names do not become CSS co
 
 ### Canonical Database Setup Workspace Composition
 
-The approved Database Setup Required surface is a non-Hero, console-first readiness workspace optimized for the canonical 1280×800 and 1024×768 laptop targets. The setup surface intentionally does **not** use the authenticated application page-title scale because this is a short, one-time pre-authentication operator workflow.
+The approved Database Setup Required surface is a non-Hero, command-first readiness page optimized for the canonical 1280×800 and 1024×768 laptop targets. The setup surface intentionally does **not** use the authenticated application page-title scale because this is a short, one-time pre-authentication operator workflow.
 
 Compact setup typography:
 
@@ -83,49 +83,60 @@ Compact setup typography:
 
 This exception is limited to Database Setup Required and must not be copied to ordinary authenticated application pages.
 
-**Approved operator-feedback revision (#744, 2026-10-12):**
-Database Setup Required now has **one deliberate, bounded outer
-frame**, containing all operator content. This replaces the earlier
-"no outer workspace card" exception, following human visual feedback
-that the separate cards appeared disconnected against the page
-background. The page remains a **compact, console-first** readiness
-surface—not an authenticated Hero or a full-height administration shell.
+**Current operator-feedback authority (#744, 2026-10-12): full
+command-first redesign.** The earlier 2:1 card grid and later giant
+nested outer frame are explicitly **REJECTED** by human review. Do not
+reintroduce either layout. The operational page should explain one next
+action clearly instead of assigning equal visual weight to many panels.
 
-The single frame uses existing Violet surface tokens:
-`max-w-6xl`, `rounded-2xl`, `border-kaori-outline`,
-`bg-surface-hover` and `shadow-lg` with responsive padding.
-Inside the frame, the identity/header, readiness strip, primary
-bootstrap, initialization steps and read-only footer remain **separate
-white/elevated cards** with `border-outline-default`,
-`bg-surface-card` and `shadow-sm`. The primary bootstrap and
-encryption boundary stay in a responsive 2:1 grid at laptop/desktop
-width, with the semantic warning stretched to the adjacent card height.
-The initialization path still uses the existing horizontal flow
-component. Advanced Setup stays collapsed behind the shared component.
+**Approved composition for local Visual UAT:**
 
-Preserve the locked `text-lg`/`text-sm`/`text-xs` hierarchy,
-existing status badges, clipboard terminal, shared components, keyboard
-accessibility, light/dark tokens and fail-closed PostgreSQL-unavailable
-state. Do **not** nest additional workspace-level outer shells,
-recreate shared terminal/step/callout components, introduce inline CSS,
-or change the manual bootstrap command. The first-run command is copied
-for **Windows PowerShell host** (or another host terminal), not mandated
-WSL Remote.
+1. **Unboxed identity header:** KAORI initialization context, one main
+   heading, short readiness explanation and semantic status badge.
+   No Hero banner, giant parent container, or decorative card.
+2. **Inline readiness rail:** one unboxed, border-separated definition
+   list for Database / Application Schema / Normal Sign-In. Semantic
+   values remain owned by `table_label`.
+3. **One primary action panel:** the only dominant elevated surface.
+   Full-width command-first bootstrap action with a Violet left
+   boundary, concise guidance, terminal clipboard widget and
+   operator-controlled execution notice. No sidebar rail or
+   equal-height warning column.
+4. **Preflight boundary:** a short, full-width semantic encryption
+   callout *after* the main action, clearly instructing the operator to
+   check the key before executing the copied command. It must never
+   claim to generate or rotate credentials.
+5. **Unboxed step rail:** use
+   `operational_flow_steps.render(..., variant='inline')`. The new
+   shared variant has no individual step cards, while the component's
+   default `boxed` mode remains unchanged for all other pages.
+6. **Secondary controls:** existing collapsed Advanced Setup and a
+   subdued, unboxed read-only / Retry Setup Check footer.
+
+Keep light/dark semantics, accessible labels, responsive stacking,
+single `h1`, compact terminal ownership, copy behavior and fail-closed
+PostgreSQL-unavailable state. The non-DevContainer/server guidance
+must remain separate and must not receive the development migration
+password. The setup screen remains **read-only**; it never performs
+schema DDL or admin seed from the browser.
 
 ```text
-Compact Page Identity
-↓
-Readiness Strip: Database | Application Schema | Normal Sign-In
-↓
-Bootstrap Console (2/3) | Encryption Boundary (1/3)
-↓
-Horizontal Initialization Path
-↓
-Advanced Setup (collapsed by default)
-↓
-Read-only Boundary + Retry Setup Check
+KAORI Initialization · Database Setup Required            [state]
+Connected DB / Schema Not Installed / Sign-In Unavailable
+-----------------------------------------------------------
+             ONE PRIMARY BOOTSTRAP ACTION
+             [Copyable shared terminal command]
+-----------------------------------------------------------
+Encryption key preflight (semantic callout)
+Inline step rail (no step cards)
+Advanced Setup (collapsed)
+Read-only note                                     [Retry]
 ```
 
+No nested Violet frame, three-card status strip, boxed three-step
+timeline, right-side warning rail, new page-local JS/CSS, or
+duplicated provider calls. Previous screenshot variants were
+superseded specifically by user feedback.
 The primary path must fit within the first laptop viewport under normal browser zoom whenever ordinary browser chrome allows it. Secondary manual recovery commands and missing-schema evidence stay behind the shared expandable-content component so they do not permanently inflate the page.
 
 Shared ownership is mandatory:
@@ -137,7 +148,7 @@ Shared ownership is mandatory:
 - `components/view_more_content.html` owns the collapsed Advanced Setup disclosure;
 - `components/section_link_button.html` owns Retry Setup Check.
 
-The setup page must not introduce authenticated Hero geometry, **additional oversized/nested parent workspace cards beyond the single approved bounded frame**, a permanent troubleshooting rail, a vertical timeline that consumes most of the viewport, duplicate readiness summaries, page-local terminal chrome, arbitrary typography, custom CSS, provider calls, or database mutation from presentation code.
+The setup page must not introduce authenticated Hero geometry, an oversized/nested workspace frame, a permanent troubleshooting rail, boxed peer cards for the primary action path, duplicate readiness summaries, page-local terminal chrome, arbitrary typography, custom CSS, provider calls, or database mutation from presentation code.
 
 ## Locked Security Contract
 
