@@ -139,7 +139,7 @@ def get_report_schedules_payload(
     selected_filters = _get_selected_filters(query_args)
     schedule_records, pagination = paginate_select(
         db.session,
-        _filter_schedule_statement(selected_filters).order_by(
+        _filter_schedule_statement(selected_filters, _get_delivery_channel_options()).order_by(
             ReportSchedule.created_at.desc(), ReportSchedule.id.desc()
         ),
         page=query_args.get('page', 1),
