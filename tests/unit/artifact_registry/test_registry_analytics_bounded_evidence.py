@@ -40,3 +40,13 @@ def test_analytics_generation_authority_is_committed_and_checked_again():
     assert 'db.session.refresh(inventory_state)' in ANALYTICS
     assert "if current_generation != domain['evidence']['inventory_committed_at']:" in ANALYTICS
     assert 'Registry inventory generation changed during Analytics materialization.' in ANALYTICS
+
+
+def test_committed_kubernetes_generation_is_an_analytics_freshness_dependency():
+    common = (ROOT / 'app/artifact_registry/presentation_common.py').read_text()
+    assert "'correlation_input_signature': runtime_input_signature(db.session)" in ANALYTICS
+    assert "runtime_input_signature(db.session) != domain['evidence']['correlation_input_signature']" in ANALYTICS
+    assert "runtime_input_signature(db.session) != evidence.get('correlation_input_signature')" in common
+    assert 'security_latest_scan_at' in ANALYTICS
+    assert 'security_latest_scan_at' in common
+    assert 'runtime_observed_at' in common
