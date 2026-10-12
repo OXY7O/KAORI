@@ -55,7 +55,7 @@
         {% endif %}
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             {% set binding_metrics = [
-                            ('link-2', 'Consumer Bindings', binding_rows|length, 'Kubernetes, Object Storage, and future assets'),
+                            ('link-2', 'Consumer Bindings', binding_total, 'Kubernetes, Object Storage, and future assets'),
                             ('shield-check', 'Validated Bindings', validated_binding_count, 'Binding validation currently Ready'),
                             ('route', 'Operational Bindings', ready_binding_count, 'Source + binding gates currently usable'),
                             ('layout-grid', 'Consumer Assets', resolution_scope_count, 'Managed assets with resolver context')
@@ -77,7 +77,7 @@
     {% include "integrations/observability/metrics_source/partials/_binding_registry.html" %}
     {{ binding_readiness_boundary.render(metrics_source_label,
         instance.readiness_status or 'validation_required',
-        binding_rows|length,
+        binding_total,
         validated_binding_count,
         ready_binding_count,
         title='Binding Decision',
@@ -227,7 +227,7 @@
     ) }}
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}
-    {{ framed_workspace_tabs.badge_oob('metrics-source', 'scope', (binding_rows|length|string) ~ ' Bindings') }}
-    <span id="metrics-source-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (bindings|length|string) ~ ' Bindings' }}</span>
+    {{ framed_workspace_tabs.badge_oob('metrics-source', 'scope', (binding_total|string) ~ ' Bindings') }}
+    <span id="metrics-source-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (binding_total|string) ~ ' Bindings' }}</span>
 {% endif %}
 {% include "components/operation_feedback_oob.html" %}
