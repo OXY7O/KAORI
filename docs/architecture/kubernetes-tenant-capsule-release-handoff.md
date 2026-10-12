@@ -9,6 +9,53 @@ Target integration: `kaori/review/staging-uat` only. No developer check,
 pytest, Ruff, pyright, CI/CD, DAST, live API UAT, promotion or deployment until
 a separate explicit instruction.
 
+## Provider-declared Capsule `kaori.io/tenant` projection evidence — #1229
+
+**Observed local read-only evidence (12 Oct 2026):** Capsule Tenant
+`kaori-demo` declares
+`spec.namespaceOptions.additionalMetadata.labels` =
+`{cluster: kaori-local, kaori.io/tenant: kaori-demo,
+pod-security.kubernetes.io/enforce: restricted}`, with
+`managedMetadataOnly=false` and `quota=2`. The Namespace
+`kaori-demo-dev` has the same `kaori.io/tenant` value and a matching
+`capsule.clastix.io/tenant=kaori-demo` membership label. Its managedFields
+reports `manager=kubectl-create` at initial creation; that record alone
+cannot prove the historical actor or authorize KAORI ownership transfer.
+However, the **current authoritative Capsule Tenant spec** is concrete
+evidence that this particular label is a provider-declared Namespace
+metadata projection.
+
+The approved reconciliation is narrow: G0 and G2/G3 read-only
+preservation may recognize **only the exact key `kaori.io/tenant`** when
+the immutable Capsule Tenant spec observed for the same approved
+CR UID/RV/spec SHA contains
+`namespaceOptions.additionalMetadata.labels['kaori.io/tenant']` with
+the precise Capsule Tenant name **and** the Namespace actually has the
+same value, current Capsule membership correlation and unchanged UID/RV.
+G0 then retains the independent
+`external_or_unattributed/observe_only` classification. This is not the
+canonical KAORI `kaori.io/tenant-id` ownership marker, is not handoff
+consent, and **must not** be added to the removable KAORI transfer key
+list. It is preserved by GET-only provider read-back in preview, offline
+scope review and the guarded executor; spec changes fail CR hash
+verification. No PATCH is sent to this Namespace.
+
+Any other unverified `kaori.io/*` key, missing/mismatched Capsule spec
+projection, changed Namespace label/UID/RV, inconsistent canonical KAORI
+manager/tenant ID or conflicting owner remains **FAIL**. Authoritative
+Capsule CR validation occurs before any Namespace no-op admission; a
+locally supplied source label or managedFields author is insufficient.
+
+The former #1227 G0 orphan-label blocker remains correct **when provider
+spec correlation is missing**. Existing pending approval plans created
+under prior G0 classification are not silently rewritten: prepare and
+independently approve a fresh plan through governed workflow after the
+current one expires/restarts. G1 review and Platform Admin consent do
+not authorize provider mutation. A successful Namespace preservation
+does not resolve separate Capsule RoleBinding controller provenance,
+consent for related-resource PATCH, START ledger, or any other G2/G3
+handoff constraint. Tests are authored, not executed under HOLD.
+
 ## G0/G2 marker-origin consistency: orphan `kaori.io/tenant` (#1227)
 
 Local Capsule `kaori-demo` / Namespace `kaori-demo-dev` read-only
