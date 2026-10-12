@@ -252,14 +252,18 @@ def store_analytics_snapshot(
     freshness_minutes: int,
     stale_grace_minutes: int,
     job_execution_id: int | None,
+    claimed_at: datetime | None = None,
 ) -> ObjectStorageAnalyticsSnapshot:
-    snapshot = mark_analytics_pending(
-        system_id=system_id,
-        time_range=time_range,
-        freshness_minutes=freshness_minutes,
-        stale_grace_minutes=stale_grace_minutes,
-        job_execution_id=job_execution_id,
-    )
+    if claimed_at is None:
+        claimed_at = mark_analytics_pending(
+            system_id=system_id,
+            time_range=time_range,
+            freshness_minutes=freshness_minutes,
+            stale_grace_minutes=stale_grace_minutes,
+            job_execution_id=job_execution_id,
+        ).last_attempt_at
+    snapshot = _locked_analytics_snapshot(system_id=system_id, time_range=time_range)
+    _verify_snapshot_claim(snapshot, job_execution_id=job_execution_id, claimed_at=claimed_at)
     now = datetime.now(UTC)
     snapshot.payload_json = _encode_snapshot_value({'schema': ANALYTICS_SNAPSHOT_SCHEMA, **payload})
     snapshot.status = 'ready'
@@ -280,14 +284,18 @@ def fail_analytics_snapshot(
     freshness_minutes: int,
     stale_grace_minutes: int,
     job_execution_id: int | None,
+    claimed_at: datetime | None = None,
 ) -> None:
-    snapshot = mark_analytics_pending(
-        system_id=system_id,
-        time_range=time_range,
-        freshness_minutes=freshness_minutes,
-        stale_grace_minutes=stale_grace_minutes,
-        job_execution_id=job_execution_id,
-    )
+    if claimed_at is None:
+        claimed_at = mark_analytics_pending(
+            system_id=system_id,
+            time_range=time_range,
+            freshness_minutes=freshness_minutes,
+            stale_grace_minutes=stale_grace_minutes,
+            job_execution_id=job_execution_id,
+        ).last_attempt_at
+    snapshot = _locked_analytics_snapshot(system_id=system_id, time_range=time_range)
+    _verify_snapshot_claim(snapshot, job_execution_id=job_execution_id, claimed_at=claimed_at)
     snapshot.status = 'failed'
     snapshot.last_attempt_at = datetime.now(UTC)
     snapshot.last_error = str(error)[:4000]
