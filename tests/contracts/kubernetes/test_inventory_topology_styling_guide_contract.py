@@ -290,6 +290,8 @@ def test_topology_adaptive_relationship_labels_and_legend() -> None:
 
     assert 'visibleEdges.length > 0 && visibleEdges.length <= 8' in script
     assert 'workspaceState.edgeLabels || smallGraph' in script
+    assert "cy.edges(':selected').addClass('edge-label-visible')" in script
+    assert 'Always Show Relationship Labels' in workspace
     assert "cy.on('mouseout', 'edge', () => updateEdgeLabelClasses())" in script
     assert "'text-background-shape': 'roundrectangle'" in script
     assert "'text-rotation': 'none'" in script
