@@ -158,3 +158,18 @@ and committed evidence for audit, but appear as **Disabled** or **Inactive**
 rather than Full Coverage or Active Ready in the operational summary.
 The Integration workspace owns connection posture; downstream Artifact
 Registry source/consumer eligibility is governed by its own issues/contract.
+
+
+## Second-provider extension evidence (#1484)
+
+`tests/contracts/integrations/test_registry_second_provider_extension_contract.py`
+now checks a synthetic second provider's kernel registration, normalized
+inventory collector dispatch, independent optional security/governance
+collectors and digest-based consumer source contracts. The fixture
+does not create an AWS/ECR connection or mutate provider-owned resources.
+
+These tests remain authored-but-not-executed in the review-only GitHub
+workflow. The Registry extension gate still requires PostgreSQL persisted
+second-provider commit/correlation tests, worker concurrency and human
+UAT before full acceptance. See
+`docs/architecture/registry-provider-extension-gate.md`.
