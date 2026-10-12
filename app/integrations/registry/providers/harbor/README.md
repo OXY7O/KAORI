@@ -139,3 +139,22 @@ Before promotion, verify good/bad internal certificates, blocked HTTP/unapproved
 hosts, redirect rejection, stored insecure-record behavior, secret-free evidence,
 browser edit/resave and web/worker environment parity. The provider's resources
 remain authoritative and are never modified by this change.
+
+
+## Integration Coverage versus provider readiness (#1483)
+
+**Harbor Integration Coverage** is an operational-adoption summary across four
+independent dimensions: (1) provider Full Validation/API readiness, (2)
+committed Inventory snapshot, (3) eligible Metrics Source binding, and (4)
+enabled Webhook reconciliation. **Full Coverage** means all four are ready;
+**Partial Coverage** means at least one dimension is missing. This is **not**
+an additional Registry Inventory eligibility requirement and does not override
+the authoritative Full Validation gate. Metrics and Webhook are optional for
+the provider's core Registry function; `Not Bound` or `Not Enabled` is a
+factual not-adopted dimension, not a failed connection test.
+
+Disabled or inactive registered connections retain historical validation
+and committed evidence for audit, but appear as **Disabled** or **Inactive**
+rather than Full Coverage or Active Ready in the operational summary.
+The Integration workspace owns connection posture; downstream Artifact
+Registry source/consumer eligibility is governed by its own issues/contract.
