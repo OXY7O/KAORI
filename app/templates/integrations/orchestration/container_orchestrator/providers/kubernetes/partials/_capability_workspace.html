@@ -59,7 +59,7 @@
 {% elif optional_blocked_features %}
     {% set capability_next_action = "Review optional access only when an approved governed workflow requires it." %}
 {% else %}
-    {% set capability_next_action = "Revalidate after Kubernetes upgrades, served-API changes, or RBAC policy changes." %}
+    {% set capability_next_action = "Revalidate the connection after Kubernetes version upgrades, served-API changes, or updates to cluster RBAC policies." %}
 {% endif %}
 <section id="kubernetes-capability-workspace"
          class="relative font-sans {{ integration_ui.section_shell_classes() }}"
@@ -113,7 +113,7 @@
                 capability_gate_title,
                 capability_gate_description,
                 capability_gate_tone,
-                'Full Validation owns API and RBAC evidence; Runtime Refresh owns live API health.',
+                'Full Validation provides API and RBAC evidence; Runtime Refresh monitors live Kubernetes API health and connectivity.',
                 capability_next_action) }}
         {% if validation_state.readiness != 'ready' or optional_blocked_features %}
             <section class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-4"
