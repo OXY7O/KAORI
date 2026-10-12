@@ -119,6 +119,12 @@ request-error, waiting-request, and offline-node boundaries. The catalog schema 
 `evidence_boundary` field so Metrics Source, Alertmanager, provider APIs, committed inventory, and worker
 artifacts can coexist without making one backend the Intelligence schema owner.
 
+### Per-channel resolved delivery and policy authority (#1512)
+
+Firing/resolved delivery evaluates only candidate durable recommendation AlertCases in keyset batches. The resolved completion marker is committed only once every eligible destination from successful prior firing evidence has a successful resolved delivery. A failed channel remains retryable by the same idempotent channel/event key without re-delivering to channels already sent. Previously stranded failed rows can re-enter candidate selection; historical successful resolved cases remain out of the normal dispatch scan.
+
+Channel defaults are permitted only when **no explicit governed routing policy covers the case domain**. A configured but nonmatching/disabled policy must not trigger a broader default broadcast. Registry delivery remains disabled irrespective of read-only AlertCase visibility. The delivery ledger remains authoritative for retry success and channel suppression; no webhook listener is introduced.
+
 ## Alert Intelligence notification delivery
 
 Notification Channels is an Integrations-owned provider-neutral outbound delivery layer. Telegram, SMTP email, and Microsoft Teams Workflows are the current adapters. Channel credentials are stored through `EncryptedText`; the generic persistence contract stores encrypted provider credential payload, destination, provider configuration, severity policy, and domain scope without Telegram-specific database columns.
