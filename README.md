@@ -44,19 +44,19 @@ The supported development path is the VS Code Dev Container described in [`docs/
 
 ```bash
 cp .env.example .env
-# Set distinct owner POSTGRES_* and restricted runtime DATABASE_URL secrets.
-# Open in VS Code Dev Containers; follow the guarded PostgreSQL fresh
-# bootstrap runbook to run migrations as owner, provision kaori_runtime,
-# then start Flask/Beat/workers. Do not migrate as the app runtime role.
+# Configure the non-owner runtime DATABASE_URL and KAORI_DEV_DB_SECRETS_DIR.
+# Place postgres_admin_password and migrator_password in that outside-repo
+# WSL host directory BEFORE first DevContainer open (see linked runbook).
+# Do NOT store postgres or migrator credentials in this .env.
 ```
 
 When opened with **Dev Containers: Reopen in Container**, the full
 development fleet (database, Redis, workspace, workers and Beat) starts
-automatically, including a one-shot restricted runtime login bootstrap.
+automatically, including a one-shot three-role PostgreSQL identity bootstrap.
 Press F5 to view the existing read-only **Database Setup Required** page
 on a brand-new schema; then choose **Terminal → Run Task →
-KAORI: Initialize Fresh Database** exactly once to migrate, seed RBAC,
-create the first administrator and verify non-owner grants. Normal
+KAORI: Initialize Fresh Database** exactly once to migrate as non-superuser kaori_migrator, refresh grants,
+then create the first application administrator using kaori_runtime. Normal
 reopens need no initialization commands.
 
 See [fresh DevContainer PostgreSQL bootstrap](docs/operations/devcontainer-postgres-fresh-bootstrap.md)
