@@ -58,6 +58,7 @@
       }
     }
   },
+  "initializeCommand": "python3 .devcontainer/prepare-postgres-env.py",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "postStartCommand": "bash .devcontainer/post-start.sh"
 }
