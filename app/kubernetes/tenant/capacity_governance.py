@@ -198,7 +198,10 @@ def _build_capacity_governance_summary_from_inputs(
     committed, committed_count, unbounded_namespaces = committed_state
     limits, _, unknown_limits = limits_state or (CapacityVector(cpu=None, memory_bytes=None), 0, [])
     exposure_mode = getattr(policy, 'limit_exposure_mode', 'observe') if policy is not None else 'observe'
-    cpu_ratio = Decimal(getattr(policy, 'cpu_limit_ratio', '1.50') or '1.50') if policy is not None else Decimal('1.50')
+    cpu_ratio = (
+        Decimal(getattr(policy, 'cpu_limit_ratio', '1.50') or '1.50')
+        if policy is not None else Decimal('1.50')
+    )
     memory_ratio = (
         Decimal(getattr(policy, 'memory_limit_ratio', '1.00') or '1.00')
         if policy is not None else Decimal('1.00')
@@ -690,7 +693,7 @@ def _enforce_allocation_preflight(
     limit_positive = (
         request.current_limits is not None and request.proposed_limits is not None
         and any(
-            next_value is None or (current_value is not None and next_value > current_value)
+            next_value is None or current_value is None or next_value > current_value
             for current_value, next_value in (
                 (request.current_limits.cpu, request.proposed_limits.cpu),
                 (request.current_limits.memory_bytes, request.proposed_limits.memory_bytes),
