@@ -21,7 +21,7 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
         identity_columns=('registry', 'environment', 'project', 'repository', 'digest'),
         record_label='registry inventory records',
         overview_metrics=(
-            InventoryOverviewMetric('Artifacts', 'count', key='record_type', match_values=('artifact',)),
+            InventoryOverviewMetric('Artifacts', 'count', key='entity_type', match_values=('artifact',)),
             InventoryOverviewMetric('Total Size MiB', 'sum', key='size_mib', number_format='#,##0.00', unit='MiB'),
             InventoryOverviewMetric(
                 'Scanned',
@@ -40,7 +40,7 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
             top_n=8,
         ),
         columns=(
-            column('record_type', 'Record Type', 'Project, repository, or real artifact identity.', width=18),
+            column('entity_type', 'Record Type', 'Project, repository, or real artifact identity.', width=18),
             column('registry', 'Artifact Registry', 'Committed Registry integration display name.', width=28),
             column('environment', 'Environment', 'Registry integration environment.', width=16),
             column('project', 'Project', 'Committed Registry project or namespace.', width=28),
