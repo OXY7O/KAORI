@@ -112,7 +112,15 @@
                             <div class="min-w-0">
                                 <h2 id="development-bootstrap-title"
                                     class="text-sm font-semibold text-content-primary">Development Bootstrap</h2>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{% if devcontainer_setup %}Run this command in your WSL host terminal (repository root). It upgrades the schema as kaori_migrator, grants restricted runtime access, and creates the first application administrator.{% else %}Initialize the schema, seed canonical RBAC, and create the first local administrator.{% endif %}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                                    {% if devcontainer_setup %}
+                                        Run this command in your WSL host terminal (repository root).
+                                        It upgrades the schema as kaori_migrator, grants restricted runtime
+                                        access, and creates the first application administrator.
+                                    {% else %}
+                                        Initialize the schema, seed canonical RBAC, and create the first local administrator.
+                                    {% endif %}
+                                </p>
                             </div>
                             {{ table_label.metadata_label('KAORI Dev Container', icon='container') }}
                         </div>
@@ -154,7 +162,14 @@
                         <section aria-labelledby="manual-initialization-title">
                             <h3 id="manual-initialization-title"
                                 class="text-xs font-semibold text-content-secondary">Manual Initialization Commands</h3>
-                            <p class="mt-0.5 mb-2 text-xs leading-5 text-content-muted">{% if devcontainer_setup %}Use only from the WSL host; raw Flask migrations under the runtime DATABASE_URL are prohibited.{% else %}Use only when migration and RBAC seed steps must run separately.{% endif %}</p>
+                            <p class="mt-0.5 mb-2 text-xs leading-5 text-content-muted">
+                                {% if devcontainer_setup %}
+                                    Use only from the WSL host; raw Flask migrations under the runtime
+                                    DATABASE_URL are prohibited.
+                                {% else %}
+                                    Use only when migration and RBAC seed steps must run separately.
+                                {% endif %}
+                            </p>
                             {{ terminal_command.render(manual_bootstrap_commands, label='Manual Bootstrap', prompt='', copy_label='Copy Commands', compact=true) }}
                         </section>
                         <section aria-labelledby="missing-schema-title">
