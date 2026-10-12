@@ -113,10 +113,8 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ integration_status(row.readiness_status or 'validation_required',
-                                                        'Ready' if row.readiness_status == 'ready' else (
-                                                        'Blocked' if row.readiness_status == 'blocked' else 'Validation Required') ,
-                            display='indicator'
-                            ) }}
+                                                   (row.readiness_status or 'validation_required')|replace('_', ' ')|title,
+                                                   display='indicator') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="break-words text-sm font-medium text-content-primary [overflow-wrap:anywhere]">{{ row.compatibility_profile or "Not Validated" }}</p>
