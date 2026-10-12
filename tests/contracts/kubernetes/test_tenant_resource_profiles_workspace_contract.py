@@ -1415,3 +1415,49 @@ def test_allocation_change_all_title_info_tips_are_adjacent_not_corner_actions()
             assert 'items-start justify-between gap-4' not in header, filename
         assert template.count('name="csrf_token"') >= 1, filename
         assert template.count('type="submit"') >= 1, filename
+
+
+def test_allocation_change_shows_request_and_limit_evidence_for_both_contracts() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    context = read('app/kubernetes/tenant/registry_context.py')
+    assert template.count('ResourceQuota · Requests &amp; Limits') == 2
+    assert 'Requests drive capacity admission; limits enforce ceilings.' in template
+
+    expected = (
+        ('CPU Requests', 'cpu'),
+        ('CPU Limits', 'cpu-limit'),
+        ('Memory Requests', 'memory'),
+        ('Memory Limits', 'memory-limit'),
+        ('Pods', 'pods'),
+        ('Total Storage', 'storage'),
+    )
+    for side in ('current', 'proposed'):
+        block = template.split(f'aria-label="{side.title()} allocation"', 1)[1]
+        start = block.index('<dl class="mt-2 grid grid-cols-2 gap-px')
+        end = block.index('</dl>', start) + len('</dl>')
+        markup = Environment(autoescape=True).from_string(block[start:end]).render()
+        assert markup.count('<dt ') == 6
+        assert 'lg:grid-cols-3' in markup
+        for label, suffix in expected:
+            assert f'>{label}</dt>' in markup
+            assert f'data-tenant-allocation-{side}-{suffix}' in markup
+            assert f"[data-tenant-allocation-{side}-{suffix}]" in script
+        for key, resource in (('cpu-limit', 'cpu'), ('memory-limit', 'memory')):
+            selector = f'{side}{resource.title()}Limit'
+            assert (
+                f"if ({selector}) {selector}.textContent = {side} "
+                f"? quotaValue({side}, 'limits.{resource}') : '—'"
+            ) in script
+
+    # Neither LimitRange defaults nor the current mutable profile replace
+    # frozen Namespace ResourceQuota evidence in the comparison.
+    assert "const current = namespaces[namespaceSelect?.value] || null" in script
+    assert "profileSelect?.value === 'adopted_baseline' ? current" in script
+    assert "'quota': record.allocation_quota_json or {}" in context
+    assert "'quota': profile.quota_hard_json or {}" in context
+    assert 'data-tenant-allocation-current-pvc-min' in template
+    assert 'data-tenant-allocation-proposed-pvc-max' in template
+
