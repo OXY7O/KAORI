@@ -23,3 +23,13 @@ def test_explicit_empty_delivery_intent_does_not_adopt_new_recipients() -> None:
     run = SimpleNamespace(schedule_snapshot={'notification_channel_ids': []})
     schedule = SimpleNamespace(notification_channel_ids_as_list=lambda: [42])
     assert get_run_delivery_channel_ids(run, schedule) == []
+
+
+def test_delivery_worker_rolls_back_failed_session_before_writing_delivery_attention() -> None:
+    from pathlib import Path
+
+    worker = (Path(__file__).resolve().parents[2] / 'app/reports/jobs/tasks.py').read_text(encoding='utf-8')
+    delivery_failure = worker.split("current_app.logger.exception('Scheduled report", 1)[0]
+    assert 'db.session.rollback()' in delivery_failure
+    assert 'recovered_run = db.session.get(ReportScheduleRun, schedule_run_id)' in worker
+    assert 'recovered_run.delivery_result = {' in worker
