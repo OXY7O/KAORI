@@ -287,7 +287,8 @@ def _build_recommendation_findings(
         collect('Kubernetes Runtime', build_kubernetes_runtime_recommendation_findings)
         collect('Kubernetes Storage Binding', _build_storage_binding_findings)
         collect('Kubernetes TLS', _build_tls_certificate_findings)
-        collect('Tenant Governance', build_tenant_governance_recommendation_findings)
+        if any(key.startswith('kubernetes.tenant.') for key in rules):
+            collect('Tenant Governance', build_tenant_governance_recommendation_findings)
     if any(key.startswith('object_storage.') for key in rules):
         collect('Object Storage', build_object_storage_recommendation_findings)
     if any(key.startswith('registry.') for key in rules):
