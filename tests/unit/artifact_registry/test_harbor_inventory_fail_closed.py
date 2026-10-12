@@ -44,3 +44,36 @@ def test_harbor_list_rejects_malformed_members_instead_of_partial_success(items)
 
 def test_harbor_complete_valid_empty_collection_remains_valid() -> None:
     assert HarborClient._object_list([], 'projects') == []
+
+
+def test_artifact_missing_requested_tag_collection_fails_closed() -> None:
+    with pytest.raises(HarborResponseError, match='omitted the requested tag inventory'):
+        _artifact_record({'digest': 'sha256:abc'})
+
+
+class _OneChildClient:
+    def list_all_artifacts(self, **_kwargs):
+        return [{'digest': 'sha256:abc', 'tags': []}]
+
+    def list_all_repositories(self, **_kwargs):
+        return [{'name': 'team/repo-a', 'artifact_count': 1}]
+
+
+def test_harbor_repository_declared_artifact_count_detects_incomplete_listing() -> None:
+    client = _OneChildClient()
+    with pytest.raises(HarborResponseError, match='provider-reported artifacts'):
+        _repository_record(client, 'team', {'name': 'repo-a', 'artifact_count': 2})
+
+
+def test_harbor_project_declared_repository_count_detects_incomplete_listing() -> None:
+    client = _OneChildClient()
+    with pytest.raises(HarborResponseError, match='provider-reported repositories'):
+        _project_record(client, {'name': 'team', 'repo_count': 2})
+
+
+def test_valid_declared_child_counts_match_complete_discovery() -> None:
+    client = _OneChildClient()
+    repository = _repository_record(client, 'team', {'name': 'repo-a', 'artifact_count': 1})
+    project = _project_record(client, {'name': 'team', 'repo_count': 1})
+    assert len(repository.artifacts) == 1
+    assert len(project.repositories) == 1
