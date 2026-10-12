@@ -128,7 +128,19 @@ def get_report_artifact_registry_analysis_payload(report: Report) -> dict[str, A
     if error is not None or instance_id is None or instance is None:
         return {'_error': error or 'The selected Artifact Registry integration no longer exists.'}
 
-    overview = build_overview(provider_id=instance_id)
+    # The Fast Shell no longer includes committed dashboard sections.
+    # Reports resolve the established source-scoped projections explicitly.
+    overview = build_overview_section('overview', provider_id=instance_id)
+    capacity_view = build_overview_section('capacity', provider_id=instance_id)
+    signals_view = build_overview_section('signals', provider_id=instance_id)
+    overview = {
+        **overview,
+        'capacity': capacity_view.get('capacity') or {},
+        'forecast': capacity_view.get('forecast') or {},
+        'top_consumers': capacity_view.get('top_consumers') or [],
+        'alerts': signals_view.get('alerts') or {},
+        'recommended_actions': signals_view.get('recommended_actions') or [],
+    }
     state = db.session.get(RegistryCollectionState, instance_id)
     artifacts = _query_artifacts(instance_id)
     capacity = dict(overview.get('capacity') or {})
