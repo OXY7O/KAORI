@@ -502,10 +502,15 @@ def cancel_job_execution(job: JobExecution, *, terminate: bool = False) -> JobEx
             'Only queued jobs or cooperative analytics and forecasting jobs can be canceled.'
         )
     if job.celery_task_id:
-        current_app.extensions['celery'].control.revoke(
-            job.celery_task_id,
-            terminate=terminate,
-        )
+        try:
+            current_app.extensions['celery'].control.revoke(
+                job.celery_task_id,
+                terminate=terminate,
+            )
+        except (CeleryError, KombuOperationalError, OSError) as exc:
+            raise JobCancellationNotAllowed(
+                'Celery cancellation could not be confirmed. The execution remains active.'
+            ) from exc
     if job.status == 'queued':
         if job.celery_task_id:
             return mark_job_canceled(job.celery_task_id, message='Canceled before worker execution') or job
@@ -586,11 +591,21 @@ def recover_stale_jobs() -> dict[str, int]:
             and job.cancel_requested_at < cancel_cutoff
         ):
             if job.celery_task_id:
-                current_app.extensions['celery'].control.revoke(
-                    job.celery_task_id,
-                    terminate=True,
-                    signal='SIGTERM',
-                )
+                try:
+                    current_app.extensions['celery'].control.revoke(
+                        job.celery_task_id,
+                        terminate=True,
+                        signal='SIGTERM',
+                    )
+                except (CeleryError, KombuOperationalError, OSError):
+                    current_app.logger.warning(
+                        'Could not revoke overdue cancellation for job %s; keeping cancellation pending.',
+                        job.public_id,
+                        exc_info=True,
+                    )
+                    # Do not release the deduplication slot or claim a worker stopped.
+                    # Reconcile other stale jobs; retry this cancellation later.
+                    continue
             _terminalize(job, 'canceled')
             job.error_code = None
             job.error_message = None
