@@ -6,14 +6,13 @@ set -eu
 # Never mount these DB-only environment values into Flask/Celery containers.
 [ "${POSTGRES_USER:-}" = postgres ] || { echo 'ABORT: expected local postgres bootstrap user' >&2; exit 1; }
 [ "${POSTGRES_DB:-}" = kaori ] || { echo 'ABORT: expected local kaori database' >&2; exit 1; }
-# The two Docker volumes exist independently of both application checkout
-# and host OS. No elevated credential is present in a common env_file.
-[ -s /run/kaori-admin/runtime_password ] &&
-[ -s /run/kaori-migrator/password ] ||
-  { echo 'ABORT: missing segregated PostgreSQL role password files' >&2; exit 1; }
-KAORI_RUNTIME_PASSWORD="$(cat /run/kaori-admin/runtime_password)"
-KAORI_MIGRATOR_PASSWORD="$(cat /run/kaori-migrator/password)"
-export KAORI_RUNTIME_PASSWORD KAORI_MIGRATOR_PASSWORD
+# Bundled local PostgreSQL reads two ignored, service-scoped env files:
+# postgres-bootstrap.env and postgres-migrate.env. These must never be
+# loaded into Flask/Celery/Beat; no password literals are committed.
+[ -n "${POSTGRES_PASSWORD:-}" ] &&
+[ -n "${KAORI_RUNTIME_PASSWORD:-}" ] &&
+[ -n "${KAORI_MIGRATOR_PASSWORD:-}" ] ||
+  { echo 'ABORT: missing private PostgreSQL credential ENV values' >&2; exit 1; }
 
 # Load role passwords via psql's environment-variable reader rather than
 # process arguments (ps argv would otherwise disclose both secrets).

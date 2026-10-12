@@ -127,14 +127,15 @@ def test_new_devcontainer_three_role_initialization_keeps_ddl_off_automatic_star
     compose = COMPOSE.read_text()
     db_block = _services(compose)['db']
     operator_block = _services(compose)['db-bootstrap']
-    assert 'POSTGRES_PASSWORD: !reset null' in db_block
-    assert 'POSTGRES_PASSWORD_FILE: /run/kaori-admin/postgres_password' in db_block
-    assert 'kaori_dev_pg_admin_credentials:/run/kaori-admin:ro' in db_block
-    assert 'kaori_dev_pg_migrator_credentials:/run/kaori-migrator:ro' in db_block
+    assert 'POSTGRES_PASSWORD: !reset null' not in db_block
+    assert 'postgres-bootstrap.env' in db_block
+    assert 'postgres-migrate.env' in db_block
+    assert 'environment: !override' in db_block
+    assert 'POSTGRES_PASSWORD_FILE' not in db_block
     assert '/docker-entrypoint-initdb.d/01-kaori-roles.sh:ro' in db_block
     assert 'profiles: [operator-bootstrap]' in operator_block
-    assert 'kaori_dev_pg_migrator_credentials:/run/kaori-migrator:ro' in operator_block
-    assert 'kaori_dev_pg_admin_credentials:' not in operator_block
+    assert 'postgres-migrate.env' in operator_block
+    assert 'postgres-bootstrap.env' not in operator_block
     assert 'db-bootstrap' not in _services(compose)['workspace']
 
 
@@ -157,10 +158,16 @@ def test_devcontainer_role_init_and_secret_preparation_are_non_elevated() -> Non
     assert 'GRANT USAGE ON SCHEMA public TO kaori_runtime' in init
     assert 'flask' not in init and 'alembic' not in init.lower()
     assert "ROOT = Path('/workspace')" in prep
-    assert "ADMIN_DIR = Path('/run/kaori-admin')" in prep
-    assert "MIGRATOR_DIR = Path('/run/kaori-migrator')" in prep
+    assert "SECRET_DIR = ROOT / 'secrets' / 'devcontainer'" in prep
+    assert "PG_DATA = Path('/pgdata')" in prep
     assert 'os.O_EXCL' in prep
     assert "'POSTGRES_PASSWORD'" in prep
+    assert "PG_DATA = Path('/pgdata')" in prep
+    assert "if data_exists and not credentials_exist:" in prep
+    assert 'postgres-bootstrap.env.example' in (
+        ROOT / '.devcontainer/examples/postgres-bootstrap.env.example'
+    ).as_posix()
+
     assert "drop_value(source, 'KAORI_DEV_RUNTIME_DATABASE_URL')" in prep
 
 
@@ -219,11 +226,10 @@ def test_devcontainer_app_environment_template_documents_real_three_file_ownersh
     assert "DEVCONTAINER_BOOTSTRAP_SECRET_KEYS = {'POSTGRES_PASSWORD'}" in verifier
     assert 'leaking_bootstrap' in verifier
 
-    assert 'kaori-dev-pg-admin-secrets' in env_guide
-    assert 'kaori-dev-pg-migrator-secrets' in env_guide
-    assert 'postgres_password' in operations
-    assert 'runtime_password' in operations
-    assert 'kaori-migrator' in operations
+    assert 'secrets/devcontainer/postgres-bootstrap.env' in env_guide
+    assert 'secrets/devcontainer/postgres-migrate.env' in env_guide
+    assert 'postgres-bootstrap.env' in operations
+    assert 'postgres-migrate.env' in operations
     assert "drop_value(source, 'POSTGRES_PASSWORD')" in host
     assert "drop_value(source, 'KAORI_DEV_RUNTIME_DATABASE_URL')" in host
     assert "values.get('APP_ENV', 'development') != 'development'" in host

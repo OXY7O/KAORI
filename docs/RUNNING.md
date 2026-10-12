@@ -33,19 +33,26 @@ It must **not** contain `POSTGRES_PASSWORD`,
 `KAORI_MIGRATOR_PASSWORD`, `KAORI_RUNTIME_PASSWORD`,
 `KAORI_DB_MIGRATION_URL`, `PGPASSWORD` or owner URLs.
 
-Instead, the first host initialization generates:
+The first host initialization generates two additional **ignored
+repository-local** development files:
 
-- Docker volume `kaori-dev-pg-admin-secrets`: private files
-  `postgres_password` and `runtime_password` for initial PostgreSQL
-  and runtime login provisioning.
-- Docker volume `kaori-dev-pg-migrator-secrets`: private file
-  `password` for non-superuser migrator DDL and explicit operator bootstrap.
+- `secrets/devcontainer/postgres-bootstrap.env`, containing
+  `POSTGRES_PASSWORD` and `KAORI_RUNTIME_PASSWORD` for the `db`
+  service's initial PostgreSQL identity provisioning.
+- `secrets/devcontainer/postgres-migrate.env`, containing
+  `KAORI_MIGRATOR_PASSWORD` for `db` initdb and the explicit
+  one-shot `db-bootstrap`.
 
-Both are outside the repository in Docker-managed volumes, and private. They are
-not application/worker env files. The initializer preserves their
-contents across reopens and refuses missing/mismatched credentials for
-an existing volume. **Never edit generated `DATABASE_URL` to point to
-`postgres` or `kaori_migrator`.**
+`.devcontainer/examples/` holds tracked sample templates, not real
+passwords. `/secrets/` is ignored by Git **and Docker build context**.
+The initializer checks the actual PGDATA volume before migrating an
+existing local app URL: if the database is empty, it backs up `.env`
+under ignored `secrets/devcontainer/` and changes only the runtime
+connection plus missing development keys. A populated database with
+missing/mismatched credentials is a **hard stop**, not a reason to
+generate new passwords or clear Docker volumes. Because the full
+checkout is bind-mounted, these files are trusted-development
+credentials, **not production-grade secrets isolation**.
 
 See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
 for exact file ownership, keys, and production boundaries.
@@ -82,8 +89,9 @@ docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml \
 ```
 
 The application `DATABASE_URL` belongs only to `kaori_runtime`, not a DBA
-or migration role. The two PostgreSQL authority **Docker volumes** are not in `.env`
-and are not mounted into Flask, workspace or workers. `POSTGRES_USER=postgres` inside
+or migration role. The two PostgreSQL authority **ignored local ENV files** are not
+loaded as environment variables into Flask/workers/Beat, but are
+physically readable to processes with full source-workspace access. `POSTGRES_USER=postgres` inside
 the shared app `.env` remains a non-secret Compose selector, **not** a
 runtime identity or password.
 On a fresh or migration-behind development database, the workspace remains usable while Celery workers and Beat wait for the exact current Alembic migration head. They do not dispatch or consume scheduled KAORI work before schema readiness and they do not run migrations themselves. After migrations, grants, and first-admin admission pass, the background services continue automatically without a manual restart.

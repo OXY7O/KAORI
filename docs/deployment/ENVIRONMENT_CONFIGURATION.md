@@ -6,64 +6,67 @@ KAORI uses one canonical variable inventory with explicit ownership by runtime. 
 
 | Mode | Runtime configuration | Compose authority | Source behavior |
 | --- | --- | --- | --- |
-| Local development | Root `.env` generated/updated from `.env.example`, plus two host-only PostgreSQL secret env files outside the repository | `compose.yml` + `.devcontainer/compose.devcontainer.yml` | Bind-mounted working tree, VS Code debugger, automatic Tailwind watcher and operator-triggered database bootstrap |
+| Local development | Root `.env` and ignored `secrets/devcontainer/{postgres-bootstrap,postgres-migrate}.env` (templates tracked under `.devcontainer/examples/`) | `compose.yml` + `.devcontainer/compose.devcontainer.yml` | Bind-mounted working tree, VS Code debugger, automatic Tailwind watcher and operator-triggered database bootstrap |
 | Governed server (UAT/production) | `/etc/kaori/app.env`, `secrets.env`, `deploy.env`, plus generated release state | `compose.production.yml` + `deploy/server/compose.server.yml` | Admitted immutable image digest; pre-migration backup and deployment verification |
 | Local standalone Docker | `example/kaori/.env` copied from its own example | `example/kaori/compose.yml` | Admitted RC image; **not** a live-source development build |
 
 The two local modes have separate Compose project names and persistent volumes. Neither local `.env` is a production/server authority. The server has no single monolithic runtime `.env` file.
 
-## Local DevContainer first-run: native Windows VS Code authority (#1427)
+## DevContainer PostgreSQL first run — ignored repository-local ENV (#1427)
 
-**Standard operator workflow:** open the Windows checkout in normal VS Code,
-select **Dev Containers: Rebuild and Reopen in Container**. The
-`initializeCommand` invokes the Docker CLI to run disposable
-`python:3.12-alpine`, with a bind mount of the source and two named
-Docker volumes. No WSL Remote, Windows Python, or per-service manual
-startup is needed.
+On Windows, use the existing **VS Code Windows → Dev Containers: Rebuild
+and Reopen in Container** workflow. No WSL Remote or host Python. The
+`initializeCommand` invokes disposable `python:3.12-alpine` using
+Docker Desktop. It mounts the source plus **read-only PostgreSQL data
+volume `kaori-dev_kaori_postgres_data`** so database existence is
+checked using `PG_VERSION`, rather than by counting running containers.
 
-| Authority | Location and credentials | Recipients |
+| Configuration authority | Local file | Consumers |
 | --- | --- | --- |
-| Application runtime | Ignored `<repo>/.env` generated from `.env.example`; `DATABASE_URL=postgresql://kaori_runtime:<generated-secret>@db:5432/kaori`, `SECRET_KEY`, `INTEGRATION_CREDENTIAL_KEY`, `ADMIN_*`, Redis and provider config | Flask, workspace, ten workers, Beat; one-off application bootstrap |
-| Local PostgreSQL provisioner | Named Docker volume `kaori-dev-pg-admin-secrets`, files `postgres_password` and `runtime_password` | `db` only (PostgreSQL image and first-volume role initialization) |
-| Schema migration | Named Docker volume `kaori-dev-pg-migrator-secrets`, file `password` | `db` during first-volume init; explicitly invoked `db-bootstrap` thereafter |
+| App runtime | Ignored root `.env` from tracked `.env.example`; canonical `DATABASE_URL=postgresql://kaori_runtime:<secret>@db:5432/kaori`; application keys, `ADMIN_*`, integrations, Redis | Flask, workspace, workers, Beat |
+| DB initial admin and runtime provisioning | Ignored `secrets/devcontainer/postgres-bootstrap.env`; contains `POSTGRES_PASSWORD` and `KAORI_RUNTIME_PASSWORD` | `db` service only |
+| DB schema migration | Ignored `secrets/devcontainer/postgres-migrate.env`; contains `KAORI_MIGRATOR_PASSWORD` | `db` at initial PostgreSQL role creation, `db-bootstrap` when the operator explicitly requests it |
 
-The volumes are not mounted to Flask/workspace/Celery/Beat and survive
-regular Compose shutdown. The containerized initializer uses mode 0700
-directories and 0600 files owned by the pinned PostgreSQL 16 OS identity;
-Windows/OneDrive host file privacy for application `.env` follows Windows
-ACLs. The PostgreSQL image's `POSTGRES_PASSWORD_FILE` references the
-admin volume. New initdb creates database `kaori`, local bootstrap
-`postgres` superuser, non-superuser schema owner `kaori_migrator`,
-and restricted `kaori_runtime`. No schema migration or first
-application admin is created automatically.
+The existing root `.gitignore` excludes `/secrets/`, and
+`.dockerignore` excludes that directory from images. Safe tracked
+samples are `.devcontainer/examples/postgres-bootstrap.env.example`
+and `.devcontainer/examples/postgres-migrate.env.example`. Active
+files are generated once with unique random credentials; do not
+paste passwords in GitHub, chat or screenshots.
 
-The existing **Database Setup Required / Initialization Required**
-page keeps its Copy Command, to be run from **Windows PowerShell host**:
+**Fresh-volume reconciliation:** when root `.env` already contains an
+older local `DATABASE_URL`, the initializer may replace it **only if
+the inspected PostgreSQL volume is empty** and the URL belongs to
+`db:5432/kaori`. It first preserves the original application file as
+ignored `secrets/devcontainer/application-env-before-three-role.bak`.
+All other application/provider configuration stays. If database data
+exists or an existing secret file mismatches `.env`, the initializer
+**ABORTS**; there is no silent password rotation, volume deletion or
+automatic migration.
+
+The PostgreSQL image creates local `postgres` (bootstrap superuser),
+`kaori_migrator` (non-superuser schema owner) and `kaori_runtime`
+(non-owner restricted DML). Normal app processes retain only canonical
+`DATABASE_URL`. Empty schema displays existing HTTP 503
+**Database Setup Required / Initialization Required**. Operator runs
+the existing copied command from **Windows PowerShell host**:
 
 ```powershell
 docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
 ```
 
-Only the operator-run migration service receives `kaori_migrator`
-credential, performs Alembic DDL, refreshes privilege/immutable
-ledger restrictions, and creates the first KAORI administrator using
-the restricted runtime login. `DATABASE_URL` always means the
-restricted application connection; non-secret
-`POSTGRES_DB=kaori`, `POSTGRES_USER=postgres`,
-`POSTGRES_PORT=5432` remain Compose infrastructure selectors.
-`POSTGRES_PASSWORD`, `KAORI_RUNTIME_PASSWORD`,
-`KAORI_MIGRATOR_PASSWORD`, `PGPASSWORD` and
-`KAORI_DB_MIGRATION_URL` must not be stored in shared application
-`.env`. The abandoned `KAORI_DEV_RUNTIME_DATABASE_URL` fallback
-is not a supported active option.
+This migrates as `kaori_migrator`, refreshes runtime/immutable-ledger
+grants, and creates first **KAORI application** admin as runtime.
+Workers/Beat wait until schema head, ledger and permissions are admitted.
+Reopens never implicitly run Alembic or recreate an application admin.
 
-This process is development-only. Existing volumes and passwords are
-not silently reset on reopening, and UAT on a fresh real Docker volume
-is required before acceptance. The old data-preserving #1405 cutover
-remains separate. For server deployments, external PostgreSQL, and
-DBA-executed SQL, use the production authorities #1439/#1440/#1469.
-See [the first-run runbook](../operations/devcontainer-postgres-first-run.md)
-and [development setup](../DEVELOPMENT.md).
+**Security boundary:** these development files are ignored by Git and
+Docker build but physically inside a **bind-mounted full repository**;
+container processes that can read that workspace may read the files.
+Use only in trusted local DevContainer. This is **not** production-grade
+credential isolation and must not replace the segregated server
+`/etc/kaori/{app,secrets,deploy}.env` or DBA-controlled credentials.
+See [the first-run runbook](../operations/devcontainer-postgres-first-run.md).
 
 ### Production database authority is separate
 

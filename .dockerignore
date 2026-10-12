@@ -25,6 +25,8 @@ __pycache__
 htmlcov
 
 instance
+# Generated local PostgreSQL bootstrap/migration credentials: NEVER in images.
+/secrets/
 storage
 uploads
 reports
