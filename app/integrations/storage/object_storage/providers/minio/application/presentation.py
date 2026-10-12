@@ -3,9 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from app.common.pagination import paginate_sequence
+from sqlalchemy import and_, case, func, or_, select
+from sqlalchemy.orm import aliased
+
+from app.common.pagination import paginate_sequence, paginate_query
 from app.common.presentation import present_user_datetime
-from app.integrations.asset_owner_sources import build_bound_observability_source_rows
+from app.extensions.db import db
+from app.integrations.asset_owner_sources import paginate_bound_observability_source_rows
 from app.integrations.deletion import asset_owner_deletion_guard
 from app.integrations.observability.metrics_source.providers import provider_definition
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
@@ -20,6 +24,7 @@ from app.integrations.storage.object_storage.providers.minio.capabilities import
 from app.integrations.storage.object_storage.providers.minio.compatibility import compatibility_policy_view
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.minio import MinioInstance
+from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,84 +59,169 @@ class MinioDetailQuery:
     history_readiness: str = ''
 
 
+def _active_source_exists(integration_type: str, *, source_name: str | None = None):
+    source = aliased(IntegrationInstance)
+    condition = [
+        IntegrationBinding.asset_type == 'object_storage_system',
+        IntegrationBinding.asset_key == MinioInstance.object_storage_system_id,
+        IntegrationBinding.binding_role == 'primary',
+        IntegrationBinding.enabled.is_(True),
+        source.enabled.is_(True),
+        source.integration_type == integration_type,
+    ]
+    if source_name:
+        condition.append(source.name.ilike(source_name))
+    return (
+        select(IntegrationBinding.id)
+        .join(source, source.id == IntegrationBinding.integration_instance_id)
+        .where(*condition)
+        .exists()
+    )
+
+
+def _minio_index_base_query():
+    return (
+        MinioInstance.query.join(MinioInstance.integration_instance)
+        .join(MinioInstance.object_storage_system)
+    )
+
+
+def _index_registry_query(query: MinioIndexQuery):
+    rows = _minio_index_base_query()
+    if query.query:
+        term = f'%{query.query}%'
+        rows = rows.filter(or_(
+            IntegrationInstance.name.ilike(term),
+            ObjectStorageSystem.name.ilike(term),
+            IntegrationInstance.environment.ilike(term),
+            MinioInstance.compatibility_profile.ilike(term),
+            MinioInstance.declared_release.ilike(term),
+        ))
+    if query.environment:
+        rows = rows.filter(IntegrationInstance.environment == query.environment)
+    if query.readiness:
+        rows = rows.filter(IntegrationInstance.readiness_status == query.readiness)
+    if query.compatibility:
+        rows = rows.filter(MinioInstance.compatibility_profile == query.compatibility)
+    return rows.order_by(IntegrationInstance.name.asc(), MinioInstance.id.asc())
+
+
+def _index_coverage_query(query: MinioIndexQuery, *, metrics_exists, alerts_exists):
+    rows = _minio_index_base_query()
+    if query.coverage_query:
+        term = f'%{query.coverage_query}%'
+        rows = rows.filter(or_(
+            IntegrationInstance.name.ilike(term),
+            ObjectStorageSystem.name.ilike(term),
+            IntegrationInstance.environment.ilike(term),
+            _active_source_exists('metrics_source', source_name=term),
+            _active_source_exists('alert_source', source_name=term),
+        ))
+    if query.coverage_environment:
+        rows = rows.filter(IntegrationInstance.environment == query.coverage_environment)
+    covered = and_(IntegrationInstance.readiness_status == 'ready', metrics_exists, alerts_exists)
+    if query.coverage_status == 'ready':
+        rows = rows.filter(covered)
+    elif query.coverage_status == 'attention':
+        rows = rows.filter(~covered)
+    return rows.order_by(IntegrationInstance.name.asc(), MinioInstance.id.asc())
+
+
+def _minio_portfolio_stats(*, metrics_exists, alerts_exists) -> dict[str, int]:
+    covered = and_(IntegrationInstance.readiness_status == 'ready', metrics_exists, alerts_exists)
+    total, ready, metrics, alerts, covered_count = (
+        db.session.query(
+            func.count(MinioInstance.id),
+            func.sum(case((IntegrationInstance.readiness_status == 'ready', 1), else_=0)),
+            func.sum(case((metrics_exists, 1), else_=0)),
+            func.sum(case((alerts_exists, 1), else_=0)),
+            func.sum(case((covered, 1), else_=0)),
+        )
+        .select_from(MinioInstance)
+        .join(MinioInstance.integration_instance)
+        .one()
+    )
+    total = int(total or 0)
+    ready = int(ready or 0)
+    metrics = int(metrics or 0)
+    alerts = int(alerts or 0)
+    return {
+        'total': total,
+        'configured': total,
+        'ready': ready,
+        'attention': total - ready,
+        'bindings': metrics + alerts,
+        'metrics_bound': metrics,
+        'alerts_bound': alerts,
+        'uncovered': total - int(covered_count or 0),
+    }
+
+
 def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
     query = query or MinioIndexQuery()
-    instances = (
-        MinioInstance.query.join(MinioInstance.integration_instance).order_by(IntegrationInstance.name.asc()).all()
+    metrics_exists = _active_source_exists('metrics_source')
+    alerts_exists = _active_source_exists('alert_source')
+    stats = _minio_portfolio_stats(metrics_exists=metrics_exists, alerts_exists=alerts_exists)
+    registry_instances, pagination = paginate_query(
+        _index_registry_query(query), page=query.page, per_page=query.per_page
     )
-    registry_rows: list[dict[str, Any]] = []
-    coverage_rows: list[dict[str, Any]] = []
-    total_bindings = 0
-    metrics_bound = 0
-    alerts_bound = 0
+    coverage_instances, coverage_pagination = paginate_query(
+        _index_coverage_query(query, metrics_exists=metrics_exists, alerts_exists=alerts_exists),
+        page=query.coverage_page, per_page=query.coverage_per_page,
+    )
 
-    for instance in instances:
+    registry_rows: list[dict[str, Any]] = []
+    for instance in registry_instances:
+        metrics_binding = current_metrics_binding(instance)
+        alert_binding = current_alert_binding(instance)
+        registry_rows.append({
+            'id': instance.id,
+            'name': instance.name,
+            'environment': instance.environment,
+            'endpoint': instance.endpoint,
+            'asset_name': instance.object_storage_system.name,
+            'readiness_status': instance.readiness_status or 'validation_required',
+            'compatibility_profile': instance.compatibility_profile,
+            'declared_release': instance.declared_release,
+            'metrics_status': _source_binding_status(metrics_source_for_binding(metrics_binding), metrics_binding),
+            'alert_status': _source_binding_status(alert_source_for_binding(alert_binding), alert_binding),
+            'binding_count': int(metrics_binding is not None) + int(alert_binding is not None),
+        })
+
+    coverage_rows: list[dict[str, Any]] = []
+    for instance in coverage_instances:
         metrics_binding = current_metrics_binding(instance)
         metrics_source = metrics_source_for_binding(metrics_binding)
         alert_binding = current_alert_binding(instance)
         alert_source = alert_source_for_binding(alert_binding)
-        metrics_status = _source_binding_status(metrics_source, metrics_binding)
-        metrics_source_label = _metrics_source_label(metrics_source)
-        alert_status = _source_binding_status(alert_source, alert_binding)
-        binding_count = int(metrics_binding is not None) + int(alert_binding is not None)
-        total_bindings += binding_count
-        metrics_bound += int(metrics_binding is not None)
-        alerts_bound += int(alert_binding is not None)
-        registry_rows.append(
-            {
-                'id': instance.id,
-                'name': instance.name,
-                'environment': instance.environment,
-                'endpoint': instance.endpoint,
-                'asset_name': instance.object_storage_system.name,
-                'readiness_status': instance.readiness_status or 'validation_required',
-                'compatibility_profile': instance.compatibility_profile,
-                'declared_release': instance.declared_release,
-                'metrics_status': metrics_status,
-                'alert_status': alert_status,
-                'binding_count': binding_count,
-            }
-        )
         uncovered = metrics_binding is None or alert_binding is None
-        coverage_rows.append(
-            {
-                'asset_name': instance.object_storage_system.name,
-                'environment': instance.environment,
-                'instance': instance,
-                'api_status': _provider_status(instance),
-                'metrics_source': metrics_source,
-                'metrics_source_label': metrics_source_label,
-                'metrics_status': metrics_status,
-                'alert_source': alert_source,
-                'alert_status': alert_status,
-                'coverage_status': 'attention' if uncovered or instance.readiness_status != 'ready' else 'ready',
-                'coverage_label': 'Attention' if uncovered or instance.readiness_status != 'ready' else 'Ready',
-            }
-        )
+        attention = uncovered or instance.readiness_status != 'ready'
+        coverage_rows.append({
+            'asset_name': instance.object_storage_system.name,
+            'environment': instance.environment,
+            'instance': instance,
+            'api_status': _provider_status(instance),
+            'metrics_source': metrics_source,
+            'metrics_source_label': _metrics_source_label(metrics_source),
+            'metrics_status': _source_binding_status(metrics_source, metrics_binding),
+            'alert_source': alert_source,
+            'alert_status': _source_binding_status(alert_source, alert_binding),
+            'coverage_status': 'attention' if attention else 'ready',
+            'coverage_label': 'Attention' if attention else 'Ready',
+        })
 
-    filtered_registry_rows = _filter_registry_rows(
-        registry_rows,
-        query=query.query,
-        environment=query.environment,
-        readiness=query.readiness,
-        compatibility=query.compatibility,
-    )
-    filtered_coverage_rows = _filter_coverage_rows(
-        coverage_rows,
-        query=query.coverage_query,
-        environment=query.coverage_environment,
-        status=query.coverage_status,
-    )
-    registry_page_rows, pagination = _paginate(filtered_registry_rows, page=query.page, per_page=query.per_page)
-    coverage_page_rows, coverage_pagination = _paginate(
-        filtered_coverage_rows,
-        page=query.coverage_page,
-        per_page=query.coverage_per_page,
-    )
-    ready = sum(1 for item in instances if item.readiness_status == 'ready')
+    all_environments = [
+        value for (value,) in db.session.query(IntegrationInstance.environment)
+        .join(MinioInstance, MinioInstance.integration_instance_id == IntegrationInstance.id)
+        .distinct().all() if value
+    ]
+    compatibility_options = [
+        value for (value,) in db.session.query(MinioInstance.compatibility_profile)
+        .distinct().all() if value
+    ]
     return {
-        'rows': registry_page_rows,
-        'coverage_rows': coverage_page_rows,
+        'rows': registry_rows,
+        'coverage_rows': coverage_rows,
         'pagination': pagination,
         'coverage_pagination': coverage_pagination,
         'active_tab': query.tab if query.tab in {'coverage', 'registry'} else 'coverage',
@@ -143,33 +233,20 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
         'selected_coverage_environment': query.coverage_environment,
         'selected_coverage_status': query.coverage_status,
         'registry_has_active_filters': bool(query.query or query.environment or query.readiness or query.compatibility),
-        'coverage_has_active_filters': bool(
-            query.coverage_query or query.coverage_environment or query.coverage_status
-        ),
-        'environment_options': sorted({row['environment'] for row in registry_rows if row.get('environment')}),
+        'coverage_has_active_filters': bool(query.coverage_query or query.coverage_environment or query.coverage_status),
+        'environment_options': sorted(all_environments),
         'readiness_options': [
             {'value': 'ready', 'label': 'Ready'},
             {'value': 'blocked', 'label': 'Blocked'},
             {'value': 'validation_required', 'label': 'Validation Required'},
         ],
-        'compatibility_options': sorted(
-            {row['compatibility_profile'] for row in registry_rows if row.get('compatibility_profile')}
-        ),
-        'coverage_environment_options': sorted({row['environment'] for row in coverage_rows if row.get('environment')}),
+        'compatibility_options': sorted(compatibility_options),
+        'coverage_environment_options': sorted(all_environments),
         'coverage_status_options': [
             {'value': 'ready', 'label': 'Ready'},
             {'value': 'attention', 'label': 'Attention'},
         ],
-        'stats': {
-            'total': len(instances),
-            'configured': len(instances),
-            'ready': ready,
-            'attention': len(instances) - ready,
-            'bindings': total_bindings,
-            'metrics_bound': metrics_bound,
-            'alerts_bound': alerts_bound,
-            'uncovered': sum(1 for row in coverage_rows if row['coverage_status'] != 'ready'),
-        },
+        'stats': stats,
     }
 
 
@@ -178,73 +255,6 @@ def _metrics_source_label(source: object | None) -> str:
         return 'No Metrics Source Binding'
     provider_key = str(getattr(source, 'provider_key', None) or '').strip().lower()
     return provider_definition(provider_key).label if provider_key else 'Metrics Source'
-
-
-def _filter_registry_rows(
-    rows: list[dict[str, Any]],
-    *,
-    query: str,
-    environment: str,
-    readiness: str,
-    compatibility: str,
-) -> list[dict[str, Any]]:
-    normalized_query = str(query or '').strip().lower()
-    filtered = rows
-    if normalized_query:
-        filtered = [
-            row
-            for row in filtered
-            if normalized_query
-            in ' '.join(
-                str(value or '')
-                for value in (
-                    row.get('name'),
-                    row.get('asset_name'),
-                    row.get('environment'),
-                    row.get('compatibility_profile'),
-                    row.get('declared_release'),
-                )
-            ).lower()
-        ]
-    if environment:
-        filtered = [row for row in filtered if row.get('environment') == environment]
-    if readiness:
-        filtered = [row for row in filtered if row.get('readiness_status') == readiness]
-    if compatibility:
-        filtered = [row for row in filtered if row.get('compatibility_profile') == compatibility]
-    return filtered
-
-
-def _filter_coverage_rows(
-    rows: list[dict[str, Any]],
-    *,
-    query: str,
-    environment: str,
-    status: str,
-) -> list[dict[str, Any]]:
-    normalized_query = str(query or '').strip().lower()
-    filtered = rows
-    if normalized_query:
-        filtered = [
-            row
-            for row in filtered
-            if normalized_query
-            in ' '.join(
-                str(value or '')
-                for value in (
-                    row.get('asset_name'),
-                    row.get('environment'),
-                    getattr(row.get('instance'), 'name', ''),
-                    getattr(row.get('metrics_source'), 'name', ''),
-                    getattr(row.get('alert_source'), 'name', ''),
-                )
-            ).lower()
-        ]
-    if environment:
-        filtered = [row for row in filtered if row.get('environment') == environment]
-    if status:
-        filtered = [row for row in filtered if row.get('coverage_status') == status]
-    return filtered
 
 
 def build_detail_context(
@@ -280,9 +290,9 @@ def build_detail_context(
         fallback_capabilities=tuple(instance.capabilities or ()),
     )
 
-    all_binding_rows = _asset_binding_rows(instance)
-    binding_rows, binding_pagination = paginate_sequence(
-        all_binding_rows,
+    binding_rows, binding_pagination = paginate_bound_observability_source_rows(
+        asset_type='object_storage_system',
+        asset_key=instance.object_storage_system_id,
         page=query.binding_page,
         per_page=query.binding_per_page,
     )
@@ -316,7 +326,7 @@ def build_detail_context(
         'alert_source': alert_source,
         'alert_status': _source_binding_status(alert_source, alert_binding),
         'binding_rows': binding_rows,
-        'binding_total': len(all_binding_rows),
+        'binding_total': binding_pagination['total_items'],
         'binding_pagination': binding_pagination,
         'capability_registry': capability_registry,
         'compatibility_policy': compatibility_policy_view(
@@ -324,7 +334,9 @@ def build_detail_context(
         ),
         'validated_at_display': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
-        'bucket_count': len(instance.object_storage_system.buckets or ()),
+        'bucket_count': ObjectStorageBucket.query.filter_by(
+            object_storage_system_id=instance.object_storage_system_id
+        ).count(),
         'inventory_status': 'ready' if inventory_current else 'unknown',
         'inventory_status_label': (
             'Current Source Snapshot' if inventory_current
@@ -452,13 +464,6 @@ def build_minio_capability_registry(
         'required_count': sum(1 for item in API_CAPABILITIES if item.required),
         'optional_count': sum(1 for item in API_CAPABILITIES if not item.required),
     }
-
-
-def _asset_binding_rows(instance: MinioInstance) -> list[dict[str, Any]]:
-    return build_bound_observability_source_rows(
-        asset_type='object_storage_system',
-        asset_key=instance.object_storage_system_id,
-    )
 
 
 def _provider_status(instance: MinioInstance) -> dict[str, str]:
