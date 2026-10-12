@@ -128,8 +128,16 @@
             selectedSectionsByReportType[reportType] = defaultSectionsByReportType[reportType].slice()
         })
 
-        if (initialSelectedSections.length > 0) {
-            selectedSectionsByReportType[reportTypeSelect.value] = initialSelectedSections.slice()
+        if (initialSelectedSections.length > 0 || Boolean(bootstrap.has_validation_errors)) {
+            // Invalid/empty POST selections must remain empty on rerender, not become defaults.
+            const availableSections = new Set(
+                (sectionOptionsByReportType[reportTypeSelect.value] || []).map(function (item) {
+                    return item.value
+                })
+            )
+            selectedSectionsByReportType[reportTypeSelect.value] = initialSelectedSections.filter(function (value) {
+                return availableSections.has(value)
+            })
         }
 
         function setReadinessItemTone(icon, status, isReady) {

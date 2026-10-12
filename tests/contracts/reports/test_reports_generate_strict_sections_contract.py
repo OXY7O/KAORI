@@ -13,3 +13,11 @@ def test_posted_sections_and_period_are_preserved_for_backend_validation() -> No
     assert "form, for_submission=True" in service
     assert "Analytics reports require an explicit time range." in service
     assert "Inventory report sections are fixed by the published contract." in service
+
+
+def test_invalid_post_sections_are_not_replaced_with_client_defaults() -> None:
+    runtime = (ROOT / 'app/static/js/reports/generate.js').read_text()
+    page = (ROOT / 'app/templates/reports/generate/index.html').read_text()
+    assert 'Boolean(bootstrap.has_validation_errors)' in runtime
+    assert 'initialSelectedSections.filter(function (value)' in runtime
+    assert '"has_validation_errors": {{ (payload.errors|length > 0)|tojson }}' in page
