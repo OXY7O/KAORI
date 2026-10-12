@@ -47,7 +47,7 @@
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             <div class="px-5 py-4 sm:px-6">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Bindings</p>
-                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ binding_rows|length }}</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ binding_total }}</p>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Managed assets using this source</p>
             </div>
             <div class="px-5 py-4 sm:px-6">
@@ -70,7 +70,7 @@
     {% include "integrations/observability/alert_source/providers/alertmanager/partials/_binding_registry.html" %}
     {{ binding_readiness_boundary.render('Alertmanager',
         instance.readiness_status or 'validation_required',
-        binding_rows|length,
+        binding_total,
         validated_binding_count,
         operational_binding_count,
         title='Binding Decision',
@@ -199,8 +199,8 @@
     ) }}
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}
-    {{ framed_workspace_tabs.badge_oob('alertmanager', 'scope', (binding_rows|length|string) ~ ' Bindings') }}
-    <span id="alertmanager-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (bindings|length|string) ~ ' Bindings' }}</span>
+    {{ framed_workspace_tabs.badge_oob('alertmanager', 'scope', (binding_total|string) ~ ' Bindings') }}
+    <span id="alertmanager-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (binding_total|string) ~ ' Bindings' }}</span>
 {% endif %}
 {% if not scope_oob|default(false) %}
     {% include "components/operation_feedback_oob.html" %}
