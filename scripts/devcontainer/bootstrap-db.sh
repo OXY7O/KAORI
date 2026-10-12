@@ -4,8 +4,8 @@ set -eu
 # Explicit operator action (NOT part of DevContainer auto-start).
 # Container identity is a one-shot DevContainer service; all web/workers/Beat
 # retain only their existing canonical non-owner DATABASE_URL.
-if [ "${APP_ENV:-}" != development ] || [ -z "${KAORI_MIGRATOR_PASSWORD:-}" ]; then
-    echo 'ABORT: DevContainer migrator secret or development boundary unavailable' >&2
+if [ "${APP_ENV:-}" != development ] || [ ! -s /run/kaori-migrator/password ]; then
+    echo 'ABORT: isolated Docker migrator credential or development boundary unavailable' >&2
     exit 1
 fi
 case "${1:-}" in
@@ -14,8 +14,8 @@ case "${1:-}" in
     *) echo 'Usage: bootstrap-db.sh [--upgrade-only]' >&2; exit 2 ;;
 esac
 
-migration_password="$KAORI_MIGRATOR_PASSWORD"
-KAORI_DB_MIGRATION_URL="$(python - <<'PY'
+migration_password="$(cat /run/kaori-migrator/password)"
+KAORI_DB_MIGRATION_URL="$(KAORI_MIGRATOR_PASSWORD="$migration_password" python - <<'PY'
 import os
 import sys
 from sqlalchemy.engine import URL, make_url
@@ -33,7 +33,6 @@ print(URL.create(
 PY
 )" || exit 1
 export KAORI_DB_MIGRATION_URL
-unset KAORI_MIGRATOR_PASSWORD
 
 # Preflight all credentials and migration identity before mutating schema.
 sh scripts/init_db.sh --schema-only
