@@ -27,13 +27,14 @@ class _NoWorkflowRedirects(HTTPRedirectHandler):
         return None
 
 
-
 def _is_approved_workflow_url(value: str) -> bool:
-    parsed = urlparse(value)
-    hostname = str(parsed.hostname or '').lower()
     try:
+        parsed = urlparse(value)
+        hostname = str(parsed.hostname or '').lower()
         port = parsed.port
     except ValueError:
+        # Malformed IPv6 brackets, invalid ports and Unicode host validation
+        # must fail closed instead of causing a configuration-page HTTP 500.
         return False
     return bool(
         parsed.scheme == 'https'
@@ -105,11 +106,7 @@ def validate_form(data: NotificationChannelFormInput) -> list[str]:
     if not workflow_url:
         errors.append('Microsoft Teams Workflow webhook URL is required.')
         return errors
-    parsed = urlparse(workflow_url)
-    hostname = str(parsed.hostname or '').lower()
-    if parsed.scheme != 'https' or not hostname:
-        errors.append('Microsoft Teams Workflow webhook URL must use HTTPS.')
-    elif not _is_approved_workflow_url(workflow_url):
+    if not _is_approved_workflow_url(workflow_url):
         errors.append('Use an approved HTTPS Microsoft Teams Workflows URL on port 443, without user info.')
     return errors
 

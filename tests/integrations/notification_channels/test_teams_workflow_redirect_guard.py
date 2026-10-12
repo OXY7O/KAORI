@@ -19,6 +19,8 @@ WORKFLOW_URL = 'https://abc.1.environment.api.powerplatform.com/workflow/token'
     ('https://malicious.example/path', False),
     ('https://name:pass@abc.1.environment.api.powerplatform.com/workflow/token', False),
     ('https://abc.1.environment.api.powerplatform.com:444/secret', False),
+    ('https://[bad-host', False),
+    ('https://abc.1.environment.api.powerplatform.com:notaport/secret', False),
 ])
 def test_workflow_url_validation(url: str, expected: bool) -> None:
     assert teams._is_approved_workflow_url(url) is expected
