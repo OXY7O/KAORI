@@ -83,6 +83,7 @@ def test_devcontainer_workers_wait_for_current_migration_head_before_starting() 
         section = service_section(compose, service)
         assert 'WAIT_FOR_DB: "true"' in section
         assert 'WAIT_FOR_SCHEMA: "true"' in section
+        assert 'WAIT_FOR_RUNTIME_GRANTS: "true"' in section
 
     workspace = service_section(compose, 'workspace')
     assert 'WAIT_FOR_DB: "false"' in workspace
@@ -90,6 +91,10 @@ def test_devcontainer_workers_wait_for_current_migration_head_before_starting() 
 
     assert 'ScriptDirectory.from_config' in wait_script
     assert "SELECT to_regclass('public.alembic_version')" in wait_script
+    assert "_restricted_runtime_grants_ready(database_url)" in wait_script
+    assert "_env_bool('WAIT_FOR_RUNTIME_GRANTS')" in wait_script
+    assert "has_table_privilege(current_user, c.oid, 'UPDATE')" in wait_script
+    assert "has_table_privilege(current_user, c.oid, 'TRUNCATE')" in wait_script
     assert 'SELECT version_num FROM alembic_version' in wait_script
     assert 'current_heads == expected_heads' in wait_script
     assert "_env_bool('WAIT_FOR_SCHEMA')" in wait_script
