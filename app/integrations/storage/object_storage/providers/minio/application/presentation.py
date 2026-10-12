@@ -347,8 +347,10 @@ def build_minio_capability_registry(
     observed = set(instance.capabilities or ())
     rows: list[dict[str, Any]] = []
     for definition in API_CAPABILITIES:
-        row_status = 'ready' if definition.key in observed else 'blocked'
-        available = row_status == 'ready'
+        available = definition.key in observed
+        row_status = (
+            'ready' if available else 'blocked' if definition.required and instance.last_validated_at else 'not_checked'
+        )
         rows.append(
             {
                 'key': definition.key,
@@ -357,7 +359,7 @@ def build_minio_capability_registry(
                 'required': bool(definition.required),
                 'requirement_label': 'Required' if definition.required else 'Optional',
                 'status': row_status,
-                'status_label': 'Ready' if available else 'Blocked',
+                'status_label': 'Ready' if available else 'Blocked' if row_status == 'blocked' else 'Not Checked',
                 'available': available,
                 'contract': CAPABILITY_PROFILE,
                 'category': 'MinIO S3 API',
@@ -365,7 +367,11 @@ def build_minio_capability_registry(
                 'evidence': (
                     f'Full Validation observed {definition.label} in the persisted MinIO capability snapshot.'
                     if available
-                    else f'Full Validation did not observe {definition.label} in the current MinIO capability snapshot.'
+                    else (
+                        f'Full Validation did not prove required {definition.label}.'
+                        if row_status == 'blocked'
+                        else f'{definition.label} has no validated provider-core evidence. Optional bucket configuration is assessed during Inventory Sync.'
+                    )
                 ),
                 'success_criteria': definition.description,
                 'impact': (
@@ -376,15 +382,23 @@ def build_minio_capability_registry(
                 'next_action': (
                     'No corrective action is required. Revalidate after MinIO upgrades or credential changes.'
                     if available
-                    else 'Verify the registered MinIO credential can perform this read-only operation, then rerun Full Validation.'
+                    else (
+                        'Verify the registered S3 API access and rerun Full Validation.'
+                        if row_status == 'blocked'
+                        else 'Review optional bucket evidence after Object Storage Inventory Sync; do not infer provider-core readiness from an untested API.'
+                    )
                 ),
                 'remediation': (
                     []
                     if available
-                    else [
-                        'Verify the registered MinIO endpoint and read-only credential permissions.',
-                        'Rerun Full Validation and confirm this capability becomes Ready.',
-                    ]
+                    else (
+                        [
+                            'Verify the registered MinIO endpoint and required S3 discovery permissions.',
+                            'Rerun Full Validation and confirm this capability becomes Ready.',
+                        ]
+                        if row_status == 'blocked'
+                        else []
+                    )
                 ),
                 'technical_checks': [],
             }
@@ -407,7 +421,7 @@ def build_minio_capability_registry(
         rows = [row for row in rows if row['required'] is want_required]
     else:
         normalized_requirement = ''
-    if normalized_status in {'ready', 'blocked'}:
+    if normalized_status in {'ready', 'blocked', 'not_checked'}:
         rows = [row for row in rows if row['status'] == normalized_status]
     else:
         normalized_status = ''
