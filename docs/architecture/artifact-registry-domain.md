@@ -793,3 +793,23 @@ detail access use active/enabled Registry source identity. Disabled/retired
 source evidence may remain stored for audit but does not contribute to active
 operational counts. Malformed/disabled bookmarked source filters return 404
 rather than silently expanding scope.
+
+
+### Bounded Runtime Usage materialization and read projection (#1443)
+
+The correlation worker streams committed Registry artifact ORM rows through
+`yield_per` / `selectinload` in bounded batches and retains compact scalar
+digest/tag candidates (artifact ID, repository, digest, host, observation time)
+rather than all hydrated artifact ORM entities. Source-host state is looked up
+once per Registry instance. Binding replacement uses an SQL-scoped artifact-ID
+subquery under the existing single materialization transaction; it does not
+materialize an unbounded artifact-ID list.
+
+The normal Runtime Usage view projects scan status/vulnerability summary only
+for active Registry artifacts that have committed runtime bindings, iterating
+projected columns in batches. Evidence filters and aggregate counters still
+derive from the committed binding set. The `Security Exposed` number counts
+**runtime bindings** associated with Critical/High artifact evidence, not a
+distinct number of artifact records; its explanatory copy makes that explicit.
+The canonical grouped Registry summary, filter controls, View More modal and
+default five-row pagination remain unchanged.
