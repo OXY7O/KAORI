@@ -7,10 +7,10 @@
 {% import "components/view_more_content.html" as view_more_content %}
 {% block title %}Database Setup Required · KAORI{% endblock title %}
 {% block content %}
-    {% set bootstrap_command = "bash scripts/init_db.sh --bootstrap-admin" %}
+    {% set bootstrap_command = "docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap" %}
     {% set manual_bootstrap_commands -%}
-        flask --app run:app db upgrade
-        flask --app run:app seed-rbac
+        # Run from the WSL host: migrations must use the one-shot database migrator
+        docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
     {%- endset %}
     {% set database_checks -%}
         docker compose ps
@@ -102,11 +102,11 @@
                             <div class="min-w-0">
                                 <h2 id="development-bootstrap-title"
                                     class="text-sm font-semibold text-content-primary">Development Bootstrap</h2>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Initialize the schema, seed canonical RBAC, and create the first local administrator.</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Run this command in your WSL host terminal (repository root). It upgrades the schema as kaori_migrator, grants restricted runtime access, and creates the first application administrator.</p>
                             </div>
                             {{ table_label.metadata_label('KAORI Dev Container', icon='container') }}
                         </div>
-                        {{ terminal_command.render(bootstrap_command, label='KAORI Dev Container', copy_label='Copy Command', compact=true) }}
+                        {{ terminal_command.render(bootstrap_command, label='WSL Host · DevContainer Bootstrap', copy_label='Copy Command', compact=true) }}
                         <p class="mt-1.5 flex items-start gap-1.5 text-xs leading-5 text-content-muted">
                             <i data-lucide="shield-check"
                                class="mt-0.5 h-3.5 w-3.5 shrink-0"
@@ -144,7 +144,7 @@
                         <section aria-labelledby="manual-initialization-title">
                             <h3 id="manual-initialization-title"
                                 class="text-xs font-semibold text-content-secondary">Manual Initialization Commands</h3>
-                            <p class="mt-0.5 mb-2 text-xs leading-5 text-content-muted">Use only when migration and RBAC seed steps must run separately.</p>
+                            <p class="mt-0.5 mb-2 text-xs leading-5 text-content-muted">Use only from the WSL host; raw Flask migrations under the runtime DATABASE_URL are prohibited.</p>
                             {{ terminal_command.render(manual_bootstrap_commands, label='Manual Bootstrap', prompt='', copy_label='Copy Commands', compact=true) }}
                         </section>
                         <section aria-labelledby="missing-schema-title">
