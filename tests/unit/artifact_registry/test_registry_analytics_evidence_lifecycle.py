@@ -15,7 +15,9 @@ def test_invalid_metrics_responses_do_not_become_ready_empty_evidence():
     assert _valid_instant_vector({'status': 'success', 'data': {'resultType': 'vector', 'result': []}})
 
 
-def test_expired_snapshot_remains_readable_but_cannot_claim_current():
+def test_expired_snapshot_remains_readable_but_cannot_claim_current(monkeypatch):
+    from app.artifact_registry import presentation_common
+    monkeypatch.setattr(presentation_common, '_registry_analytics_inputs_changed', lambda _snapshot: False)
     now = datetime.now(UTC)
     expired = SimpleNamespace(
         status='ready',
@@ -37,7 +39,9 @@ def test_expired_snapshot_remains_readable_but_cannot_claim_current():
     )[2]['label'] == 'Snapshot Attention'
 
 
-def test_missing_expiry_is_not_current():
+def test_missing_expiry_is_not_current(monkeypatch):
+    from app.artifact_registry import presentation_common
+    monkeypatch.setattr(presentation_common, '_registry_analytics_inputs_changed', lambda _snapshot: False)
     now = datetime.now(UTC)
     legacy = SimpleNamespace(
         status='ready', payload_json={'inventory': {}},
