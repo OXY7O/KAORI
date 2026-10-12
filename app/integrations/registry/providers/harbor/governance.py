@@ -217,16 +217,22 @@ def collect_harbor_governance(
     for index, summary in enumerate(projects, start=1):
         record = _project_governance_record(client, summary, states)
         if record is None:
-            continue
+            raise HarborResponseError('Harbor governance project discovery returned a project without a name.')
         project_records.append(record)
         if progress_callback is not None:
             progress_callback(index, total_projects, record.project_name)
 
-    replication_records = [
-        record
-        for policy in _replication_policies(client, states)
-        if (record := _replication_record(policy)) is not None
-    ]
+    replication_records: list[ReplicationPolicyRecord] = []
+    for policy in _replication_policies(client, states):
+        record = _replication_record(policy)
+        if record is None:
+            states['replication'] = _state(
+                supported=True,
+                observed=False,
+                detail='Replication policies included a record without a native policy ID.',
+            )
+            break
+        replication_records.append(record)
     return RegistryGovernanceEvidence(
         projects=project_records,
         replication_policies=replication_records,
