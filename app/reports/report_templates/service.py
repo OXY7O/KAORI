@@ -153,36 +153,33 @@ def get_custom_template_filtered_query(filters: dict[str, str]):
         query = query.where(func.lower(ReportTemplate.output_format) == filters['output_format'])
     if filters['search']:
         term = filters['search'].strip().lower()
-        pattern = f"%{term.replace('%', '\\%').replace('_', '\\_')}%"
-        report_types = [
+        escaped = term.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        pattern = f'%{escaped}%'
+        matching_report_types = [
             spec.value for spec in REPORT_TYPE_SPECS
             if term in spec.label.lower() or term in spec.family.lower()
         ]
-        domain_ids = [
+        matching_domains = [
             domain for domain, label in REPORT_DOMAIN_LABELS.items()
             if term in label.lower()
         ]
-        section_ids = [
+        matching_sections = [
             str(item['value']) for item in SECTION_OPTIONS
             if term in str(item['label']).lower()
         ]
-        query = query.where(
-            or_(
-                func.lower(ReportTemplate.name).like(pattern, escape='\\'),
-                func.lower(ReportTemplate.description).like(pattern, escape='\\'),
-                func.lower(ReportTemplate.created_by_display_name_snapshot).like(pattern, escape='\\'),
-                func.lower(ReportTemplate.created_by_username_snapshot).like(pattern, escape='\\'),
-                func.lower(ReportTemplate.report_type).like(pattern, escape='\\'),
-                func.lower(cast(ReportTemplate.sections, db.String)).like(pattern, escape='\\'),
-                ReportTemplate.report_type.in_(report_types),
-                ReportTemplate.report_domain.in_(domain_ids),
-                func.lower(cast(ReportTemplate.sections, db.String)).like(
-                    f"%{section_ids[0]}%"
-                ) if len(section_ids) == 1 else ReportTemplate.sections.is_not(None) & or_(
-                    *(func.lower(cast(ReportTemplate.sections, db.String)).like(f"%{section}%") for section in section_ids)
-                ) if section_ids else ReportTemplate.id == -1,
-            )
-        )
+        section_text = func.lower(cast(ReportTemplate.sections, db.String))
+        predicates = [
+            func.lower(ReportTemplate.name).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.description).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.created_by_display_name_snapshot).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.created_by_username_snapshot).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.report_type).like(pattern, escape='\\'),
+            section_text.like(pattern, escape='\\'),
+            ReportTemplate.report_type.in_(matching_report_types),
+            ReportTemplate.report_domain.in_(matching_domains),
+        ]
+        predicates.extend(section_text.like(f'%{section}%') for section in matching_sections)
+        query = query.where(or_(*predicates))
     return query
 
 
