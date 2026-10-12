@@ -32,7 +32,7 @@ def test_missing_registry_scope_does_not_claim_snapshot_available() -> None:
         domain='registry', asset_key=service._INVALID_REGISTRY_SCOPE,
     )
     assert snapshot['available'] is False
-    assert snapshot['serving_last_good'] is True
+    assert snapshot['serving_last_good'] is False
 
 
 def test_scoped_counts_do_not_equate_unknown_source_with_critical_firing() -> None:
