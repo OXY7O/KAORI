@@ -407,11 +407,7 @@ if (canvas && form) {
                     },
                     'arrow-scale': 0.78,
                     width: 2,
-                    label: (edge) => {
-                        if (!edgeLabelsToggle.checked && payload.edges.length > 8) return ''
-                        return edge.data('relationship') === 'runtime_usage'
-                            ? 'used at runtime' : edge.data('relationship') === 'owns' ? 'owns' : 'contains'
-                    },
+                    label: '',
                     'font-family': 'Inter, sans-serif',
                     'font-size': 9,
                     'font-weight': 600,
@@ -425,6 +421,22 @@ if (canvas && form) {
                     'text-border-width': 1,
                     'text-border-opacity': 0.7,
                     'overlay-opacity': 0,
+                },
+            },
+            {
+                selector: 'edge.edge-label-visible',
+                style: {
+                    label: (edge) => edge.data('relationship') === 'runtime_usage'
+                        ? 'used at runtime' : edge.data('relationship') === 'owns' ? 'owns' : 'contains',
+                },
+            },
+            {
+                selector: 'edge.edge-hovered',
+                style: {
+                    width: 3,
+                    'line-color': token('--kaori-brand-primary', 'CanvasText'),
+                    'target-arrow-color': token('--kaori-brand-primary', 'CanvasText'),
+                    'line-opacity': 1,
                 },
             },
             { selector: 'node:selected', style: { 'border-width': 3, 'border-color': token('--kaori-brand-primary', 'CanvasText') } },
@@ -504,6 +516,12 @@ if (canvas && form) {
         })
         layout.run()
     }
+    const updateEdgeLabelClasses = () => {
+        if (!cy) return
+        cy.edges().forEach((edge) => {
+            edge.toggleClass('edge-label-visible', edgeLabelsToggle.checked || edge.selected() || edge.hasClass('edge-hovered'))
+        })
+    }
     const renderGraph = async () => {
         if (!renderer) {
             const module = await import(canvas.dataset.rendererUrl)
@@ -538,6 +556,14 @@ if (canvas && form) {
         })
         cy.on('mouseout', 'node', hideTip)
         cy.on('pan zoom', hideTip)
+        cy.on('mouseover', 'edge', (event) => {
+            event.target.addClass('edge-hovered')
+            updateEdgeLabelClasses()
+        })
+        cy.on('mouseout', 'edge', (event) => {
+            event.target.removeClass('edge-hovered')
+            updateEdgeLabelClasses()
+        })
         cy.on('tap', 'node', (event) => {
             hideTip()
             const node = event.target
@@ -550,10 +576,14 @@ if (canvas && form) {
             if (event.target === cy) {
                 cy.elements().removeClass('kaori-topology-muted')
                 hideTip()
+                cy.elements().unselect()
+                updateEdgeLabelClasses()
             }
         })
         cy.on('tap', 'edge', (event) => {
             const edge = event.target
+            edge.select()
+            updateEdgeLabelClasses()
             inspectorContent.replaceChildren()
             inspectorContent.append(elements('h4', 'text-lg font-semibold text-content-primary', 'Relationship Evidence'))
             const details = elements('div', 'rounded-lg border border-outline-default p-4')
@@ -565,6 +595,7 @@ if (canvas && form) {
             inspectorContent.append(elements('p', 'text-xs text-content-muted', 'Containment and ownership are presentation context from committed Registry-to-Pod bindings. Digest matches are stronger than tag-only evidence.'))
             openInspector()
         })
+        updateEdgeLabelClasses()
         graphHasLayout = false
         setView(view)
     }
@@ -648,6 +679,7 @@ if (canvas && form) {
     const updateDisplay = (relayout = false) => {
         if (!cy) return
         cy.style().fromJson(graphStyle()).update()
+        updateEdgeLabelClasses()
         cy.elements().removeClass('kaori-topology-muted')
         if (relayout) {
             graphHasLayout = false
