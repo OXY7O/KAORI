@@ -27,6 +27,12 @@ Future domains such as Intelligence execution evidence should be added as adapte
 7. Cleanup is batched; partial completion is recorded as `cleanup_partial` and never removes the verified archive.
 8. Active source records are protected by each domain adapter. The Job Execution adapter archives only terminal jobs and never follows `result_reference` into analytics, forecast, report, or dataset storage.
 
+## Re-verification and recovery of archive evidence
+
+Archive History **Verify** re-reads the data, manifest and any supplementary artifacts from the original storage locator and compares size and SHA-256 evidence. If any object is missing, inaccessible or mismatched, the archive moves to `failed`, its previous verification timestamp is invalidated, and Data/Manifest download is blocked until a successful re-verification. Re-verification is an integrity check, not a hot-data restore or a cleanup retry.
+
+On successful re-verification of a previously failed archive, `archive_and_cleanup` records with `cleanup_deleted_count < record_count` remain `cleanup_partial` even if zero source rows were deleted. The operator must review the original failed execution and remaining hot records before starting a separate governed lifecycle run. Archive-only or fully completed cleanup may return to `ready` after integrity checks pass. `purge_failed`/`expired` artifacts cannot be silently reset by the Verify action; their own purge/recovery contract remains authoritative.
+
 ## Scale and scheduling
 
 Celery Beat runs one lightweight Data Lifecycle dispatcher every 15 minutes while `DATA_LIFECYCLE_SCHEDULER_ENABLED=true`. Persistent per-domain policy rows are authoritative for whether a domain is due and at what hour/minute; legacy per-domain environment defaults no longer decide whether the dispatcher itself exists. The operator workspace surfaces the global dispatcher state so a saved schedule is never presented as having a next automatic run while dispatch is globally disabled. Due domains are fanned out as separate maintenance jobs, so Activity Audit, Job Execution, Runtime Observation, Analytics Snapshot, and Generated Report retention do not create one large database/storage burst.
