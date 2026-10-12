@@ -18,13 +18,15 @@ def _initialization(tmp_path: Path, *, volume_exists: dict[str, bool]):
     namespace = runpy.run_path(str(PREPARE), run_name='kaori_first_run_test')
     main = namespace['main']
     state = main.__globals__
-    state['ROOT'] = tmp_path
-    state['APP_ENV'] = tmp_path / '.env'
+    checkout = tmp_path / 'checkout'
+    checkout.mkdir()
+    state['ROOT'] = checkout
+    state['APP_ENV'] = checkout / '.env'
     state['SECRET_DIR'] = tmp_path / 'private-home' / '.config' / 'kaori' / 'devcontainer'
     state['DB_SECRETS'] = state['SECRET_DIR'] / 'postgres-bootstrap.env'
     state['MIGRATOR_SECRETS'] = state['SECRET_DIR'] / 'postgres-migrate.env'
     state['database_volume_exists'] = lambda: volume_exists['value']
-    (tmp_path / '.env.example').write_text(
+    (checkout / '.env.example').write_text(
         'POSTGRES_DB=kaori\n'
         'POSTGRES_USER=postgres\n'
         'POSTGRES_PASSWORD=old-owner-dev-password\n'
@@ -170,3 +172,33 @@ def test_docker_inspect_accepts_only_correct_kaori_dev_volume(
         ),
     )
     assert namespace['database_volume_exists']() is True
+
+
+def test_existing_migration_password_file_must_remain_private(tmp_path: Path) -> None:
+    volume = {'value': False}
+    main, state = _initialization(tmp_path, volume_exists=volume)
+    main()
+    state['MIGRATOR_SECRETS'].chmod(0o644)
+    volume['value'] = True
+    with pytest.raises(SystemExit, match='mode 0600'):
+        main()
+
+
+def test_external_postgres_secret_directory_must_not_be_a_symlink(tmp_path: Path) -> None:
+    main, state = _initialization(tmp_path, volume_exists={'value': False})
+    secret_dir = state['SECRET_DIR']
+    actual_directory = tmp_path / 'other-private-directory'
+    actual_directory.mkdir()
+    secret_dir.parent.mkdir(parents=True)
+    secret_dir.symlink_to(actual_directory, target_is_directory=True)
+    with pytest.raises(SystemExit, match='outside the source workspace'):
+        main()
+
+
+def test_application_env_symlink_is_rejected(tmp_path: Path) -> None:
+    main, state = _initialization(tmp_path, volume_exists={'value': False})
+    redirect = tmp_path / 'unexpected-env-file'
+    redirect.write_text('APP_ENV=development\n', encoding='utf-8')
+    state['APP_ENV'].symlink_to(redirect)
+    with pytest.raises(SystemExit, match='application .env must not be a symlink'):
+        main()
