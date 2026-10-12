@@ -106,6 +106,12 @@ before acceptance; no design drift is accepted as a domain exception by default.
 - Partial dataset failure: preserve per-source/per-dataset error/provenance, do not label whole coverage healthy.
 - Forecast: keep heavy range history and model extrapolation separate from instant operational metrics.
 
+## Overlapping scope writer ownership (Object Storage #1392)
+
+Canonical JobExecution deduplication uses request/parameter fingerprints. A fleet materialization request and a selected-system on-demand request can overlap on the **same** Object Storage `(system_id, time_range)` Analytics or `(system_id, history_window, method)` Forecast snapshot. Resource-group admission quotas are not sufficient to guarantee exclusive writes. The current Object Storage implementation therefore fences the **stable dataset key** using its existing snapshot-row `last_job_execution_id` and `last_attempt_at` (no schema addition): a worker claims ownership before provider collection, refuses an older JobExecution claim, and rechecks the exact job ID plus timestamp under a database row lock before committing either ready payload or failed attempt. A superseded worker cannot downgrade or overwrite a later claim, even across duplicate deliveries from one JobExecution.
+
+Do not infer that this fence is automatically present in Kubernetes or Registry Analytics; those domains must audit and implement their own scoped isolation under separate child issues as appropriate. PostgreSQL concurrent write, worker-lost/retry, and crash/cancellation behavior still require runtime evidence before Human Acceptance; source contracts alone do not prove isolation.
+
 ## Time-range semantic contract
 
 Allowed UI labels `1h, 6h, 12h, 24h, 7d, 30d, 60d` are display vocabulary only, already present in `app/common/analytics/params.py` and existing UI. The selected value becomes a **measured source interval** only after the worker executed a true qualified range query and committed that interval's dataset. Merely filtering the creation age of a single `current` snapshot is not historical analytics. Explicit legacy selectors may remain only when described as last-known snapshot selection. The source's retention/capabilities determine whether historical ranges are supported; never infer support from the dropdown.
