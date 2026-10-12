@@ -49,6 +49,16 @@ def dispatch_case_notifications() -> dict[str, int]:
             NotificationDelivery.status.in_(('failed', 'queued')),
         )
     )
+    # A closed case without any successfully delivered firing event has no
+    # eligible resolved destination, so it must not be scanned forever.
+    firing_prefix = literal('alert-case:') + AlertCase.public_id + literal(':firing:%')
+    had_successful_firing = exists().where(
+        and_(
+            NotificationDelivery.event_key.like(firing_prefix),
+            NotificationDelivery.event_type == 'alert_ops.firing',
+            NotificationDelivery.status == 'sent',
+        )
+    )
     last_id = 0
     while True:
         cases = (
@@ -61,6 +71,7 @@ def dispatch_case_notifications() -> dict[str, int]:
                         AlertCase.source_state == 'resolved',
                         AlertCase.workflow_state == 'closed',
                         AlertCase.domain != 'registry',
+                        had_successful_firing,
                         or_(AlertCase.last_resolved_notified_at.is_(None), failed_resolved),
                     ),
                 ),

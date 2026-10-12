@@ -66,3 +66,14 @@ def test_enabled_policy_mismatch_must_not_fall_back_to_default_channels(monkeypa
     )
     assert routing.firing_routes(case) == []
     assert routing.policy_allows_resolved(case, 42) is False
+
+
+def test_closed_case_dispatch_requires_successful_firing_evidence() -> None:
+    """Source guard: pending resolved work cannot be inferred from case closure alone."""
+    import inspect
+
+    text = inspect.getsource(notifications.dispatch_case_notifications)
+    assert 'had_successful_firing' in text
+    assert "NotificationDelivery.event_type == 'alert_ops.firing'" in text
+    assert "NotificationDelivery.status == 'sent'" in text
+    assert "AlertCase.domain != 'registry'" in text
