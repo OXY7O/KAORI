@@ -247,7 +247,10 @@ def test_registry_inventory_overview_restores_asset_counts_from_existing_kpis() 
         'def build_inventory_overview()',
         1,
     )[0]
-    assert 'counts = _overview_kpi_values(None)' in inventory_base
+    assert 'overview, _providers, _selected, scoped_providers, states = _overview_scope_context()' in inventory_base
+    assert '_overview_inventory_kpi_evidence(scoped_providers, states)' in inventory_base
+    assert 'counts = _overview_kpi_values(committed_provider_ids)' in inventory_base
+    assert '_overview_kpi_values(None)' not in inventory_base
     assert "'project_count': counts['projects']" in inventory_base
     assert "'repository_count': counts['repositories']" in inventory_base
     assert "'artifact_count': counts['artifacts']" in inventory_base
