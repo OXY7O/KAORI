@@ -19,10 +19,10 @@ containers. A host `.venv` is not required.
    The canonical variable contract is documented in `docs/deployment/ENVIRONMENT_CONFIGURATION.md`.
 2. Review `ADMIN_*` and development secret values.
 3. Open the repository in VS Code.
-4. Run `Dev Containers: Rebuild and Reopen in Container`.
-5. For the first PostgreSQL initialization, follow the [owner-only fresh-bootstrap runbook](operations/devcontainer-postgres-fresh-bootstrap.md). It provisions the runtime login before Flask/worker startup. Do not invoke `scripts/init_db.sh` without transient owner `KAORI_DB_MIGRATION_URL`.
-6. After the Dev Container reports frontend assets are ready, allow VS Code **Automatic Tasks** for this trusted workspace. The existing `KAORI: Watch Tailwind CSS` task starts on folder open, with at most one instance. If disabled, start it from **Terminal → Run Task**.
-7. Press `F5` and select `KAORI: Flask Debug`.
+4. Run `Dev Containers: Rebuild and Reopen in Container`. **VS Code starts PostgreSQL, Redis, workspace, all ten Celery workers and Beat automatically**. Compose also runs a one-shot `db-role-bootstrap` dependency that creates/adopts the restricted `kaori_runtime` login for a fresh bundled PostgreSQL database. No Docker commands or manual role setup are needed during normal opening.
+5. After the Dev Container reports frontend assets are ready, allow VS Code **Automatic Tasks** for this trusted workspace. The existing `KAORI: Watch Tailwind CSS` task starts on folder open, with at most one instance.
+6. Press `F5` and select `KAORI: Flask Debug`. A newly created database with no KAORI schema displays the existing **Database Setup Required** page. This is read-only and is expected before first initialization.
+7. **Only on the first empty database**, choose **Terminal → Run Task → `KAORI: Initialize Fresh Database`**. This single deliberate task performs owner-only migrations, RBAC/admin setup, refreshes runtime grants and verifies the Capsule ledger guard. Then refresh the browser to reach normal sign-in. Later DevContainer reopen/start operations require **no database initialization task**.
 
 A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend verification before the watcher can work. The `postCreate` lifecycle no longer forces an unconditional global npm upgrade, and `postStart` avoids rebuilding unchanged assets. If lifecycle startup fails, resolve that failure before treating the watcher as ready.
 
@@ -63,12 +63,15 @@ that deletes unrelated DevContainer volumes too. Follow the
 [scoped fresh-bootstrap procedure](operations/devcontainer-postgres-fresh-bootstrap.md)
 only when the developer explicitly authorizes local data destruction.
 
-On a fresh database, bring up PostgreSQL and the workspace first.
-Keep workers and Beat paused until owner migrations/bootstrap,
-runtime role provisioning, ORM/ledger admission and retained Redis
-queue-safety review are complete. Workers and Beat still enforce their
-existing `WAIT_FOR_SCHEMA=true` gate, which does not authorize them
-to run migrations or compensate for a missing runtime login.
+On a fresh database, VS Code already starts all services through its
+existing `runServices` list. The new one-shot Compose service creates only
+the non-owner runtime login; **it never runs Alembic or creates an app
+administrator**. Workers and Beat are started by DevContainer, but their
+existing `WAIT_FOR_SCHEMA=true` gate keeps task consumption disabled until
+the schema reaches the current Alembic head. The initial schema/admin
+mutation stays an explicit one-time VS Code task. If opening fails, check
+`db-role-bootstrap` logs, configuration and persisted role credentials;
+do not reset a nonempty database or silently switch to owner runtime.
 
 Equivalent terminal launch inside the Dev Container:
 
@@ -84,7 +87,7 @@ only after changing the Dockerfile or Python dependency files.
 
 Useful VS Code tasks:
 
-- `KAORI: Database Upgrade` (owner-only; do not run without explicit migration identity; use the fresh-bootstrap runbook)
+- `KAORI: Initialize Fresh Database` (one-time explicit fresh schema/RBAC/admin task; owner-only migration context is transient)\n- `KAORI: Database Upgrade` (owner-only migration and restricted-grant refresh)
 - `KAORI: Database Current`
 - `KAORI: Ruff Check`
 - `KAORI: djLint Check`
