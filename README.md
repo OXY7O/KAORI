@@ -50,10 +50,18 @@ cp .env.example .env
 # then start Flask/Beat/workers. Do not migrate as the app runtime role.
 ```
 
+When opened with **Dev Containers: Reopen in Container**, the full
+development fleet (database, Redis, workspace, workers and Beat) starts
+automatically, including a one-shot restricted runtime login bootstrap.
+Press F5 to view the existing read-only **Database Setup Required** page
+on a brand-new schema; then choose **Terminal → Run Task →
+KAORI: Initialize Fresh Database** exactly once to migrate, seed RBAC,
+create the first administrator and verify non-owner grants. Normal
+reopens need no initialization commands.
+
 See [fresh DevContainer PostgreSQL bootstrap](docs/operations/devcontainer-postgres-fresh-bootstrap.md)
-for the exact commands, or [existing-data role cutover](docs/operations/devcontainer-postgres-runtime-role.md)
-when records must be preserved. After the database guard passes, press F5
-to start the existing Flask Debug configuration.
+for first-run and recovery evidence, or [existing-data role cutover](docs/operations/devcontainer-postgres-runtime-role.md)
+when records must be preserved.
 
 For a laptop that should run a governed staging/RC image **without a Dev Container**, use [`example/kaori`](example/kaori/README.md). The example consumes an explicit admitted image reference rather than a mutable `staging` tag.
 
