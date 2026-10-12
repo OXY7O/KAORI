@@ -9,23 +9,46 @@ The files and Docker volumes for these modes are intentionally separate. A root 
 
 ## Mode 1 — Local development in VS Code Dev Container
 
-### 1. Prepare the environment
+### 1. Prepare the application environment
+
+`.env.example` is the **app-only DevContainer template**. The WSL
+host `initializeCommand` automatically creates private root `.env` if it
+does not already exist and replaces the placeholder runtime
+`DATABASE_URL` with a generated `kaori_runtime` credential. You may
+instead copy it before first open to choose your own
+`ADMIN_EMAIL`/`ADMIN_USERNAME` and optional development settings:
 
 ```bash
+# Optional — skip when the host should generate .env from its template.
 cp .env.example .env
 ```
 
-Review at minimum:
+The app `.env` contains non-secret `POSTGRES_DB=kaori`,
+`POSTGRES_USER=postgres` (the **image's bootstrap role**, not a Flask
+login), `POSTGRES_PORT=5432`, runtime
+`DATABASE_URL=postgresql://kaori_runtime:<generated-password>@db:5432/kaori`,
+`SECRET_KEY`, `INTEGRATION_CREDENTIAL_KEY`, `ADMIN_*`,
+Redis/Celery keys and other existing application/provider settings.
+It must **not** contain `POSTGRES_PASSWORD`,
+`KAORI_MIGRATOR_PASSWORD`, `KAORI_RUNTIME_PASSWORD`,
+`KAORI_DB_MIGRATION_URL`, `PGPASSWORD` or owner URLs.
 
-- `SECRET_KEY`
-- `DATABASE_URL`
-- `POSTGRES_*`
-- `REDIS_URL`
-- `CELERY_BROKER_URL`
-- `CELERY_RESULT_BACKEND`
-- bootstrap `ADMIN_*` values
+Instead, the first host initialization generates:
 
-The complete variable contract is documented in `docs/deployment/ENVIRONMENT_CONFIGURATION.md`.
+- `~/.config/kaori/devcontainer/postgres-bootstrap.env` — credentials
+  for local `postgres` and initial `kaori_runtime` provisioning.
+- `~/.config/kaori/devcontainer/postgres-migrate.env` — credential
+  for non-superuser `kaori_migrator`, used by database initdb and
+  explicit operator bootstrap only.
+
+Both are outside the repository, developer-owned, and private. They are
+not application/worker env files. The initializer preserves their
+contents across reopens and refuses missing/mismatched credentials for
+an existing volume. **Never edit generated `DATABASE_URL` to point to
+`postgres` or `kaori_migrator`.**
+
+See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
+for exact file ownership, keys, and production boundaries.
 
 ### 2. Open the Dev Container
 
@@ -58,8 +81,11 @@ docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml \
 ```
 
 The application `DATABASE_URL` belongs only to `kaori_runtime`, not a DBA
-or migration role. The host initializer provisions segregated PostgreSQL
-credentials under `~/.config/kaori/devcontainer/`; they are not in `.env`.
+or migration role. The two PostgreSQL authority files live outside the
+source workspace at `~/.config/kaori/devcontainer/`; they are not in `.env`
+and are not inherited by Flask or workers. `POSTGRES_USER=postgres` inside
+the shared app `.env` remains a non-secret Compose selector, **not** a
+runtime identity or password.
 On a fresh or migration-behind development database, the workspace remains usable while Celery workers and Beat wait for the exact current Alembic migration head. They do not dispatch or consume scheduled KAORI work before schema readiness and they do not run migrations themselves. After migrations, grants, and first-admin admission pass, the background services continue automatically without a manual restart.
 
 ### 3a. Existing DevContainer databases and the historical role cutover
