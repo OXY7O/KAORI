@@ -45,7 +45,8 @@ def enqueue_registry_runtime_correlation(
     prerequisites = correlation_prerequisites()
     if not prerequisites['eligible']:
         raise RegistryRuntimeCorrelationBlocked(
-            'Committed Artifact Registry artifacts and Kubernetes Pod inventory are both required before runtime correlation.'
+            'Committed Artifact Registry artifacts and Kubernetes Pod inventory '
+            'are both required before runtime correlation.'
         )
     return enqueue_canonical_job(
         task=materialize_registry_runtime_correlation_task,
