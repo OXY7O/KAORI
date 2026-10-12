@@ -37,9 +37,9 @@ def test_activity_audit_uses_availability_posture_without_treating_warning_event
     assert 'Actor Evidence' in summary
     assert 'Hot Evidence Scope' in summary
     assert 'Notification-backed' in summary
-    assert 'Authorized readers can review committed notification-backed activity across KAORI.' in summary
+    assert 'Authorized access to committed KAORI activity evidence.' in summary
     assert 'System-Wide Scope' not in summary
-    assert 'Actor identity, role, and authentication source are preserved at commit time.' in summary
+    assert 'Actor identity, role, and authentication source preserved at commit.' in summary
     assert 'Immutable' in summary
     assert 'Hot + Archive' in summary
     assert "'posture_label': 'Available'" in queries
