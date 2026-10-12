@@ -10,6 +10,7 @@ from werkzeug.datastructures import MultiDict
 from app.extensions.db import db
 
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
+from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
 from app.intelligence.finding_presentation import (
     build_affected_assets,
     build_affected_items,
@@ -392,6 +393,7 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
             ).filter(
                 TLSCertificateInventory.collected_at >= cutoff,
                 TLSCertificateCollectionState.collected_at >= cutoff,
+                TLSCertificateCollectionState.secret_collection_status == TLS_COLLECTION_COLLECTED,
             ).filter(
                 TLSCertificateInventory.status.in_(['expired', 'critical', 'warning', 'invalid'])
             )
