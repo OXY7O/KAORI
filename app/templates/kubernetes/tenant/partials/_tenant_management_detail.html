@@ -686,6 +686,8 @@
                                         {% set current_handoff_approval = row.release_handoff_approval %}
                                         {% if tenant.provider_key == 'native_kubernetes' and row.get('native_release_readiness') and row.native_release_readiness.provider_handoff_recovery_required %}
                                             {{ table_label.status_label('Recovery Required', 'warning') }}
+                                        {% elif tenant.provider_key == 'capsule' and row.capsule_approved_plan_expired %}
+                                            {{ table_label.status_label('Approval Expired', 'warning') }}
                                         {% elif tenant.provider_key == 'native_kubernetes' and row.get('native_release_readiness') and row.native_release_readiness.approval_expired %}
                                             {{ table_label.status_label('Approval Expired', 'warning') }}
                                         {% elif tenant.provider_key == 'native_kubernetes' and row.get('native_release_readiness') and row.native_release_readiness.review_expired %}
@@ -750,6 +752,58 @@
                                                 </a>
                                             </div>
                                         {% endif %}
+                                        {% if tenant.provider_key == 'capsule' and row.capsule_approved_plan_expired and handoff_plan %}
+                                            <div class="rounded-lg border border-status-warning-border bg-status-warning-soft px-3 py-3 space-y-3"
+                                                 role="status" aria-label="Expired Capsule independent approval">
+                                                <div class="flex items-start gap-2.5">
+                                                    <i data-lucide="clock-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text" aria-hidden="true"></i>
+                                                    <div>
+                                                        <p class="text-xs font-semibold text-status-warning-text">Capsule independent approval expired</p>
+                                                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                                            The prior independent review remains historical evidence, but its 15-minute approval window is over.
+                                                            Provider Admin consent, preview and handoff are unavailable until a new exact SHA receives a fresh independent review.
+                                                            Do not reuse the old plan.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {% if handoff_plan.requested_by == current_user.id and current_user.has_permission('tenant.manage')
+                                                      and current_user.has_permission('integrations.manage')
+                                                      and current_user.has_permission('clusters.manage') %}
+                                                    <form method="post"
+                                                          action="{{ url_for('tenant.restart_expired_capsule_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-post="{{ url_for('tenant.restart_expired_capsule_handoff_route', tenant_id=tenant.id) }}"
+                                                          hx-target="#tenant-management-detail"
+                                                          hx-select="#tenant-management-detail"
+                                                          hx-swap="outerHTML show:none focus-scroll:false"
+                                                          hx-indicator="#tenant-management-loading"
+                                                          hx-disabled-elt="find button[type='submit']"
+                                                          class="space-y-2">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
+                                                        <input type="hidden" name="tenant_detail_section" value="release">
+                                                        <input type="hidden" name="tenant_release_step" value="approval">
+                                                        {% for state_key, state_value in registry_state.items() %}
+                                                            <input type="hidden" name="registry_{{ state_key }}" value="{{ state_value }}">
+                                                        {% endfor %}
+                                                        <input type="hidden" name="plan_sha256" value="{{ handoff_plan.plan_sha256 }}">
+                                                        <label class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                                                            <input type="checkbox" name="confirm_capsule_handoff_restart" value="restart" required
+                                                                   class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                            <span>Restart only if no Capsule provider START/attempt exists; require new independent review and Platform Admin consent. Provider resources will not be modified.</span>
+                                                        </label>
+                                                        <button type="submit"
+                                                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                                            <i data-lucide="refresh-cw" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                            Restart Expired Capsule Plan
+                                                        </button>
+                                                    </form>
+                                                {% else %}
+                                                    <p class="text-xs leading-5 text-content-secondary">
+                                                        Ask the original requester to restart from fresh provider evidence. A different authorized operator must approve the new plan.
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
                                         {% if row.release_handoff_preparation_state == 'available'
                                               or (row.release_handoff_preparation_state == 'expired'
                                                   and handoff_plan and handoff_plan.requested_by == current_user.id) %}
@@ -808,9 +862,10 @@
                                                     <i data-lucide="lock-keyhole" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                                                     <div class="min-w-0">
                                                         <h5 class="text-sm font-semibold text-content-primary">
-                                                            {{ 'Awaiting Independent Review' if row.release_handoff_preparation_state == 'pending'
-                                                               else ('Independent Review Recorded' if row.release_handoff_preparation_state == 'acknowledged'
-                                                                     else 'Plan Not Eligible for Replacement') }}
+                                                            {{ 'Capsule Approval Expired' if row.capsule_approved_plan_expired
+                                                               else ('Awaiting Independent Review' if row.release_handoff_preparation_state == 'pending'
+                                                                     else ('Independent Review Recorded' if row.release_handoff_preparation_state == 'acknowledged'
+                                                                           else 'Plan Not Eligible for Replacement')) }}
                                                         </h5>
                                                         {% if row.release_handoff_preparation_state == 'expired' %}
                                                             <p class="mt-1 text-xs leading-5 text-content-secondary">
@@ -910,6 +965,7 @@
                                                             Existing kubeconfig verified through SelfSubjectReview and scoped SelfSubjectAccessReview. Provider transfer is still separate.
                                                         </p>
                                                     {% elif row.release_handoff_preparation_state == 'acknowledged'
+                                                            and not row.capsule_approved_plan_expired
                                                             and handoff_plan.requested_by == current_user.id %}
                                                         <p class="mt-2 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5 text-xs leading-5 text-content-secondary"
                                                            role="status" aria-label="Independent Platform Admin required">
@@ -1124,6 +1180,7 @@
                                                             Your own plan request cannot constitute successor consent.
                                                         </p>
                                                     {% elif row.release_handoff_preparation_state == 'acknowledged'
+                                                            and not row.capsule_approved_plan_expired
                                                             and handoff_approval
                                                             and handoff_approval.approved_by != handoff_plan.requested_by
                                                             and current_user.has_permission('clusters.manage')
