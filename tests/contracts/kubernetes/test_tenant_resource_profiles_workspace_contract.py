@@ -808,7 +808,12 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'type="number"' in capacity
     assert 'min="0.01"' in capacity
     assert 'step="0.01"' in capacity
-    assert 'placeholder="2048"' in capacity
+    assert 'placeholder="Enter GiB amount"' in capacity
+    assert 'placeholder="2048"' not in capacity
+    assert 'for="tenant-storage-budget-gib"' in capacity
+    assert 'id="tenant-storage-budget-gib"' in capacity
+    assert 'aria-describedby="tenant-storage-budget-help"' in capacity
+    assert 'Optional. Enter a value and save to govern storage; blank means Not Governed.' in capacity
     assert '2048 GiB = 2 TiB' in capacity
     assert 'Compute evidence required' in capacity
     assert 'Logical storage governed' in capacity
