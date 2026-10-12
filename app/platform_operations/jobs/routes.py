@@ -478,13 +478,19 @@ def run_now(job_key: str) -> ResponseReturnValue:
 
     try:
         recover_stale_jobs()
-        # Only the Object Storage Inventory job accepts the explicit scoped empty
-        # reconciliation form. The owning dispatcher verifies its confirmation.
+        # Only the Object Storage and Artifact Registry Inventory jobs accept a
+        # scoped confirmed-empty form. Domain dispatchers verify confirmation.
         empty_parameters = None
         if job_key == 'object_storage.inventory.sync' and request.form.get('empty_reconciliation'):
             empty_parameters = {
                 'empty_reconciliation': request.form.get('empty_reconciliation'),
                 'confirm_empty_system_id': request.form.get('confirm_empty_system_id'),
+                'confirmation_phrase': request.form.get('confirmation_phrase'),
+            }
+        elif job_key == 'artifact_registry.inventory.sync' and request.form.get('empty_reconciliation'):
+            empty_parameters = {
+                'empty_reconciliation': request.form.get('empty_reconciliation'),
+                'confirm_empty_instance_id': request.form.get('confirm_empty_instance_id'),
                 'confirmation_phrase': request.form.get('confirmation_phrase'),
             }
         outcome = dispatch_registered_job(
