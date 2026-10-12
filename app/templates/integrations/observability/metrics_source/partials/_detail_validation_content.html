@@ -26,12 +26,12 @@
     {% set gate_label = "Provider Remediation Required" %}
     {% set gate_body = "Restore required core API contracts." %}
     {% set gate_tone = "critical" %}
-    {% set next_action = "Restore blocked core APIs, then rerun Full Validation." %}
+    {% set next_action = "Restore blocked core APIs, then rerun Full Validation to refresh readiness." %}
 {% elif readiness == "degraded" %}
     {% set gate_label = "Core APIs Ready" %}
     {% set gate_body = "Core APIs are usable; provider compatibility remains Degraded." %}
     {% set gate_tone = "warning" %}
-    {% set next_action = "Source is usable with degraded compatibility. Upgrade or qualify the detected release, then rerun Full Validation." %}
+    {% set next_action = "Source remains usable with degraded compatibility. Upgrade or qualify its release, then rerun Full Validation." %}
 {% elif readiness == "ready" %}
     {% set gate_label = "Provider Ready" %}
     {% set gate_body = "Core Metrics Source APIs are usable." %}
