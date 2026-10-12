@@ -403,6 +403,50 @@ def _governance_filtered_query(
     )
 
 
+def _governance_replication_empty_state(
+    *, provider_count: int, capability_counts: dict[str, int]
+) -> dict[str, str]:
+    observed = capability_counts.get('observed', 0)
+    unavailable = capability_counts.get('unavailable', 0)
+    unsupported = capability_counts.get('unsupported', 0)
+    if provider_count and observed == provider_count:
+        return {
+            'title': 'No Replication Policies Configured',
+            'description': (
+                'The current committed governance snapshot successfully observed '
+                'an empty replication policy inventory across the active Registry sources.'
+            ),
+        }
+    if provider_count and unsupported == provider_count:
+        return {
+            'title': 'Replication Not Supported',
+            'description': 'The active Registry providers report replication as unsupported.',
+        }
+    if unavailable:
+        return {
+            'title': 'Replication Evidence Unavailable',
+            'description': (
+                'Replication collection was unavailable for one or more Registry sources. '
+                'Review Governance Sync diagnostics; absence of rows does not prove no policies.'
+            ),
+        }
+    if observed:
+        return {
+            'title': 'No Replication Policies in Available Evidence',
+            'description': (
+                'Observed sources report no replication policies, but the remaining Registry '
+                'sources are unsupported or have no usable committed evidence.'
+            ),
+        }
+    return {
+        'title': 'No Replication Evidence Collected',
+        'description': (
+            'No committed replication evidence is available for this scope. '
+            'Run Governance Sync to collect supported provider evidence.'
+        ),
+    }
+
+
 def build_governance(
     *,
     active_tab: str = 'policies',
@@ -481,6 +525,10 @@ def build_governance(
         'snapshot_context': _governance_snapshot_context(summary),
         'posture_cards': _governance_posture_cards(summary, capability_counts=capability_counts),
         'capability_counts': capability_counts,
+        'replication_empty': _governance_replication_empty_state(
+            provider_count=summary['provider_count'],
+            capability_counts=capability_counts['replication'],
+        ),
         'active_tab': normalized_tab,
         'rows': rows,
         'pagination': pagination,
