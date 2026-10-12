@@ -1,8 +1,10 @@
 """Pure host-side first-run contract tests; never connect to Docker or mutate KAORI DB."""
 from __future__ import annotations
 
+import json
 import runpy
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -96,3 +98,76 @@ def test_existing_database_rejects_runtime_credential_drift(tmp_path: Path) -> N
     with pytest.raises(SystemExit, match='runtime DATABASE_URL differs'):
         main()
     assert app_env.read_text() == tampered
+
+
+def test_docker_inspect_missing_volume_is_the_only_allowed_fresh_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, state = _initialization(tmp_path, volume_exists={'value': False})
+    namespace = runpy.run_path(str(PREPARE), run_name='kaori_first_run_inspect')
+    inspect_volume = namespace['database_volume_exists']
+    module = namespace['subprocess']
+    monkeypatch.setattr(
+        module, 'run',
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=1,
+            stderr='Error response from daemon: get kaori-dev_kaori_postgres_data: no such volume',
+            stdout='',
+        ),
+    )
+    assert inspect_volume() is False
+
+
+def test_docker_inspect_daemon_failure_never_regenerates_database_secrets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    namespace = runpy.run_path(str(PREPARE), run_name='kaori_first_run_inspect')
+    monkeypatch.setattr(
+        namespace['subprocess'], 'run',
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=1, stderr='Cannot connect to the Docker daemon', stdout='',
+        ),
+    )
+    with pytest.raises(SystemExit, match='Docker volume inspection failed'):
+        namespace['database_volume_exists']()
+
+
+def test_docker_inspect_rejects_same_name_volume_owned_by_other_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    namespace = runpy.run_path(str(PREPARE), run_name='kaori_first_run_inspect')
+    inspect = [{
+        'Name': 'kaori-dev_kaori_postgres_data',
+        'Labels': {
+            'com.docker.compose.project': 'foreign-project',
+            'com.docker.compose.volume': 'kaori_postgres_data',
+        },
+    }]
+    monkeypatch.setattr(
+        namespace['subprocess'], 'run',
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0, stderr='', stdout=json.dumps(inspect),
+        ),
+    )
+    with pytest.raises(SystemExit, match='identity/ownership differs'):
+        namespace['database_volume_exists']()
+
+
+def test_docker_inspect_accepts_only_correct_kaori_dev_volume(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    namespace = runpy.run_path(str(PREPARE), run_name='kaori_first_run_inspect')
+    inspect = [{
+        'Name': 'kaori-dev_kaori_postgres_data',
+        'Labels': {
+            'com.docker.compose.project': 'kaori-dev',
+            'com.docker.compose.volume': 'kaori_postgres_data',
+        },
+    }]
+    monkeypatch.setattr(
+        namespace['subprocess'], 'run',
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0, stderr='', stdout=json.dumps(inspect),
+        ),
+    )
+    assert namespace['database_volume_exists']() is True
