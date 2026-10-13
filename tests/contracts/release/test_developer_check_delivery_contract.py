@@ -34,7 +34,11 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert jobs['developer-check']['name'] == 'Developer Check'
     assert jobs['developer-check']['if'].startswith('${{ always()')
     assert set(jobs['python-check']['needs']) == {'route', 'toolchain'}
-    assert set(jobs['validation-check']['needs']) == {'route', 'toolchain'}
+    # Both kaori-ci runners share one host: finish Pyright before memory-heavy focused pytest.
+    # Preserve frontend-only validation when Python is intentionally skipped.
+    assert set(jobs['validation-check']['needs']) == {'route', 'toolchain', 'python-check'}
+    assert "needs.python-check.result == 'success'" in jobs['validation-check']['if']
+    assert "needs.python-check.result == 'skipped'" in jobs['validation-check']['if']
     assert set(jobs['developer-check']['needs']) == {
         'route',
         'toolchain',
