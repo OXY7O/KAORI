@@ -216,3 +216,58 @@ def test_registry_minimap_matches_k8s_graph_overview_and_redraw_contract() -> No
     assert 'window.devicePixelRatio' in k8s
     assert 'ctx.setLineDash([4, 3])' in k8s
     assert 'const drawMiniMap = (pane, node)' not in renderer
+
+
+def test_resource_list_scrolls_without_pagination_and_matches_k8s() -> None:
+    template = REGISTRY.read_text(encoding='utf-8')
+    renderer = RUNTIME_JS.read_text(encoding='utf-8')
+    k8s = K8S.read_text(encoding='utf-8')
+    assert 'id="registry-topology-view-panel-list"' in template
+    assert 'h-[38rem] overflow-auto overscroll-contain bg-surface-card' in template
+    assert 'topology-view-panel-list' in k8s
+    assert 'overflow-auto bg-surface-card' in k8s
+    assert 'registry-topology-resource-rows' in template
+    assert 'registry-topology-prev' not in template
+    assert 'registry-topology-next' not in template
+    assert 'registry-topology-list-count' not in template
+    assert 'registry-topology-prev' not in renderer
+    assert 'registry-topology-next' not in renderer
+    assert 'listPage' not in renderer
+    assert 'pageSize' not in renderer
+    assert 'const nodes = sortedVisibleResources()' in renderer
+    assert 'for (const item of nodes)' in renderer
+    assert 'payload.summary.omitted_bindings' in renderer
+    assert "Dashed: scope · Solid: runtime/ownership." in template
+    assert "Tag/mixed matches: see Details for confidence." in template
+    assert template.count('whitespace-nowrap text-xs text-') >= 2
+
+
+def test_runtime_inspector_evidence_cards_preserve_committed_match_and_security() -> None:
+    inspector = (ROOT / 'app/templates/artifact_registry/partials/_topology_inspector_templates.html').read_text(encoding='utf-8')
+    renderer = RUNTIME_JS.read_text(encoding='utf-8')
+    Environment().parse(inspector)
+    for marker in (
+        'registry-topology-runtime-evidence-row-template',
+        'data-node-runtime-bindings',
+        'data-runtime-evidence-count',
+        'data-runtime-evidence-rows',
+        'data-runtime-workload',
+        'data-runtime-pod',
+        'data-runtime-cluster',
+        'data-runtime-namespace',
+        'data-runtime-match-text',
+        'data-runtime-security-text',
+        'data-runtime-match-dot',
+        'data-runtime-security-dot',
+    ):
+        assert marker in inspector
+    assert "const rows = associatedBindings(node.id())" in renderer
+    assert "rows.slice(0, 10)" in renderer
+    assert "String(item.match_type || item.match || '').toLowerCase()" in renderer
+    assert "item.confidence" in renderer
+    assert "Number(item.critical) > 0 ? 'critical'" in renderer
+    assert "Number(item.high) > 0 ? 'warning'" in renderer
+    assert "applyStatusSurface(card.querySelector('[data-runtime-match]')" in renderer
+    assert "applyStatusSurface(card.querySelector('[data-runtime-security]')" in renderer
+    assert "'registry-topology-runtime-evidence-row-template'" in renderer
+    assert "rows.length - 10" in renderer
