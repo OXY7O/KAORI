@@ -158,8 +158,10 @@ jobs:
 
   validation-check:
     name: Frontend & Focused Validation
-    needs: [route, toolchain]
-    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
+    # Both kaori-ci runner services share host 'kaori': serialize memory-intensive
+    # Pyright and focused pytest; still run frontend-only routes if Python is skipped.
+    needs: [route, toolchain, python-check]
+    if: ${{ !cancelled() && needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.python-check.result == 'success' || needs.python-check.result == 'skipped') && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 20
     steps:
