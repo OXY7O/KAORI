@@ -59,6 +59,7 @@ def test_discord_parser_keeps_webhook_secret_out_of_edit_view() -> None:
 def test_discord_204_success_sends_mentions_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     opener = Mock()
     response = MagicMock()
+    response.__enter__.return_value = response
     response.status = 204
     opener.open.return_value = response
     handlers = []
@@ -85,6 +86,7 @@ def test_discord_204_success_sends_mentions_disabled(monkeypatch: pytest.MonkeyP
 def test_discord_200_with_message_id(monkeypatch: pytest.MonkeyPatch) -> None:
     opener = Mock()
     response = MagicMock()
+    response.__enter__.return_value = response
     response.status = 200
     response.read.return_value = b'{"id":"111"}'
     opener.open.return_value = response
