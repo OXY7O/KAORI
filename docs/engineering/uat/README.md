@@ -8,6 +8,10 @@ Read one `.feature` file per KAORI capability, click the scenario with its stabl
 
 **Feedback:** add a comment on [#1738](https://github.com/OXY7O/KAORI/issues/1738), citing the exact ID and the Given/When/Then line that should change. Mention the feature and role, expected committed state, provider/audit read-back, negative/security path or UI geometry, as applicable. Never include secrets. Gherkin text is written in English for consistency with KAORI's approved technical documentation; discuss refinements in Indonesian if you prefer.
 
+## UAT execution/evidence pilot (#1728)
+
+The [manual execution instructions](EXECUTION.md), [first-wave node mapping](scenario_execution_manifest.json), and [execution request example](execution_request.example.json) are available on the **stacked #1728 work branch**. They collect JUnit and screenshots/traces from the existing runners without creating a new CI lane. A dossier reports machine readiness and **never automatically records human acceptance**. The four pilot scenarios do not represent 91-scenario execution coverage.
+
 ## Execution and ownership boundaries
 
 - **91 scenarios in 18 capability files**, exactly matching the [scenario catalog](../KAORI_UAT_SCENARIO_CATALOG.md). **14 `@detailed` scenarios** expand the existing [first-wave procedures](../KAORI_UAT_FIRST_WAVE_CASES.md); **77 `@draft` scenarios** use catalog-level actions and expected results and need owner refinement before becoming full executable cases.
