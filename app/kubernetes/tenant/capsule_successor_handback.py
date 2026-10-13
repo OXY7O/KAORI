@@ -152,7 +152,7 @@ def _capsule_handback_scope(
         or not isinstance(release.get('handoff_fingerprint'), str)
     ):
         raise ValueError('Complete verified Capsule Released lineage is required.')
-    owner = _successor(release.get('successor_owner'))
+    _successor(release.get('successor_owner'))
     rows = release.get('verified_components')
     if (
         not isinstance(rows, list)

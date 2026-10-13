@@ -44,10 +44,12 @@ def test_scheduled_due_checks_distinguish_expired_and_missing_evidence(
     )
     if kind == 'analytics':
         monkeypatch.setattr(materialization, 'get_analytics_snapshot', lambda **_kw: snapshot)
-        due = lambda: materialization.analytics_snapshot_due(system_id='one', time_range='24h')
+        def due() -> bool:
+            return materialization.analytics_snapshot_due(system_id='one', time_range='24h')
     else:
         monkeypatch.setattr(materialization, 'get_forecast_snapshot', lambda **_kw: snapshot)
-        due = lambda: materialization.forecast_snapshot_due(system_id='one', history_window='30d')
+        def due() -> bool:
+            return materialization.forecast_snapshot_due(system_id='one', history_window='30d')
     assert due() is True
     snapshot.expires_at = datetime.now(UTC) + timedelta(minutes=15)
     snapshot.payload_json = None
