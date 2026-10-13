@@ -119,7 +119,7 @@ def test_configuration_key_inventory_uses_full_width_grouped_list_instead_of_til
     assert 'data-kaori-inventory-metadata-collection' in metadata
     assert 'data-kaori-metadata-keys-layout="balanced-two-column"' in metadata
     assert (
-        "metadata_description = 'Indexed key names from the committed snapshot; value content remains protected.' if mode == 'keys'"
+        "metadata_description = 'Key names only; no values.' if mode == 'keys' else 'Committed metadata entries.'"
         in metadata
     )
     assert 'entries|length % 2 == 1' in metadata

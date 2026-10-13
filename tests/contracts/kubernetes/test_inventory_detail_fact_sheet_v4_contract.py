@@ -78,3 +78,58 @@ def test_inventory_related_resources_use_contained_list_variant() -> None:
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{DETAILS[resource]}')
         if 'related_resource_collection.html' in detail:
             assert 'related_collection.inventory_render(' in detail, resource
+
+
+def test_structured_metadata_json_is_pretty_printed_without_changing_data() -> None:
+    import json
+
+    from app.common.presentation import pretty_structured_json
+
+    value = (
+        '{"apiVersion":"networking.k8s.io/v1","metadata":'
+        '{"name":"minio","annotations":{"comment":"Unicode: café"}},'
+        '"spec":{"rules":[{"host":"minio.localhost","http":{"paths":[]}}]}}'
+    )
+    formatted = pretty_structured_json(value)
+    assert formatted is not None
+    assert formatted.startswith('{\n  "apiVersion":')
+    assert '\n    "name": "minio"' in formatted
+    assert json.loads(formatted) == json.loads(value)
+    assert "café" in formatted
+    assert pretty_structured_json('[{"name":"pod"}]') == '[\n  {\n    "name": "pod"\n  }\n]'
+
+    for plain_value in (None, 12, False, '', 'Plain annotation', '42', 'true', '"text"', '{broken', '[broken'):
+        assert pretty_structured_json(plain_value) is None
+
+
+def test_inventory_metadata_json_markup_is_indented_escaped_and_responsive() -> None:
+    import html
+    import json
+    import re
+
+    from jinja2 import Environment, FileSystemLoader
+
+    from app.common.presentation import pretty_structured_json
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    env.filters['pretty_structured_json'] = pretty_structured_json
+    render = env.get_template('components/technical_metadata_collection.html').module.render
+    value = '{"apiVersion":"networking.k8s.io/v1","spec":{"host":"<script>alert(1)</script>"}}'
+
+    for embedded in (False, True):
+        markup = str(render('Ingress Annotations', {
+            'kubectl.kubernetes.io/last-applied-configuration': value,
+            'plain': 'unmodified value',
+            'invalid': '{broken',
+        }, embedded=embedded))
+        assert markup.count('data-kaori-inventory-json-value') == 1
+        assert '<script>' not in markup
+        assert '&lt;script&gt;' in markup
+        assert 'whitespace-pre-wrap break-words' in markup
+        assert 'overflow-y-auto' not in markup
+        assert 'data-kaori-copy-' not in markup
+        match = re.search(r'<pre[^>]*data-kaori-inventory-json-value[^>]*>(.*?)</pre>', markup, re.DOTALL)
+        assert match is not None
+        assert json.loads(html.unescape(match.group(1))) == json.loads(value)
+        assert 'unmodified value' in markup
+        assert '{broken' in markup
