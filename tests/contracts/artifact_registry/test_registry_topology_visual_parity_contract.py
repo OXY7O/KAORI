@@ -165,3 +165,52 @@ def test_registry_inspector_matches_k8s_details_and_relationships_design() -> No
     assert "groupNamespaceToggle" in renderer
     assert "updateNamespaceBoundaries" in renderer
     assert "evidence.status !== 'ready'" in renderer
+
+
+def test_registry_topology_auto_filters_use_canonical_header_actions_and_loading() -> None:
+    template = REGISTRY.read_text(encoding='utf-8')
+    renderer = RUNTIME_JS.read_text(encoding='utf-8')
+    Environment().parse(template)
+    assert 'components/table_registry.html' in template
+    assert 'registry_ui.clear_filters_action(' in template
+    assert "id='registry-topology-clear-filters'" in template
+    assert 'header_actions=registry_topology_header_actions' in template
+    assert 'id="registry-topology-clear-filters"' not in template  # macro owns the control
+    assert 'Apply Filters' not in template
+    assert 'lg:grid-cols-6' in template
+    assert "loading_id='registry-topology-loading'" in template
+    assert "const loading = $('registry-topology-loading')" in renderer
+    assert "loading?.classList.toggle('htmx-request', state)" in renderer
+    assert "const setLoading = (state) =>" in renderer
+    assert 'if (controller === requestController) setLoading(false)' in renderer
+    assert 'const requestController = new AbortController()' in renderer
+    assert "select.addEventListener('change', commitFilterChange)" in renderer
+    assert "searchTimer = window.setTimeout(commitFilterChange, 350)" in renderer
+    assert "clearFiltersButton?.addEventListener('click'" in renderer
+    assert "form.querySelector('input[name=\"artifact_id\"]')?.remove()" in renderer
+    assert "window.history.replaceState({}, '', url)" in renderer
+
+
+def test_registry_minimap_matches_k8s_graph_overview_and_redraw_contract() -> None:
+    template = (ROOT / 'app/templates/artifact_registry/partials/_topology_inspector_templates.html').read_text(encoding='utf-8')
+    renderer = RUNTIME_JS.read_text(encoding='utf-8')
+    k8s = (ROOT / 'app/static/js/kubernetes/inventory/topology.js').read_text(encoding='utf-8')
+    assert 'data-minimap' in template
+    for feature in (
+        'window.devicePixelRatio',
+        'ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)',
+        "token('--kaori-surface-card'",
+        "token('--kaori-outline-strong'",
+        "token('--kaori-status-info'",
+        'ctx.setLineDash([4, 3])',
+        "node.union(node.successors('node')).filter(':visible')",
+        "nodeIds.has(edge.source().id()) && nodeIds.has(edge.target().id())",
+        'const scheduleDrawerMiniMapUpdate = () =>',
+        "cy.on('pan zoom resize position layoutstop', scheduleDrawerMiniMapUpdate)",
+        "window.addEventListener('resize', scheduleDrawerMiniMapUpdate)",
+        "drawing.dataset.kaoriBound = 'true'",
+    ):
+        assert feature in renderer
+    assert 'window.devicePixelRatio' in k8s
+    assert 'ctx.setLineDash([4, 3])' in k8s
+    assert 'const drawMiniMap = (pane, node)' not in renderer
