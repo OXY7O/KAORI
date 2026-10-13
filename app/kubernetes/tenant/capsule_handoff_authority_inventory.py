@@ -258,6 +258,12 @@ def _intent_bindings(
     return intents, blockers
 
 
+def _require_exact_namespaces(names: set[Any], namespaces: list[dict[str, Any]]) -> None:
+    """Reject incomplete Namespace identity before correlating RBAC contracts."""
+    if len(names) != len(namespaces) or not all(isinstance(ns, str) and ns for ns in names):
+        raise ValueError('Capsule RBAC lineage Namespace identity is incomplete.')
+
+
 def inspect_capsule_role_binding_lineage(
     *,
     capsule_spec: Any,
@@ -280,8 +286,7 @@ def inspect_capsule_role_binding_lineage(
     ):
         raise ValueError('Capsule RBAC lineage requires exact bounded provider scope.')
     ns_set = {item.get('name') for item in namespaces if isinstance(item, Mapping)}
-    if len(ns_set) != len(namespaces) or not all(isinstance(ns, str) and ns for ns in ns_set):
-        raise ValueError('Capsule RBAC lineage Namespace identity is incomplete.')
+    _require_exact_namespaces(ns_set, namespaces)
     intents, blockers = _intent_bindings(capsule_spec, {str(ns) for ns in ns_set}, tenant_id=tenant_id)
     resources = related.get('resources')
     if not isinstance(resources, list) or len(resources) > 300:
