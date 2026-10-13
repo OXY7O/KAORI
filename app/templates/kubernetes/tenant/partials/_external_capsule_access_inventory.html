@@ -93,7 +93,7 @@
                                         <p class="mt-1 break-all font-mono">
                                             {{ subject.kind }} · {{ subject.name }}
                                             {% if subject.namespace %}
-                                                <span> · {{ subject.namespace }}</span>
+                                                <span>· {{ subject.namespace }}</span>
                                             {% endif %}
                                         </p>
                                     {% endfor %}
@@ -231,9 +231,7 @@
                             required
                             class="mt-1 block h-9 w-full min-w-40 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary sm:w-auto">
                         {% for tenant in external_native_tenants %}
-                            <option value="{{ tenant.id }}">
-                                {{ tenant.name }}
-                            </option>
+                            <option value="{{ tenant.id }}">{{ tenant.name }}</option>
                         {% endfor %}
                     </select>
                 </label>
