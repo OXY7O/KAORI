@@ -353,3 +353,35 @@ def test_topology_relationship_summary_reuses_existing_inspector() -> None:
     assert "if (!resourceCount) return" in script
     assert 'Namespace boundary overlays appear only' in pattern
     assert 'visible committed edge type and direction' in pattern
+
+
+def test_topology_regular_external_labels_and_semantic_operational_arrows() -> None:
+    script = _read('app/static/js/kubernetes/inventory/topology.js')
+    workspace = _read('app/templates/kubernetes/inventory/topology/partials/_workspace.html')
+    edge_builder = _read('app/kubernetes/inventory/topology/edge_builder.py')
+    palette = _read('docs/design/components/TOPOLOGY_PALETTE.md')
+
+    # External resource labels are regular; glyphs inside the badge still identify node type.
+    assert "'font-size': 10,\n                    'font-weight': 400" in script
+    assert "'font-size': 11, 'font-weight': 400" in script
+    assert 'font-weight="700"' in script
+    assert "'font-size': 9,\n                    'font-weight': 500" in script
+
+    # Subtle operational paths remain directional and distinct from containment.
+    assert 'selector: \'edge[relationship = "owns"]\'' in script
+    assert "style: { 'line-opacity': 0.74, 'arrow-scale': 0.66, width: 1.7 }" in script
+    assert 'selector: \'edge[relationship = "scheduled_on"]\'' in script
+    assert "style: { 'line-opacity': 0.58, 'arrow-scale': 0.58, width: 1.35 }" in script
+    assert 'selector: \'edge[relationship = "contains"]\'' in script
+    assert "'target-arrow-shape': 'none'" in script
+    assert "'target-arrow-shape': 'triangle'" in script
+    assert "relationship='owns'" in edge_builder
+    assert "relationship='scheduled_on'" in edge_builder
+    assert 'Owns: Workload → Pod; Scheduled on: Pod → Node' in workspace
+    assert '## Readable Label and Operational Edge Hierarchy' in palette
+
+    # Intentional interaction emphasis and previously approved hover behavior stay intact.
+    assert "selector: 'edge.edge-hovered'" in script
+    assert "cy.edges(':selected:visible').addClass('edge-label-visible')" in script
+    assert "'text-margin-y': 24" in script
+    assert 'Always Show Relationship Labels' in workspace
