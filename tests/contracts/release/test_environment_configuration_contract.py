@@ -74,7 +74,7 @@ def test_environment_contract_uses_canonical_storage_and_public_url_names() -> N
     production = read(APP_ENV)
     assert 'REPORT_STORAGE_BACKEND=s3' in production
     assert 'REPORT_S3_BUCKET=kaori-production' in production
-    assert 'KAORI_PUBLIC_BASE_URL=https://kaori.cloud' in production
+    assert 'KAORI_PUBLIC_BASE_URL=https://change-me.example.com' in production
 
 
 def test_split_environment_contract_verifier_passes() -> None:
