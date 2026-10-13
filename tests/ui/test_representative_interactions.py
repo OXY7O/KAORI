@@ -894,8 +894,6 @@ def test_reports_generate_wizard_negative_submission_is_scoped_and_reviewable(
     kaori_authenticated_base_url: str,
 ) -> None:
     """UAT-RPT-001/003: real wizard clicks, scope selection and bounded rejection."""
-    import app.reports.generate.service as report_service
-
     page = configured_page
     viewport_name, _ = kaori_viewport
     submitted: list[dict[str, str]] = []
@@ -949,12 +947,14 @@ def test_reports_generate_wizard_negative_submission_is_scoped_and_reviewable(
         page.locator('#cluster-select').select_option('qa-cluster')
         page.locator('#namespace-select').select_option('qa-namespace')
 
-        for step in ('3', '4', '5'):
+        page.locator('#wizard-next-button').click()
+        expect(page.locator('[data-wizard-panel="3"]')).to_be_visible()
+        page.locator('#output-format-select').select_option('csv')
+        for step in ('4', '5'):
             page.locator('#wizard-next-button').click()
             expect(page.locator(f'[data-wizard-panel="{step}"]')).to_be_visible()
             assert_document_fits_viewport(page)
 
-        page.locator('#output-format-select').select_option('csv')
         expect(page.locator('#generate-report-button')).to_be_enabled()
         expect(page.locator('#preview-report-name')).to_contain_text('QA Controlled Analytics')
         page.screenshot(
