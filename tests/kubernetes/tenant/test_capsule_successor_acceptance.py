@@ -425,7 +425,7 @@ class _Session:
         self.commits += 1
 
 
-def _bound_service(monkeypatch, *, drift=False, previous=None):
+def _bound_service(monkeypatch, *, drift=False, previous_same_plan=False):
     plan = _plan()
     approval = _approval(plan)
     tenant = SimpleNamespace(
@@ -459,6 +459,7 @@ def _bound_service(monkeypatch, *, drift=False, previous=None):
     monkeypatch.setattr(acceptance, 'require_platform_admin_actor', lambda _: None)
     monkeypatch.setattr(acceptance, 'latest_release_handoff_plan', lambda _: plan)
     monkeypatch.setattr(acceptance, 'latest_release_handoff_approval', lambda _: approval)
+    previous = {'plan_sha256': plan['plan_sha256']} if previous_same_plan else None
     monkeypatch.setattr(acceptance, 'latest_capsule_successor_acceptance', lambda _: previous)
     fresh = {
         **plan,
@@ -519,10 +520,7 @@ def test_capsule_acceptance_rejects_scope_drift_and_same_plan_replay(monkeypatch
             confirmed=True,
         )
     assert session.commits == 0
-    plan, session = _bound_service(
-        monkeypatch,
-        previous={'plan_sha256': plan['plan_sha256']},
-    )
+    plan, session = _bound_service(monkeypatch, previous_same_plan=True)
     with pytest.raises(ValueError, match='already|superseded|changed'):
         acceptance.accept_capsule_successor_handoff_committed(
             tenant_id='tenant-1',
