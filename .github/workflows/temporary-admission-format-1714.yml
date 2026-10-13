@@ -46,7 +46,13 @@ jobs:
           set -e
           printf 'Ruff safe autofix exit (NOT admission): %s\n' "$ruff_fix_rc"
           run_toolchain python -m ruff format app migrations tests scripts
+          # djLint returns 1 when --reformat changes files; check the resulting tree.
+          set +e
           run_toolchain python -m djlint app/templates --reformat
+          djlint_reformat_rc=$?
+          set -e
+          printf 'djLint reformat exit (NOT admission): %s\n' "$djlint_reformat_rc"
+          run_toolchain python -m djlint app/templates --check
           git add -u app migrations tests scripts
           git diff --cached --check
           if git diff --cached --quiet; then
