@@ -173,9 +173,7 @@ OBJECT_STORAGE_ANALYTICS_HERO = TEMPLATES / 'storage' / 'object_storage' / 'anal
 OBJECT_STORAGE_ANALYTICS_PAGES = ROOT / 'app' / 'storage' / 'object_storage' / 'analytics' / 'pages.py'
 REGISTRY_ANALYTICS_HERO = TEMPLATES / 'artifact_registry' / 'analytics.html'
 REGISTRY_ANALYTICS_PAGES = ROOT / 'app' / 'artifact_registry' / 'presentation_analytics.py'
-REGISTRY_ANALYTICS_PAGE_KEYS = {
-    'overview', 'growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'
-}
+REGISTRY_ANALYTICS_PAGE_KEYS = {'overview', 'growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'}
 OBJECT_STORAGE_ANALYTICS_PAGE_KEYS = {'overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'}
 SETTINGS_GENERAL_HERO = TEMPLATES / 'settings' / 'general' / 'partials' / '_hero.html'
 SETTINGS_ACCOUNT_HERO = TEMPLATES / 'settings' / 'account' / 'partials' / '_hero.html'
