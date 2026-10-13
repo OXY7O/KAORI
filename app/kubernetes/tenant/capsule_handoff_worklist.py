@@ -19,6 +19,14 @@ _MAX_RELATED = 300
 _MAX_GLOBAL = 100
 
 
+def _scope_key(item: Mapping[str, Any]) -> tuple[str, str]:
+    """Validate provider Namespace/kind identity before using it as a scope key."""
+    namespace, kind = item.get('namespace'), item.get('kind')
+    if not isinstance(namespace, str) or not namespace or not isinstance(kind, str) or not kind:
+        raise ValueError('Capsule provider LIST Namespace/kind scope is incomplete.')
+    return namespace, kind
+
+
 def build_capsule_handoff_worklist(
     *,
     plan: Mapping[str, Any],
@@ -51,14 +59,14 @@ def build_capsule_handoff_worklist(
         raise ValueError('Capsule worklist lacks SHA-bound complete authoritative inventory.')
     names = {row['name'] for row in namespaces}
     expected_lists = {(name, kind) for name in names for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')}
-    list_keys = [(item.get('namespace'), item.get('kind')) for item in lists if isinstance(item, Mapping)]
+    list_keys = [_scope_key(item) for item in lists if isinstance(item, Mapping)]
     if len(list_keys) != len(lists) or len(set(list_keys)) != len(lists) or set(list_keys) != expected_lists:
         raise ValueError('Capsule worklist provider LIST scopes are incomplete or duplicated.')
     counts: dict[tuple[str, str], int] = {key: 0 for key in expected_lists}
     for obj in rows:
         if not isinstance(obj, Mapping):
             raise ValueError('Capsule resource LIST contains malformed object evidence.')
-        key = (obj.get('namespace'), obj.get('kind'))
+        key = _scope_key(obj)
         if key not in counts:
             raise ValueError('Capsule related inventory contains a foreign Namespace or kind.')
         counts[key] += 1
@@ -107,7 +115,7 @@ def build_capsule_handoff_worklist(
             or (namespace and namespace not in names)
         ):
             raise ValueError('Capsule worklist contains an invalid provider object.')
-        key = (namespace, kind, name)
+        key = (str(namespace), str(kind), str(name))
         if key in identities:
             raise ValueError('Capsule worklist contains duplicate provider targets.')
         identities.add(key)
