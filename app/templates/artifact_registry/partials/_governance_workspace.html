@@ -31,12 +31,12 @@
                 {% endcall %}
             </div>
             {{ page_hero.context_card('Registry governance posture',
-                            'Committed Evidence',
-                            'Governance Posture',
-                            governance.posture.label,
-                            governance.posture.tone,
-                            [
-                            ('database-backup', 'Committed Providers', governance.governance_ready_count ~ '/' ~ governance.provider_count, 'Governance snapshots') ,
+                        'Committed Evidence',
+                        'Governance Posture',
+                        governance.posture.label,
+                        governance.posture.tone,
+                        [
+                        ('database-backup', 'Committed Providers', governance.governance_ready_count ~ '/' ~ governance.provider_count, 'Governance snapshots') ,
             ('clock-3', 'Last Committed', governance.snapshot_context.latest_collected_at|user_datetime if governance.snapshot_context.latest_collected_at else 'Not Collected', 'Policy and replication evidence')
             ],
             'Open Registry Integrations',
@@ -51,24 +51,24 @@
         {% include "artifact_registry/components/_setup_blocker.html" %}
     {% else %}
         {{ snapshot_context_bar.render(source_label=governance.snapshot_context.source_label,
-                    status=governance.snapshot_context.status,
-                    tone=governance.snapshot_context.tone,
-                    description=governance.snapshot_context.description,
-                    latest_collected=governance.snapshot_context.latest_collected_at|user_datetime if governance.snapshot_context.latest_collected_at else 'Not Collected',
-                    scope_label=governance.snapshot_context.scope_label,
-                    coverage_label=governance.snapshot_context.coverage_label,
-                    exceptions_label=governance.snapshot_context.exceptions_label,
-                    title='Governance Data Snapshot',
-                    icon='scale',
-                    latest_supporting='Latest committed Governance evidence.',
-                    scope_supporting='Provider-neutral Registry scope.',
-                    coverage_supporting=governance.snapshot_context.coverage_supporting,
-                    exceptions_supporting=governance.snapshot_context.exceptions_supporting,
-                    coverage_tone=governance.snapshot_context.coverage_tone,
-                    exceptions_tone=governance.snapshot_context.exceptions_tone,
-                    metric_icon_palette='brand',
-                    coverage_metric_label='Governance Coverage',
-                    exceptions_metric_label='Evidence Exceptions') }}
+                status=governance.snapshot_context.status,
+                tone=governance.snapshot_context.tone,
+                description=governance.snapshot_context.description,
+                latest_collected=governance.snapshot_context.latest_collected_at|user_datetime if governance.snapshot_context.latest_collected_at else 'Not Collected',
+                scope_label=governance.snapshot_context.scope_label,
+                coverage_label=governance.snapshot_context.coverage_label,
+                exceptions_label=governance.snapshot_context.exceptions_label,
+                title='Governance Data Snapshot',
+                icon='scale',
+                latest_supporting='Latest committed Governance evidence.',
+                scope_supporting='Provider-neutral Registry scope.',
+                coverage_supporting=governance.snapshot_context.coverage_supporting,
+                exceptions_supporting=governance.snapshot_context.exceptions_supporting,
+                coverage_tone=governance.snapshot_context.coverage_tone,
+                exceptions_tone=governance.snapshot_context.exceptions_tone,
+                metric_icon_palette='brand',
+                coverage_metric_label='Governance Coverage',
+                exceptions_metric_label='Evidence Exceptions') }}
         <section class="{{ section_card.shell_classes() }}"
                  aria-labelledby="artifact-registry-governance-operations-heading">
             <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
@@ -76,20 +76,28 @@
                 <div class="flex shrink-0 flex-wrap items-center gap-2">
                     {% if current_user.has_permission('artifact_registry.sync') %}
                         <form method="post"
-                          action="{{ url_for('artifact_registry.governance_sync') }}"
-                          hx-post="{{ url_for('artifact_registry.governance_sync') }}"
-                          hx-target="#artifact-registry-governance-workspace"
-                          hx-swap="outerHTML"
-                          hx-disabled-elt="find button">
+                              action="{{ url_for('artifact_registry.governance_sync') }}"
+                              hx-post="{{ url_for('artifact_registry.governance_sync') }}"
+                              hx-target="#artifact-registry-governance-workspace"
+                              hx-swap="outerHTML"
+                              hx-disabled-elt="find button">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="tab" value="{{ governance.active_tab }}">
-                        <input type="hidden" name="page" value="{{ governance.pagination.page }}">
-                        <input type="hidden" name="per_page" value="{{ governance.pagination.per_page }}">
-                        <input type="hidden" name="q" value="{{ governance.filters.search }}">
-                        <input type="hidden" name="provider" value="{{ governance.filters.provider }}">
-                        <input type="hidden" name="retention" value="{{ governance.filters.retention }}">
-                        <input type="hidden" name="immutability" value="{{ governance.filters.immutability }}">
-                        <input type="hidden" name="state" value="{{ governance.filters.state }}">
+                            <input type="hidden" name="tab" value="{{ governance.active_tab }}">
+                            <input type="hidden" name="page" value="{{ governance.pagination.page }}">
+                            <input type="hidden"
+                                   name="per_page"
+                                   value="{{ governance.pagination.per_page }}">
+                            <input type="hidden" name="q" value="{{ governance.filters.search }}">
+                            <input type="hidden"
+                                   name="provider"
+                                   value="{{ governance.filters.provider }}">
+                            <input type="hidden"
+                                   name="retention"
+                                   value="{{ governance.filters.retention }}">
+                            <input type="hidden"
+                                   name="immutability"
+                                   value="{{ governance.filters.immutability }}">
+                            <input type="hidden" name="state" value="{{ governance.filters.state }}">
                             <button type="submit"
                                     {% if governance.sync_state.is_active %}disabled{% endif %}
                                     class="{{ action_button.classes('primary') }}">
@@ -123,237 +131,241 @@
                     <p class="mt-1 text-sm font-semibold text-content-primary">{{ governance.sync_state.next_run_label }}</p>
                 </div>
             </div>
-
-    </section>
-    <section class="space-y-3"
-             aria-labelledby="artifact-registry-governance-coverage-heading">
-        {{ section_intro.render('Governance Coverage',
-            'Committed policy, retention, immutability, and replication evidence across Registry providers.',
-            'artifact-registry-governance-coverage-heading') }}
-        {# Four authoritative posture entries are constructed in the Governance
+        </section>
+        <section class="space-y-3"
+                 aria-labelledby="artifact-registry-governance-coverage-heading">
+            {{ section_intro.render('Governance Coverage',
+                        'Committed policy, retention, immutability, and replication evidence across Registry providers.',
+                        'artifact-registry-governance-coverage-heading') }}
+            {# Four authoritative posture entries are constructed in the Governance
            presenter; keep their labels/statuses unchanged in the shared grid. #}
-        {% set policy_coverage = governance.posture_cards[0] %}
-        {% set retention_coverage = governance.posture_cards[1] %}
-        {% set immutability_coverage = governance.posture_cards[2] %}
-        {% set replication_coverage = governance.posture_cards[3] %}
-        {% set coverage_metrics = [
-            ('shield-check', policy_coverage.label, policy_coverage.value, policy_coverage.detail, policy_coverage.tone),
-            ('clock-3', retention_coverage.label, retention_coverage.value, retention_coverage.detail, retention_coverage.tone),
-            ('lock-keyhole', immutability_coverage.label, immutability_coverage.value, immutability_coverage.detail, immutability_coverage.tone),
-            ('git-compare-arrows', replication_coverage.label, replication_coverage.value, replication_coverage.detail, replication_coverage.tone)
-        ] %}
-        {% set coverage_status_labels = [
-            policy_coverage.status_label,
-            retention_coverage.status_label,
-            immutability_coverage.status_label,
-            replication_coverage.status_label
-        ] %}
-        {% call section_card.render(
-            'Governance Evidence Estate',
-            'Committed project policies and replication coverage across Registry providers.',
-            'layout-grid',
-            body_classes='p-0',
-            aria_label='Governance evidence coverage'
-        ) %}
-            {{ resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels) }}
-        {% endcall %}
-    </section>
-
-    <section class="space-y-3"
-             aria-labelledby="artifact-registry-governance-evidence-heading">
-        {{ section_intro.render('Governance Evidence',
-            'Review committed project policy and replication records without changing provider configuration.',
-            'artifact-registry-governance-evidence-heading') }}
-        <section id="artifact-registry-governance-registry"
-                 class="{{ section_card.shell_classes() }}">
-            {{ content_tabs.render_links('registry-governance', [
-                ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page)),
+            {% set policy_coverage = governance.posture_cards[0] %}
+            {% set retention_coverage = governance.posture_cards[1] %}
+            {% set immutability_coverage = governance.posture_cards[2] %}
+            {% set replication_coverage = governance.posture_cards[3] %}
+            {% set coverage_metrics = [
+                            ('shield-check', policy_coverage.label, policy_coverage.value, policy_coverage.detail, policy_coverage.tone),
+                            ('clock-3', retention_coverage.label, retention_coverage.value, retention_coverage.detail, retention_coverage.tone),
+                            ('lock-keyhole', immutability_coverage.label, immutability_coverage.value, immutability_coverage.detail, immutability_coverage.tone),
+                            ('git-compare-arrows', replication_coverage.label, replication_coverage.value, replication_coverage.detail, replication_coverage.tone)
+                        ] %}
+            {% set coverage_status_labels = [
+                            policy_coverage.status_label,
+                            retention_coverage.status_label,
+                            immutability_coverage.status_label,
+                            replication_coverage.status_label
+                        ] %}
+            {% call section_card.render(
+                'Governance Evidence Estate',
+                'Committed project policies and replication coverage across Registry providers.',
+                'layout-grid',
+                body_classes='p-0',
+                aria_label='Governance evidence coverage'
+                ) %}
+                {{ resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels) }}
+            {% endcall %}
+        </section>
+        <section class="space-y-3"
+                 aria-labelledby="artifact-registry-governance-evidence-heading">
+            {{ section_intro.render('Governance Evidence',
+                        'Review committed project policy and replication records without changing provider configuration.',
+                        'artifact-registry-governance-evidence-heading') }}
+            <section id="artifact-registry-governance-registry"
+                     class="{{ section_card.shell_classes() }}">
+                {{ content_tabs.render_links('registry-governance', [
+                                ('policies', 'Policies', 'shield-check', url_for('artifact_registry.governance', tab='policies', page=1, per_page=governance.pagination.per_page) ),
                 ('replication', 'Replication', 'git-compare-arrows', url_for('artifact_registry.governance', tab='replication', page=1, per_page=governance.pagination.per_page))
-            ], governance.active_tab, 'Registry Governance Sections',
+                ], governance.active_tab, 'Registry Governance Sections',
                 embedded=true,
                 data_namespace='registry-governance',
                 hx_target='#artifact-registry-governance-registry',
                 hx_select='#artifact-registry-governance-registry',
                 hx_push_url='true',
                 nowrap=true) }}
-            {% set governance_result_badge %}
-                {{ table_label.metadata_label(governance.pagination.total_items ~ (' Record' if governance.pagination.total_items == 1 else ' Records'), icon='list-filter') }}
-            {% endset %}
-            {% set governance_header_actions %}
-                {% if governance.has_filters %}
-                    {{ registry.clear_filters_link('artifact_registry.governance',
-                                                    'artifact-registry-governance-registry',
-                                                    'artifact-registry-governance-loading',
-                                                    governance.pagination.per_page,
-                                                    table_ui.action_classes(),
-                                                    query_params={'tab': governance.active_tab}) }}
-                {% endif %}
-            {% endset %}
-            {{ table_ui.inventory_block_header('shield-check' if governance.active_tab == 'policies' else 'git-compare-arrows',
-                                               'Project Policy Registry' if governance.active_tab == 'policies' else 'Replication Policy Registry',
-                                               'Committed retention and immutability evidence from Registry providers.' if governance.active_tab == 'policies' else 'Committed replication policies and provider-observed destinations.',
-                                               'artifact-registry-governance-loading',
-                                               'Refreshing Governance Evidence',
-                                               none,
-                                               none,
-                                               header_actions=governance_header_actions,
-                                               title_extra=governance_result_badge) }}
-            <div class="{{ table_ui.inventory_filter_bar_classes() }}">
-                {% call registry.filter_form('artifact_registry.governance',
-                                             'artifact-registry-governance-registry',
-                                             'artifact-registry-governance-loading',
-                                             governance.pagination.per_page) %}
-                    <input type="hidden" name="tab" value="{{ governance.active_tab }}">
-                    <div class="min-w-0 flex-1">
-                        <label for="artifact-registry-governance-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
-                        {{ table_ui.search_field('q',
-                                                governance.filters.search,
-                                                'Search project or provider…' if governance.active_tab == 'policies' else 'Search policy, provider, source or destination…',
-                                                'artifact-registry-governance-search') }}
-                    </div>
-                    <label>
-                        <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
-                        <select name="provider" class="{{ table_ui.filter_select_classes() }}">
-                            <option value="">All Providers</option>
-                            {% for provider in governance.provider_options %}
-                                <option value="{{ provider.id }}"
-                                        {% if governance.filters.provider == provider.id|string %}selected{% endif %}>{{ provider.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    {% if governance.active_tab == 'policies' %}
-                        <label>
-                            <span class="{{ table_ui.filter_label_classes() }}">Retention</span>
-                            <select name="retention" class="{{ table_ui.filter_select_classes() }}">
-                                <option value="">All Retention</option>
-                                {% for key, label in [('configured', 'Configured'), ('not_configured', 'Not Configured'), ('unavailable', 'Unavailable'), ('unsupported', 'Unsupported'), ('not_collected', 'Not Collected')] %}
-                                    <option value="{{ key }}" {% if governance.filters.retention == key %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label>
-                            <span class="{{ table_ui.filter_label_classes() }}">Immutability</span>
-                            <select name="immutability" class="{{ table_ui.filter_select_classes() }}">
-                                <option value="">All Immutability</option>
-                                {% for key, label in [('configured', 'Configured'), ('not_configured', 'Not Configured'), ('unavailable', 'Unavailable'), ('unsupported', 'Unsupported'), ('not_collected', 'Not Collected')] %}
-                                    <option value="{{ key }}" {% if governance.filters.immutability == key %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                    {% else %}
-                        <label>
-                            <span class="{{ table_ui.filter_label_classes() }}">State</span>
-                            <select name="state" class="{{ table_ui.filter_select_classes() }}">
-                                <option value="">All States</option>
-                                <option value="enabled" {% if governance.filters.state == 'enabled' %}selected{% endif %}>Enabled</option>
-                                <option value="disabled" {% if governance.filters.state == 'disabled' %}selected{% endif %}>Disabled</option>
-                                <option value="unknown" {% if governance.filters.state == 'unknown' %}selected{% endif %}>Unknown</option>
-                            </select>
-                        </label>
+                {% set governance_result_badge %}
+                    {{ table_label.metadata_label(governance.pagination.total_items ~ (' Record' if governance.pagination.total_items == 1 else ' Records') , icon='list-filter') }}
+                {% endset %}
+                {% set governance_header_actions %}
+                    {% if governance.has_filters %}
+                        {{ registry.clear_filters_link('artifact_registry.governance',
+                                                'artifact-registry-governance-registry',
+                                                'artifact-registry-governance-loading',
+                                                governance.pagination.per_page,
+                                                table_ui.action_classes() ,
+                        query_params={'tab': governance.active_tab}) }}
                     {% endif %}
-                {% endcall %}
-            </div>
-            {% if governance.active_tab == 'policies' %}
-                <div class="overflow-x-auto">
-                    <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
-                        <caption class="sr-only">Committed Registry project retention and immutability policy evidence.</caption>
-                        <thead class="{{ table_ui.head_classes() }}">
-                            <tr>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Project</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Retention</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Immutability</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
-                            </tr>
-                        </thead>
-                        <tbody class="{{ table_ui.body_classes() }}">
-                            {% for row in governance.rows %}
-                                <tr class="{{ table_ui.row_classes() }}">
-                                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.project, '', 'folder-kanban') }}</td>
-                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ row.provider_label }}</span></td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.retention_label, row.retention_tone) }}</td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.immutability_label, row.immutability_tone) }}</td>
-                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-xs font-medium text-content-secondary whitespace-nowrap">{{ row.observed_at|user_datetime }}</span></td>
-                                </tr>
-                            {% else %}
-                                <tr>
-                                    <td colspan="5" class="p-0">
-                                        {% set empty_state_icon = 'shield-check' %}
-                                        {% set empty_state_label = 'Committed Governance' %}
-                                        {% set empty_state_title = 'No Policies Match Your Filters' if governance.has_filters else 'No Policy Evidence Collected' %}
-                                        {% set empty_state_description = 'Adjust or clear filters to review other committed policy evidence.' if governance.has_filters else 'No committed retention or immutability policy records are available in this scope. Run Governance Sync to collect provider evidence.' %}
-                                        {% set empty_state_min_height = 'min-h-[190px]' %}
-                                        {% include 'components/states/_empty_state.html' %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                {% endset %}
+                {{ table_ui.inventory_block_header('shield-check' if governance.active_tab == 'policies' else 'git-compare-arrows',
+                                'Project Policy Registry' if governance.active_tab == 'policies' else 'Replication Policy Registry',
+                                'Committed retention and immutability evidence from Registry providers.' if governance.active_tab == 'policies' else 'Committed replication policies and provider-observed destinations.',
+                                'artifact-registry-governance-loading',
+                                'Refreshing Governance Evidence',
+                                none,
+                                none,
+                                header_actions=governance_header_actions,
+                                title_extra=governance_result_badge) }}
+                <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+                    {% call registry.filter_form('artifact_registry.governance',
+                        'artifact-registry-governance-registry',
+                        'artifact-registry-governance-loading',
+                        governance.pagination.per_page) %}
+                        <input type="hidden" name="tab" value="{{ governance.active_tab }}">
+                        <div class="min-w-0 flex-1">
+                            <label for="artifact-registry-governance-search"
+                                   class="{{ table_ui.filter_label_classes() }}">Search</label>
+                            {{ table_ui.search_field('q',
+                                                        governance.filters.search,
+                                                        'Search project or provider…' if governance.active_tab == 'policies' else 'Search policy, provider, source or destination…',
+                                                        'artifact-registry-governance-search') }}
+                        </div>
+                        <label>
+                            <span class="{{ table_ui.filter_label_classes() }}">Provider</span>
+                            <select name="provider" class="{{ table_ui.filter_select_classes() }}">
+                                <option value="">All Providers</option>
+                                {% for provider in governance.provider_options %}
+                                    <option value="{{ provider.id }}"
+                                            {% if governance.filters.provider == provider.id|string %}selected{% endif %}>{{ provider.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        {% if governance.active_tab == 'policies' %}
+                            <label>
+                                <span class="{{ table_ui.filter_label_classes() }}">Retention</span>
+                                <select name="retention" class="{{ table_ui.filter_select_classes() }}">
+                                    <option value="">All Retention</option>
+                                    {% for key, label in [('configured', 'Configured'), ('not_configured', 'Not Configured'), ('unavailable', 'Unavailable'), ('unsupported', 'Unsupported'), ('not_collected', 'Not Collected')] %}
+                                        <option value="{{ key }}"
+                                                {% if governance.filters.retention == key %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label>
+                                <span class="{{ table_ui.filter_label_classes() }}">Immutability</span>
+                                <select name="immutability" class="{{ table_ui.filter_select_classes() }}">
+                                    <option value="">All Immutability</option>
+                                    {% for key, label in [('configured', 'Configured'), ('not_configured', 'Not Configured'), ('unavailable', 'Unavailable'), ('unsupported', 'Unsupported'), ('not_collected', 'Not Collected')] %}
+                                        <option value="{{ key }}"
+                                                {% if governance.filters.immutability == key %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                        {% else %}
+                            <label>
+                                <span class="{{ table_ui.filter_label_classes() }}">State</span>
+                                <select name="state" class="{{ table_ui.filter_select_classes() }}">
+                                    <option value="">All States</option>
+                                    <option value="enabled"
+                                            {% if governance.filters.state == 'enabled' %}selected{% endif %}>Enabled</option>
+                                    <option value="disabled"
+                                            {% if governance.filters.state == 'disabled' %}selected{% endif %}>Disabled</option>
+                                    <option value="unknown"
+                                            {% if governance.filters.state == 'unknown' %}selected{% endif %}>Unknown</option>
+                                </select>
+                            </label>
+                        {% endif %}
+                    {% endcall %}
                 </div>
-                {{ registry.footer('artifact_registry.governance',
-                                    'artifact-registry-governance-registry',
-                                    'artifact-registry-governance-loading',
-                                    governance.pagination,
-                                    governance.filter_query,
-                                    [5, 10, 25, 50],
-                                    resource_label='Projects',
-                                    control_name='artifact-registry-governance-policies') }}
-            {% else %}
-                <div class="overflow-x-auto">
-                    <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
-                        <caption class="sr-only">Committed Registry replication policies and observed source and destination evidence.</caption>
-                        <thead class="{{ table_ui.head_classes() }}">
-                            <tr>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Policy</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Trigger</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Destination</th>
-                                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
-                            </tr>
-                        </thead>
-                        <tbody class="{{ table_ui.body_classes() }}">
-                            {% for row in governance.rows %}
-                                <tr class="{{ table_ui.row_classes() }}">
-                                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.name, '', 'git-compare-arrows') }}</td>
-                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ row.provider_label }}</span></td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label('Enabled' if row.enabled else ('Disabled' if row.enabled is not none else 'Unknown'), 'normal' if row.enabled else ('info' if row.enabled is false else 'unknown')) }}</td>
-                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ row.trigger_type or 'Not Observed' }}</span></td>
-                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary break-all">{{ row.source_registry or 'Provider Default' }}</span></td>
-                                    <td class="{{ table_ui.cell_classes() }}">
-                                        <p class="text-sm text-content-secondary break-all">{{ row.destination_registry or 'Not Observed' }}</p>
-                                        {% if row.destination_namespace %}
-                                            <p class="mt-0.5 text-xs text-content-muted break-all">{{ row.destination_namespace }}</p>
-                                        {% endif %}
-                                    </td>
-                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-xs font-medium text-content-secondary whitespace-nowrap">{{ row.observed_at|user_datetime }}</span></td>
-                                </tr>
-                            {% else %}
+                {% if governance.active_tab == 'policies' %}
+                    <div class="overflow-x-auto">
+                        <table class="{{ table_ui.table_classes('min-w-[60rem]') }}">
+                            <caption class="sr-only">Committed Registry project retention and immutability policy evidence.</caption>
+                            <thead class="{{ table_ui.head_classes() }}">
                                 <tr>
-                                    <td colspan="7" class="p-0">
-                                        {% set empty_state_icon = 'git-compare-arrows' %}
-                                        {% set empty_state_label = 'Committed Governance' %}
-                                        {% set empty_state_title = 'No Replication Policies Match Your Filters' if governance.has_filters else governance.replication_empty.title %}
-                                        {% set empty_state_description = 'Adjust or clear filters to review other committed replication evidence.' if governance.has_filters else governance.replication_empty.description %}
-                                        {% set empty_state_min_height = 'min-h-[190px]' %}
-                                        {% include 'components/states/_empty_state.html' %}
-                                    </td>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Project</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Retention</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Immutability</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
                                 </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {{ registry.footer('artifact_registry.governance',
-                                    'artifact-registry-governance-registry',
-                                    'artifact-registry-governance-loading',
-                                    governance.pagination,
-                                    governance.filter_query,
-                                    [5, 10, 25, 50],
-                                    resource_label='Replication Policies',
-                                    control_name='artifact-registry-governance-replication') }}
-            {% endif %}
+                            </thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for row in governance.rows %}
+                                    <tr class="{{ table_ui.row_classes() }}">
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.project, '', 'folder-kanban') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ row.provider_label }}</span></td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.retention_label, row.retention_tone) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.immutability_label, row.immutability_tone) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-xs font-medium text-content-secondary whitespace-nowrap">{{ row.observed_at|user_datetime }}</span></td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="p-0">
+                                            {% set empty_state_icon = "shield-check" %}
+                                            {% set empty_state_label = "Committed Governance" %}
+                                            {% set empty_state_title = 'No Policies Match Your Filters' if governance.has_filters else 'No Policy Evidence Collected' %}
+                                            {% set empty_state_description = 'Adjust or clear filters to review other committed policy evidence.' if governance.has_filters else 'No committed retention or immutability policy records are available in this scope. Run Governance Sync to collect provider evidence.' %}
+                                            {% set empty_state_min_height = "min-h-[190px]" %}
+                                            {% include 'components/states/_empty_state.html' %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{ registry.footer('artifact_registry.governance',
+                                        'artifact-registry-governance-registry',
+                                        'artifact-registry-governance-loading',
+                                        governance.pagination,
+                                        governance.filter_query,
+                                        [5, 10, 25, 50],
+                                        resource_label='Projects',
+                                        control_name='artifact-registry-governance-policies') }}
+                {% else %}
+                    <div class="overflow-x-auto">
+                        <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
+                            <caption class="sr-only">Committed Registry replication policies and observed source and destination evidence.</caption>
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Policy</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Trigger</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Destination</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Observed</th>
+                                </tr>
+                            </thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for row in governance.rows %}
+                                    <tr class="{{ table_ui.row_classes() }}">
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.name, '', 'git-compare-arrows') }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ row.provider_label }}</span></td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label('Enabled' if row.enabled else ('Disabled' if row.enabled is not none else 'Unknown') , 'normal' if row.enabled else ('info' if row.enabled is false else 'unknown')) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ row.trigger_type or 'Not Observed' }}</span></td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary break-all">{{ row.source_registry or 'Provider Default' }}</span></td>
+                                        <td class="{{ table_ui.cell_classes() }}">
+                                            <p class="text-sm text-content-secondary break-all">{{ row.destination_registry or 'Not Observed' }}</p>
+                                            {% if row.destination_namespace %}
+                                                <p class="mt-0.5 text-xs text-content-muted break-all">{{ row.destination_namespace }}</p>
+                                            {% endif %}
+                                        </td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-xs font-medium text-content-secondary whitespace-nowrap">{{ row.observed_at|user_datetime }}</span></td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="7" class="p-0">
+                                            {% set empty_state_icon = "git-compare-arrows" %}
+                                            {% set empty_state_label = "Committed Governance" %}
+                                            {% set empty_state_title = 'No Replication Policies Match Your Filters' if governance.has_filters else governance.replication_empty.title %}
+                                            {% set empty_state_description = 'Adjust or clear filters to review other committed replication evidence.' if governance.has_filters else governance.replication_empty.description %}
+                                            {% set empty_state_min_height = "min-h-[190px]" %}
+                                            {% include 'components/states/_empty_state.html' %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{ registry.footer('artifact_registry.governance',
+                                        'artifact-registry-governance-registry',
+                                        'artifact-registry-governance-loading',
+                                        governance.pagination,
+                                        governance.filter_query,
+                                        [5, 10, 25, 50],
+                                        resource_label='Replication Policies',
+                                        control_name='artifact-registry-governance-replication') }}
+                {% endif %}
+            </section>
         </section>
-    </section>
     {% endif %}
 </div>

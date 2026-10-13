@@ -486,9 +486,7 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
     elif protection_assessed < total:
         protection_title = 'Protection Not Assessed' if protection_assessed == 0 else 'Protection Partially Assessed'
         protection_tone = 'unknown' if protection_assessed == 0 else 'warning'
-        protection_description = (
-            f'No attention observed, but complete protection evidence exists for only {protection_assessed}/{total} assets.'
-        )
+        protection_description = f'No attention observed, but complete protection evidence exists for only {protection_assessed}/{total} assets.'
     else:
         protection_title, protection_tone = 'No Protection Attention', 'normal'
         protection_description = 'All committed assets have assessed versioning, encryption, and immutability evidence.'
@@ -548,7 +546,7 @@ def _overview_fleet_posture_metrics(
     """Project committed fleet readings into the canonical grouped metric layout."""
     total = int(posture['total_assets'])
     metric_values = (
-        ('Quota Assessed', f"{posture['quota_assessed']}/{total}" if total else 'No Evidence'),
+        ('Quota Assessed', f'{posture["quota_assessed"]}/{total}' if total else 'No Evidence'),
         (
             'Protection Attention',
             str(posture['protection_attention']) if posture['protection_assessed'] else 'No Evidence',
@@ -557,7 +555,7 @@ def _overview_fleet_posture_metrics(
             'Public Exposure',
             str(posture['public_exposure']) if posture['exposure_assessed'] else 'No Evidence',
         ),
-        ('Usage Collected', f"{posture['usage_collected']}/{total}" if total else 'No Evidence'),
+        ('Usage Collected', f'{posture["usage_collected"]}/{total}' if total else 'No Evidence'),
     )
     return [
         (reading['icon'], label, value, reading['description'], reading['tone'])
@@ -583,20 +581,15 @@ def build_overview() -> dict[str, Any]:
     normal = status.in_(('ready', 'connected'))
     critical = status.in_(('blocked', 'failed'))
     provider_attention = status.in_(('blocked', 'failed', 'warning', 'unknown'))
-    (total, observed, ready, blocked, attention, stale, latest) = (
-        db.session.query(
-            func.count(ObjectStorageSystem.id),
-            func.count(ObjectStorageSystem.inventory_observed_at),
-            func.sum(case((normal, 1), else_=0)),
-            func.sum(case((critical, 1), else_=0)),
-            func.sum(case((provider_attention, 1), else_=0)),
-            func.sum(case((
-                ObjectStorageSystem.inventory_observed_at < threshold, 1
-            ), else_=0)),
-            func.max(ObjectStorageSystem.inventory_observed_at),
-        )
-        .one()
-    )
+    (total, observed, ready, blocked, attention, stale, latest) = db.session.query(
+        func.count(ObjectStorageSystem.id),
+        func.count(ObjectStorageSystem.inventory_observed_at),
+        func.sum(case((normal, 1), else_=0)),
+        func.sum(case((critical, 1), else_=0)),
+        func.sum(case((provider_attention, 1), else_=0)),
+        func.sum(case((ObjectStorageSystem.inventory_observed_at < threshold, 1), else_=0)),
+        func.max(ObjectStorageSystem.inventory_observed_at),
+    ).one()
     total_systems, inventoried_systems = int(total or 0), int(observed or 0)
     ready_systems, blocked_systems = int(ready or 0), int(blocked or 0)
     provider_attention_count, stale_count = int(attention or 0), int(stale or 0)
@@ -610,10 +603,14 @@ def build_overview() -> dict[str, Any]:
     # Provider distribution uses the same authoritative canonical-owner join as list pages.
     owner_query = _system_scope().order_by(None)
     provider_label = _sql_provider_label()
-    distributions = owner_query.with_entities(
-        provider_label.label('provider_label'),
-        func.count(ObjectStorageSystem.id).label('system_count'),
-    ).group_by(provider_label).all()
+    distributions = (
+        owner_query.with_entities(
+            provider_label.label('provider_label'),
+            func.count(ObjectStorageSystem.id).label('system_count'),
+        )
+        .group_by(provider_label)
+        .all()
+    )
     provider_distribution = [
         {'label': label, 'count': int(count)}
         for label, count in sorted(distributions, key=lambda row: (-row[1], row[0]))
@@ -697,11 +694,17 @@ def _visible_system_owners(system_ids: Sequence[str]) -> dict[str, ManagedAssetO
     ids = tuple(dict.fromkeys(str(value) for value in system_ids if value))
     if not ids:
         return {}
-    rows = _system_scope().order_by(None).filter(
-        ObjectStorageSystem.id.in_(ids)
-    ).with_entities(
-        ObjectStorageSystem.id, IntegrationInstance, MinioInstance,
-    ).all()
+    rows = (
+        _system_scope()
+        .order_by(None)
+        .filter(ObjectStorageSystem.id.in_(ids))
+        .with_entities(
+            ObjectStorageSystem.id,
+            IntegrationInstance,
+            MinioInstance,
+        )
+        .all()
+    )
     owners: dict[str, ManagedAssetOwner | None] = {system_id: None for system_id in ids}
     for system_id, identity, record in rows:
         if identity is None:
@@ -728,28 +731,15 @@ def _sql_provider_label():
 def _system_options() -> dict[str, list[dict[str, str]]]:
     """Return only distinct scalar filter values, never full system/bucket rows."""
     source = _system_scope()
-    providers = {
-        value for (value,) in source.with_entities(IntegrationInstance.provider_key)
-        .distinct().all() if value
-    }
+    providers = {value for (value,) in source.with_entities(IntegrationInstance.provider_key).distinct().all() if value}
     environments = {
-        value for (value,) in source.with_entities(ObjectStorageSystem.environment)
-        .distinct().all() if value
+        value for (value,) in source.with_entities(ObjectStorageSystem.environment).distinct().all() if value
     }
-    statuses = {
-        value for (value,) in source.with_entities(ObjectStorageSystem.status)
-        .distinct().all() if value
-    }
+    statuses = {value for (value,) in source.with_entities(ObjectStorageSystem.status).distinct().all() if value}
     return {
-        'providers': [
-            {'value': key, 'label': _provider_label(key)} for key in sorted(providers)
-        ],
-        'environments': [
-            {'value': value, 'label': value.title()} for value in sorted(environments)
-        ],
-        'statuses': [
-            {'value': value, 'label': _status(value)[0]} for value in sorted(statuses)
-        ],
+        'providers': [{'value': key, 'label': _provider_label(key)} for key in sorted(providers)],
+        'environments': [{'value': value, 'label': value.title()} for value in sorted(environments)],
+        'statuses': [{'value': value, 'label': _status(value)[0]} for value in sorted(statuses)],
     }
 
 
@@ -761,11 +751,9 @@ def _committed_system_snapshot() -> dict[str, Any]:
         func.count(ObjectStorageSystem.inventory_observed_at),
         func.max(ObjectStorageSystem.inventory_observed_at),
         func.sum(case((ObjectStorageSystem.inventory_observed_at < threshold, 1), else_=0)),
-        func.sum(case((
-            func.lower(ObjectStorageSystem.status).in_(
-                ('blocked', 'failed', 'warning', 'unknown')
-            ), 1
-        ), else_=0)),
+        func.sum(
+            case((func.lower(ObjectStorageSystem.status).in_(('blocked', 'failed', 'warning', 'unknown')), 1), else_=0)
+        ),
     ).one()
     total_count, observed_count = int(total or 0), int(observed or 0)
     return _overview_snapshot_from_counts(
@@ -783,8 +771,10 @@ def _filtered_systems(filters: SystemFilters):
     search = filters.search.strip().lower()
     if search:
         searchable = func.lower(
-            func.coalesce(ObjectStorageSystem.name, '') + ' '
-            + func.coalesce(MinioInstance.endpoint, 'Not Configured') + ' '
+            func.coalesce(ObjectStorageSystem.name, '')
+            + ' '
+            + func.coalesce(MinioInstance.endpoint, 'Not Configured')
+            + ' '
             + _sql_provider_label()
         )
         query = query.filter(searchable.contains(search, autoescape=True))
@@ -799,21 +789,22 @@ def _filtered_systems(filters: SystemFilters):
 
 def build_systems(filters: SystemFilters) -> dict[str, Any]:
     query = _filtered_systems(filters)
-    total, ready, blocked, attention, inventoried = query.order_by(None).with_entities(
-        func.count(ObjectStorageSystem.id),
-        func.sum(case((
-            func.lower(ObjectStorageSystem.status).in_(('ready', 'connected')), 1
-        ), else_=0)),
-        func.sum(case((
-            func.lower(ObjectStorageSystem.status).in_(('blocked', 'failed')), 1
-        ), else_=0)),
-        func.sum(case((
-            func.lower(ObjectStorageSystem.status).in_(
-                ('blocked', 'failed', 'warning', 'unknown')
-            ), 1
-        ), else_=0)),
-        func.count(ObjectStorageSystem.inventory_observed_at),
-    ).one()
+    total, ready, blocked, attention, inventoried = (
+        query.order_by(None)
+        .with_entities(
+            func.count(ObjectStorageSystem.id),
+            func.sum(case((func.lower(ObjectStorageSystem.status).in_(('ready', 'connected')), 1), else_=0)),
+            func.sum(case((func.lower(ObjectStorageSystem.status).in_(('blocked', 'failed')), 1), else_=0)),
+            func.sum(
+                case(
+                    (func.lower(ObjectStorageSystem.status).in_(('blocked', 'failed', 'warning', 'unknown')), 1),
+                    else_=0,
+                )
+            ),
+            func.count(ObjectStorageSystem.inventory_observed_at),
+        )
+        .one()
+    )
     paged, pagination = paginate_query(
         query.options(selectinload(ObjectStorageSystem.buckets)),
         page=filters.page,
@@ -821,10 +812,7 @@ def build_systems(filters: SystemFilters) -> dict[str, Any]:
     )
     owners = _visible_system_owners([system.id for system in paged])
     return {
-        'systems': [
-            _system_row(system, owner=owners.get(str(system.id)), owner_resolved=True)
-            for system in paged
-        ],
+        'systems': [_system_row(system, owner=owners.get(str(system.id)), owner_resolved=True) for system in paged],
         'pagination': pagination,
         'total_systems': int(total or 0),
         'ready_systems': int(ready or 0),
@@ -999,9 +987,15 @@ def _filtered_buckets(filters: BucketFilters):
             'Not Observed',
         )
         searchable = func.lower(
-            ObjectStorageBucket.name + ' ' + ObjectStorageSystem.name + ' '
-            + _sql_provider_label() + ' '
-            + func.coalesce(ObjectStorageBucket.native_type, 'bucket') + ' ' + location
+            ObjectStorageBucket.name
+            + ' '
+            + ObjectStorageSystem.name
+            + ' '
+            + _sql_provider_label()
+            + ' '
+            + func.coalesce(ObjectStorageBucket.native_type, 'bucket')
+            + ' '
+            + location
         )
         query = query.filter(searchable.contains(search, autoescape=True))
     if filters.system_id:
@@ -1013,7 +1007,6 @@ def _filtered_buckets(filters: BucketFilters):
     if filters.environment:
         query = query.filter(ObjectStorageSystem.environment == filters.environment)
     return query.order_by(ObjectStorageBucket.name.asc(), ObjectStorageBucket.id.asc())
-
 
 
 def _bucket_empty_state(total_committed_assets: int, snapshot: dict[str, Any]) -> dict[str, str]:
@@ -1056,14 +1049,16 @@ def _bucket_empty_state(total_committed_assets: int, snapshot: dict[str, Any]) -
 def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     query = _filtered_buckets(filters)
     total, bucket_count, container_count, systems_count, providers_count, latest = (
-        query.order_by(None).with_entities(
+        query.order_by(None)
+        .with_entities(
             func.count(ObjectStorageBucket.id),
             func.sum(case((ObjectStorageBucket.native_type == 'bucket', 1), else_=0)),
             func.sum(case((ObjectStorageBucket.native_type == 'container', 1), else_=0)),
             func.count(func.distinct(ObjectStorageBucket.object_storage_system_id)),
             func.count(func.distinct(IntegrationInstance.provider_key)),
             func.max(ObjectStorageBucket.observed_at),
-        ).one()
+        )
+        .one()
     )
     paged, pagination = paginate_query(
         query.options(joinedload(ObjectStorageBucket.object_storage_system)),
@@ -1073,13 +1068,15 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     owner_cache = _visible_system_owners([bucket.object_storage_system_id for bucket in paged])
     rows = [_bucket_row(bucket, owner_cache=owner_cache) for bucket in paged]
     types = {
-        value for (value,) in ObjectStorageBucket.query.with_entities(
-            ObjectStorageBucket.native_type
-        ).distinct().all() if value
+        value
+        for (value,) in ObjectStorageBucket.query.with_entities(ObjectStorageBucket.native_type).distinct().all()
+        if value
     }
-    systems = ObjectStorageSystem.query.with_entities(
-        ObjectStorageSystem.id, ObjectStorageSystem.name
-    ).order_by(ObjectStorageSystem.name.asc(), ObjectStorageSystem.id.asc()).all()
+    systems = (
+        ObjectStorageSystem.query.with_entities(ObjectStorageSystem.id, ObjectStorageSystem.name)
+        .order_by(ObjectStorageSystem.name.asc(), ObjectStorageSystem.id.asc())
+        .all()
+    )
     total_committed_assets = ObjectStorageBucket.query.count()
     snapshot = _committed_system_snapshot()
     return {
@@ -1092,10 +1089,7 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
         'total_containers': int(container_count or 0),
         'systems_in_scope': int(systems_count or 0),
         'providers_in_scope': int(providers_count or 0),
-        'types': [
-            {'value': value, 'label': _native_type_label(value)}
-            for value in sorted(types)
-        ],
+        'types': [{'value': value, 'label': _native_type_label(value)} for value in sorted(types)],
         'latest_observed_at': latest,
         'setup': _setup_state(ObjectStorageSystem.query.count()),
         'snapshot': snapshot,

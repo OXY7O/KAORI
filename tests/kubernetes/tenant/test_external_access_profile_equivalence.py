@@ -5,7 +5,9 @@ from copy import deepcopy
 import pytest
 
 from app.kubernetes.tenant.access import (
-    ACCESS_PROFILE_CATALOG, capsule_cluster_role_manifest, get_access_profile,
+    ACCESS_PROFILE_CATALOG,
+    capsule_cluster_role_manifest,
+    get_access_profile,
 )
 from app.kubernetes.tenant.external_access_profile_equivalence import (
     _require_committed_capsule_binding,
@@ -42,16 +44,19 @@ def test_extra_privileges_cannot_be_mapped_as_less_privileged_profile():
     assert result['decision'] == 'no_exact_profile'
 
 
-@pytest.mark.parametrize('mutation', [
-    lambda role: role['rules'][0].update({'verbs': ['*']}),
-    lambda role: role['rules'][0].update({'resources': ['*']}),
-    lambda role: role['rules'][0].update({'apiGroups': ['*']}),
-    lambda role: role['rules'][0].update({'resourceNames': ['named-only']}),
-    lambda role: role['rules'][0].update({'nonResourceURLs': ['/metrics']}),
-    lambda role: role.update({'aggregationRule': {'clusterRoleSelectors': []}}),
-    lambda role: role['metadata'].update({'uid': ''}),
-    lambda role: role['metadata'].update({'resourceVersion': ''}),
-])
+@pytest.mark.parametrize(
+    'mutation',
+    [
+        lambda role: role['rules'][0].update({'verbs': ['*']}),
+        lambda role: role['rules'][0].update({'resources': ['*']}),
+        lambda role: role['rules'][0].update({'apiGroups': ['*']}),
+        lambda role: role['rules'][0].update({'resourceNames': ['named-only']}),
+        lambda role: role['rules'][0].update({'nonResourceURLs': ['/metrics']}),
+        lambda role: role.update({'aggregationRule': {'clusterRoleSelectors': []}}),
+        lambda role: role['metadata'].update({'uid': ''}),
+        lambda role: role['metadata'].update({'resourceVersion': ''}),
+    ],
+)
 def test_unsupported_role_permissions_and_provider_identity_fail_closed(mutation):
     role = _provider_role()
     mutation(role)
@@ -75,44 +80,54 @@ def test_capsule_profile_review_accepts_single_foreign_source_binding_only():
 
     tenant = type('TenantRef', (), {'id': 'tenant-a', 'cluster_id': 'cluster-a'})()
     observation = {
-        'provider': 'capsule', 'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
+        'provider': 'capsule',
+        'tenant_id': 'tenant-a',
+        'cluster_id': 'cluster-a',
         'observed_at': datetime.now(UTC).isoformat(),
-        'bindings': [{
-            'source': 'rules.permissions.bindings', 'ownership': 'external',
-            'cluster_role_name': 'platform-reader',
-            'subjects': [{'kind': 'Group', 'name': 'platform-team', 'namespace': ''}],
-        }],
+        'bindings': [
+            {
+                'source': 'rules.permissions.bindings',
+                'ownership': 'external',
+                'cluster_role_name': 'platform-reader',
+                'subjects': [{'kind': 'Group', 'name': 'platform-team', 'namespace': ''}],
+            }
+        ],
     }
-    result = _require_committed_capsule_binding(
-        observation, tenant=tenant, binding_index=0, now=datetime.now(UTC)
-    )
+    result = _require_committed_capsule_binding(observation, tenant=tenant, binding_index=0, now=datetime.now(UTC))
     assert result['cluster_role_name'] == 'platform-reader'
 
 
-@pytest.mark.parametrize('bad', [
-    lambda rows: rows[0].update(ownership='kaori'),
-    lambda rows: rows[0].update(cluster_role_name=''),
-    lambda rows: rows[0].update(subjects=[]),
-    lambda rows: rows.append(deepcopy(rows[0])),
-])
+@pytest.mark.parametrize(
+    'bad',
+    [
+        lambda rows: rows[0].update(ownership='kaori'),
+        lambda rows: rows[0].update(cluster_role_name=''),
+        lambda rows: rows[0].update(subjects=[]),
+        lambda rows: rows.append(deepcopy(rows[0])),
+    ],
+)
 def test_capsule_profile_review_fails_on_managed_or_ambiguous_binding(bad):
     from datetime import UTC, datetime
 
     tenant = type('TenantRef', (), {'id': 'tenant-a', 'cluster_id': 'cluster-a'})()
-    rows = [{
-        'source': 'additionalRoleBindings', 'ownership': 'external',
-        'cluster_role_name': 'reader',
-        'subjects': [{'kind': 'User', 'name': 'operator', 'namespace': ''}],
-    }]
+    rows = [
+        {
+            'source': 'additionalRoleBindings',
+            'ownership': 'external',
+            'cluster_role_name': 'reader',
+            'subjects': [{'kind': 'User', 'name': 'operator', 'namespace': ''}],
+        }
+    ]
     bad(rows)
     observation = {
-        'provider': 'capsule', 'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
-        'observed_at': datetime.now(UTC).isoformat(), 'bindings': rows,
+        'provider': 'capsule',
+        'tenant_id': 'tenant-a',
+        'cluster_id': 'cluster-a',
+        'observed_at': datetime.now(UTC).isoformat(),
+        'bindings': rows,
     }
     with pytest.raises(ValueError):
-        _require_committed_capsule_binding(
-            observation, tenant=tenant, binding_index=0, now=datetime.now(UTC)
-        )
+        _require_committed_capsule_binding(observation, tenant=tenant, binding_index=0, now=datetime.now(UTC))
 
 
 def test_role_reread_rejects_permission_or_resourceversion_race():

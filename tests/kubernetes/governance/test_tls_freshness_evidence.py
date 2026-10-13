@@ -21,8 +21,11 @@ def test_failed_attempt_cannot_refresh_successful_snapshot_clock():
     failed = state(secret='collection_failed', ingress='collected', at=now)
     failed.updated_at = now
     at, stale, exceptions = _collection_freshness(
-        cluster_ids=['a'], states={'a': failed},
-        record_times={'a': old}, stale_after=timedelta(hours=7), now=now,
+        cluster_ids=['a'],
+        states={'a': failed},
+        record_times={'a': old},
+        stale_after=timedelta(hours=7),
+        now=now,
     )
     assert at == old
     assert stale is True
@@ -32,8 +35,11 @@ def test_failed_attempt_cannot_refresh_successful_snapshot_clock():
 def test_zero_certificates_can_have_successful_collection_evidence():
     now = datetime(2026, 10, 11, tzinfo=UTC)
     at, stale, exceptions = _collection_freshness(
-        cluster_ids=['a'], states={'a': state(at=now)},
-        record_times={}, stale_after=timedelta(hours=7), now=now,
+        cluster_ids=['a'],
+        states={'a': state(at=now)},
+        record_times={},
+        stale_after=timedelta(hours=7),
+        now=now,
     )
     assert at == now and stale is False and exceptions is False
 
@@ -59,8 +65,11 @@ def test_fleet_requires_all_clusters_and_all_source_families():
 def test_recent_secret_evidence_does_not_make_failed_ingress_mapping_complete():
     now = datetime(2026, 10, 11, tzinfo=UTC)
     at, stale, exceptions = _collection_freshness(
-        cluster_ids=['a'], states={'a': state(ingress='api_unavailable', at=now)},
-        record_times={}, stale_after=timedelta(hours=7), now=now,
+        cluster_ids=['a'],
+        states={'a': state(ingress='api_unavailable', at=now)},
+        record_times={},
+        stale_after=timedelta(hours=7),
+        now=now,
     )
     assert at == now and stale is False and exceptions is True
 
@@ -71,15 +80,19 @@ def test_last_successful_empty_inventory_requires_target_specific_job_evidence()
     fleet_job = SimpleNamespace(
         status='partially_succeeded',
         completed_at=old,
-        payload_json={'targets': [
-            {'cluster_id': 'empty-but-successful'}, {'cluster_id': 'failed'},
-        ]},
+        payload_json={
+            'targets': [
+                {'cluster_id': 'empty-but-successful'},
+                {'cluster_id': 'failed'},
+            ]
+        },
         result_summary_json={
             'failures': [{'cluster_id': 'failed', 'error': 'Secret API unavailable'}],
         },
     )
     job_times = _successful_job_evidence_times(
-        [fleet_job], ['empty-but-successful', 'failed'],
+        [fleet_job],
+        ['empty-but-successful', 'failed'],
     )
     assert job_times == {'empty-but-successful': old}
 

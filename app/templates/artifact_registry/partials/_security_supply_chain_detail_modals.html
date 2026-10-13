@@ -279,7 +279,6 @@
         </div>
     {% endcall %}
 {%- endmacro %}
-
 {% macro vulnerability(row, dialog_id) -%}
     {% set severity_tone = 'critical' if row.severity == 'critical' else ('warning' if row.severity in ['high', 'medium'] else ('normal' if row.severity in ['low', 'negligible'] else 'unknown')) %}
     {% call shell(
@@ -320,22 +319,27 @@
                 <dl class="grid min-w-0 grid-cols-1 gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2">
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:col-span-2 sm:px-5">
                         <dt class="text-xs font-medium text-content-muted">Affected Package</dt>
-                        <dd class="mt-1 min-w-0 break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ row.package }}</dd>
+                        <dd class="mt-1 min-w-0 break-words text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">
+                            {{ row.package }}
+                        </dd>
                     </div>
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
                         <dt class="text-xs font-medium text-content-muted">Installed Version</dt>
-                        <dd class="mt-1 min-w-0 break-all text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ row.installed_version }}</dd>
+                        <dd class="mt-1 min-w-0 break-all text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">
+                            {{ row.installed_version }}
+                        </dd>
                     </div>
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
                         <dt class="text-xs font-medium text-content-muted">Fixed Version</dt>
-                        <dd class="mt-1 min-w-0 break-all text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ row.fixed_version }}</dd>
+                        <dd class="mt-1 min-w-0 break-all text-sm font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">
+                            {{ row.fixed_version }}
+                        </dd>
                     </div>
                 </dl>
                 <p class="border-t border-outline-subtle bg-surface-subtle px-4 py-3 text-xs leading-5 text-content-muted sm:px-5">
                     {{ 'Fixed-version evidence was observed in the committed provider scan.' if row.fix_available else 'No fixed version was observed in the committed provider scan.' }}
                 </p>
             </section>
-
             <section class="min-w-0 overflow-hidden rounded-xl border border-outline-default bg-surface-card"
                      data-artifact-registry-vulnerability-artifact>
                 <header class="flex min-w-0 items-start gap-3 px-4 py-4 sm:px-5">
@@ -351,11 +355,15 @@
                 <dl class="grid min-w-0 grid-cols-1 gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2">
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
                         <dt class="text-xs font-medium text-content-muted">Project</dt>
-                        <dd class="mt-1 min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.project }}</dd>
+                        <dd class="mt-1 min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                            {{ row.project }}
+                        </dd>
                     </div>
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
                         <dt class="text-xs font-medium text-content-muted">Repository</dt>
-                        <dd class="mt-1 min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.repository }}</dd>
+                        <dd class="mt-1 min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                            {{ row.repository }}
+                        </dd>
                     </div>
                 </dl>
                 <div class="flex min-w-0 items-start gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:px-5">
@@ -369,7 +377,6 @@
                     </div>
                 </div>
             </section>
-
             <section class="min-w-0 overflow-hidden rounded-xl border border-outline-default bg-surface-card"
                      data-artifact-registry-vulnerability-exposure>
                 <header class="flex min-w-0 items-start gap-3 px-4 py-4 sm:px-5">
@@ -385,30 +392,42 @@
                 <dl class="grid min-w-0 grid-cols-1 gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2">
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
                         <dt class="text-xs font-medium text-content-muted">Runtime Bindings</dt>
-                        <dd class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ row.runtime_exposure_count }}</dd>
+                        <dd class="mt-1 text-sm font-semibold tabular-nums text-content-primary">
+                            {{ row.runtime_exposure_count }}
+                        </dd>
                     </div>
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
                         <dt class="text-xs font-medium text-content-muted">Snapshot Freshness</dt>
-                        <dd class="mt-1">{{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}</dd>
+                        <dd class="mt-1">
+                            {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
+                        </dd>
                     </div>
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
                         <dt class="text-xs font-medium text-content-muted">Registry Provider</dt>
-                        <dd class="mt-1 min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.provider_label }}</dd>
+                        <dd class="mt-1 min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                            {{ row.provider_label }}
+                        </dd>
                     </div>
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
                         <dt class="text-xs font-medium text-content-muted">Registry Source</dt>
-                        <dd class="mt-1 min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.source_name }}</dd>
+                        <dd class="mt-1 min-w-0 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                            {{ row.source_name }}
+                        </dd>
                     </div>
                     <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:col-span-2 sm:px-5">
                         <dt class="text-xs font-medium text-content-muted">Scan Observed</dt>
-                        <dd class="mt-1 min-w-0 break-words text-sm font-medium tabular-nums text-content-primary [overflow-wrap:anywhere]">{{ row.observed_at|user_datetime }}</dd>
+                        <dd class="mt-1 min-w-0 break-words text-sm font-medium tabular-nums text-content-primary [overflow-wrap:anywhere]">
+                            {{ row.observed_at|user_datetime }}
+                        </dd>
                     </div>
                 </dl>
                 <div class="min-w-0 border-t border-outline-subtle bg-surface-subtle px-4 py-3.5 sm:px-5">
                     {% if row.runtime_exposure_count %}
                         <a href="{{ url_for('artifact_registry.runtime', artifact_id=row.artifact_id) }}"
                            class="{{ table_ui.action_classes() }} inline-flex max-w-full items-center gap-1.5">
-                            <i data-lucide="waypoints" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+                            <i data-lucide="waypoints"
+                               class="h-3.5 w-3.5 shrink-0"
+                               aria-hidden="true"></i>
                             Open Runtime Usage
                         </a>
                     {% else %}

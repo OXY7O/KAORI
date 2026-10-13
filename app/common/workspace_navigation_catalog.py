@@ -397,7 +397,13 @@ _CAPABILITY_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
     'object_storage_analytics': ('system_id', 'time_range'),
     'artifact_registry_security': ('source_id',),
     'artifact_registry_runtime': (
-        'source_id', 'cluster_id', 'namespace', 'match_type', 'exposure', 'artifact_id', 'q',
+        'source_id',
+        'cluster_id',
+        'namespace',
+        'match_type',
+        'exposure',
+        'artifact_id',
+        'q',
     ),
 }
 
@@ -537,16 +543,17 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
     ),
     'artifact_registry_runtime': (
         CapabilityViewDefinition(
-            'overview', 'Overview', 'layout-dashboard',
-            'artifact_registry.runtime_overview', ('artifact_registry.view',)
+            'overview',
+            'Overview',
+            'layout-dashboard',
+            'artifact_registry.runtime_overview',
+            ('artifact_registry.view',),
         ),
         CapabilityViewDefinition(
-            'usage', 'Runtime Usage', 'list',
-            'artifact_registry.runtime', ('artifact_registry.view',)
+            'usage', 'Runtime Usage', 'list', 'artifact_registry.runtime', ('artifact_registry.view',)
         ),
         CapabilityViewDefinition(
-            'topology', 'Topology', 'waypoints',
-            'artifact_registry.runtime_topology', ('artifact_registry.view',)
+            'topology', 'Topology', 'waypoints', 'artifact_registry.runtime_topology', ('artifact_registry.view',)
         ),
     ),
     'artifact_registry_analytics': (

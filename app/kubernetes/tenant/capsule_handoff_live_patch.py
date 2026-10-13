@@ -8,6 +8,7 @@ module can be enabled by a separate authorized change.
 No route, background job, task registration or feature flag imports this
 adapter. Failed or unknown PATCH outcomes require human recovery, never retry.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -39,7 +40,10 @@ _CAPSULE_LIVE_PATCH_ENABLED = False
 
 
 def _provider_methods(
-    *, core: Any, rbac: Any, kind: str,
+    *,
+    core: Any,
+    rbac: Any,
+    kind: str,
 ) -> tuple[Any, Any]:
     if kind == 'Namespace':
         return core.read_namespace, core.patch_namespace
@@ -53,7 +57,11 @@ def _provider_methods(
 
 
 def _provider_read(
-    read: Any, *, kind: str, name: str, namespace: str,
+    read: Any,
+    *,
+    kind: str,
+    name: str,
+    namespace: str,
 ) -> Any:
     if kind == 'Namespace':
         return read(name=name, _request_timeout=5)
@@ -61,11 +69,18 @@ def _provider_read(
 
 
 def _provider_patch(
-    patch: Any, *, kind: str, name: str, namespace: str,
-    body: list[dict[str, Any]], dry_run: bool,
+    patch: Any,
+    *,
+    kind: str,
+    name: str,
+    namespace: str,
+    body: list[dict[str, Any]],
+    dry_run: bool,
 ) -> Any:
     args: dict[str, Any] = {
-        'name': name, 'body': body, '_content_type': _CONTENT_TYPE,
+        'name': name,
+        'body': body,
+        '_content_type': _CONTENT_TYPE,
         '_request_timeout': 5,
     }
     if kind != 'Namespace':
@@ -78,9 +93,14 @@ def _provider_patch(
 
 
 def _require_source_still_unchanged(
-    *, kind: str, before: Any, current: Any,
-    record: Mapping[str, Any], tenant_id: str,
-    capsule_name: str, capsule_uid: str,
+    *,
+    kind: str,
+    before: Any,
+    current: Any,
+    record: Mapping[str, Any],
+    tenant_id: str,
+    capsule_name: str,
+    capsule_uid: str,
 ) -> None:
     if kind == 'Namespace':
         if (
@@ -91,13 +111,19 @@ def _require_source_still_unchanged(
             raise ValueError('Capsule Namespace changed during live dry-run; abort PATCH.')
         return
     prior, problems = classify_capsule_related_resource(
-        resource=before, kind=kind, namespace=record['namespace'],
-        tenant_id=tenant_id, capsule_name=capsule_name,
+        resource=before,
+        kind=kind,
+        namespace=record['namespace'],
+        tenant_id=tenant_id,
+        capsule_name=capsule_name,
         capsule_uid=capsule_uid,
     )
     live, live_problems = classify_capsule_related_resource(
-        resource=current, kind=kind, namespace=record['namespace'],
-        tenant_id=tenant_id, capsule_name=capsule_name,
+        resource=current,
+        kind=kind,
+        namespace=record['namespace'],
+        tenant_id=tenant_id,
+        capsule_name=capsule_name,
         capsule_uid=capsule_uid,
     )
     if prior != dict(record) or live != prior or live_problems != problems:
@@ -105,9 +131,15 @@ def _require_source_still_unchanged(
 
 
 def execute_capsule_single_metadata_patch_staged(
-    *, core: Any, rbac: Any, component: Mapping[str, Any],
-    tenant_id: str, capsule_name: str, capsule_uid: str,
-    successor_owner: str, related_record: Mapping[str, Any] | None = None,
+    *,
+    core: Any,
+    rbac: Any,
+    component: Mapping[str, Any],
+    tenant_id: str,
+    capsule_name: str,
+    capsule_uid: str,
+    successor_owner: str,
+    related_record: Mapping[str, Any] | None = None,
     consented_label_keys: list[str] | None = None,
 ) -> dict[str, Any]:
     """Preview, conditionally PATCH once and re-read exactly one resource.
@@ -125,16 +157,23 @@ def execute_capsule_single_metadata_patch_staged(
         )
     if (
         not isinstance(component, Mapping)
-        or component.get('kind') not in (
-            'Namespace', 'ResourceQuota', 'LimitRange', 'RoleBinding',
+        or component.get('kind')
+        not in (
+            'Namespace',
+            'ResourceQuota',
+            'LimitRange',
+            'RoleBinding',
         )
         or not all(
             isinstance(component.get(key), str) and component[key]
             for key in ('kind', 'name', 'uid', 'resource_version')
         )
-        or not isinstance(tenant_id, str) or not tenant_id
-        or not isinstance(capsule_name, str) or not capsule_name
-        or not isinstance(capsule_uid, str) or not capsule_uid
+        or not isinstance(tenant_id, str)
+        or not tenant_id
+        or not isinstance(capsule_name, str)
+        or not capsule_name
+        or not isinstance(capsule_uid, str)
+        or not capsule_uid
     ):
         raise ValueError('Capsule live PATCH has no complete approved object identity.')
 
@@ -144,7 +183,8 @@ def execute_capsule_single_metadata_patch_staged(
         if namespace != name or related_record is not None or consented_label_keys is not None:
             raise ValueError('Capsule Namespace PATCH may not inherit related-resource consent.')
     elif (
-        not isinstance(namespace, str) or not namespace
+        not isinstance(namespace, str)
+        or not namespace
         or not isinstance(related_record, Mapping)
         or related_record.get('namespace') != namespace
         or related_record.get('kind') != kind
@@ -158,36 +198,60 @@ def execute_capsule_single_metadata_patch_staged(
     before = _provider_read(read, kind=kind, name=name, namespace=namespace)
     if kind == 'Namespace':
         baseline = capture_capsule_namespace_baseline(
-            component, before, tenant_id=tenant_id, capsule_tenant_name=capsule_name,
+            component,
+            before,
+            tenant_id=tenant_id,
+            capsule_tenant_name=capsule_name,
         )
         operations = build_capsule_namespace_handoff_patch(
-            component, before, tenant_id=tenant_id,
+            component,
+            before,
+            tenant_id=tenant_id,
             capsule_tenant_name=capsule_name,
             verified_successor_owner=successor_owner,
         )
         preview = _provider_patch(
-            patch, kind=kind, name=name, namespace=namespace,
-            body=operations, dry_run=True,
+            patch,
+            kind=kind,
+            name=name,
+            namespace=namespace,
+            body=operations,
+            dry_run=True,
         )
         verify_capsule_namespace_preview(
-            before=before, preview=preview, successor_owner=successor_owner,
+            before=before,
+            preview=preview,
+            successor_owner=successor_owner,
         )
     else:
         operations = build_capsule_related_metadata_handoff_patch(
-            record=related_record, before=before, kind=kind,
-            namespace=namespace, tenant_id=tenant_id,
-            capsule_name=capsule_name, capsule_uid=capsule_uid,
+            record=related_record,
+            before=before,
+            kind=kind,
+            namespace=namespace,
+            tenant_id=tenant_id,
+            capsule_name=capsule_name,
+            capsule_uid=capsule_uid,
             successor_owner=successor_owner,
             approved_label_keys=consented_label_keys,
         )
         preview = _provider_patch(
-            patch, kind=kind, name=name, namespace=namespace,
-            body=operations, dry_run=True,
+            patch,
+            kind=kind,
+            name=name,
+            namespace=namespace,
+            body=operations,
+            dry_run=True,
         )
         verify_capsule_related_metadata_preview(
-            record=related_record, before=before, preview=preview,
-            kind=kind, namespace=namespace, tenant_id=tenant_id,
-            capsule_name=capsule_name, capsule_uid=capsule_uid,
+            record=related_record,
+            before=before,
+            preview=preview,
+            kind=kind,
+            namespace=namespace,
+            tenant_id=tenant_id,
+            capsule_name=capsule_name,
+            capsule_uid=capsule_uid,
             successor_owner=successor_owner,
             approved_label_keys=consented_label_keys,
         )
@@ -196,35 +260,52 @@ def execute_capsule_single_metadata_patch_staged(
     # provider read proves that server dry-run did not mutate anything.
     unchanged = _provider_read(read, kind=kind, name=name, namespace=namespace)
     _require_source_still_unchanged(
-        kind=kind, before=before, current=unchanged,
+        kind=kind,
+        before=before,
+        current=unchanged,
         record=related_record if kind != 'Namespace' else component,
-        tenant_id=tenant_id, capsule_name=capsule_name, capsule_uid=capsule_uid,
+        tenant_id=tenant_id,
+        capsule_name=capsule_name,
+        capsule_uid=capsule_uid,
     )
 
     # No retries: if the provider times out here, an external reviewer must
     # re-observe live objects and reconcile the immutable START history.
     _provider_patch(
-        patch, kind=kind, name=name, namespace=namespace,
-        body=operations, dry_run=False,
+        patch,
+        kind=kind,
+        name=name,
+        namespace=namespace,
+        body=operations,
+        dry_run=False,
     )
     after = _provider_read(read, kind=kind, name=name, namespace=namespace)
     if kind == 'Namespace':
         result = classify_capsule_namespace_handoff(
-            baseline=baseline, current=after,
-            tenant_id=tenant_id, successor_owner=successor_owner,
+            baseline=baseline,
+            current=after,
+            tenant_id=tenant_id,
+            successor_owner=successor_owner,
         )
     else:
         result = classify_capsule_related_metadata_readback(
-            record=related_record, before=before, current=after,
-            kind=kind, namespace=namespace, tenant_id=tenant_id,
-            capsule_name=capsule_name, capsule_uid=capsule_uid,
+            record=related_record,
+            before=before,
+            current=after,
+            kind=kind,
+            namespace=namespace,
+            tenant_id=tenant_id,
+            capsule_name=capsule_name,
+            capsule_uid=capsule_uid,
             successor_owner=successor_owner,
             approved_label_keys=consented_label_keys,
         )
     if result.get('state') != 'provider_markers_transferred':
         raise ValueError('Capsule post-PATCH read-back is incomplete: operator recovery required.')
     return {
-        'kind': kind, 'namespace': namespace, 'name': name,
+        'kind': kind,
+        'namespace': namespace,
+        'name': name,
         'uid': component['uid'],
         'source_resource_version': component['resource_version'],
         'observed_resource_version': result['resource_version'],

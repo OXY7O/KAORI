@@ -36,29 +36,45 @@ def test_second_registry_provider_registers_without_harbor_code_changes() -> Non
     assert resolved.integration_type == 'registry'
 
 
-
 def _synthetic_inventory(_instance: object):
     from app.integrations.registry.contracts import (
-        ArtifactRecord, ProjectRecord, RegistryInventoryEvidence, RepositoryRecord,
+        ArtifactRecord,
+        ProjectRecord,
+        RegistryInventoryEvidence,
+        RepositoryRecord,
     )
 
     artifact = ArtifactRecord(
         digest='sha256:' + 'a' * 64,
         provider_native_id='external-993',
-        artifact_type='OCI', media_type='application/vnd.oci.image.manifest.v1+json',
-        size_bytes=321, push_time=None, pull_time=None, tags=[{'name': 'stable'}],
+        artifact_type='OCI',
+        media_type='application/vnd.oci.image.manifest.v1+json',
+        size_bytes=321,
+        push_time=None,
+        pull_time=None,
+        tags=[{'name': 'stable'}],
     )
     repository = RepositoryRecord(
-        name='team/service', provider_native_id='repo-1', artifact_count=1,
-        pull_count=None, description=None, provider_created_at=None,
-        provider_updated_at=None, artifacts=[artifact],
+        name='team/service',
+        provider_native_id='repo-1',
+        artifact_count=1,
+        pull_count=None,
+        description=None,
+        provider_created_at=None,
+        provider_updated_at=None,
+        artifacts=[artifact],
     )
-    return RegistryInventoryEvidence(projects=[
-        ProjectRecord(
-            name='team', provider_native_id='tenant-3',
-            public=False, repository_count=1, repositories=[repository],
-        )
-    ])
+    return RegistryInventoryEvidence(
+        projects=[
+            ProjectRecord(
+                name='team',
+                provider_native_id='tenant-3',
+                public=False,
+                repository_count=1,
+                repositories=[repository],
+            )
+        ]
+    )
 
 
 def test_second_registry_collector_normalizes_to_canonical_evidence(monkeypatch) -> None:
@@ -67,7 +83,8 @@ def test_second_registry_collector_normalizes_to_canonical_evidence(monkeypatch)
     from app.integrations.registry.collectors import RegistryInventoryCollector
 
     monkeypatch.setitem(
-        collectors._COLLECTORS, 'aws_ecr',
+        collectors._COLLECTORS,
+        'aws_ecr',
         RegistryInventoryCollector(provider_key='aws_ecr', collect=_synthetic_inventory),
     )
     evidence = collectors.get_registry_collector('aws_ecr').collect(object())
@@ -86,13 +103,15 @@ def test_second_registry_optional_security_governance_collectors_are_independent
 ) -> None:
     from app.integrations.registry import governance_contracts, security_collectors
     from app.integrations.registry.governance_contracts import (
-        RegistryGovernanceCollector, RegistryGovernanceEvidence,
+        RegistryGovernanceCollector,
+        RegistryGovernanceEvidence,
     )
     from app.integrations.registry.security_collectors import RegistrySecurityCollector
     from app.integrations.registry.security_contracts import RegistrySecurityEvidence
 
     monkeypatch.setitem(
-        security_collectors._COLLECTORS, 'aws_ecr',
+        security_collectors._COLLECTORS,
+        'aws_ecr',
         RegistrySecurityCollector(
             provider_key='aws_ecr',
             collect=lambda _instance, _targets, _progress, _current: RegistrySecurityEvidence(),
@@ -100,23 +119,32 @@ def test_second_registry_optional_security_governance_collectors_are_independent
         ),
     )
     monkeypatch.setitem(
-        governance_contracts._COLLECTORS, 'aws_ecr',
+        governance_contracts._COLLECTORS,
+        'aws_ecr',
         RegistryGovernanceCollector(
             provider_key='aws_ecr',
             collect=lambda _instance: RegistryGovernanceEvidence(),
         ),
     )
-    assert security_collectors.get_registry_security_collector('aws_ecr').collect(
-        object(), [], None, None,
-    ).artifacts == []
+    assert (
+        security_collectors.get_registry_security_collector('aws_ecr')
+        .collect(
+            object(),
+            [],
+            None,
+            None,
+        )
+        .artifacts
+        == []
+    )
     assert governance_contracts.get_registry_governance_collector('aws_ecr').collect(object()).projects == []
 
 
 def test_unknown_optional_collector_fails_explicitly_not_harbor_fallback() -> None:
     import pytest
 
-    from app.integrations.registry.security_collectors import get_registry_security_collector
     from app.integrations.registry.governance_contracts import get_registry_governance_collector
+    from app.integrations.registry.security_collectors import get_registry_security_collector
 
     with pytest.raises(LookupError, match='No qualified'):
         get_registry_security_collector('synthetic_unknown')

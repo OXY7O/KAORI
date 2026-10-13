@@ -339,9 +339,7 @@ def test_no_quota_source_is_nonapplicable_not_an_api_version_failure(monkeypatch
 
 def test_declared_grq_without_source_still_blocks_without_false_version_message(monkeypatch):
     _no_existing_intent(monkeypatch)
-    state = build_capsule_shared_allocation_cutover_state(
-        _tenant(sources=[], served_version='')
-    )
+    state = build_capsule_shared_allocation_cutover_state(_tenant(sources=[], served_version=''))
     assert state['applicable'] is True
     assert state['supported'] is False
     assert state['source_count'] == 0
@@ -353,15 +351,13 @@ def test_capsule_shared_governance_guidance_is_read_only_and_links_only_admitted
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[3]
-    shared = (
-        root / 'app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html'
-    ).read_text(encoding='utf-8')
-    quota = (
-        root / 'app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html'
-    ).read_text(encoding='utf-8')
-    workspace = (root / 'app/templates/kubernetes/tenant/namespace_provisioning.html').read_text(
+    shared = (root / 'app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html').read_text(
         encoding='utf-8'
     )
+    quota = (root / 'app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html').read_text(
+        encoding='utf-8'
+    )
+    workspace = (root / 'app/templates/kubernetes/tenant/namespace_provisioning.html').read_text(encoding='utf-8')
     assert 'GlobalResourceQuota governance blockers' in shared
     assert 'Other Capsule allocation authorities' in shared
     assert "state.get('applicable') and not state.get('supported')" in shared
@@ -416,9 +412,9 @@ def test_capsule_zero_quota_help_is_read_only_in_shared_allocation_ui():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[3]
-    template = (
-        root / 'app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html'
-    ).read_text(encoding='utf-8')
+    template = (root / 'app/templates/kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html').read_text(
+        encoding='utf-8'
+    )
     assert "state.get('no_tenant_quota_configured')" in template
     assert 'No Tenant Quota Configured' in template
     assert 'this is not a failed deployment' in template

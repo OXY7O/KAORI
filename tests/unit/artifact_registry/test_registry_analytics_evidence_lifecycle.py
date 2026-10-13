@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 from app.artifact_registry.analytics import _valid_instant_vector
-from app.artifact_registry.presentation_analytics import _analytics_snapshot_view, _analytics_signal_summary
+from app.artifact_registry.presentation_analytics import _analytics_signal_summary, _analytics_snapshot_view
 
 
 def test_invalid_metrics_responses_do_not_become_ready_empty_evidence():
@@ -17,6 +17,7 @@ def test_invalid_metrics_responses_do_not_become_ready_empty_evidence():
 
 def test_expired_snapshot_remains_readable_but_cannot_claim_current(monkeypatch):
     from app.artifact_registry import presentation_common
+
     monkeypatch.setattr(presentation_common, '_registry_analytics_inputs_changed', lambda _snapshot: False)
     now = datetime.now(UTC)
     expired = SimpleNamespace(
@@ -29,23 +30,32 @@ def test_expired_snapshot_remains_readable_but_cannot_claim_current(monkeypatch)
     assert view['snapshot'] is expired
     assert view['status_label'] == 'Stale Snapshot'
     assert view['is_current'] is False
-    assert _analytics_signal_summary(
-        {
-            'critical_runtime_artifacts': 0, 'tag_only_bindings': 0,
-            'runtime_scan_gaps': 0, 'unsigned_runtime_artifacts': 0,
-            'stale_candidates': 0, 'metric_capability_gaps': 0,
-        },
-        [view],
-    )[2]['label'] == 'Snapshot Attention'
+    assert (
+        _analytics_signal_summary(
+            {
+                'critical_runtime_artifacts': 0,
+                'tag_only_bindings': 0,
+                'runtime_scan_gaps': 0,
+                'unsigned_runtime_artifacts': 0,
+                'stale_candidates': 0,
+                'metric_capability_gaps': 0,
+            },
+            [view],
+        )[2]['label']
+        == 'Snapshot Attention'
+    )
 
 
 def test_missing_expiry_is_not_current(monkeypatch):
     from app.artifact_registry import presentation_common
+
     monkeypatch.setattr(presentation_common, '_registry_analytics_inputs_changed', lambda _snapshot: False)
     now = datetime.now(UTC)
     legacy = SimpleNamespace(
-        status='ready', payload_json={'inventory': {}},
-        generated_at=now, expires_at=None,
+        status='ready',
+        payload_json={'inventory': {}},
+        generated_at=now,
+        expires_at=None,
     )
     assert _analytics_snapshot_view(SimpleNamespace(id=11), legacy)['is_current'] is False
 
@@ -92,7 +102,8 @@ def test_malformed_connected_alertmanager_payload_cannot_be_ready(monkeypatch):
     from app.artifact_registry import analytics
 
     monkeypatch.setattr(
-        analytics, 'list_alerts_for_scope',
+        analytics,
+        'list_alerts_for_scope',
         lambda **_kw: {'connected': True, 'alerts': {'not': 'a list'}},
     )
     observed = analytics._alert_evidence(SimpleNamespace(id=2, name='registry'))

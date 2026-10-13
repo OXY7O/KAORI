@@ -18,6 +18,9 @@ def test_every_analytics_page_and_record_fragment_reads_committed_snapshot() -> 
     source = (root / 'app/storage/object_storage/analytics/service.py').read_text(encoding='utf-8')
     assert 'context, system, time_range = _base_context(page_key, query_args)' in source
     assert '_attach_committed_analytics_snapshot(context, system=system, time_range=time_range)' in source
-    for method in ('get_object_storage_alert_table_context', 'get_object_storage_bucket_table_context',
-                   'get_object_storage_bucket_forecast_table_context'):
+    for method in (
+        'get_object_storage_alert_table_context',
+        'get_object_storage_bucket_table_context',
+        'get_object_storage_bucket_forecast_table_context',
+    ):
         assert f'def {method}(' in source

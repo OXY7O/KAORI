@@ -41,9 +41,9 @@
                         </div>
                         {% if item.progress_percent is not none %}
                             {{ progress_bar.bar(item.progress_percent,
-                                track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover',
-                                fill_classes='h-full rounded-full ' ~ metric_color,
-                                label=item.label ~ ' ' ~ item.progress_label|lower ~ ' percentage') }}
+                                                        track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover',
+                                                        fill_classes='h-full rounded-full ' ~ metric_color,
+                                                        label=item.label ~ ' ' ~ item.progress_label|lower ~ ' percentage') }}
                         {% else %}
                             <div class="mt-3 h-2 rounded-full bg-surface-hover"
                                  role="img"
@@ -100,9 +100,9 @@
                                 <strong class="tabular-nums text-content-primary">{{ quota_used_percent|round(1) }}%</strong>
                             </div>
                             {{ progress_bar.bar(quota_used_percent,
-                                track_classes='mt-2 h-3 overflow-hidden rounded-full bg-surface-hover',
-                                fill_classes='h-full rounded-full bg-kaori-primary',
-                                label='Registry committed project quota used percentage') }}
+                                                        track_classes='mt-2 h-3 overflow-hidden rounded-full bg-surface-hover',
+                                                        fill_classes='h-full rounded-full bg-kaori-primary',
+                                                        label='Registry committed project quota used percentage') }}
                         </div>
                         <div>
                             <div class="flex items-center justify-between gap-3 text-xs">
@@ -110,9 +110,9 @@
                                 <strong class="tabular-nums text-content-primary">{{ quota_free_percent|round(1) }}%</strong>
                             </div>
                             {{ progress_bar.bar(quota_free_percent,
-                                track_classes='mt-2 h-3 overflow-hidden rounded-full bg-surface-hover',
-                                fill_classes='h-full rounded-full bg-status-info',
-                                label='Registry committed project quota free percentage') }}
+                                                        track_classes='mt-2 h-3 overflow-hidden rounded-full bg-surface-hover',
+                                                        fill_classes='h-full rounded-full bg-status-info',
+                                                        label='Registry committed project quota free percentage') }}
                         </div>
                     </div>
                 {% else %}

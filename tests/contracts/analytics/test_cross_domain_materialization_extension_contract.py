@@ -69,8 +69,8 @@ def test_new_analytics_domain_extension_does_not_require_another_framework() -> 
     assert 'JobExecution' in jobs
     assert 'data-analytics-section-load-tracker' in shared
     assert 'macro job_progress' in progress
-    assert "js/analytics/section_load_tracker.js" in k8s
-    assert "js/analytics/section_load_tracker.js" in registry
+    assert 'js/analytics/section_load_tracker.js' in k8s
+    assert 'js/analytics/section_load_tracker.js' in registry
     assert 'section loading' in guide.lower()
 
 

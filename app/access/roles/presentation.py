@@ -101,9 +101,7 @@ def _build_roles_summary(
     custom_roles = sum(1 for role in roles if not role_is_mutation_protected(role))
     active_roles = sum(1 for role in roles if role.is_active)
     assigned_users = sum(assignment_counts.get(role.id, 0) for role in roles)
-    inactive_assigned_users = sum(
-        assignment_counts.get(role.id, 0) for role in roles if not role.is_active
-    )
+    inactive_assigned_users = sum(assignment_counts.get(role.id, 0) for role in roles if not role.is_active)
     baseline_drift_count = int(baseline['drift_count'])
     posture_label, posture_tone = (
         ('Review Required', 'warning')
@@ -136,9 +134,7 @@ def build_roles_overview_summary() -> dict[str, Any]:
         .all()
     )
     assignment_counts, _ = _role_reference_counts(include_provider_counts=False)
-    return _build_roles_summary(
-        roles, assignment_counts, role_baseline_snapshot(roles), matching=len(roles)
-    )
+    return _build_roles_summary(roles, assignment_counts, role_baseline_snapshot(roles), matching=len(roles))
 
 
 def build_roles_index_context(*, can_manage_roles: bool, filters: Mapping[str, Any] | None = None) -> dict[str, Any]:
@@ -210,9 +206,7 @@ def build_roles_index_context(*, can_manage_roles: bool, filters: Mapping[str, A
     )
     page_rows = filtered_rows[pagination.offset : pagination.offset + pagination.per_page]
 
-    summary = _build_roles_summary(
-        roles_list, role_assignment_counts, baseline, matching=len(filtered_rows)
-    )
+    summary = _build_roles_summary(roles_list, role_assignment_counts, baseline, matching=len(filtered_rows))
 
     return {
         'role_rows': page_rows,

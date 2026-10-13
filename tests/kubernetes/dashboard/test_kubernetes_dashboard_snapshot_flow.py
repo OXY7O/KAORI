@@ -575,8 +575,8 @@ def test_kubernetes_fleet_freshness_uses_only_two_batched_snapshot_reads(monkeyp
         assert set(parameters_by_cluster) == set(ids)
         return {
             cluster_id: SimpleNamespace(
-                available=cluster_id in ({'cluster-1', 'cluster-2'} if dataset_key == service.CAPACITY_DATASET_KEY
-                                         else {'cluster-1'})
+                available=cluster_id
+                in ({'cluster-1', 'cluster-2'} if dataset_key == service.CAPACITY_DATASET_KEY else {'cluster-1'})
             )
             for cluster_id in parameters_by_cluster
         }
@@ -592,9 +592,7 @@ def test_kubernetes_fleet_freshness_uses_only_two_batched_snapshot_reads(monkeyp
 
     service._populate_data_freshness(dashboard, selected_cluster_id=None, selected=None)
 
-    assert [dataset for dataset, _ in calls] == [
-        service.CAPACITY_DATASET_KEY, service.DASHBOARD_ALERTS_DATASET_KEY
-    ]
+    assert [dataset for dataset, _ in calls] == [service.CAPACITY_DATASET_KEY, service.DASHBOARD_ALERTS_DATASET_KEY]
     assert dashboard.data_freshness[1].value == '2 / 3 clusters'
     assert dashboard.data_freshness[1].status == 'Partial'
     assert dashboard.data_freshness[2].value == '1 / 3 clusters'

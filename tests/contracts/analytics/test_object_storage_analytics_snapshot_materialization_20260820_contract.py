@@ -136,8 +136,8 @@ def test_ui_explains_snapshot_authority_and_three_stage_readiness() -> None:
     assert 'Latest Analytics Data Snapshot' in controls
     assert 'shared_readiness.snapshot_card(' in controls
     assert 'shared_readiness.source_card(' in controls
-    assert "analytics/components/_controls_readiness.html" in controls
-    assert "shared_readiness.frame(" in controls
+    assert 'analytics/components/_controls_readiness.html' in controls
+    assert 'shared_readiness.frame(' in controls
     assert "'object-storage-analytics-refresh-indicator'" in controls
     assert blocker.count('Object Storage → Metrics Source → Alert Source → Analytics Snapshot') == 1
     assert blocker.count('Object Storage → Metrics Source → Alert Source') == 2

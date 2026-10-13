@@ -59,7 +59,6 @@ def _current_migration_heads(database_url: str) -> frozenset[str]:
         connection.close()
 
 
-
 def _runtime_database_admitted(database_url: str) -> bool:
     """Fail closed until DevContainer app identity and immutable ledger ACLs are ready."""
     if os.getenv('APP_ENV') != 'development':
@@ -106,7 +105,6 @@ def _runtime_database_admitted(database_url: str) -> bool:
             return bool(result and all(result))
 
 
-
 def wait_for_database() -> None:
     database_url = _database_url()
     attempts = max(_env_int('DB_WAIT_ATTEMPTS', 30), 1)
@@ -143,7 +141,9 @@ def wait_for_schema() -> None:
         if current_heads == expected_heads:
             try:
                 if _runtime_database_admitted(database_url):
-                    print(f'Database schema and restricted runtime ready at head(s): {", ".join(sorted(expected_heads))}')
+                    print(
+                        f'Database schema and restricted runtime ready at head(s): {", ".join(sorted(expected_heads))}'
+                    )
                     return
             except psycopg2.Error:
                 pass  # grants/immutable ledger are not yet ready: keep workers gated

@@ -7,11 +7,6 @@ from wtforms.validators import ValidationError
 from app.access.rbac.decorators import permission_required
 from app.common.http import htmx_target, is_htmx_request
 from app.common.presentation import present_key_label
-from app.kubernetes.cluster.capsule_rbac_bootstrap import (
-    bootstrap_missing_capsule_roles,
-    check_capsule_role_bootstrap,
-    latest_capsule_role_bootstrap_evidence,
-)
 from app.integrations.binding_service import SourceBindingSpec, create_source_binding
 from app.integrations.coverage import build_binding_workspace
 from app.integrations.domain_service import (
@@ -53,6 +48,11 @@ from app.integrations.validation.web import (
     snapshot_feedback_for_user,
     validate_snapshot_access,
     validation_poll_response,
+)
+from app.kubernetes.cluster.capsule_rbac_bootstrap import (
+    bootstrap_missing_capsule_roles,
+    check_capsule_role_bootstrap,
+    latest_capsule_role_bootstrap_evidence,
 )
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
@@ -284,8 +284,11 @@ def kubernetes_capsule_rbac_check(cluster_id: str) -> ResponseReturnValue:
     result = check_capsule_role_bootstrap(cluster_id, int(current_user.id))
     flash(
         'Capsule RBAC check: '
-        + ('all canonical roles match.' if result['status'] == 'ready' else
-           'review missing or conflicting role prerequisites in the cluster panel.'),
+        + (
+            'all canonical roles match.'
+            if result['status'] == 'ready'
+            else 'review missing or conflicting role prerequisites in the cluster panel.'
+        ),
         'success' if result['status'] == 'ready' else 'warning',
     )
     return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id, tab='validation'))
@@ -306,8 +309,11 @@ def kubernetes_capsule_rbac_bootstrap(cluster_id: str) -> ResponseReturnValue:
     result = bootstrap_missing_capsule_roles(cluster_id, int(current_user.id), approved=True)
     flash(
         'Capsule ClusterRole bootstrap '
-        + ('completed and verified.' if result['status'] == 'ready' else
-           'requires operator attention; no conflicting roles were overwritten.'),
+        + (
+            'completed and verified.'
+            if result['status'] == 'ready'
+            else 'requires operator attention; no conflicting roles were overwritten.'
+        ),
         'success' if result['status'] == 'ready' else 'warning',
     )
     return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id, tab='validation'))

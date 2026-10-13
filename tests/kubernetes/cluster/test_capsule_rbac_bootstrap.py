@@ -23,9 +23,7 @@ def _role(profile, *, drift=False, aggregated=False):
         for rule in source['rules']
     ]
     if drift:
-        rules[0] = SimpleNamespace(
-            to_dict=lambda: {'api_groups': [''], 'resources': ['*'], 'verbs': ['*']}
-        )
+        rules[0] = SimpleNamespace(to_dict=lambda: {'api_groups': [''], 'resources': ['*'], 'verbs': ['*']})
     return SimpleNamespace(
         rules=rules,
         aggregation_rule=SimpleNamespace() if aggregated else None,
@@ -53,7 +51,8 @@ class FakeRBAC:
             raise ApiException(status=409)
         if kwargs.get('dry_run') != 'All':
             self.roles[name] = SimpleNamespace(
-                rules=body.rules, aggregation_rule=None,
+                rules=body.rules,
+                aggregation_rule=None,
                 metadata=SimpleNamespace(uid='created-uid', resource_version='1'),
             )
 
@@ -68,7 +67,10 @@ def _evidence():
 
 def test_catalog_is_four_latest_canonical_profiles():
     assert [(x.key.value, x.version) for x in bootstrap._catalog()] == [
-        ('viewer', 1), ('operator', 1), ('tenant_admin', 1), ('deployer', 1)
+        ('viewer', 1),
+        ('operator', 1),
+        ('tenant_admin', 1),
+        ('deployer', 1),
     ]
 
 
@@ -86,12 +88,14 @@ def test_bootstrap_only_creates_missing_roles_after_server_dry_run(monkeypatch):
     viewer = profiles[0]
     api = FakeRBAC({bootstrap.capsule_cluster_role_name(viewer): _role(viewer)})
     monkeypatch.setattr(bootstrap, 'latest_capsule_role_bootstrap_evidence', lambda _: _evidence())
-    monkeypatch.setattr(bootstrap, '_read_roles', lambda _: (
-        api, [bootstrap._role_status(api, profile) for profile in profiles]
-    ))
-    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {
-        'operation': action, 'status': status, **data
-    })
+    monkeypatch.setattr(
+        bootstrap, '_read_roles', lambda _: (api, [bootstrap._role_status(api, profile) for profile in profiles])
+    )
+    monkeypatch.setattr(
+        bootstrap,
+        '_audit',
+        lambda cluster, actor, action, status, data: {'operation': action, 'status': status, **data},
+    )
 
     result = bootstrap.bootstrap_missing_capsule_roles('cluster-a', 42, approved=True)
 
@@ -110,12 +114,10 @@ def test_conflict_blocks_all_mutations(monkeypatch):
     name = bootstrap.capsule_cluster_role_name(profiles[0])
     api = FakeRBAC({name: _role(profiles[0], drift=True)})
     monkeypatch.setattr(bootstrap, 'latest_capsule_role_bootstrap_evidence', lambda _: _evidence())
-    monkeypatch.setattr(bootstrap, '_read_roles', lambda _: (
-        api, [bootstrap._role_status(api, profile) for profile in profiles]
-    ))
-    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {
-        'status': status, **data
-    })
+    monkeypatch.setattr(
+        bootstrap, '_read_roles', lambda _: (api, [bootstrap._role_status(api, profile) for profile in profiles])
+    )
+    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {'status': status, **data})
 
     result = bootstrap.bootstrap_missing_capsule_roles('cluster-a', 42, approved=True)
     assert result['status'] == 'failed'
@@ -128,12 +130,10 @@ def test_partial_failure_preserves_created_roles_and_audit(monkeypatch):
     second_name = bootstrap.capsule_cluster_role_name(profiles[1])
     api = FakeRBAC(fail_on=second_name)
     monkeypatch.setattr(bootstrap, 'latest_capsule_role_bootstrap_evidence', lambda _: _evidence())
-    monkeypatch.setattr(bootstrap, '_read_roles', lambda _: (
-        api, [bootstrap._role_status(api, profile) for profile in profiles]
-    ))
-    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {
-        'status': status, **data
-    })
+    monkeypatch.setattr(
+        bootstrap, '_read_roles', lambda _: (api, [bootstrap._role_status(api, profile) for profile in profiles])
+    )
+    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {'status': status, **data})
 
     result = bootstrap.bootstrap_missing_capsule_roles('cluster-a', 42, approved=True)
 
@@ -148,9 +148,7 @@ def test_bootstrap_requires_explicit_approval_and_fresh_check(monkeypatch):
         bootstrap.bootstrap_missing_capsule_roles('cluster-a', 42, approved=False)
 
     monkeypatch.setattr(bootstrap, 'latest_capsule_role_bootstrap_evidence', lambda _: None)
-    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {
-        'status': status, **data
-    })
+    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {'status': status, **data})
     result = bootstrap.bootstrap_missing_capsule_roles('cluster-a', 42, approved=True)
     assert result['status'] == 'failed'
     assert result['created'] == []
@@ -162,25 +160,17 @@ def test_created_role_has_only_canonical_permissions_and_never_clusterrolebindin
         assert body.metadata.name == bootstrap.capsule_cluster_role_name(profile)
         assert body.metadata.labels['app.kubernetes.io/managed-by'] == 'kaori'
         assert len(body.rules) == len(profile.rules)
-        assert all(
-            rule.verbs == list(expected.verbs)
-            for rule, expected in zip(body.rules, profile.rules, strict=True)
-        )
+        assert all(rule.verbs == list(expected.verbs) for rule, expected in zip(body.rules, profile.rules, strict=True))
 
 
 def test_existing_all_exact_roles_require_no_mutation(monkeypatch):
     profiles = bootstrap._catalog()
-    api = FakeRBAC({
-        bootstrap.capsule_cluster_role_name(profile): _role(profile)
-        for profile in profiles
-    })
+    api = FakeRBAC({bootstrap.capsule_cluster_role_name(profile): _role(profile) for profile in profiles})
     monkeypatch.setattr(bootstrap, 'latest_capsule_role_bootstrap_evidence', lambda _: _evidence())
-    monkeypatch.setattr(bootstrap, '_read_roles', lambda _: (
-        api, [bootstrap._role_status(api, profile) for profile in profiles]
-    ))
-    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {
-        'status': status, **data
-    })
+    monkeypatch.setattr(
+        bootstrap, '_read_roles', lambda _: (api, [bootstrap._role_status(api, profile) for profile in profiles])
+    )
+    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {'status': status, **data})
 
     result = bootstrap.bootstrap_missing_capsule_roles('cluster-a', 42, approved=True)
     assert result['status'] == 'ready'
@@ -190,12 +180,12 @@ def test_existing_all_exact_roles_require_no_mutation(monkeypatch):
 
 
 def test_bootstrap_rejects_stale_preflight_without_kubernetes_mutation(monkeypatch):
-    monkeypatch.setattr(bootstrap, 'latest_capsule_role_bootstrap_evidence', lambda _: {
-        'operation': 'check', 'status': 'missing', 'checked_at': '2020-01-01T00:00:00+00:00'
-    })
-    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {
-        'status': status, **data
-    })
+    monkeypatch.setattr(
+        bootstrap,
+        'latest_capsule_role_bootstrap_evidence',
+        lambda _: {'operation': 'check', 'status': 'missing', 'checked_at': '2020-01-01T00:00:00+00:00'},
+    )
+    monkeypatch.setattr(bootstrap, '_audit', lambda cluster, actor, action, status, data: {'status': status, **data})
     result = bootstrap.bootstrap_missing_capsule_roles('cluster-a', 42, approved=True)
     assert result['status'] == 'failed'
     assert result['created'] == []

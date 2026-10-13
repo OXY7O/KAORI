@@ -49,10 +49,7 @@ def _governance_sync_result(
             if status != 'error'
             else 'Artifact Registry Governance Sync Failed'
         ),
-        'message': (
-            f'{synced} Registry provider(s) synchronized; '
-            f'{len(failures)} failed; {partial_sources} partial.'
-        ),
+        'message': (f'{synced} Registry provider(s) synchronized; {len(failures)} failed; {partial_sources} partial.'),
         'detail': detail,
         'total_count': total,
         'synced_count': synced,
@@ -65,6 +62,7 @@ def _governance_sync_result(
         'finished_at': _now_iso(),
         'duration_seconds': round(perf_counter() - started, 1),
     }
+
 
 @shared_task(
     bind=True,

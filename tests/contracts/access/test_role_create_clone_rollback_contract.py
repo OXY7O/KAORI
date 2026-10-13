@@ -21,7 +21,9 @@ def test_role_create_clone_database_failure_routes_are_bounded() -> None:
         assert 'form.name.errors' in code
         assert event in code
         assert 'No role changes were saved.' in code
-        assert code.index('rollback_role_transaction()', code.index('except (SQLAlchemyError, ValueError):')) < code.index('role_access_feedback(', code.index('except (SQLAlchemyError, ValueError):'))
+        assert code.index(
+            'rollback_role_transaction()', code.index('except (SQLAlchemyError, ValueError):')
+        ) < code.index('role_access_feedback(', code.index('except (SQLAlchemyError, ValueError):'))
         assert 'form.validate_on_submit()' in code
 
     assert 'lock_role_for_mutation(role_id)' in ROUTES.read_text(encoding='utf-8')

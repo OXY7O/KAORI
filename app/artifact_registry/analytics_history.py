@@ -162,13 +162,15 @@ def collect_registry_metric_history(
 
     successful = len(values)
     status = 'unavailable' if not successful else ('partial' if errors else 'ready')
-    history.update({
-        'status': status,
-        'metrics_source': consumer.config.name,
-        'binding_id': consumer.binding.id,
-        'capability_gaps': errors,
-        'series': values,
-    })
+    history.update(
+        {
+            'status': status,
+            'metrics_source': consumer.config.name,
+            'binding_id': consumer.binding.id,
+            'capability_gaps': errors,
+            'series': values,
+        }
+    )
     current_metrics: dict[str, Any] = {
         'status': status,
         'metrics_source': consumer.config.name,
@@ -176,9 +178,7 @@ def collect_registry_metric_history(
         'capability_gaps': errors,
     }
     for field in ('project_usage_bytes', 'project_quota_bytes', 'project_artifacts', 'project_pull_count'):
-        current_metrics[field] = {
-            project: point['last'] for project, point in values.get(field, {}).items()
-        }
+        current_metrics[field] = {project: point['last'] for project, point in values.get(field, {}).items()}
     rate = values.get('request_rate_per_second', {}).get('_aggregate')
     current_metrics['request_rate_per_second'] = rate['last'] if rate else None
 

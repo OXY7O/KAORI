@@ -113,7 +113,8 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[9%]">Namespaces</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Provider Authority</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Lifecycle</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Actions</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -127,8 +128,10 @@
                             {% if row.cluster %}
                                 {{ table_ui.cluster_identity(row.cluster.name, row.cluster.environment) }}
                             {% else %}
-                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="Unavailable">Unavailable</p>
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="Cluster reference {{ tenant.cluster_id }}">Cluster reference {{ tenant.cluster_id }}</p>
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                                   title="Unavailable">Unavailable</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                                   title="Cluster reference {{ tenant.cluster_id }}">Cluster reference {{ tenant.cluster_id }}</p>
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
@@ -139,7 +142,8 @@
                                     Not Reported
                                 {% endif %}
                             </p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}">{{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}">{{ row.environments|length }} environment{{ '' if row.environments|length == 1 else 's' }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             {% set historical_namespace_count = row.namespace_history_count - row.namespace_count %}
@@ -149,8 +153,10 @@
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ tenant.provider_key|replace('_', ' ') |title }}">{{ tenant.provider_key|replace('_', ' ') |title }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ tenant.reconciliation_authority|replace('_', ' ') |title }}">{{ tenant.reconciliation_authority|replace('_', ' ') |title }}</p>
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ tenant.provider_key|replace('_', ' ') |title }}">{{ tenant.provider_key|replace('_', ' ') |title }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ tenant.reconciliation_authority|replace('_', ' ') |title }}">{{ tenant.reconciliation_authority|replace('_', ' ') |title }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             <div class="space-y-1.5">
@@ -165,20 +171,13 @@
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                             <div class="flex justify-end">
-                                <a href="{{ url_for(
-                                        'tenant.tenant_detail',
-                                        tenant_id=tenant.id,
-                                        registry_page=tenant_pagination.page,
-                                        registry_per_page=tenant_pagination.per_page,
-                                        registry_search=tenant_registry_filters.search,
-                                        registry_cluster_id=tenant_registry_filters.cluster_id,
-                                        registry_environment=tenant_registry_filters.environment,
-                                        registry_lifecycle_status=tenant_registry_filters.lifecycle_status
-                                    ) }}"
+                                <a href="{{ url_for('tenant.tenant_detail', tenant_id=tenant.id, registry_page=tenant_pagination.page, registry_per_page=tenant_pagination.per_page, registry_search=tenant_registry_filters.search, registry_cluster_id=tenant_registry_filters.cluster_id, registry_environment=tenant_registry_filters.environment, registry_lifecycle_status=tenant_registry_filters.lifecycle_status) }}"
                                    hx-boost="false"
                                    aria-label="{{ 'Manage' if can_manage else 'View' }} {{ tenant.name }} details"
                                    class="{{ table_ui.action_classes() }} shrink-0">
-                                    <i data-lucide="{{ 'settings-2' if can_manage else 'eye' }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    <i data-lucide="{{ 'settings-2' if can_manage else 'eye' }}"
+                                       class="h-3.5 w-3.5"
+                                       aria-hidden="true"></i>
                                     {{ 'Manage' if can_manage else 'View' }}
                                 </a>
                             </div>
@@ -198,13 +197,12 @@
         </table>
     </div>
     {{ registry_ui.footer('tenant.tenants',
-            registry_id,
-            loading_id,
-            tenant_pagination,
-            query_params,
-            tenant_pagination.allowed_per_page,
-            resource_label='Tenants',
-            rows_aria_label='Tenant rows per page',
-            control_name='tenant-registry') }}
+        registry_id,
+        loading_id,
+        tenant_pagination,
+        query_params,
+        tenant_pagination.allowed_per_page,
+        resource_label='Tenants',
+        rows_aria_label='Tenant rows per page',
+        control_name='tenant-registry') }}
 </section>
-

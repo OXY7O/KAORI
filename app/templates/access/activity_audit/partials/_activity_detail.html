@@ -23,11 +23,11 @@
             </div>
             {# Keep identity, provenance and time in the same modal header, not a second card. #}
             {{ detail_ui.summary_strip([
-                ('Actor', item.user_label, item.user_role),
-                ('Target', item.target_name, item.target_type),
-                ('Recorded', item.created_at|user_datetime, item.created_label),
-                ('Evidence', 'Activity Register', 'Notification-backed')
-                ], compact=true, layout='unified', pinned=false) }}
+                        ('Actor', item.user_label, item.user_role) ,
+            ('Target', item.target_name, item.target_type),
+            ('Recorded', item.created_at|user_datetime, item.created_label),
+            ('Evidence', 'Activity Register', 'Notification-backed')
+            ], compact=true, layout='unified', pinned=false) }}
         </header>
         <div class="space-y-4 p-5">
             {% if item.failure_summary %}
@@ -40,7 +40,8 @@
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ failure_icon_classes }}"
                                   aria-hidden="true"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
-                                <h4 id="activity-outcome-heading" class="text-sm font-semibold text-content-primary">Failure Summary</h4>
+                                <h4 id="activity-outcome-heading"
+                                    class="text-sm font-semibold text-content-primary">Failure Summary</h4>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Recorded outcome and evidence to review before further action.</p>
                             </div>
                         </div>
@@ -73,7 +74,11 @@
                             <div class="min-w-0">
                                 <h5 class="text-xs font-semibold text-content-secondary">Next Review Step</h5>
                                 <p class="mt-1 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">
-                                    Inspect {% if item.failure_context %}the recorded failure context, {% endif %}trace references{% if item.related_sources %}, and authorized related evidence{% endif %} before deciding whether to retry.
+                                    Inspect
+                                    {% if item.failure_context %}the recorded failure context, {% endif %}
+                                    trace references
+                                    {% if item.related_sources %}, and authorized related evidence{% endif %}
+                                    before deciding whether to retry.
                                 </p>
                             </div>
                         </div>
@@ -150,7 +155,8 @@
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                               aria-hidden="true"><i data-lucide="git-branch" class="h-4 w-4"></i></span>
                         <div>
-                            <h4 id="activity-related-source-heading" class="text-sm font-semibold text-content-primary">Related Committed Evidence</h4>
+                            <h4 id="activity-related-source-heading"
+                                class="text-sm font-semibold text-content-primary">Related Committed Evidence</h4>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Source-owned workspaces with independent access and retention. No duplicate event is created.</p>
                         </div>
                     </header>
@@ -209,35 +215,47 @@
                     </div>
                 </header>
                 <div class="grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2">
-                    <section class="min-w-0 bg-surface-card" aria-labelledby="activity-actor-context-heading">
+                    <section class="min-w-0 bg-surface-card"
+                             aria-labelledby="activity-actor-context-heading">
                         <h5 id="activity-actor-context-heading"
                             class="border-b border-outline-subtle bg-surface-elevated/35 px-4 py-3 text-xs font-semibold leading-5 text-content-secondary">Actor & Access</h5>
                         <dl class="divide-y divide-outline-subtle">
                             <div class="min-w-0 px-4 py-3">
                                 <dt class="text-xs font-medium text-content-muted">Email</dt>
-                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ item.user_email or 'Not recorded' }}</dd>
+                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                    {{ item.user_email or 'Not recorded' }}
+                                </dd>
                             </div>
                             <div class="min-w-0 px-4 py-3">
                                 <dt class="text-xs font-medium text-content-muted">Role</dt>
-                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ item.user_role }}</dd>
+                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                    {{ item.user_role }}
+                                </dd>
                             </div>
                             <div class="min-w-0 px-4 py-3">
                                 <dt class="text-xs font-medium text-content-muted">Authentication</dt>
-                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ item.user_auth_source }}</dd>
+                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                    {{ item.user_auth_source }}
+                                </dd>
                             </div>
                         </dl>
                     </section>
-                    <section class="min-w-0 bg-surface-card" aria-labelledby="activity-target-context-heading">
+                    <section class="min-w-0 bg-surface-card"
+                             aria-labelledby="activity-target-context-heading">
                         <h5 id="activity-target-context-heading"
                             class="border-b border-outline-subtle bg-surface-elevated/35 px-4 py-3 text-xs font-semibold leading-5 text-content-secondary">Target Context</h5>
                         <dl class="divide-y divide-outline-subtle">
                             <div class="min-w-0 px-4 py-3">
                                 <dt class="text-xs font-medium text-content-muted">Target Type</dt>
-                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ item.target_type }}</dd>
+                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                    {{ item.target_type }}
+                                </dd>
                             </div>
                             <div class="min-w-0 px-4 py-3">
                                 <dt class="text-xs font-medium text-content-muted">Module</dt>
-                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ item.module_label }}</dd>
+                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                    {{ item.module_label }}
+                                </dd>
                             </div>
                         </dl>
                     </section>

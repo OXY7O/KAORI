@@ -52,8 +52,20 @@ class _SetupStructureParser(HTMLParser):
     """Require actual rendered setup controls to remain inside the canvas."""
 
     _VOID = {
-        'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-        'link', 'meta', 'param', 'source', 'track', 'wbr',
+        'area',
+        'base',
+        'br',
+        'col',
+        'embed',
+        'hr',
+        'img',
+        'input',
+        'link',
+        'meta',
+        'param',
+        'source',
+        'track',
+        'wbr',
     }
 
     def __init__(self) -> None:
@@ -66,14 +78,8 @@ class _SetupStructureParser(HTMLParser):
         values = dict(attrs)
         if any(name.startswith('<') for name, _value in attrs):
             self.errors.append(f'malformed start tag <{tag}>: nested tag parsed as attribute')
-        workspace_in_ancestors = any(
-            'data-kaori-setup-workspace' in attributes
-            for _tag, attributes in self.elements
-        )
-        console_in_ancestors = any(
-            'data-kaori-setup-console' in attributes
-            for _tag, attributes in self.elements
-        )
+        workspace_in_ancestors = any('data-kaori-setup-workspace' in attributes for _tag, attributes in self.elements)
+        console_in_ancestors = any('data-kaori-setup-console' in attributes for _tag, attributes in self.elements)
         markers = {
             'data-kaori-setup-console',
             'data-kaori-setup-command',
@@ -129,10 +135,7 @@ def test_rendered_database_setup_html_stays_inside_its_workspace() -> None:
             parser.feed(html)
             parser.close()
 
-            assert not parser.errors, (
-                f'setup_required={setup_required}, app_env={app_env}: '
-                + '; '.join(parser.errors)
-            )
+            assert not parser.errors, f'setup_required={setup_required}, app_env={app_env}: ' + '; '.join(parser.errors)
             assert not parser.elements, 'unclosed rendered HTML elements'
             assert 'data-kaori-setup-console' in parser.found
             assert 'data-kaori-terminal-command' in parser.found

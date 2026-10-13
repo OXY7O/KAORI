@@ -134,8 +134,10 @@ def main() -> int:
         errors,
     )
     require(
-        'hidden w-[20%]' in table and 'hidden w-[9%]' in table
-        and 'w-full overflow-hidden' in table and 'w-full table-fixed' in table,
+        'hidden w-[20%]' in table
+        and 'hidden w-[9%]' in table
+        and 'w-full overflow-hidden' in table
+        and 'w-full table-fixed' in table,
         'TLS registry responsive hide-and-reflow contract must remain unchanged.',
         errors,
     )

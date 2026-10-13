@@ -124,14 +124,8 @@ def _build_registry_row(
 ) -> dict[str, Any]:
     cluster = connection.cluster
     canonical = connection.integration_instance
-    canonical_active = bool(
-        canonical is not None
-        and canonical.enabled
-        and canonical.lifecycle_status == 'active'
-    )
-    readiness = (
-        connection.readiness_status or 'validation_required'
-    ) if canonical_active else 'blocked'
+    canonical_active = bool(canonical is not None and canonical.enabled and canonical.lifecycle_status == 'active')
+    readiness = (connection.readiness_status or 'validation_required') if canonical_active else 'blocked'
     if bound_sources is None:
         metrics_source, metrics_binding = bound_source_for_scope(
             'metrics_source', scope_type='kubernetes_cluster', scope_key=cluster.id
@@ -223,10 +217,7 @@ def _hydrate_connection_rows(connection_ids: list[int]) -> dict[int, dict[str, A
         scope_type='kubernetes_cluster',
         scope_keys=[str(connection.cluster_id) for connection in connections],
     )
-    return {
-        connection.id: _build_registry_row(connection, bound_sources=bound_sources)
-        for connection in connections
-    }
+    return {connection.id: _build_registry_row(connection, bound_sources=bound_sources) for connection in connections}
 
 
 def _search_blob(row: dict[str, Any], fields: tuple[str, ...]) -> str:
@@ -296,14 +287,16 @@ def build_kubernetes_page(filters: KubernetesFrontPageFilters | None = None) -> 
     stats = fleet_stats(fleet)
     environments = environment_options(fleet)
     registry_ids, pagination = page_connection_ids(
-        fleet, filters=resolved.registry, coverage=False,
+        fleet,
+        filters=resolved.registry,
+        coverage=False,
     )
     coverage_ids, coverage_pagination = page_connection_ids(
-        fleet, filters=resolved.coverage, coverage=True,
+        fleet,
+        filters=resolved.coverage,
+        coverage=True,
     )
-    hydrated = _hydrate_connection_rows(list(dict.fromkeys(
-        [*registry_ids, *coverage_ids]
-    )))
+    hydrated = _hydrate_connection_rows(list(dict.fromkeys([*registry_ids, *coverage_ids])))
     registry_rows = [hydrated[identity] for identity in registry_ids if identity in hydrated]
     coverage_rows = [hydrated[identity] for identity in coverage_ids if identity in hydrated]
 
@@ -326,9 +319,7 @@ def build_kubernetes_page(filters: KubernetesFrontPageFilters | None = None) -> 
             or resolved.registry.coverage
         ),
         'coverage_has_active_filters': bool(
-            resolved.coverage.query.strip()
-            or resolved.coverage.environment
-            or resolved.coverage.status
+            resolved.coverage.query.strip() or resolved.coverage.environment or resolved.coverage.status
         ),
         'environment_options': environments,
         'coverage_environment_options': environments,

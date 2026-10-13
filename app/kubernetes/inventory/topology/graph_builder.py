@@ -35,8 +35,7 @@ class TopologyGraphBuilder:
             # resource types against the exact committed SQL totals, including
             # nodes whose parent Namespace did not fit the graph window.
             displayed = {
-                kind: sum(node['data']['type'] == kind for node in nodes)
-                for kind in self.records.source_totals
+                kind: sum(node['data']['type'] == kind for node in nodes) for kind in self.records.source_totals
             }
             omitted_by_type = dict(omitted_by_type)
             for kind, total in self.records.source_totals.items():

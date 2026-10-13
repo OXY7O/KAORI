@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -10,9 +11,7 @@ ROOT = Path(__file__).resolve().parents[3]
 def _supporting_text(attention_count: int) -> str:
     source = ast.parse((ROOT / 'app/access/overview/presentation.py').read_text(encoding='utf-8'))
     function = next(
-        node
-        for node in source.body
-        if isinstance(node, ast.FunctionDef) and node.name == '_activity_supporting_text'
+        node for node in source.body if isinstance(node, ast.FunctionDef) and node.name == '_activity_supporting_text'
     )
     namespace: dict[str, Any] = {'Any': Any}
     exec(compile(ast.Module(body=[function], type_ignores=[]), '<access-evidence>', 'exec'), namespace)

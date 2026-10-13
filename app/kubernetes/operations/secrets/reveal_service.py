@@ -12,8 +12,8 @@ from kubernetes.config.config_exception import ConfigException
 from sqlalchemy import or_, text
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, paginate_query, pagination_payload
 from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload
+from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, paginate_query, pagination_payload
 from app.extensions.db import db
 from app.kubernetes.operations.secrets.live_service import (
     LiveSecretSnapshot,
@@ -353,11 +353,13 @@ def get_reveal_page_context(
             per_page=pending_per_page,
         )
     else:
-        pending_window = pagination_payload(build_pagination_window(
-            total_items=0,
-            page=pending_page,
-            per_page=pending_per_page,
-        ))
+        pending_window = pagination_payload(
+            build_pagination_window(
+                total_items=0,
+                page=pending_page,
+                per_page=pending_per_page,
+            )
+        )
     pending_pagination = {
         **pending_window,
         'total': pending_window['total_items'],
@@ -568,29 +570,25 @@ def decide_reveal_request(
 
     now = _now()
     next_expiry = (
-        now + timedelta(
-            minutes=int(current_app.config.get('KUBERNETES_SECRET_REVEAL_APPROVAL_TTL_MINUTES', 10))
-        )
-        if approve else now
+        now + timedelta(minutes=int(current_app.config.get('KUBERNETES_SECRET_REVEAL_APPROVAL_TTL_MINUTES', 10)))
+        if approve
+        else now
     )
     # Compare-and-set additionally protects engines that ignore FOR UPDATE,
     # and makes duplicate POST submissions fail closed rather than notify twice.
-    changed = (
-        SecretRevealRequest.query.filter(
-            SecretRevealRequest.id == record.id,
-            SecretRevealRequest.status == 'pending',
-            SecretRevealRequest.expires_at > now,
-        )
-        .update(
-            {
-                SecretRevealRequest.status: 'approved' if approve else 'denied',
-                SecretRevealRequest.approver_user_id: approver_user_id,
-                SecretRevealRequest.decided_at: now,
-                SecretRevealRequest.decision_note: (decision_note or '').strip()[:500] or None,
-                SecretRevealRequest.expires_at: next_expiry,
-            },
-            synchronize_session=False,
-        )
+    changed = SecretRevealRequest.query.filter(
+        SecretRevealRequest.id == record.id,
+        SecretRevealRequest.status == 'pending',
+        SecretRevealRequest.expires_at > now,
+    ).update(
+        {
+            SecretRevealRequest.status: 'approved' if approve else 'denied',
+            SecretRevealRequest.approver_user_id: approver_user_id,
+            SecretRevealRequest.decided_at: now,
+            SecretRevealRequest.decision_note: (decision_note or '').strip()[:500] or None,
+            SecretRevealRequest.expires_at: next_expiry,
+        },
+        synchronize_session=False,
     )
     if changed != 1:
         db.session.rollback()

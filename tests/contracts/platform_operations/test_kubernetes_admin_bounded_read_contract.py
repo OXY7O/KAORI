@@ -11,11 +11,11 @@ def test_admin_read_model_uses_canonical_binding_and_sql_counts():
     for token in (
         "binding.asset_type == 'kubernetes_cluster'",
         "canonical.lifecycle_status == 'active'",
-        "connection.cluster_id == Cluster.id",
-        "connection.kubeconfig.is_not(None)",
-        "Cluster.secret_reveal_encryption_verified.is_(True)",
-        "Cluster.secret_reveal_audit_verified.is_(True)",
-        "func.count(Cluster.id)",
+        'connection.cluster_id == Cluster.id',
+        'connection.kubeconfig.is_not(None)',
+        'Cluster.secret_reveal_encryption_verified.is_(True)',
+        'Cluster.secret_reveal_audit_verified.is_(True)',
+        'func.count(Cluster.id)',
     ):
         assert token in sql
     assert 'administration_counts()' in overview

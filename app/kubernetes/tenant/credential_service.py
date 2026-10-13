@@ -226,7 +226,9 @@ def create_human_credential_committed(
         TenantCredentialDeliveryMethod.JUMPSERVER,
         TenantCredentialDeliveryMethod.EXCEPTIONAL_KUBECONFIG,
     }:
-        raise ValueError('Human Tenant credentials require the approved human access delivery method or an explicitly governed kubeconfig exception.')
+        raise ValueError(
+            'Human Tenant credentials require the approved human access delivery method or an explicitly governed kubeconfig exception.'
+        )
 
     approver = (
         db.session.get(User, request.exception_authorized_by_user_id)

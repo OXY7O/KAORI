@@ -353,9 +353,9 @@
                 <div class="flex items-center gap-1.5 border-b border-outline-subtle bg-surface-card px-5 py-3">
                     <h3 class="text-sm font-semibold text-content-primary">Resource List</h3>
                     {{ info_tip.render('k8s-inventory-topology-title', 'Topology Resource List Guide', 'How to interpret relationships in the committed Kubernetes topology.', items=[
-                        'Topology Resource Status: Operational status summarized from the latest committed resource snapshot. Unknown means evidence is insufficient, not healthy.',
-                        'Resource Relationships: Links between resources inferred from committed Kubernetes references and selectors. An absent link may reflect missing or filtered evidence.'
-                    ], placement='right', variant='guide') }}
+                                        'Topology Resource Status: Operational status summarized from the latest committed resource snapshot. Unknown means evidence is insufficient, not healthy.',
+                                        'Resource Relationships: Links between resources inferred from committed Kubernetes references and selectors. An absent link may reflect missing or filtered evidence.'
+                                        ], placement='right', variant='guide') }}
                 </div>
                 <div class="min-w-[760px]">
                     <table class="{{ table_ui.table_classes() }}">

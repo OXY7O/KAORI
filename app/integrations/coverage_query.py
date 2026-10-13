@@ -49,13 +49,13 @@ def _coverage_statement(integration_type: str):
             IntegrationBinding.integration_instance_id,
             IntegrationBinding.validation_status,
             IntegrationBinding.selector_json,
-            func.count().over(
-                partition_by=IntegrationBinding.integration_instance_id
-            ).label('sharing_count'),
-            func.row_number().over(
+            func.count().over(partition_by=IntegrationBinding.integration_instance_id).label('sharing_count'),
+            func.row_number()
+            .over(
                 partition_by=(IntegrationBinding.asset_type, IntegrationBinding.asset_key),
                 order_by=(rank, IntegrationBinding.priority, IntegrationBinding.id),
-            ).label('position'),
+            )
+            .label('position'),
         )
         .join(IntegrationInstance, IntegrationInstance.id == IntegrationBinding.integration_instance_id)
         .where(
@@ -66,14 +66,15 @@ def _coverage_statement(integration_type: str):
     )
     source = aliased(IntegrationInstance)
     winner = bindings
-    provider_models = tuple(dict.fromkeys(
-        implementation.record_model
-        for implementation in registry.implementations_for_type(integration_type)
-        if implementation.record_model is not None
-    ))
+    provider_models = tuple(
+        dict.fromkeys(
+            implementation.record_model
+            for implementation in registry.implementations_for_type(integration_type)
+            if implementation.record_model is not None
+        )
+    )
     provider_checks = [
-        select(model.id).where(model.integration_instance_id == source.id).exists()
-        for model in provider_models
+        select(model.id).where(model.integration_instance_id == source.id).exists() for model in provider_models
     ]
     # An orphaned canonical source may retain old Ready state; never count it.
     provider_record_exists = or_(*provider_checks) if provider_checks else literal(True)
@@ -127,8 +128,13 @@ def _coverage_statement(integration_type: str):
 
 
 def paged_coverage_scopes(
-    integration_type: str, *, page: int, per_page: int,
-    query: str = '', environment: str = '', status: str = '',
+    integration_type: str,
+    *,
+    page: int,
+    per_page: int,
+    query: str = '',
+    environment: str = '',
+    status: str = '',
 ) -> dict[str, Any]:
     """Aggregate fleet posture in SQL and hydrate only the filtered visible asset page."""
     scope = _coverage_statement(integration_type)
@@ -137,20 +143,15 @@ def paged_coverage_scopes(
         select(
             func.count(),
             func.sum(case((scope.c.coverage_status == 'ready', 1), else_=0)),
-            func.sum(case((scope.c.coverage_status.in_(
-                ('degraded', 'validation_required', 'blocked')
-            ), 1), else_=0)),
+            func.sum(case((scope.c.coverage_status.in_(('degraded', 'validation_required', 'blocked')), 1), else_=0)),
             func.sum(case((scope.c.coverage_status == 'uncovered', 1), else_=0)),
         ).select_from(scope)
     ).one()
-    options = session.execute(
-        select(scope.c.environment, scope.c.coverage_status).distinct()
-    ).all()
-    environment_options = sorted({
-        get_environment_label(value) for value, _state in options
-    })
+    options = session.execute(select(scope.c.environment, scope.c.coverage_status).distinct()).all()
+    environment_options = sorted({get_environment_label(value) for value, _state in options})
     status_options = [
-        name for name in ('ready', 'degraded', 'validation_required', 'blocked', 'uncovered')
+        name
+        for name in ('ready', 'degraded', 'validation_required', 'blocked', 'uncovered')
         if any(state == name for _value, state in options)
     ]
 
@@ -163,28 +164,35 @@ def paged_coverage_scopes(
         statement = statement.where(scope.c.coverage_status == status)
     if query.strip():
         term = f'%{query.strip().lower()}%'
-        statement = statement.where(or_(
-            func.lower(scope.c.asset_name).like(term),
-            func.lower(scope.c.asset_key).like(term),
-            func.lower(scope.c.environment).like(term),
-            func.lower(func.replace(scope.c.environment, '_', ' ')).like(term),
-            func.lower(func.coalesce(scope.c.source_name, '')).like(term),
-            func.lower(scope.c.hint).like(term),
-            func.lower(func.replace(scope.c.coverage_status, '_', ' ')).like(term),
-            func.lower(case(
-                (scope.c.coverage_status == 'uncovered', 'Not Bound'),
-                (scope.c.coverage_status == 'validation_required', 'Binding Validation Required'),
-                else_=scope.c.coverage_status,
-            )).like(term),
-        ))
-    filtered_count = int(session.scalar(
-        select(func.count()).select_from(statement.order_by(None).subquery())
-    ) or 0)
+        statement = statement.where(
+            or_(
+                func.lower(scope.c.asset_name).like(term),
+                func.lower(scope.c.asset_key).like(term),
+                func.lower(scope.c.environment).like(term),
+                func.lower(func.replace(scope.c.environment, '_', ' ')).like(term),
+                func.lower(func.coalesce(scope.c.source_name, '')).like(term),
+                func.lower(scope.c.hint).like(term),
+                func.lower(func.replace(scope.c.coverage_status, '_', ' ')).like(term),
+                func.lower(
+                    case(
+                        (scope.c.coverage_status == 'uncovered', 'Not Bound'),
+                        (scope.c.coverage_status == 'validation_required', 'Binding Validation Required'),
+                        else_=scope.c.coverage_status,
+                    )
+                ).like(term),
+            )
+        )
+    filtered_count = int(session.scalar(select(func.count()).select_from(statement.order_by(None).subquery())) or 0)
     window = build_pagination_window(total_items=filtered_count, page=page, per_page=per_page)
-    selected = session.execute(
-        statement.order_by(scope.c.position, scope.c.asset_name, scope.c.asset_key)
-        .offset(window.offset).limit(window.per_page)
-    ).mappings().all()
+    selected = (
+        session.execute(
+            statement.order_by(scope.c.position, scope.c.asset_name, scope.c.asset_key)
+            .offset(window.offset)
+            .limit(window.per_page)
+        )
+        .mappings()
+        .all()
+    )
     return {
         'rows': [dict(row) for row in selected],
         'pagination': pagination_payload(window),

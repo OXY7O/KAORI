@@ -141,7 +141,8 @@
                 {% else %}
                     <div class="p-4">{{ detail.empty_evidence('Volume Evidence Not Reported', 'Pod specification evidence was unavailable, so volume absence cannot be established.', 'shield-question') }}</div>
                 {% endif %}
-                <div class="border-t border-outline-subtle" aria-label="Pod Configuration and Storage References">
+                <div class="border-t border-outline-subtle"
+                     aria-label="Pod Configuration and Storage References">
                     {{ related_collection.inventory_render('Configuration References',
                                         'ConfigMap/Secret names only.',
                                         pod.configuration_references,

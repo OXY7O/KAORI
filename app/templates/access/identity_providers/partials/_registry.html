@@ -13,21 +13,20 @@
                 </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="{{ table_ui.block_title_classes() }}">Provider Registry</h2>
-                    {{ table_label.result_count(summary.matching) }}
-                </div>
+                        <h2 class="{{ table_ui.block_title_classes() }}">Provider Registry</h2>
+                        {{ table_label.result_count(summary.matching) }}
+                    </div>
                     <p class="{{ table_ui.block_description_classes() }}">Review configuration, enablement, identity links, and provider-owned actions.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {% if filters.search or filters.provider_key != 'all' or filters.state != 'all' %}
-                    {{ registry_ui.clear_filters_link(
-                        'identity_providers.index',
-                        'identity-provider-registry',
-                        'identity-provider-registry-loading',
-                        filters.per_page,
-                        table_ui.action_classes(),
-                        query_params={'tab': 'providers'}
+                    {{ registry_ui.clear_filters_link('identity_providers.index',
+                                        'identity-provider-registry',
+                                        'identity-provider-registry-loading',
+                                        filters.per_page,
+                                        table_ui.action_classes() ,
+                    query_params={'tab': 'providers'}
                     ) }}
                 {% endif %}
             </div>
@@ -42,7 +41,7 @@
             filters.per_page,
             form_id='identity-provider-registry-filter-form',
             aria_label='Provider Registry filters'
-        ) %}
+            ) %}
             <input type="hidden" name="tab" value="providers">
             <label class="min-w-0">
                 <span class="{{ table_ui.filter_label_classes() }}">Search Provider</span>
@@ -136,8 +135,7 @@
     </div>
     {% set footer_query = pagination_query.copy() %}
     {% set _ = footer_query.pop('per_page', none) %}
-    {{ registry_ui.footer(
-        'identity_providers.index',
+    {{ registry_ui.footer('identity_providers.index',
         'identity-provider-registry',
         'identity-provider-registry-loading',
         pagination,
@@ -145,6 +143,5 @@
         per_page_options,
         resource_label='Providers',
         rows_aria_label='Rows Per Page',
-        control_name='identity-provider-registry'
-    ) }}
+        control_name='identity-provider-registry') }}
 </section>

@@ -5,8 +5,10 @@ from app.platform_operations.kubernetes.presentation import _administration_post
 
 def _status(*, clusters=1, ready=1, enabled=1, eligible=1, gate=True):
     return _administration_posture(
-        cluster_count=clusters, ready_cluster_count=ready,
-        enabled_namespace_count=enabled, eligible_policy_count=eligible,
+        cluster_count=clusters,
+        ready_cluster_count=ready,
+        enabled_namespace_count=enabled,
+        eligible_policy_count=eligible,
         global_reveal_enabled=gate,
     )[0]
 

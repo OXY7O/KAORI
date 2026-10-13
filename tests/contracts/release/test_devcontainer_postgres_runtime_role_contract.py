@@ -2,6 +2,7 @@
 
 Source-only regression (not executed while CI/CD remains HOLD).
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -31,10 +32,18 @@ def test_devcontainer_all_runtime_services_use_canonical_non_owner_database_url(
     assert compose.startswith('name: kaori-dev\n')
     assert len(services) >= 14
     expected = {
-        'workspace', 'inventory-worker', 'registry-security-worker',
-        'maintenance-worker', 'runtime-worker', 'validation-worker',
-        'analytics-worker', 'reports-worker', 'forecasting-worker',
-        'resolver-execution-worker', 'resolver-maintenance-worker', 'beat',
+        'workspace',
+        'inventory-worker',
+        'registry-security-worker',
+        'maintenance-worker',
+        'runtime-worker',
+        'validation-worker',
+        'analytics-worker',
+        'reports-worker',
+        'forecasting-worker',
+        'resolver-execution-worker',
+        'resolver-maintenance-worker',
+        'beat',
     }
     assert expected <= services.keys()
     for service in expected:
@@ -53,8 +62,8 @@ def test_devcontainer_role_provisioning_is_transactional_and_not_data_destructiv
     sql = PROVISION.read_text()
     assert 'BEGIN;' in sql and 'COMMIT;' in sql
     assert "current_database() <> 'kaori'" in sql
-    assert "application_name" in sql
-    assert "kaori-devcontainer-role-provision" in sql
+    assert 'application_name' in sql
+    assert 'kaori-devcontainer-role-provision' in sql
     assert 'CREATE ROLE kaori_runtime' in sql
     assert 'NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE' in sql
     assert 'GRANT SELECT, INSERT, UPDATE, DELETE' in sql
@@ -64,19 +73,13 @@ def test_devcontainer_role_provisioning_is_transactional_and_not_data_destructiv
     assert 'ON TABLE public.capsule_handoff_ledger_events TO kaori_runtime' in sql
     assert 'GRANT SELECT, INSERT' in sql
     for denied in ('UPDATE', 'DELETE', 'TRUNCATE'):
-        assert (
-            "has_table_privilege('kaori_runtime', "
-            "'public.capsule_handoff_ledger_events', "
-            f"'{denied}')"
-        ) in sql
+        assert (f"has_table_privilege('kaori_runtime', 'public.capsule_handoff_ledger_events', '{denied}')") in sql
     assert "has_schema_privilege('kaori_runtime', 'public', 'CREATE')" in sql
     assert 'ALTER DEFAULT PRIVILEGES' not in '\n'.join(
         line for line in sql.splitlines() if not line.lstrip().startswith('--')
     )
     for statement in ('DROP DATABASE', 'DROP TABLE', 'TRUNCATE TABLE', 'DELETE FROM'):
-        assert statement not in '\n'.join(
-            line for line in sql.splitlines() if not line.lstrip().startswith('--')
-        )
+        assert statement not in '\n'.join(line for line in sql.splitlines() if not line.lstrip().startswith('--'))
 
 
 def test_postgresql_provisioning_role_record_does_not_shadow_current_role() -> None:
@@ -150,14 +153,18 @@ def test_auto_bootstrap_guard_never_migrates_existing_schema() -> None:
     assert "runtime.username != 'kaori_runtime'" in source
     assert "runtime.host != 'db'" in source
     assert "runtime.database != 'kaori'" in source
-    for table in ('pg_catalog.pg_class', 'pg_catalog.pg_proc',
-                  'pg_catalog.pg_type', 'pg_catalog.pg_namespace',
-                  'pg_catalog.pg_extension'):
+    for table in (
+        'pg_catalog.pg_class',
+        'pg_catalog.pg_proc',
+        'pg_catalog.pg_type',
+        'pg_catalog.pg_namespace',
+        'pg_catalog.pg_extension',
+    ):
         assert table in source
-    assert "existing)" in source and "virgin)" in source
-    assert "No automatic migration" in source
-    assert "exec sh scripts/devcontainer/bootstrap-db.sh" in source
-    for forbidden in ("DROP DATABASE", "TRUNCATE", "down --volumes"):
+    assert 'existing)' in source and 'virgin)' in source
+    assert 'No automatic migration' in source
+    assert 'exec sh scripts/devcontainer/bootstrap-db.sh' in source
+    for forbidden in ('DROP DATABASE', 'TRUNCATE', 'down --volumes'):
         assert forbidden not in source
 
 
@@ -174,7 +181,7 @@ def test_devcontainer_role_init_and_secret_preparation_are_non_elevated() -> Non
     assert '\\getenv runtime_password KAORI_RUNTIME_PASSWORD' in init
     assert '-v "migrator_password=' not in init
     assert '-v "runtime_password=' not in init
-    assert "--set=ON_ERROR_STOP=1" in init
+    assert '--set=ON_ERROR_STOP=1' in init
     assert 'PASSWORD %L' in init
     assert 'GRANT CONNECT ON DATABASE kaori TO kaori_runtime' in init
     assert 'GRANT USAGE ON SCHEMA public TO kaori_runtime' in init
@@ -185,10 +192,10 @@ def test_devcontainer_role_init_and_secret_preparation_are_non_elevated() -> Non
     assert 'os.O_EXCL' in prep
     assert "'POSTGRES_PASSWORD'" in prep
     assert "PG_DATA = Path('/pgdata')" in prep
-    assert "if data_exists and not credentials_exist:" in prep
-    assert 'postgres-bootstrap.env.example' in (
-        ROOT / '.devcontainer/examples/postgres-bootstrap.env.example'
-    ).as_posix()
+    assert 'if data_exists and not credentials_exist:' in prep
+    assert (
+        'postgres-bootstrap.env.example' in (ROOT / '.devcontainer/examples/postgres-bootstrap.env.example').as_posix()
+    )
 
     assert "drop_value(source, 'KAORI_DEV_RUNTIME_DATABASE_URL')" in prep
 
@@ -236,16 +243,20 @@ def test_devcontainer_app_environment_template_documents_real_three_file_ownersh
     host = (ROOT / '.devcontainer/prepare-postgres-env.py').read_text()
 
     entries = {
-        line.split('=', 1)[0] for line in example.splitlines()
+        line.split('=', 1)[0]
+        for line in example.splitlines()
         if line and not line.lstrip().startswith('#') and '=' in line
     }
     assert {'APP_ENV', 'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PORT', 'DATABASE_URL'} <= entries
     assert 'POSTGRES_USER=postgres' in example
     assert 'DATABASE_URL=postgresql://kaori_runtime:' in example
     for elevated in (
-        'POSTGRES_PASSWORD', 'KAORI_MIGRATOR_PASSWORD',
-        'KAORI_RUNTIME_PASSWORD', 'KAORI_DB_MIGRATION_URL',
-        'PGPASSWORD', 'POSTGRES_PASSWORD_FILE',
+        'POSTGRES_PASSWORD',
+        'KAORI_MIGRATOR_PASSWORD',
+        'KAORI_RUNTIME_PASSWORD',
+        'KAORI_DB_MIGRATION_URL',
+        'PGPASSWORD',
+        'POSTGRES_PASSWORD_FILE',
         'KAORI_DEV_RUNTIME_DATABASE_URL',
     ):
         assert elevated not in entries

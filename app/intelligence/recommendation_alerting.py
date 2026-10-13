@@ -137,7 +137,9 @@ def decorate_catalog_rules(rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for rule in rules:
         key = str(rule.get('rule_key') or '')
         rule['alert_escalation'] = effective_alert_policy(
-            key, override=overrides.get(key), override_loaded=True,
+            key,
+            override=overrides.get(key),
+            override_loaded=True,
         )
         rule['active_exception_count'] = int(exception_counts.get(key, 0)) if key in exception_keys else 0
     return rules

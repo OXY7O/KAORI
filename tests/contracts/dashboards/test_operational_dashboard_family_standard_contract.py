@@ -171,7 +171,7 @@ def test_kubernetes_capacity_decision_notes_and_forecast_helpers() -> None:
     assert 'Worker capacity headroom chart' in capacity
     assert 'Available Capacity' in capacity
     assert 'item.headroom_percent if item.headroom_percent is not none else none' in capacity
-    assert "progress_bar.bar(headroom_percent," in capacity
+    assert 'progress_bar.bar(headroom_percent,' in capacity
     assert 'headroom unavailable' in capacity
     assert 'Capacity Decision Notes' not in capacity
     assert 'Recommended Capacity Action Flow' in capacity
@@ -739,10 +739,10 @@ def test_dashboard_unavailable_alert_evidence_does_not_prompt_scope_reselection(
         ('app/templates/artifact_registry/partials/_overview_alerts_summary.html', 'Registry provider'),
     ):
         source = read(path)
-        assert "scope_required=true" in source
+        assert 'scope_required=true' in source
         assert "scope_blocked_title='Select " in source
         assert "unavailable_title='Alert Evidence Unavailable'" in source
-        assert f"Committed Alert Intelligence case evidence is unavailable for this {expected_scope}." in source
+        assert f'Committed Alert Intelligence case evidence is unavailable for this {expected_scope}.' in source
         assert "unavailable_title='Select " not in source
         assert "unavailable_description='Select " not in source
 
@@ -766,8 +766,16 @@ def test_top_consumer_missing_evidence_uses_snapshot_required_panel_in_reference
 def test_dashboard_health_registries_preserve_zero_result_pagination_and_compact_empty_state() -> None:
     for path, width, empty_title in (
         ('app/templates/kubernetes/dashboard/partials/_cluster_health.html', '1040', 'No Cluster Health Data'),
-        ('app/templates/storage/object_storage/dashboard/partials/_system_health.html', '1040', 'No Object Storage Health Data'),
-        ('app/templates/artifact_registry/partials/_overview_provider_health.html', '1120', 'No Registry Provider Health Data'),
+        (
+            'app/templates/storage/object_storage/dashboard/partials/_system_health.html',
+            '1040',
+            'No Object Storage Health Data',
+        ),
+        (
+            'app/templates/artifact_registry/partials/_overview_provider_health.html',
+            '1120',
+            'No Registry Provider Health Data',
+        ),
     ):
         source = read(path)
         assert "<div class=\"{{ 'overflow-x-auto' if pagination.total_items > 0 else '' }}\">" in source
@@ -830,7 +838,10 @@ def test_reporting_scope_bound_reflects_all_or_selected_dashboard_scope() -> Non
     object_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
 
     assert "reporting_scope = 'Selected Cluster' if dashboard.selected_cluster_id else 'All Clusters'" in kubernetes
-    assert "reporting_scope = dashboard.selected_system.name if dashboard.selected_system else 'All Systems'" in object_storage
+    assert (
+        "reporting_scope = dashboard.selected_system.name if dashboard.selected_system else 'All Systems'"
+        in object_storage
+    )
     for source in (kubernetes, object_storage):
         assert 'reporting_workspace.guidance(reporting_scope,' in source
     assert 'reporting_workspace.guidance(overview.scope_label,' in registry
@@ -850,9 +861,7 @@ def test_registry_capacity_requires_selected_provider_before_evidence_projection
     assert 'if selected_provider is None:\n            return context' in section
     assert section.index('return context') < section.index('return _overview_capacity_projection(')
 
-    capacity_projection = service.split('def _overview_capacity_projection(', 1)[1].split(
-        'def build_overview(', 1
-    )[0]
+    capacity_projection = service.split('def _overview_capacity_projection(', 1)[1].split('def build_overview(', 1)[0]
     assert 'selected_provider: IntegrationInstance,' in capacity_projection
     assert '.filter(RegistryProject.integration_instance_id == selected_provider.id)' in capacity_projection
     assert 'if selected_provider is not None:' not in capacity_projection

@@ -99,9 +99,7 @@ def sync_registry_governance(
     # for unavailable evidence rather than replacing them with invented empty
     # policy sets. A successful observed-empty replication result is different.
     if (capability_states.get('replication') or {}).get('status') == 'observed':
-        RegistryReplicationPolicy.query.filter_by(integration_instance_id=identity.id).delete(
-            synchronize_session=False
-        )
+        RegistryReplicationPolicy.query.filter_by(integration_instance_id=identity.id).delete(synchronize_session=False)
         for record in evidence.replication_policies:
             policy = RegistryReplicationPolicy()
             policy.integration_instance_id = identity.id
@@ -171,9 +169,7 @@ def sync_registry_governance(
     state.last_observed_at = observed_at
     state.last_committed_at = datetime.now(UTC)
     state.last_error = (
-        'Governance capability evidence unavailable: ' + ', '.join(sorted(unavailable))
-        if unavailable
-        else None
+        'Governance capability evidence unavailable: ' + ', '.join(sorted(unavailable)) if unavailable else None
     )
     state.metadata_json = {
         **evidence.provider_metadata,

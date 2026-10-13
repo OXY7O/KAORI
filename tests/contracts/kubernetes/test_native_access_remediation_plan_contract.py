@@ -13,8 +13,8 @@ def test_remediation_reuses_existing_governed_plan_for_native_and_capsule():
     context = read('app/kubernetes/tenant/access_service.py')
     ui = read('app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html')
 
-    assert "latest_native_access_drift_evidence" in plan
-    assert "latest_tenant_access_drift_evidence" in plan
+    assert 'latest_native_access_drift_evidence' in plan
+    assert 'latest_tenant_access_drift_evidence' in plan
     assert "'native_kubernetes'" in plan
     assert "'capsule'" in plan
     assert "code == 'active_grant_missing_native_declaration'" in plan
@@ -37,9 +37,12 @@ def test_remediation_reuses_existing_governed_plan_for_native_and_capsule():
 def test_remediation_planner_never_mutates_access_provider_automatically():
     plan = read('app/kubernetes/tenant/access_remediation_plan.py')
     for token in (
-        'runtime_adapter.build_client', 'patch_namespaced_role_binding(',
-        'delete_namespaced_role_binding(', 'reconcile_native_access_grant(',
-        'reconcile_capsule_access_grant(', 'create_namespaced_role_binding(',
+        'runtime_adapter.build_client',
+        'patch_namespaced_role_binding(',
+        'delete_namespaced_role_binding(',
+        'reconcile_native_access_grant(',
+        'reconcile_capsule_access_grant(',
+        'create_namespaced_role_binding(',
         'release_adopted_tenant_committed(',
     ):
         assert token not in plan

@@ -14,16 +14,16 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="inline-flex min-w-0 items-center gap-1.5">
                         <h2 id="capsule-tenant-quota-heading"
-                        class="text-base font-semibold text-content-primary">Capsule Tenant Quota Governance</h2>
+                            class="text-base font-semibold text-content-primary">Capsule Tenant Quota Governance</h2>
                         {{ info_tip.render('capsule-tenant-quota-tip',
-                'Capsule Tenant quota',
-                'KAORI preserves Capsule authority and changes only Tenant.spec.resourceQuotas after explicit governance cutover.',
-                [
-                'Tenant and Namespace quota scopes retain their provider semantics during capacity admission.',
-                'Provider UID/resourceVersion and the served Tenant CR schema are revalidated before mutation.',
-                'Namespace LimitRange constraints remain external observed evidence unless they are the selected allocation authority.',
-                'Every write requires provider read-back before KAORI commits effective state.'
-                ], placement='right') }}
+                                                'Capsule Tenant quota',
+                                                'KAORI preserves Capsule authority and changes only Tenant.spec.resourceQuotas after explicit governance cutover.',
+                                                [
+                                                'Tenant and Namespace quota scopes retain their provider semantics during capacity admission.',
+                                                'Provider UID/resourceVersion and the served Tenant CR schema are revalidated before mutation.',
+                                                'Namespace LimitRange constraints remain external observed evidence unless they are the selected allocation authority.',
+                                                'Every write requires provider read-back before KAORI commits effective state.'
+                                                ], placement='right') }}
                     </span>
                     {{ table_label.special_label('Tenant.spec.resourceQuotas', 'info', 'shield-check') }}
                 </div>
@@ -32,7 +32,6 @@
                 </p>
             </div>
         </div>
-
     </header>
     <div class="space-y-4 p-4 sm:p-5">
         <form method="post"
@@ -44,7 +43,9 @@
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <p class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
-                            <i data-lucide="crosshair" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                            <i data-lucide="crosshair"
+                               class="h-4 w-4 text-kaori-primary"
+                               aria-hidden="true"></i>
                             Adopted → KAORI Managed
                         </p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Explicitly take over allocation governance for an observed legacy Tenant quota.</p>
@@ -83,61 +84,71 @@
                         </select>
                     </label>
                 </div>
-<section class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-label="Capsule Tenant quota cutover comparison">
-<div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-4 py-3">
-<span class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
-<i data-lucide="git-compare-arrows" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Managed Contract Comparison</span>
-{{ table_label.special_label('Preflight · Read Only', 'maintenance', 'shield-check') }}
-                </div>
-                <div class="grid md:grid-cols-2">
-                    {% for side, title, caption in [
-                        ('current', 'Observed Tenant Quota', 'Adopted · Tenant CR evidence'),
-                        ('proposed', 'Proposed Resource Profile', 'Pending · Governed profile')
-                    ] %}
-                        <section class="min-w-0 px-5 py-4 sm:px-6 sm:py-5 {% if side == 'proposed' %}border-t border-outline-subtle md:border-t-0 md:border-l{% endif %}"
-                                 aria-label="{{ title }}">
-                            <div class="flex min-h-[8rem] flex-col">
-                                <p class="text-sm font-semibold {{ 'text-kaori-primary' if side == 'proposed' else 'text-content-secondary' }}">{{ title }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ caption }}</p>
-                                <div class="mt-2 space-y-1">
-                                    {% if side == 'current' %}
-                                        <p class="min-h-5 break-words text-sm font-semibold text-content-primary"
-                                           data-tenant-quota-current-source>—</p>
-                                        <p class="min-h-5 break-words text-xs text-content-muted"
-                                           data-tenant-quota-current-scope>—</p>
-                                    {% else %}
-                                        <p class="min-h-5 break-words text-sm font-semibold text-content-primary"
-                                           data-tenant-quota-proposed-profile>—</p>
-                                        <p class="min-h-5 break-words text-xs text-content-muted"
-                                           data-tenant-quota-proposed-summary>—</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <p class="border-b border-outline-subtle pb-2 text-xs font-semibold text-content-secondary">Tenant.spec.resourceQuotas · Requests &amp; Limits</p>
-                            <dl class="grid grid-cols-2 gap-x-5 sm:grid-cols-3">
-                                {% for label, key in [
-                                    ('CPU Requests', 'requests.cpu'),
-                                    ('CPU Limits', 'limits.cpu'),
-                                    ('Memory Requests', 'requests.memory'),
-                                    ('Memory Limits', 'limits.memory'),
-                                    ('Pods', 'pods'),
-                                    ('Total Storage', 'requests.storage')
-                                ] %}
-                                    <div class="border-b border-outline-subtle py-3">
-                                        <dt class="text-xs text-content-muted">{{ label }}</dt>
-                                        <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                            data-tenant-quota-metric-side="{{ side }}"
-                                            data-tenant-quota-metric-key="{{ key }}">—</dd>
+                <section class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                         aria-label="Capsule Tenant quota cutover comparison">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-4 py-3">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
+                            <i data-lucide="git-compare-arrows"
+                               class="h-4 w-4 text-kaori-primary"
+                               aria-hidden="true"></i>Managed Contract Comparison</span>
+                        {{ table_label.special_label('Preflight · Read Only', 'maintenance', 'shield-check') }}
+                    </div>
+                    <div class="grid md:grid-cols-2">
+                        {% for side, title, caption in [
+                            ('current', 'Observed Tenant Quota', 'Adopted · Tenant CR evidence'),
+                            ('proposed', 'Proposed Resource Profile', 'Pending · Governed profile')
+                            ] %}
+                            <section class="min-w-0 px-5 py-4 sm:px-6 sm:py-5 {% if side == 'proposed' %}border-t border-outline-subtle md:border-t-0 md:border-l{% endif %}"
+                                     aria-label="{{ title }}">
+                                <div class="flex min-h-[8rem] flex-col">
+                                    <p class="text-sm font-semibold {{ 'text-kaori-primary' if side == 'proposed' else 'text-content-secondary' }}">{{ title }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ caption }}</p>
+                                    <div class="mt-2 space-y-1">
+                                        {% if side == 'current' %}
+                                            <p class="min-h-5 break-words text-sm font-semibold text-content-primary"
+                                               data-tenant-quota-current-source>—</p>
+                                            <p class="min-h-5 break-words text-xs text-content-muted"
+                                               data-tenant-quota-current-scope>—</p>
+                                        {% else %}
+                                            <p class="min-h-5 break-words text-sm font-semibold text-content-primary"
+                                               data-tenant-quota-proposed-profile>—</p>
+                                            <p class="min-h-5 break-words text-xs text-content-muted"
+                                               data-tenant-quota-proposed-summary>—</p>
+                                        {% endif %}
                                     </div>
-                                {% endfor %}
-                            </dl>
-                        </section>
-                    {% endfor %}
-                </div>
-                <div class="flex items-center justify-between gap-2 border-t border-outline-subtle bg-surface-elevated px-4 py-3">
-<span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary"><i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Change Highlights</span>
-<span data-tenant-quota-change-summary aria-live="polite" class="text-xs text-content-secondary">Choose contracts</span>
-</div></section>
+                                </div>
+                                <p class="border-b border-outline-subtle pb-2 text-xs font-semibold text-content-secondary">Tenant.spec.resourceQuotas · Requests &amp; Limits</p>
+                                <dl class="grid grid-cols-2 gap-x-5 sm:grid-cols-3">
+                                    {% for label, key in [
+                                        ('CPU Requests', 'requests.cpu'),
+                                        ('CPU Limits', 'limits.cpu'),
+                                        ('Memory Requests', 'requests.memory'),
+                                        ('Memory Limits', 'limits.memory'),
+                                        ('Pods', 'pods'),
+                                        ('Total Storage', 'requests.storage')
+                                        ] %}
+                                        <div class="border-b border-outline-subtle py-3">
+                                            <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                            <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                                data-tenant-quota-metric-side="{{ side }}"
+                                                data-tenant-quota-metric-key="{{ key }}">
+                                                —
+                                            </dd>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            </section>
+                        {% endfor %}
+                    </div>
+                    <div class="flex items-center justify-between gap-2 border-t border-outline-subtle bg-surface-elevated px-4 py-3">
+                        <span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary"><i data-lucide="chart-no-axes-column-increasing"
+   class="h-4 w-4 text-kaori-primary"
+   aria-hidden="true"></i>Change Highlights</span>
+                        <span data-tenant-quota-change-summary
+                              aria-live="polite"
+                              class="text-xs text-content-secondary">Choose contracts</span>
+                    </div>
+                </section>
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
@@ -161,7 +172,9 @@
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <div>
                         <p class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
-                            <i data-lucide="refresh-cw" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                            <i data-lucide="refresh-cw"
+                               class="h-4 w-4 text-kaori-primary"
+                               aria-hidden="true"></i>
                             Managed Allocation Change
                         </p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Change a governed Capsule Tenant quota through the same authority and verification path.</p>
@@ -194,61 +207,71 @@
                         </select>
                     </label>
                 </div>
-<section class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-label="Capsule managed quota comparison">
-<div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-4 py-3">
-<span class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
-<i data-lucide="git-compare-arrows" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Managed Contract Comparison</span>
-{{ table_label.special_label('Pending Admission', 'maintenance', 'shield-check') }}
-                </div>
-                <div class="grid md:grid-cols-2">
-                    {% for side, title, caption in [
-                        ('current', 'Current Managed Contract', 'Committed · KAORI Managed'),
-                        ('proposed', 'Proposed Resource Profile', 'Proposed · Pending admission')
-                    ] %}
-                        <section class="min-w-0 px-5 py-4 sm:px-6 sm:py-5 {% if side == 'proposed' %}border-t border-outline-subtle md:border-t-0 md:border-l{% endif %}"
-                                 aria-label="{{ title }}">
-                            <div class="flex min-h-[8rem] flex-col">
-                                <p class="text-sm font-semibold {{ 'text-kaori-primary' if side == 'proposed' else 'text-content-secondary' }}">{{ title }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ caption }}</p>
-                                <div class="mt-2 space-y-1">
-                                    {% if side == 'current' %}
-                                        <p class="min-h-5 break-words text-sm font-semibold text-content-primary"
-                                           data-tenant-quota-managed-current>—</p>
-                                        <p class="min-h-5 break-words text-xs text-content-muted"
-                                           data-tenant-quota-managed-summary>—</p>
-                                    {% else %}
-                                        <p class="min-h-5 break-words text-sm font-semibold text-content-primary"
-                                           data-tenant-quota-managed-proposed-profile>—</p>
-                                        <p class="min-h-5 break-words text-xs text-content-muted"
-                                           data-tenant-quota-managed-proposed-summary>—</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <p class="border-b border-outline-subtle pb-2 text-xs font-semibold text-content-secondary">Tenant.spec.resourceQuotas · Requests &amp; Limits</p>
-                            <dl class="grid grid-cols-2 gap-x-5 sm:grid-cols-3">
-                                {% for label, key in [
-                                    ('CPU Requests', 'requests.cpu'),
-                                    ('CPU Limits', 'limits.cpu'),
-                                    ('Memory Requests', 'requests.memory'),
-                                    ('Memory Limits', 'limits.memory'),
-                                    ('Pods', 'pods'),
-                                    ('Total Storage', 'requests.storage')
-                                ] %}
-                                    <div class="border-b border-outline-subtle py-3">
-                                        <dt class="text-xs text-content-muted">{{ label }}</dt>
-                                        <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                            data-tenant-quota-metric-side="{{ side }}"
-                                            data-tenant-quota-metric-key="{{ key }}">—</dd>
+                <section class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                         aria-label="Capsule managed quota comparison">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-outline-subtle px-4 py-3">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
+                            <i data-lucide="git-compare-arrows"
+                               class="h-4 w-4 text-kaori-primary"
+                               aria-hidden="true"></i>Managed Contract Comparison</span>
+                        {{ table_label.special_label('Pending Admission', 'maintenance', 'shield-check') }}
+                    </div>
+                    <div class="grid md:grid-cols-2">
+                        {% for side, title, caption in [
+                            ('current', 'Current Managed Contract', 'Committed · KAORI Managed'),
+                            ('proposed', 'Proposed Resource Profile', 'Proposed · Pending admission')
+                            ] %}
+                            <section class="min-w-0 px-5 py-4 sm:px-6 sm:py-5 {% if side == 'proposed' %}border-t border-outline-subtle md:border-t-0 md:border-l{% endif %}"
+                                     aria-label="{{ title }}">
+                                <div class="flex min-h-[8rem] flex-col">
+                                    <p class="text-sm font-semibold {{ 'text-kaori-primary' if side == 'proposed' else 'text-content-secondary' }}">{{ title }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ caption }}</p>
+                                    <div class="mt-2 space-y-1">
+                                        {% if side == 'current' %}
+                                            <p class="min-h-5 break-words text-sm font-semibold text-content-primary"
+                                               data-tenant-quota-managed-current>—</p>
+                                            <p class="min-h-5 break-words text-xs text-content-muted"
+                                               data-tenant-quota-managed-summary>—</p>
+                                        {% else %}
+                                            <p class="min-h-5 break-words text-sm font-semibold text-content-primary"
+                                               data-tenant-quota-managed-proposed-profile>—</p>
+                                            <p class="min-h-5 break-words text-xs text-content-muted"
+                                               data-tenant-quota-managed-proposed-summary>—</p>
+                                        {% endif %}
                                     </div>
-                                {% endfor %}
-                            </dl>
-                        </section>
-                    {% endfor %}
-                </div>
-                <div class="flex items-center justify-between gap-2 border-t border-outline-subtle bg-surface-elevated px-4 py-3">
-<span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary"><i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Change Highlights</span>
-<span data-tenant-quota-change-summary aria-live="polite" class="text-xs text-content-secondary">Choose contracts</span>
-</div></section>
+                                </div>
+                                <p class="border-b border-outline-subtle pb-2 text-xs font-semibold text-content-secondary">Tenant.spec.resourceQuotas · Requests &amp; Limits</p>
+                                <dl class="grid grid-cols-2 gap-x-5 sm:grid-cols-3">
+                                    {% for label, key in [
+                                        ('CPU Requests', 'requests.cpu'),
+                                        ('CPU Limits', 'limits.cpu'),
+                                        ('Memory Requests', 'requests.memory'),
+                                        ('Memory Limits', 'limits.memory'),
+                                        ('Pods', 'pods'),
+                                        ('Total Storage', 'requests.storage')
+                                        ] %}
+                                        <div class="border-b border-outline-subtle py-3">
+                                            <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                            <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                                data-tenant-quota-metric-side="{{ side }}"
+                                                data-tenant-quota-metric-key="{{ key }}">
+                                                —
+                                            </dd>
+                                        </div>
+                                    {% endfor %}
+                                </dl>
+                            </section>
+                        {% endfor %}
+                    </div>
+                    <div class="flex items-center justify-between gap-2 border-t border-outline-subtle bg-surface-elevated px-4 py-3">
+                        <span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary"><i data-lucide="chart-no-axes-column-increasing"
+   class="h-4 w-4 text-kaori-primary"
+   aria-hidden="true"></i>Change Highlights</span>
+                        <span data-tenant-quota-change-summary
+                              aria-live="polite"
+                              class="text-xs text-content-secondary">Choose contracts</span>
+                    </div>
+                </section>
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">

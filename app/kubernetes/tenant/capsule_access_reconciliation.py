@@ -139,11 +139,13 @@ def _check_profile(grant: TenantAccessGrant, rbac_api: Any) -> str:
             verbs = rule.verbs if hasattr(rule, 'verbs') else rule['verbs']
             if getattr(rule, 'resource_names', None) or getattr(rule, 'non_resource_urls', None):
                 raise ValueError('Capsule profile ClusterRole has unsupported RBAC restrictions/URLs.')
-            values.append((
-                tuple(sorted(api_groups or [])),
-                tuple(sorted(resources or [])),
-                tuple(sorted(verbs or [])),
-            ))
+            values.append(
+                (
+                    tuple(sorted(api_groups or [])),
+                    tuple(sorted(resources or [])),
+                    tuple(sorted(verbs or [])),
+                )
+            )
         return sorted(values)
 
     if getattr(role, 'aggregation_rule', None) is not None:
@@ -155,9 +157,7 @@ def _check_profile(grant: TenantAccessGrant, rbac_api: Any) -> str:
 
 def _binding(grant: TenantAccessGrant, role: str, namespaces: list[str]) -> dict[str, Any]:
     kind, name = membership_subject(grant.membership)
-    if kind == 'ServiceAccount' and (
-        grant.scope_type != TenantAccessScope.NAMESPACE.value or len(namespaces) != 1
-    ):
+    if kind == 'ServiceAccount' and (grant.scope_type != TenantAccessScope.NAMESPACE.value or len(namespaces) != 1):
         raise ValueError('Capsule ServiceAccount grants require exactly one Namespace scope.')
     subject = {'kind': kind, 'name': name, 'apiGroup': '' if kind == 'ServiceAccount' else 'rbac.authorization.k8s.io'}
     if kind == 'ServiceAccount':
@@ -249,9 +249,7 @@ def _update_spec(
                 return deepcopy(spec)
         filtered_rules.append(
             {
-                'namespaceSelector': {
-                    'matchExpressions': [{'key': _NAME_LABEL, 'operator': 'In', 'values': names}]
-                },
+                'namespaceSelector': {'matchExpressions': [{'key': _NAME_LABEL, 'operator': 'In', 'values': names}]},
                 'permissions': {'bindings': [binding]},
             }
         )
@@ -261,10 +259,15 @@ def _update_spec(
 
 
 def _effective(client: Any, grant: TenantAccessGrant, role_name: str, names: list[str]) -> list[dict[str, str]]:
-    kind, subject_name = membership_subject(grant.membership) if grant.status == 'active' else (
-        'ServiceAccount' if grant.membership.principal_type == 'service_account'
-        else grant.membership.principal_type.title(),
-        grant.membership.subject_name,
+    kind, subject_name = (
+        membership_subject(grant.membership)
+        if grant.status == 'active'
+        else (
+            'ServiceAccount'
+            if grant.membership.principal_type == 'service_account'
+            else grant.membership.principal_type.title(),
+            grant.membership.subject_name,
+        )
     )
     found = []
     for name in names:
@@ -280,7 +283,8 @@ def _effective(client: Any, grant: TenantAccessGrant, role_name: str, names: lis
             role_ref = binding.role_ref
             subjects = binding.subjects or []
             expected = any(
-                value.kind == kind and value.name == subject_name
+                value.kind == kind
+                and value.name == subject_name
                 and (kind != 'ServiceAccount' or value.namespace == name)
                 for value in subjects
             )
@@ -357,8 +361,7 @@ def _reconcile(grant: TenantAccessGrant, *, mutate: bool) -> TenantAccessGrant:
         item = _tenant_object(api, version, name, tenant_id, grant.tenant)
     current_spec = item.get('spec') or {}
     spec_verified = all(
-        (current_spec.get(key) or []) == (desired_spec.get(key) or [])
-        for key in ('additionalRoleBindings', 'rules')
+        (current_spec.get(key) or []) == (desired_spec.get(key) or []) for key in ('additionalRoleBindings', 'rules')
     )
     effective = _effective(client, grant, role, sorted(set(names) | previous))
     _write_state(grant, item=item, desired=names, effective=effective)
@@ -377,7 +380,9 @@ def reconcile_capsule_access_grant(grant: TenantAccessGrant) -> TenantAccessGran
         grant.last_reconciled_at = datetime.now(UTC)
         grant.reconciliation_evidence_json = {
             **(grant.reconciliation_evidence_json or {}),
-            'provider': 'capsule', 'error': grant.reconciliation_message, 'secret_material_persisted': False,
+            'provider': 'capsule',
+            'error': grant.reconciliation_message,
+            'secret_material_persisted': False,
         }
         raise
 

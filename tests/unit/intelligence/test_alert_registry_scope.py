@@ -15,7 +15,7 @@ class _Column:
     def is_(self, _value: object) -> bool:
         return True
 
-    def asc(self) -> "_Column":
+    def asc(self) -> '_Column':
         return self
 
 
@@ -23,10 +23,10 @@ class _ProvidersQuery:
     def __init__(self, rows: list[SimpleNamespace]) -> None:
         self.rows = rows
 
-    def filter(self, *_criteria: object) -> "_ProvidersQuery":
+    def filter(self, *_criteria: object) -> '_ProvidersQuery':
         return self
 
-    def order_by(self, *_columns: object) -> "_ProvidersQuery":
+    def order_by(self, *_columns: object) -> '_ProvidersQuery':
         return self
 
     def all(self) -> list[SimpleNamespace]:
@@ -36,20 +36,36 @@ class _ProvidersQuery:
 def test_registry_provider_choices_exclude_inactive_disabled_and_blocked(monkeypatch) -> None:
     rows = [
         SimpleNamespace(
-            id=7, name='Harbor A', environment='UAT', enabled=True,
-            lifecycle_status='active', readiness_status='ready',
+            id=7,
+            name='Harbor A',
+            environment='UAT',
+            enabled=True,
+            lifecycle_status='active',
+            readiness_status='ready',
         ),
         SimpleNamespace(
-            id=8, name='Harbor B', environment='UAT', enabled=False,
-            lifecycle_status='active', readiness_status='ready',
+            id=8,
+            name='Harbor B',
+            environment='UAT',
+            enabled=False,
+            lifecycle_status='active',
+            readiness_status='ready',
         ),
         SimpleNamespace(
-            id=9, name='Harbor C', environment='UAT', enabled=True,
-            lifecycle_status='retired', readiness_status='ready',
+            id=9,
+            name='Harbor C',
+            environment='UAT',
+            enabled=True,
+            lifecycle_status='retired',
+            readiness_status='ready',
         ),
         SimpleNamespace(
-            id=10, name='Harbor D', environment='UAT', enabled=True,
-            lifecycle_status='active', readiness_status='blocked',
+            id=10,
+            name='Harbor D',
+            environment='UAT',
+            enabled=True,
+            lifecycle_status='active',
+            readiness_status='blocked',
         ),
     ]
     column = _Column()
@@ -169,20 +185,32 @@ def test_registry_case_lifecycle_and_selected_detail_stay_in_provider_scope(monk
     monkeypatch.setattr(service, 'Cluster', SimpleNamespace(query=no_rows, name=column))
     monkeypatch.setattr(service, 'ObjectStorageSystem', SimpleNamespace(query=no_rows, name=column))
     provider = SimpleNamespace(
-        id=7, name='Harbor A', environment='UAT',
-        enabled=True, lifecycle_status='active', readiness_status='ready',
+        id=7,
+        name='Harbor A',
+        environment='UAT',
+        enabled=True,
+        lifecycle_status='active',
+        readiness_status='ready',
     )
     model = SimpleNamespace(
         query=_ProvidersQuery([provider]),
-        integration_type=column, enabled=column, lifecycle_status=column,
-        name=column, id=column,
+        integration_type=column,
+        enabled=column,
+        lifecycle_status=column,
+        name=column,
+        id=column,
     )
     monkeypatch.setattr(service, 'IntegrationInstance', model)
 
     def case_record(identifier: str, state: str, workflow: str) -> SimpleNamespace:
         return SimpleNamespace(
-            public_id=identifier, source_state=state, workflow_state=workflow,
-            source_type='recommendation', severity='warning', source_resolved_at=None, closure_reason='resolved',
+            public_id=identifier,
+            source_state=state,
+            workflow_state=workflow,
+            source_type='recommendation',
+            severity='warning',
+            source_resolved_at=None,
+            closure_reason='resolved',
             postmortem_status='complete',
         )
 
@@ -198,7 +226,8 @@ def test_registry_case_lifecycle_and_selected_detail_stay_in_provider_scope(monk
 
     monkeypatch.setattr(service, '_case_rows', scoped_query)
     monkeypatch.setattr(
-        service, '_snapshot_context',
+        service,
+        '_snapshot_context',
         lambda **_kwargs: {'available': True, 'serving_last_good': False, 'label': 'Test'},
     )
     monkeypatch.setattr(service, '_serialize_case', lambda case: {'public_id': case.public_id})
@@ -211,10 +240,14 @@ def test_registry_case_lifecycle_and_selected_detail_stay_in_provider_scope(monk
     monkeypatch.setattr(service, 'built_in_templates', lambda: [])
     monkeypatch.setattr(service, '_owner_options', lambda: [])
 
-    args = MultiDict([
-        ('domain', 'registry'), ('asset', '7'), ('tab', 'active'),
-        ('case', 'REG-7-UNKNOWN'),
-    ])
+    args = MultiDict(
+        [
+            ('domain', 'registry'),
+            ('asset', '7'),
+            ('tab', 'active'),
+            ('case', 'REG-7-UNKNOWN'),
+        ]
+    )
     payload = service.get_alert_intelligence_payload(args)
     assert payload['scope_invalid'] is False
     assert payload['summary']['active'] == 1

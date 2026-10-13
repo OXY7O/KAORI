@@ -141,9 +141,11 @@ def test_single_tls_update_reports_provider_failure_separately(
     updates = _load_updates(monkeypatch)
     record = _record()
     updates.db.session.get = lambda model, certificate_id: (
-        record if model is updates.TLSCertificateInventory else
-        SimpleNamespace(ingress_mapping_status='collected')
-        if model is updates.TLSCertificateCollectionState else None
+        record
+        if model is updates.TLSCertificateInventory
+        else SimpleNamespace(ingress_mapping_status='collected')
+        if model is updates.TLSCertificateCollectionState
+        else None
     )
     monkeypatch.setattr(
         updates,
@@ -165,9 +167,11 @@ def test_single_tls_provider_failure_reports_unconfirmed_failure_event_when_data
     updates = _load_updates(monkeypatch, commit_error=True)
     record = _record()
     updates.db.session.get = lambda model, certificate_id: (
-        record if model is updates.TLSCertificateInventory else
-        SimpleNamespace(ingress_mapping_status='collected')
-        if model is updates.TLSCertificateCollectionState else None
+        record
+        if model is updates.TLSCertificateInventory
+        else SimpleNamespace(ingress_mapping_status='collected')
+        if model is updates.TLSCertificateCollectionState
+        else None
     )
     monkeypatch.setattr(
         updates,
@@ -189,9 +193,11 @@ def test_single_tls_update_warns_when_provider_succeeds_but_persistence_fails(
     updates = _load_updates(monkeypatch, commit_error=True)
     record = _record()
     updates.db.session.get = lambda model, certificate_id: (
-        record if model is updates.TLSCertificateInventory else
-        SimpleNamespace(ingress_mapping_status='collected')
-        if model is updates.TLSCertificateCollectionState else None
+        record
+        if model is updates.TLSCertificateInventory
+        else SimpleNamespace(ingress_mapping_status='collected')
+        if model is updates.TLSCertificateCollectionState
+        else None
     )
     provider_calls: list[int] = []
     monkeypatch.setattr(
@@ -243,8 +249,7 @@ def test_single_tls_update_blocks_uncovered_host_before_provider_patch(
     record = _record()
     record.ingress_hosts = ['uncovered.example.org']
     updates.db.session.get = lambda model, identifier: (
-        record if model is updates.TLSCertificateInventory else
-        SimpleNamespace(ingress_mapping_status='collected')
+        record if model is updates.TLSCertificateInventory else SimpleNamespace(ingress_mapping_status='collected')
     )
     monkeypatch.setattr(updates, 'find_uncovered_hosts', lambda hosts, cert: hosts)
     calls: list[int] = []
@@ -285,9 +290,7 @@ def test_tls_update_blocks_unknown_ingress_mapping_without_provider_patch(
 ) -> None:
     updates = _load_updates(monkeypatch)
     record = _record()
-    updates.db.session.get = lambda model, identifier: (
-        record if model is updates.TLSCertificateInventory else None
-    )
+    updates.db.session.get = lambda model, identifier: record if model is updates.TLSCertificateInventory else None
     calls: list[int] = []
     monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
     result = updates.apply_certificate_update(record.id, {})

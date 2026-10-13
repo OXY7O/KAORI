@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import yaml
 import pytest
+import yaml
 
 from app.kubernetes.tenant.access import (
     ACCESS_PROFILE_CATALOG,

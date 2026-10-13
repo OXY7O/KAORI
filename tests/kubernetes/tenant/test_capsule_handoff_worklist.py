@@ -1,4 +1,5 @@
 """#1229 Capsule worklist remains operator-only and bounded (authored, not run)."""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -7,10 +8,11 @@ from datetime import UTC, datetime
 import pytest
 
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
-    _digest, capsule_related_scope_sha256,
+    _digest,
+    capsule_related_scope_sha256,
 )
-from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.capsule_handoff_resource_admission import assess_capsule_resource_handoff_scope
+from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.release_handoff_approval import _plan_hash
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 
@@ -18,18 +20,30 @@ from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 def _case():
     objects = [
         {
-            'kind': 'ResourceQuota', 'namespace': 'demo-dev', 'name': 'quota',
-            'uid': 'quota-uid', 'resource_version': '7', 'origin': 'kaori_correlated',
+            'kind': 'ResourceQuota',
+            'namespace': 'demo-dev',
+            'name': 'quota',
+            'uid': 'quota-uid',
+            'resource_version': '7',
+            'origin': 'kaori_correlated',
             'policy_sha256': 'e' * 64,
         },
         {
-            'kind': 'LimitRange', 'namespace': 'demo-dev', 'name': 'external-limits',
-            'uid': 'limits-uid', 'resource_version': '11', 'origin': 'foreign_preserved',
+            'kind': 'LimitRange',
+            'namespace': 'demo-dev',
+            'name': 'external-limits',
+            'uid': 'limits-uid',
+            'resource_version': '11',
+            'origin': 'foreign_preserved',
             'policy_sha256': 'f' * 64,
         },
         {
-            'kind': 'RoleBinding', 'namespace': 'demo-dev', 'name': 'grant',
-            'uid': 'rb-uid', 'resource_version': '23', 'origin': 'ambiguous_kaori',
+            'kind': 'RoleBinding',
+            'namespace': 'demo-dev',
+            'name': 'grant',
+            'uid': 'rb-uid',
+            'resource_version': '23',
+            'origin': 'ambiguous_kaori',
             'policy_sha256': 'd' * 64,
         },
     ]
@@ -39,22 +53,34 @@ def _case():
         for kind, amount in [('ResourceQuota', 1), ('LimitRange', 1), ('RoleBinding', 1)]
     ]
     related_sha = capsule_related_scope_sha256(
-        resources=objects, list_snapshots=lists,
+        resources=objects,
+        list_snapshots=lists,
     )
-    shared_items = [{
-        'kind': 'GlobalResourceQuota', 'name': 'shared',
-        'uid': 'global-uid', 'resource_version': '19',
-        'scope': 'direct_tenant_selector', 'policy_sha256': 'a' * 64,
-    }]
-    shared_sha = _digest({
-        'api_version': 'v1beta2', 'resources': shared_items,
-    })
+    shared_items = [
+        {
+            'kind': 'GlobalResourceQuota',
+            'name': 'shared',
+            'uid': 'global-uid',
+            'resource_version': '19',
+            'scope': 'direct_tenant_selector',
+            'policy_sha256': 'a' * 64,
+        }
+    ]
+    shared_sha = _digest(
+        {
+            'api_version': 'v1beta2',
+            'resources': shared_items,
+        }
+    )
     plan = {
         'plan_sha256': 'c' * 64,
         'handoff_components': [
             {
-                'kind': 'CapsuleTenant', 'name': 'demo', 'uid': 'cr-uid',
-                'resource_version': '2', 'authority': 'capsule',
+                'kind': 'CapsuleTenant',
+                'name': 'demo',
+                'uid': 'cr-uid',
+                'resource_version': '2',
+                'authority': 'capsule',
                 'ownership': 'external_or_unattributed',
                 'handoff': 'external_acceptance_required',
                 'capsule_spec_sha256': 'e' * 64,
@@ -63,16 +89,22 @@ def _case():
                 'capsule_related_resources_count': '3',
             },
             {
-                'kind': 'Namespace', 'name': 'demo-dev', 'namespace': 'demo-dev',
-                'uid': 'ns-uid', 'resource_version': '4', 'authority': 'capsule',
+                'kind': 'Namespace',
+                'name': 'demo-dev',
+                'namespace': 'demo-dev',
+                'uid': 'ns-uid',
+                'resource_version': '4',
+                'authority': 'capsule',
                 'ownership': 'kaori_marker_correlated',
                 'handoff': 'external_acceptance_required',
             },
         ],
     }
     related = {
-        'resources': objects, 'resource_count': 3,
-        'list_snapshots': lists, 'resource_sha256': related_sha,
+        'resources': objects,
+        'resource_count': 3,
+        'list_snapshots': lists,
+        'resource_sha256': related_sha,
         'global_quota': {
             'served_version': 'v1beta2',
             'list_resource_version': 'cluster-rv',
@@ -102,16 +134,19 @@ def test_worklist_preserves_foreign_policy_and_lists_manual_review_items():
     assert result['release_authorized'] is False
 
 
-@pytest.mark.parametrize('mutation', [
-    lambda p, r: p['handoff_components'][1].update(uid=''),
-    lambda p, r: r.update(resource_sha256='d' * 64),
-    lambda p, r: r['global_quota'].update(scope_sha256='d' * 64),
-    lambda p, r: r['resources'][0].update(origin='provider_but_not_proven'),
-    lambda p, r: r['resources'].append(deepcopy(r['resources'][0])),
-    lambda p, r: r['resources'][0].update(namespace='other-ns'),
-    lambda p, r: r['global_quota']['resources'][0].update(scope='unsupported'),
-    lambda p, r: r['global_quota']['resources'][0].update(uid=None),
-])
+@pytest.mark.parametrize(
+    'mutation',
+    [
+        lambda p, r: p['handoff_components'][1].update(uid=''),
+        lambda p, r: r.update(resource_sha256='d' * 64),
+        lambda p, r: r['global_quota'].update(scope_sha256='d' * 64),
+        lambda p, r: r['resources'][0].update(origin='provider_but_not_proven'),
+        lambda p, r: r['resources'].append(deepcopy(r['resources'][0])),
+        lambda p, r: r['resources'][0].update(namespace='other-ns'),
+        lambda p, r: r['global_quota']['resources'][0].update(scope='unsupported'),
+        lambda p, r: r['global_quota']['resources'][0].update(uid=None),
+    ],
+)
 def test_worklist_fails_closed_on_changed_provider_scope_or_unknown_state(mutation):
     plan, related = _case()
     mutation(plan, related)
@@ -181,22 +216,29 @@ def _provenance_case():
     plan['handoff_components'][0]['capsule_related_resources_sha256'] = related['resource_sha256']
     plan['handoff_components'][0]['capsule_rbac_lineage_sha256'] = 'b' * 64
     related.update(
-        status='read_only_related_inventory', blockers=[],
+        status='read_only_related_inventory',
+        blockers=[],
         rbac_lineage={
             'status': 'contract_correlated_controller_origin_unverified',
-            'lineage_sha256': 'b' * 64, 'contract_correlated': False,
+            'lineage_sha256': 'b' * 64,
+            'contract_correlated': False,
             'controller_origin_verified': False,
             'blockers': ['Capsule effective KAORI RoleBinding origin is ambiguous.'],
         },
     )
     related['global_quota'].update(
-        status='observed_not_handoff_authorized', blockers=[],
+        status='observed_not_handoff_authorized',
+        blockers=[],
     )
     plan.update(
-        tenant_id='tenant-1', cluster_id='cluster-1', generation=1,
-        provider='capsule', requested_by=10,
+        tenant_id='tenant-1',
+        cluster_id='cluster-1',
+        generation=1,
+        provider='capsule',
+        requested_by=10,
         requested_at=datetime.now(UTC).isoformat(),
-        successor_owner='platform-team', change_reference='CHG-1011',
+        successor_owner='platform-team',
+        change_reference='CHG-1011',
         provider_identity=[
             {'kind': 'CapsuleTenant', 'name': 'demo', 'uid': 'cr-uid', 'resource_version': '2'},
             {'kind': 'Namespace', 'name': 'demo-dev', 'uid': 'ns-uid', 'resource_version': '4'},
@@ -282,16 +324,19 @@ def test_resource_admission_refuses_changed_digests_or_controller_claim_override
 
 
 def _controller_audit_claim(report, *, kind='ResourceQuota', name='quota'):
-    item = next(row for row in report['resources']
-                if row['kind'] == kind and row['name'] == name)
+    item = next(row for row in report['resources'] if row['kind'] == kind and row['name'] == name)
     return {
         'source': 'kubernetes_apiserver_audit',
         'audit_id': '00000000-0000-4000-8000-000000000011',
         'event_at': datetime.now(UTC).isoformat(),
-        'stage': 'ResponseComplete', 'verb': 'patch',
-        'cluster_id': 'cluster-1', 'tenant_id': 'tenant-1',
-        'kind': item['kind'], 'namespace': item['namespace'],
-        'name': item['name'], 'uid': item['uid'],
+        'stage': 'ResponseComplete',
+        'verb': 'patch',
+        'cluster_id': 'cluster-1',
+        'tenant_id': 'tenant-1',
+        'kind': item['kind'],
+        'namespace': item['namespace'],
+        'name': item['name'],
+        'uid': item['uid'],
         'resource_version': item['resource_version'],
         'response_code': 200,
         'controller_principal_sha256': 'a' * 64,
@@ -305,7 +350,9 @@ def test_matching_apiserver_claim_still_does_not_prove_controller_or_grant_hando
     before = assess_capsule_resource_handoff_scope(plan=plan, related=related)
     claim = _controller_audit_claim(before)
     observed = assess_capsule_resource_handoff_scope(
-        plan=plan, related=related, controller_audit_claims=[claim],
+        plan=plan,
+        related=related,
+        controller_audit_claims=[claim],
     )
     quota = next(row for row in observed['resources'] if row['name'] == 'quota')
     assert observed['controller_audit_claim_count'] == 1
@@ -318,19 +365,22 @@ def test_matching_apiserver_claim_still_does_not_prove_controller_or_grant_hando
     assert 'controller_principal_sha256' not in str(observed)
 
 
-@pytest.mark.parametrize('change', [
-    lambda c: c.update(tenant_id='other-tenant'),
-    lambda c: c.update(cluster_id='other-cluster'),
-    lambda c: c.update(uid='foreign-uid'),
-    lambda c: c.update(resource_version='stale'),
-    lambda c: c.update(policy_sha256='f' * 64),
-    lambda c: c.update(metadata_sha256='f' * 64),
-    lambda c: c.update(kind='GlobalResourceQuota'),
-    lambda c: c.update(stage='RequestReceived'),
-    lambda c: c.update(response_code=403),
-    lambda c: c.update(controller_principal_sha256='not-a-sha'),
-    lambda c: c.update(secret='credential-must-not-be-copied'),
-])
+@pytest.mark.parametrize(
+    'change',
+    [
+        lambda c: c.update(tenant_id='other-tenant'),
+        lambda c: c.update(cluster_id='other-cluster'),
+        lambda c: c.update(uid='foreign-uid'),
+        lambda c: c.update(resource_version='stale'),
+        lambda c: c.update(policy_sha256='f' * 64),
+        lambda c: c.update(metadata_sha256='f' * 64),
+        lambda c: c.update(kind='GlobalResourceQuota'),
+        lambda c: c.update(stage='RequestReceived'),
+        lambda c: c.update(response_code=403),
+        lambda c: c.update(controller_principal_sha256='not-a-sha'),
+        lambda c: c.update(secret='credential-must-not-be-copied'),
+    ],
+)
 def test_foreign_tampered_or_untrusted_audit_claim_fails_closed(change):
     plan, related = _provenance_case()
     baseline = assess_capsule_resource_handoff_scope(plan=plan, related=related)
@@ -338,7 +388,9 @@ def test_foreign_tampered_or_untrusted_audit_claim_fails_closed(change):
     change(claim)
     with pytest.raises((TypeError, ValueError, KeyError)):
         assess_capsule_resource_handoff_scope(
-            plan=plan, related=related, controller_audit_claims=[claim],
+            plan=plan,
+            related=related,
+            controller_audit_claims=[claim],
         )
 
 
@@ -348,5 +400,7 @@ def test_duplicate_apiserver_audit_id_or_resource_claim_cannot_be_replayed():
     claim = _controller_audit_claim(baseline)
     with pytest.raises(ValueError):
         assess_capsule_resource_handoff_scope(
-            plan=plan, related=related, controller_audit_claims=[claim, dict(claim)],
+            plan=plan,
+            related=related,
+            controller_audit_claims=[claim, dict(claim)],
         )

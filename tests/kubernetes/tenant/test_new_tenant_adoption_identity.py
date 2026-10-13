@@ -8,12 +8,15 @@ from app.kubernetes.tenant.discovery_adoption import validate_adoption_provider_
 
 
 def test_native_and_capsule_adoption_pins_exact_uid_and_version_from_preflight():
-    assert validate_adoption_provider_identity(
-        expected_uid='provider-generation-1',
-        observed_uid='provider-generation-1',
-        expected_resource_version='123',
-        observed_resource_version='123',
-    ) is None
+    assert (
+        validate_adoption_provider_identity(
+            expected_uid='provider-generation-1',
+            observed_uid='provider-generation-1',
+            expected_resource_version='123',
+            observed_resource_version='123',
+        )
+        is None
+    )
 
 
 @pytest.mark.parametrize(
@@ -28,8 +31,10 @@ def test_native_and_capsule_adoption_pins_exact_uid_and_version_from_preflight()
     ],
 )
 def test_new_tenant_adoption_rejects_missing_or_changed_provider_identity(
-    expected_uid: str, observed_uid: str,
-    expected_version: str, observed_version: str,
+    expected_uid: str,
+    observed_uid: str,
+    expected_version: str,
+    observed_version: str,
 ):
     with pytest.raises(ValueError, match='UID|resourceVersion'):
         validate_adoption_provider_identity(
@@ -52,7 +57,8 @@ def test_new_tenant_adoption_rolls_back_pending_governance_after_provider_error(
     )
     monkeypatch.setattr(module, 'db', SimpleNamespace(session=session))
     monkeypatch.setattr(
-        module, '_prepare_adoption',
+        module,
+        '_prepare_adoption',
         lambda _source: SimpleNamespace(provider_key='native_kubernetes'),
     )
 
@@ -86,7 +92,8 @@ def test_new_tenant_adoption_rolls_back_when_database_commit_fails(monkeypatch):
     context = SimpleNamespace(provider_key='capsule', tenant=SimpleNamespace())
     monkeypatch.setattr(module, '_prepare_adoption', lambda _source: context)
     monkeypatch.setattr(
-        module, '_adopt_capsule',
+        module,
+        '_adopt_capsule',
         lambda _context: (SimpleNamespace(), None),
     )
     with pytest.raises(ValueError, match='conflicted with committed KAORI state'):
@@ -101,14 +108,19 @@ def test_new_tenant_adoption_rolls_back_when_database_commit_fails(monkeypatch):
         ([None], 'malformed entries'),
         ([{'name': 'sandbox', 'uid': '', 'resource_version': '7'}], 'name/UID/resourceVersion'),
         ([{'name': 'sandbox', 'uid': 'uid-1', 'resource_version': ''}], 'name/UID/resourceVersion'),
-        ([
-            {'name': 'sandbox', 'uid': 'uid-1', 'resource_version': '7'},
-            {'name': 'sandbox', 'uid': 'uid-2', 'resource_version': '8'},
-        ], 'duplicate Namespace correlation'),
+        (
+            [
+                {'name': 'sandbox', 'uid': 'uid-1', 'resource_version': '7'},
+                {'name': 'sandbox', 'uid': 'uid-2', 'resource_version': '8'},
+            ],
+            'duplicate Namespace correlation',
+        ),
     ],
 )
 def test_capsule_new_tenant_adoption_rejects_incomplete_inventory_before_db_records(
-    monkeypatch, correlations, reason,
+    monkeypatch,
+    correlations,
+    reason,
 ):
     from types import SimpleNamespace
 
@@ -120,7 +132,8 @@ def test_capsule_new_tenant_adoption_rejects_incomplete_inventory_before_db_reco
     monkeypatch.setattr(module, 'TenantNamespace', unexpected_creation)
     with pytest.raises(ValueError, match=reason):
         module._capsule_namespace_records(
-            SimpleNamespace(), SimpleNamespace(),
+            SimpleNamespace(),
+            SimpleNamespace(),
             {'correlated_namespaces': correlations},
         )
 
@@ -132,24 +145,35 @@ def test_capsule_new_tenant_adoption_rejects_namespace_owned_by_another_tenant(m
 
     cluster = SimpleNamespace(id='cluster-a')
     context = SimpleNamespace(
-        cluster=cluster, client=SimpleNamespace(), resource_name='capsule-a',
-        expected_provider_uid='tenant-uid', expected_provider_resource_version='5',
+        cluster=cluster,
+        client=SimpleNamespace(),
+        resource_name='capsule-a',
+        expected_provider_uid='tenant-uid',
+        expected_provider_resource_version='5',
     )
-    monkeypatch.setattr(module, '_read_capsule_tenant', lambda *_: (
-        'v1beta2', {'metadata': {'name': 'capsule-a', 'uid': 'tenant-uid', 'resourceVersion': '5'}},
-    ))
+    monkeypatch.setattr(
+        module,
+        '_read_capsule_tenant',
+        lambda *_: (
+            'v1beta2',
+            {'metadata': {'name': 'capsule-a', 'uid': 'tenant-uid', 'resourceVersion': '5'}},
+        ),
+    )
     monkeypatch.setattr(module, '_managed_capsule_map', lambda _: {})
     monkeypatch.setattr(
-        module, 'observe_capsule_tenant_allocation',
+        module,
+        'observe_capsule_tenant_allocation',
         lambda *_args, **_kwargs: {'correlated_namespaces': [{'name': 'claimed-ns'}]},
     )
     monkeypatch.setattr(
-        module, 'qualify_capsule_tenant_adoption',
+        module,
+        'qualify_capsule_tenant_adoption',
         lambda **_kwargs: ('capsule', {}),
     )
     monkeypatch.setattr(module, '_apply_capsule_allocation_capability_state', lambda *a, **kw: None)
     monkeypatch.setattr(
-        module, '_managed_namespace_map',
+        module,
+        '_managed_namespace_map',
         lambda _: {('cluster-a', 'claimed-ns'): object()},
     )
 
@@ -174,7 +198,9 @@ def test_native_discovery_blocks_orphaned_or_foreign_ownership_before_adoption(l
     from app.kubernetes.tenant.discovery_service import _native_management
 
     state, explanation = _native_management(
-        namespace='sandbox', labels=labels, managed_record=None,
+        namespace='sandbox',
+        labels=labels,
+        managed_record=None,
     )
     assert state == 'Blocked'
     assert reason in explanation
@@ -213,32 +239,45 @@ def test_native_discovery_without_claims_remains_a_review_candidate():
     assert state == 'Discovered'
 
 
-@pytest.mark.parametrize('labels', [
-    {'app.kubernetes.io/managed-by': 'kaori'},
-    {'kaori.io/tenant-id': 'former-tenant'},
-    {'kaori.io/resource-profile': 'old-profile'},
-    {'kaori.io/tenant-generation': '2'},
-    {'app.kubernetes.io/managed-by': 'external-controller'},
-])
+@pytest.mark.parametrize(
+    'labels',
+    [
+        {'app.kubernetes.io/managed-by': 'kaori'},
+        {'kaori.io/tenant-id': 'former-tenant'},
+        {'kaori.io/resource-profile': 'old-profile'},
+        {'kaori.io/tenant-generation': '2'},
+        {'app.kubernetes.io/managed-by': 'external-controller'},
+    ],
+)
 def test_capsule_new_tenant_adoption_blocks_orphaned_or_foreign_cr_before_provider_work(
-    monkeypatch, labels,
+    monkeypatch,
+    labels,
 ):
     from types import SimpleNamespace
 
     from app.kubernetes.tenant import discovery_adoption as module
 
     context = SimpleNamespace(
-        cluster=SimpleNamespace(id='cluster-a'), resource_name='capsule-a',
+        cluster=SimpleNamespace(id='cluster-a'),
+        resource_name='capsule-a',
         client=SimpleNamespace(),
     )
     monkeypatch.setattr(module, '_managed_capsule_map', lambda _: {})
-    monkeypatch.setattr(module, '_read_capsule_tenant', lambda *_: (
-        'v1beta2',
-        {'metadata': {
-            'name': 'capsule-a', 'uid': 'capsule-uid', 'resourceVersion': '5',
-            'labels': labels,
-        }},
-    ))
+    monkeypatch.setattr(
+        module,
+        '_read_capsule_tenant',
+        lambda *_: (
+            'v1beta2',
+            {
+                'metadata': {
+                    'name': 'capsule-a',
+                    'uid': 'capsule-uid',
+                    'resourceVersion': '5',
+                    'labels': labels,
+                }
+            },
+        ),
+    )
 
     def forbidden_observation(*args, **kwargs):
         pytest.fail('Blocked Capsule CR must not proceed into provider allocation observation.')

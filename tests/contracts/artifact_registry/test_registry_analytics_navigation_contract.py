@@ -47,9 +47,7 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
 
-    views = catalog.split("'artifact_registry_analytics': (", 1)[1].split(
-        "    'artifact_registry_security': (", 1
-    )[0]
+    views = catalog.split("'artifact_registry_analytics': (", 1)[1].split("    'artifact_registry_security': (", 1)[0]
     expected = (
         ('overview', 'artifact_registry.analytics'),
         ('growth', 'artifact_registry.analytics_growth'),
@@ -67,7 +65,7 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
         assert "('artifact_registry.view',)" in views
         if key != 'overview':
             assert f"'artifact_registry.analytics_{key}': '{key}'" in navigation
-            assert f"def analytics_{key}() -> ResponseReturnValue:" in routes
+            assert f'def analytics_{key}() -> ResponseReturnValue:' in routes
             assert f"return _render_registry_analytics_page('{key}')" in routes
             assert f"'artifact_registry.analytics_{key}'" in shell
 
@@ -75,13 +73,13 @@ def test_registry_analytics_has_eight_authorized_page_level_views() -> None:
     assert "return 'artifact_registry_analytics'" in navigation
     assert "'artifact_registry_analytics': 'Analytics'" in navigation
     assert "'artifact_registry.analytics_alerts_table': 'alerts'" in navigation
-    assert "def analytics() -> ResponseReturnValue:" in routes
+    assert 'def analytics() -> ResponseReturnValue:' in routes
     assert "return _render_registry_analytics_page('overview')" in routes
-    assert "framed_workspace_tabs.render_navigation" not in shell
-    assert "components/framed_workspace_tabs.html" not in shell
+    assert 'framed_workspace_tabs.render_navigation' not in shell
+    assert 'components/framed_workspace_tabs.html' not in shell
     assert "analytics.active_tab == 'overview'" in shell
     assert "section='summary'" in shell
-    assert "section=analytics.active_tab" in shell
+    assert 'section=analytics.active_tab' in shell
     assert 'hx-trigger="load"' in shell
     assert 'artifact-registry-analytics-active-section' in shell
     assert 'artifact-registry-analytics-summary' in shell
@@ -93,26 +91,25 @@ def test_registry_analytics_legacy_links_redirect_and_preserve_alert_filters() -
     presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     sections = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
 
-    assert "_REGISTRY_ANALYTICS_DETAIL_ROUTES = {" in routes
+    assert '_REGISTRY_ANALYTICS_DETAIL_ROUTES = {' in routes
     for key in ('growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'):
         assert f"'{key}': 'artifact_registry.analytics_{key}'" in routes
     assert "legacy_tab = request.args.get('tab', '', type=str)" in routes
-    assert "if legacy_tab in _REGISTRY_ANALYTICS_DETAIL_ROUTES:" in routes
-    assert "return redirect(url_for(_REGISTRY_ANALYTICS_DETAIL_ROUTES[legacy_tab], **alert_args))" in routes
+    assert 'if legacy_tab in _REGISTRY_ANALYTICS_DETAIL_ROUTES:' in routes
+    assert 'return redirect(url_for(_REGISTRY_ANALYTICS_DETAIL_ROUTES[legacy_tab], **alert_args))' in routes
     for field in ('alert_q', 'alert_severity', 'alert_state', 'alert_source', 'alert_page', 'alert_per_page'):
         assert f"'{field}'" in routes
     assert "return redirect(url_for('artifact_registry.analytics_alerts', **query_args))" in routes
     assert "'artifact_registry.analytics_alerts'," in routes
-    assert "def analytics_alerts_table() -> ResponseReturnValue:" in routes
-    assert "def build_analytics_shell(" in presentation
+    assert 'def analytics_alerts_table() -> ResponseReturnValue:' in routes
+    assert 'def build_analytics_shell(' in presentation
     assert "active_tab: str = 'overview'" in presentation
-    assert "_REGISTRY_ANALYTICS_PAGE_DETAILS = {" in presentation
+    assert '_REGISTRY_ANALYTICS_PAGE_DETAILS = {' in presentation
     assert (
-        "normalized_tab = active_tab if active_tab in _REGISTRY_ANALYTICS_PAGE_DETAILS else 'overview'"
-        in presentation
+        "normalized_tab = active_tab if active_tab in _REGISTRY_ANALYTICS_PAGE_DETAILS else 'overview'" in presentation
     )
-    assert "RegistryAnalyticsSnapshot.query" in presentation
-    assert "MetricsConsumer" not in presentation
+    assert 'RegistryAnalyticsSnapshot.query' in presentation
+    assert 'MetricsConsumer' not in presentation
     assert "url_for('artifact_registry.analytics_alerts_table')" in sections
     assert '[5, 10, 25, 50]' in sections
 
@@ -130,10 +127,10 @@ def test_analytics_overview_uses_shared_intro_and_level_three_navigation() -> No
     assert 'artifact-registry-analytics-summary-heading' in summary
     assert 'Analytics Summary</p>' not in summary
     assert 'for card in analytics.summary_cards' in summary
-    assert "section_card.render(" in summary
+    assert 'section_card.render(' in summary
     assert "'Analytical Evidence Summary'" in summary
     assert "body_classes='p-0'" in summary
-    assert "posture_grid.render(analytical_metrics, columns=4, status_labels=analytical_statuses)" in summary
+    assert 'posture_grid.render(analytical_metrics, columns=4, status_labels=analytical_statuses)' in summary
     for expression in ('card.icon', 'card.label', 'card.value', 'card.detail', 'card.tone'):
         assert expression in summary
     assert "analytical_statuses.append('Review' if card.tone == 'warning'" in summary

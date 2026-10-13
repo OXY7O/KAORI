@@ -77,8 +77,10 @@ def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) ->
     # remain persisted for audit, but cannot be advertised as available.
     if has_payload and (stale_deadline is None or now > stale_deadline):
         label, tone = (
-            'Expired · Refreshing' if snapshot.status == 'pending'
-            else 'Expired · Worker Failed' if snapshot.status == 'failed'
+            'Expired · Refreshing'
+            if snapshot.status == 'pending'
+            else 'Expired · Worker Failed'
+            if snapshot.status == 'failed'
             else 'Expired',
             'critical',
         )
@@ -171,9 +173,7 @@ class SnapshotSupersededError(RuntimeError):
 
 def _ensure_new_attempt_is_current(previous_id: int | None, requested_id: int | None) -> None:
     if previous_id is not None and (requested_id is None or requested_id < previous_id):
-        raise SnapshotSupersededError(
-            'A newer JobExecution already owns this Object Storage dataset snapshot.'
-        )
+        raise SnapshotSupersededError('A newer JobExecution already owns this Object Storage dataset snapshot.')
 
 
 def _verify_snapshot_claim(
@@ -194,9 +194,10 @@ def _verify_snapshot_claim(
 
 def _locked_analytics_snapshot(*, system_id: str, time_range: str) -> ObjectStorageAnalyticsSnapshot:
     return (
-        ObjectStorageAnalyticsSnapshot.query.filter_by(
-            object_storage_system_id=str(system_id), time_range=time_range
-        ).with_for_update().populate_existing().one()
+        ObjectStorageAnalyticsSnapshot.query.filter_by(object_storage_system_id=str(system_id), time_range=time_range)
+        .with_for_update()
+        .populate_existing()
+        .one()
     )
 
 
@@ -204,7 +205,10 @@ def _locked_forecast_snapshot(*, system_id: str, history_window: str) -> ObjectS
     return (
         ObjectStorageForecastSnapshot.query.filter_by(
             object_storage_system_id=str(system_id), history_window=history_window, method=FORECAST_METHOD
-        ).with_for_update().populate_existing().one()
+        )
+        .with_for_update()
+        .populate_existing()
+        .one()
     )
 
 
@@ -222,7 +226,10 @@ def mark_analytics_pending(
         snapshot = (
             ObjectStorageAnalyticsSnapshot.query.filter_by(
                 object_storage_system_id=str(system_id), time_range=time_range
-            ).with_for_update().populate_existing().first()
+            )
+            .with_for_update()
+            .populate_existing()
+            .first()
         )
         if snapshot is None:
             snapshot = ObjectStorageAnalyticsSnapshot()
@@ -412,8 +419,10 @@ def forecast_snapshot_state(snapshot: ObjectStorageForecastSnapshot | None) -> d
     # The validity boundary takes precedence over a pending/failed attempt.
     if has_payload and (stale_deadline is None or now > stale_deadline):
         label, tone = (
-            'Expired · Refreshing' if snapshot.status == 'pending'
-            else 'Expired · Worker Failed' if snapshot.status == 'failed'
+            'Expired · Refreshing'
+            if snapshot.status == 'pending'
+            else 'Expired · Worker Failed'
+            if snapshot.status == 'failed'
             else 'Expired',
             'critical',
         )
@@ -458,7 +467,10 @@ def mark_forecast_pending(
                 object_storage_system_id=str(system_id),
                 history_window=history_window,
                 method=FORECAST_METHOD,
-            ).with_for_update().populate_existing().first()
+            )
+            .with_for_update()
+            .populate_existing()
+            .first()
         )
         if snapshot is None:
             snapshot = ObjectStorageForecastSnapshot()

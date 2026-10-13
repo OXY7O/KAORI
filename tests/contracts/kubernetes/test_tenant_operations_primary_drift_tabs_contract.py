@@ -24,7 +24,7 @@ def test_drift_workflows_use_canonical_primary_tabs_not_nested_tabs() -> None:
         assert f"active_tab == '{key}'" in operations or f"active_tab in {{'{key}'" in routes
         assert f"'{key}'" in tab_helper
 
-    assert operations.count("content_tabs.render_links(") == 1
+    assert operations.count('content_tabs.render_links(') == 1
     assert "'tenant-operations'" in operations
     assert "hx_target='#tenant-operations-workspace'" in operations
     assert "hx_push_url='true'" in operations
@@ -47,9 +47,7 @@ def test_each_primary_tab_has_two_tables_with_provider_details_preserved() -> No
     allocation = operations.split("{% elif active_tab == 'allocation-drift' %}", 1)[1].split(
         "{% elif active_tab == 'operational-reconcile' %}", 1
     )[0]
-    operational = operations.split("{% elif active_tab == 'operational-reconcile' %}", 1)[1].split(
-        "{% else %}", 1
-    )[0]
+    operational = operations.split("{% elif active_tab == 'operational-reconcile' %}", 1)[1].split('{% else %}', 1)[0]
 
     assert allocation.count('{% include "kubernetes/tenant/partials/') == 2
     for name in ('_capsule_tenant_quota_drift.html', '_capsule_shared_allocation_drift.html'):

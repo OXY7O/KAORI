@@ -85,16 +85,11 @@ def materialize_registry_analytics_task(
             metrics = payload.get('metrics') if isinstance(payload.get('metrics'), dict) else {}
             historical = payload.get('history') if isinstance(payload.get('history'), dict) else {}
             partial_sources += int(
-                metrics.get('status') != 'ready'
-                or bool(historical) and historical.get('status') != 'ready'
+                metrics.get('status') != 'ready' or bool(historical) and historical.get('status') != 'ready'
             )
 
     result = {
-        'status': (
-            'error' if not completed
-            else 'warning' if failures or partial_sources
-            else 'success'
-        ),
+        'status': ('error' if not completed else 'warning' if failures or partial_sources else 'success'),
         'total_count': len(ids),
         'completed_count': completed,
         'failed_count': len(failures),

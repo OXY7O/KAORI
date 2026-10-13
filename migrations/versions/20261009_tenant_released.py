@@ -16,12 +16,14 @@ depends_on = None
 def upgrade() -> None:
     op.drop_constraint('ck_tenants_lifecycle_status', 'tenants', type_='check')
     op.create_check_constraint(
-        'ck_tenants_lifecycle_status', 'tenants',
+        'ck_tenants_lifecycle_status',
+        'tenants',
         "lifecycle_status IN ('pending', 'ready', 'degraded', 'decommissioning', 'decommissioned', 'released')",
     )
     op.drop_constraint('ck_tenant_namespaces_provisioning_status', 'tenant_namespaces', type_='check')
     op.create_check_constraint(
-        'ck_tenant_namespaces_provisioning_status', 'tenant_namespaces',
+        'ck_tenant_namespaces_provisioning_status',
+        'tenant_namespaces',
         "provisioning_status IN ('pending', 'ready', 'drifted', 'failed', 'deprovisioning', 'deprovisioned', 'released')",
     )
 
@@ -30,19 +32,22 @@ def downgrade() -> None:
     # Never collapse provider-preserving Released into destructive Decommissioned.
     # Administrators must first reconcile/rollback released generations explicitly.
     connection = op.get_bind()
-    if connection.exec_driver_sql(
-        "SELECT 1 FROM tenants WHERE lifecycle_status = 'released' LIMIT 1"
-    ).first() or connection.exec_driver_sql(
-        "SELECT 1 FROM tenant_namespaces WHERE provisioning_status = 'released' LIMIT 1"
-    ).first():
+    if (
+        connection.exec_driver_sql("SELECT 1 FROM tenants WHERE lifecycle_status = 'released' LIMIT 1").first()
+        or connection.exec_driver_sql(
+            "SELECT 1 FROM tenant_namespaces WHERE provisioning_status = 'released' LIMIT 1"
+        ).first()
+    ):
         raise RuntimeError('Cannot downgrade while Released Tenant/Namespace history exists.')
     op.drop_constraint('ck_tenant_namespaces_provisioning_status', 'tenant_namespaces', type_='check')
     op.create_check_constraint(
-        'ck_tenant_namespaces_provisioning_status', 'tenant_namespaces',
+        'ck_tenant_namespaces_provisioning_status',
+        'tenant_namespaces',
         "provisioning_status IN ('pending', 'ready', 'drifted', 'failed', 'deprovisioning', 'deprovisioned')",
     )
     op.drop_constraint('ck_tenants_lifecycle_status', 'tenants', type_='check')
     op.create_check_constraint(
-        'ck_tenants_lifecycle_status', 'tenants',
+        'ck_tenants_lifecycle_status',
+        'tenants',
         "lifecycle_status IN ('pending', 'ready', 'degraded', 'decommissioning', 'decommissioned')",
     )

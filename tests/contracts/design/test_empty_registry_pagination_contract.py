@@ -98,7 +98,6 @@ def test_affected_operational_registry_footers_are_unconditional() -> None:
         assert FOOTER_TOKENS.search(source), relative
 
 
-
 def test_capsule_drift_empty_tables_render_canonical_footer_and_htmx_targets() -> None:
     environment = Environment(loader=FileSystemLoader(TEMPLATES), autoescape=True)
     environment.filters['environment_name'] = lambda value, empty='': value or empty
@@ -133,9 +132,7 @@ def test_capsule_drift_empty_tables_render_canonical_footer_and_htmx_targets() -
         assert f"'{registry_id}'" in source
         assert '.total_items > 0 %}' not in source
 
-        rendered = environment.get_template(template).render(
-            **{rows_key: [], pagination_key: empty_page}
-        )
+        rendered = environment.get_template(template).render(**{rows_key: [], pagination_key: empty_page})
         assert f'id="{registry_id}"' in rendered
         assert f'id="{loading_id}"' in rendered
         assert f'data-kaori-canonical-registry-footer="{registry_id}"' in rendered

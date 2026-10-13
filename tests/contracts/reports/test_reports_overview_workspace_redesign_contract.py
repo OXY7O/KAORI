@@ -53,7 +53,7 @@ def test_reports_overview_hero_keeps_health_in_canonical_context_card() -> None:
     assert "'Artifact Readiness'" in source
     assert "('circle-check', 'Ready', ready_card.value, 'Available artifacts')" in source
     assert re.search(r"hero_action_label = ['\"]Open Storage['\"]", source)
-    assert "hero_status_label = payload.reporting_posture.label" in source
+    assert 'hero_status_label = payload.reporting_posture.label' in source
     assert "return {'label': 'Degraded', 'tone': 'warning', 'reason': 'storage'}" in service
     assert "return {'label': 'Degraded', 'tone': 'warning', 'reason': 'queue'}" in service
 

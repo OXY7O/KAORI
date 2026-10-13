@@ -14,8 +14,11 @@ from app.kubernetes.tenant.native_handoff_dry_run import (
 
 def _component(kind: str = 'Namespace') -> dict[str, str]:
     return {
-        'kind': kind, 'name': 'sandbox' if kind == 'Namespace' else 'limits',
-        'namespace': 'sandbox', 'uid': 'uid-7', 'resource_version': '19',
+        'kind': kind,
+        'name': 'sandbox' if kind == 'Namespace' else 'limits',
+        'namespace': 'sandbox',
+        'uid': 'uid-7',
+        'resource_version': '19',
         'handoff': 'external_acceptance_required',
         'ownership': 'kaori_marker_correlated',
     }
@@ -25,9 +28,12 @@ def _resource(kind: str = 'Namespace', *, uid: str = 'uid-7', rv: str = '19'):
     return SimpleNamespace(
         metadata=SimpleNamespace(
             name='sandbox' if kind == 'Namespace' else 'limits',
-            uid=uid, resource_version=rv,
-            owner_references=[], finalizers=['example.com/keep'],
-            generation=5, deletion_timestamp=None,
+            uid=uid,
+            resource_version=rv,
+            owner_references=[],
+            finalizers=['example.com/keep'],
+            generation=5,
+            deletion_timestamp=None,
             deletion_grace_period_seconds=None,
             labels={
                 'app.kubernetes.io/managed-by': 'kaori',
@@ -39,15 +45,26 @@ def _resource(kind: str = 'Namespace', *, uid: str = 'uid-7', rv: str = '19'):
                 'example.com/other': 'preserved',
             },
         ),
-        spec={'hard': {'requests.cpu': '2'}} if kind == 'ResourceQuota'
-        else {'limits': ['8Gi']} if kind == 'LimitRange' else None,
+        spec={'hard': {'requests.cpu': '2'}}
+        if kind == 'ResourceQuota'
+        else {'limits': ['8Gi']}
+        if kind == 'LimitRange'
+        else None,
     )
 
 
 class _CoreApi:
-    def __init__(self, kind='Namespace', *, tamper_spec=False, tamper_labels=False,
-                 tamper_annotations=False, tamper_owner=False,
-                 tamper_finalizers=False, persist=False):
+    def __init__(
+        self,
+        kind='Namespace',
+        *,
+        tamper_spec=False,
+        tamper_labels=False,
+        tamper_annotations=False,
+        tamper_owner=False,
+        tamper_finalizers=False,
+        persist=False,
+    ):
         self.obj = _resource(kind)
         self.tamper_spec = tamper_spec
         self.tamper_labels = tamper_labels
@@ -108,9 +125,7 @@ class _CoreApi:
 def test_native_handoff_simulates_all_component_types_without_persisting(kind):
     core = _CoreApi(kind)
     before = deepcopy(core.obj)
-    outcome = dry_run_native_handoff_component(
-        core, _component(kind), tenant_id='tenant-1'
-    )
+    outcome = dry_run_native_handoff_component(core, _component(kind), tenant_id='tenant-1')
 
     assert outcome['dry_run'] is True
     assert outcome['live_provider_unchanged'] is True
@@ -134,7 +149,9 @@ def test_handoff_dry_run_releases_real_profile_label_without_legacy_alias(kind):
     core.obj.metadata.labels.pop('kaori.io/tenant-generation')
     before = deepcopy(core.obj)
     receipt = dry_run_native_handoff_component(
-        core, _component(kind), tenant_id='tenant-1',
+        core,
+        _component(kind),
+        tenant_id='tenant-1',
     )
     assert 'kaori.io/resource-profile' in receipt['label_keys_to_release']
     assert receipt['spec_unchanged'] is True
@@ -144,7 +161,9 @@ def test_handoff_dry_run_releases_real_profile_label_without_legacy_alias(kind):
 
 def test_json_patch_tests_uid_version_owner_before_removing_only_kaori_metadata():
     ops = build_native_handoff_patch(
-        _component(), _resource(), tenant_id='tenant-1',
+        _component(),
+        _resource(),
+        tenant_id='tenant-1',
     )
     assert ops[:4] == [
         {'op': 'test', 'path': '/metadata/uid', 'value': 'uid-7'},
@@ -157,18 +176,17 @@ def test_json_patch_tests_uid_version_owner_before_removing_only_kaori_metadata(
     assert not any('spec' in op['path'] for op in ops)
 
 
-@pytest.mark.parametrize('change', [
-    lambda component, resource: component.update(uid='different'),
-    lambda component, resource: component.update(resource_version='2'),
-    lambda component, resource: component.update(handoff='observe_only'),
-    lambda component, resource: component.update(ownership='marker_conflict'),
-    lambda component, resource: resource.metadata.labels.update(
-        {'kaori.io/tenant-id': 'another-tenant'}
-    ),
-    lambda component, resource: resource.metadata.labels.update(
-        {'app.kubernetes.io/managed-by': 'external'}
-    ),
-])
+@pytest.mark.parametrize(
+    'change',
+    [
+        lambda component, resource: component.update(uid='different'),
+        lambda component, resource: component.update(resource_version='2'),
+        lambda component, resource: component.update(handoff='observe_only'),
+        lambda component, resource: component.update(ownership='marker_conflict'),
+        lambda component, resource: resource.metadata.labels.update({'kaori.io/tenant-id': 'another-tenant'}),
+        lambda component, resource: resource.metadata.labels.update({'app.kubernetes.io/managed-by': 'external'}),
+    ],
+)
 def test_native_patch_fails_closed_on_missing_authority_or_changed_identity(change):
     component, resource = _component(), _resource()
     change(component, resource)
@@ -179,19 +197,13 @@ def test_native_patch_fails_closed_on_missing_authority_or_changed_identity(chan
 def test_dry_run_rejects_mutating_admission_or_live_provider_side_effect():
     core = _CoreApi('ResourceQuota', tamper_spec=True)
     with pytest.raises(ValueError, match='spec'):
-        dry_run_native_handoff_component(
-            core, _component('ResourceQuota'), tenant_id='tenant-1'
-        )
+        dry_run_native_handoff_component(core, _component('ResourceQuota'), tenant_id='tenant-1')
     core = _CoreApi('Namespace', tamper_labels=True)
     with pytest.raises(ValueError, match='unrelated Kubernetes labels'):
-        dry_run_native_handoff_component(
-            core, _component(), tenant_id='tenant-1'
-        )
+        dry_run_native_handoff_component(core, _component(), tenant_id='tenant-1')
     core = _CoreApi('Namespace', tamper_annotations=True)
     with pytest.raises(ValueError, match='annotations'):
-        dry_run_native_handoff_component(
-            core, _component(), tenant_id='tenant-1'
-        )
+        dry_run_native_handoff_component(core, _component(), tenant_id='tenant-1')
     core = _CoreApi('Namespace', tamper_owner=True)
     with pytest.raises(ValueError, match='ownerReferences'):
         dry_run_native_handoff_component(core, _component(), tenant_id='tenant-1')
@@ -200,10 +212,7 @@ def test_dry_run_rejects_mutating_admission_or_live_provider_side_effect():
         dry_run_native_handoff_component(core, _component(), tenant_id='tenant-1')
     core = _CoreApi('Namespace', persist=True)
     with pytest.raises(ValueError, match='live state changed'):
-        dry_run_native_handoff_component(
-            core, _component(), tenant_id='tenant-1'
-        )
-
+        dry_run_native_handoff_component(core, _component(), tenant_id='tenant-1')
 
 
 def test_native_dry_run_rejects_colluding_or_mismatched_approval(monkeypatch):
@@ -230,13 +239,9 @@ def test_native_dry_run_rejects_colluding_or_mismatched_approval(monkeypatch):
     monkeypatch.setattr(module, '_plan_hash', lambda _: 'a' * 64)
     monkeypatch.setattr(module, '_checked_recently', lambda _: True)
     with pytest.raises(ValueError, match='independently approved'):
-        dry_run_native_release_handoff_committed(
-            tenant_id='tenant-a', actor_user_id=32, plan_sha256='a' * 64
-        )
+        dry_run_native_release_handoff_committed(tenant_id='tenant-a', actor_user_id=32, plan_sha256='a' * 64)
 
     approval['approved_by'] = 22
     approval['handoff_fingerprint'] = 'outdated'
     with pytest.raises(ValueError, match='independently approved'):
-        dry_run_native_release_handoff_committed(
-            tenant_id='tenant-a', actor_user_id=32, plan_sha256='a' * 64
-        )
+        dry_run_native_release_handoff_committed(tenant_id='tenant-a', actor_user_id=32, plan_sha256='a' * 64)

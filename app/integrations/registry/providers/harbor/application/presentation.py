@@ -69,12 +69,14 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
             IntegrationBinding.query.join(
                 IntegrationInstance,
                 IntegrationBinding.integration_instance_id == IntegrationInstance.id,
-            ).filter(
+            )
+            .filter(
                 IntegrationInstance.integration_type == 'metrics_source',
                 IntegrationBinding.asset_type == 'registry_instance',
                 IntegrationBinding.asset_key.in_([str(identity_id) for identity_id in identity_ids]),
                 IntegrationBinding.enabled.is_(True),
-            ).all()
+            )
+            .all()
         ):
             binding_counts[binding.asset_key] = binding_counts.get(binding.asset_key, 0) + 1
     collection_states = {
@@ -130,10 +132,18 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
         complete = all(
             item['status'] == 'ready' for item in (api_status, inventory_status, metrics_status, webhook_status)
         )
-        coverage_status = ('disabled' if is_disabled else 'inactive' if not is_active else
-                           'ready' if complete else 'attention')
-        coverage_label = ('Disabled' if is_disabled else 'Inactive' if not is_active else
-                          'Full Coverage' if complete else 'Partial Coverage')
+        coverage_status = (
+            'disabled' if is_disabled else 'inactive' if not is_active else 'ready' if complete else 'attention'
+        )
+        coverage_label = (
+            'Disabled'
+            if is_disabled
+            else 'Inactive'
+            if not is_active
+            else 'Full Coverage'
+            if complete
+            else 'Partial Coverage'
+        )
 
         rows.append(
             {
@@ -142,8 +152,13 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
                 'environment': instance.environment,
                 'endpoint': instance.endpoint,
                 'auth_type': instance.auth_type,
-                'readiness_status': ('disabled' if is_disabled else 'inactive' if not is_active else
-                                     instance.readiness_status or 'validation_required'),
+                'readiness_status': (
+                    'disabled'
+                    if is_disabled
+                    else 'inactive'
+                    if not is_active
+                    else instance.readiness_status or 'validation_required'
+                ),
                 'compatibility_profile': instance.compatibility_profile,
                 'detected_version': instance.detected_version,
                 'last_checked': present_user_datetime(instance.last_checked_at, empty='Not observed'),
@@ -194,12 +209,15 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
                 eligibility=registry_inventory_eligibility(row['identity']),
             )
     active = sum(
-        1 for instance in instances
+        1
+        for instance in instances
         if instance.integration_instance.enabled and instance.integration_instance.lifecycle_status == 'active'
     )
     ready = sum(
-        1 for instance in instances
-        if instance.integration_instance.enabled and instance.integration_instance.lifecycle_status == 'active'
+        1
+        for instance in instances
+        if instance.integration_instance.enabled
+        and instance.integration_instance.lifecycle_status == 'active'
         and instance.readiness_status == 'ready'
     )
     return {
@@ -254,7 +272,11 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
 def _provider_status(instance: HarborInstance) -> dict[str, str]:
     identity = instance.integration_instance
     if not identity.enabled:
-        return {'status': 'disabled', 'label': 'Disabled', 'detail': 'Connection disabled; retained validation is historical'}
+        return {
+            'status': 'disabled',
+            'label': 'Disabled',
+            'detail': 'Connection disabled; retained validation is historical',
+        }
     if identity.lifecycle_status != 'active':
         return {'status': 'inactive', 'label': 'Inactive', 'detail': 'Connection lifecycle is not active'}
     readiness = str(instance.readiness_status or 'validation_required')

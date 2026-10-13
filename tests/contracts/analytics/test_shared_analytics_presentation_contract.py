@@ -1,4 +1,5 @@
 """Cross-domain render contract for the canonical KAORI Analytics presentation."""
+
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
@@ -15,6 +16,7 @@ def _environment() -> Environment:
         undefined=StrictUndefined,
         autoescape=True,
     )
+
     def _user_datetime(value: object, default: str = 'Unavailable') -> str:
         return str(value) if value else default
 
@@ -96,12 +98,10 @@ def _registry_payload() -> dict:
 
 def test_shared_selector_and_readiness_geometry_render_identically_across_domains() -> None:
     env = _environment()
-    k8s = env.get_template(
-        'kubernetes/analytics/overview/partials/_health_summary.html'
-    ).render(payload=_k8s_payload())
-    registry = env.get_template(
-        'artifact_registry/partials/_analytics_controls_readiness.html'
-    ).render(analytics=_registry_payload())
+    k8s = env.get_template('kubernetes/analytics/overview/partials/_health_summary.html').render(payload=_k8s_payload())
+    registry = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(
+        analytics=_registry_payload()
+    )
 
     for html in (k8s, registry):
         assert html.count('data-analytics-controls-readiness') == 1
@@ -150,8 +150,7 @@ def test_shared_selector_supports_legacy_bookmarks_without_duplicating_normal_op
 def test_kubernetes_metrics_status_preserves_source_specific_query_evidence() -> None:
     env = _environment()
     source = env.from_string(
-        '{% import "kubernetes/analytics/components/_metrics_source_status.html" as k8s %}'
-        '{{ k8s.render(status) }}'
+        '{% import "kubernetes/analytics/components/_metrics_source_status.html" as k8s %}{{ k8s.render(status) }}'
     )
     base = {'configured': True, 'connected': True, 'response_time_ms': 16, 'state': 'connected'}
     for delta, expected in (

@@ -12,7 +12,7 @@ def test_top_consumers_uses_one_canonical_workspace_and_native_fallback() -> Non
 
     for tab in ('rankings', 'records', 'recommendations'):
         assert f'data-analytics-tab-panel="{tab}"' in section
-    assert "analytics_workspace.tabbed(" in section
+    assert 'analytics_workspace.tabbed(' in section
     assert "'top-consumers-content'," in section
     assert 'detached=true' not in section
     assert 'data-top-consumers-tabset' in section
@@ -65,7 +65,7 @@ def test_resource_cards_replace_nested_tabs_without_new_tab_controller() -> None
 
 def test_small_cpu_formatting_does_not_round_nonzero_evidence_to_zero() -> None:
     rows = read('app/kubernetes/analytics/top_consumers/rows.py')
-    assert "if 0 < abs(value) < 0.01:" in rows
+    assert 'if 0 < abs(value) < 0.01:' in rows
     assert "return f'{value:.3g} cores'" in rows
     assert "return f'{safe_round(value, 2)} cores'" in rows
 

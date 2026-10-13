@@ -54,20 +54,20 @@
     <aside class="{{ aside_classes() }}" aria-label="{{ aria_label }}">
         {% if blocked %}
             {{ blocked_context_body(eyebrow_label,
-                    title,
-                    metrics,
-                    blocked_info,
-                    blocked_label,
-                    'warning') }}
+                        title,
+                        metrics,
+                        blocked_info,
+                        blocked_label,
+                        'warning') }}
         {% else %}
             {{ context_card_body(eyebrow_label,
-                    title,
-                    status_label,
-                    status_tone,
-                    metrics,
-                    action_label,
-                    action_href,
-                    action_icon) }}
+                        title,
+                        status_label,
+                        status_tone,
+                        metrics,
+                        action_label,
+                        action_href,
+                        action_icon) }}
         {% endif %}
     </aside>
 {%- endmacro %}

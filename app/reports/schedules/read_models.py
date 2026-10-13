@@ -10,6 +10,7 @@ from app.reports.schedules.presentation import serialize_schedule
 from app.reports.schedules.support import get_cluster_map, get_delivery_channel_options, parse_optional_int
 from app.reports.scope import KUBERNETES_CLUSTER_ASSET_TYPE
 
+
 def _get_schedule_counts() -> tuple[int, int]:
     total, active = db.session.execute(
         select(
@@ -35,11 +36,13 @@ def _get_schedule_filter_context() -> list[dict[str, Any]]:
         selected_type = str(asset_type or KUBERNETES_CLUSTER_ASSET_TYPE)
         selected_id = str(asset_id or cluster_id or '')
         if selected_id:
-            result.append({
-                'scope_asset_filter_key': f'{selected_type}:{selected_id}',
-                'scope_label': selected_type.replace('_', ' ').title(),
-                'scope': str(label or selected_id),
-            })
+            result.append(
+                {
+                    'scope_asset_filter_key': f'{selected_type}:{selected_id}',
+                    'scope_label': selected_type.replace('_', ' ').title(),
+                    'scope': str(label or selected_id),
+                }
+            )
     return result
 
 
@@ -64,5 +67,3 @@ def _serialize_schedule_rows(schedules: list[ReportSchedule]) -> list[dict[str, 
         int(item['channel_id']): f'{item["label"]} · {item["provider"]}' for item in get_delivery_channel_options()
     }
     return [serialize_schedule(item, cluster_map, delivery_label_map) for item in schedules]
-
-

@@ -153,9 +153,7 @@ def _provider_health_projection(
         )
     )
     scoped_provider_ids = [int(provider.id) for provider in visible_providers]
-    project_counts_query = project_counts_query.filter(
-        RegistryProject.integration_instance_id.in_(scoped_provider_ids)
-    )
+    project_counts_query = project_counts_query.filter(RegistryProject.integration_instance_id.in_(scoped_provider_ids))
     repository_counts_query = repository_counts_query.filter(
         RegistryProject.integration_instance_id.in_(scoped_provider_ids)
     )
@@ -183,10 +181,7 @@ def _provider_health_projection(
         ).all()
     }
 
-    metrics_by_provider = {
-        int(provider.id): registry_metrics_readiness(provider)
-        for provider in visible_providers
-    }
+    metrics_by_provider = {int(provider.id): registry_metrics_readiness(provider) for provider in visible_providers}
     provider_rows: list[dict[str, Any]] = []
     for provider in visible_providers:
         key = int(provider.id)
@@ -454,14 +449,16 @@ def _fleet_freshness(
     metrics_all_ready = bool(provider_count) and metrics_ready_count == provider_count
     analytics_all_ready = bool(provider_count) and analytics_ready_count == provider_count
     analytics_status = (
-        'Ready' if analytics_all_ready
-        else 'Partial' if analytics_ready_count
-        else 'Stale' if analytics_stale_count
+        'Ready'
+        if analytics_all_ready
+        else 'Partial'
+        if analytics_ready_count
+        else 'Stale'
+        if analytics_stale_count
         else 'Required'
     )
     analytics_tone = (
-        'normal' if analytics_all_ready else
-        'warning' if analytics_ready_count or analytics_stale_count else 'unknown'
+        'normal' if analytics_all_ready else 'warning' if analytics_ready_count or analytics_stale_count else 'unknown'
     )
     return [
         {
@@ -486,15 +483,21 @@ def _fleet_freshness(
         {
             'label': 'Security Snapshot',
             'status': (
-                'No Artifacts' if artifact_total == 0 and stats['committed_count']
-                else 'Required' if not scanned_count
-                else 'Available' if scanned_count >= artifact_total
+                'No Artifacts'
+                if artifact_total == 0 and stats['committed_count']
+                else 'Required'
+                if not scanned_count
+                else 'Available'
+                if scanned_count >= artifact_total
                 else 'Partial'
             ),
             'tone': (
-                'info' if artifact_total == 0 and stats['committed_count']
-                else 'unknown' if artifact_total == 0
-                else 'normal' if scanned_count >= artifact_total
+                'info'
+                if artifact_total == 0 and stats['committed_count']
+                else 'unknown'
+                if artifact_total == 0
+                else 'normal'
+                if scanned_count >= artifact_total
                 else 'warning'
             ),
             'value': (
@@ -556,8 +559,7 @@ def _overview_operations_projection(
         # health-page bookmark; never substitute another provider's readiness.
         metrics_by_provider[int(selected_provider.id)] = registry_metrics_readiness(selected_provider)
     analytics_views = {
-        provider_id: _analytics_snapshot_view(snapshot)
-        for provider_id, snapshot in analytics_by_provider.items()
+        provider_id: _analytics_snapshot_view(snapshot) for provider_id, snapshot in analytics_by_provider.items()
     }
     analytics_ready_count = sum(view['is_current'] for view in analytics_views.values())
     analytics_stale_count = sum(view['is_stale'] for view in analytics_views.values())

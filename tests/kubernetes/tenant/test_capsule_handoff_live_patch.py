@@ -1,4 +1,5 @@
 """#1229: disabled Capsule PATCH adapter contracts (authored, NOT executed)."""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -11,9 +12,12 @@ from app.kubernetes.tenant import capsule_handoff_live_patch as live
 
 def _component(kind='Namespace'):
     return {
-        'kind': kind, 'name': 'demo-dev' if kind == 'Namespace' else 'quota',
-        'namespace': 'demo-dev', 'uid': 'provider-uid',
-        'resource_version': '7', 'authority': 'capsule',
+        'kind': kind,
+        'name': 'demo-dev' if kind == 'Namespace' else 'quota',
+        'namespace': 'demo-dev',
+        'uid': 'provider-uid',
+        'resource_version': '7',
+        'authority': 'capsule',
         'handoff': 'external_acceptance_required',
         'ownership': 'kaori_marker_correlated',
     }
@@ -21,15 +25,19 @@ def _component(kind='Namespace'):
 
 def _metadata(resource_version='7', *, owner='kaori'):
     return SimpleNamespace(
-        name='demo-dev', uid='provider-uid',
+        name='demo-dev',
+        uid='provider-uid',
         resource_version=resource_version,
         labels={
             'app.kubernetes.io/managed-by': owner,
             'kaori.io/tenant-id': 'tenant-1',
             'capsule.clastix.io/tenant': 'demo',
         },
-        annotations={}, owner_references=[], finalizers=[],
-        generation=1, deletion_timestamp=None,
+        annotations={},
+        owner_references=[],
+        finalizers=[],
+        generation=1,
+        deletion_timestamp=None,
         deletion_grace_period_seconds=None,
     )
 
@@ -38,32 +46,42 @@ def test_capsule_live_patch_is_statically_disabled_before_any_provider_call():
     class _Forbidden:
         def __getattr__(self, name):
             raise AssertionError(f'Unexpected provider access: {name}')
+
     with pytest.raises(PermissionError, match='disabled pending durable START'):
         live.execute_capsule_single_metadata_patch_staged(
-            core=_Forbidden(), rbac=_Forbidden(),
-            component=_component(), tenant_id='tenant-1',
-            capsule_name='demo', capsule_uid='cr-uid',
+            core=_Forbidden(),
+            rbac=_Forbidden(),
+            component=_component(),
+            tenant_id='tenant-1',
+            capsule_name='demo',
+            capsule_uid='cr-uid',
             successor_owner='platform-team',
         )
     assert live._CAPSULE_LIVE_PATCH_ENABLED is False
 
 
-@pytest.mark.parametrize(('kind', 'method'), [
-    ('Namespace', 'patch_namespace'),
-    ('ResourceQuota', 'patch_namespaced_resource_quota'),
-    ('LimitRange', 'patch_namespaced_limit_range'),
-    ('RoleBinding', 'patch_namespaced_role_binding'),
-])
+@pytest.mark.parametrize(
+    ('kind', 'method'),
+    [
+        ('Namespace', 'patch_namespace'),
+        ('ResourceQuota', 'patch_namespaced_resource_quota'),
+        ('LimitRange', 'patch_namespaced_limit_range'),
+        ('RoleBinding', 'patch_namespaced_role_binding'),
+    ],
+)
 def test_capsule_patch_dispatch_is_typed_and_never_infers_a_spec_write(kind, method):
     calls = []
+
     def invoke(**kwargs):
         calls.append(kwargs)
         return {'provider': 'example'}
+
     class _Provider:
         def __getattr__(self, name):
             if name == method or name == method.replace('patch_', 'read_', 1):
                 return invoke
             raise AssertionError(name)
+
     core, rbac = _Provider(), _Provider()
     _, dispatcher = live._provider_methods(core=core, rbac=rbac, kind=kind)
     operations = [
@@ -71,12 +89,20 @@ def test_capsule_patch_dispatch_is_typed_and_never_infers_a_spec_write(kind, met
         {'op': 'test', 'path': '/metadata/resourceVersion', 'value': '7'},
     ]
     first = live._provider_patch(
-        dispatcher, kind=kind, name='quota', namespace='demo-dev',
-        body=operations, dry_run=True,
+        dispatcher,
+        kind=kind,
+        name='quota',
+        namespace='demo-dev',
+        body=operations,
+        dry_run=True,
     )
     second = live._provider_patch(
-        dispatcher, kind=kind, name='quota', namespace='demo-dev',
-        body=operations, dry_run=False,
+        dispatcher,
+        kind=kind,
+        name='quota',
+        namespace='demo-dev',
+        body=operations,
+        dry_run=False,
     )
     assert first == second == {'provider': 'example'}
     assert calls[0]['dry_run'] == 'All'
@@ -95,9 +121,13 @@ def test_capsule_before_patch_detects_namespace_uid_rv_or_label_drift(monkeypatc
     before = SimpleNamespace(metadata=_metadata(), spec={'quota': 'unchanged'})
     same = deepcopy(before)
     live._require_source_still_unchanged(
-        kind='Namespace', before=before, current=same,
-        record=_component(), tenant_id='tenant-1',
-        capsule_name='demo', capsule_uid='cr-uid',
+        kind='Namespace',
+        before=before,
+        current=same,
+        record=_component(),
+        tenant_id='tenant-1',
+        capsule_name='demo',
+        capsule_uid='cr-uid',
     )
     cases = [
         lambda r: setattr(r.metadata, 'resource_version', '8'),
@@ -109,9 +139,13 @@ def test_capsule_before_patch_detects_namespace_uid_rv_or_label_drift(monkeypatc
         mutation(changed)
         with pytest.raises(ValueError, match='changed during live dry-run'):
             live._require_source_still_unchanged(
-                kind='Namespace', before=before, current=changed,
-                record=_component(), tenant_id='tenant-1',
-                capsule_name='demo', capsule_uid='cr-uid',
+                kind='Namespace',
+                before=before,
+                current=changed,
+                record=_component(),
+                tenant_id='tenant-1',
+                capsule_name='demo',
+                capsule_uid='cr-uid',
             )
 
 
@@ -136,11 +170,13 @@ def test_capsule_live_candidate_cannot_treat_preview_as_release(monkeypatch):
             return deepcopy(after)
 
     monkeypatch.setattr(
-        live, 'capture_capsule_namespace_baseline',
+        live,
+        'capture_capsule_namespace_baseline',
         lambda *args, **kwargs: {'kind': 'Namespace'},
     )
     monkeypatch.setattr(
-        live, 'build_capsule_namespace_handoff_patch',
+        live,
+        'build_capsule_namespace_handoff_patch',
         lambda *args, **kwargs: [
             {'op': 'test', 'path': '/metadata/uid', 'value': 'provider-uid'},
             {'op': 'test', 'path': '/metadata/resourceVersion', 'value': '7'},
@@ -149,13 +185,18 @@ def test_capsule_live_candidate_cannot_treat_preview_as_release(monkeypatch):
     monkeypatch.setattr(live, 'verify_capsule_namespace_preview', lambda **_: None)
     monkeypatch.setattr(live, 'capsule_preservation_digest', lambda obj: obj.spec)
     monkeypatch.setattr(
-        live, 'classify_capsule_namespace_handoff',
+        live,
+        'classify_capsule_namespace_handoff',
         lambda **_: {'state': 'provider_markers_transferred', 'resource_version': '8'},
     )
     result = live.execute_capsule_single_metadata_patch_staged(
-        core=_Core(), rbac=SimpleNamespace(), component=_component(),
-        tenant_id='tenant-1', capsule_name='demo',
-        capsule_uid='cr-uid', successor_owner='platform-team',
+        core=_Core(),
+        rbac=SimpleNamespace(),
+        component=_component(),
+        tenant_id='tenant-1',
+        capsule_name='demo',
+        capsule_uid='cr-uid',
+        successor_owner='platform-team',
     )
     assert [c[0] for c in calls] == ['read', 'patch', 'read', 'patch', 'read']
     assert calls[1][1]['dry_run'] == 'All'
@@ -176,6 +217,7 @@ def test_capsule_unknown_outcome_must_not_be_retried(monkeypatch):
         def read_namespace(self, **kwargs):
             calls.append('read')
             return before
+
         def patch_namespace(self, **kwargs):
             calls.append('patch')
             if kwargs.get('dry_run') == 'All':
@@ -183,18 +225,25 @@ def test_capsule_unknown_outcome_must_not_be_retried(monkeypatch):
             raise TimeoutError('provider outcome unknown')
 
     monkeypatch.setattr(
-        live, 'capture_capsule_namespace_baseline', lambda *a, **k: {},
+        live,
+        'capture_capsule_namespace_baseline',
+        lambda *a, **k: {},
     )
     monkeypatch.setattr(
-        live, 'build_capsule_namespace_handoff_patch',
+        live,
+        'build_capsule_namespace_handoff_patch',
         lambda *a, **k: [{'op': 'test', 'path': '/metadata/uid', 'value': 'provider-uid'}],
     )
     monkeypatch.setattr(live, 'verify_capsule_namespace_preview', lambda **_: None)
     monkeypatch.setattr(live, 'capsule_preservation_digest', lambda obj: obj.spec)
     with pytest.raises(TimeoutError, match='outcome unknown'):
         live.execute_capsule_single_metadata_patch_staged(
-            core=_Core(), rbac=SimpleNamespace(), component=_component(),
-            tenant_id='tenant-1', capsule_name='demo',
-            capsule_uid='cr-uid', successor_owner='platform-team',
+            core=_Core(),
+            rbac=SimpleNamespace(),
+            component=_component(),
+            tenant_id='tenant-1',
+            capsule_name='demo',
+            capsule_uid='cr-uid',
+            successor_owner='platform-team',
         )
     assert calls == ['read', 'patch', 'read', 'patch']

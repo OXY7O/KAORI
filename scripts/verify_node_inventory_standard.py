@@ -185,8 +185,7 @@ def main() -> int:
         )
         and "table_ui.table_classes('min-w-[74rem] !table-fixed')" in table_content
         and 'overflow-x-auto overscroll-x-contain' in table_content
-        and "table_ui.cluster_identity(node.cluster_name, node.cluster_environment, 'w-full min-w-0')"
-        in table_content,
+        and "table_ui.cluster_identity(node.cluster_name, node.cluster_environment, 'w-full min-w-0')" in table_content,
         'Node/Cluster width must be prioritized with the approved proportional table layout.',
         errors,
     )

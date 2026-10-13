@@ -10,20 +10,19 @@
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-tree" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="{{ table_ui.block_title_classes() }}">Role Registry</h2>
-                    {{ table_label.result_count(summary.matching) }}
-                </div>
+                        <h2 class="{{ table_ui.block_title_classes() }}">Role Registry</h2>
+                        {{ table_label.result_count(summary.matching) }}
+                    </div>
                     <p class="{{ table_ui.block_description_classes() }}">Review role type, lifecycle state, baseline integrity, assignments, permission coverage, and governed actions.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {% if filters.search or filters.role_type != 'all' or filters.state != 'all' %}
-                    {{ registry_ui.clear_filters_link(
-                        'access.roles.index',
-                        'role-registry',
-                        'role-registry-loading',
-                        filters.per_page,
-                        table_ui.action_classes()
+                    {{ registry_ui.clear_filters_link('access.roles.index',
+                                        'role-registry',
+                                        'role-registry-loading',
+                                        filters.per_page,
+                                        table_ui.action_classes()
                     ) }}
                 {% endif %}
             </div>
@@ -38,7 +37,7 @@
             filters.per_page,
             form_id='role-registry-filter-form',
             aria_label='Role Registry filters'
-        ) %}
+            ) %}
             <label class="min-w-0">
                 <span class="{{ table_ui.filter_label_classes() }}">Search Role</span>
                 {{ table_ui.search_field('search', filters.search, 'Role name, slug, or purpose', 'role-search') }}
@@ -106,8 +105,7 @@
     </div>
     {% set footer_query = pagination_query.copy() %}
     {% set _ = footer_query.pop('per_page', none) %}
-    {{ registry_ui.footer(
-        'access.roles.index',
+    {{ registry_ui.footer('access.roles.index',
         'role-registry',
         'role-registry-loading',
         pagination,
@@ -115,6 +113,5 @@
         per_page_options,
         resource_label='Roles',
         rows_aria_label='Rows Per Page',
-        control_name='role-registry'
-    ) }}
+        control_name='role-registry') }}
 </section>

@@ -3,7 +3,6 @@ from types import SimpleNamespace
 
 from app.platform_operations.jobs.configuration import _policy_status
 
-
 ROOT = Path(__file__).resolve().parents[3]
 
 

@@ -6,7 +6,8 @@
          data-kaori-cluster-signal-overview>
     <header class="{{ analysis_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                  aria-hidden="true">
                 <i data-lucide="activity" class="h-4 w-4"></i>
             </span>
             <div class="min-w-0">
@@ -15,7 +16,7 @@
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            {{ table_label.metadata_label(overview.source|replace('_', ' ')|title ~ ' Source', 'radio-tower', size='compact') }}
+            {{ table_label.metadata_label(overview.source|replace('_', ' ') |title ~ ' Source', 'radio-tower', size='compact') }}
             {{ table_label.status_label('Connected' if overview.connected else 'Not Connected', 'normal' if overview.connected else 'unknown', size='compact') }}
         </div>
     </header>
@@ -28,19 +29,19 @@
                         class="{{ analysis_surface.section_title_classes() }}">Operator Decision</h3>
                     {{ table_label.status_label(overview.priority.label ~ ' Priority', priority_tone, size='compact') }}
                 </div>
-                {{ analysis_surface.interpretation_content(
-                    'Recommended Response',
-                    overview.insight.action_hint,
-                    overview.priority.description,
-                    icon=overview.priority.icon|default('compass'),
-                    role='status',
-                    tone=priority_tone
+                {{ analysis_surface.interpretation_content('Recommended Response',
+                                overview.insight.action_hint,
+                                overview.priority.description,
+                                icon=overview.priority.icon|default('compass') ,
+                role='status',
+                tone=priority_tone
                 ) }}
             </section>
             <section class="{{ analysis_surface.nested_evidence_card_classes('overflow-hidden') }}"
                      aria-labelledby="cluster-evidence-boundary-title">
                 <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-3">
-                    <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}" aria-hidden="true">
+                    <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                          aria-hidden="true">
                         <i data-lucide="database" class="h-3.5 w-3.5"></i>
                     </span>
                     <div class="min-w-0">
@@ -52,11 +53,15 @@
                 <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-1">
                     <div class="min-w-0 bg-surface-card px-4 py-3">
                         <dt class="{{ analysis_surface.metric_label_classes() }}">Primary Source</dt>
-                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ overview.source|replace('_', ' ')|title }}</dd>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                            {{ overview.source|replace('_', ' ') |title }}
+                        </dd>
                     </div>
                     <div class="min-w-0 bg-surface-card px-4 py-3">
                         <dt class="{{ analysis_surface.metric_label_classes() }}">Evidence Coverage</dt>
-                        <dd class="mt-1">{{ table_label.status_label('Complete' if overview.evidence_complete else 'Partial', 'normal' if overview.evidence_complete else 'unknown', size='compact') }}</dd>
+                        <dd class="mt-1">
+                            {{ table_label.status_label('Complete' if overview.evidence_complete else 'Partial', 'normal' if overview.evidence_complete else 'unknown', size='compact') }}
+                        </dd>
                     </div>
                 </dl>
                 {% if overview.fallback_used and overview.fallback_reason %}
@@ -80,14 +85,15 @@
                     ('Total Signals', overview.total_signals, 'Active alerts plus anomaly candidates', 'waves'),
                     ('Active Alerts', overview.active_alerts, 'Firing, active, or pending', 'bell-ring'),
                     ('Anomalies', overview.anomalies, 'Metrics Source-derived candidates', 'radar')
-                ] %}
+                    ] %}
                     <article class="{{ analysis_surface.nested_evidence_card_classes('flex min-w-0 flex-col justify-between p-4') }}">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
                                 <p class="mt-2 text-3xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
                             </div>
-                            <span class="{{ analysis_surface.role_icon_classes('brand') }}" aria-hidden="true">
+                            <span class="{{ analysis_surface.role_icon_classes('brand') }}"
+                                  aria-hidden="true">
                                 <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                             </span>
                         </div>
@@ -100,7 +106,8 @@
             <section class="{{ analysis_surface.nested_evidence_card_classes('overflow-hidden') }}"
                      aria-labelledby="cluster-alert-lifecycle-title">
                 <div class="border-b border-outline-subtle px-4 py-3">
-                    <h3 id="cluster-alert-lifecycle-title" class="text-sm font-semibold text-content-primary">Alert Lifecycle</h3>
+                    <h3 id="cluster-alert-lifecycle-title"
+                        class="text-sm font-semibold text-content-primary">Alert Lifecycle</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Status counts from the current selected alert evidence.</p>
                 </div>
                 <dl class="grid grid-cols-3 divide-x divide-outline-subtle">
@@ -108,10 +115,12 @@
                         ('Active', overview.active_alerts),
                         ('Pending', overview.pending_alerts),
                         ('Resolved', overview.resolved_alerts)
-                    ] %}
+                        ] %}
                         <div class="min-w-0 px-3 py-4 sm:px-4">
                             <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                            <dd class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ value }}</dd>
+                            <dd class="mt-2 text-xl font-semibold tabular-nums text-content-primary">
+                                {{ value }}
+                            </dd>
                         </div>
                     {% endfor %}
                 </dl>
@@ -127,11 +136,12 @@
                         ('Critical Alerts', overview.critical_alerts, 'critical'),
                         ('Warning Alerts', overview.warning_alerts, 'warning'),
                         ('Info Alerts', overview.info_alerts, 'info')
-                    ] %}
+                        ] %}
                         <div class="min-w-0 px-3 py-4 sm:px-4">
-                            <p class="truncate text-xs font-medium text-content-muted" title="{{ label }}">{{ label }}</p>
+                            <p class="truncate text-xs font-medium text-content-muted"
+                               title="{{ label }}">{{ label }}</p>
                             <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
-                            <div class="mt-2">{{ table_label.status_label(label|replace(' Alerts', ''), tone=tone, size='compact') }}</div>
+                            <div class="mt-2">{{ table_label.status_label(label|replace(' Alerts', '') , tone=tone, size='compact') }}</div>
                         </div>
                     {% endfor %}
                 </div>
@@ -148,9 +158,10 @@
                 {% for label, value, count, unit, icon in [
                     ('Dominant Signal', overview.insight.dominant_signal, overview.insight.dominant_signal_count, 'Records', 'bell-ring'),
                     ('Dominant Anomaly', overview.insight.dominant_anomaly, overview.insight.dominant_anomaly_count, 'Candidates', 'radar')
-                ] %}
+                    ] %}
                     <div class="flex min-w-0 items-start gap-3 bg-surface-card px-4 py-4">
-                        <span class="{{ analysis_surface.role_icon_classes('brand' if loop.first else 'insight', size='compact') }}" aria-hidden="true">
+                        <span class="{{ analysis_surface.role_icon_classes('brand' if loop.first else 'insight', size='compact') }}"
+                              aria-hidden="true">
                             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
                         </span>
                         <div class="min-w-0 flex-1">

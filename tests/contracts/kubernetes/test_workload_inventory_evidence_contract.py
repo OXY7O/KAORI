@@ -104,8 +104,7 @@ def test_workload_table_prioritizes_long_workload_and_scope_names() -> None:
     assert 'w-[23%] min-w-[15rem]' in table
     assert "table_ui.title_cell(workload.name, workload.identity_supporting, 'boxes')" in table
     assert (
-        'table_ui.namespaced_scope_identity(workload.cluster_name, '
-        'workload.cluster_environment, workload.namespace)'
+        'table_ui.namespaced_scope_identity(workload.cluster_name, workload.cluster_environment, workload.namespace)'
     ) in table
     assert 'title="{{ namespace or \'-\' }}"' in shared
     assert 'title="{{ name }}"' in primitives

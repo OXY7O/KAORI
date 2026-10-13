@@ -11,13 +11,13 @@ import importlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-LEGACY_TLS = "weak_tls_context"
-TLS_MODULE = "app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls"
+LEGACY_TLS = 'weak_tls_context'
+TLS_MODULE = 'app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls'
 
 
 def test_no_kubernetes_application_source_imports_retired_tls_context() -> None:
-    for path in (ROOT / "app").rglob("*.py"):
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for path in (ROOT / 'app').rglob('*.py'):
+        tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and node.module == TLS_MODULE:
                 assert all(alias.name != LEGACY_TLS for alias in node.names), path
@@ -25,15 +25,15 @@ def test_no_kubernetes_application_source_imports_retired_tls_context() -> None:
 
 def test_sensitive_kubernetes_operations_and_inventory_import_without_retired_tls() -> None:
     for module_name in (
-        "app.kubernetes.operations.secrets.live_service",
-        "app.kubernetes.operations.secrets.create_service",
-        "app.kubernetes.operations.secrets.replace_service",
-        "app.kubernetes.operations.secrets.delete_service",
-        "app.kubernetes.operations.secrets.reveal_service",
-        "app.kubernetes.operations.configmaps.runtime",
-        "app.kubernetes.inventory.synchronization",
-        "app.kubernetes.governance.tls_certificates.collector",
-        "app.intelligence.alert_signals.service",
+        'app.kubernetes.operations.secrets.live_service',
+        'app.kubernetes.operations.secrets.create_service',
+        'app.kubernetes.operations.secrets.replace_service',
+        'app.kubernetes.operations.secrets.delete_service',
+        'app.kubernetes.operations.secrets.reveal_service',
+        'app.kubernetes.operations.configmaps.runtime',
+        'app.kubernetes.inventory.synchronization',
+        'app.kubernetes.governance.tls_certificates.collector',
+        'app.intelligence.alert_signals.service',
     ):
         module = importlib.import_module(module_name)
         assert module is not None
@@ -41,28 +41,26 @@ def test_sensitive_kubernetes_operations_and_inventory_import_without_retired_tl
 
 def test_operational_calls_use_provider_scoped_tls_instead_of_process_global_override() -> None:
     adapter = (
-        ROOT / "app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py"
-    ).read_text(encoding="utf-8")
+        ROOT / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/adapter.py'
+    ).read_text(encoding='utf-8')
     client = (
-        ROOT / "app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/client.py"
-    ).read_text(encoding="utf-8")
+        ROOT / 'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/client.py'
+    ).read_text(encoding='utf-8')
     for path in (
-        "app/kubernetes/operations/secrets/live_service.py",
-        "app/kubernetes/operations/configmaps/runtime.py",
+        'app/kubernetes/operations/secrets/live_service.py',
+        'app/kubernetes/operations/configmaps/runtime.py',
     ):
-        source = (ROOT / path).read_text(encoding="utf-8")
-        assert "connection_for_cluster(cluster)" in source
+        source = (ROOT / path).read_text(encoding='utf-8')
+        assert 'connection_for_cluster(cluster)' in source
         assert "'client.build'" in source
         assert LEGACY_TLS not in source
-    assert "allow_weak_tls=bool(connection.allow_weak_tls)" in adapter
-    assert "configure_weak_tls(" in client
-    assert "enabled=self.allow_weak_tls" in client
+    assert 'allow_weak_tls=bool(connection.allow_weak_tls)' in adapter
+    assert 'configure_weak_tls(' in client
+    assert 'enabled=self.allow_weak_tls' in client
 
 
 def test_alert_signals_uses_canonical_scoped_transport_without_legacy_wrapper() -> None:
-    source = (
-        ROOT / "app/intelligence/alert_signals/service.py"
-    ).read_text(encoding="utf-8")
+    source = (ROOT / 'app/intelligence/alert_signals/service.py').read_text(encoding='utf-8')
     assert "get_integration('container_orchestrator').execute('client.build', connection)" in source
-    assert "core_api = client.core_api()" in source
-    assert "weak_tls_context" not in source
+    assert 'core_api = client.core_api()' in source
+    assert 'weak_tls_context' not in source

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from types import SimpleNamespace
 
 import pytest
 
@@ -52,7 +51,11 @@ def test_changed_scan_report_failure_retains_old_scan_identity_and_findings(resp
     evidence, refreshed, reused = _artifact_security_record(
         Client(),
         old,
-        {'scan_overview': {'report': {'scan_status': 'completed', 'end_time': '2026-10-12T00:00:00Z', 'summary': {'critical': 0}}}},
+        {
+            'scan_overview': {
+                'report': {'scan_status': 'completed', 'end_time': '2026-10-12T00:00:00Z', 'summary': {'critical': 0}}
+            }
+        },
         project_name='team',
         repository_name='team/image',
     )
@@ -69,10 +72,16 @@ def test_changed_scan_report_failure_retains_old_scan_identity_and_findings(resp
 def test_report_failure_without_prior_snapshot_remains_unavailable() -> None:
     old = _target()
     target = RegistrySecurityTarget(
-        artifact_id=old.artifact_id, project_name=old.project_name,
-        repository_name=old.repository_name, digest=old.digest,
-        scan_status=None, scan_completed_at=None, vulnerability_summary={},
-        signature_status=None, sbom_status=None, has_scan_snapshot=False,
+        artifact_id=old.artifact_id,
+        project_name=old.project_name,
+        repository_name=old.repository_name,
+        digest=old.digest,
+        scan_status=None,
+        scan_completed_at=None,
+        vulnerability_summary={},
+        signature_status=None,
+        sbom_status=None,
+        has_scan_snapshot=False,
     )
 
     class Client:
@@ -80,9 +89,11 @@ def test_report_failure_without_prior_snapshot_remains_unavailable() -> None:
             raise HarborResponseError('invalid report')
 
     evidence, refreshed, reused = _artifact_security_record(
-        Client(), target,
+        Client(),
+        target,
         {'scan_overview': {'report': {'scan_status': 'success', 'end_time': '2026-10-12T00:00:00Z'}}},
-        project_name='team', repository_name='team/image',
+        project_name='team',
+        repository_name='team/image',
     )
     assert evidence.scan_snapshot is None
     assert evidence.scan_status is None

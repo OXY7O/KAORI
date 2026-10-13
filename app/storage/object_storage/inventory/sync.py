@@ -136,9 +136,7 @@ def sync_object_storage_inventory(
         db.session.refresh(canonical, attribute_names=['metadata_json', 'readiness_status', 'enabled'])
         if not canonical.enabled or instance.readiness_status != 'ready':
             raise RuntimeError('Storage connection changed or lost Core Validation before Inventory Sync began.')
-        source_generation = int(
-            (canonical.metadata_json or {}).get('object_storage_connection_generation') or 0
-        )
+        source_generation = int((canonical.metadata_json or {}).get('object_storage_connection_generation') or 0)
         if empty_reconciliation is not None:
             # Refresh under the system row lock; the dispatch-time ORM identity
             # may have been loaded before a concurrent inventory generation.
@@ -177,9 +175,7 @@ def sync_object_storage_inventory(
                     'Previous committed bucket evidence remains unchanged.'
                 )
             current_stage = 'independent empty discovery confirmation'
-            confirmation = collect_instance_bucket_inventory(
-                instance, usage_stats_mode='disabled'
-            )
+            confirmation = collect_instance_bucket_inventory(instance, usage_stats_mode='disabled')
             if confirmation.buckets or confirmation.warning_count:
                 raise RuntimeError(
                     'Independent ListBuckets verification did not confirm an empty, complete result. '
@@ -227,7 +223,10 @@ def sync_object_storage_inventory(
             logger.warning(
                 'Authorized Object Storage empty reconciliation committed for system %s: '
                 '%s prior assets, %s confirmations, actor %s.',
-                system.id, previous_bucket_count, 2, reconciliation_evidence['confirmed_by_user_id'],
+                system.id,
+                previous_bucket_count,
+                2,
+                reconciliation_evidence['confirmed_by_user_id'],
             )
         return result
     except Exception:

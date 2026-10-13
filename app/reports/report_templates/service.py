@@ -156,17 +156,10 @@ def get_custom_template_filtered_query(filters: dict[str, str]):
         escaped = term.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
         pattern = f'%{escaped}%'
         matching_report_types = [
-            spec.value for spec in REPORT_TYPE_SPECS
-            if term in spec.label.lower() or term in spec.family.lower()
+            spec.value for spec in REPORT_TYPE_SPECS if term in spec.label.lower() or term in spec.family.lower()
         ]
-        matching_domains = [
-            domain for domain, label in REPORT_DOMAIN_LABELS.items()
-            if term in label.lower()
-        ]
-        matching_sections = [
-            str(item['value']) for item in SECTION_OPTIONS
-            if term in str(item['label']).lower()
-        ]
+        matching_domains = [domain for domain, label in REPORT_DOMAIN_LABELS.items() if term in label.lower()]
+        matching_sections = [str(item['value']) for item in SECTION_OPTIONS if term in str(item['label']).lower()]
         section_text = func.lower(cast(ReportTemplate.sections, db.String))
         predicates = [
             func.lower(ReportTemplate.name).like(pattern, escape='\\'),
@@ -275,7 +268,9 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
     sections = [item if isinstance(item, str) else 'Invalid Section' for item in template.sections_as_list()]
     report_type_label = get_report_type_label(template.report_type)
     status = template.status or 'draft'
-    family = get_report_family(template.report_type) if template.report_type in get_allowed_report_types() else 'unknown'
+    family = (
+        get_report_family(template.report_type) if template.report_type in get_allowed_report_types() else 'unknown'
+    )
     return {
         'id': str(template.id),
         'template_key': f'custom:{template.id}',
@@ -293,8 +288,7 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         'status': status,
         'output_format': str(template.output_format or '').upper(),
         'allowed_formats': (
-            [value.upper() for value in get_allowed_output_formats(template.report_type)]
-            if family != 'unknown' else []
+            [value.upper() for value in get_allowed_output_formats(template.report_type)] if family != 'unknown' else []
         ),
         'icon': get_report_type_icon(template.report_type),
         'sections': get_section_labels(sections),
@@ -309,7 +303,8 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         'contract_errors': contract_errors,
         'generate_href': (
             build_generate_href(template.report_type, sections, template.name, template.output_format)
-            if contract_valid else ''
+            if contract_valid
+            else ''
         ),
         'duplicate_href': url_for('reports.duplicate_custom_template', template_id=template.id),
         'edit_href': url_for('reports.report_templates', edit_template_id=template.id),
@@ -582,7 +577,8 @@ def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
     )
     active_custom_templates = sum(
         int(template.get('_weight', 1))
-        for template in templates if template['ownership'] == 'custom' and template['status'] == 'active'
+        for template in templates
+        if template['ownership'] == 'custom' and template['status'] == 'active'
     )
     return [
         {

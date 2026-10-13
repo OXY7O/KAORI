@@ -53,11 +53,9 @@
         </section>
         {% include "access/activity_audit/partials/_activity_summary_cards.html" %}
         <section class="space-y-4" aria-labelledby="audit-records-heading">
-            {{ section_intro.render(
-                'Audit Records',
-                'Browse committed operational activity and source-owned administrative evidence without mixing their authorities.',
-                'audit-records-heading'
-            ) }}
+            {{ section_intro.render('Audit Records',
+                        'Browse committed operational activity and source-owned administrative evidence without mixing their authorities.',
+                        'audit-records-heading') }}
             {% include "access/activity_audit/partials/_audit_records_workspace.html" %}
         </section>
         {{ resource_detail_modal.host('Activity',

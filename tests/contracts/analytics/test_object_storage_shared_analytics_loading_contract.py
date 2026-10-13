@@ -41,11 +41,9 @@ def test_object_storage_reuses_shared_analytics_tracker_across_six_pages() -> No
 
     # Server-rendered summary/panels are not fabricated as HTMX section requests.
     assert 'data-analytics-lazy-section="true"' not in page
-    assert "partials/_overview_analysis.html" in page
-    assert "partials/_overview_workspace.html" in page
-    assert 'data-analytics-lazy-section="true"' not in _source(
-        STORAGE / 'partials/_overview_workspace.html'
-    )
+    assert 'partials/_overview_analysis.html' in page
+    assert 'partials/_overview_workspace.html' in page
+    assert 'data-analytics-lazy-section="true"' not in _source(STORAGE / 'partials/_overview_workspace.html')
 
 
 def test_object_storage_three_real_htmx_record_fragments_are_counted() -> None:
@@ -65,9 +63,9 @@ def test_object_storage_three_real_htmx_record_fragments_are_counted() -> None:
 
     javascript = _source(ROOT / 'app/static/js/analytics/section_load_tracker.js')
     assert 'currentSection(trackedSection(event))' in javascript
-    assert 'setState(section, \'loading\')' in javascript
-    assert 'setState(section, \'loaded\')' in javascript
-    assert 'setState(section, \'failed\')' in javascript
+    assert "setState(section, 'loading')" in javascript
+    assert "setState(section, 'loaded')" in javascript
+    assert "setState(section, 'failed')" in javascript
     for error in ('htmx:responseError', 'htmx:sendError', 'htmx:timeout'):
         assert error in javascript
 
@@ -80,7 +78,7 @@ def test_object_storage_controls_use_shared_shell_with_preserved_domain_evidence
     assert "'Analytics Controls & Data Readiness'" in controls
     assert "eyebrow='Analytics Overview' if page_key == 'overview'" in controls
     assert "'object-storage-analytics-refresh-indicator'" in controls
-    assert "loading_bar.render(indicator_id" in shared
+    assert 'loading_bar.render(indicator_id' in shared
     assert 'data-analytics-refresh-request="true"' in controls
     assert 'hx-get="{{ url_for(\'analytics.object_storage_\' ~ page_key) }}"' in controls
     assert 'hx-target="#object-storage-analytics-page"' in controls
@@ -140,13 +138,13 @@ def test_shared_object_storage_templates_parse_and_worker_remains_domain_owned()
     assert 'analytics-batch' in job_adapter
     assert 'MetricsConsumer' not in _source(STORAGE / 'index.html')
 
+
 def test_object_storage_controls_render_independently_in_all_six_views() -> None:
     """Catch missing macro imports that Jinja parsing alone cannot detect."""
     from jinja2 import StrictUndefined
 
-    environment = Environment(
-        loader=FileSystemLoader(str(TEMPLATES)), undefined=StrictUndefined
-    )
+    environment = Environment(loader=FileSystemLoader(str(TEMPLATES)), undefined=StrictUndefined)
+
     def _user_datetime(value: object, fallback: str = 'Unavailable') -> str:
         return str(value) if value else fallback
 
@@ -210,12 +208,10 @@ def test_object_storage_controls_render_independently_in_all_six_views() -> None
             'instance_name': None,
         },
     }
-    for page_key in (
-        'overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'
-    ):
-        html = environment.get_template(
-            'storage/object_storage/analytics/partials/_controls.html'
-        ).render(page_key=page_key, **context)
+    for page_key in ('overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'):
+        html = environment.get_template('storage/object_storage/analytics/partials/_controls.html').render(
+            page_key=page_key, **context
+        )
 
         assert 'Analytics Controls & Data Readiness' in html
         assert 'data-analytics-controls-readiness' in html

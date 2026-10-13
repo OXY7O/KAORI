@@ -125,9 +125,7 @@ def materialize_object_storage_analytics(
                         )
                     except SnapshotSupersededError:
                         db.session.rollback()
-                        logger.info(
-                            'Suppressed obsolete Analytics failure for %s (%s).', system.id, time_range
-                        )
+                        logger.info('Suppressed obsolete Analytics failure for %s (%s).', system.id, time_range)
                     except SQLAlchemyError:
                         db.session.rollback()
                         logger.exception('Could not persist Object Storage analytics failure state.')

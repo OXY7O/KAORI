@@ -7,6 +7,7 @@ Source-only migration. NOT executed or installed by merge. Production
 handback is denied until the PostgreSQL triggers, unique START index,
 non-owner DB privileges and WAL durability are independently verified.
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -34,13 +35,12 @@ def upgrade() -> None:
     dialect = _dialect()
     # A restart cannot silently issue a second START for the same predecessor.
     op.create_index(
-        _INDEX, 'audit_events', ['target_id'], unique=True,
-        postgresql_where=sa.text(
-            f"target_type = '{_TARGET}' AND action = '{_START}'"
-        ),
-        sqlite_where=sa.text(
-            f"target_type = '{_TARGET}' AND action = '{_START}'"
-        ),
+        _INDEX,
+        'audit_events',
+        ['target_id'],
+        unique=True,
+        postgresql_where=sa.text(f"target_type = '{_TARGET}' AND action = '{_START}'"),
+        sqlite_where=sa.text(f"target_type = '{_TARGET}' AND action = '{_START}'"),
     )
     if dialect == 'postgresql':
         op.execute(f"""
@@ -88,20 +88,20 @@ END
 
 def downgrade() -> None:
     dialect = _dialect()
-    if op.get_bind().execute(
-        sa.text('SELECT 1 FROM audit_events WHERE target_type = :target LIMIT 1'),
-        {'target': _TARGET},
-    ).first():
+    if (
+        op.get_bind()
+        .execute(
+            sa.text('SELECT 1 FROM audit_events WHERE target_type = :target LIMIT 1'),
+            {'target': _TARGET},
+        )
+        .first()
+    ):
         raise RuntimeError('Cannot remove Capsule handback guards with recorded attempt evidence.')
-    names = ['tr_capsule_handback_audit_deny_update',
-             'tr_capsule_handback_audit_deny_delete']
+    names = ['tr_capsule_handback_audit_deny_update', 'tr_capsule_handback_audit_deny_delete']
     if dialect == 'postgresql':
         names.append('tr_capsule_handback_audit_deny_truncate')
     for name in names:
-        op.execute(
-            f'DROP TRIGGER {name} ON audit_events'
-            if dialect == 'postgresql' else f'DROP TRIGGER {name}'
-        )
+        op.execute(f'DROP TRIGGER {name} ON audit_events' if dialect == 'postgresql' else f'DROP TRIGGER {name}')
     if dialect == 'postgresql':
         op.execute(f'DROP FUNCTION {_FUNCTION}()')
     op.drop_index(_INDEX, table_name='audit_events')

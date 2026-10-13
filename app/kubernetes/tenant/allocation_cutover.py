@@ -220,9 +220,7 @@ def _mutate_namespace_ownership(
     observed_uid = _metadata_value(metadata, 'uid')
     observed_version = _metadata_value(metadata, 'resource_version')
     expected_uid = str(getattr(record, 'provider_reference', None) or '').strip()
-    if record.ownership_status == 'adopted' and (
-        not expected_uid or not observed_uid or observed_uid != expected_uid
-    ):
+    if record.ownership_status == 'adopted' and (not expected_uid or not observed_uid or observed_uid != expected_uid):
         raise ValueError('Adopted Namespace UID differs from committed provider identity; inspect before mutation.')
     if not observed_version:
         raise ValueError('Namespace resourceVersion is unavailable; refusing ownership mutation.')
@@ -238,12 +236,16 @@ def _mutate_namespace_ownership(
             )
     labels = dict(getattr(metadata, 'labels', None) or {})
     if capsule_namespace_authority_present(
-        labels=labels, owner_references=getattr(metadata, 'owner_references', None),
+        labels=labels,
+        owner_references=getattr(metadata, 'owner_references', None),
     ):
         raise ValueError('Namespace has Capsule Tenant authority; Native ownership takeover is prohibited.')
     if allocation_control_state(record) == 'adopted_observed' and any(
-        key in labels for key in (
-            _TENANT_ID_KEY, _ENVIRONMENT_KEY, _PROFILE_ID_KEY,
+        key in labels
+        for key in (
+            _TENANT_ID_KEY,
+            _ENVIRONMENT_KEY,
+            _PROFILE_ID_KEY,
             'kaori.io/tenant-generation',
         )
     ):
@@ -252,9 +254,8 @@ def _mutate_namespace_ownership(
     if owner and owner != _MANAGED_BY_VALUE:
         raise ValueError(f'Namespace is managed by {owner}; governance takeover fails closed.')
     claimed_tenant = str(labels.get(_TENANT_ID_KEY) or '').strip()
-    if (
-        (claimed_tenant and claimed_tenant != str(record.environment.tenant.id))
-        or (owner == _MANAGED_BY_VALUE and not claimed_tenant)
+    if (claimed_tenant and claimed_tenant != str(record.environment.tenant.id)) or (
+        owner == _MANAGED_BY_VALUE and not claimed_tenant
     ):
         raise ValueError('Namespace already carries an ambiguous or foreign KAORI Tenant ownership claim.')
 

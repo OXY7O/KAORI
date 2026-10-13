@@ -45,9 +45,7 @@ def test_user_directory_intro_is_in_full_content_not_htmx_directory_fragment() -
     routes = read('app/access/users/routes.py')
     assert "'Account Directory'" in content
     assert "'Find users by identity source, account state, and role assignment.'" in content
-    assert content.index("'Account Directory'") < content.index(
-        '{% include "access/users/partials/_directory.html" %}'
-    )
+    assert content.index("'Account Directory'") < content.index('{% include "access/users/partials/_directory.html" %}')
     assert 'section_intro.render(' not in directory
     assert 'id="user-directory"' in directory
     assert 'User Directory' in directory

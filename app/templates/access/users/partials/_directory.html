@@ -20,13 +20,12 @@
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {% if filters.search or filters.status != 'all' or filters.auth_source != 'all' or filters.role_id %}
-                    {{ registry_ui.clear_filters_link(
-                    'users.index',
-                    'user-directory',
-                    'users-refresh-indicator',
-                    filters.per_page,
-                    table_ui.action_classes()
-                ) }}
+                    {{ registry_ui.clear_filters_link('users.index',
+                                        'user-directory',
+                                        'users-refresh-indicator',
+                                        filters.per_page,
+                                        table_ui.action_classes()
+                    ) }}
                 {% endif %}
             </div>
         </div>

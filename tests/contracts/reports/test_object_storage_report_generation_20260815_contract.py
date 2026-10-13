@@ -96,10 +96,10 @@ def test_object_storage_analysis_combines_governed_evidence_for_pdf_and_csv() ->
     assert "get_object_storage_analytics_context('performance', args, committed_snapshot=shared_snapshot)" in collector
     assert "get_object_storage_analytics_context('alerts', args, committed_snapshot=shared_snapshot)" in collector
     assert "'evidence_boundary': evidence_boundary" in collector
-    assert "read_analytics_snapshot(" in collector
+    assert 'read_analytics_snapshot(' in collector
     assert "'analytics_cutoff': snapshot_state.get('generated_at')" in collector
     assert "'data_cutoff': snapshot_state.get('generated_at')" in collector
-    assert "system.inventory_observed_at or now" not in collector
+    assert 'system.inventory_observed_at or now' not in collector
     assert "committed_snapshot is None and (payload is None or state.get('stale'))" in read(
         'app/storage/object_storage/analytics/service.py'
     )

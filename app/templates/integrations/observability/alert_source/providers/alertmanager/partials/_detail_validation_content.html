@@ -104,5 +104,4 @@
         {% include "integrations/observability/alert_source/providers/alertmanager/partials/_detail_scope.html" %}
     {% endwith %}
 {% endif %}
-
-{{ provider_detail_posture.state_oob('alertmanager', instance.readiness_status, capability_rows|selectattr('available')|list|length) }}
+{{ provider_detail_posture.state_oob('alertmanager', instance.readiness_status, capability_rows|selectattr('available') |list|length) }}

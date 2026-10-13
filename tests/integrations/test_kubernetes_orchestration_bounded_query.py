@@ -37,8 +37,7 @@ def test_kubernetes_page_sizes_use_existing_pagination_window():
     from pathlib import Path
 
     source = (
-        Path(__file__).resolve().parents[2]
-        / 'app/integrations/orchestration/container_orchestrator/fleet_query.py'
+        Path(__file__).resolve().parents[2] / 'app/integrations/orchestration/container_orchestrator/fleet_query.py'
     ).read_text()
     assert 'build_pagination_window(' in source
     assert '.offset(window.offset).limit(window.per_page)' in source

@@ -76,8 +76,12 @@ def _providers() -> list[IntegrationInstance]:
 
 
 def _capability_state(
-    *, supported: bool, observed: bool, attempted: bool,
-    observed_count: int | None = None, artifact_total: int | None = None,
+    *,
+    supported: bool,
+    observed: bool,
+    attempted: bool,
+    observed_count: int | None = None,
+    artifact_total: int | None = None,
 ) -> dict[str, str]:
     if not supported:
         return {'key': 'unsupported', 'label': 'Unsupported', 'tone': 'unknown'}
@@ -229,17 +233,12 @@ def _security_scope_evidence(
         RegistryArtifact.sbom_status.isnot(None),
     )
     supported = {
-        collector.provider_key: collector.capabilities
-        for collector in registered_registry_security_collectors()
+        collector.provider_key: collector.capabilities for collector in registered_registry_security_collectors()
     }
     signature_ids = [
-        int(source.id) for source in scoped_sources
-        if 'signature' in supported.get(source.provider_key, ())
+        int(source.id) for source in scoped_sources if 'signature' in supported.get(source.provider_key, ())
     ]
-    sbom_ids = [
-        int(source.id) for source in scoped_sources
-        if 'sbom' in supported.get(source.provider_key, ())
-    ]
+    sbom_ids = [int(source.id) for source in scoped_sources if 'sbom' in supported.get(source.provider_key, ())]
     gap_predicate = or_(
         and_(
             RegistryProject.integration_instance_id.in_(signature_ids),
@@ -260,16 +259,13 @@ def _security_scope_evidence(
     def count_if(predicate: Any) -> Any:
         return func.coalesce(func.sum(case((predicate, 1), else_=0)), 0)
 
-    artifact_total, evidence_count, signature_observed, sbom_available, coverage_gaps = (
-        artifact_scope.with_entities(
-            func.count(RegistryArtifact.id),
-            count_if(evidence_filter),
-            count_if(func.lower(RegistryArtifact.signature_status) == 'signed'),
-            count_if(func.lower(RegistryArtifact.sbom_status) == 'available'),
-            count_if(gap_predicate),
-        ).one()
-    )
-
+    artifact_total, evidence_count, signature_observed, sbom_available, coverage_gaps = artifact_scope.with_entities(
+        func.count(RegistryArtifact.id),
+        count_if(evidence_filter),
+        count_if(func.lower(RegistryArtifact.signature_status) == 'signed'),
+        count_if(func.lower(RegistryArtifact.sbom_status) == 'available'),
+        count_if(gap_predicate),
+    ).one()
 
     latest_snapshot_ids = (
         RegistryScanSnapshot.query.with_entities(func.max(RegistryScanSnapshot.id).label('id'))
@@ -277,9 +273,7 @@ def _security_scope_evidence(
         .subquery()
     )
     scan_scope = (
-        RegistryScanSnapshot.query.join(
-            latest_snapshot_ids, RegistryScanSnapshot.id == latest_snapshot_ids.c.id
-        )
+        RegistryScanSnapshot.query.join(latest_snapshot_ids, RegistryScanSnapshot.id == latest_snapshot_ids.c.id)
         .join(RegistryArtifact, RegistryScanSnapshot.artifact_id == RegistryArtifact.id)
         .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
         .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
@@ -289,9 +283,13 @@ def _security_scope_evidence(
         func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)
     )
     scanned_artifacts = successful_scan_scope.order_by(None).count()
-    current_scanned_artifacts = successful_scan_scope.filter(
-        RegistryScanSnapshot.observed_at >= datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
-    ).order_by(None).count()
+    current_scanned_artifacts = (
+        successful_scan_scope.filter(
+            RegistryScanSnapshot.observed_at >= datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
+        )
+        .order_by(None)
+        .count()
+    )
 
     finding_scope = (
         RegistryVulnerability.query.join(
@@ -389,9 +387,7 @@ def _security_source_capabilities(
         return func.coalesce(func.sum(case((predicate, 1), else_=0)), 0)
 
     grouped = (
-        RegistryArtifact.query.join(
-            RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
-        )
+        RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
         .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
         .filter(RegistryProject.integration_instance_id.in_(ids))
         .with_entities(
@@ -409,13 +405,23 @@ def _security_source_capabilities(
     )
     counts = {
         int(provider_id): (
-            int(total), int(scan_ready), int(scan_attempted),
-            int(signature_ready), int(signature_attempted),
-            int(sbom_ready), int(sbom_attempted),
+            int(total),
+            int(scan_ready),
+            int(scan_attempted),
+            int(signature_ready),
+            int(signature_attempted),
+            int(sbom_ready),
+            int(sbom_attempted),
         )
         for (
-            provider_id, total, scan_ready, scan_attempted,
-            signature_ready, signature_attempted, sbom_ready, sbom_attempted,
+            provider_id,
+            total,
+            scan_ready,
+            scan_attempted,
+            signature_ready,
+            signature_attempted,
+            sbom_ready,
+            sbom_attempted,
         ) in grouped
     }
     rows: list[dict[str, Any]] = []
@@ -425,37 +431,39 @@ def _security_source_capabilities(
         )
         collector = collectors.get(source.provider_key)
         capabilities = collector.capabilities if collector is not None else frozenset()
-        rows.append({
-            'source_name': source.name,
-            'provider_label': source.provider_key.replace('_', ' ').title(),
-            'artifact_count': total,
-            'coverage': {
-                'vulnerability': scan_ready,
-                'signature': signature_ready,
-                'sbom': sbom_ready,
-            },
-            'vulnerability': _capability_state(
-                supported='vulnerability' in capabilities,
-                observed=bool(scan_ready),
-                attempted=bool(scan_attempted),
-                observed_count=scan_ready,
-                artifact_total=total,
-            ),
-            'signature': _capability_state(
-                supported='signature' in capabilities,
-                observed=bool(signature_ready),
-                attempted=bool(signature_attempted),
-                observed_count=signature_ready,
-                artifact_total=total,
-            ),
-            'sbom': _capability_state(
-                supported='sbom' in capabilities,
-                observed=bool(sbom_ready),
-                attempted=bool(sbom_attempted),
-                observed_count=sbom_ready,
-                artifact_total=total,
-            ),
-        })
+        rows.append(
+            {
+                'source_name': source.name,
+                'provider_label': source.provider_key.replace('_', ' ').title(),
+                'artifact_count': total,
+                'coverage': {
+                    'vulnerability': scan_ready,
+                    'signature': signature_ready,
+                    'sbom': sbom_ready,
+                },
+                'vulnerability': _capability_state(
+                    supported='vulnerability' in capabilities,
+                    observed=bool(scan_ready),
+                    attempted=bool(scan_attempted),
+                    observed_count=scan_ready,
+                    artifact_total=total,
+                ),
+                'signature': _capability_state(
+                    supported='signature' in capabilities,
+                    observed=bool(signature_ready),
+                    attempted=bool(signature_attempted),
+                    observed_count=signature_ready,
+                    artifact_total=total,
+                ),
+                'sbom': _capability_state(
+                    supported='sbom' in capabilities,
+                    observed=bool(sbom_ready),
+                    attempted=bool(sbom_attempted),
+                    observed_count=sbom_ready,
+                    artifact_total=total,
+                ),
+            }
+        )
     return rows
 
 
@@ -503,7 +511,9 @@ def _security_vulnerability_page(
         else_=5,
     )
     page_items, pagination = paginate_query(
-        query.order_by(severity_rank.asc(), RegistryVulnerability.vulnerability_id.asc(), RegistryVulnerability.id.asc()),
+        query.order_by(
+            severity_rank.asc(), RegistryVulnerability.vulnerability_id.asc(), RegistryVulnerability.id.asc()
+        ),
         page=page,
         per_page=per_page,
     )
@@ -587,22 +597,24 @@ def _security_supply_evidence_page(
         per_page=per_page,
     )
     artifact_ids = [int(artifact.id) for artifact in page_items]
-    latest_security_at = dict(
-        RegistryScanSnapshot.query.with_entities(
-            RegistryScanSnapshot.artifact_id,
-            func.max(RegistryScanSnapshot.observed_at),
+    latest_security_at = (
+        dict(
+            RegistryScanSnapshot.query.with_entities(
+                RegistryScanSnapshot.artifact_id,
+                func.max(RegistryScanSnapshot.observed_at),
+            )
+            .filter(RegistryScanSnapshot.artifact_id.in_(artifact_ids))
+            .group_by(RegistryScanSnapshot.artifact_id)
+            .all()
         )
-        .filter(RegistryScanSnapshot.artifact_id.in_(artifact_ids))
-        .group_by(RegistryScanSnapshot.artifact_id)
-        .all()
-    ) if artifact_ids else {}
+        if artifact_ids
+        else {}
+    )
     rows: list[dict[str, Any]] = []
     for artifact in page_items:
         security_at = latest_security_at.get(int(artifact.id))
         artifact_freshness = _freshness(security_at)
-        if security_at is None and (
-            artifact.signature_status is not None or artifact.sbom_status is not None
-        ):
+        if security_at is None and (artifact.signature_status is not None or artifact.sbom_status is not None):
             artifact_freshness = {'label': 'Age Unverified', 'tone': 'warning'}
         repository = artifact.repository
         project = repository.project
@@ -782,20 +794,28 @@ def build_security(
         source_label=source_label,
         view=view,
     )
-    capability_sources = [
-        source for source in scoped_sources
-        if not search_value
-        or search_value in f'{source.name} {source.provider_key.replace("_", " ")}'.lower()
-    ] if view == 'supply_chain' and supply_section == 'capabilities' else []
+    capability_sources = (
+        [
+            source
+            for source in scoped_sources
+            if not search_value or search_value in f'{source.name} {source.provider_key.replace("_", " ")}'.lower()
+        ]
+        if view == 'supply_chain' and supply_section == 'capabilities'
+        else []
+    )
     visible_capability_sources, capability_pagination = paginate_sequence(
         capability_sources,
         page=page,
         per_page=per_page,
     )
-    capability_rows = _security_source_capabilities(
-        visible_capability_sources,
-        evidence_filter=evidence['evidence_filter'],
-    ) if visible_capability_sources else []
+    capability_rows = (
+        _security_source_capabilities(
+            visible_capability_sources,
+            evidence_filter=evidence['evidence_filter'],
+        )
+        if visible_capability_sources
+        else []
+    )
     source_capabilities = capability_rows
 
     rows: list[dict[str, Any]] = []

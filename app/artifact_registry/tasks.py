@@ -92,7 +92,8 @@ def sync_all_registry_task(
                 or requested_by_user_id is None
                 or int(empty_reconciliation.get('confirmed_by_user_id') or 0) != requested_by_user_id
                 or len(targets) != 1
-                or int(targets[0]['integration_instance_id']) != int(empty_reconciliation.get('integration_instance_id') or 0)
+                or int(targets[0]['integration_instance_id'])
+                != int(empty_reconciliation.get('integration_instance_id') or 0)
             ):
                 raise RuntimeError('Registry confirmed-empty job scope or operator evidence is invalid.')
         for index, target in enumerate(targets, start=1):

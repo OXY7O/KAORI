@@ -219,9 +219,7 @@ def sync_registry_security_source_task(
         repository_failure_count = int(provider_metadata.get('repository_failure_count') or len(repository_failures))
         result['repository_failure_count'] = repository_failure_count
         report_failures = list(provider_metadata.get('report_failures') or [])
-        result['report_failure_count'] = int(
-            provider_metadata.get('report_failure_count') or len(report_failures)
-        )
+        result['report_failure_count'] = int(provider_metadata.get('report_failure_count') or len(report_failures))
 
         warning_evidence: list[dict[str, str]] = []
         for failure in repository_failures:
@@ -241,16 +239,18 @@ def sync_registry_security_source_task(
         for failure in report_failures:
             if not isinstance(failure, dict):
                 continue
-            warning_evidence.append({
-                'integration_instance_id': source_key,
-                'instance_name': instance_name,
-                'provider_key': result['provider_key'],
-                'project_name': str(failure.get('project_name') or ''),
-                'repository_name': str(failure.get('repository_name') or ''),
-                'digest': str(failure.get('digest') or ''),
-                'error_type': 'VulnerabilityReportIncomplete',
-                'message': str(failure.get('message') or '')[:500],
-            })
+            warning_evidence.append(
+                {
+                    'integration_instance_id': source_key,
+                    'instance_name': instance_name,
+                    'provider_key': result['provider_key'],
+                    'project_name': str(failure.get('project_name') or ''),
+                    'repository_name': str(failure.get('repository_name') or ''),
+                    'digest': str(failure.get('digest') or ''),
+                    'error_type': 'VulnerabilityReportIncomplete',
+                    'message': str(failure.get('message') or '')[:500],
+                }
+            )
         result['warning_evidence'] = warning_evidence[:50]
         result['status'] = 'warning' if repository_failure_count or result['report_failure_count'] else 'success'
     except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:

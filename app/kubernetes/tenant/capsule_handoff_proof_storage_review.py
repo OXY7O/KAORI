@@ -5,6 +5,7 @@ docket. This cannot establish schema installed, actual DB write-once
 permissions, anti-replay retention, a Vault/KMS trust root or authentic
 human/controller authority. There is no INSERT/COMMIT or provider call.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -31,23 +32,38 @@ def _datetime(value: Any) -> datetime:
 
 
 def inspect_capsule_proof_storage(
-    *, resource_report: Mapping[str, Any],
+    *,
+    resource_report: Mapping[str, Any],
     collector_receipt_review: Mapping[str, Any],
     consent_review: Mapping[str, Any],
-    requester_user_id: int, reviewer_user_id: int,
+    requester_user_id: int,
+    reviewer_user_id: int,
     successor_user_id: int,
-    batch_rows: list[Any], consent_rows: list[Any],
+    batch_rows: list[Any],
+    consent_rows: list[Any],
 ) -> dict[str, Any]:
     """Validate exact *shape* of up to one batch/consent for a Tenant plan."""
     if (
-        not all(isinstance(x, Mapping) for x in (
-            resource_report, collector_receipt_review, consent_review,
-        ))
-        or not isinstance(batch_rows, list) or not isinstance(consent_rows, list)
-        or len(batch_rows) > 1 or len(consent_rows) > 1
-        or any(type(x) is not int or x <= 0 for x in (
-            requester_user_id, reviewer_user_id, successor_user_id,
-        ))
+        not all(
+            isinstance(x, Mapping)
+            for x in (
+                resource_report,
+                collector_receipt_review,
+                consent_review,
+            )
+        )
+        or not isinstance(batch_rows, list)
+        or not isinstance(consent_rows, list)
+        or len(batch_rows) > 1
+        or len(consent_rows) > 1
+        or any(
+            type(x) is not int or x <= 0
+            for x in (
+                requester_user_id,
+                reviewer_user_id,
+                successor_user_id,
+            )
+        )
         or len({requester_user_id, reviewer_user_id, successor_user_id}) != 3
         or collector_receipt_review.get('collector_mac_verified') is not True
         or collector_receipt_review.get('apiserver_audit_integrity_verified') is not False
@@ -60,9 +76,15 @@ def inspect_capsule_proof_storage(
     worklist_sha = resource_report.get('worklist_sha256')
     tenant_id = resource_report.get('tenant_id')
     if (
-        not all(isinstance(x, str) and x for x in (
-            plan_sha, scope_sha, worklist_sha, tenant_id,
-        ))
+        not all(
+            isinstance(x, str) and x
+            for x in (
+                plan_sha,
+                scope_sha,
+                worklist_sha,
+                tenant_id,
+            )
+        )
         or any(
             collector_receipt_review.get(key) != resource_report.get(key)
             for key in ('tenant_id', 'plan_sha256', 'worklist_sha256', 'resource_review_sha256')
@@ -95,7 +117,8 @@ def inspect_capsule_proof_storage(
         }
         if (
             any(_field(batch, key) != val for key, val in expected.items())
-            or type(_field(batch, 'id')) is not int or _field(batch, 'id') <= 0
+            or type(_field(batch, 'id')) is not int
+            or _field(batch, 'id') <= 0
         ):
             raise ValueError('Committed Capsule audit batch is stale, replayed or cross-plan.')
         batch_recorded = _datetime(_field(batch, 'recorded_at'))
@@ -120,7 +143,8 @@ def inspect_capsule_proof_storage(
         }
         if (
             any(_field(consent, key) != val for key, val in expected.items())
-            or type(_field(consent, 'id')) is not int or _field(consent, 'id') <= 0
+            or type(_field(consent, 'id')) is not int
+            or _field(consent, 'id') <= 0
         ):
             raise ValueError('Committed Capsule successor consent changed its exact source scope.')
         accepted = _datetime(_field(consent, 'accepted_at'))
@@ -131,12 +155,15 @@ def inspect_capsule_proof_storage(
     return {
         'status': (
             'one_batch_and_consent_record_correlated_unattested'
-            if consent_rows else (
+            if consent_rows
+            else (
                 'batch_without_committed_consent_requires_manual_review'
-                if batch_rows else 'no_committed_proof_evidence_observed'
+                if batch_rows
+                else 'no_committed_proof_evidence_observed'
             )
         ),
-        'tenant_id': tenant_id, 'plan_sha256': plan_sha,
+        'tenant_id': tenant_id,
+        'plan_sha256': plan_sha,
         'worklist_sha256': worklist_sha,
         'resource_review_sha256': scope_sha,
         'batch_record_count': len(batch_rows),
@@ -160,32 +187,42 @@ def inspect_capsule_proof_storage(
 
 
 def read_capsule_proof_history(
-    *, tenant_id: str, resource_report: Mapping[str, Any],
+    *,
+    tenant_id: str,
+    resource_report: Mapping[str, Any],
     collector_receipt_review: Mapping[str, Any],
     consent_review: Mapping[str, Any],
-    requester_user_id: int, reviewer_user_id: int,
+    requester_user_id: int,
+    reviewer_user_id: int,
     successor_user_id: int,
 ) -> dict[str, Any]:
     """Bounded SELECT of *all* attempts for Tenant; never filter old plans away."""
     if (
-        not isinstance(tenant_id, str) or not tenant_id
+        not isinstance(tenant_id, str)
+        or not tenant_id
         or not isinstance(resource_report, Mapping)
         or resource_report.get('tenant_id') != tenant_id
     ):
         raise ValueError('Capsule proof history requires exact Tenant scope.')
     batches = (
         CapsuleHandoffAuditBatch.query.filter_by(tenant_id=tenant_id)
-        .order_by(CapsuleHandoffAuditBatch.id.asc()).limit(2).all()
+        .order_by(CapsuleHandoffAuditBatch.id.asc())
+        .limit(2)
+        .all()
     )
     consents = (
         CapsuleHandoffResourceConsentRecord.query.filter_by(tenant_id=tenant_id)
-        .order_by(CapsuleHandoffResourceConsentRecord.id.asc()).limit(2).all()
+        .order_by(CapsuleHandoffResourceConsentRecord.id.asc())
+        .limit(2)
+        .all()
     )
     return inspect_capsule_proof_storage(
         resource_report=resource_report,
         collector_receipt_review=collector_receipt_review,
         consent_review=consent_review,
-        requester_user_id=requester_user_id, reviewer_user_id=reviewer_user_id,
+        requester_user_id=requester_user_id,
+        reviewer_user_id=reviewer_user_id,
         successor_user_id=successor_user_id,
-        batch_rows=batches, consent_rows=consents,
+        batch_rows=batches,
+        consent_rows=consents,
     )

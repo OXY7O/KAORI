@@ -2,6 +2,7 @@
 
 Do NOT run migration, pytest, CI/CD, provider calls or live SQL under HOLD.
 """
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -26,17 +27,25 @@ def _scope():
     ]
     related_sha = _digest({'resources': [], 'lists': lists})
     global_quota = {
-        'served_version': 'v1beta2', 'list_resource_version': 'global-rv',
-        'resources': [], 'count': 0,
-    }
-    global_quota['scope_sha256'] = _digest({
-        'api_version': 'v1beta2', 'list_resource_version': 'global-rv',
+        'served_version': 'v1beta2',
+        'list_resource_version': 'global-rv',
         'resources': [],
-    })
+        'count': 0,
+    }
+    global_quota['scope_sha256'] = _digest(
+        {
+            'api_version': 'v1beta2',
+            'list_resource_version': 'global-rv',
+            'resources': [],
+        }
+    )
     components = [
         {
-            'kind': 'CapsuleTenant', 'name': 'demo', 'uid': 'cr-uid',
-            'resource_version': '3', 'authority': 'capsule',
+            'kind': 'CapsuleTenant',
+            'name': 'demo',
+            'uid': 'cr-uid',
+            'resource_version': '3',
+            'authority': 'capsule',
             'ownership': 'external_or_unattributed',
             'handoff': 'external_acceptance_required',
             'capsule_spec_sha256': 'a' * 64,
@@ -46,15 +55,22 @@ def _scope():
             'capsule_rbac_lineage_sha256': 'b' * 64,
         },
         {
-            'kind': 'Namespace', 'name': 'demo-dev', 'namespace': 'demo-dev',
-            'uid': 'ns-uid', 'resource_version': '9',
-            'authority': 'capsule', 'ownership': 'kaori_marker_correlated',
+            'kind': 'Namespace',
+            'name': 'demo-dev',
+            'namespace': 'demo-dev',
+            'uid': 'ns-uid',
+            'resource_version': '9',
+            'authority': 'capsule',
+            'ownership': 'kaori_marker_correlated',
             'handoff': 'external_acceptance_required',
         },
     ]
     plan = {
-        'tenant_id': 'tenant-1', 'cluster_id': 'cluster-1', 'generation': 1,
-        'provider': 'capsule', 'requested_by': 10,
+        'tenant_id': 'tenant-1',
+        'cluster_id': 'cluster-1',
+        'generation': 1,
+        'provider': 'capsule',
+        'requested_by': 10,
         'requested_at': datetime.now(UTC).isoformat(),
         'handoff_fingerprint': handoff_fingerprint(components),
         'provider_identity': [
@@ -62,13 +78,16 @@ def _scope():
             {'kind': 'Namespace', 'name': 'demo-dev', 'uid': 'ns-uid', 'resource_version': '9'},
         ],
         'successor_owner': 'platform-team',
-        'change_reference': 'CHG-1011', 'handoff_components': components,
+        'change_reference': 'CHG-1011',
+        'handoff_components': components,
     }
     plan['plan_sha256'] = _plan_hash(plan)
     related = {
         'status': 'read_only_related_inventory',
-        'resources': [], 'resource_count': 0,
-        'list_snapshots': lists, 'resource_sha256': related_sha,
+        'resources': [],
+        'resource_count': 0,
+        'list_snapshots': lists,
+        'resource_sha256': related_sha,
         'global_quota': global_quota,
     }
     return plan, related
@@ -78,7 +97,8 @@ def _event(plan, related, *, event_type='started', prior=None, seconds=0):
     actor = 31 if event_type == 'recovery_reviewed' else 30
     worklist = build_capsule_handoff_worklist(plan=plan, related=related)
     count = sum(
-        item['decision'] in (
+        item['decision']
+        in (
             'candidate_kaori_metadata_handoff_review',
             'explicit_kaori_metadata_handoff_review',
         )
@@ -91,34 +111,46 @@ def _event(plan, related, *, event_type='started', prior=None, seconds=0):
         'attempt_id': '00000000-0000-4000-8000-000000000001',
         'sequence': prior['sequence'] + 1 if prior else 1,
         'event_at': when.isoformat(),
-        'tenant_id': plan['tenant_id'], 'cluster_id': plan['cluster_id'],
-        'generation': plan['generation'], 'plan_sha256': plan['plan_sha256'],
+        'tenant_id': plan['tenant_id'],
+        'cluster_id': plan['cluster_id'],
+        'generation': plan['generation'],
+        'plan_sha256': plan['plan_sha256'],
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'worklist_sha256': worklist['inventory_sha256'],
         'actor_user_id': actor,
         'previous_event_sha256': prior['event_sha256'] if prior else None,
         'event_sha256': None,
         'outcome': {
-            'started': 'unknown', 'partial': 'unknown',
+            'started': 'unknown',
+            'partial': 'unknown',
             'readback_candidate': 'readback_observed',
             'recovery_reviewed': 'review_only',
         }[event_type],
         'readback_sha256': None,
-        'expected_count': count, 'observed_count': 0,
-        'pending_count': 0, 'transferred_count': 0, 'ambiguous_count': 0,
-        'provider_handoff_verified': False, 'release_authorized': False,
-        'resume_authorized': False, 'auto_retry_authorized': False,
+        'expected_count': count,
+        'observed_count': 0,
+        'pending_count': 0,
+        'transferred_count': 0,
+        'ambiguous_count': 0,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+        'resume_authorized': False,
+        'auto_retry_authorized': False,
         'secret_material_persisted': False,
     }
     if event_type == 'readback_candidate':
         event.update(
             readback_sha256='e' * 64,
-            observed_count=count, pending_count=count,
+            observed_count=count,
+            pending_count=count,
         )
     if event_type == 'recovery_reviewed' and prior is not None:
         for key in (
-            'readback_sha256', 'observed_count', 'pending_count',
-            'transferred_count', 'ambiguous_count',
+            'readback_sha256',
+            'observed_count',
+            'pending_count',
+            'transferred_count',
+            'ambiguous_count',
         ):
             event[key] = prior[key]
     event['event_sha256'] = _event_checksum(event)
@@ -137,8 +169,10 @@ def _row(event, *, row_id):
 
 def _inspect(plan, related, rows):
     return ledger.inspect_capsule_ledger_rows(
-        plan=plan, related=related,
-        accepted_actor_user_id=30, rows=rows,
+        plan=plan,
+        related=related,
+        accepted_actor_user_id=30,
+        rows=rows,
     )
 
 
@@ -158,9 +192,14 @@ def test_started_and_partial_ledger_require_independent_recovery():
     first = _inspect(plan, related, [_row(start, row_id=10)])
     assert first['status'] == 'started_outcome_unknown_recovery_required'
     partial = _event(plan, related, event_type='partial', prior=start, seconds=3)
-    second = _inspect(plan, related, [
-        _row(start, row_id=10), _row(partial, row_id=11),
-    ])
+    second = _inspect(
+        plan,
+        related,
+        [
+            _row(start, row_id=10),
+            _row(partial, row_id=11),
+        ],
+    )
     assert second['status'] == 'partial_handoff_recovery_required'
     assert second['db_write_once_triggers_verified'] is False
     assert second['auto_retry_authorized'] is False
@@ -171,17 +210,28 @@ def test_reviewed_readback_claim_is_not_verified_provider_handoff():
     plan, related = _scope()
     start = _event(plan, related)
     candidate = _event(
-        plan, related, event_type='readback_candidate', prior=start, seconds=3,
+        plan,
+        related,
+        event_type='readback_candidate',
+        prior=start,
+        seconds=3,
     )
     review = _event(
-        plan, related, event_type='recovery_reviewed', prior=candidate,
+        plan,
+        related,
+        event_type='recovery_reviewed',
+        prior=candidate,
         seconds=6,
     )
-    state = _inspect(plan, related, [
-        _row(start, row_id=15),
-        _row(candidate, row_id=16),
-        _row(review, row_id=17),
-    ])
+    state = _inspect(
+        plan,
+        related,
+        [
+            _row(start, row_id=15),
+            _row(candidate, row_id=16),
+            _row(review, row_id=17),
+        ],
+    )
     assert state['status'] == 'manual_review_recorded_no_retry_granted'
     assert state['ledger_record_count'] == 3
     assert state['provider_handoff_verified'] is False
@@ -189,16 +239,19 @@ def test_reviewed_readback_claim_is_not_verified_provider_handoff():
     assert state['transactional_start_commit_verified'] is False
 
 
-@pytest.mark.parametrize('corruption', [
-    lambda r: r.update(plan_sha256='f' * 64),
-    lambda r: r.update(sequence=9),
-    lambda r: r.update(event_sha256='0' * 64),
-    lambda r: r.update(actor_user_id=29),
-    lambda r: r.update(attempt_id='00000000-0000-4000-8000-000000000009'),
-    lambda r: r.update(event_at=datetime.now(UTC) + timedelta(days=1)),
-    lambda r: r.update(recorded_at=None),
-    lambda r: r.update(event_json={'secret': 'not-a-valid-event'}),
-])
+@pytest.mark.parametrize(
+    'corruption',
+    [
+        lambda r: r.update(plan_sha256='f' * 64),
+        lambda r: r.update(sequence=9),
+        lambda r: r.update(event_sha256='0' * 64),
+        lambda r: r.update(actor_user_id=29),
+        lambda r: r.update(attempt_id='00000000-0000-4000-8000-000000000009'),
+        lambda r: r.update(event_at=datetime.now(UTC) + timedelta(days=1)),
+        lambda r: r.update(recorded_at=None),
+        lambda r: r.update(event_json={'secret': 'not-a-valid-event'}),
+    ],
+)
 def test_indexed_columns_payload_or_event_time_drift_fail_closed(corruption):
     plan, related = _scope()
     row = _row(_event(plan, related), row_id=50)
@@ -247,11 +300,14 @@ def test_sql_reader_is_only_bounded_select_not_a_writer(monkeypatch):
 
     query = Query()
     monkeypatch.setattr(
-        ledger, 'CapsuleHandoffLedgerEvent',
+        ledger,
+        'CapsuleHandoffLedgerEvent',
         SimpleNamespace(query=query, id=Column()),
     )
     result = ledger.read_capsule_ledger_history(
-        tenant_id='tenant-1', plan=plan, related=related,
+        tenant_id='tenant-1',
+        plan=plan,
+        related=related,
         accepted_actor_user_id=30,
     )
     assert result['append_authorized'] is False
@@ -261,9 +317,7 @@ def test_sql_reader_is_only_bounded_select_not_a_writer(monkeypatch):
 
 
 def test_migration_source_has_write_once_triggers_fencing_and_no_data_drop():
-    source = Path(
-        'migrations/versions/20261011_capsule_handoff_write_once_ledger.py'
-    ).read_text()
+    source = Path('migrations/versions/20261011_capsule_handoff_write_once_ledger.py').read_text()
     assert "down_revision = '20261009_tenant_released'" in source
     assert 'FOR UPDATE' in source  # PostgreSQL Tenant-scope write lock
     assert 'tr_capsule_ledger_deny_update' in source

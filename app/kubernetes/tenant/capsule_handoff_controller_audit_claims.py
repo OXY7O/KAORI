@@ -5,6 +5,7 @@ created a RoleBinding, quota or limit. Only a separately validated apiserver
 audit collection and principal trust root may elevate source authentication;
 this pure correlation never authorizes provider mutation or Release.
 """
+
 from __future__ import annotations
 
 import re
@@ -17,12 +18,26 @@ from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 
 _SHA = re.compile(r'[a-f0-9]{64}\Z')
 _MAX_CLAIMS = 330
-_FIELDS = frozenset({
-    'source', 'audit_id', 'event_at', 'stage', 'verb',
-    'cluster_id', 'tenant_id', 'kind', 'namespace', 'name',
-    'uid', 'resource_version', 'response_code',
-    'controller_principal_sha256', 'policy_sha256', 'metadata_sha256',
-})
+_FIELDS = frozenset(
+    {
+        'source',
+        'audit_id',
+        'event_at',
+        'stage',
+        'verb',
+        'cluster_id',
+        'tenant_id',
+        'kind',
+        'namespace',
+        'name',
+        'uid',
+        'resource_version',
+        'response_code',
+        'controller_principal_sha256',
+        'policy_sha256',
+        'metadata_sha256',
+    }
+)
 _KINDS = frozenset({'Namespace', 'ResourceQuota', 'LimitRange', 'RoleBinding'})
 
 
@@ -31,8 +46,11 @@ def _is_sha(value: Any) -> bool:
 
 
 def correlate_capsule_controller_audit_claims(
-    *, tenant_id: str, cluster_id: str,
-    resources: list[dict[str, Any]], claims: list[Mapping[str, Any]],
+    *,
+    tenant_id: str,
+    cluster_id: str,
+    resources: list[dict[str, Any]],
+    claims: list[Mapping[str, Any]],
 ) -> dict[str, Any]:
     """Bind asserted AuditEvent metadata to exact resource identity/digests.
 
@@ -40,10 +58,13 @@ def correlate_capsule_controller_audit_claims(
     No raw principal, RBAC subject, credential or audit object is returned.
     """
     if (
-        not isinstance(tenant_id, str) or not tenant_id
-        or not isinstance(cluster_id, str) or not cluster_id
+        not isinstance(tenant_id, str)
+        or not tenant_id
+        or not isinstance(cluster_id, str)
+        or not cluster_id
         or not isinstance(resources, list)
-        or not isinstance(claims, list) or len(claims) > _MAX_CLAIMS
+        or not isinstance(claims, list)
+        or len(claims) > _MAX_CLAIMS
     ):
         raise ValueError('Capsule audit-origin claims require bounded canonical scope.')
     candidate_keys: dict[tuple[str, str, str], dict[str, Any]] = {}
@@ -74,10 +95,12 @@ def correlate_capsule_controller_audit_claims(
         except (TypeError, ValueError, AttributeError, KeyError) as exc:
             raise ValueError('Capsule controller audit identity/time is invalid.') from exc
         if (
-            source is None or key in results
+            source is None
+            or key in results
             or str(audit_id) != record['audit_id']
             or record['audit_id'] in seen_audit_ids
-            or at.tzinfo is None or at.utcoffset() is None
+            or at.tzinfo is None
+            or at.utcoffset() is None
             or record['source'] != 'kubernetes_apiserver_audit'
             or record['stage'] != 'ResponseComplete'
             or record['verb'] not in ('create', 'patch', 'update')
@@ -91,9 +114,7 @@ def correlate_capsule_controller_audit_claims(
             or record['policy_sha256'] != source.get('policy_sha256')
             or record['metadata_sha256'] != source.get('metadata_sha256')
         ):
-            raise ValueError(
-                'Capsule audit claim does not match an exact KAORI resource scope.'
-            )
+            raise ValueError('Capsule audit claim does not match an exact KAORI resource scope.')
         seen_audit_ids.add(record['audit_id'])
         results[key] = _digest(dict(record))
     return {

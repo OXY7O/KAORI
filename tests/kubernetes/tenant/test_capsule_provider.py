@@ -242,9 +242,9 @@ def test_capsule_access_grants_require_served_v1beta2_schema_fields() -> None:
     assert snapshot.capabilities['access_grants_tenant'] is TenantCapabilityStatus.AVAILABLE
     assert snapshot.capabilities['access_grants_scoped'] is TenantCapabilityStatus.AVAILABLE
 
-    tenant['spec']['versions'][0]['schema']['openAPIV3Schema']['properties']['spec']['properties'][
-        'rules'
-    ]['items']['properties']['permissions']['properties'].pop('bindings')
+    tenant['spec']['versions'][0]['schema']['openAPIV3Schema']['properties']['spec']['properties']['rules']['items'][
+        'properties'
+    ]['permissions']['properties'].pop('bindings')
     missing_scoped = discover_capsule(_ApiClient([tenant]))
     assert missing_scoped.capabilities['access_grants_tenant'] is TenantCapabilityStatus.AVAILABLE
     assert missing_scoped.capabilities['access_grants_scoped'] is TenantCapabilityStatus.UNAVAILABLE

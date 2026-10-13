@@ -15,14 +15,13 @@
 {% if payload.registry_runtime_evidence is defined and payload.registry_runtime_evidence.status != 'ready' %}
     {% import 'components/operational_callout.html' as operational_callout %}
     <div class="p-4">
-        {{ operational_callout.render(
-            payload.registry_runtime_evidence.title,
-            payload.registry_runtime_evidence.description,
-            icon='waypoints',
-            tone='warning',
-            variant='semantic',
-            action_href=url_for('artifact_registry.runtime'),
-            action_label='Review Runtime Usage'
+        {{ operational_callout.render(payload.registry_runtime_evidence.title,
+                payload.registry_runtime_evidence.description,
+                icon='waypoints',
+                tone='warning',
+                variant='semantic',
+                action_href=url_for('artifact_registry.runtime') ,
+        action_label='Review Runtime Usage'
         ) }}
     </div>
 {% endif %}

@@ -176,7 +176,8 @@ def create_report_request(
     user_id: int | None,
 ) -> tuple[bool, list[str], Report | None]:
     form_state = get_form_state_from_form(
-        form, for_submission=True,
+        form,
+        for_submission=True,
     )
 
     errors = validate_form_state(

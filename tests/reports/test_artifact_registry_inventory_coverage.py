@@ -6,11 +6,18 @@ from app.reports.export.xlsx.standard import get_inventory_workbook_profile
 
 def test_inventory_retains_empty_project_and_repository_with_real_artifact_rows() -> None:
     artifact = SimpleNamespace(
-        digest='sha256:a', vulnerability_summary={'critical': 1},
-        tags=[SimpleNamespace(name='v1')], artifact_type='image',
+        digest='sha256:a',
+        vulnerability_summary={'critical': 1},
+        tags=[SimpleNamespace(name='v1')],
+        artifact_type='image',
         media_type='application/vnd.oci.image.manifest.v1+json',
-        size_bytes=1048576, scan_status='scanned', signature_status='signed',
-        sbom_status='available', push_time=None, pull_time=None, observed_at=None,
+        size_bytes=1048576,
+        scan_status='scanned',
+        signature_status='signed',
+        sbom_status='available',
+        push_time=None,
+        pull_time=None,
+        observed_at=None,
     )
     projects = [
         SimpleNamespace(name='empty-project', repositories=[], observed_at=None),

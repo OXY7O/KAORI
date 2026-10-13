@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.orm import aliased
 
-from app.common.pagination import paginate_sequence, paginate_query
+from app.common.pagination import paginate_query, paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.asset_owner_sources import paginate_bound_observability_source_rows
@@ -80,23 +80,22 @@ def _active_source_exists(integration_type: str, *, source_name: str | None = No
 
 
 def _minio_index_base_query():
-    return (
-        MinioInstance.query.join(MinioInstance.integration_instance)
-        .join(MinioInstance.object_storage_system)
-    )
+    return MinioInstance.query.join(MinioInstance.integration_instance).join(MinioInstance.object_storage_system)
 
 
 def _index_registry_query(query: MinioIndexQuery):
     rows = _minio_index_base_query()
     if query.query:
         term = f'%{query.query}%'
-        rows = rows.filter(or_(
-            IntegrationInstance.name.ilike(term),
-            ObjectStorageSystem.name.ilike(term),
-            IntegrationInstance.environment.ilike(term),
-            MinioInstance.compatibility_profile.ilike(term),
-            MinioInstance.declared_release.ilike(term),
-        ))
+        rows = rows.filter(
+            or_(
+                IntegrationInstance.name.ilike(term),
+                ObjectStorageSystem.name.ilike(term),
+                IntegrationInstance.environment.ilike(term),
+                MinioInstance.compatibility_profile.ilike(term),
+                MinioInstance.declared_release.ilike(term),
+            )
+        )
     if query.environment:
         rows = rows.filter(IntegrationInstance.environment == query.environment)
     if query.readiness:
@@ -110,13 +109,15 @@ def _index_coverage_query(query: MinioIndexQuery, *, metrics_exists, alerts_exis
     rows = _minio_index_base_query()
     if query.coverage_query:
         term = f'%{query.coverage_query}%'
-        rows = rows.filter(or_(
-            IntegrationInstance.name.ilike(term),
-            ObjectStorageSystem.name.ilike(term),
-            IntegrationInstance.environment.ilike(term),
-            _active_source_exists('metrics_source', source_name=term),
-            _active_source_exists('alert_source', source_name=term),
-        ))
+        rows = rows.filter(
+            or_(
+                IntegrationInstance.name.ilike(term),
+                ObjectStorageSystem.name.ilike(term),
+                IntegrationInstance.environment.ilike(term),
+                _active_source_exists('metrics_source', source_name=term),
+                _active_source_exists('alert_source', source_name=term),
+            )
+        )
     if query.coverage_environment:
         rows = rows.filter(IntegrationInstance.environment == query.coverage_environment)
     covered = and_(IntegrationInstance.readiness_status == 'ready', metrics_exists, alerts_exists)
@@ -167,26 +168,29 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
     )
     coverage_instances, coverage_pagination = paginate_query(
         _index_coverage_query(query, metrics_exists=metrics_exists, alerts_exists=alerts_exists),
-        page=query.coverage_page, per_page=query.coverage_per_page,
+        page=query.coverage_page,
+        per_page=query.coverage_per_page,
     )
 
     registry_rows: list[dict[str, Any]] = []
     for instance in registry_instances:
         metrics_binding = current_metrics_binding(instance)
         alert_binding = current_alert_binding(instance)
-        registry_rows.append({
-            'id': instance.id,
-            'name': instance.name,
-            'environment': instance.environment,
-            'endpoint': instance.endpoint,
-            'asset_name': instance.object_storage_system.name,
-            'readiness_status': instance.readiness_status or 'validation_required',
-            'compatibility_profile': instance.compatibility_profile,
-            'declared_release': instance.declared_release,
-            'metrics_status': _source_binding_status(metrics_source_for_binding(metrics_binding), metrics_binding),
-            'alert_status': _source_binding_status(alert_source_for_binding(alert_binding), alert_binding),
-            'binding_count': int(metrics_binding is not None) + int(alert_binding is not None),
-        })
+        registry_rows.append(
+            {
+                'id': instance.id,
+                'name': instance.name,
+                'environment': instance.environment,
+                'endpoint': instance.endpoint,
+                'asset_name': instance.object_storage_system.name,
+                'readiness_status': instance.readiness_status or 'validation_required',
+                'compatibility_profile': instance.compatibility_profile,
+                'declared_release': instance.declared_release,
+                'metrics_status': _source_binding_status(metrics_source_for_binding(metrics_binding), metrics_binding),
+                'alert_status': _source_binding_status(alert_source_for_binding(alert_binding), alert_binding),
+                'binding_count': int(metrics_binding is not None) + int(alert_binding is not None),
+            }
+        )
 
     coverage_rows: list[dict[str, Any]] = []
     for instance in coverage_instances:
@@ -196,28 +200,32 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
         alert_source = alert_source_for_binding(alert_binding)
         uncovered = metrics_binding is None or alert_binding is None
         attention = uncovered or instance.readiness_status != 'ready'
-        coverage_rows.append({
-            'asset_name': instance.object_storage_system.name,
-            'environment': instance.environment,
-            'instance': instance,
-            'api_status': _provider_status(instance),
-            'metrics_source': metrics_source,
-            'metrics_source_label': _metrics_source_label(metrics_source),
-            'metrics_status': _source_binding_status(metrics_source, metrics_binding),
-            'alert_source': alert_source,
-            'alert_status': _source_binding_status(alert_source, alert_binding),
-            'coverage_status': 'attention' if attention else 'ready',
-            'coverage_label': 'Attention' if attention else 'Ready',
-        })
+        coverage_rows.append(
+            {
+                'asset_name': instance.object_storage_system.name,
+                'environment': instance.environment,
+                'instance': instance,
+                'api_status': _provider_status(instance),
+                'metrics_source': metrics_source,
+                'metrics_source_label': _metrics_source_label(metrics_source),
+                'metrics_status': _source_binding_status(metrics_source, metrics_binding),
+                'alert_source': alert_source,
+                'alert_status': _source_binding_status(alert_source, alert_binding),
+                'coverage_status': 'attention' if attention else 'ready',
+                'coverage_label': 'Attention' if attention else 'Ready',
+            }
+        )
 
     all_environments = [
-        value for (value,) in db.session.query(IntegrationInstance.environment)
+        value
+        for (value,) in db.session.query(IntegrationInstance.environment)
         .join(MinioInstance, MinioInstance.integration_instance_id == IntegrationInstance.id)
-        .distinct().all() if value
+        .distinct()
+        .all()
+        if value
     ]
     compatibility_options = [
-        value for (value,) in db.session.query(MinioInstance.compatibility_profile)
-        .distinct().all() if value
+        value for (value,) in db.session.query(MinioInstance.compatibility_profile).distinct().all() if value
     ]
     return {
         'rows': registry_rows,
@@ -232,9 +240,7 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
         'selected_coverage_query': query.coverage_query,
         'selected_coverage_environment': query.coverage_environment,
         'selected_coverage_status': query.coverage_status,
-        'registry_has_active_filters': bool(
-            query.query or query.environment or query.readiness or query.compatibility
-        ),
+        'registry_has_active_filters': bool(query.query or query.environment or query.readiness or query.compatibility),
         'coverage_has_active_filters': bool(
             query.coverage_query or query.coverage_environment or query.coverage_status
         ),
@@ -343,8 +349,10 @@ def build_detail_context(
         ).count(),
         'inventory_status': 'ready' if inventory_current else 'unknown',
         'inventory_status_label': (
-            'Current Source Snapshot' if inventory_current
-            else 'Source Changed · Sync Required' if source_changed and inventory_observed_at
+            'Current Source Snapshot'
+            if inventory_current
+            else 'Source Changed · Sync Required'
+            if source_changed and inventory_observed_at
             else 'No Committed Inventory'
         ),
         'inventory_source_changed': source_changed,

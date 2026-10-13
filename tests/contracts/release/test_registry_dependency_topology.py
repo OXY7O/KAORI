@@ -29,7 +29,7 @@ def test_topology_is_a_bounded_committed_binding_projection() -> None:
     assert '_MAX_VISIBLE_BINDINGS = 45' in source
     assert 'omitted_bindings' in source
     assert 'runtime_correlation_evidence_readiness' in source
-    assert "confidence_by_edge" in source
+    assert 'confidence_by_edge' in source
     assert 'mixed' in source
     assert 'HarborProvider(' not in source
     assert 'requests.get(' not in source
@@ -41,10 +41,10 @@ def test_topology_routes_are_permission_scoped_and_linked_to_runtime() -> None:
     assert "@artifact_registry_bp.get('/runtime/topology')" in source
     assert "@artifact_registry_bp.get('/runtime/topology/data')" in source
     for name in ('runtime_topology', 'runtime_topology_data'):
-        signature = f'@permission_required(\'artifact_registry.view\')\ndef {name}('
+        signature = f"@permission_required('artifact_registry.view')\ndef {name}("
         assert signature in source
-    assert '_runtime_scope_id(\'source_id\')' in source
-    assert '_runtime_scope_id(\'artifact_id\')' in source
+    assert "_runtime_scope_id('source_id')" in source
+    assert "_runtime_scope_id('artifact_id')" in source
 
     runtime = RUNTIME.read_text(encoding='utf-8')
     # Level-three integrated tabs own navigation; the legacy duplicate CTA
@@ -58,7 +58,7 @@ def test_topology_reuses_shared_workspace_with_accessible_list_fallback() -> Non
     renderer = RENDERER.read_text(encoding='utf-8')
     assert STANDARD.exists()
     assert 'visualization.render(' in template
-    assert "snapshot_context_bar.render(" in template
+    assert 'snapshot_context_bar.render(' in template
     assert 'role="img"' in template
     assert 'Resource List' in template
     assert 'registry-topology-resource-rows' in template

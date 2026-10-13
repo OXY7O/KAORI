@@ -140,7 +140,12 @@ def _tenant_admin_section(value: str | None) -> str:
 
 
 _REGISTRY_DETAIL_KEYS = (
-    'page', 'per_page', 'search', 'cluster_id', 'environment', 'lifecycle_status',
+    'page',
+    'per_page',
+    'search',
+    'cluster_id',
+    'environment',
+    'lifecycle_status',
 )
 
 
@@ -155,8 +160,7 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
     if not rows:
         abort(404)
     state: dict[str, str] = {
-        key: str(request.values.get(f'registry_{key}') or '').strip()[:256]
-        for key in _REGISTRY_DETAIL_KEYS
+        key: str(request.values.get(f'registry_{key}') or '').strip()[:256] for key in _REGISTRY_DETAIL_KEYS
     }
     for key, fallback in (('page', 1), ('per_page', 5)):
         try:
@@ -164,13 +168,9 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
         except ValueError:
             number = fallback
         state[key] = str(number if number > 0 else fallback)
-    state['per_page'] = str(
-        int(state['per_page']) if int(state['per_page']) in {5, 10, 25, 50} else 5
-    )
+    state['per_page'] = str(int(state['per_page']) if int(state['per_page']) in {5, 10, 25, 50} else 5)
     context['row'] = rows[0]
-    context['tenant_namespace_profile_mapping'] = get_tenant_namespace_profile_mapping_context(
-        tenant_id
-    )
+    context['tenant_namespace_profile_mapping'] = get_tenant_namespace_profile_mapping_context(tenant_id)
     context['registry_state'] = state
     # A detail POST reopens its governed section after the HTMX swap. If a
     # lifecycle transition makes it ineligible, use the next permitted view;
@@ -184,7 +184,8 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
     if admin and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready':
         allowed_sections.add('release')
     if (
-        admin and tenant.provider_key == 'native_kubernetes'
+        admin
+        and tenant.provider_key == 'native_kubernetes'
         and tenant.lifecycle_status == 'released'
         and (tenant.provider_evidence_json or {}).get('release_governance', {}).get('release_mode') == 'managed_handoff'
     ):
@@ -195,25 +196,21 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
     elif requested_section == 'release' and 'handback' in allowed_sections:
         active_section = 'handback'
     else:
-        active_section = 'release' if 'release' in allowed_sections else (
-            'handback' if 'handback' in allowed_sections else 'provider'
+        active_section = (
+            'release'
+            if 'release' in allowed_sections
+            else ('handback' if 'handback' in allowed_sections else 'provider')
         )
     context['tenant_detail_open_section'] = active_section
     # Wizard navigation is presentation only. No step is treated as approved,
     # executable, or complete without the existing committed checks/services.
     steps = ('scope', 'handoff', 'approval', 'finalize')
-    requested_step = str(
-        request.values.get('tenant_release_step')
-        or request.values.get('release_step')
-        or 'scope'
-    ).strip().lower()
-    context['tenant_release_step'] = (
-        requested_step if requested_step in steps else 'scope'
+    requested_step = (
+        str(request.values.get('tenant_release_step') or request.values.get('release_step') or 'scope').strip().lower()
     )
+    context['tenant_release_step'] = requested_step if requested_step in steps else 'scope'
     context['tenant_release_step_index'] = steps.index(context['tenant_release_step']) + 1
-    registry_query = {
-        f'registry_{key}': value for key, value in state.items() if value
-    }
+    registry_query = {f'registry_{key}': value for key, value in state.items() if value}
     context['tenant_release_step_urls'] = {
         step: url_for(
             'tenant.tenant_detail',
@@ -240,19 +237,23 @@ def _tenant_section_redirect(section: str):
     if resolved_section == 'registry' and detail_id:
         context = _tenant_detail_context(detail_id)
         if request.headers.get('HX-Request') != 'true':
-            return redirect(url_for(
-                'tenant.tenant_detail', tenant_id=detail_id,
-                tenant_detail_section=context['tenant_detail_open_section'],
-                release_step=context['tenant_release_step']
-                if context['tenant_detail_open_section'] == 'release' else None,
-                _anchor={
-                    'release': 'tenant-release-governance',
-                    'handback': 'tenant-native-handback',
-                    'provider': 'tenant-provider-authority',
-                    'lifecycle': 'tenant-lifecycle-actions',
-                }[context['tenant_detail_open_section']],
-                **{f'registry_{key}': value for key, value in context['registry_state'].items() if value},
-            ))
+            return redirect(
+                url_for(
+                    'tenant.tenant_detail',
+                    tenant_id=detail_id,
+                    tenant_detail_section=context['tenant_detail_open_section'],
+                    release_step=context['tenant_release_step']
+                    if context['tenant_detail_open_section'] == 'release'
+                    else None,
+                    _anchor={
+                        'release': 'tenant-release-governance',
+                        'handback': 'tenant-native-handback',
+                        'provider': 'tenant-provider-authority',
+                        'lifecycle': 'tenant-lifecycle-actions',
+                    }[context['tenant_detail_open_section']],
+                    **{f'registry_{key}': value for key, value in context['registry_state'].items() if value},
+                )
+            )
         feedback = getattr(g, 'tenant_operational_feedback', None)
         rendered = render_template(
             'kubernetes/tenant/partials/_tenant_management_detail.html',
@@ -309,11 +310,7 @@ def _registry_section_context() -> dict[str, Any]:
     # Registry form POSTs inherit only prefixed context values from the selected
     # expandable panel. Keep those distinct from provider mutation form fields.
     def field(name: str, default: str = '') -> str:
-        return str(
-            request.values.get(f'registry_{name}')
-            or request.values.get(name)
-            or default
-        )
+        return str(request.values.get(f'registry_{name}') or request.values.get(name) or default)
 
     def number(name: str, default: int) -> int:
         try:
@@ -334,8 +331,7 @@ def _registry_section_context() -> dict[str, Any]:
     # its ID. The selected Tenant must belong to the current authorized registry.
     requested = str(request.values.get('manage_tenant_id') or '').strip()
     context['managed_tenant_id'] = (
-        requested if any(str(row['tenant'].id) == requested for row in context['tenant_rows'])
-        else ''
+        requested if any(str(row['tenant'].id) == requested for row in context['tenant_rows']) else ''
     )
     return context
 

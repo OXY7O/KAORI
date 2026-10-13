@@ -68,11 +68,18 @@ def get_tenant_shell_context() -> dict[str, Any]:
     return {
         'ready_clusters': ready_clusters,
         'tenant_count': Tenant.query.filter(
-            Tenant.lifecycle_status.notin_((TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value))
+            Tenant.lifecycle_status.notin_(
+                (TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value)
+            )
         ).count(),
         'profile_count': TenantResourceProfile.query.count(),
         'namespace_count': TenantNamespace.query.filter(
-            TenantNamespace.provisioning_status.notin_((TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value))
+            TenantNamespace.provisioning_status.notin_(
+                (
+                    TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                    TenantNamespaceProvisioningStatus.RELEASED.value,
+                )
+            )
         ).count(),
         'ready_namespace_count': TenantNamespace.query.filter_by(
             provisioning_status=TenantNamespaceProvisioningStatus.READY.value
@@ -108,7 +115,10 @@ def get_resource_profile_workspace_context() -> dict[str, Any]:
             ).count(),
             'active_allocations': TenantNamespace.query.filter(
                 TenantNamespace.provisioning_status.notin_(
-                    (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+                    (
+                        TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                        TenantNamespaceProvisioningStatus.RELEASED.value,
+                    )
                 ),
                 TenantNamespace.resource_profile_id.isnot(None),
             ).count(),
@@ -171,8 +181,11 @@ def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[
         .filter(
             TenantNamespace.resource_profile_id.in_(profile_ids),
             TenantNamespace.provisioning_status.notin_(
-                    (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
-                ),
+                (
+                    TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                    TenantNamespaceProvisioningStatus.RELEASED.value,
+                )
+            ),
         )
         .group_by(
             TenantNamespace.resource_profile_id,
@@ -289,9 +302,12 @@ def get_tenant_registry_context(
         )
         for environment_row in environment_rows:
             environment_map.setdefault(environment_row.tenant_id, []).append(environment_row.environment)
-            capsule_environment_map.setdefault(environment_row.tenant_id, []).append({
-                'id': environment_row.id, 'environment': environment_row.environment,
-            })
+            capsule_environment_map.setdefault(environment_row.tenant_id, []).append(
+                {
+                    'id': environment_row.id,
+                    'environment': environment_row.environment,
+                }
+            )
 
         if include_decommission_preflight:
             namespace_history_rows = (
@@ -311,7 +327,10 @@ def get_tenant_registry_context(
             .filter(
                 TenantEnvironment.tenant_id.in_(tenant_ids),
                 TenantNamespace.provisioning_status.notin_(
-                    (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+                    (
+                        TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                        TenantNamespaceProvisioningStatus.RELEASED.value,
+                    )
                 ),
             )
             .group_by(TenantEnvironment.tenant_id)
@@ -340,12 +359,8 @@ def get_tenant_registry_context(
             .group_by(AuditEvent.target_id)
             .subquery()
         )
-        recent_rows = db.session.query(AuditEvent).join(
-            latest_ids, AuditEvent.id == latest_ids.c.id
-        ).all()
-        release_evidence = {
-            str(event.target_id): dict(event.metadata_json or {}) for event in recent_rows
-        }
+        recent_rows = db.session.query(AuditEvent).join(latest_ids, AuditEvent.id == latest_ids.c.id).all()
+        release_evidence = {str(event.target_id): dict(event.metadata_json or {}) for event in recent_rows}
 
     handoff_plans: dict[str, dict[str, Any]] = {}
     handoff_approvals: dict[str, dict[str, Any]] = {}
@@ -393,13 +408,8 @@ def get_tenant_registry_context(
                 .group_by(AuditEvent.target_id)
                 .subquery()
             )
-            rows = db.session.query(AuditEvent).join(
-                latest_ids, AuditEvent.id == latest_ids.c.id
-            ).all()
-            destination.update({
-                str(event.target_id): dict(event.metadata_json or {})
-                for event in rows
-            })
+            rows = db.session.query(AuditEvent).join(latest_ids, AuditEvent.id == latest_ids.c.id).all()
+            destination.update({str(event.target_id): dict(event.metadata_json or {}) for event in rows})
 
     # For restart eligibility, latest alone may hide an older partial
     # transfer behind a later no-transfer observation. Read committed history
@@ -411,12 +421,15 @@ def get_tenant_registry_context(
             db.session.query(AuditEvent)
             .filter(
                 AuditEvent.target_id.in_(tenant_ids),
-                AuditEvent.target_type.in_((
-                    'kubernetes_tenant_release_native_handoff_readback',
-                    'kubernetes_tenant_release_native_handoff_execution',
-                )),
+                AuditEvent.target_type.in_(
+                    (
+                        'kubernetes_tenant_release_native_handoff_readback',
+                        'kubernetes_tenant_release_native_handoff_execution',
+                    )
+                ),
             )
-            .order_by(AuditEvent.id.desc()).all()
+            .order_by(AuditEvent.id.desc())
+            .all()
         )
         for event in history_rows:
             destination = (
@@ -424,14 +437,12 @@ def get_tenant_registry_context(
                 if event.target_type == 'kubernetes_tenant_release_native_handoff_readback'
                 else execution_histories
             )
-            destination.setdefault(str(event.target_id), []).append(
-                dict(event.metadata_json or {})
-            )
+            destination.setdefault(str(event.target_id), []).append(dict(event.metadata_json or {}))
 
     # The read model uses the same eligibility predicate as the locked
     # preparation service. No provider read or independent plan decision here.
-    from app.kubernetes.tenant.release_handoff_approval import handoff_plan_preparation_state
     from app.kubernetes.tenant.native_release_readiness import project_native_release_readiness
+    from app.kubernetes.tenant.release_handoff_approval import handoff_plan_preparation_state
 
     tenant_rows: list[dict[str, Any]] = []
     for item in items:
@@ -449,7 +460,8 @@ def get_tenant_registry_context(
             row['release_handoff_plan'] = handoff_plans.get(item.id)
             row['release_handoff_approval'] = handoff_approvals.get(item.id)
             row['release_handoff_preparation_state'] = handoff_plan_preparation_state(
-                row['release_handoff_plan'], row['release_handoff_approval'],
+                row['release_handoff_plan'],
+                row['release_handoff_approval'],
             )
             row['release_native_handoff_dry_run'] = handoff_dry_runs.get(item.id)
             row['release_native_handoff_readback'] = handoff_readbacks.get(item.id)
@@ -463,12 +475,12 @@ def get_tenant_registry_context(
             # Only AuditEvent / committed Tenant state on normal UI GET.
             # Fresh Kubernetes verification occurs through an explicit POST.
             from app.kubernetes.tenant.release_handoff_approval import _checked_recently
+
             plan = row['native_residual_cleanup_plan'] or {}
             approved = row['native_residual_cleanup_approval'] or {}
-            row['native_residual_plan_current'] = (
-                plan.get('status') == 'pending_independent_review'
-                and _checked_recently(plan.get('requested_at'))
-            )
+            row['native_residual_plan_current'] = plan.get(
+                'status'
+            ) == 'pending_independent_review' and _checked_recently(plan.get('requested_at'))
             row['native_residual_approval_current'] = (
                 approved.get('status') == 'approved_for_exact_metadata_cleanup'
                 and _checked_recently(approved.get('approved_at'))
@@ -511,8 +523,7 @@ def get_tenant_registry_context(
                 and _checked_recently(capsule_review.get('approved_at'))
             )
             if item.provider_key == 'native_kubernetes' and (
-                row['release_handoff_plan']
-                or (row['release_preflight'] or {}).get('handoff_required_count')
+                row['release_handoff_plan'] or (row['release_preflight'] or {}).get('handoff_required_count')
             ):
                 row['native_release_readiness'] = project_native_release_readiness(
                     preflight=row['release_preflight'],
@@ -787,7 +798,9 @@ def _recorded_allocation_advanced_controls(record: TenantNamespace) -> dict[str,
             }
             for key, value in dict(controls).items()
             if isinstance(value, Mapping)
-        } if isinstance(controls, Mapping) else {},
+        }
+        if isinstance(controls, Mapping)
+        else {},
     }
 
 
@@ -843,9 +856,10 @@ def _namespace_allocation_state(namespace_options: list[TenantNamespace]) -> dic
     }
 
 
-
 def _matches_verified_native_profile_predecessor(
-    tenant: Tenant, current: Tenant, prior: Tenant | None,
+    tenant: Tenant,
+    current: Tenant,
+    prior: Tenant | None,
     lineage: Mapping[str, Any],
 ) -> bool:
     """Validate recorded Re-adoption handoff, not a name-only candidate."""
@@ -876,7 +890,9 @@ def _matches_verified_native_profile_predecessor(
 
 
 def _verified_native_profile_predecessors(
-    tenant: Tenant, *, limit: int = 5,
+    tenant: Tenant,
+    *,
+    limit: int = 5,
 ) -> list[Tenant]:
     """Follow only committed provider-UID-verified Re-adoption ancestry.
 
@@ -897,14 +913,18 @@ def _verified_native_profile_predecessors(
             break
         predecessor_id = lineage.get('predecessor_tenant_id')
         if (
-            not isinstance(predecessor_id, str) or not predecessor_id
+            not isinstance(predecessor_id, str)
+            or not predecessor_id
             or predecessor_id in seen
             or lineage.get('provider_uid_verified') is not True
         ):
             break
         prior = db.session.get(Tenant, predecessor_id)
         if not _matches_verified_native_profile_predecessor(
-            tenant, current, prior, lineage,
+            tenant,
+            current,
+            prior,
+            lineage,
         ):
             break
         ancestors.append(prior)
@@ -914,7 +934,8 @@ def _verified_native_profile_predecessors(
 
 
 def _committed_profile_history(
-    tenant: Tenant, records: list[TenantNamespace],
+    tenant: Tenant,
+    records: list[TenantNamespace],
 ) -> dict[tuple[str, str], list[dict[str, Any]]]:
     """Read a bounded provider-UID-verified predecessor snapshot set."""
     ancestors = _verified_native_profile_predecessors(tenant)
@@ -926,8 +947,7 @@ def _committed_profile_history(
         return {}
     ancestors_by_id = {item.id: item for item in ancestors}
     candidates = (
-        TenantNamespace.query
-        .join(
+        TenantNamespace.query.join(
             TenantEnvironment,
             TenantNamespace.tenant_environment_id == TenantEnvironment.id,
         )
@@ -940,11 +960,11 @@ def _committed_profile_history(
             TenantNamespace.cluster_id == tenant.cluster_id,
             TenantNamespace.namespace.in_(names),
             TenantNamespace.provider_reference.in_(uids),
-            TenantNamespace.provisioning_status
-            == TenantNamespaceProvisioningStatus.RELEASED.value,
+            TenantNamespace.provisioning_status == TenantNamespaceProvisioningStatus.RELEASED.value,
         )
         .order_by(
-            TenantNamespace.generation.desc(), TenantNamespace.id.desc(),
+            TenantNamespace.generation.desc(),
+            TenantNamespace.id.desc(),
         )
         .limit(75)
         .all()
@@ -957,36 +977,36 @@ def _committed_profile_history(
         if (
             prior_tenant is None
             or prior_tenant.provider_reference != previous.namespace
-            or previous.provider_reference != (
-                prior_tenant.provider_evidence_json or {}
-            ).get('provider_uid')
+            or previous.provider_reference != (prior_tenant.provider_evidence_json or {}).get('provider_uid')
         ):
             continue
         key = (previous.namespace, str(previous.provider_reference))
         dedup = (
-            prior_tenant_id, previous.namespace,
-            str(previous.provider_reference), previous.generation,
+            prior_tenant_id,
+            previous.namespace,
+            str(previous.provider_reference),
+            previous.generation,
         )
         if dedup in seen:
             continue
         seen.add(dedup)
         evidence = prior_tenant.provider_evidence_json or {}
         release = evidence.get('release_governance') or {}
-        result.setdefault(key, []).append({
-            'tenant_generation': prior_tenant.generation,
-            'namespace_generation': previous.generation,
-            'profile_name': _namespace_profile_name(previous),
-            'profile_version': _namespace_profile_version(previous),
-            'quota': dict(previous.allocation_quota_json or {}),
-            'released_at': release.get('released_at'),
-            'provider_uid': previous.provider_reference,
-            'status': 'Released',
-        })
+        result.setdefault(key, []).append(
+            {
+                'tenant_generation': prior_tenant.generation,
+                'namespace_generation': previous.generation,
+                'profile_name': _namespace_profile_name(previous),
+                'profile_version': _namespace_profile_version(previous),
+                'quota': dict(previous.allocation_quota_json or {}),
+                'released_at': release.get('released_at'),
+                'provider_uid': previous.provider_reference,
+                'status': 'Released',
+            }
+        )
     for history in result.values():
         history.sort(
-            key=lambda row: (
-                row['tenant_generation'], row['namespace_generation']
-            ),
+            key=lambda row: (row['tenant_generation'], row['namespace_generation']),
             reverse=True,
         )
         del history[5:]
@@ -994,7 +1014,9 @@ def _committed_profile_history(
 
 
 def get_tenant_namespace_profile_mapping_context(
-    tenant_id: str, *, limit: int = 5,
+    tenant_id: str,
+    *,
+    limit: int = 5,
 ) -> dict[str, Any]:
     """Bounded, committed-only Tenant → Namespace → profile lineage.
 
@@ -1004,30 +1026,26 @@ def get_tenant_namespace_profile_mapping_context(
     """
     if limit != 5:
         raise ValueError('Tenant Detail uses the canonical five-row preview.')
-    query = (
-        TenantNamespace.query
-        .join(
-            TenantEnvironment,
-            TenantNamespace.tenant_environment_id == TenantEnvironment.id,
-        )
-        .filter(TenantEnvironment.tenant_id == tenant_id)
-    )
+    query = TenantNamespace.query.join(
+        TenantEnvironment,
+        TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+    ).filter(TenantEnvironment.tenant_id == tenant_id)
     # Count independently of eager ORM loader options; materialize only five.
     total = query.count()
     records = (
         query.options(
             joinedload(TenantNamespace.environment),
             joinedload(TenantNamespace.resource_profile),
-        ).order_by(
-            TenantNamespace.created_at.desc(), TenantNamespace.id.desc(),
+        )
+        .order_by(
+            TenantNamespace.created_at.desc(),
+            TenantNamespace.id.desc(),
         )
         .limit(limit)
         .all()
     )
     tenant = db.session.get(Tenant, tenant_id)
-    history_by_provider = (
-        _committed_profile_history(tenant, records) if tenant else {}
-    )
+    history_by_provider = _committed_profile_history(tenant, records) if tenant else {}
     rows: list[dict[str, Any]] = []
     for record in records:
         evidence = record.provisioning_evidence_json or {}
@@ -1052,30 +1070,29 @@ def get_tenant_namespace_profile_mapping_context(
             TenantNamespaceProvisioningStatus.RELEASED.value,
             TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
         )
-        rows.append({
-            'namespace': record.namespace,
-            'environment': record.environment.environment,
-            'generation': record.generation,
-            'ownership_status': record.ownership_status,
-            'provisioning_status': record.provisioning_status,
-            'historical': historical,
-            'profile_name': name,
-            'profile_source': source,
-            'profile_public_id': (
-                record.resource_profile.public_id if attached else None
-            ),
-            'profile_version': _namespace_profile_version(record),
-            'allocation_customized': record.allocation_customized,
-            'control_state': allocation_control_state(record),
-            'quota': dict(record.allocation_quota_json or {}),
-            'last_reconciled_at_label': present_user_datetime(
-                record.last_reconciled_at, empty='No reconciliation timestamp',
-            ),
-            'provider_uid': record.provider_reference,
-            'verified_history': history_by_provider.get(
-                (record.namespace, str(record.provider_reference)), []
-            ),
-        })
+        rows.append(
+            {
+                'namespace': record.namespace,
+                'environment': record.environment.environment,
+                'generation': record.generation,
+                'ownership_status': record.ownership_status,
+                'provisioning_status': record.provisioning_status,
+                'historical': historical,
+                'profile_name': name,
+                'profile_source': source,
+                'profile_public_id': (record.resource_profile.public_id if attached else None),
+                'profile_version': _namespace_profile_version(record),
+                'allocation_customized': record.allocation_customized,
+                'control_state': allocation_control_state(record),
+                'quota': dict(record.allocation_quota_json or {}),
+                'last_reconciled_at_label': present_user_datetime(
+                    record.last_reconciled_at,
+                    empty='No reconciliation timestamp',
+                ),
+                'provider_uid': record.provider_reference,
+                'verified_history': history_by_provider.get((record.namespace, str(record.provider_reference)), []),
+            }
+        )
     return {'rows': rows, 'total': total, 'limit': limit}
 
 
@@ -1150,9 +1167,7 @@ def get_namespace_registry_context(
         return base_context
 
     namespace_options = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).all()
-    namespace_allocation_options, namespace_cutover_options = _allocation_workflow_target_options(
-        namespace_options
-    )
+    namespace_allocation_options, namespace_cutover_options = _allocation_workflow_target_options(namespace_options)
     namespace_cutover_state = {
         str(record.id): build_allocation_cutover_state(record) for record in namespace_cutover_options
     }
@@ -1209,8 +1224,8 @@ def get_tenant_context() -> dict[str, Any]:
     ).count()
     active_profile_allocation_count = TenantNamespace.query.filter(
         TenantNamespace.provisioning_status.notin_(
-                    (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
-                ),
+            (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+        ),
         TenantNamespace.resource_profile_id.isnot(None),
     ).count()
     return {

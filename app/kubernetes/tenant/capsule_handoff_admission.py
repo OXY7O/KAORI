@@ -7,6 +7,7 @@ The consumer MUST independently reload current records and perform a fresh
 authenticated provider SSR/SAR + preflight. A persisted receipt or a label is
 not a substitute for controller provenance or live Kubernetes authority.
 """
+
 from __future__ import annotations
 
 import re
@@ -15,11 +16,13 @@ from typing import Any
 
 from app.kubernetes.tenant.capsule_handoff_contract import validate_capsule_handoff_scope
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
-from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.capsule_handoff_resource_admission import assess_capsule_resource_handoff_scope
+from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.capsule_platform_admin_authority import _capsule_admin_scope
 from app.kubernetes.tenant.release_handoff_approval import (
-    _REQUIRED_DEPENDENCIES, _checked_recently, _plan_hash,
+    _REQUIRED_DEPENDENCIES,
+    _checked_recently,
+    _plan_hash,
 )
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 
@@ -32,8 +35,10 @@ def _sha(value: object) -> bool:
 
 def _identity(obj: Mapping[str, Any]) -> tuple[str, str, str, str]:
     return (
-        str(obj.get('namespace') or ''), str(obj.get('kind') or ''),
-        str(obj.get('name') or ''), str(obj.get('uid') or ''),
+        str(obj.get('namespace') or ''),
+        str(obj.get('kind') or ''),
+        str(obj.get('name') or ''),
+        str(obj.get('uid') or ''),
     )
 
 
@@ -43,8 +48,10 @@ def _safe_plan_inventory(plan: Mapping[str, Any]) -> tuple[Mapping[str, Any], li
     if not all(
         _sha(cr.get(field))
         for field in (
-            'capsule_spec_sha256', 'capsule_related_resources_sha256',
-            'capsule_shared_quota_sha256', 'capsule_rbac_lineage_sha256',
+            'capsule_spec_sha256',
+            'capsule_related_resources_sha256',
+            'capsule_shared_quota_sha256',
+            'capsule_rbac_lineage_sha256',
         )
     ):
         raise ValueError('Capsule approved plan lacks complete bound provider digests.')
@@ -56,7 +63,9 @@ def _safe_plan_inventory(plan: Mapping[str, Any]) -> tuple[Mapping[str, Any], li
 
 
 def _inspect_related(
-    *, snapshot: Mapping[str, Any], cr: Mapping[str, Any],
+    *,
+    snapshot: Mapping[str, Any],
+    cr: Mapping[str, Any],
     namespaces: list[dict[str, Any]],
 ) -> list[str]:
     """Check structural completeness; never promote correlated origins to proof."""
@@ -79,14 +88,9 @@ def _inspect_related(
         reasons.append('related_inventory_incomplete')
     else:
         expected = {
-            (item['name'], kind)
-            for item in namespaces
-            for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
+            (item['name'], kind) for item in namespaces for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
         }
-        actual = {
-            (item.get('namespace'), item.get('kind'))
-            for item in lists if isinstance(item, Mapping)
-        }
+        actual = {(item.get('namespace'), item.get('kind')) for item in lists if isinstance(item, Mapping)}
         if len(actual) != len(lists) or actual != expected:
             reasons.append('related_inventory_list_scope_changed')
         items = [_identity(item) for item in resources if isinstance(item, Mapping)]
@@ -104,19 +108,20 @@ def _inspect_related(
     # Residual managed grants, quotas or limits always require their own exact
     # source and successor authority handoff, irrespective of manager labels.
     if isinstance(resources, list) and any(
-        isinstance(row, Mapping) and row.get('origin') in ('kaori_correlated', 'ambiguous_kaori')
-        for row in resources
+        isinstance(row, Mapping) and row.get('origin') in ('kaori_correlated', 'ambiguous_kaori') for row in resources
     ):
         reasons.append('residual_kaori_resource_controls')
     quota = related.get('global_quota')
     if (
-        not isinstance(quota, Mapping) or quota.get('status') != 'observed_not_handoff_authorized'
+        not isinstance(quota, Mapping)
+        or quota.get('status') != 'observed_not_handoff_authorized'
         or quota.get('scope_sha256') != cr['capsule_shared_quota_sha256']
         or not _sha(quota.get('scope_sha256'))
         or not isinstance(quota.get('resources'), list)
         or type(quota.get('count')) is not int
         or quota['count'] != len(quota['resources'])
-        or not isinstance(quota.get('blockers'), list) or quota.get('blockers')
+        or not isinstance(quota.get('blockers'), list)
+        or quota.get('blockers')
     ):
         reasons.append('global_quota_provenance_incomplete')
     lineage = related.get('rbac_lineage')
@@ -126,7 +131,8 @@ def _inspect_related(
         or lineage.get('lineage_sha256') != cr['capsule_rbac_lineage_sha256']
         or not _sha(lineage.get('lineage_sha256'))
         or lineage.get('contract_correlated') is not True
-        or not isinstance(lineage.get('blockers'), list) or lineage.get('blockers')
+        or not isinstance(lineage.get('blockers'), list)
+        or lineage.get('blockers')
     ):
         reasons.append('rbac_contract_not_correlated')
     # Deliberate hard stop: controller-origin verification is not implemented.
@@ -137,7 +143,9 @@ def _inspect_related(
 
 
 def assess_capsule_handoff_admission(
-    *, tenant_id: str, actor_user_id: int,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
     plan: Mapping[str, Any] | None,
     approval: Mapping[str, Any] | None,
     acceptance: Mapping[str, Any] | None,
@@ -171,8 +179,10 @@ def assess_capsule_handoff_admission(
 
     sha = plan.get('plan_sha256')
     if (
-        plan.get('tenant_id') != tenant_id or plan.get('provider') != 'capsule'
-        or not _sha(sha) or _plan_hash(dict(plan)) != sha
+        plan.get('tenant_id') != tenant_id
+        or plan.get('provider') != 'capsule'
+        or not _sha(sha)
+        or _plan_hash(dict(plan)) != sha
         or not _checked_recently(plan.get('requested_at'))
         or type(plan.get('requested_by')) is not int
         or actor_user_id == plan.get('requested_by')
@@ -270,7 +280,8 @@ def assess_capsule_handoff_admission(
             problems.append('related_inventory_malformed')
         try:
             worklist = build_capsule_handoff_worklist(
-                plan=plan, related=preflight.get('capsule_related_inventory'),
+                plan=plan,
+                related=preflight.get('capsule_related_inventory'),
             )
         except (TypeError, ValueError, KeyError):
             problems.append('provider_preservation_worklist_incomplete')
@@ -279,7 +290,8 @@ def assess_capsule_handoff_admission(
             manual_review_count = worklist['manual_review_count']
             try:
                 provenance = assess_capsule_resource_handoff_scope(
-                    plan=plan, related=preflight.get('capsule_related_inventory'),
+                    plan=plan,
+                    related=preflight.get('capsule_related_inventory'),
                 )
             except (TypeError, ValueError, KeyError, OverflowError):
                 problems.append('resource_specific_provenance_review_incomplete')
@@ -324,11 +336,9 @@ def assess_capsule_handoff_admission(
     # implemented. Never emit 'ready' or enable dry-run/live provider mutation.
     return {
         'status': 'blocked_pending_capsule_provider_handoff',
-        'tenant_id': tenant_id, 'plan_sha256': sha if _sha(sha) else None,
-        'handoff_fingerprint': (
-            plan.get('handoff_fingerprint')
-            if _sha(plan.get('handoff_fingerprint')) else None
-        ),
+        'tenant_id': tenant_id,
+        'plan_sha256': sha if _sha(sha) else None,
+        'handoff_fingerprint': (plan.get('handoff_fingerprint') if _sha(plan.get('handoff_fingerprint')) else None),
         'consistent_preconditions': not problems,
         'blockers': sorted(set(problems)),
         'worklist_sha256': worklist_sha256,
@@ -337,8 +347,10 @@ def assess_capsule_handoff_admission(
         'per_resource_review_count': per_resource_review_count,
         'resource_specific_handoff_admitted': False,
         'controller_origin_verified': False,
-        'dry_run_admitted': False, 'provider_execution_admitted': False,
-        'resume_authorized': False, 'auto_retry_authorized': False,
+        'dry_run_admitted': False,
+        'provider_execution_admitted': False,
+        'resume_authorized': False,
+        'auto_retry_authorized': False,
         'provider_mutation_performed': False,
         'provider_handoff_verified': False,
         'release_authorized': False,

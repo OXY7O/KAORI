@@ -5,6 +5,11 @@ from flask_login import current_user
 from kubernetes.client.rest import ApiException
 
 from app.access.rbac.decorators import permission_required
+from app.kubernetes.tenant.access_drift_analysis import (
+    evaluate_native_access_drift_committed,
+    evaluate_tenant_access_drift_committed,
+)
+from app.kubernetes.tenant.access_remediation_plan import prepare_tenant_access_remediation_plan_committed
 from app.kubernetes.tenant.access_service import (
     TenantAccessStateConflictError,
     TenantGroupReconciliationError,
@@ -21,11 +26,6 @@ from app.kubernetes.tenant.access_service import (
     revoke_membership_by_id_committed,
     update_tenant_group_by_id_committed,
 )
-from app.kubernetes.tenant.access_drift_analysis import (
-    evaluate_native_access_drift_committed,
-    evaluate_tenant_access_drift_committed,
-)
-from app.kubernetes.tenant.access_remediation_plan import prepare_tenant_access_remediation_plan_committed
 from app.kubernetes.tenant.external_access_observation import observe_external_capsule_access_committed
 from app.kubernetes.tenant.external_access_profile_equivalence import (
     review_capsule_external_role_profile_committed,
@@ -65,8 +65,8 @@ def plan_capsule_access_remediation_route():
             status='success',
             title='Access Remediation Plan Prepared',
             message=(
-                f"{result['explicit_reconcile_count']} governed reconcile candidate(s), "
-                f"{result['manual_review_count']} manual review item(s)."
+                f'{result["explicit_reconcile_count"]} governed reconcile candidate(s), '
+                f'{result["manual_review_count"]} manual review item(s).'
             ),
             detail='No provider mutation; use existing Inspect/Reconcile only after approval.',
             metadata={'tenant_id': result['tenant_id'], 'operation': 'plan_access_remediation'},
@@ -97,7 +97,7 @@ def analyze_native_access_drift_route():
             event_type='kubernetes_tenant_native_access_drift_evaluated',
             status='warning' if result['finding_count'] else 'success',
             title='Native Access Declaration Analysis Recorded',
-            message=f"{result['finding_count']} RBAC declaration finding(s); no mutation.",
+            message=f'{result["finding_count"]} RBAC declaration finding(s); no mutation.',
             detail='Verify effective Role/RoleBinding permissions separately before remediation.',
             metadata={'tenant_id': result['tenant_id'], 'operation': 'analyze_native_access'},
         )
@@ -126,7 +126,7 @@ def analyze_capsule_external_access_route():
             event_type='kubernetes_tenant_access_drift_evaluated',
             status='warning' if result['finding_count'] else 'success',
             title='Tenant Access Evidence Evaluated',
-            message=f"{result['finding_count']} access declaration finding(s); no provider mutation.",
+            message=f'{result["finding_count"]} access declaration finding(s); no provider mutation.',
             detail='Inspect Kubernetes effective RBAC separately before remediation.',
             metadata={'tenant_id': result['tenant_id'], 'operation': 'analyze_tenant_access'},
         )
@@ -139,9 +139,7 @@ def observe_capsule_external_access_route():
     try:
         _csrf()
         tenant_id = str(request.form.get('tenant_id') or '').strip()
-        result = observe_external_capsule_access_committed(
-            tenant_id=tenant_id, actor_user_id=int(current_user.id)
-        )
+        result = observe_external_capsule_access_committed(tenant_id=tenant_id, actor_user_id=int(current_user.id))
     except (ApiException, ValueError) as exc:
         _record(
             event_type='kubernetes_tenant_external_access_observation_failed',
@@ -157,7 +155,7 @@ def observe_capsule_external_access_route():
             status='warning' if result['status'] == 'review_required' else 'success',
             title='External Capsule Access Observed',
             message=(
-                f"{result['external_count']} external bindings and {result['owner_count']} provider owners observed."
+                f'{result["external_count"]} external bindings and {result["owner_count"]} provider owners observed.'
             ),
             detail='No membership or RBAC mutation. Review external identities before governed takeover.',
             metadata={'tenant_id': result['tenant_id'], 'operation': 'observe_external_capsule_access'},
@@ -190,8 +188,8 @@ def observe_native_external_access_route():
             status='warning' if result['status'] == 'review_required' else 'success',
             title='Native Namespace RBAC Observed',
             message=(
-                f"{result['external_count']} external binding(s), "
-                f"{result['kaori_correlated_count']} KAORI-correlated binding(s)."
+                f'{result["external_count"]} external binding(s), '
+                f'{result["kaori_correlated_count"]} KAORI-correlated binding(s).'
             ),
             detail='Observation only; external access ownership requires separate human review.',
             metadata={'tenant_id': result['tenant_id'], 'operation': 'observe_external_native_access'},
@@ -214,22 +212,22 @@ def review_external_native_profile_route():
     except (ApiException, ValueError) as exc:
         _record(
             event_type='kubernetes_tenant_external_profile_review_blocked',
-            status='warning', title='External Role Profile Review Blocked',
-            message=str(exc), detail='No Identity, Grant or Kubernetes RBAC was changed.',
-            metadata={'tenant_id': request.form.get('tenant_id'),
-                      'operation': 'review_external_native_profile'},
+            status='warning',
+            title='External Role Profile Review Blocked',
+            message=str(exc),
+            detail='No Identity, Grant or Kubernetes RBAC was changed.',
+            metadata={'tenant_id': request.form.get('tenant_id'), 'operation': 'review_external_native_profile'},
         )
     else:
         _record(
             event_type='kubernetes_tenant_external_profile_review_recorded',
-            status='info', title='External Role Profile Evidence Recorded',
+            status='info',
+            title='External Role Profile Evidence Recorded',
             message=(
-                f"{result['role_kind']}/{result['role_name']} · "
-                f"{result['equivalent_profile'] or 'no exact profile'}"
+                f'{result["role_kind"]}/{result["role_name"]} · {result["equivalent_profile"] or "no exact profile"}'
             ),
             detail='Even exact role equivalence does not authorize identity import or RBAC change.',
-            metadata={'tenant_id': result['tenant_id'],
-                      'operation': 'review_external_native_profile'},
+            metadata={'tenant_id': result['tenant_id'], 'operation': 'review_external_native_profile'},
         )
     return _tenant_section_redirect('access-grants')
 
@@ -248,19 +246,20 @@ def review_external_capsule_profile_route():
     except (ApiException, ValueError) as exc:
         _record(
             event_type='kubernetes_tenant_capsule_profile_review_blocked',
-            status='warning', title='Capsule Profile Review Blocked',
-            message=str(exc), detail='No provider RBAC or KAORI grant was changed.',
-            metadata={'tenant_id': request.form.get('tenant_id'),
-                      'operation': 'review_external_capsule_profile'},
+            status='warning',
+            title='Capsule Profile Review Blocked',
+            message=str(exc),
+            detail='No provider RBAC or KAORI grant was changed.',
+            metadata={'tenant_id': request.form.get('tenant_id'), 'operation': 'review_external_capsule_profile'},
         )
     else:
         _record(
             event_type='kubernetes_tenant_capsule_profile_review_recorded',
-            status='info', title='Capsule External Profile Evidence Recorded',
-            message=f"{result['role_name']} · {result['equivalent_profile'] or 'no exact profile'}",
+            status='info',
+            title='Capsule External Profile Evidence Recorded',
+            message=f'{result["role_name"]} · {result["equivalent_profile"] or "no exact profile"}',
             detail='External identity/scope confirmation and explicit import are still required.',
-            metadata={'tenant_id': result['tenant_id'],
-                      'operation': 'review_external_capsule_profile'},
+            metadata={'tenant_id': result['tenant_id'], 'operation': 'review_external_capsule_profile'},
         )
     return _tenant_section_redirect('access-grants')
 
@@ -550,7 +549,8 @@ def create_access_grant_route():
             title='Tenant Access Granted' if grant.reconciliation_status == 'ready' else 'Grant Pending Verification',
             message=(
                 f'{grant.membership.subject_name} received {grant.access_profile.replace("_", " ").title()} access.'
-                if grant.reconciliation_status == 'ready' else 'Grant intent committed; effective provider access is not verified.'
+                if grant.reconciliation_status == 'ready'
+                else 'Grant intent committed; effective provider access is not verified.'
             ),
             detail=grant.reconciliation_message,
             metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'create_access_grant'},
@@ -608,7 +608,9 @@ def reconcile_access_grant_route(grant_id: int):
         _record(
             event_type='kubernetes_tenant_access_grant_reconciled',
             status='success' if grant.reconciliation_status in {'ready', 'revoked'} else 'warning',
-            title='Tenant Access Reconciled' if grant.reconciliation_status in {'ready', 'revoked'} else 'Reconciliation Needs Attention',
+            title='Tenant Access Reconciled'
+            if grant.reconciliation_status in {'ready', 'revoked'}
+            else 'Reconciliation Needs Attention',
             message=grant.reconciliation_message or 'Kubernetes RBAC matches committed Tenant access intent.',
             metadata={'grant_id': grant.public_id, 'operation': 'reconcile_access_grant'},
         )
@@ -636,7 +638,9 @@ def revoke_access_grant_route(grant_id: int):
         _record(
             event_type='kubernetes_tenant_access_grant_revoked',
             status='success' if grant.reconciliation_status == 'revoked' else 'warning',
-            title='Tenant Access Revoked' if grant.reconciliation_status == 'revoked' else 'Revoke Pending Verification',
+            title='Tenant Access Revoked'
+            if grant.reconciliation_status == 'revoked'
+            else 'Revoke Pending Verification',
             message=grant.reconciliation_message or 'Effective Kubernetes RoleBinding access requires verification.',
             metadata={'grant_id': grant.public_id, 'tenant_id': grant.tenant_id, 'operation': 'revoke_access_grant'},
         )

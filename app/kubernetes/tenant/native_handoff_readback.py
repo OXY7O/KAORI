@@ -38,10 +38,7 @@ _DRY_RUN_TARGET = 'kubernetes_tenant_release_native_handoff_dry_run'
 
 
 def latest_native_handoff_readback(tenant_id: str) -> dict[str, Any] | None:
-    row = (
-        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).first()
-    )
+    row = AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id).order_by(AuditEvent.id.desc()).first()
     return dict(row.metadata_json or {}) if row else None
 
 
@@ -51,55 +48,59 @@ def native_handoff_readback_history(tenant_id: str) -> list[dict[str, Any]]:
     Earlier partial/full transfers must not be hidden by a later zero-transfer
     read-back after an external rollback. This performs no provider reads.
     """
-    rows = (
-        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).all()
-    )
+    rows = AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id).order_by(AuditEvent.id.desc()).all()
     return [dict(row.metadata_json or {}) for row in rows]
 
 
 def _latest_native_dry_run(tenant_id: str) -> dict[str, Any] | None:
     row = (
         AuditEvent.query.filter_by(target_type=_DRY_RUN_TARGET, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).first()
+        .order_by(AuditEvent.id.desc())
+        .first()
     )
     return dict(row.metadata_json or {}) if row else None
 
 
 def verify_external_native_component(
-    *, before: dict[str, Any], current: Any, successor_owner: str,
+    *,
+    before: dict[str, Any],
+    current: Any,
+    successor_owner: str,
 ) -> dict[str, Any]:
     """Check exact preserved spec/foreign metadata against approved preview."""
     name, uid, rv, labels = _resource_metadata(current)
-    if (
-        (name, uid) != (before.get('name'), before.get('uid'))
-        or not rv or rv == before.get('resource_version')
-    ):
+    if (name, uid) != (before.get('name'), before.get('uid')) or not rv or rv == before.get('resource_version'):
         raise ValueError('Provider identity/resourceVersion did not show an accepted handoff.')
     if (
-        not successor_owner or successor_owner == 'kaori'
+        not successor_owner
+        or successor_owner == 'kaori'
         or labels.get('app.kubernetes.io/managed-by') != successor_owner
         or any(key in labels for key in _MARKER_KEYS if key != 'app.kubernetes.io/managed-by')
     ):
         raise ValueError('Successor provider ownership markers were not established.')
-    if (
-        before.get('spec_sha256') != _stable_sha256(_spec(current))
-        or before.get('retained_metadata_sha256')
-        != _stable_sha256(_retained_provider_metadata(current))
-    ):
+    if before.get('spec_sha256') != _stable_sha256(_spec(current)) or before.get(
+        'retained_metadata_sha256'
+    ) != _stable_sha256(_retained_provider_metadata(current)):
         raise ValueError('Provider spec or unrelated metadata changed during handoff.')
     if before.get('operation') != 'metadata_only_json_patch_dry_run':
         raise ValueError('No canonical Native dry-run component proof exists.')
     return {
-        'kind': before['kind'], 'name': name, 'uid': uid,
-        'resource_version': rv, 'successor_owner': successor_owner,
-        'spec_preserved': True, 'foreign_metadata_preserved': True,
+        'kind': before['kind'],
+        'name': name,
+        'uid': uid,
+        'resource_version': rv,
+        'successor_owner': successor_owner,
+        'spec_preserved': True,
+        'foreign_metadata_preserved': True,
         'provider_mutation_performed_by_kaori': False,
     }
 
 
 def observe_external_native_handoff_committed(
-    *, tenant_id: str, actor_user_id: int, plan_sha256: str,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
 ) -> dict[str, Any]:
     """Observe post-change Kubernetes objects; DO NOT authorize governance release."""
     plan = latest_release_handoff_plan(tenant_id)
@@ -107,7 +108,10 @@ def observe_external_native_handoff_committed(
     claim = latest_release_successor_claim(tenant_id)
     dry_run = _latest_native_dry_run(tenant_id)
     if (
-        not plan or not approval or not claim or not dry_run
+        not plan
+        or not approval
+        or not claim
+        or not dry_run
         or len(plan_sha256) != 64
         or plan.get('tenant_id') != tenant_id
         or plan.get('plan_sha256') != plan_sha256
@@ -134,9 +138,11 @@ def observe_external_native_handoff_committed(
         raise ValueError('A complete independent plan, successor reference and passed dry-run are required.')
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.provider_key != 'native_kubernetes'
+        tenant is None
+        or tenant.provider_key != 'native_kubernetes'
         or tenant.reconciliation_authority != 'native_kubernetes'
-        or tenant.provider_state != 'native' or tenant.ownership_status != 'adopted'
+        or tenant.provider_state != 'native'
+        or tenant.ownership_status != 'adopted'
         or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
         or tenant.cluster_id != plan.get('cluster_id')
         or tenant.generation != plan.get('generation')
@@ -147,7 +153,8 @@ def observe_external_native_handoff_committed(
         raise ValueError('Active Tenant governance dependencies block provider handoff acceptance.')
     expected = dry_run.get('previewed_components')
     if (
-        not isinstance(expected, list) or not expected
+        not isinstance(expected, list)
+        or not expected
         or len(expected) != dry_run.get('expected_component_count')
         or len(expected) > 100
     ):
@@ -157,12 +164,13 @@ def observe_external_native_handoff_committed(
         raise ValueError('Original handoff provider inventory is unavailable.')
     selection = {
         (item.get('namespace'), item.get('kind'), item.get('name'), item.get('uid'))
-        for item in approved if isinstance(item, dict)
-        and item.get('handoff') == 'external_acceptance_required'
+        for item in approved
+        if isinstance(item, dict) and item.get('handoff') == 'external_acceptance_required'
     }
     selected = [
         (item.get('namespace'), item.get('kind'), item.get('name'), item.get('uid'))
-        for item in expected if isinstance(item, dict)
+        for item in expected
+        if isinstance(item, dict)
     ]
     if len(selection) != len(selected) or set(selected) != selection:
         raise ValueError('Read-back target scope changed from the approved provider inventory.')
@@ -173,13 +181,17 @@ def observe_external_native_handoff_committed(
     live_components: dict[tuple[str, str, str, str], Any] = {}
     for component in expected:
         key = (
-            str(component.get('namespace') or ''), str(component['kind']),
-            str(component['name']), str(component['uid']),
+            str(component.get('namespace') or ''),
+            str(component['kind']),
+            str(component['name']),
+            str(component['uid']),
         )
         live_components[key] = _read_resource(core, component)
     recovery = summarize_native_handoff_recovery(
-        previewed_components=expected, live_components=live_components,
-        tenant_id=tenant_id, successor_owner=str(plan['successor_owner']),
+        previewed_components=expected,
+        live_components=live_components,
+        tenant_id=tenant_id,
+        successor_owner=str(plan['successor_owner']),
     )
     # Keep the existing full-transfer proof and status unchanged. Partial or
     # unchanged marker states can be observed but never complete provider handoff.
@@ -188,23 +200,26 @@ def observe_external_native_handoff_committed(
     if complete:
         for component in expected:
             key = (
-                str(component.get('namespace') or ''), str(component['kind']),
-                str(component['name']), str(component['uid']),
+                str(component.get('namespace') or ''),
+                str(component['kind']),
+                str(component['name']),
+                str(component['uid']),
             )
-            results.append(verify_external_native_component(
-                before=component, current=live_components[key],
-                successor_owner=str(plan['successor_owner']),
-            ))
+            results.append(
+                verify_external_native_component(
+                    before=component,
+                    current=live_components[key],
+                    successor_owner=str(plan['successor_owner']),
+                )
+            )
 
     receipt = {
-        'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
+        'tenant_id': tenant_id,
+        'cluster_id': tenant.cluster_id,
         'generation': tenant.generation,
         'plan_sha256': plan_sha256,
         'handoff_fingerprint': plan['handoff_fingerprint'],
-        'status': (
-            'provider_handoff_observed_acceptance_unverified'
-            if complete else recovery['status']
-        ),
+        'status': ('provider_handoff_observed_acceptance_unverified' if complete else recovery['status']),
         'observed_components': results if complete else recovery['components'],
         'observed_count': len(results) if complete else recovery['transferred_count'],
         'recovery': recovery,
@@ -216,17 +231,23 @@ def observe_external_native_handoff_committed(
         'release_authorized': False,
         'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action=(
-            'tenant.release.native_provider_handoff_observed'
-            if complete else 'tenant.release.native_provider_handoff_recovery_observed'
-        ),
-        summary=(
-            'Observed external provider marker transfer; acceptance unverified, Release blocked.'
-            if complete else 'Observed incomplete Native handoff; recovery required, Release blocked.'
-        ),
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action=(
+                'tenant.release.native_provider_handoff_observed'
+                if complete
+                else 'tenant.release.native_provider_handoff_recovery_observed'
+            ),
+            summary=(
+                'Observed external provider marker transfer; acceptance unverified, Release blocked.'
+                if complete
+                else 'Observed incomplete Native handoff; recovery required, Release blocked.'
+            ),
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt

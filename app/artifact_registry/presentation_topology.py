@@ -86,12 +86,14 @@ def build_dependency_topology(
         .limit(_MAX_VISIBLE_BINDINGS)
         .all()
     )
-    clusters = {
-        str(cluster.id): cluster.name
-        for cluster in Cluster.query.filter(
-            Cluster.id.in_({binding.cluster_id for binding in bindings})
-        ).all()
-    } if bindings else {}
+    clusters = (
+        {
+            str(cluster.id): cluster.name
+            for cluster in Cluster.query.filter(Cluster.id.in_({binding.cluster_id for binding in bindings})).all()
+        }
+        if bindings
+        else {}
+    )
     source_names = {int(source.id): source.name for source in sources}
 
     nodes: dict[str, dict[str, Any]] = {}
@@ -110,9 +112,7 @@ def build_dependency_topology(
     ) -> str:
         node_id = _node_id(kind, *identity)
         if node_id not in nodes:
-            nodes[node_id] = {
-                'data': {'id': node_id, 'type': kind, 'label': label, **data}
-            }
+            nodes[node_id] = {'data': {'id': node_id, 'type': kind, 'label': label, **data}}
         return node_id
 
     def add_edge(source: str, target: str, kind: str) -> str:
@@ -141,7 +141,9 @@ def build_dependency_topology(
         registry_name = source_names.get(int(project.integration_instance_id), 'Registry')
         artifact_label = f'{project.name}/{repository.name}'
         artifact_node = add_node(
-            'artifact', (artifact_pk,), artifact_label,
+            'artifact',
+            (artifact_pk,),
+            artifact_label,
             subtitle=artifact.digest[:25] + '…' if len(artifact.digest) > 25 else artifact.digest,
             digest=artifact.digest,
             source=registry_name,
@@ -156,35 +158,49 @@ def build_dependency_topology(
         cluster_label = clusters.get(cluster_key, cluster_key)
         branch_key = (artifact_pk, cluster_key)
         cluster_node = add_node(
-            'cluster', branch_key, cluster_label,
+            'cluster',
+            branch_key,
+            cluster_label,
             subtitle='Kubernetes Cluster',
             cluster_id=cluster_key,
         )
         namespace_key = (artifact_pk, cluster_key, binding.namespace)
         namespace_node = add_node(
-            'namespace', namespace_key, binding.namespace,
+            'namespace',
+            namespace_key,
+            binding.namespace,
             subtitle='Namespace',
         )
         workload_type = binding.workload_type or 'Workload'
         workload_name = binding.workload_name or 'Not Resolved'
         workload_key = (
-            str(artifact_pk), cluster_key, binding.namespace,
-            workload_type, workload_name,
+            str(artifact_pk),
+            cluster_key,
+            binding.namespace,
+            workload_type,
+            workload_name,
         )
         workload_node = None
         if binding.workload_name:
             workload_keys.add(workload_key)
             workload_node = add_node(
-                'workload', workload_key, workload_name,
+                'workload',
+                workload_key,
+                workload_name,
                 subtitle=workload_type,
             )
         pod_key = (
-            str(artifact_pk), cluster_key, binding.namespace,
-            'pod', binding.pod_name,
+            str(artifact_pk),
+            cluster_key,
+            binding.namespace,
+            'pod',
+            binding.pod_name,
         )
         pod_keys.add(pod_key)
         pod_node = add_node(
-            'pod', pod_key, binding.pod_name,
+            'pod',
+            pod_key,
+            binding.pod_name,
             subtitle='Pod',
         )
         usage_details = binding.details if isinstance(binding.details, dict) else {}
@@ -204,47 +220,49 @@ def build_dependency_topology(
             (cluster_node, namespace_node, 'contains'),
         ]
         if workload_node is not None:
-            relationships.extend([
-                (namespace_node, workload_node, 'contains'),
-                (workload_node, pod_node, 'owns'),
-            ])
+            relationships.extend(
+                [
+                    (namespace_node, workload_node, 'contains'),
+                    (workload_node, pod_node, 'owns'),
+                ]
+            )
         else:
             relationships.append((namespace_node, pod_node, 'contains'))
         for source, target, relationship in relationships:
             edge_key = add_edge(source, target, relationship)
             if relationship == 'runtime_usage':
                 confidence_by_edge[edge_key].add(confidence)
-        visible_bindings.append({
-            'id': int(binding.id),
-            'artifact_id': artifact_pk,
-            'artifact': artifact_label,
-            'digest': artifact.digest,
-            'source': registry_name,
-            'cluster': cluster_label,
-            'cluster_id': cluster_key,
-            'namespace': binding.namespace,
-            'workload': f'{workload_type}/{workload_name}',
-            'pod': binding.pod_name,
-            'containers': containers,
-            'match': match['label'],
-            'match_type': binding.match_type,
-            'confidence': match['confidence'],
-            'security': security['label'],
-            'critical': security['critical'],
-            'high': security['high'],
-            'image_reference': binding.image_reference,
-            'observed_at': _utc_text(binding.observed_at),
-            'registry_observed_at': usage_details.get('registry_observed_at'),
-            'pod_collected_at': usage_details.get('pod_collected_at'),
-            'node_id': pod_node,
-            'artifact_node_id': artifact_node,
-            'url': url_for('artifact_registry.runtime', artifact_id=artifact_pk),
-        })
+        visible_bindings.append(
+            {
+                'id': int(binding.id),
+                'artifact_id': artifact_pk,
+                'artifact': artifact_label,
+                'digest': artifact.digest,
+                'source': registry_name,
+                'cluster': cluster_label,
+                'cluster_id': cluster_key,
+                'namespace': binding.namespace,
+                'workload': f'{workload_type}/{workload_name}',
+                'pod': binding.pod_name,
+                'containers': containers,
+                'match': match['label'],
+                'match_type': binding.match_type,
+                'confidence': match['confidence'],
+                'security': security['label'],
+                'critical': security['critical'],
+                'high': security['high'],
+                'image_reference': binding.image_reference,
+                'observed_at': _utc_text(binding.observed_at),
+                'registry_observed_at': usage_details.get('registry_observed_at'),
+                'pod_collected_at': usage_details.get('pod_collected_at'),
+                'node_id': pod_node,
+                'artifact_node_id': artifact_node,
+                'url': url_for('artifact_registry.runtime', artifact_id=artifact_pk),
+            }
+        )
 
     for edge_id, confidences in confidence_by_edge.items():
-        edges[edge_id]['data']['confidence'] = (
-            next(iter(confidences)) if len(confidences) == 1 else 'mixed'
-        )
+        edges[edge_id]['data']['confidence'] = next(iter(confidences)) if len(confidences) == 1 else 'mixed'
 
     readiness = runtime_correlation_evidence_readiness(db.session)
     return {

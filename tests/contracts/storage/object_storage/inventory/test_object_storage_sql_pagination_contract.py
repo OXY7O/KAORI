@@ -18,17 +18,17 @@ def test_object_storage_lists_filter_before_sql_pagination() -> None:
     assert 'query = _filtered_systems(filters)' in source
     assert 'query = _filtered_buckets(filters)' in source
     assert source.count('paged, pagination = paginate_query(') == 2
-    assert "ObjectStorageSystem.id.asc()" in source
-    assert "ObjectStorageBucket.id.asc()" in source
+    assert 'ObjectStorageSystem.id.asc()' in source
+    assert 'ObjectStorageBucket.id.asc()' in source
 
 
 def test_object_storage_aggregate_snapshots_and_filters_do_not_materialize_fleet_orm_rows() -> None:
     source = read('app/storage/object_storage/inventory/presentation.py')
     assert 'def _committed_system_snapshot()' in source
-    assert "func.count(ObjectStorageSystem.inventory_observed_at)" in source
+    assert 'func.count(ObjectStorageSystem.inventory_observed_at)' in source
     assert "'snapshot': _committed_system_snapshot()" in source
-    assert "func.count(func.distinct(ObjectStorageBucket.object_storage_system_id))" in source
-    assert "func.count(func.distinct(IntegrationInstance.provider_key))" in source
+    assert 'func.count(func.distinct(ObjectStorageBucket.object_storage_system_id))' in source
+    assert 'func.count(func.distinct(IntegrationInstance.provider_key))' in source
     assert 'def _system_options()' in source
     assert '.distinct().all()' in source
     assert 'def _join_system_owner(query)' in source

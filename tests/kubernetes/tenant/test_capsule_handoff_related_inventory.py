@@ -2,6 +2,7 @@
 
 Authored only; no pytest or CI execution in DevContainer review HOLD.
 """
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -10,15 +11,27 @@ from types import SimpleNamespace
 import pytest
 
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
-    capsule_related_scope_unchanged, classify_capsule_related_resource,
+    capsule_related_scope_unchanged,
+    classify_capsule_related_resource,
     observe_capsule_related_inventory,
 )
 
 
-def _resource(kind='ResourceQuota', *, name='control', manager='capsule',
-              labels=None, owner_refs=None, uid='obj-uid', rv='9', spec=None):
+def _resource(
+    kind='ResourceQuota',
+    *,
+    name='control',
+    manager='capsule',
+    labels=None,
+    owner_refs=None,
+    uid='obj-uid',
+    rv='9',
+    spec=None,
+):
     observed_labels = (
-        labels if labels is not None else {
+        labels
+        if labels is not None
+        else {
             'app.kubernetes.io/managed-by': manager,
             'capsule.clastix.io/tenant': 'demo',
             'foreign.example/retain': 'true',
@@ -26,12 +39,15 @@ def _resource(kind='ResourceQuota', *, name='control', manager='capsule',
     )
     obj = SimpleNamespace(
         metadata=SimpleNamespace(
-            name=name, uid=uid, resource_version=rv, namespace='demo-dev',
-            labels=observed_labels, annotations={'foreign.example/note': 'unchanged'},
-            owner_references=owner_refs if owner_refs is not None else [
-                {'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2',
-                 'name': 'demo', 'uid': 'cr-uid'}
-            ],
+            name=name,
+            uid=uid,
+            resource_version=rv,
+            namespace='demo-dev',
+            labels=observed_labels,
+            annotations={'foreign.example/note': 'unchanged'},
+            owner_references=owner_refs
+            if owner_refs is not None
+            else [{'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2', 'name': 'demo', 'uid': 'cr-uid'}],
             finalizers=['capsule.clastix.io/preserve'],
         ),
     )
@@ -39,17 +55,26 @@ def _resource(kind='ResourceQuota', *, name='control', manager='capsule',
         obj.role_ref = {'kind': 'ClusterRole', 'name': 'view', 'apiGroup': 'rbac.authorization.k8s.io'}
         obj.subjects = [{'kind': 'User', 'name': 'external-user'}]
     else:
-        obj.spec = spec if spec is not None else (
-            {'hard': {'requests.cpu': '1'}} if kind == 'ResourceQuota'
-            else {'limits': [{'type': 'Container', 'max': {'memory': '1Gi'}}]}
+        obj.spec = (
+            spec
+            if spec is not None
+            else (
+                {'hard': {'requests.cpu': '1'}}
+                if kind == 'ResourceQuota'
+                else {'limits': [{'type': 'Container', 'max': {'memory': '1Gi'}}]}
+            )
         )
     return obj
 
 
 def _classify(item, *, kind='ResourceQuota'):
     return classify_capsule_related_resource(
-        resource=item, kind=kind, namespace='demo-dev',
-        tenant_id='tenant-uuid', capsule_name='demo', capsule_uid='cr-uid',
+        resource=item,
+        kind=kind,
+        namespace='demo-dev',
+        tenant_id='tenant-uuid',
+        capsule_name='demo',
+        capsule_uid='cr-uid',
     )
 
 
@@ -76,17 +101,26 @@ class _API:
 
 
 def _scope():
-    return [{
-        'kind': 'Namespace', 'authority': 'capsule',
-        'namespace': 'demo-dev', 'name': 'demo-dev',
-        'uid': 'ns-uid', 'resource_version': '7',
-    }]
+    return [
+        {
+            'kind': 'Namespace',
+            'authority': 'capsule',
+            'namespace': 'demo-dev',
+            'name': 'demo-dev',
+            'uid': 'ns-uid',
+            'resource_version': '7',
+        }
+    ]
 
 
 def _observe(core, rbac, scope=None):
     return observe_capsule_related_inventory(
-        core=core, rbac=rbac, namespace_components=scope if scope is not None else _scope(),
-        tenant_id='tenant-uuid', capsule_name='demo', capsule_uid='cr-uid',
+        core=core,
+        rbac=rbac,
+        namespace_components=scope if scope is not None else _scope(),
+        tenant_id='tenant-uuid',
+        capsule_name='demo',
+        capsule_uid='cr-uid',
     )
 
 
@@ -105,10 +139,12 @@ def test_capsule_namespaced_inventory_uses_only_methods_on_correct_kubernetes_sd
         ResourceQuota=[_resource(name='capsule-quota')],
         LimitRange=[_resource('LimitRange', name='capsule-limit')],
     )
-    rbac_spy = _API(RoleBinding=[
-        _resource('RoleBinding', name='capsule-namespace-deleter'),
-        _resource('RoleBinding', name='capsule-admin', uid='other-uid'),
-    ])
+    rbac_spy = _API(
+        RoleBinding=[
+            _resource('RoleBinding', name='capsule-namespace-deleter'),
+            _resource('RoleBinding', name='capsule-admin', uid='other-uid'),
+        ]
+    )
 
     class _CoreOnly:
         def list_namespaced_resource_quota(self, namespace, **kwargs):
@@ -130,8 +166,7 @@ def test_capsule_namespaced_inventory_uses_only_methods_on_correct_kubernetes_sd
     assert len(result['list_snapshots']) == 3
     assert [item[0] for item in core_spy.calls] == ['ResourceQuota', 'LimitRange']
     assert [item[0] for item in rbac_spy.calls] == ['RoleBinding']
-    assert all(call[2] == {'limit': 101, '_request_timeout': 5}
-               for call in core_spy.calls + rbac_spy.calls)
+    assert all(call[2] == {'limit': 101, '_request_timeout': 5} for call in core_spy.calls + rbac_spy.calls)
     assert result['provider_mutation_performed'] is False
     assert result['provider_handoff_verified'] is False
     assert result['release_authorized'] is False
@@ -140,10 +175,15 @@ def test_capsule_namespaced_inventory_uses_only_methods_on_correct_kubernetes_sd
 def test_provider_owned_and_external_policy_are_observed_not_claimed():
     items = [
         _resource(),
-        _resource('LimitRange', name='external', labels={
-            'app.kubernetes.io/managed-by': 'other-operator',
-            'foreign.example/retain': 'yes',
-        }, owner_refs=[]),
+        _resource(
+            'LimitRange',
+            name='external',
+            labels={
+                'app.kubernetes.io/managed-by': 'other-operator',
+                'foreign.example/retain': 'yes',
+            },
+            owner_refs=[],
+        ),
     ]
     first, problems = _classify(items[0])
     assert first['origin'] == 'capsule_provider' and problems == []
@@ -153,17 +193,22 @@ def test_provider_owned_and_external_policy_are_observed_not_claimed():
 
 
 def test_kaori_owned_allocation_or_access_is_visible_and_blocks_provider_handoff():
-    quota = _resource(labels={
-        'app.kubernetes.io/managed-by': 'kaori',
-        'kaori.io/tenant-id': 'tenant-uuid',
-        'capsule.clastix.io/tenant': 'demo',
-    })
-    grant = _resource('RoleBinding', labels={
-        'app.kubernetes.io/managed-by': 'kaori',
-        'kaori.io/tenant-id': 'tenant-uuid',
-        'kaori.io/access-grant': 'grant-id',
-        'capsule.clastix.io/tenant': 'demo',
-    })
+    quota = _resource(
+        labels={
+            'app.kubernetes.io/managed-by': 'kaori',
+            'kaori.io/tenant-id': 'tenant-uuid',
+            'capsule.clastix.io/tenant': 'demo',
+        }
+    )
+    grant = _resource(
+        'RoleBinding',
+        labels={
+            'app.kubernetes.io/managed-by': 'kaori',
+            'kaori.io/tenant-id': 'tenant-uuid',
+            'kaori.io/access-grant': 'grant-id',
+            'capsule.clastix.io/tenant': 'demo',
+        },
+    )
     for kind, item in [('ResourceQuota', quota), ('RoleBinding', grant)]:
         evidence, blockers = _classify(item, kind=kind)
         assert evidence['origin'] == 'kaori_correlated'
@@ -171,13 +216,15 @@ def test_kaori_owned_allocation_or_access_is_visible_and_blocks_provider_handoff
         assert 'handoff' in blockers[0] or 'controls' in blockers[0]
 
 
-@pytest.mark.parametrize('changes', [
-    {'app.kubernetes.io/managed-by': 'kaori', 'kaori.io/tenant-id': 'other'},
-    {'app.kubernetes.io/managed-by': 'capsule', 'kaori.io/tenant-id': 'tenant-uuid'},
-    {'app.kubernetes.io/managed-by': 'kaori', 'kaori.io/tenant-id': 'tenant-uuid',
-     'kaori.io/unknown': 'value'},
-    {},
-])
+@pytest.mark.parametrize(
+    'changes',
+    [
+        {'app.kubernetes.io/managed-by': 'kaori', 'kaori.io/tenant-id': 'other'},
+        {'app.kubernetes.io/managed-by': 'capsule', 'kaori.io/tenant-id': 'tenant-uuid'},
+        {'app.kubernetes.io/managed-by': 'kaori', 'kaori.io/tenant-id': 'tenant-uuid', 'kaori.io/unknown': 'value'},
+        {},
+    ],
+)
 def test_ambiguous_unattributed_or_spoofed_kaori_origin_never_admitted(changes):
     item = _resource(labels=changes, owner_refs=[])
     evidence, blockers = _classify(item)
@@ -185,14 +232,14 @@ def test_ambiguous_unattributed_or_spoofed_kaori_origin_never_admitted(changes):
     assert evidence['origin'] in ('ambiguous_kaori', 'unattributed')
 
 
-@pytest.mark.parametrize('owner', [
-    [{'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2',
-      'name': 'another', 'uid': 'cr-uid'}],
-    [{'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2',
-      'name': 'demo', 'uid': 'foreign-uid'}],
-    [{'kind': 'Controller', 'apiVersion': 'foreign.example/v1',
-      'name': 'operator', 'uid': 'third-party'}],
-])
+@pytest.mark.parametrize(
+    'owner',
+    [
+        [{'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2', 'name': 'another', 'uid': 'cr-uid'}],
+        [{'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2', 'name': 'demo', 'uid': 'foreign-uid'}],
+        [{'kind': 'Controller', 'apiVersion': 'foreign.example/v1', 'name': 'operator', 'uid': 'third-party'}],
+    ],
+)
 def test_foreign_or_recreated_cr_owner_reference_blocks(owner):
     evidence, blockers = _classify(_resource(owner_refs=owner))
     assert blockers
@@ -236,18 +283,30 @@ def test_added_deleted_or_reordered_provider_objects_change_fingerprint():
     first = _observe(_API(ResourceQuota=[item]), _API())
     second = _observe(_API(ResourceQuota=[item, _resource(name='extra', uid='extra-uid')]), _API())
     assert first['resource_sha256'] != second['resource_sha256']
-    reordered = _observe(_API(ResourceQuota=list(reversed([
-        item, _resource(name='extra', uid='extra-uid'),
-    ]))), _API())
+    reordered = _observe(
+        _API(
+            ResourceQuota=list(
+                reversed(
+                    [
+                        item,
+                        _resource(name='extra', uid='extra-uid'),
+                    ]
+                )
+            )
+        ),
+        _API(),
+    )
     assert second['resource_sha256'] == reordered['resource_sha256']
 
 
-@pytest.mark.parametrize('bad', [
-    [],
-    [{'kind': 'Namespace', 'name': 'demo-dev', 'namespace': 'different',
-      'uid': 'ns-uid', 'resource_version': '7'}],
-    _scope() + _scope(),
-])
+@pytest.mark.parametrize(
+    'bad',
+    [
+        [],
+        [{'kind': 'Namespace', 'name': 'demo-dev', 'namespace': 'different', 'uid': 'ns-uid', 'resource_version': '7'}],
+        _scope() + _scope(),
+    ],
+)
 def test_incomplete_or_duplicated_namespace_scope_is_rejected(bad):
     with pytest.raises(ValueError):
         _observe(_API(), _API(), scope=bad)
@@ -262,13 +321,15 @@ def test_malformed_provider_policy_and_list_fail_closed():
         _observe(oversized, _API())
     missing_list_rv = _API()
     missing_list_rv._list = lambda *args, **kwargs: SimpleNamespace(
-        metadata=SimpleNamespace(resource_version=None), items=[],
+        metadata=SimpleNamespace(resource_version=None),
+        items=[],
     )
     with pytest.raises(ValueError):
         _observe(missing_list_rv, _API())
     partial = _API()
     partial._list = lambda *args, **kwargs: SimpleNamespace(
-        metadata=SimpleNamespace(resource_version='list-rv', _continue='page-2'), items=[],
+        metadata=SimpleNamespace(resource_version='list-rv', _continue='page-2'),
+        items=[],
     )
     with pytest.raises(ValueError):
         _observe(partial, _API())
@@ -281,7 +342,7 @@ def test_preflight_keeps_native_shape_and_binds_capsule_sha_to_current_fingerpri
     assert "capsule_cr['capsule_related_resources_sha256']" in preflight
     assert "capsule_cr['capsule_related_resources_count']" in preflight
     assert "evidence['capsule_related_inventory'] = capsule_related_inventory" in preflight
-    assert 'if tenant.provider_key == \'capsule\':' in preflight
+    assert "if tenant.provider_key == 'capsule':" in preflight
     assert 'observe_capsule_related_inventory(' in preflight
     assert 'resource_sha256' in preflight
 
@@ -305,10 +366,15 @@ def test_collection_list_revision_churn_does_not_invalidate_identical_object_sco
         {**first, 'global_quota': {'list_resource_version': '11', 'scope_sha256': 'same'}},
         {**changed, 'global_quota': {'list_resource_version': '20', 'scope_sha256': 'same'}},
     )
-    changed['resources'].append({
-        'kind': 'ResourceQuota', 'namespace': 'demo-dev', 'name': 'new-quota',
-        'uid': 'new-uid', 'resource_version': '8',
-    })
+    changed['resources'].append(
+        {
+            'kind': 'ResourceQuota',
+            'namespace': 'demo-dev',
+            'name': 'new-quota',
+            'uid': 'new-uid',
+            'resource_version': '8',
+        }
+    )
     assert not capsule_related_scope_unchanged(
         {**first, 'global_quota': {'list_resource_version': '11', 'scope_sha256': 'same'}},
         {**changed, 'global_quota': {'list_resource_version': '20', 'scope_sha256': 'same'}},
@@ -329,23 +395,30 @@ def test_kaori_labels_cannot_override_foreign_or_conflicting_capsule_origin(conf
         'capsule.clastix.io/tenant': 'demo',
     }
     owners = [
-        {'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2',
-         'name': 'demo', 'uid': 'cr-uid'},
+        {'kind': 'Tenant', 'apiVersion': 'capsule.clastix.io/v1beta2', 'name': 'demo', 'uid': 'cr-uid'},
     ]
     if conflict == 'foreign_owner':
-        owners.append({
-            'kind': 'ConfigMap', 'apiVersion': 'v1',
-            'name': 'foreign-controller', 'uid': 'foreign-uid',
-        })
+        owners.append(
+            {
+                'kind': 'ConfigMap',
+                'apiVersion': 'v1',
+                'name': 'foreign-controller',
+                'uid': 'foreign-uid',
+            }
+        )
     elif conflict == 'wrong_capsule_tenant':
         labels['capsule.clastix.io/tenant'] = 'another-tenant'
     else:
         owners[0]['uid'] = 'foreign-capsule-uid'
     for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding'):
-        source = _resource(kind, labels={
-            **labels,
-            **({'kaori.io/access-grant': 'grant-id'} if kind == 'RoleBinding' else {}),
-        }, owner_refs=owners)
+        source = _resource(
+            kind,
+            labels={
+                **labels,
+                **({'kaori.io/access-grant': 'grant-id'} if kind == 'RoleBinding' else {}),
+            },
+            owner_refs=owners,
+        )
         evidence, problems = _classify(source, kind=kind)
         assert evidence['origin'] == 'ambiguous_kaori'
         assert evidence['mutation_authorized'] == 'false'

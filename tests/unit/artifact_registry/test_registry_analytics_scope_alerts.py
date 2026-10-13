@@ -27,21 +27,24 @@ def test_unavailable_or_disabled_selected_provider_never_becomes_all():
 
 
 def test_analytics_governance_explicitly_not_configured_differs_from_unassessed():
-    from app.artifact_registry.presentation_analytics import _analytics_aggregate, _accumulate_domain_counts
+    from app.artifact_registry.presentation_analytics import _accumulate_domain_counts, _analytics_aggregate
 
     aggregate = _analytics_aggregate()
-    _accumulate_domain_counts(aggregate, {
-        'inventory': {'projects': 10},
-        'security': {},
-        'runtime': {},
-        'governance': {
-            'projects_assessed': 2,
-            'retention_configured': 1,
-            'retention_not_configured': 1,
-            'immutability_configured': 1,
-            'immutability_not_configured': 0,
+    _accumulate_domain_counts(
+        aggregate,
+        {
+            'inventory': {'projects': 10},
+            'security': {},
+            'runtime': {},
+            'governance': {
+                'projects_assessed': 2,
+                'retention_configured': 1,
+                'retention_not_configured': 1,
+                'immutability_configured': 1,
+                'immutability_not_configured': 0,
+            },
         },
-    })
+    )
     assert aggregate['projects'] == 10
     assert aggregate['retention_not_configured'] == 1
     assert aggregate['immutability_not_configured'] == 0

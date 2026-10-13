@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 def test_warning_or_error_outcome_precedes_secondary_activity_and_metadata() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
-    assert "{% if item.failure_summary %}" in detail
+    assert '{% if item.failure_summary %}' in detail
     assert 'data-activity-outcome="recorded"' in detail
     assert 'aria-labelledby="activity-outcome-heading"' in detail
     assert "item.status == 'error'" in detail
@@ -61,7 +61,7 @@ def test_audit_identity_and_source_evidence_remain_present() -> None:
 
 def test_optional_evidence_uses_shared_accessible_disclosure_not_custom_js() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
-    assert "{% import \"components/view_more_content.html\" as view_more %}" in detail
+    assert '{% import "components/view_more_content.html" as view_more %}' in detail
     assert "'Additional Evidence'" in detail
     assert "aria_label='Additional Evidence'" in detail
     assert "'Technical Evidence'" in detail

@@ -163,7 +163,7 @@ def _reconcile_record():
                 'control_state': 'observed',
                 'control_reason': 'Observed allocation remains read-only.',
                 'source_resources': [],
-            }
+            },
         },
         cluster_id=7,
         namespace='api-prod',
@@ -223,18 +223,21 @@ def test_native_takeover_rejects_namespace_uid_replacement_before_provider_patch
     assert api.patched_namespaces == []
 
 
-@pytest.mark.parametrize('ownership_labels', [
-    {
-        'app.kubernetes.io/managed-by': 'kaori',
-        'kaori.io/tenant-id': 'another-tenant',
-    },
-    {
-        'kaori.io/tenant-id': 'another-tenant',
-    },
-    {
-        'app.kubernetes.io/managed-by': 'kaori',
-    },
-])
+@pytest.mark.parametrize(
+    'ownership_labels',
+    [
+        {
+            'app.kubernetes.io/managed-by': 'kaori',
+            'kaori.io/tenant-id': 'another-tenant',
+        },
+        {
+            'kaori.io/tenant-id': 'another-tenant',
+        },
+        {
+            'app.kubernetes.io/managed-by': 'kaori',
+        },
+    ],
+)
 def test_native_takeover_rejects_ambiguous_or_foreign_kaori_claims(
     ownership_labels,
 ):
@@ -248,18 +251,19 @@ def test_native_takeover_rejects_ambiguous_or_foreign_kaori_claims(
 
     api.read_namespace = conflicting_namespace
     with pytest.raises(ValueError, match='foreign KAORI Tenant ownership claim'):
-        allocation_cutover._mutate_namespace_ownership(
-            api, _reconcile_record(), profile=_profile()
-        )
+        allocation_cutover._mutate_namespace_ownership(api, _reconcile_record(), profile=_profile())
     assert api.patched_namespaces == []
 
 
-@pytest.mark.parametrize('ownership_labels', [
-    {'kaori.io/environment': 'production'},
-    {'kaori.io/resource-profile': 'previous-profile'},
-    {'kaori.io/tenant-generation': '1'},
-    {'kaori.io/tenant-id': 'tenant-1'},
-])
+@pytest.mark.parametrize(
+    'ownership_labels',
+    [
+        {'kaori.io/environment': 'production'},
+        {'kaori.io/resource-profile': 'previous-profile'},
+        {'kaori.io/tenant-generation': '1'},
+        {'kaori.io/tenant-id': 'tenant-1'},
+    ],
+)
 def test_native_initial_takeover_rejects_residual_kaori_markers_before_patch(ownership_labels):
     api = _FakeCoreApi()
     original_read = api.read_namespace
@@ -304,10 +308,12 @@ def test_native_initial_takeover_rejects_intervening_provider_version_before_pat
 def test_managed_native_reconcile_does_not_reuse_stale_original_adoption_version():
     api = _FakeCoreApi()
     record = _reconcile_record()
-    record.provisioning_evidence_json.update({
-        'allocation_control_state': 'kaori_managed',
-        'resource_version': 'previous-version',
-    })
+    record.provisioning_evidence_json.update(
+        {
+            'allocation_control_state': 'kaori_managed',
+            'resource_version': 'previous-version',
+        }
+    )
     allocation_cutover._mutate_namespace_ownership(api, record, profile=_profile())
     assert len(api.patched_namespaces) == 1
 
@@ -323,9 +329,7 @@ def test_native_takeover_requires_provider_resource_version_before_patch():
 
     api.read_namespace = missing_resource_version
     with pytest.raises(ValueError, match='resourceVersion is unavailable'):
-        allocation_cutover._mutate_namespace_ownership(
-            api, _reconcile_record(), profile=_profile()
-        )
+        allocation_cutover._mutate_namespace_ownership(api, _reconcile_record(), profile=_profile())
     assert api.patched_namespaces == []
 
 
@@ -341,9 +345,7 @@ def test_native_takeover_rejects_namespace_replacement_on_readback():
 
     api.read_namespace = replaced_after_patch
     with pytest.raises(ValueError, match='changed during ownership read-back'):
-        allocation_cutover._mutate_namespace_ownership(
-            api, _reconcile_record(), profile=_profile()
-        )
+        allocation_cutover._mutate_namespace_ownership(api, _reconcile_record(), profile=_profile())
     assert len(api.patched_namespaces) == 1
 
 
@@ -577,7 +579,9 @@ def test_native_allocation_takeover_rejects_capsule_authority_before_patch(label
     api.read_namespace = capsule_namespace
     with pytest.raises(ValueError, match='Capsule Tenant authority'):
         allocation_cutover._mutate_namespace_ownership(
-            api, _reconcile_record(), profile=_profile(),
+            api,
+            _reconcile_record(),
+            profile=_profile(),
         )
     assert api.patched_namespaces == []
 
@@ -585,13 +589,15 @@ def test_native_allocation_takeover_rejects_capsule_authority_before_patch(label
 def _previously_managed_without_limit_range(*, frozen_limits=None, frozen_storage=None):
     """Legacy #762 success wrongly persisted a LimitRange name after deleting it."""
     record = _reconcile_record()
-    record.provisioning_evidence_json.update({
-        'allocation_control_state': 'kaori_managed',
-        'managed_resource_names': {
-            'quota': 'kaori-tenant-quota',
-            'limit_range': 'kaori-tenant-limits',
-        },
-    })
+    record.provisioning_evidence_json.update(
+        {
+            'allocation_control_state': 'kaori_managed',
+            'managed_resource_names': {
+                'quota': 'kaori-tenant-quota',
+                'limit_range': 'kaori-tenant-limits',
+            },
+        }
+    )
     record.allocation_limit_defaults_json = {} if frozen_limits is None else frozen_limits
     record.allocation_storage_policy_json = {} if frozen_storage is None else frozen_storage
     record.allocation_quota_json = {'requests.cpu': '2'}
@@ -603,7 +609,10 @@ def _install_present_managed_quota(api):
     api.patched_quotas = []
     api.read_namespaced_resource_quota = lambda name, namespace: SimpleNamespace(
         metadata=SimpleNamespace(
-            name=name, namespace=namespace, uid='rq-uid', resource_version='7',
+            name=name,
+            namespace=namespace,
+            uid='rq-uid',
+            resource_version='7',
             labels={'app.kubernetes.io/managed-by': 'kaori'},
         )
     )
@@ -690,7 +699,12 @@ def test_optional_legacy_limit_range_can_be_created_for_newly_admitted_defaults(
     ],
 )
 def test_missing_or_unverified_optional_limit_range_stays_fail_closed_before_mutation(
-    monkeypatch, frozen_limits, frozen_storage, live_hash, live_sources, committed_hash,
+    monkeypatch,
+    frozen_limits,
+    frozen_storage,
+    live_hash,
+    live_sources,
+    committed_hash,
 ):
     record = _previously_managed_without_limit_range(
         frozen_limits=frozen_limits,
@@ -718,7 +732,9 @@ def test_missing_or_unverified_optional_limit_range_stays_fail_closed_before_mut
 
     assert record.provisioning_status == original_status
     assert record.provisioning_message == original_message
-    assert record.provisioning_evidence_json['allocation_reconcile_failure']['provider_mutation_may_have_started'] is False
+    assert (
+        record.provisioning_evidence_json['allocation_reconcile_failure']['provider_mutation_may_have_started'] is False
+    )
     assert api.patched_namespaces == []
     assert api.created_quotas == []
     assert api.created_limit_ranges == []
@@ -742,7 +758,9 @@ def test_pre_mutation_missing_required_limit_range_keeps_active_status_and_evide
             operation='allocation_change',
         )
     assert record.provisioning_status == 'ready'
-    assert record.provisioning_evidence_json['allocation_reconcile_failure']['provider_mutation_may_have_started'] is False
+    assert (
+        record.provisioning_evidence_json['allocation_reconcile_failure']['provider_mutation_may_have_started'] is False
+    )
     assert api.patched_namespaces == []
 
 

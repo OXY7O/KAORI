@@ -78,21 +78,21 @@
         <section class="space-y-3"
                  aria-labelledby="artifact-registry-runtime-summary-heading">
             {{ section_intro.render('Runtime Correlation',
-                'Committed artifact-to-Kubernetes bindings, identity matches, and security exposure.',
-                'artifact-registry-runtime-summary-heading') }}
+                        'Committed artifact-to-Kubernetes bindings, identity matches, and security exposure.',
+                        'artifact-registry-runtime-summary-heading') }}
             {% set runtime_metrics = [
-                ('link-2', 'Runtime Bindings', runtime.total, 'Committed Registry artifact to Kubernetes runtime bindings.', 'info'),
-                ('fingerprint', 'Digest Matched', runtime.digest_matches, 'Immutable artifact identity matched at runtime.', 'info'),
-                ('tags', 'Tag Matched', runtime.tag_matches, 'Mutable tag matches; lower confidence.', 'warning' if runtime.tag_matches else 'info'),
-                ('shield-alert', 'Security Exposed', runtime.security_exposed, 'Runtime bindings associated with artifacts reporting Critical or High findings.', 'critical' if runtime.security_exposed else 'info')
-            ] %}
+                            ('link-2', 'Runtime Bindings', runtime.total, 'Committed Registry artifact to Kubernetes runtime bindings.', 'info'),
+                            ('fingerprint', 'Digest Matched', runtime.digest_matches, 'Immutable artifact identity matched at runtime.', 'info'),
+                            ('tags', 'Tag Matched', runtime.tag_matches, 'Mutable tag matches; lower confidence.', 'warning' if runtime.tag_matches else 'info'),
+                            ('shield-alert', 'Security Exposed', runtime.security_exposed, 'Runtime bindings associated with artifacts reporting Critical or High findings.', 'critical' if runtime.security_exposed else 'info')
+                        ] %}
             {% call section_card.render(
                 'Runtime Evidence Summary',
                 'Committed Registry and Kubernetes correlations; digest matches are higher confidence than tag matches.',
                 'waypoints',
                 body_classes='p-0',
                 aria_label='Runtime Usage summary'
-            ) %}
+                ) %}
                 {{ posture_grid.render(runtime_metrics, columns=4) }}
             {% endcall %}
         </section>

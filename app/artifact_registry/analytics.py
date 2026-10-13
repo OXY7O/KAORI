@@ -5,11 +5,11 @@ from typing import Any
 
 from sqlalchemy import func, select
 
-from app.artifact_registry.correlation import runtime_input_signature
 from app.artifact_registry.analytics_history import (
     REGISTRY_HISTORY_WINDOWS,
     collect_registry_metric_history,
 )
+from app.artifact_registry.correlation import runtime_input_signature
 from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.extensions.db import db
 from app.integrations.observability.alert_source.providers.alertmanager.application.consumer import (
@@ -26,9 +26,9 @@ from app.integrations.observability.metrics_source.query_profiles.registry_harbo
 from app.models.integration import IntegrationInstance
 from app.models.registry import (
     RegistryAnalyticsSnapshot,
+    RegistryArtifact,
     RegistryCollectionState,
     RegistryGovernanceState,
-    RegistryArtifact,
     RegistryProject,
     RegistryProjectGovernance,
     RegistryRepository,
@@ -403,19 +403,18 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
         RegistryProject, RegistryRepository.project_id == RegistryProject.id
     ).filter(RegistryProject.integration_instance_id == identity_id)
     repository_count = repositories.count()
-    artifacts = RegistryArtifact.query.join(
-        RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
-    ).join(
-        RegistryProject, RegistryRepository.project_id == RegistryProject.id
-    ).filter(RegistryProject.integration_instance_id == identity_id)
+    artifacts = (
+        RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(RegistryProject.integration_instance_id == identity_id)
+    )
 
-    bindings = RegistryWorkloadBinding.query.join(
-        RegistryArtifact, RegistryWorkloadBinding.artifact_id == RegistryArtifact.id
-    ).join(
-        RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
-    ).join(
-        RegistryProject, RegistryRepository.project_id == RegistryProject.id
-    ).filter(RegistryProject.integration_instance_id == identity_id)
+    bindings = (
+        RegistryWorkloadBinding.query.join(RegistryArtifact, RegistryWorkloadBinding.artifact_id == RegistryArtifact.id)
+        .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(RegistryProject.integration_instance_id == identity_id)
+    )
     binding_count = bindings.count()
     tag_only_count = bindings.filter(RegistryWorkloadBinding.match_type == 'tag').count()
     running_count = int(
@@ -435,10 +434,16 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
     ).yield_per(250)
 
     counts = {
-        'artifacts': 0, 'total_size_bytes': 0, 'stale_candidate_count': 0,
-        'scanned_artifacts': 0, 'critical_findings': 0, 'high_findings': 0,
-        'signed_artifacts': 0, 'sbom_artifacts': 0,
-        'critical_runtime_artifacts': 0, 'runtime_scan_gaps': 0,
+        'artifacts': 0,
+        'total_size_bytes': 0,
+        'stale_candidate_count': 0,
+        'scanned_artifacts': 0,
+        'critical_findings': 0,
+        'high_findings': 0,
+        'signed_artifacts': 0,
+        'sbom_artifacts': 0,
+        'critical_runtime_artifacts': 0,
+        'runtime_scan_gaps': 0,
         'unsigned_runtime_artifacts': 0,
     }
     stale_cutoff = generated_at - timedelta(days=90)
@@ -480,24 +485,29 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
         ).count(),
     }
     inventory = {
-        'projects': project_count, 'repositories': repository_count,
+        'projects': project_count,
+        'repositories': repository_count,
         **{key: counts[key] for key in ('artifacts', 'total_size_bytes', 'stale_candidate_count')},
     }
     security = {
         'scanned_artifacts': counts['scanned_artifacts'],
         'scan_coverage_percent': round(100 * counts['scanned_artifacts'] / counts['artifacts'], 1)
-        if counts['artifacts'] else None,
+        if counts['artifacts']
+        else None,
         'critical_findings': counts['critical_findings'],
         'high_findings': counts['high_findings'],
         'signed_artifacts': counts['signed_artifacts'],
         'signature_coverage_percent': round(100 * counts['signed_artifacts'] / counts['artifacts'], 1)
-        if counts['artifacts'] else None,
+        if counts['artifacts']
+        else None,
         'sbom_artifacts': counts['sbom_artifacts'],
         'sbom_coverage_percent': round(100 * counts['sbom_artifacts'] / counts['artifacts'], 1)
-        if counts['artifacts'] else None,
+        if counts['artifacts']
+        else None,
     }
     runtime = {
-        'bindings': binding_count, 'running_artifacts': running_count,
+        'bindings': binding_count,
+        'running_artifacts': running_count,
         'critical_runtime_artifacts': counts['critical_runtime_artifacts'],
         'tag_only_bindings': tag_only_count,
         'runtime_scan_gaps': counts['runtime_scan_gaps'],
@@ -508,7 +518,9 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
     latest_binding = bindings.with_entities(func.max(RegistryWorkloadBinding.observed_at)).scalar()
     latest_scan = artifacts.with_entities(func.max(RegistryArtifact.scan_completed_at)).scalar()
     return {
-        'inventory': inventory, 'security': security, 'runtime': runtime,
+        'inventory': inventory,
+        'security': security,
+        'runtime': runtime,
         'governance': governance_counts,
         'evidence': {
             'source': 'committed_registry_state',
@@ -516,11 +528,13 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
             'provider_queries_on_page_load': False,
             'inventory_committed_at': (
                 inventory_state.last_committed_at.isoformat()
-                if inventory_state and inventory_state.last_committed_at else None
+                if inventory_state and inventory_state.last_committed_at
+                else None
             ),
             'governance_committed_at': (
                 governance_state.last_committed_at.isoformat()
-                if governance_state and governance_state.last_committed_at else None
+                if governance_state and governance_state.last_committed_at
+                else None
             ),
             'governance_status': governance_state.status if governance_state else 'not_collected',
             'runtime_observed_at': latest_binding.isoformat() if latest_binding else None,
@@ -606,11 +620,7 @@ def materialize_registry_analytics(
 ) -> RegistryAnalyticsSnapshot:
     """Materialize Registry analytics from committed domain state plus bound Metrics Source."""
 
-    if (
-        identity.integration_type != 'registry'
-        or not identity.enabled
-        or identity.lifecycle_status != 'active'
-    ):
+    if identity.integration_type != 'registry' or not identity.enabled or identity.lifecycle_status != 'active':
         raise ValueError('Registry analytics requires an active and enabled Registry source.')
 
     if time_range != 'current' and time_range not in REGISTRY_HISTORY_WINDOWS:
@@ -631,9 +641,7 @@ def materialize_registry_analytics(
         history: dict[str, Any] | None = None
         prior_usage = _previous_project_usage(previous)
     else:
-        history, metrics, measured_growth = collect_registry_metric_history(
-            identity, time_range, now=generated_at
-        )
+        history, metrics, measured_growth = collect_registry_metric_history(identity, time_range, now=generated_at)
         growth = measured_growth
         elapsed_days = measured_growth['elapsed_days']
         prior_usage = {
@@ -657,8 +665,7 @@ def materialize_registry_analytics(
     if inventory_state is not None:
         db.session.refresh(inventory_state)
     current_generation = (
-        inventory_state.last_committed_at.isoformat()
-        if inventory_state and inventory_state.last_committed_at else None
+        inventory_state.last_committed_at.isoformat() if inventory_state and inventory_state.last_committed_at else None
     )
     if current_generation != domain['evidence']['inventory_committed_at']:
         raise RuntimeError('Registry inventory generation changed during Analytics materialization.')
@@ -672,7 +679,8 @@ def materialize_registry_analytics(
         db.session.refresh(current_governance, attribute_names=['last_committed_at'])
     governance_generation = (
         current_governance.last_committed_at.isoformat()
-        if current_governance and current_governance.last_committed_at else None
+        if current_governance and current_governance.last_committed_at
+        else None
     )
     if governance_generation != domain['evidence']['governance_committed_at']:
         raise RuntimeError('Registry Governance changed during Analytics materialization.')

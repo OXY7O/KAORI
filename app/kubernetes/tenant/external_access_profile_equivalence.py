@@ -56,10 +56,7 @@ def _role_rules_signature(role: Any) -> tuple[tuple[str, str, str], ...]:
         raise ValueError('Provider Role rule evidence is missing, malformed or unbounded.')
     atomics: set[tuple[str, str, str]] = set()
     for rule in rules:
-        if (
-            _value(rule, 'resource_names', 'resourceNames')
-            or _value(rule, 'non_resource_urls', 'nonResourceURLs')
-        ):
+        if _value(rule, 'resource_names', 'resourceNames') or _value(rule, 'non_resource_urls', 'nonResourceURLs'):
             raise ValueError('Conditioned or non-resource Role permissions need manual review.')
         api_groups = _value(rule, 'api_groups', 'apiGroups')
         resources = _items(_value(rule, 'resources'), field='resources')
@@ -69,8 +66,9 @@ def _role_rules_signature(role: Any) -> tuple[tuple[str, str, str], ...]:
             raise ValueError('Role API groups are missing or unsupported.')
         if any(not isinstance(group, str) or group == '*' or len(group) > 253 for group in api_groups):
             raise ValueError('Role API groups are unsupported or wildcard.')
-        atomics.update((api_group, resource, verb)
-                       for api_group in api_groups for resource in resources for verb in verbs)
+        atomics.update(
+            (api_group, resource, verb) for api_group in api_groups for resource in resources for verb in verbs
+        )
         if len(atomics) > 5000:
             raise ValueError('Role permission expansion exceeds bounded preview.')
     return tuple(sorted(atomics))
@@ -78,13 +76,17 @@ def _role_rules_signature(role: Any) -> tuple[tuple[str, str, str], ...]:
 
 def _canonical_profile_signature(key: str, version: int) -> tuple[tuple[str, str, str], ...]:
     profile = get_access_profile(key, version)
-    return tuple(sorted({
-        (api_group, resource, verb)
-        for rule in profile.rules
-        for api_group in rule.api_groups
-        for resource in rule.resources
-        for verb in rule.verbs
-    }))
+    return tuple(
+        sorted(
+            {
+                (api_group, resource, verb)
+                for rule in profile.rules
+                for api_group in rule.api_groups
+                for resource in rule.resources
+                for verb in rule.verbs
+            }
+        )
+    )
 
 
 def classify_external_role_profile(role: Any) -> dict[str, Any]:
@@ -98,39 +100,54 @@ def classify_external_role_profile(role: Any) -> dict[str, Any]:
         raise ValueError('Provider Role kind/UID/resourceVersion is unavailable.')
     signature = _role_rules_signature(role)
     matches = [
-        (key, version) for key, version in sorted(ACCESS_PROFILE_CATALOG)
+        (key, version)
+        for key, version in sorted(ACCESS_PROFILE_CATALOG)
         if signature == _canonical_profile_signature(key, version)
     ]
     digest = hashlib.sha256(json.dumps(signature, separators=(',', ':')).encode()).hexdigest()
     exact = matches[0] if len(matches) == 1 else None
     return {
-        'role_kind': kind, 'role_name': name, 'role_uid': uid,
+        'role_kind': kind,
+        'role_name': name,
+        'role_uid': uid,
         'role_resource_version': resource_version,
         'permission_sha256': digest,
         'equivalent_profile': exact[0] if exact else None,
         'equivalent_version': exact[1] if exact else None,
         'decision': 'principal_and_scope_review_required' if exact else 'no_exact_profile',
-        'effective_rbac_verified': False, 'identity_verified': False,
-        'import_authorized': False, 'provider_mutation_performed': False,
+        'effective_rbac_verified': False,
+        'identity_verified': False,
+        'import_authorized': False,
+        'provider_mutation_performed': False,
     }
 
 
 def _require_stable_role_review(before: dict[str, Any], after: dict[str, Any]) -> None:
     """Fail closed if Role identity or effective rule signature changed mid-review."""
     for key in (
-        'role_kind', 'role_name', 'role_uid', 'role_resource_version',
-        'permission_sha256', 'equivalent_profile', 'equivalent_version',
+        'role_kind',
+        'role_name',
+        'role_uid',
+        'role_resource_version',
+        'permission_sha256',
+        'equivalent_profile',
+        'equivalent_version',
     ):
         if before.get(key) != after.get(key):
             raise ValueError('Provider Role changed during exact permission review.')
 
 
 def _require_committed_binding(
-    evidence: dict[str, Any] | None, *, tenant: Tenant,
-    namespace: str, binding_uid: str, now: datetime,
+    evidence: dict[str, Any] | None,
+    *,
+    tenant: Tenant,
+    namespace: str,
+    binding_uid: str,
+    now: datetime,
 ) -> tuple[dict[str, Any], dict[str, str]]:
     if (
-        not evidence or evidence.get('tenant_id') != tenant.id
+        not evidence
+        or evidence.get('tenant_id') != tenant.id
         or evidence.get('cluster_id') != tenant.cluster_id
         or evidence.get('provider') != 'native_kubernetes'
     ):
@@ -147,15 +164,17 @@ def _require_committed_binding(
     if not isinstance(objects, list) or not isinstance(namespaces, list):
         raise ValueError('Native RBAC inventory is malformed.')
     matches = [
-        binding for binding in objects
+        binding
+        for binding in objects
         if isinstance(binding, dict)
-        and binding.get('namespace') == namespace and binding.get('uid') == binding_uid
+        and binding.get('namespace') == namespace
+        and binding.get('uid') == binding_uid
         and binding.get('ownership') == 'external_observed'
     ]
     scope = [
-        row for row in namespaces
-        if isinstance(row, dict) and row.get('name') == namespace
-        and row.get('uid') and row.get('resource_version')
+        row
+        for row in namespaces
+        if isinstance(row, dict) and row.get('name') == namespace and row.get('uid') and row.get('resource_version')
     ]
     if len(matches) != 1 or len(scope) != 1:
         raise ValueError('Binding has no unique foreign-owned identity in committed Tenant scope.')
@@ -163,12 +182,17 @@ def _require_committed_binding(
 
 
 def review_native_external_role_profile_committed(
-    *, tenant_id: str, namespace: str, binding_uid: str, actor_user_id: int,
+    *,
+    tenant_id: str,
+    namespace: str,
+    binding_uid: str,
+    actor_user_id: int,
 ) -> dict[str, Any]:
     """Live authorized provider read and committed non-mutating review receipt."""
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.provider_key != 'native_kubernetes'
+        tenant is None
+        or tenant.provider_key != 'native_kubernetes'
         or tenant.provider_state != 'native'
         or tenant.reconciliation_authority != 'native_kubernetes'
         or tenant.lifecycle_status != 'ready'
@@ -176,8 +200,11 @@ def review_native_external_role_profile_committed(
         raise ValueError('Choose a Ready Native Tenant with matching provider authority.')
     evidence = latest_external_native_access_evidence(tenant_id)
     selected, scope = _require_committed_binding(
-        evidence, tenant=tenant, namespace=namespace,
-        binding_uid=binding_uid, now=datetime.now(UTC),
+        evidence,
+        tenant=tenant,
+        namespace=namespace,
+        binding_uid=binding_uid,
+        now=datetime.now(UTC),
     )
     cluster = db.session.get(Cluster, tenant.cluster_id)
     if cluster is None:
@@ -193,16 +220,20 @@ def review_native_external_role_profile_committed(
         or str(getattr(ns_meta, 'resource_version', '') or '') != scope['resource_version']
     ):
         raise ValueError('Namespace provider UID/resourceVersion changed; inspect again.')
-    live = rbac.read_namespaced_role_binding(
-        selected['name'], namespace, _request_timeout=5
-    )
-    normalized = normalize_native_role_binding(
-        live, namespace=namespace, grant_ids=set()
-    )
-    if any(normalized.get(key) != selected.get(key) for key in (
-        'namespace', 'name', 'uid', 'resource_version',
-        'role_ref', 'subjects', 'ownership',
-    )):
+    live = rbac.read_namespaced_role_binding(selected['name'], namespace, _request_timeout=5)
+    normalized = normalize_native_role_binding(live, namespace=namespace, grant_ids=set())
+    if any(
+        normalized.get(key) != selected.get(key)
+        for key in (
+            'namespace',
+            'name',
+            'uid',
+            'resource_version',
+            'role_ref',
+            'subjects',
+            'ownership',
+        )
+    ):
         raise ValueError('RoleBinding or principal changed since inventory.')
     ref = selected['role_ref']
     if ref['kind'] == 'Role':
@@ -215,9 +246,7 @@ def review_native_external_role_profile_committed(
     if (result['role_kind'], result['role_name']) != (ref['kind'], ref['name']):
         raise ValueError('Role UID or reference changed during the review.')
     reread = rbac.read_namespaced_role_binding(selected['name'], namespace, _request_timeout=5)
-    verified = normalize_native_role_binding(
-        reread, namespace=namespace, grant_ids=set()
-    )
+    verified = normalize_native_role_binding(reread, namespace=namespace, grant_ids=set())
     if verified != normalized:
         raise ValueError('RoleBinding changed during permission review.')
     if ref['kind'] == 'Role':
@@ -227,9 +256,11 @@ def review_native_external_role_profile_committed(
     _require_stable_role_review(result, classify_external_role_profile(confirmed_role))
     receipt = {
         **result,
-        'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
+        'tenant_id': tenant_id,
+        'cluster_id': tenant.cluster_id,
         'provider': 'native_kubernetes',
-        'namespace': namespace, 'binding_name': selected['name'],
+        'namespace': namespace,
+        'binding_name': selected['name'],
         'binding_uid': selected['uid'],
         'binding_resource_version': selected['resource_version'],
         'subjects': selected['subjects'],
@@ -237,23 +268,31 @@ def review_native_external_role_profile_committed(
         'reviewed_at': datetime.now(UTC).isoformat(),
         'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action='tenant.external_role.profile_reviewed',
-        summary='Compared foreign Native Role rules to exact KAORI Access Profiles; no import.',
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action='tenant.external_role.profile_reviewed',
+            summary='Compared foreign Native Role rules to exact KAORI Access Profiles; no import.',
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt
 
 
 def _require_committed_capsule_binding(
-    evidence: dict[str, Any] | None, *, tenant: Tenant,
-    binding_index: int, now: datetime,
+    evidence: dict[str, Any] | None,
+    *,
+    tenant: Tenant,
+    binding_index: int,
+    now: datetime,
 ) -> dict[str, Any]:
     """Index only a unique, foreign-owned Capsule binding from fresh evidence."""
     if (
-        not evidence or evidence.get('provider') != 'capsule'
+        not evidence
+        or evidence.get('provider') != 'capsule'
         or evidence.get('tenant_id') != tenant.id
         or evidence.get('cluster_id') != tenant.cluster_id
     ):
@@ -267,7 +306,8 @@ def _require_committed_capsule_binding(
         raise ValueError('Capsule RBAC inventory expired; inspect again.')
     bindings = evidence.get('bindings')
     if (
-        not isinstance(bindings, list) or type(binding_index) is not int
+        not isinstance(bindings, list)
+        or type(binding_index) is not int
         or not 0 <= binding_index < min(len(bindings), 200)
     ):
         raise ValueError('Select one bounded observed Capsule binding.')
@@ -285,12 +325,16 @@ def _require_committed_capsule_binding(
 
 
 def review_capsule_external_role_profile_committed(
-    *, tenant_id: str, binding_index: int, actor_user_id: int,
+    *,
+    tenant_id: str,
+    binding_index: int,
+    actor_user_id: int,
 ) -> dict[str, Any]:
     """Observe Capsule authoritative CR + referenced ClusterRole; never import."""
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.provider_key != 'capsule'
+        tenant is None
+        or tenant.provider_key != 'capsule'
         or tenant.provider_state != 'capsule'
         or tenant.reconciliation_authority != 'capsule'
         or tenant.lifecycle_status != 'ready'
@@ -314,8 +358,11 @@ def review_capsule_external_role_profile_committed(
 
     def read_capsule() -> dict[str, Any]:
         item = custom.get_cluster_custom_object(
-            'capsule.clastix.io', 'v1beta2', 'tenants',
-            str(tenant.provider_reference), _request_timeout=5,
+            'capsule.clastix.io',
+            'v1beta2',
+            'tenants',
+            str(tenant.provider_reference),
+            _request_timeout=5,
         )
         if not isinstance(item, dict) or not isinstance(item.get('spec'), dict):
             raise ValueError('Capsule Tenant spec could not be verified.')
@@ -332,18 +379,17 @@ def review_capsule_external_role_profile_committed(
     read_capsule()
     role = rbac.read_cluster_role(selected['cluster_role_name'], _request_timeout=5)
     reviewed = classify_external_role_profile(role)
-    if (
-        reviewed['role_kind'] != 'ClusterRole'
-        or reviewed['role_name'] != selected['cluster_role_name']
-    ):
+    if reviewed['role_kind'] != 'ClusterRole' or reviewed['role_name'] != selected['cluster_role_name']:
         raise ValueError('Referenced Capsule ClusterRole identity changed during review.')
     read_capsule()
     confirmed_role = rbac.read_cluster_role(selected['cluster_role_name'], _request_timeout=5)
     _require_stable_role_review(reviewed, classify_external_role_profile(confirmed_role))
     receipt = {
         **reviewed,
-        'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
-        'provider': 'capsule', 'capsule_tenant_name': tenant.provider_reference,
+        'tenant_id': tenant_id,
+        'cluster_id': tenant.cluster_id,
+        'provider': 'capsule',
+        'capsule_tenant_name': tenant.provider_reference,
         'capsule_tenant_uid': expected_uid,
         'capsule_tenant_resource_version': evidence['resource_version'],
         'binding_index': binding_index,
@@ -354,11 +400,15 @@ def review_capsule_external_role_profile_committed(
         'reviewed_at': datetime.now(UTC).isoformat(),
         'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action='tenant.external_capsule_role.profile_reviewed',
-        summary='Reviewed Capsule external ClusterRole equivalence without importing principals.',
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action='tenant.external_capsule_role.profile_reviewed',
+            summary='Reviewed Capsule external ClusterRole equivalence without importing principals.',
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt

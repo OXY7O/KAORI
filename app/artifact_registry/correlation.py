@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
-from app.models.inventory import ClusterInventory, PodInventory
 from app.models.integration import IntegrationInstance
+from app.models.inventory import ClusterInventory, PodInventory
 from app.models.job import JobExecution
 from app.models.registry import (
     RegistryArtifact,
@@ -29,11 +29,13 @@ CORRELATION_BATCH_SIZE = 250
 def _active_registry_source_ids(session: Session) -> list[int]:
     return [
         int(source_id)
-        for (source_id,) in session.query(IntegrationInstance.id).filter(
+        for (source_id,) in session.query(IntegrationInstance.id)
+        .filter(
             IntegrationInstance.integration_type == 'registry',
             IntegrationInstance.lifecycle_status == 'active',
             IntegrationInstance.enabled.is_(True),
-        ).all()
+        )
+        .all()
     ]
 
 
@@ -43,13 +45,15 @@ def runtime_input_signature(session: Session) -> str:
     No provider calls and no full artifact or Pod inventory traversal.
     """
     source_ids = _active_registry_source_ids(session)
-    registry_rows = session.query(
-        RegistryCollectionState.integration_instance_id,
-        RegistryCollectionState.last_committed_at,
-    ).filter(RegistryCollectionState.integration_instance_id.in_(source_ids)).all()
-    pod_generations = session.query(
-        ClusterInventory.cluster_id, ClusterInventory.collected_at
-    ).all()
+    registry_rows = (
+        session.query(
+            RegistryCollectionState.integration_instance_id,
+            RegistryCollectionState.last_committed_at,
+        )
+        .filter(RegistryCollectionState.integration_instance_id.in_(source_ids))
+        .all()
+    )
+    pod_generations = session.query(ClusterInventory.cluster_id, ClusterInventory.collected_at).all()
     evidence = {
         'active_registry_sources': sorted(source_ids),
         'registry': sorted(
@@ -66,13 +70,13 @@ def runtime_input_signature(session: Session) -> str:
 
 def runtime_correlation_evidence_readiness(session: Session) -> dict[str, str]:
     """Qualify committed runtime evidence without live provider I/O."""
-    jobs = session.query(JobExecution).filter(
-        JobExecution.job_type == 'artifact_registry_runtime_correlation'
-    )
+    jobs = session.query(JobExecution).filter(JobExecution.job_type == 'artifact_registry_runtime_correlation')
     latest = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).first()
-    successful = jobs.filter(
-        JobExecution.status.in_(('succeeded', 'partially_succeeded'))
-    ).order_by(JobExecution.completed_at.desc(), JobExecution.id.desc()).first()
+    successful = (
+        jobs.filter(JobExecution.status.in_(('succeeded', 'partially_succeeded')))
+        .order_by(JobExecution.completed_at.desc(), JobExecution.id.desc())
+        .first()
+    )
 
     if successful is None:
         return {
@@ -279,15 +283,17 @@ def refresh_registry_workload_bindings(
             if integration_instance_id is not None
             else active_source_ids
         )
-        artifact_query = materialization_session.query(RegistryArtifact).filter(
-            RegistryArtifact.repository.has(
-                RegistryRepository.project.has(
-                    RegistryProject.integration_instance_id.in_(target_source_ids)
+        artifact_query = (
+            materialization_session.query(RegistryArtifact)
+            .filter(
+                RegistryArtifact.repository.has(
+                    RegistryRepository.project.has(RegistryProject.integration_instance_id.in_(target_source_ids))
                 )
             )
-        ).options(
-            joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
-            selectinload(RegistryArtifact.tags),
+            .options(
+                joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
+                selectinload(RegistryArtifact.tags),
+            )
         )
         digest_index: dict[tuple[str, str], list[IndexedArtifact]] = {}
         tag_index: dict[tuple[str, str], list[IndexedArtifact]] = {}
@@ -409,9 +415,7 @@ def refresh_registry_workload_bindings(
                 )
                 pending_bindings.clear()
 
-            if progress_callback is not None and (
-                pod_index % normalized_batch_size == 0 or pod_index == pod_total
-            ):
+            if progress_callback is not None and (pod_index % normalized_batch_size == 0 or pod_index == pod_total):
                 progress_callback(
                     pod_index,
                     pod_total,

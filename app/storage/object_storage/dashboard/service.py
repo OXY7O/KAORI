@@ -138,9 +138,15 @@ def _inventory_summary(
     """Summarize committed bucket evidence without hydrating bucket ORM rows."""
     evidence = (
         bucket_usage_summary(system_id=str(selected.id) if selected is not None else None)
-        if systems else {
-            'buckets': 0, 'stored_bytes': 0, 'stored_samples': 0,
-            'objects': 0, 'object_samples': 0, 'quota_configured': 0, 'usage_collected': 0,
+        if systems
+        else {
+            'buckets': 0,
+            'stored_bytes': 0,
+            'stored_samples': 0,
+            'objects': 0,
+            'object_samples': 0,
+            'quota_configured': 0,
+            'usage_collected': 0,
         }
     )
     observed = sum(system.inventory_observed_at is not None for system in systems)
@@ -158,18 +164,15 @@ def _inventory_summary(
         'systems': len(systems),
         'buckets': evidence['buckets'],
         'stored_bytes': evidence['stored_bytes'],
-        'stored_display': (
-            format_bytes(evidence['stored_bytes']) if evidence['stored_samples'] else 'Not Collected'
-        ),
+        'stored_display': (format_bytes(evidence['stored_bytes']) if evidence['stored_samples'] else 'Not Collected'),
         'objects': evidence['objects'],
-        'objects_display': (
-            format_number(evidence['objects']) if evidence['object_samples'] else 'Not Collected'
-        ),
+        'objects_display': (format_number(evidence['objects']) if evidence['object_samples'] else 'Not Collected'),
         'quota_configured': evidence['quota_configured'],
         'usage_collected': evidence['usage_collected'],
         'observed_systems': observed,
         'empty_observed_systems': empty_observed,
     }
+
 
 def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
@@ -180,13 +183,12 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
         overview = _page_metrics(payload, 'overview')
         posture = _kaori_alert_posture(system)
         usage = bucket_evidence.get(str(system.id), {})
-        inventory_stored = (
-            usage.get('stored_bytes', 0) if usage.get('stored_samples', 0) else None
-        )
+        inventory_stored = usage.get('stored_bytes', 0) if usage.get('stored_samples', 0) else None
         snapshot_usage = overview.get('usage_total')
         stored_bytes = snapshot_usage if snapshot_usage is not None else inventory_stored
         usage_source = (
-            'Snapshot' if snapshot_usage is not None
+            'Snapshot'
+            if snapshot_usage is not None
             else ('Inventory' if inventory_stored is not None else 'Not Collected')
         )
         provider_status = str(system.status or 'unknown').replace('_', ' ').title()
@@ -225,8 +227,7 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
             overall_status = 'Warning'
             overall_tone = 'warning'
             status_reason = (
-                f'Analytics snapshot is {snapshot_state.get("label") or "not ready"}; '
-                'prior evidence may be retained.'
+                f'Analytics snapshot is {snapshot_state.get("label") or "not ready"}; prior evidence may be retained.'
             )
         elif warning_alerts > 0:
             overall_status = 'Warning'
@@ -377,17 +378,20 @@ def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorage
             {
                 'label': 'Inventory Fleet',
                 'status': (
-                    'Ready' if system_count and inventory_ready == system_count
+                    'Ready'
+                    if system_count and inventory_ready == system_count
                     else ('Partial' if inventory_ready else 'Not Collected')
                 ),
                 'tone': (
-                    'normal' if system_count and inventory_ready == system_count
+                    'normal'
+                    if system_count and inventory_ready == system_count
                     else ('warning' if inventory_ready else 'unknown')
                 ),
                 'value': f'{inventory_ready} / {system_count} systems',
                 'description': (
                     f'Latest inventory {_human_time(max(observed))}; committed observations across registered systems.'
-                    if observed else 'No committed inventory observation across registered systems.'
+                    if observed
+                    else 'No committed inventory observation across registered systems.'
                 ),
                 'icon': 'database',
             },
@@ -686,9 +690,7 @@ def get_dashboard_section(
         dashboard['system_health_pagination'] = pagination
         if section == 'system_health':
             return dashboard
-        dashboard['inventory'] = _inventory_summary(
-            [selected] if selected is not None else systems, selected=selected
-        )
+        dashboard['inventory'] = _inventory_summary([selected] if selected is not None else systems, selected=selected)
         dashboard['freshness'] = _freshness(selected, systems)
     elif section == 'kpi_cards':
         dashboard['kpis'] = _dashboard_kpis(systems, selected)

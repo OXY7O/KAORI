@@ -13,9 +13,10 @@ def test_reachable_backend_does_not_imply_report_file_exists(monkeypatch) -> Non
     assert state['exists'] is False
     assert state['verified'] is False
     assert state['state'] == 'referenced'
-    assert service._get_file_state(SimpleNamespace(status='ready', file_path='s3:reports/example.pdf'), state)[
-        'label'
-    ] == 'Artifact Referenced'
+    assert (
+        service._get_file_state(SimpleNamespace(status='ready', file_path='s3:reports/example.pdf'), state)['label']
+        == 'Artifact Referenced'
+    )
 
 
 def test_archived_reference_is_not_presented_as_physically_verified() -> None:

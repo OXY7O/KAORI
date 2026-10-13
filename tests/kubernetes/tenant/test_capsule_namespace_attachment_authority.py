@@ -11,9 +11,12 @@ from app.kubernetes.tenant.capsule_namespace_attachment_authority import (
 
 def _tenant(**overrides):
     base = {
-        'cluster_id': 'cluster-a', 'provider_key': 'capsule',
-        'provider_state': 'capsule', 'reconciliation_authority': 'capsule',
-        'lifecycle_status': 'ready', 'ownership_status': 'adopted',
+        'cluster_id': 'cluster-a',
+        'provider_key': 'capsule',
+        'provider_state': 'capsule',
+        'reconciliation_authority': 'capsule',
+        'lifecycle_status': 'ready',
+        'ownership_status': 'adopted',
         'provider_reference': 'team-a',
         'provider_evidence_json': {'provider_uid': 'capsule-uid'},
     }
@@ -22,12 +25,16 @@ def _tenant(**overrides):
 
 
 def _namespace(*, labels=None, owners=None, uid='ns-uid'):
-    return SimpleNamespace(metadata=SimpleNamespace(
-        name='team-a-dev', uid=uid, resource_version='42',
-        labels=labels if labels is not None else {'capsule.clastix.io/tenant': 'team-a'},
-        owner_references=owners or [],
-        deletion_timestamp=None,
-    ))
+    return SimpleNamespace(
+        metadata=SimpleNamespace(
+            name='team-a-dev',
+            uid=uid,
+            resource_version='42',
+            labels=labels if labels is not None else {'capsule.clastix.io/tenant': 'team-a'},
+            owner_references=owners or [],
+            deletion_timestamp=None,
+        )
+    )
 
 
 def _validate(tenant=None, namespace=None, status=None):
@@ -36,7 +43,9 @@ def _validate(tenant=None, namespace=None, status=None):
         cluster_id='cluster-a',
         capsule_item={
             'metadata': {
-                'name': 'team-a', 'uid': 'capsule-uid', 'resourceVersion': '14',
+                'name': 'team-a',
+                'uid': 'capsule-uid',
+                'resourceVersion': '14',
             },
         },
         namespace=namespace or _namespace(),
@@ -54,15 +63,18 @@ def test_matching_capsule_namespace_correlation_preserves_existing_provider_auth
     assert evidence['provider_mutation_performed'] is False
 
 
-@pytest.mark.parametrize('override', [
-    {'cluster_id': 'foreign'},
-    {'provider_key': 'native_kubernetes'},
-    {'provider_state': 'native'},
-    {'reconciliation_authority': 'native_kubernetes'},
-    {'lifecycle_status': 'released'},
-    {'provider_reference': 'team-b'},
-    {'provider_evidence_json': {'provider_uid': 'recreated'}},
-])
+@pytest.mark.parametrize(
+    'override',
+    [
+        {'cluster_id': 'foreign'},
+        {'provider_key': 'native_kubernetes'},
+        {'provider_state': 'native'},
+        {'reconciliation_authority': 'native_kubernetes'},
+        {'lifecycle_status': 'released'},
+        {'provider_reference': 'team-b'},
+        {'provider_evidence_json': {'provider_uid': 'recreated'}},
+    ],
+)
 def test_cross_cluster_wrong_authority_or_released_tenant_cannot_attach(override):
     with pytest.raises(ValueError):
         _validate(tenant=_tenant(**override))
@@ -108,7 +120,8 @@ def test_multiple_capsule_claims_fail_closed():
 
 def test_capsule_owner_reference_uid_must_match_current_tenant_generation():
     stale = SimpleNamespace(
-        kind='Tenant', name='team-a',
+        kind='Tenant',
+        name='team-a',
         uid='recreated-capsule',
         api_version='capsule.clastix.io/v1beta2',
     )
@@ -118,7 +131,9 @@ def test_capsule_owner_reference_uid_must_match_current_tenant_generation():
 
 def test_capsule_owner_reference_without_generation_uid_fails_closed():
     missing = SimpleNamespace(
-        kind='Tenant', name='team-a', api_version='capsule.clastix.io/v1beta2',
+        kind='Tenant',
+        name='team-a',
+        api_version='capsule.clastix.io/v1beta2',
     )
     with pytest.raises(ValueError, match='UID belongs to another generation'):
         _validate(namespace=_namespace(owners=[missing]))

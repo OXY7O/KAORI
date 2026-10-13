@@ -17,15 +17,15 @@ def test_long_identity_context_uses_shared_responsive_summary_variant() -> None:
     assert "('Recorded', item.created_at|user_datetime, item.created_label)" in detail
     assert "('Evidence', 'Activity Register', 'Notification-backed')" in detail
     assert "layout='default', pinned=true" in shared
-    assert "data-kaori-summary-layout=\"unified\"" in shared
+    assert 'data-kaori-summary-layout="unified"' in shared
     assert 'mt-3 grid min-w-0 gap-x-6 gap-y-3 border-t border-outline-subtle pt-3' in shared
     assert "'lg:col-span-2' if unified and loop.index0 == 1" in shared
     assert "'min-w-0' if unified else" in shared
-    assert "data-kaori-summary-layout=\"target-wide\"" in shared
+    assert 'data-kaori-summary-layout="target-wide"' in shared
     assert '{% if pinned %}data-resource-detail-summary{% endif %}' in shared
     assert '[overflow-wrap:anywhere]' in shared
     assert "shell.querySelector(':scope > [data-resource-detail-summary]')" in modal
-    assert "elements.content.replaceChildren(...cloneChildren(shell))" in modal
+    assert 'elements.content.replaceChildren(...cloneChildren(shell))' in modal
 
 
 def test_failure_summary_uses_labelled_rows_without_nested_card() -> None:
@@ -63,13 +63,14 @@ def test_context_uses_full_width_trace_style_rows_for_long_identity_text() -> No
     ):
         assert value in context
 
+
 def test_optional_metadata_displays_long_fields_as_open_two_column_rows() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
     start = detail.index('{% if item.additional_evidence %}')
     end = detail.index('{% if item.technical_evidence %}', start)
     additional = detail[start:end]
-    assert "view_more.render(" in additional
-    assert "open_by_default=false" in additional
+    assert 'view_more.render(' in additional
+    assert 'open_by_default=false' in additional
     assert 'data-activity-metadata-layout="responsive-pairs"' in additional
     assert 'grid min-w-0 gap-x-8 sm:grid-cols-2' in additional
     assert '{% for evidence in item.additional_evidence %}' in additional

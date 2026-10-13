@@ -40,16 +40,11 @@ def test_runtime_filters_and_pagination_are_sql_first():
 
 def test_registered_providers_expose_bounded_record_model():
     paths = {
-        'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/__init__.py':
-            'record_model=KubernetesConnection',
-        'app/integrations/observability/metrics_source/__init__.py':
-            'record_model=MetricsSource',
-        'app/integrations/observability/alert_source/providers/alertmanager/__init__.py':
-            'record_model=AlertmanagerInstance',
-        'app/integrations/storage/object_storage/providers/minio/__init__.py':
-            'record_model=MinioInstance',
-        'app/integrations/registry/providers/harbor/__init__.py':
-            'record_model=HarborInstance',
+        'app/integrations/orchestration/container_orchestrator/adapters/kubernetes_api/__init__.py': 'record_model=KubernetesConnection',
+        'app/integrations/observability/metrics_source/__init__.py': 'record_model=MetricsSource',
+        'app/integrations/observability/alert_source/providers/alertmanager/__init__.py': 'record_model=AlertmanagerInstance',
+        'app/integrations/storage/object_storage/providers/minio/__init__.py': 'record_model=MinioInstance',
+        'app/integrations/registry/providers/harbor/__init__.py': 'record_model=HarborInstance',
     }
     for path, assertion in paths.items():
         assert assertion in read(path), path
@@ -67,6 +62,6 @@ def test_runtime_empty_page_uses_canonical_pagination_contract():
 def test_sql_reuses_existing_provider_neutral_runtime_contract():
     sql = read('app/integrations/overview_runtime_sql.py')
     assert 'registry.implementations_for_type(module.integration_type)' in sql
-    assert "canonical.provider_key == implementation.provider_key" in sql
+    assert 'canonical.provider_key == implementation.provider_key' in sql
     assert "fleet.c.health_status == 'unhealthy', 0" in sql
     assert 'func.coalesce(observation.health_status' in sql

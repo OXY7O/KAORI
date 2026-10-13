@@ -143,9 +143,7 @@ def general():
         and compatibility_registry is not None
         and request.headers.get('HX-Target') == 'compatibility-registry'
     ):
-        return make_response(
-            render_template('settings/general/partials/_compatibility_registry.html', **context)
-        )
+        return make_response(render_template('settings/general/partials/_compatibility_registry.html', **context))
     if (
         request.method == 'GET'
         and is_htmx

@@ -12,10 +12,10 @@
     {% if overview.forecast.available %}
         <div class="space-y-4">
             {% set forecast_metrics = [
-                ('database', 'Footprint Growth', overview.forecast.size_growth_per_day, 'Committed footprint delta per day.'),
-                ('package-plus', 'Artifact Growth', overview.forecast.artifact_growth_per_day, 'Artifact change per day.'),
-                ('timer', 'Nearest Quota', overview.forecast.nearest_quota_days, 'Quota ETA with positive growth.')
-            ] %}
+                            ('database', 'Footprint Growth', overview.forecast.size_growth_per_day, 'Committed footprint delta per day.'),
+                            ('package-plus', 'Artifact Growth', overview.forecast.artifact_growth_per_day, 'Artifact change per day.'),
+                            ('timer', 'Nearest Quota', overview.forecast.nearest_quota_days, 'Quota ETA with positive growth.')
+                        ] %}
             <div class="grid gap-3 sm:grid-cols-3">
                 {% for icon, label, value, helper in forecast_metrics %}
                     <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
@@ -26,7 +26,8 @@
                             <span>{{ label }}</span>
                         </div>
                         <p class="mt-2 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
-                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ helper }}">{{ helper }}</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                           title="{{ helper }}">{{ helper }}</p>
                     </article>
                 {% endfor %}
             </div>
@@ -56,11 +57,12 @@
                         ('Analytics Sources', overview.forecast.analytics_count, 'Committed analytics snapshots'),
                         ('Quota Projects', overview.consumer_insights.project_count, 'Projects with quota evidence'),
                         ('Quota Horizons', overview.consumer_insights.horizon_count, 'Projects with quota ETA')
-                    ] %}
+                        ] %}
                         <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                             <p class="text-xs text-content-muted">{{ label }}</p>
                             <p class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ value }}</p>
-                            <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ helper }}">{{ helper }}</p>
+                            <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                               title="{{ helper }}">{{ helper }}</p>
                         </div>
                     {% endfor %}
                 </div>

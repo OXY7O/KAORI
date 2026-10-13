@@ -94,9 +94,7 @@ def registry_metrics_ready_provider_ids(identities: list[IntegrationInstance]) -
     source_ids = {binding.integration_instance_id for binding in bindings}
     sources = {
         source.integration_instance_id: source
-        for source in MetricsSource.query.filter(
-            MetricsSource.integration_instance_id.in_(source_ids)
-        ).all()
+        for source in MetricsSource.query.filter(MetricsSource.integration_instance_id.in_(source_ids)).all()
     }
     ready: set[int] = set()
     for binding in bindings:

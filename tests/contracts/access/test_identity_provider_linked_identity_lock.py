@@ -22,10 +22,13 @@ def _candidate(*, key: str = 'google-workspace', provider_key: str = 'google'):
     return SimpleNamespace(key=key, provider_key=provider_key)
 
 
-@pytest.mark.parametrize('attribute,value', [
-    ('key', 'other-callback'),
-    ('provider_key', 'github'),
-])
+@pytest.mark.parametrize(
+    'attribute,value',
+    [
+        ('key', 'other-callback'),
+        ('provider_key', 'github'),
+    ],
+)
 def test_linked_provider_rebind_fails_closed(attribute: str, value: str) -> None:
     provider = _provider(linked=True)
     config = _candidate(**{attribute: value})

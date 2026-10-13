@@ -105,4 +105,4 @@ def test_operational_dashboard_recommendation_cards_deep_link_to_filtered_review
     # Existing search and modal deep-link behavior target the same finding identity.
     assert "'rule_key'," in recommendation_service
     assert "const DETAIL_PARAM = 'detail'" in javascript
-    assert "if (detailId) openFromUrl(detailId)" in javascript
+    assert 'if (detailId) openFromUrl(detailId)' in javascript

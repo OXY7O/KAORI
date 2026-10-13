@@ -12,7 +12,10 @@ def test_phase1_adapters_reuse_named_sender_functions() -> None:
     for provider in ('ntfy', 'slack', 'discord'):
         assert f'def _send_{provider}(' in registry
         assert f'sender=_send_{provider},' in registry
-        assert f'sender=lambda credentials, destination, provider_config, message, timeout: send_{provider}_message' not in registry
+        assert (
+            f'sender=lambda credentials, destination, provider_config, message, timeout: send_{provider}_message'
+            not in registry
+        )
     for provider in ('telegram', 'email', 'microsoft_teams'):
         assert f"'{provider}': NotificationProviderAdapter(" in registry
 

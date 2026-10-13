@@ -82,21 +82,21 @@ def test_release_does_not_commit_when_provider_resource_version_changes(monkeypa
     timestamp = datetime.now(UTC).isoformat()
     shared = {
         'status': 'handoff_review_required',
-        'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
-        'generation': 1, 'provider': 'native_kubernetes',
-        'ownership': 'adopted', 'checked_at': timestamp,
+        'tenant_id': 'tenant-a',
+        'cluster_id': 'cluster-a',
+        'generation': 1,
+        'provider': 'native_kubernetes',
+        'ownership': 'adopted',
+        'checked_at': timestamp,
     }
     previous = {
         **shared,
-        'live_provider_identity': [
-            {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'ns-a', 'resource_version': '1'}
-        ],
+        'live_provider_identity': [{'kind': 'Namespace', 'name': 'sandbox', 'uid': 'ns-a', 'resource_version': '1'}],
     }
     next_snapshot = {
-        **shared, 'blockers': [],
-        'live_provider_identity': [
-            {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'ns-a', 'resource_version': '2'}
-        ],
+        **shared,
+        'blockers': [],
+        'live_provider_identity': [{'kind': 'Namespace', 'name': 'sandbox', 'uid': 'ns-a', 'resource_version': '2'}],
     }
     monkeypatch.setattr(release_preflight, 'latest_tenant_release_preflight', lambda _: previous)
     monkeypatch.setattr(
@@ -115,12 +115,13 @@ def test_release_does_not_commit_after_preflight_blocks_new_dependencies(monkeyp
     timestamp = datetime.now(UTC).isoformat()
     snapshot = {
         'status': 'handoff_review_required',
-        'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
-        'generation': 1, 'provider': 'native_kubernetes',
-        'ownership': 'adopted', 'checked_at': timestamp,
-        'live_provider_identity': [
-            {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'ns-a', 'resource_version': '1'}
-        ],
+        'tenant_id': 'tenant-a',
+        'cluster_id': 'cluster-a',
+        'generation': 1,
+        'provider': 'native_kubernetes',
+        'ownership': 'adopted',
+        'checked_at': timestamp,
+        'live_provider_identity': [{'kind': 'Namespace', 'name': 'sandbox', 'uid': 'ns-a', 'resource_version': '1'}],
     }
     monkeypatch.setattr(release_preflight, 'latest_tenant_release_preflight', lambda _: snapshot)
     monkeypatch.setattr(
@@ -136,25 +137,23 @@ def test_release_detects_changed_handoff_inventory_even_when_namespace_uid_is_st
     from app.kubernetes.tenant import release_preflight
 
     timestamp = datetime.now(UTC).isoformat()
-    provider = [
-        {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'uid',
-         'resource_version': '12'}
-    ]
+    provider = [{'kind': 'Namespace', 'name': 'sandbox', 'uid': 'uid', 'resource_version': '12'}]
     snapshot = {
         'status': 'handoff_review_required',
-        'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
-        'generation': 1, 'provider': 'native_kubernetes',
-        'ownership': 'adopted', 'checked_at': timestamp,
+        'tenant_id': 'tenant-a',
+        'cluster_id': 'cluster-a',
+        'generation': 1,
+        'provider': 'native_kubernetes',
+        'ownership': 'adopted',
+        'checked_at': timestamp,
         'live_provider_identity': provider,
-        'handoff_components': [
-            {'kind': 'Namespace', 'name': 'sandbox', 'uid': 'uid',
-             'resource_version': '12'}
-        ],
+        'handoff_components': [{'kind': 'Namespace', 'name': 'sandbox', 'uid': 'uid', 'resource_version': '12'}],
         'handoff_fingerprint': 'old-fingerprint',
     }
     monkeypatch.setattr(release_preflight, 'latest_tenant_release_preflight', lambda _: snapshot)
     monkeypatch.setattr(
-        release_preflight, 'review_tenant_release_preflight_committed',
+        release_preflight,
+        'review_tenant_release_preflight_committed',
         lambda **_: {**snapshot, 'blockers': [], 'handoff_fingerprint': 'new-fingerprint'},
     )
     with pytest.raises(ValueError, match='handoff evidence changed'):

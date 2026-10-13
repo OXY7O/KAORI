@@ -86,7 +86,7 @@ def test_vulnerability_evidence_status_is_inline_and_contextual() -> None:
     intro = template[start:end]
 
     assert "section_intro.render('Vulnerability Findings'," in intro
-    assert "table_label.status_label(security.finding_interpretation.title" in intro
+    assert 'table_label.status_label(security.finding_interpretation.title' in intro
     assert "info_tip.render('artifact-registry-vulnerability-evidence-help'," in intro
     assert 'security.finding_interpretation.description' in intro
     assert "extra_classes='min-w-0 flex-1'" in intro
@@ -265,8 +265,7 @@ def test_vulnerability_runtime_drilldown_preserves_artifact_context() -> None:
     assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in modals
     assert 'Open Runtime Usage' in modals
     assert 'source_id=security.filters.source_id' in template
-    assert "supply_chain_detail.vulnerability(row, vulnerability_dialog_id)" in template
-
+    assert 'supply_chain_detail.vulnerability(row, vulnerability_dialog_id)' in template
 
 
 def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidence() -> None:
@@ -281,7 +280,7 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
 
     # The vulnerability table alone uses a bounded six-column design.
     vulns = workspace.split("table_ui.table_classes('min-w-[68rem] !table-fixed')", 1)[1].split(
-        "{% else %}\n                                        <table", 1
+        '{% else %}\n                                        <table', 1
     )[0]
     assert 'w-[19%]">Finding</th>' in vulns
     assert 'w-[21%]">Artifact</th>' in vulns
@@ -292,9 +291,9 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
     assert vulns.count('row.severity_label, severity_tone') == 1
     assert 'row.installed_version' in vulns
     assert 'row.fix_available' in vulns
-    assert "row.runtime_exposure_count" in vulns
+    assert 'row.runtime_exposure_count' in vulns
     assert "status_indicator_label('Not Observed', 'unknown')" in vulns
-    assert "row.freshness.label, row.freshness.tone" in vulns
+    assert 'row.freshness.label, row.freshness.tone' in vulns
     # Restore existing icon-bearing title_cell (not a new styling component).
     # Every registry identity renders one semantic icon without duplicating
     # the severity or freshness evidence labels.
@@ -317,61 +316,76 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
 
     # The shell is the existing approved, keyboard-closeable KAORI dialog.
     assert '{% macro vulnerability(row, dialog_id)' in detail
-    assert "dialog_id," in detail
-    assert "data-artifact-registry-vulnerability-detail" in detail
+    assert 'dialog_id,' in detail
+    assert 'data-artifact-registry-vulnerability-detail' in detail
     assert 'data-kaori-native-dialog' in detail
     assert 'data-kaori-dialog-close' in detail
 
     # Full artifact and package identities never depend on the truncated table.
     for field in (
-        'row.vulnerability_id', 'row.severity_label', 'row.package',
-        'row.installed_version', 'row.fixed_version', 'row.project',
-        'row.repository', 'row.digest', 'row.source_name', 'row.provider_label',
-        'row.observed_at|user_datetime', 'row.runtime_exposure_count',
+        'row.vulnerability_id',
+        'row.severity_label',
+        'row.package',
+        'row.installed_version',
+        'row.fixed_version',
+        'row.project',
+        'row.repository',
+        'row.digest',
+        'row.source_name',
+        'row.provider_label',
+        'row.observed_at|user_datetime',
+        'row.runtime_exposure_count',
         'row.freshness.label',
     ):
         assert field in detail
     assert 'No committed Kubernetes workload binding is currently observed' in detail
     assert 'does not establish that the finding is remediated' in detail
-    assert "row.runtime_exposure_count" in detail
+    assert 'row.runtime_exposure_count' in detail
     assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in detail
 
     # One modal per paginated finding; no provider calls or new scan logic.
     assert "'id': int(item.id)" in presentation
-    assert "RegistryWorkloadBinding.query" in presentation
+    assert 'RegistryWorkloadBinding.query' in presentation
     assert 'HarborClient' not in presentation
-    assert "registry.footer(" in workspace
+    assert 'registry.footer(' in workspace
     assert '[5, 10, 25, 50]' in workspace
-
 
 
 def test_vulnerability_detail_uses_supply_chain_cards_and_safe_long_value_wrapping() -> None:
     from jinja2 import Environment
 
-    template = read("app/templates/artifact_registry/partials/_security_supply_chain_detail_modals.html")
+    template = read('app/templates/artifact_registry/partials/_security_supply_chain_detail_modals.html')
     Environment().parse(template)
-    dialog = template.split("{% macro vulnerability(row, dialog_id) -%}", 1)[1]
+    dialog = template.split('{% macro vulnerability(row, dialog_id) -%}', 1)[1]
 
     # Reuse the Supply Chain shell instead of introducing a competing modal.
-    assert "{% call shell(" in dialog
-    assert "data-artifact-registry-vulnerability-detail-v2" in dialog
-    assert "data-artifact-registry-vulnerability-assessment" in dialog
-    assert "data-artifact-registry-vulnerability-artifact" in dialog
-    assert "data-artifact-registry-vulnerability-exposure" in dialog
-    assert dialog.index("Finding &amp; Remediation") < dialog.index(
-        "Affected Artifact"
-    ) < dialog.index("Runtime &amp; Scan Evidence")
-    assert dialog.count("rounded-xl border border-outline-default bg-surface-card") == 3
+    assert '{% call shell(' in dialog
+    assert 'data-artifact-registry-vulnerability-detail-v2' in dialog
+    assert 'data-artifact-registry-vulnerability-assessment' in dialog
+    assert 'data-artifact-registry-vulnerability-artifact' in dialog
+    assert 'data-artifact-registry-vulnerability-exposure' in dialog
+    assert (
+        dialog.index('Finding &amp; Remediation')
+        < dialog.index('Affected Artifact')
+        < dialog.index('Runtime &amp; Scan Evidence')
+    )
+    assert dialog.count('rounded-xl border border-outline-default bg-surface-card') == 3
     for icon in ('shield-alert', 'package-search', 'fingerprint', 'waypoints'):
         assert f'data-lucide="{icon}"' in dialog
 
     # Each unpredictable text dimension has its own safe wrapping contract.
     # Grids are one column on narrow viewports, two columns only at sm+.
-    assert dialog.count("grid-cols-1 gap-px border-t border-outline-subtle") == 3
-    assert dialog.count("sm:grid-cols-2") >= 3
-    assert dialog.count("sm:col-span-2") >= 2
-    for key in ('row.package', 'row.project', 'row.repository', 'row.provider_label',
-                'row.source_name', 'row.observed_at|user_datetime'):
+    assert dialog.count('grid-cols-1 gap-px border-t border-outline-subtle') == 3
+    assert dialog.count('sm:grid-cols-2') >= 3
+    assert dialog.count('sm:col-span-2') >= 2
+    for key in (
+        'row.package',
+        'row.project',
+        'row.repository',
+        'row.provider_label',
+        'row.source_name',
+        'row.observed_at|user_datetime',
+    ):
         assert key in dialog
     for value in (
         '{{ row.package }}',
@@ -398,12 +412,12 @@ def test_vulnerability_detail_uses_supply_chain_cards_and_safe_long_value_wrappi
 
     # Scanner/authority semantics, provenance, and on-demand runtime drilldown
     # remain identical to the committed evidence contract.
-    assert "row.severity_label, severity_tone" in dialog
+    assert 'row.severity_label, severity_tone' in dialog
     assert "row.runtime_exposure_count ~ ' Runtime Bindings'" in dialog
     assert "status_indicator_label('Runtime Not Observed', 'unknown')" in dialog
-    assert "row.freshness.label, row.freshness.tone" in dialog
-    assert "No committed Kubernetes workload binding is currently observed" in dialog
-    assert "does not establish that the finding is remediated" in dialog
+    assert 'row.freshness.label, row.freshness.tone' in dialog
+    assert 'No committed Kubernetes workload binding is currently observed' in dialog
+    assert 'does not establish that the finding is remediated' in dialog
     assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in dialog
     assert 'hx-post' not in dialog
 
@@ -434,23 +448,28 @@ def test_security_summary_uses_registry_section_intro_and_grouped_metrics() -> N
     summary = template[start:end]
 
     assert 'artifact-registry-security-summary-heading' in template
-    assert "section_card.render(" in summary
-    assert "posture_grid.render(security_metrics, columns=4)" in summary
+    assert 'section_card.render(' in summary
+    assert 'posture_grid.render(security_metrics, columns=4)' in summary
     assert "body_classes='p-0'" in summary
     assert "'Security Evidence Summary'" in summary
     assert "security.view == 'vulnerabilities'" in summary
-    assert summary.count("security_metrics = [") == 2
+    assert summary.count('security_metrics = [') == 2
     for metric in (
-        'Critical Findings', 'High Findings', 'Affected Artifacts', 'Runtime Exposed',
-        'Signature Observed', 'SBOM Available', 'Coverage Gaps', 'Security Sources',
+        'Critical Findings',
+        'High Findings',
+        'Affected Artifacts',
+        'Runtime Exposed',
+        'Signature Observed',
+        'SBOM Available',
+        'Coverage Gaps',
+        'Security Sources',
     ):
         assert metric in summary
     assert "'critical' if security.critical else 'info'" in summary
     assert "'warning' if security.high else 'info'" in summary
     assert "'critical' if security.runtime_exposed else 'info'" in summary
-    assert "operational_metric_card" not in summary
-    assert "registry.footer(" in template
-
+    assert 'operational_metric_card' not in summary
+    assert 'registry.footer(' in template
 
 
 def test_security_sync_action_states_fleet_scope_independently_of_view_filters() -> None:

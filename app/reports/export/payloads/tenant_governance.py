@@ -560,12 +560,16 @@ def get_report_tenant_governance_payload(report: Report) -> dict[str, Any]:
 
     tenants, namespaces = _tenant_scope(report, cluster_id)
     tenant_ids = [row.id for row in tenants]
-    records = _namespace_scoped_records(report, namespaces, _related_records(
+    records = _namespace_scoped_records(
+        report,
+        namespaces,
+        _related_records(
             tenant_ids,
             cluster_id,
             namespace=report.namespace,
             namespace_ids={row.id for row in namespaces},
-        ))
+        ),
+    )
     decisions = _capacity_decisions(report, cluster_id)
     environments = records['environments']
     tenant_by_id = {row.id: row for row in tenants}

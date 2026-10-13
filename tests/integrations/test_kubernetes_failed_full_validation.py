@@ -24,18 +24,23 @@ def _run(monkeypatch, result):
         integration_instance=canonical,
     )
     cluster = SimpleNamespace(
-        kubernetes_connection=connection, status='connected', last_check=None,
+        kubernetes_connection=connection,
+        status='connected',
+        last_check=None,
         node_count=3,
     )
     commits = []
     monkeypatch.setattr(service, 'connection_for_cluster', lambda _cluster: connection)
     monkeypatch.setattr(service, 'test_cluster_connection', lambda **_kw: result)
     monkeypatch.setattr(
-        service, '_sync_kubernetes_runtime',
+        service,
+        '_sync_kubernetes_runtime',
         lambda _cluster: setattr(canonical, 'readiness_status', connection.readiness_status),
     )
     monkeypatch.setattr(
-        service, 'db', SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append(1))),
+        service,
+        'db',
+        SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append(1))),
     )
     response = service.run_test_cluster(cluster)
     assert len(commits) == 1
@@ -44,9 +49,7 @@ def _run(monkeypatch, result):
 
 @pytest.mark.parametrize('error', ['Connection timed out', 'Unauthorized'])
 def test_failed_full_validation_supersedes_old_provider_ready(monkeypatch, error):
-    _response, connection, canonical, cluster = _run(
-        monkeypatch, {'success': False, 'error': error}
-    )
+    _response, connection, canonical, cluster = _run(monkeypatch, {'success': False, 'error': error})
     assert cluster.status == 'failed'
     assert connection.readiness_status == canonical.readiness_status == 'blocked'
     assert connection.compatibility_status == 'validation_failed'
@@ -60,10 +63,16 @@ def test_subsequent_success_restores_provider_core_evidence(monkeypatch):
     _response, connection, canonical, cluster = _run(
         monkeypatch,
         {
-            'success': True, 'node_count': 2, 'version': 'v1.31.1', 'platform': 'linux/amd64',
-            'compatibility_status': 'compatible', 'compatibility_profile': 'kubernetes-core-v1',
-            'readiness_status': 'ready', 'lifecycle_status': 'current',
-            'api_discovery_summary': {'features': {}}, 'validation_message': 'Validated',
+            'success': True,
+            'node_count': 2,
+            'version': 'v1.31.1',
+            'platform': 'linux/amd64',
+            'compatibility_status': 'compatible',
+            'compatibility_profile': 'kubernetes-core-v1',
+            'readiness_status': 'ready',
+            'lifecycle_status': 'current',
+            'api_discovery_summary': {'features': {}},
+            'validation_message': 'Validated',
         },
     )
     assert cluster.status == 'connected'

@@ -70,7 +70,7 @@ def test_node_table_keeps_seven_columns_and_surfaces_conditions() -> None:
     assert 'node.condition_summary' in content
     assert "technical_value.render(node.internal_ip or 'Not Reported')" in content
     assert "table_ui.title_cell(node.node_name, node.identity_supporting, 'server')" in content
-    assert "node.os_image" not in content
+    assert 'node.os_image' not in content
 
 
 def test_node_table_allocates_more_space_to_node_and_cluster_names() -> None:

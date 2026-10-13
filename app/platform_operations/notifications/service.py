@@ -392,7 +392,10 @@ def stage_operational_activity(
     here MUST propagate so the protected source mutation can be rolled back.
     """
     status, title, message, detail = _normalize_notification_content(
-        event_type=event_type, status=status, title=title, message=message,
+        event_type=event_type,
+        status=status,
+        title=title,
+        message=message,
         detail=None,
     )
     actor = resolve_operational_actor(metadata=metadata)
@@ -411,13 +414,20 @@ def stage_operational_activity(
     )
     return build_operational_feedback(
         OperationalFeedbackSpec(
-            status=status, title=title, message=message, detail=detail,
-            action_url=action_url, action_label=action_label,
-            action_icon=action_icon, activity_audit_saved=True,
+            status=status,
+            title=title,
+            message=message,
+            detail=detail,
+            action_url=action_url,
+            action_label=action_label,
+            action_icon=action_icon,
+            activity_audit_saved=True,
             notification_deck_visible=True,
             delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
             delivery=_feedback_delivery(
-                event_type=event_type, status=status, metadata=metadata,
+                event_type=event_type,
+                status=status,
+                metadata=metadata,
             ),
         )
     )

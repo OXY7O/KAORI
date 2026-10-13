@@ -71,29 +71,41 @@ def test_failed_and_pending_generation_never_reuses_fresh_payload_as_ready() -> 
         assert ready.available
 
         mark_snapshot_pending(
-            cluster_id=cluster.id, dataset_key='analytics.capacity',
-            parameters=parameters, job_execution_id=None,
+            cluster_id=cluster.id,
+            dataset_key='analytics.capacity',
+            parameters=parameters,
+            job_execution_id=None,
         )
         pending = read_snapshot(cluster_id=cluster.id, dataset_key='analytics.capacity', parameters=parameters)
         assert pending.state == 'pending'
         assert not pending.available
         assert pending.context is None
         old = read_last_known_snapshot(
-            cluster_id=cluster.id, dataset_key='analytics.capacity', parameters=parameters,
+            cluster_id=cluster.id,
+            dataset_key='analytics.capacity',
+            parameters=parameters,
         )
         assert old.state == 'refreshing'
         assert old.context == {'available': True, 'marker': 'last-success'}
 
         fail_snapshot(
-            cluster_id=cluster.id, dataset_key='analytics.capacity',
-            parameters=parameters, error='Test provider unavailable', job_execution_id=None,
+            cluster_id=cluster.id,
+            dataset_key='analytics.capacity',
+            parameters=parameters,
+            error='Test provider unavailable',
+            job_execution_id=None,
         )
         failed = read_snapshot(cluster_id=cluster.id, dataset_key='analytics.capacity', parameters=parameters)
         assert failed.state == 'failed'
         assert not failed.available
-        assert read_last_known_snapshot(
-            cluster_id=cluster.id, dataset_key='analytics.capacity', parameters=parameters,
-        ).state == 'failed'
+        assert (
+            read_last_known_snapshot(
+                cluster_id=cluster.id,
+                dataset_key='analytics.capacity',
+                parameters=parameters,
+            ).state
+            == 'failed'
+        )
         batch = read_snapshots(
             dataset_key='analytics.capacity',
             parameters_by_cluster={cluster.id: parameters},

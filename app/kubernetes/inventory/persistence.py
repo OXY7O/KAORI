@@ -466,8 +466,7 @@ def save_pods(
     # Preserve Pod primary keys across snapshots: derived Registry runtime
     # bindings reference PodInventory and must not disappear on every sync.
     existing_pods = {
-        (row.namespace, row.pod_name): row
-        for row in PodInventory.query.filter_by(cluster_id=cluster.id).all()
+        (row.namespace, row.pod_name): row for row in PodInventory.query.filter_by(cluster_id=cluster.id).all()
     }
 
     pods, collection_evidence = get_pods(

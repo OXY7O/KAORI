@@ -17,20 +17,26 @@ class _EmptyAggregateQuery:
 
 def test_registered_queues_display_readiness_before_first_execution(monkeypatch):
     inspected = []
-    monkeypatch.setattr(presentation.db, 'session', SimpleNamespace(
-        query=lambda *_args: _EmptyAggregateQuery()
-    ))
-    monkeypatch.setattr(presentation, 'list_job_definitions', lambda: [
-        SimpleNamespace(queue_name='maintenance'),
-        SimpleNamespace(queue_name='inventory'),
-    ])
+    monkeypatch.setattr(presentation.db, 'session', SimpleNamespace(query=lambda *_args: _EmptyAggregateQuery()))
+    monkeypatch.setattr(
+        presentation,
+        'list_job_definitions',
+        lambda: [
+            SimpleNamespace(queue_name='maintenance'),
+            SimpleNamespace(queue_name='inventory'),
+        ],
+    )
     monkeypatch.setattr(presentation, 'inspect_celery_topology', lambda: inspected.append(True) or {})
-    monkeypatch.setattr(presentation, 'get_queue_readiness', lambda queue_name, topology: {
-        'tone': 'unknown',
-        'show_warning': True,
-        'label': 'Unverified',
-        'description': f'{queue_name} worker inspection unavailable',
-    })
+    monkeypatch.setattr(
+        presentation,
+        'get_queue_readiness',
+        lambda queue_name, topology: {
+            'tone': 'unknown',
+            'show_warning': True,
+            'label': 'Unverified',
+            'description': f'{queue_name} worker inspection unavailable',
+        },
+    )
     monkeypatch.setattr(
         presentation, 'present_user_datetime', lambda value, empty: empty if value is None else str(value)
     )

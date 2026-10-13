@@ -3,11 +3,9 @@
     ('providers', 'Provider Registry', 'blocks', url_for('identity_providers.index', tab='providers')),
     ('directory', 'Directory Provisioning', 'contact-round', url_for('identity_providers.index', tab='directory'))
 ] %}
-{{ framed_tabs.render_navigation(
-    identity_workspace_tabs,
-    active_tab,
-    prefix='identity-provider-workspace',
-    aria_label='Identity Provider Records',
-    hx_target='#identity-provider-workspace',
-    hx_select='#identity-provider-workspace'
-) }}
+{{ framed_tabs.render_navigation(identity_workspace_tabs,
+active_tab,
+prefix='identity-provider-workspace',
+aria_label='Identity Provider Records',
+hx_target='#identity-provider-workspace',
+hx_select='#identity-provider-workspace') }}

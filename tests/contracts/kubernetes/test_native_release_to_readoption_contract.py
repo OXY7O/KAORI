@@ -12,10 +12,10 @@ def source(path: str) -> str:
 def test_canonical_native_handoff_release_handback_are_separate_explicit_routes():
     routes = source('app/kubernetes/tenant/routes.py')
     html = source('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
-    assert "def accept_native_successor_handoff_route(" in routes
-    assert "def execute_native_release_handoff_route(" in routes
-    assert "def finalize_verified_native_release_route(" in routes
-    assert "def verify_native_successor_handback_route(" in routes
+    assert 'def accept_native_successor_handoff_route(' in routes
+    assert 'def execute_native_release_handoff_route(' in routes
+    assert 'def finalize_verified_native_release_route(' in routes
+    assert 'def verify_native_successor_handback_route(' in routes
     assert "@permission_required('clusters.manage')" in routes
     assert 'confirm_native_handoff_execution' in html
     assert 'confirm_native_release_finalization' in html
@@ -42,17 +42,21 @@ def test_native_cycle_services_are_provider_preserving_and_fail_closed():
     assert 'TenantLifecycleStatus.RELEASED.value' in finalizer
     assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in finalizer
     assert 'handback_native_successor_governance_committed(' in handback
-    assert "require_platform_admin_actor(" in handback
+    assert 'require_platform_admin_actor(' in handback
     assert "'adoption_automatic': False" in handback
     assert "'handback_governance'" in discovery
     assert 'resource_version=resource_version' in discovery
     assert 'V1SelfSubjectReview(' in scope
     assert 'V1SelfSubjectAccessReviewSpec(' in scope
-    for snippet in ('delete_namespace(', 'delete_namespaced_resource_quota(',
-                    'delete_namespaced_limit_range(', 'create_namespace('):
+    for snippet in (
+        'delete_namespace(',
+        'delete_namespaced_resource_quota(',
+        'delete_namespaced_limit_range(',
+        'create_namespace(',
+    ):
         assert snippet not in executor
         assert snippet not in handback
-    assert "release_adopted_tenant_committed(" not in executor
+    assert 'release_adopted_tenant_committed(' not in executor
 
 
 def test_normal_registry_is_committed_only_and_does_not_hold_bearer():

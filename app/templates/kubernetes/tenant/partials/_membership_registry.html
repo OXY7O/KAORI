@@ -46,7 +46,7 @@
         '#add-user-membership-form',
         'Add Membership',
         header_actions=header_actions,
-    result_count=membership_pagination.total_items,
+        result_count=membership_pagination.total_items,
         title_extra=title_info) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
@@ -114,7 +114,8 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Type</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Status</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Updated</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Action</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Action</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -124,8 +125,10 @@
                             {{ table_ui.title_cell(membership.subject_name, membership.user.username if membership.user else (membership.group.name if membership.group else 'Managed principal') , 'user-round') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ membership.tenant.name }}">{{ membership.tenant.name }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ membership.tenant.slug }}">{{ membership.tenant.slug }}</p>
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ membership.tenant.name }}">{{ membership.tenant.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ membership.tenant.slug }}">{{ membership.tenant.slug }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.metadata_label(membership.principal_type|replace('_', ' ') |title) }}
@@ -134,7 +137,8 @@
                             {{ table_label.status_label(membership.status|title, 'normal' if membership.status == 'active' else 'critical') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-xs font-medium text-content-secondary min-w-0 max-w-full truncate" title="{{ membership.updated_at|user_datetime }}">{{ membership.updated_at|user_datetime }}</p>
+                            <p class="text-xs font-medium text-content-secondary min-w-0 max-w-full truncate"
+                               title="{{ membership.updated_at|user_datetime }}">{{ membership.updated_at|user_datetime }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             {% if membership.status == 'active' %}
@@ -190,14 +194,14 @@
         </table>
     </div>
     {{ registry_ui.footer('tenant.tenants',
-            registry_id,
-            loading_id,
-            membership_pagination,
-            query_params,
-            membership_pagination.allowed_per_page,
-            resource_label='Memberships',
-            rows_aria_label='Membership rows per page',
-            control_name='tenant-memberships',
-            page_param='membership_page',
-            per_page_param='membership_per_page') }}
+        registry_id,
+        loading_id,
+        membership_pagination,
+        query_params,
+        membership_pagination.allowed_per_page,
+        resource_label='Memberships',
+        rows_aria_label='Membership rows per page',
+        control_name='tenant-memberships',
+        page_param='membership_page',
+        per_page_param='membership_per_page') }}
 </section>

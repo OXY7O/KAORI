@@ -14,16 +14,16 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="inline-flex min-w-0 items-center gap-1.5">
                         <h2 id="capsule-shared-cutover-heading"
-                        class="text-base font-semibold text-content-primary">Capsule Shared Allocation Governance</h2>
+                            class="text-base font-semibold text-content-primary">Capsule Shared Allocation Governance</h2>
                         {{ info_tip.render('capsule-shared-cutover-tip',
-                'Capsule shared allocation',
-                'GlobalResourceQuota is one Tenant-level allocation contract. KAORI counts it once for capacity governance.',
-                [
-                'Capsule must be healthy and shared_global_quota capability must be available.',
-                'Exactly one authoritative GlobalResourceQuota with stable UID/resourceVersion is required.',
-                'Resource Profile quota values become the proposed shared contract; Namespace LimitRange evidence remains separate.',
-                'KAORI never substitutes a Native ResourceQuota write for Capsule-owned shared quota.'
-                ], placement='right') }}
+                                                'Capsule shared allocation',
+                                                'GlobalResourceQuota is one Tenant-level allocation contract. KAORI counts it once for capacity governance.',
+                                                [
+                                                'Capsule must be healthy and shared_global_quota capability must be available.',
+                                                'Exactly one authoritative GlobalResourceQuota with stable UID/resourceVersion is required.',
+                                                'Resource Profile quota values become the proposed shared contract; Namespace LimitRange evidence remains separate.',
+                                                'KAORI never substitutes a Native ResourceQuota write for Capsule-owned shared quota.'
+                                                ], placement='right') }}
                     </span>
                     {{ table_label.special_label('GlobalResourceQuota', 'info', 'shield-check') }}
                 </div>
@@ -32,7 +32,6 @@
                 </p>
             </div>
         </div>
-
     </header>
     <form method="post"
           action="{{ url_for('tenant.cutover_capsule_shared_allocation_route') }}"
@@ -40,10 +39,12 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="space-y-5 p-5">
             <div class="mb-4 flex items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
                     <i data-lucide="crosshair" class="h-4 w-4"></i>
                 </span>
-                <div><h3 class="text-sm font-semibold text-content-primary">Change Target</h3>
+                <div>
+                    <h3 class="text-sm font-semibold text-content-primary">Change Target</h3>
                     <p class="mt-1 text-xs text-content-muted">Select the Capsule Tenant and governed Resource Profile.</p>
                 </div>
             </div>
@@ -79,10 +80,13 @@
                     </select>
                 </label>
             </div>
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-label="Capsule GlobalResourceQuota contract comparison">
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     aria-label="Capsule GlobalResourceQuota contract comparison">
                 <div class="flex items-center justify-between gap-2 border-b border-outline-subtle px-4 py-3">
                     <span class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
-                        <i data-lucide="git-compare-arrows" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="git-compare-arrows"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
                         Managed Contract Comparison
                     </span>
                     {{ table_label.special_label('Preflight · Read Only', 'maintenance', 'shield-check') }}
@@ -91,14 +95,17 @@
                     {% for side, title, caption in [
                         ('current', 'Observed GlobalResourceQuota', 'Capsule provider authority · Observed'),
                         ('proposed', 'Proposed Shared Contract', 'Resource Profile · Pending admission')
-                    ] %}
-                        <section aria-label="{{ title }}" class="min-w-0 px-5 py-4 {% if side == 'proposed' %}border-t border-outline-subtle md:border-t-0 md:border-l{% endif %}">
+                        ] %}
+                        <section aria-label="{{ title }}"
+                                 class="min-w-0 px-5 py-4 {% if side == 'proposed' %}border-t border-outline-subtle md:border-t-0 md:border-l{% endif %}">
                             <p class="text-sm font-semibold {{ 'text-kaori-primary' if side == 'proposed' else 'text-content-secondary' }}">{{ title }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ caption }}</p>
                             {% if side == 'current' %}
-                                <p data-tenant-shared-current-source class="mt-2 break-words text-sm font-semibold text-content-primary">—</p>
+                                <p data-tenant-shared-current-source
+                                   class="mt-2 break-words text-sm font-semibold text-content-primary">—</p>
                             {% else %}
-                                <p data-tenant-shared-proposed-profile class="mt-2 break-words text-sm font-semibold text-content-primary">—</p>
+                                <p data-tenant-shared-proposed-profile
+                                   class="mt-2 break-words text-sm font-semibold text-content-primary">—</p>
                             {% endif %}
                             <p class="mt-4 border-b border-outline-subtle pb-2 text-xs font-semibold text-content-secondary">GlobalResourceQuota · Requests &amp; Limits</p>
                             <dl class="grid grid-cols-2 gap-x-5 sm:grid-cols-3">
@@ -106,12 +113,14 @@
                                     ('CPU Requests', 'requests.cpu'), ('CPU Limits', 'limits.cpu'),
                                     ('Memory Requests', 'requests.memory'), ('Memory Limits', 'limits.memory'),
                                     ('Pods', 'pods'), ('Total Storage', 'requests.storage')
-                                ] %}
+                                    ] %}
                                     <div class="border-b border-outline-subtle py-3">
                                         <dt class="text-xs text-content-muted">{{ label }}</dt>
                                         <dd class="mt-1 text-sm font-semibold text-content-primary"
                                             data-tenant-quota-metric-side="{{ side }}"
-                                            data-tenant-quota-metric-key="{{ key }}">—</dd>
+                                            data-tenant-quota-metric-key="{{ key }}">
+                                            —
+                                        </dd>
                                     </div>
                                 {% endfor %}
                             </dl>
@@ -120,18 +129,22 @@
                 </div>
                 <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle bg-surface-elevated px-4 py-3">
                     <span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary">
-                        <i data-lucide="chart-no-axes-column-increasing" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="chart-no-axes-column-increasing"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
                         Change Highlights
                     </span>
-                    <span data-tenant-quota-change-summary aria-live="polite" class="text-xs text-content-secondary">Choose contracts</span>
+                    <span data-tenant-quota-change-summary
+                          aria-live="polite"
+                          class="text-xs text-content-secondary">Choose contracts</span>
                 </div>
             </section>
             {# A different committed authority is not a broken GlobalResourceQuota.
                Keep actual GRQ blockers separate from workflow-inapplicability guidance. #}
             {% set blocked_grq = capsule_shared_cutover_state.values()
-                |selectattr('applicable')|rejectattr('supported')|list %}
+                        |selectattr('applicable')|rejectattr('supported')|list %}
             {% set other_authorities = capsule_shared_cutover_state.values()
-                |rejectattr('applicable')|list %}
+                        |rejectattr('applicable')|list %}
             {% if blocked_grq %}
                 <section class="rounded-lg border border-status-warning-border bg-status-warning-soft px-4 py-3 text-status-warning-text"
                          aria-label="GlobalResourceQuota governance blockers">
@@ -142,9 +155,9 @@
                             {% if state.get('applicable') and not state.get('supported') %}
                                 <li class="min-w-0 text-xs leading-5">
                                     <span class="font-semibold">{{ tenant.name }}</span>
-                                    <span class="block break-words">{{ state.get('reason') }}</span>
+                                    <span class="block break-words">{{ state.get("reason") }}</span>
                                     <span class="block">Committed GRQ sources: {{ state.get('source_count', 0) }}
-                                        · Observed API: {{ state.get('provider_api_version') or 'Not observed' }}</span>
+                                    · Observed API: {{ state.get("provider_api_version") or 'Not observed' }}</span>
                                 </li>
                             {% endif %}
                         {% endfor %}
@@ -174,8 +187,8 @@
                                     </div>
                                     <p class="mt-1 break-words text-xs leading-5 text-content-secondary">
                                         <span class="font-medium text-content-primary">Detected authority:</span>
-                                        {{ state.get('detected_authority') }}
-                                        <span aria-hidden="true"> · </span>
+                                        {{ state.get("detected_authority") }}
+                                        <span aria-hidden="true">·</span>
                                         GRQ sources: {{ state.get('source_count', 0) }}
                                     </p>
                                     {% if state.get('authority') == 'capsule_tenant_resource_quotas' %}

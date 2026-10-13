@@ -11,8 +11,8 @@ from app.extensions.db import db
 from app.kubernetes.tenant.access import (
     ACCESS_PROFILE_CATALOG,
     LATEST_ACCESS_PROFILE_VERSION,
-    capsule_cluster_role_manifest,
     TenantAccessScope,
+    capsule_cluster_role_manifest,
     get_access_profile,
     validate_grant_scope,
 )
@@ -230,7 +230,9 @@ def create_access_grant_committed(
                 if grant.reconciliation_status == TenantAccessReconciliationStatus.READY.value
                 else 'Tenant Access Grant was committed; effective provider reconciliation is still pending.'
             ),
-            outcome='success' if grant.reconciliation_status == TenantAccessReconciliationStatus.READY.value else 'warning',
+            outcome='success'
+            if grant.reconciliation_status == TenantAccessReconciliationStatus.READY.value
+            else 'warning',
         )
         db.session.commit()
         return grant
@@ -273,7 +275,9 @@ def revoke_access_grant_committed(*, grant_id: int, actor: User | None = None) -
                 if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value
                 else 'Tenant Access Grant is revoked in KAORI, but effective cleanup remains unverified.'
             ),
-            outcome='success' if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value else 'warning',
+            outcome='success'
+            if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value
+            else 'warning',
         )
         db.session.commit()
         return grant
@@ -712,7 +716,8 @@ def revoke_membership_committed(*, membership_id: int, actor: User | None = None
                 action='tenant_access_grant.membership_revoked',
                 summary='Tenant Access Grant was revoked because its membership was revoked.',
                 outcome=(
-                    'success' if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value
+                    'success'
+                    if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value
                     else 'warning'
                 ),
             )
@@ -792,7 +797,8 @@ def reconcile_access_grants_for_namespace_committed(
 
     tenant = namespace.environment.tenant
     if tenant.provider_key != tenant.reconciliation_authority or tenant.provider_key not in {
-        'native_kubernetes', 'capsule'
+        'native_kubernetes',
+        'capsule',
     }:
         return {'matched': 0, 'reconciled': 0, 'failed': 0}
 
@@ -961,15 +967,15 @@ def get_tenant_access_context() -> dict[str, object]:
     ]
     recent_access_remediation = (
         AuditEvent.query.filter_by(target_type='kubernetes_tenant_access_remediation_plan')
-        .order_by(AuditEvent.id.desc()).limit(30).all()
+        .order_by(AuditEvent.id.desc())
+        .limit(30)
+        .all()
     )
     capsule_remediation = [
-        row for row in recent_access_remediation
-        if (row.metadata_json or {}).get('provider', 'capsule') == 'capsule'
+        row for row in recent_access_remediation if (row.metadata_json or {}).get('provider', 'capsule') == 'capsule'
     ][:5]
     native_remediation = [
-        row for row in recent_access_remediation
-        if (row.metadata_json or {}).get('provider') == 'native_kubernetes'
+        row for row in recent_access_remediation if (row.metadata_json or {}).get('provider') == 'native_kubernetes'
     ][:5]
     return {
         'access_tenant_options': tenant_options,
@@ -987,34 +993,46 @@ def get_tenant_access_context() -> dict[str, object]:
         'recent_tenant_memberships': TenantMembership.query.order_by(TenantMembership.created_at.desc()).limit(5).all(),
         'recent_access_grants': TenantAccessGrant.query.order_by(TenantAccessGrant.created_at.desc()).limit(5).all(),
         'external_capsule_tenants': [
-            tenant for tenant in tenant_options
+            tenant
+            for tenant in tenant_options
             if tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
         ],
         'external_native_tenants': [
-            tenant for tenant in tenant_options
+            tenant
+            for tenant in tenant_options
             if tenant.provider_key == 'native_kubernetes'
             and tenant.provider_state == 'native'
             and tenant.reconciliation_authority == 'native_kubernetes'
         ],
         'recent_external_access_profile_reviews': (
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_external_role_profile_review')
-            .order_by(AuditEvent.id.desc()).limit(5).all()
+            .order_by(AuditEvent.id.desc())
+            .limit(5)
+            .all()
         ),
         'recent_external_native_access': (
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_external_access_inventory')
-            .order_by(AuditEvent.id.desc()).limit(5).all()
+            .order_by(AuditEvent.id.desc())
+            .limit(5)
+            .all()
         ),
         'recent_external_capsule_access': (
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_external_access_inventory')
-            .order_by(AuditEvent.id.desc()).limit(5).all()
+            .order_by(AuditEvent.id.desc())
+            .limit(5)
+            .all()
         ),
         'recent_capsule_access_drift': (
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_access_drift_evidence')
-            .order_by(AuditEvent.id.desc()).limit(5).all()
+            .order_by(AuditEvent.id.desc())
+            .limit(5)
+            .all()
         ),
         'recent_native_access_drift': (
             AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_access_drift_evidence')
-            .order_by(AuditEvent.id.desc()).limit(5).all()
+            .order_by(AuditEvent.id.desc())
+            .limit(5)
+            .all()
         ),
         'recent_capsule_access_remediation': capsule_remediation,
         'recent_native_access_remediation': native_remediation,

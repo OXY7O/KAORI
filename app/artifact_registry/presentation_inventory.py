@@ -28,7 +28,11 @@ def _project_row(item: RegistryProject) -> dict[str, Any]:
         'id': item.id,
         'name': item.name,
         'public': item.public,
-        'repository_count': (item.repository_count if item.repository_count is not None else RegistryRepository.query.filter_by(project_id=item.id).count()),
+        'repository_count': (
+            item.repository_count
+            if item.repository_count is not None
+            else RegistryRepository.query.filter_by(project_id=item.id).count()
+        ),
         'provider': item.integration_instance_id,
         'provider_id': item.integration_instance_id,
         'observed_at': item.observed_at,
@@ -40,7 +44,11 @@ def _repository_row(item: RegistryRepository) -> dict[str, Any]:
         'id': item.id,
         'name': item.name,
         'project': item.project.name,
-        'artifact_count': (item.artifact_count if item.artifact_count is not None else RegistryArtifact.query.filter_by(repository_id=item.id).count()),
+        'artifact_count': (
+            item.artifact_count
+            if item.artifact_count is not None
+            else RegistryArtifact.query.filter_by(repository_id=item.id).count()
+        ),
         'pull_count': item.pull_count,
         'provider_id': item.project.integration_instance_id,
         'observed_at': item.observed_at,
@@ -159,9 +167,7 @@ def _inventory_snapshot_context(overview: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _inventory_fleet_readings(
-    overview: dict[str, Any], committed_provider_ids: list[int]
-) -> list[dict[str, Any]]:
+def _inventory_fleet_readings(overview: dict[str, Any], committed_provider_ids: list[int]) -> list[dict[str, Any]]:
     provider_count = int(overview['provider_count'])
     snapshot_count = int(overview['snapshot_count'])
     exception_count = (
@@ -170,9 +176,7 @@ def _inventory_fleet_readings(
         + int(overview['failed_refresh_count'])
     )
     project_count = int(overview['project_count'])
-    scoped_projects = RegistryProject.query.filter(
-        RegistryProject.integration_instance_id.in_(committed_provider_ids)
-    )
+    scoped_projects = RegistryProject.query.filter(RegistryProject.integration_instance_id.in_(committed_provider_ids))
     visibility_observed = scoped_projects.filter(RegistryProject.public.is_not(None)).count()
     public_projects = scoped_projects.filter(RegistryProject.public.is_(True)).count()
 
@@ -379,16 +383,11 @@ def _inventory_resource_posture_metrics(
 def _inventory_rows(resource: str, committed_provider_ids: list[int]) -> Any:
     """Return a scoped SQL query, never an eagerly materialized asset fleet."""
     if resource == 'repositories':
-        query = RegistryRepository.query.join(
-            RegistryProject, RegistryRepository.project_id == RegistryProject.id
-        )
+        query = RegistryRepository.query.join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
     elif resource == 'artifacts':
-        query = (
-            RegistryArtifact.query.join(
-                RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
-            )
-            .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
-        )
+        query = RegistryArtifact.query.join(
+            RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
+        ).join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
     else:
         query = RegistryProject.query
     return query.join(
@@ -399,8 +398,7 @@ def _inventory_rows(resource: str, committed_provider_ids: list[int]) -> Any:
 
 def _inventory_filter_options(query: Any) -> tuple[list[dict[str, Any]], list[str]]:
     provider_ids = [
-        int(row[0])
-        for row in query.with_entities(RegistryProject.integration_instance_id).distinct().all()
+        int(row[0]) for row in query.with_entities(RegistryProject.integration_instance_id).distinct().all()
     ]
     providers = IntegrationInstance.query.filter(IntegrationInstance.id.in_(provider_ids)).all()
     source_options = [
@@ -416,9 +414,7 @@ def _inventory_filter_options(query: Any) -> tuple[list[dict[str, Any]], list[st
         for provider in providers
     ]
     source_options.sort(key=lambda item: (item['name'].lower(), item['id']))
-    environment_options = sorted(
-        {item['environment'] for item in source_options}, key=str.lower
-    )
+    environment_options = sorted({item['environment'] for item in source_options}, key=str.lower)
     return source_options, environment_options
 
 
@@ -433,7 +429,9 @@ def _inventory_scope_filter(
     if source_id is not None:
         query = query.filter(RegistryProject.integration_instance_id == source_id)
     if environment:
-        query = query.filter(func.lower(func.coalesce(IntegrationInstance.environment, 'Not Set')) == environment.lower())
+        query = query.filter(
+            func.lower(func.coalesce(IntegrationInstance.environment, 'Not Set')) == environment.lower()
+        )
     if resource == 'projects':
         if visibility == 'public':
             query = query.filter(RegistryProject.public.is_(True))
@@ -469,9 +467,7 @@ def _inventory_search_filter(query: Any, resource: str, search: str) -> Any:
     return query.filter(or_(*predicates))
 
 
-def _inventory_resource_posture_metrics(
-    resource: str, query: Any
-) -> list[tuple[str, str, Any, str, str]]:
+def _inventory_resource_posture_metrics(resource: str, query: Any) -> list[tuple[str, str, Any, str, str]]:
     total = query.order_by(None).count()
     provider_count = int(
         query.with_entities(func.count(func.distinct(RegistryProject.integration_instance_id))).scalar() or 0
@@ -485,16 +481,32 @@ def _inventory_resource_posture_metrics(
             .scalar_subquery()
         )
         artifact_total, pull_evidence_count = query.with_entities(
-            func.coalesce(
-                func.sum(func.coalesce(RegistryRepository.artifact_count, fallback_artifacts)), 0
-            ),
+            func.coalesce(func.sum(func.coalesce(RegistryRepository.artifact_count, fallback_artifacts)), 0),
             func.count(RegistryRepository.pull_count),
         ).one()
         return [
             ('package-open', 'Repositories', total, 'Committed repositories in the current inventory.', 'brand'),
-            ('database-backup', 'Registry Sources', provider_count, 'Registry providers contributing committed repository evidence.', 'brand'),
-            ('fingerprint', 'Artifacts', int(artifact_total or 0), 'Committed artifact identities referenced by repository inventory.', 'brand'),
-            ('activity', 'Pull Counts Observed', int(pull_evidence_count or 0), 'Repositories with committed provider pull-count evidence.', 'info' if pull_evidence_count else 'unknown'),
+            (
+                'database-backup',
+                'Registry Sources',
+                provider_count,
+                'Registry providers contributing committed repository evidence.',
+                'brand',
+            ),
+            (
+                'fingerprint',
+                'Artifacts',
+                int(artifact_total or 0),
+                'Committed artifact identities referenced by repository inventory.',
+                'brand',
+            ),
+            (
+                'activity',
+                'Pull Counts Observed',
+                int(pull_evidence_count or 0),
+                'Repositories with committed provider pull-count evidence.',
+                'info' if pull_evidence_count else 'unknown',
+            ),
         ]
 
     if resource == 'artifacts':
@@ -502,18 +514,54 @@ def _inventory_resource_posture_metrics(
         untagged = max(total - tagged, 0)
         return [
             ('fingerprint', 'Artifacts', total, 'Committed digest-oriented Registry artifact identities.', 'brand'),
-            ('database-backup', 'Registry Sources', provider_count, 'Registry providers contributing committed artifact evidence.', 'brand'),
-            ('tags', 'Tagged Artifacts', tagged, 'Artifacts with one or more committed mutable tag references.', 'info' if tagged else 'unknown'),
-            ('tag', 'Untagged Artifacts', untagged, 'Committed artifacts without a current tag reference.', 'info' if untagged else 'normal'),
+            (
+                'database-backup',
+                'Registry Sources',
+                provider_count,
+                'Registry providers contributing committed artifact evidence.',
+                'brand',
+            ),
+            (
+                'tags',
+                'Tagged Artifacts',
+                tagged,
+                'Artifacts with one or more committed mutable tag references.',
+                'info' if tagged else 'unknown',
+            ),
+            (
+                'tag',
+                'Untagged Artifacts',
+                untagged,
+                'Committed artifacts without a current tag reference.',
+                'info' if untagged else 'normal',
+            ),
         ]
 
     public = query.filter(RegistryProject.public.is_(True)).order_by(None).count()
     missing = query.filter(RegistryProject.public.is_(None)).order_by(None).count()
     return [
         ('folder-kanban', 'Projects', total, 'Committed Registry project identities.', 'brand'),
-        ('database-backup', 'Registry Sources', provider_count, 'Registry providers contributing committed project evidence.', 'brand'),
-        ('globe-2', 'Public Projects', public, 'Projects marked public by provider evidence.', 'info' if public else 'normal'),
-        ('circle-help', 'Visibility Not Observed', missing, 'Projects without committed visibility evidence.', 'warning' if missing else 'normal'),
+        (
+            'database-backup',
+            'Registry Sources',
+            provider_count,
+            'Registry providers contributing committed project evidence.',
+            'brand',
+        ),
+        (
+            'globe-2',
+            'Public Projects',
+            public,
+            'Projects marked public by provider evidence.',
+            'info' if public else 'normal',
+        ),
+        (
+            'circle-help',
+            'Visibility Not Observed',
+            missing,
+            'Projects without committed visibility evidence.',
+            'warning' if missing else 'normal',
+        ),
     ]
 
 
@@ -688,14 +736,16 @@ def build_inventory_project_detail(project_id: int) -> dict[str, Any] | None:
     repository_items = (
         RegistryRepository.query.filter_by(project_id=project.id)
         .order_by(func.lower(RegistryRepository.name).asc(), RegistryRepository.id.asc())
-        .limit(25).all()
+        .limit(25)
+        .all()
     )
     repositories = [
         {
             'id': int(repository.id),
             'name': repository.name,
             'artifact_count': (
-                int(repository.artifact_count) if repository.artifact_count is not None
+                int(repository.artifact_count)
+                if repository.artifact_count is not None
                 else RegistryArtifact.query.filter_by(repository_id=repository.id).count()
             ),
             'pull_count': repository.pull_count,
@@ -750,7 +800,9 @@ def _inventory_detail_provider_context(integration_instance_id: int) -> dict[str
 
 def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | None:
     repository = RegistryRepository.query.filter(RegistryRepository.id == int(repository_id)).first()
-    if repository is None or not _inventory_detail_in_active_committed_scope(repository.project.integration_instance_id):
+    if repository is None or not _inventory_detail_in_active_committed_scope(
+        repository.project.integration_instance_id
+    ):
         return None
 
     source = _inventory_detail_provider_context(repository.project.integration_instance_id)
@@ -758,21 +810,25 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
     artifact_items = (
         RegistryArtifact.query.filter_by(repository_id=repository.id)
         .order_by(RegistryArtifact.digest.asc(), RegistryArtifact.id.asc())
-        .limit(25).all()
+        .limit(25)
+        .all()
     )
     artifact_ids = [int(item.id) for item in artifact_items]
     tag_counts = dict(
         RegistryTag.query.with_entities(RegistryTag.artifact_id, func.count(RegistryTag.id))
         .filter(RegistryTag.artifact_id.in_(artifact_ids))
-        .group_by(RegistryTag.artifact_id).all()
+        .group_by(RegistryTag.artifact_id)
+        .all()
     )
     tagged = (
         RegistryTag.query.with_entities(
             RegistryTag.id.label('tag_id'),
-            func.row_number().over(
+            func.row_number()
+            .over(
                 partition_by=RegistryTag.artifact_id,
                 order_by=(func.lower(RegistryTag.name).asc(), RegistryTag.id.asc()),
-            ).label('tag_rank'),
+            )
+            .label('tag_rank'),
         )
         .filter(RegistryTag.artifact_id.in_(artifact_ids))
         .subquery()
@@ -782,7 +838,8 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
         .filter(tagged.c.tag_rank <= 3)
         .order_by(RegistryTag.artifact_id.asc(), func.lower(RegistryTag.name).asc(), RegistryTag.id.asc())
         .all()
-        if artifact_ids else []
+        if artifact_ids
+        else []
     )
     tag_names: dict[int, list[str]] = {artifact_id: [] for artifact_id in artifact_ids}
     for tag in preview_tags:
@@ -811,9 +868,7 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
         'description': repository.description or 'No provider description collected.',
         'project_id': int(repository.project.id),
         'project_name': repository.project.name,
-        'artifact_count': (
-            int(repository.artifact_count) if repository.artifact_count is not None else artifact_total
-        ),
+        'artifact_count': (int(repository.artifact_count) if repository.artifact_count is not None else artifact_total),
         'pull_count': repository.pull_count,
         'provider_created_at': repository.provider_created_at,
         'provider_updated_at': repository.provider_updated_at,
@@ -840,7 +895,8 @@ def build_inventory_artifact_detail(artifact_id: int) -> dict[str, Any] | None:
     tag_items = (
         RegistryTag.query.filter_by(artifact_id=artifact.id)
         .order_by(func.lower(RegistryTag.name).asc(), RegistryTag.id.asc())
-        .limit(25).all()
+        .limit(25)
+        .all()
     )
     tags = [
         {

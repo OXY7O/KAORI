@@ -248,7 +248,9 @@ def _grouped_current_counts(model: Any, cluster_ids: list[Any]) -> dict[Any, int
     }
 
 
-def get_inventory_cluster_summary(clusters: list[Cluster] | None = None) -> tuple[
+def get_inventory_cluster_summary(
+    clusters: list[Cluster] | None = None,
+) -> tuple[
     list[Cluster],
     dict[str, dict[str, Any]],
 ]:
@@ -402,8 +404,11 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
         'collection_exceptions': collection_exceptions,
         'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
         'scope_label': (
-            selected[0].name if cluster_id and selected_count == 1
-            else f'{selected_count} Cluster' if selected_count == 1 else f'{selected_count} Clusters'
+            selected[0].name
+            if cluster_id and selected_count == 1
+            else f'{selected_count} Cluster'
+            if selected_count == 1
+            else f'{selected_count} Clusters'
         ),
         'scope_supporting': 'Selected cluster'
         if cluster_id and selected_count == 1
@@ -527,34 +532,32 @@ def _cluster_overview_row(
         else {'label': 'No Assets', 'count': 0}
     )
 
-    return (
-        {
-            'id': cluster.id,
-            'name': cluster.name,
-            'environment': cluster.environment,
-            'status': cluster.status,
-            'connection_label': connection_label,
-            'connection_tone': connection_tone,
-            'kubernetes_version': summary.get('version') or '-',
-            'synced_at': synced_at,
-            'sync_status_label': sync_label,
-            'sync_status_tone': sync_tone,
-            'counts': counts,
-            'total_objects': total_objects,
-            'signals': signals,
-            'populated_asset_types': populated_asset_types,
-            'dominant_asset': dominant_asset,
-            'snapshot_source': 'Committed Snapshot',
-            'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
-            'guidance': _inventory_guidance(
-                connected=connected,
-                synced_at=synced_at,
-                signals=signals,
-                connection_status=cluster.status,
-                collection_evidence=collection_evidence,
-            ),
-        }
-    )
+    return {
+        'id': cluster.id,
+        'name': cluster.name,
+        'environment': cluster.environment,
+        'status': cluster.status,
+        'connection_label': connection_label,
+        'connection_tone': connection_tone,
+        'kubernetes_version': summary.get('version') or '-',
+        'synced_at': synced_at,
+        'sync_status_label': sync_label,
+        'sync_status_tone': sync_tone,
+        'counts': counts,
+        'total_objects': total_objects,
+        'signals': signals,
+        'populated_asset_types': populated_asset_types,
+        'dominant_asset': dominant_asset,
+        'snapshot_source': 'Committed Snapshot',
+        'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
+        'guidance': _inventory_guidance(
+            connected=connected,
+            synced_at=synced_at,
+            signals=signals,
+            connection_status=cluster.status,
+            collection_evidence=collection_evidence,
+        ),
+    }
 
 
 def _fleet_active_signal_count(
@@ -567,16 +570,18 @@ def _fleet_active_signal_count(
     for cluster in clusters:
         summary = inventory_summary.get(cluster.id, {})
         counts = {key: mapping.get(cluster.id, 0) for key, mapping in count_maps.items()}
-        total += len(_build_inventory_signals(
-            connected=cluster.status == 'connected',
-            connection_status=cluster.status,
-            collection_evidence=summary.get('collection_evidence') or {},
-            synced_at=summary.get('synced_at'),
-            node_count=counts['nodes'],
-            workload_count=counts['workloads'],
-            pod_count=counts['pods'],
-            storage_count=counts['storage'],
-        ))
+        total += len(
+            _build_inventory_signals(
+                connected=cluster.status == 'connected',
+                connection_status=cluster.status,
+                collection_evidence=summary.get('collection_evidence') or {},
+                synced_at=summary.get('synced_at'),
+                node_count=counts['nodes'],
+                workload_count=counts['workloads'],
+                pod_count=counts['pods'],
+                storage_count=counts['storage'],
+            )
+        )
     return total
 
 

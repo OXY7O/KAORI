@@ -9,7 +9,6 @@ from sqlalchemy.orm import joinedload
 from app.artifact_registry.presentation_common import _aware_datetime, _providers, _state_view
 from app.artifact_registry.presentation_overview import build_overview
 from app.common.pagination import paginate_query
-from app.models.integration import IntegrationInstance
 from app.models.registry import (
     RegistryCollectionState,
     RegistryGovernanceState,
@@ -42,17 +41,19 @@ def _governance_project_rows(items: list[Any], identity_by_id: dict[int, Any]) -
         identity = identity_by_id[int(item.project.integration_instance_id)]
         retention = _policy_state_view(item.retention_status)
         immutability = _policy_state_view(item.immutability_status)
-        rows.append({
-            'project': item.project.name,
-            'provider_label': _governance_source_name(identity),
-            'retention_status': str(item.retention_status or 'not_collected'),
-            'retention_label': retention['label'],
-            'retention_tone': retention['tone'],
-            'immutability_status': str(item.immutability_status or 'not_collected'),
-            'immutability_label': immutability['label'],
-            'immutability_tone': immutability['tone'],
-            'observed_at': item.observed_at,
-        })
+        rows.append(
+            {
+                'project': item.project.name,
+                'provider_label': _governance_source_name(identity),
+                'retention_status': str(item.retention_status or 'not_collected'),
+                'retention_label': retention['label'],
+                'retention_tone': retention['tone'],
+                'immutability_status': str(item.immutability_status or 'not_collected'),
+                'immutability_label': immutability['label'],
+                'immutability_tone': immutability['tone'],
+                'observed_at': item.observed_at,
+            }
+        )
     return rows
 
 
@@ -159,11 +160,14 @@ def _governance_summary(
 ) -> dict[str, Any]:
     source_ids = [int(source.id) for source in identities]
     provider_count = len(source_ids)
-    project_total = RegistryProject.query.filter(
-        RegistryProject.integration_instance_id.in_(source_ids)
-    ).count() if source_ids else 0
+    project_total = (
+        RegistryProject.query.filter(RegistryProject.integration_instance_id.in_(source_ids)).count()
+        if source_ids
+        else 0
+    )
     ready_count = sum(
-        1 for source_id in source_ids
+        1
+        for source_id in source_ids
         if (state := states.get(source_id)) is not None
         and state.status in {'ready', 'partial'}
         and state.last_committed_at is not None
@@ -229,9 +233,12 @@ def _governance_snapshot_context(summary: dict[str, Any]) -> dict[str, Any]:
     ready_count = summary['ready_count']
     exception_count = summary['exception_count']
     status = (
-        'Inputs Changed' if summary['inputs_changed_count']
-        else 'Current' if provider_count and ready_count == provider_count and exception_count == 0
-        else 'Not Collected' if ready_count == 0
+        'Inputs Changed'
+        if summary['inputs_changed_count']
+        else 'Current'
+        if provider_count and ready_count == provider_count and exception_count == 0
+        else 'Not Collected'
+        if ready_count == 0
         else 'Attention'
     )
     return {
@@ -261,7 +268,9 @@ def _governance_snapshot_context(summary: dict[str, Any]) -> dict[str, Any]:
         'exceptions_supporting': (
             'Missing, stale, partial, unavailable, or superseded Governance collection.'
             if exception_count
-            else 'No freshness or collection exceptions.' if provider_count else 'No active Registry providers.'
+            else 'No freshness or collection exceptions.'
+            if provider_count
+            else 'No active Registry providers.'
         ),
         'exceptions_tone': 'normal' if provider_count and exception_count == 0 else 'warning',
     }
@@ -279,9 +288,12 @@ def _governance_posture_cards(
     immutability_observed = summary['immutability_configured'] + summary['immutability_not_configured']
     replication = capability_counts['replication']
     replication_status = (
-        'Observed' if replication['observed']
-        else 'Unavailable' if replication['unavailable']
-        else 'Unsupported' if replication['unsupported'] and replication['unsupported'] == provider_count
+        'Observed'
+        if replication['observed']
+        else 'Unavailable'
+        if replication['unavailable']
+        else 'Unsupported'
+        if replication['unsupported'] and replication['unsupported'] == provider_count
         else 'Not Collected'
     )
     return [
@@ -291,11 +303,16 @@ def _governance_posture_cards(
             'status_label': (
                 'Committed'
                 if project_total and summary['policy_rows'] == project_total
-                else 'Partial' if summary['policy_rows'] else 'Not Collected'
+                else 'Partial'
+                if summary['policy_rows']
+                else 'Not Collected'
             ),
             'tone': (
-                'normal' if project_total and summary['policy_rows'] == project_total
-                else 'warning' if summary['policy_rows'] else 'unknown'
+                'normal'
+                if project_total and summary['policy_rows'] == project_total
+                else 'warning'
+                if summary['policy_rows']
+                else 'unknown'
             ),
             'detail': 'Committed project retention and immutability evidence.',
         },
@@ -303,9 +320,9 @@ def _governance_posture_cards(
             'label': 'Retention Coverage',
             'value': f'{retention_observed}/{project_total} Projects',
             'status_label': 'Observed' if retention_observed else 'Not Collected',
-            'tone': 'normal' if project_total and retention_observed == project_total else (
-                'warning' if project_total else 'unknown'
-            ),
+            'tone': 'normal'
+            if project_total and retention_observed == project_total
+            else ('warning' if project_total else 'unknown'),
             'detail': (
                 f'{summary["retention_configured"]} configured · '
                 f'{summary["retention_not_configured"]} not configured · '
@@ -316,9 +333,9 @@ def _governance_posture_cards(
             'label': 'Immutability Coverage',
             'value': f'{immutability_observed}/{project_total} Projects',
             'status_label': 'Observed' if immutability_observed else 'Not Collected',
-            'tone': 'normal' if project_total and immutability_observed == project_total else (
-                'warning' if project_total else 'unknown'
-            ),
+            'tone': 'normal'
+            if project_total and immutability_observed == project_total
+            else ('warning' if project_total else 'unknown'),
             'detail': (
                 f'{summary["immutability_configured"]} configured · '
                 f'{summary["immutability_not_configured"]} not configured · '
@@ -329,9 +346,9 @@ def _governance_posture_cards(
             'label': 'Replication Coverage',
             'value': f'{replication["observed"]}/{provider_count} Providers',
             'status_label': replication_status,
-            'tone': 'normal' if provider_count and replication['observed'] == provider_count else (
-                'warning' if provider_count else 'unknown'
-            ),
+            'tone': 'normal'
+            if provider_count and replication['observed'] == provider_count
+            else ('warning' if provider_count else 'unknown'),
             'detail': (
                 f'{summary["replication_rows"]} policies · '
                 f'{replication["unavailable"]} unavailable · '
@@ -384,7 +401,8 @@ def _governance_filtered_query(
         escaped = search.casefold().replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
         pattern = f'%{escaped}%'
         matched_sources = [
-            int(identity.id) for identity in identities
+            int(identity.id)
+            for identity in identities
             if search.casefold() in _governance_source_name(identity).casefold()
         ]
         clauses = (
@@ -397,8 +415,12 @@ def _governance_filtered_query(
                 func.lower(RegistryReplicationPolicy.name).like(pattern, escape='\\'),
                 func.lower(func.coalesce(RegistryReplicationPolicy.trigger_type, '')).like(pattern, escape='\\'),
                 func.lower(func.coalesce(RegistryReplicationPolicy.source_registry, '')).like(pattern, escape='\\'),
-                func.lower(func.coalesce(RegistryReplicationPolicy.destination_registry, '')).like(pattern, escape='\\'),
-                func.lower(func.coalesce(RegistryReplicationPolicy.destination_namespace, '')).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryReplicationPolicy.destination_registry, '')).like(
+                    pattern, escape='\\'
+                ),
+                func.lower(func.coalesce(RegistryReplicationPolicy.destination_namespace, '')).like(
+                    pattern, escape='\\'
+                ),
                 RegistryReplicationPolicy.integration_instance_id.in_(matched_sources),
             ]
         )
@@ -410,9 +432,7 @@ def _governance_filtered_query(
     )
 
 
-def _governance_replication_empty_state(
-    *, provider_count: int, capability_counts: dict[str, int]
-) -> dict[str, str]:
+def _governance_replication_empty_state(*, provider_count: int, capability_counts: dict[str, int]) -> dict[str, str]:
     observed = capability_counts.get('observed', 0)
     unavailable = capability_counts.get('unavailable', 0)
     unsupported = capability_counts.get('unsupported', 0)
@@ -528,18 +548,20 @@ def build_governance(
     if sync_state['label'] == 'Sync Failed':
         # A failed fleet refresh must be visible even if earlier committed
         # evidence is still fresh and readable.
-        snapshot_context.update({
-            'status': 'Refresh Failed' if summary['ready_count'] else 'Collection Failed',
-            'tone': 'warning',
-            'description': (
-                'The latest Governance Sync failed; the previous committed evidence '
-                'remains available where collected.'
-            ),
-            'exception_count': max(snapshot_context['exception_count'], 1),
-            'exceptions_label': 'Latest Sync Failed',
-            'exceptions_supporting': 'Review JobExecution errors before trusting freshness.',
-            'exceptions_tone': 'warning',
-        })
+        snapshot_context.update(
+            {
+                'status': 'Refresh Failed' if summary['ready_count'] else 'Collection Failed',
+                'tone': 'warning',
+                'description': (
+                    'The latest Governance Sync failed; the previous committed evidence '
+                    'remains available where collected.'
+                ),
+                'exception_count': max(snapshot_context['exception_count'], 1),
+                'exceptions_label': 'Latest Sync Failed',
+                'exceptions_supporting': 'Review JobExecution errors before trusting freshness.',
+                'exceptions_tone': 'warning',
+            }
+        )
         posture = {'label': 'Evidence Attention', 'tone': 'warning'}
     return {
         'setup': overview['setup'],
@@ -568,8 +590,7 @@ def build_governance(
         },
         'has_filters': filters_active,
         'provider_options': [
-            {'id': int(identity.id), 'name': _governance_source_name(identity)}
-            for identity in identities
+            {'id': int(identity.id), 'name': _governance_source_name(identity)} for identity in identities
         ],
         'sync_state': sync_state,
     }

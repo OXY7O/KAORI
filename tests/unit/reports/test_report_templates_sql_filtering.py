@@ -1,5 +1,6 @@
-from app.reports.report_templates.service import get_custom_template_filtered_query, get_selected_filters
 from werkzeug.datastructures import MultiDict
+
+from app.reports.report_templates.service import get_custom_template_filtered_query, get_selected_filters
 
 
 def test_template_sql_filter_contains_domain_family_and_format() -> None:
@@ -13,7 +14,7 @@ def test_template_sql_filter_contains_domain_family_and_format() -> None:
 
 
 def test_template_search_is_a_database_predicate() -> None:
-    query = get_custom_template_filtered_query(get_selected_filters(MultiDict([('search', 'Harbor')])) )
+    query = get_custom_template_filtered_query(get_selected_filters(MultiDict([('search', 'Harbor')])))
     sql = str(query)
     assert 'LIKE' in sql
     assert 'report_templates.name' in sql

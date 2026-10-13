@@ -3,6 +3,7 @@
 Issue #1129. This module contains no provider PATCH, AuditEvent INSERT,
 Released/Handback status mutation, or new Re-adoption admission shortcut.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -40,22 +41,26 @@ from app.models.tenant import (
 # Exactly the historical pre-#1126 owner label taxonomy. The old SHA-bound
 # dry-run counted resource-profile as foreign metadata. It must NOT be
 # recomputed using today's _MARKER_KEYS, otherwise history changes meaning.
-_LEGACY_OWNER_MARKERS = frozenset({
-    'app.kubernetes.io/managed-by',
-    'kaori.io/tenant-id',
-    'kaori.io/environment',
-    'kaori.io/profile-id',
-})
+_LEGACY_OWNER_MARKERS = frozenset(
+    {
+        'app.kubernetes.io/managed-by',
+        'kaori.io/tenant-id',
+        'kaori.io/environment',
+        'kaori.io/profile-id',
+    }
+)
 _RESIDUAL_LABEL = 'kaori.io/resource-profile'
 _ONLY_RESIDUE_ALLOWED = frozenset({_RESIDUAL_LABEL})
-_GOVERNED_LABELS = frozenset({
-    'app.kubernetes.io/managed-by',
-    'kaori.io/tenant-id',
-    'kaori.io/environment',
-    'kaori.io/resource-profile',
-    'kaori.io/tenant-generation',
-    'kaori.io/profile-id',
-})
+_GOVERNED_LABELS = frozenset(
+    {
+        'app.kubernetes.io/managed-by',
+        'kaori.io/tenant-id',
+        'kaori.io/environment',
+        'kaori.io/resource-profile',
+        'kaori.io/tenant-generation',
+        'kaori.io/profile-id',
+    }
+)
 _SUPPORTED = frozenset({'Namespace', 'ResourceQuota', 'LimitRange'})
 
 
@@ -65,10 +70,14 @@ def _scope_key(item: Mapping[str, Any]) -> tuple[str, str, str, str]:
     namespace = item.get('namespace') or name
     uid = item.get('uid')
     if (
-        not isinstance(kind, str) or kind not in _SUPPORTED
-        or not isinstance(name, str) or not name
-        or not isinstance(namespace, str) or not namespace
-        or not isinstance(uid, str) or not uid
+        not isinstance(kind, str)
+        or kind not in _SUPPORTED
+        or not isinstance(name, str)
+        or not name
+        or not isinstance(namespace, str)
+        or not namespace
+        or not isinstance(uid, str)
+        or not uid
         or (kind == 'Namespace' and name != namespace)
     ):
         raise ValueError('Legacy Native recovery evidence has an invalid resource identity.')
@@ -76,7 +85,9 @@ def _scope_key(item: Mapping[str, Any]) -> tuple[str, str, str, str]:
 
 
 def _index_scope(
-    values: Any, *, title: str,
+    values: Any,
+    *,
+    title: str,
 ) -> dict[tuple[str, str, str, str], Mapping[str, Any]]:
     if not isinstance(values, list) or not 0 < len(values) <= 100:
         raise ValueError(f'{title} has missing or unbounded resource coverage.')
@@ -95,18 +106,18 @@ def _legacy_retained_metadata(resource: Any) -> dict[str, Any]:
     """Reconstruct only the original historical foreign-label SHA recipe."""
     labels = _resource_metadata(resource)[3]
     return {
-        'foreign_labels': {
-            key: value for key, value in labels.items()
-            if key not in _LEGACY_OWNER_MARKERS
-        },
+        'foreign_labels': {key: value for key, value in labels.items() if key not in _LEGACY_OWNER_MARKERS},
         'annotations': _read(_metadata(resource), 'annotations') or {},
         'immutable_metadata': _immutable_metadata(resource),
     }
 
 
 def inspect_legacy_profile_residue_component(
-    *, preview: Mapping[str, Any], handback: Mapping[str, Any],
-    live: Any, profile_public_id: str,
+    *,
+    preview: Mapping[str, Any],
+    handback: Mapping[str, Any],
+    live: Any,
+    profile_public_id: str,
 ) -> dict[str, Any]:
     """Evaluate one exact provider component; never authorize a PATCH.
 
@@ -127,27 +138,20 @@ def inspect_legacy_profile_residue_component(
     if (
         not isinstance(removed, list)
         or not {'app.kubernetes.io/managed-by', 'kaori.io/tenant-id'}.issubset(removed)
-        or any(not isinstance(label, str) or label not in _LEGACY_OWNER_MARKERS
-               for label in removed)
+        or any(not isinstance(label, str) or label not in _LEGACY_OWNER_MARKERS for label in removed)
         or len(set(removed)) != len(removed)
     ):
         raise ValueError('This is not a recognized pre-#1126 ownership receipt.')
 
     name, uid, rv, labels = _resource_metadata(live)
-    if (
-        name != key[2] or uid != key[3]
-        or not rv or rv != handback.get('resource_version')
-        or not profile_public_id
-    ):
+    if name != key[2] or uid != key[3] or not rv or rv != handback.get('resource_version') or not profile_public_id:
         raise ValueError('Provider UID/resourceVersion or profile evidence changed.')
 
     if any(label in labels for label in _GOVERNED_LABELS - _ONLY_RESIDUE_ALLOWED):
         raise ValueError('Unexpected KAORI or successor ownership remains in provider.')
-    if (
-        preview.get('spec_sha256') != _stable_sha256(_spec(live))
-        or preview.get('retained_metadata_sha256')
-        != _stable_sha256(_legacy_retained_metadata(live))
-    ):
+    if preview.get('spec_sha256') != _stable_sha256(_spec(live)) or preview.get(
+        'retained_metadata_sha256'
+    ) != _stable_sha256(_legacy_retained_metadata(live)):
         raise ValueError('Historical provider spec/foreign metadata evidence changed.')
 
     observed_profile = labels.get(_RESIDUAL_LABEL)
@@ -169,7 +173,9 @@ def inspect_legacy_profile_residue_component(
 
 
 def assess_legacy_native_profile_residue_readonly(
-    *, tenant_id: str, actor_user_id: int,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
 ) -> dict[str, Any]:
     """Collect governed read-only evidence, not permission to remediate.
 
@@ -208,7 +214,8 @@ def assess_legacy_native_profile_residue_readonly(
         or release.get('tenant_id') != tenant_id
         or release.get('cluster_id') != tenant.cluster_id
         or release.get('generation') != tenant.generation
-        or not isinstance(plan_sha, str) or len(plan_sha) != 64
+        or not isinstance(plan_sha, str)
+        or len(plan_sha) != 64
         or any(char not in '0123456789abcdef' for char in plan_sha)
         or not release.get('successor_owner')
         or committed_handback.get('status') != 'verified'
@@ -233,19 +240,19 @@ def assess_legacy_native_profile_residue_readonly(
     released = _index_scope(release.get('verified_components'), title='Released provider')
     verified = _index_scope(handback.get('verified_components'), title='Verified Handback')
     if (
-        set(previews) != set(released) or set(previews) != set(verified)
+        set(previews) != set(released)
+        or set(previews) != set(verified)
         or handback.get('verified_count') != len(previews)
         or handback.get('expected_component_count') != len(previews)
-        or release.get('released_namespace_count') != sum(
-            kind == 'Namespace' for kind, _, _, _ in previews
-        )
+        or release.get('released_namespace_count') != sum(kind == 'Namespace' for kind, _, _, _ in previews)
     ):
         raise ValueError('Canonical Released and Handback provider scopes differ.')
 
     records = (
         TenantNamespace.query.join(TenantEnvironment)
         .filter(TenantEnvironment.tenant_id == tenant_id)
-        .order_by(TenantNamespace.id.asc()).all()
+        .order_by(TenantNamespace.id.asc())
+        .all()
     )
     namespace_map = {row.namespace: row for row in records}
     if len(namespace_map) != len(records):
@@ -259,7 +266,8 @@ def assess_legacy_native_profile_residue_readonly(
             or row.cluster_id != tenant.cluster_id
             or row.provisioning_status != TenantNamespaceProvisioningStatus.RELEASED.value
             or row.resource_profile is None
-            or kind == 'Namespace' and row.provider_reference != uid
+            or kind == 'Namespace'
+            and row.provider_reference != uid
         ):
             raise ValueError('Released Namespace/Resource Profile lineage is incomplete.')
         if kind == 'Namespace':
@@ -268,16 +276,13 @@ def assess_legacy_native_profile_residue_readonly(
                 recorded.get('status') != 'verified'
                 or recorded.get('release_plan_sha256') != plan_sha
                 or recorded.get('provider_uid') != uid
-                or recorded.get('resource_version') != verified[(kind, namespace, name, uid)].get(
-                    'resource_version'
-                )
+                or recorded.get('resource_version') != verified[(kind, namespace, name, uid)].get('resource_version')
                 or (committed_handback.get('provider_resource_versions') or {}).get(name)
                 != recorded.get('resource_version')
             ):
                 raise ValueError('Committed Namespace handback RV ledger is not verified.')
 
-    if any(type(value) is not int or value != 0 for value in
-           _release_dependency_counts(tenant_id).values()):
+    if any(type(value) is not int or value != 0 for value in _release_dependency_counts(tenant_id).values()):
         raise ValueError('Released Tenant has active KAORI governance dependencies.')
 
     cluster = db.session.get(Cluster, tenant.cluster_id)
@@ -289,17 +294,21 @@ def assess_legacy_native_profile_residue_readonly(
     for key, component in previews.items():
         live = _read_resource(core, component)
         name, uid, rv, _ = _resource_metadata(live)
-        if (name, uid, rv) != (
-            key[2], key[3], verified[key].get('resource_version')
-        ):
+        if (name, uid, rv) != (key[2], key[3], verified[key].get('resource_version')):
             raise ValueError('Live provider identity changed since verified Handback.')
         live_resources[key] = live
-        authority_scope.append({
-            'kind': key[0], 'namespace': key[1], 'name': name,
-            'uid': uid, 'resource_version': rv,
-        })
+        authority_scope.append(
+            {
+                'kind': key[0],
+                'namespace': key[1],
+                'name': name,
+                'uid': uid,
+                'resource_version': rv,
+            }
+        )
     provider = verify_native_provider_admin_authority(
-        cluster=cluster, components=authority_scope,
+        cluster=cluster,
+        components=authority_scope,
     )
     if (
         provider.get('resource_authority_verified') is not True
@@ -312,7 +321,8 @@ def assess_legacy_native_profile_residue_readonly(
 
     components = [
         inspect_legacy_profile_residue_component(
-            preview=previews[key], handback=verified[key],
+            preview=previews[key],
+            handback=verified[key],
             live=live_resources[key],
             profile_public_id=str(namespace_map[key[1]].resource_profile.public_id),
         )

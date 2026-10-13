@@ -4,6 +4,7 @@ KAORI app operator authorization is a distinct trust domain from the Kubernetes
 client-certificate principal. Neither a manager label nor successful provider
 authentication alone constitutes the independent human Release decision.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -33,14 +34,15 @@ def require_platform_admin_actor(actor_user_id: int) -> None:
     """Use existing KAORI authorization; no duplicate Platform Admin role engine."""
     actor = db.session.get(User, actor_user_id)
     if actor is None or not all(
-        callable(getattr(actor, 'has_permission', None)) and actor.has_permission(key)
-        for key in _REQUIRED_PERMISSIONS
+        callable(getattr(actor, 'has_permission', None)) and actor.has_permission(key) for key in _REQUIRED_PERMISSIONS
     ):
         raise ValueError('Platform Admin permissions are required for Native governance transfer.')
 
 
 def verify_native_provider_admin_authority(
-    *, cluster: Any, components: list[dict[str, Any]],
+    *,
+    cluster: Any,
+    components: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """SelfSubjectReview and named SelfSubjectAccessReviews using KAORI kubeconfig.
 
@@ -62,10 +64,14 @@ def verify_native_provider_admin_authority(
         key = (kind, namespace, name)
         if (
             kind not in _RESOURCES
-            or not isinstance(name, str) or not name
-            or not isinstance(namespace, str) or not namespace
-            or not item.get('uid') or not item.get('resource_version')
-            or kind == 'Namespace' and name != namespace
+            or not isinstance(name, str)
+            or not name
+            or not isinstance(namespace, str)
+            or not namespace
+            or not item.get('uid')
+            or not item.get('resource_version')
+            or kind == 'Namespace'
+            and name != namespace
             or key in seen
         ):
             raise ValueError('Invalid or duplicated Native resource in provider authorization scope.')
@@ -74,7 +80,8 @@ def verify_native_provider_admin_authority(
     provider = runtime_adapter.build_client(cluster)
     try:
         identity = provider.authentication_api().create_self_subject_review(
-            body=V1SelfSubjectReview(), _request_timeout=5,
+            body=V1SelfSubjectReview(),
+            _request_timeout=5,
         )
     except ApiException:
         raise ValueError('Kubernetes SelfSubjectReview did not verify the configured kubeconfig.') from None
@@ -82,7 +89,9 @@ def verify_native_provider_admin_authority(
     username = _field(user, 'username')
     groups = _field(user, 'groups') or []
     if (
-        not isinstance(username, str) or not username or username.startswith('system:serviceaccount:')
+        not isinstance(username, str)
+        or not username
+        or username.startswith('system:serviceaccount:')
         or not isinstance(groups, (list, tuple))
         or not all(isinstance(group, str) and group for group in groups)
     ):
@@ -91,7 +100,8 @@ def verify_native_provider_admin_authority(
     credential_ids = _field(extra, 'authentication.kubernetes.io/credential-id', [])
     credential_id = (
         credential_ids[0]
-        if isinstance(credential_ids, (tuple, list)) and len(credential_ids) == 1
+        if isinstance(credential_ids, (tuple, list))
+        and len(credential_ids) == 1
         and isinstance(credential_ids[0], str)
         and credential_ids[0].startswith('X509SHA256=')
         else ''
@@ -99,8 +109,10 @@ def verify_native_provider_admin_authority(
     for item in scope:
         for verb in ('get', 'patch'):
             resource = V1ResourceAttributes(
-                group='', resource=_RESOURCES[item['kind']],
-                name=item['name'], verb=verb,
+                group='',
+                resource=_RESOURCES[item['kind']],
+                name=item['name'],
+                verb=verb,
                 namespace=None if item['kind'] == 'Namespace' else item['namespace'],
             )
             review = V1SelfSubjectAccessReview(
@@ -108,7 +120,8 @@ def verify_native_provider_admin_authority(
             )
             try:
                 response = provider.authorization_api().create_self_subject_access_review(
-                    body=review, _request_timeout=5,
+                    body=review,
+                    _request_timeout=5,
                 )
             except ApiException:
                 raise ValueError('Kubernetes SelfSubjectAccessReview could not verify provider permissions.') from None
@@ -119,7 +132,7 @@ def verify_native_provider_admin_authority(
                 or _field(status, 'evaluation_error')
             ):
                 raise ValueError(
-                    f"KAORI Kubernetes connection lacks {verb} permission on {item['kind']}/{item['name']}."
+                    f'KAORI Kubernetes connection lacks {verb} permission on {item["kind"]}/{item["name"]}.'
                 )
     return {
         'verification_source': 'kubernetes_self_subject_review',

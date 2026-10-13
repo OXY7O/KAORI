@@ -49,8 +49,7 @@ _EXPECTED_HANDOFF_FRAGMENTS = (
     'KAORI-linked allocation ownership requires independently approved external handoff',
 )
 _CAPSULE_G1_EXECUTOR_OBLIGATION = (
-    'Capsule controller-generated RoleBinding origins and '
-    'provider handoff remain unverified; executor is blocked.'
+    'Capsule controller-generated RoleBinding origins and provider handoff remain unverified; executor is blocked.'
 )
 
 
@@ -71,9 +70,15 @@ def _capsule_g1_only_origin_obligation(snapshot: dict[str, Any], blocker: str) -
     if len(crs) != 1:
         return False
     cr = crs[0]
-    if any(not isinstance(cr.get(key), str) or not re.fullmatch(r'[a-f0-9]{64}', cr[key])
-           for key in ('capsule_spec_sha256', 'capsule_related_resources_sha256',
-                       'capsule_shared_quota_sha256', 'capsule_rbac_lineage_sha256')):
+    if any(
+        not isinstance(cr.get(key), str) or not re.fullmatch(r'[a-f0-9]{64}', cr[key])
+        for key in (
+            'capsule_spec_sha256',
+            'capsule_related_resources_sha256',
+            'capsule_shared_quota_sha256',
+            'capsule_rbac_lineage_sha256',
+        )
+    ):
         return False
     quota = related.get('global_quota')
     lineage = related.get('rbac_lineage')
@@ -83,9 +88,11 @@ def _capsule_g1_only_origin_obligation(snapshot: dict[str, Any], blocker: str) -
         or not isinstance(related.get('list_snapshots'), list)
         or related.get('resource_sha256') != cr['capsule_related_resources_sha256']
         or not isinstance(related.get('blockers'), list)
-        or not isinstance(quota, Mapping) or quota.get('blockers') != []
+        or not isinstance(quota, Mapping)
+        or quota.get('blockers') != []
         or quota.get('scope_sha256') != cr['capsule_shared_quota_sha256']
-        or not isinstance(lineage, Mapping) or lineage.get('blockers') != []
+        or not isinstance(lineage, Mapping)
+        or lineage.get('blockers') != []
         or lineage.get('lineage_sha256') != cr['capsule_rbac_lineage_sha256']
     ):
         return False
@@ -99,47 +106,60 @@ def _capsule_g1_only_origin_obligation(snapshot: dict[str, Any], blocker: str) -
 
     try:
         work = build_capsule_handoff_worklist(
-            plan={'handoff_components': components}, related=related,
+            plan={'handoff_components': components},
+            related=related,
         )
     except (ValueError, TypeError, KeyError):
         return False
     allowed = {
         (
-            f"Capsule {item['kind']}/{item['namespace']}/{item['name']} "
-            "retains KAORI provider controls requiring separately admitted handoff."
+            f'Capsule {item["kind"]}/{item["namespace"]}/{item["name"]} '
+            'retains KAORI provider controls requiring separately admitted handoff.'
         )
         for item in work['items']
         if item['decision'] == 'explicit_kaori_metadata_handoff_review'
     }
     if (
-        any(item['decision'] in ('operator_origin_investigation', 'operator_selector_investigation')
-            for item in work['items'])
+        any(
+            item['decision'] in ('operator_origin_investigation', 'operator_selector_investigation')
+            for item in work['items']
+        )
         or not allowed
         or any(not isinstance(warning, str) or warning not in allowed for warning in handoff_warnings)
     ):
         return False
-    return blocker == _CAPSULE_G1_EXECUTOR_OBLIGATION or (
-        blocker in allowed and blocker in handoff_warnings
-    )
+    return blocker == _CAPSULE_G1_EXECUTOR_OBLIGATION or (blocker in allowed and blocker in handoff_warnings)
 
 
-_REQUIRED_DEPENDENCIES = frozenset({
-    'credentials', 'Access Grants', 'Memberships', 'enabled Groups',
-    'managed resources', 'advanced capabilities', 'domain reservations',
-    'exposure policies',
-})
+_REQUIRED_DEPENDENCIES = frozenset(
+    {
+        'credentials',
+        'Access Grants',
+        'Memberships',
+        'enabled Groups',
+        'managed resources',
+        'advanced capabilities',
+        'domain reservations',
+        'exposure policies',
+    }
+)
 _PLAN_HASH_FIELDS = (
-    'tenant_id', 'cluster_id', 'generation', 'provider', 'handoff_fingerprint',
-    'provider_identity', 'successor_owner', 'change_reference',
-    'requested_by', 'requested_at',
+    'tenant_id',
+    'cluster_id',
+    'generation',
+    'provider',
+    'handoff_fingerprint',
+    'provider_identity',
+    'successor_owner',
+    'change_reference',
+    'requested_by',
+    'requested_at',
 )
 
 
 def _plan_hash(contract: dict[str, Any]) -> str:
     payload = {key: contract.get(key) for key in _PLAN_HASH_FIELDS}
-    return hashlib.sha256(
-        json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()
-    ).hexdigest()
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
 def _valid_reference(value: str, *, name: str) -> str:
@@ -166,14 +186,15 @@ def _complete_provider_snapshot(evidence: dict[str, Any]) -> None:
     if (
         evidence.get('status') not in {'blocked', 'handoff_review_required'}
         or not _checked_recently(evidence.get('checked_at'))
-        or not isinstance(identities, list) or not identities
-        or not isinstance(components, list) or not components
+        or not isinstance(identities, list)
+        or not identities
+        or not isinstance(components, list)
+        or not components
         or not evidence.get('handoff_fingerprint')
     ):
         raise ValueError('Refresh a complete Release preflight before preparing handoff.')
     if not all(
-        isinstance(item, dict)
-        and all(item.get(field) for field in ('kind', 'name', 'uid', 'resource_version'))
+        isinstance(item, dict) and all(item.get(field) for field in ('kind', 'name', 'uid', 'resource_version'))
         for item in identities + components
     ):
         raise ValueError('Provider handoff identity evidence is incomplete.')
@@ -183,21 +204,11 @@ def _complete_provider_snapshot(evidence: dict[str, Any]) -> None:
     # conflicting committed inventory cannot define one exact transfer target,
     # even when a hash was recomputed over the ambiguous list.
     identity_keys = [(item['kind'], item['name']) for item in identities]
-    component_keys = [
-        (item.get('namespace') or '', item['kind'], item['name'])
-        for item in components
-    ]
-    if (
-        len(identity_keys) != len(set(identity_keys))
-        or len(component_keys) != len(set(component_keys))
-    ):
+    component_keys = [(item.get('namespace') or '', item['kind'], item['name']) for item in components]
+    if len(identity_keys) != len(set(identity_keys)) or len(component_keys) != len(set(component_keys)):
         raise ValueError('Provider handoff inventory has duplicated or ambiguous resource identity.')
-    namespace_identities = {
-        (row['name'], row['uid']) for row in identities if row['kind'] == 'Namespace'
-    }
-    namespace_components = {
-        (row['name'], row['uid']) for row in components if row['kind'] == 'Namespace'
-    }
+    namespace_identities = {(row['name'], row['uid']) for row in identities if row['kind'] == 'Namespace'}
+    namespace_components = {(row['name'], row['uid']) for row in components if row['kind'] == 'Namespace'}
     if namespace_components != namespace_identities:
         raise ValueError('Native/Capsule Namespace handoff coverage is incomplete.')
 
@@ -226,7 +237,8 @@ def _can_confirm_plan(snapshot: dict[str, Any]) -> None:
     if not isinstance(blockers, list) or any(not isinstance(x, str) for x in blockers):
         raise ValueError('Release blocker evidence is incomplete.')
     unexpected = [
-        row for row in blockers
+        row
+        for row in blockers
         if not row.startswith(_EXPECTED_HANDOFF_PREFIXES)
         and not any(fragment in row for fragment in _EXPECTED_HANDOFF_FRAGMENTS)
         and not _capsule_g1_only_origin_obligation(snapshot, row)
@@ -237,8 +249,7 @@ def _can_confirm_plan(snapshot: dict[str, Any]) -> None:
 
 def _latest_event(*, tenant_id: str, target_type: str) -> dict[str, Any] | None:
     row = (
-        AuditEvent.query.filter_by(target_type=target_type, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).first()
+        AuditEvent.query.filter_by(target_type=target_type, target_id=tenant_id).order_by(AuditEvent.id.desc()).first()
     )
     return dict(row.metadata_json or {}) if row else None
 
@@ -252,7 +263,8 @@ def latest_release_handoff_approval(tenant_id: str) -> dict[str, Any] | None:
 
 
 def handoff_plan_preparation_state(
-    plan: dict[str, Any] | None, approval: dict[str, Any] | None,
+    plan: dict[str, Any] | None,
+    approval: dict[str, Any] | None,
 ) -> str:
     """Single-plan policy shared by backend and read-only Registry presentation.
 
@@ -264,7 +276,9 @@ def handoff_plan_preparation_state(
         return 'available'
     sha = plan.get('plan_sha256')
     if (
-        sha and approval and approval.get('plan_sha256') == sha
+        sha
+        and approval
+        and approval.get('plan_sha256') == sha
         and approval.get('status') == 'acknowledged_pending_provider_handoff'
     ):
         return 'acknowledged'
@@ -284,7 +298,8 @@ def handoff_plan_preparation_state(
 def _require_no_active_handoff_plan(*, tenant_id: str, actor_user_id: int) -> None:
     plan = latest_release_handoff_plan(tenant_id)
     state = handoff_plan_preparation_state(
-        plan, latest_release_handoff_approval(tenant_id),
+        plan,
+        latest_release_handoff_approval(tenant_id),
     )
     if state == 'expired' and str(plan.get('requested_by')) != str(actor_user_id):
         raise ValueError(
@@ -313,18 +328,18 @@ def prepare_release_handoff_plan_committed(
     reference = _valid_reference(change_reference, name='Change record')
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.ownership_status != 'adopted'
+        tenant is None
+        or tenant.ownership_status != 'adopted'
         or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
     ):
         raise ValueError('Only Ready externally adopted Tenants can prepare a Release handoff.')
-    snapshot = review_tenant_release_preflight_committed(
-        tenant_id=tenant_id, actor_user_id=actor_user_id
-    )
+    snapshot = review_tenant_release_preflight_committed(tenant_id=tenant_id, actor_user_id=actor_user_id)
     _complete_provider_snapshot(snapshot)
     # Live review commits its AuditEvent, so take the row lock *after* review.
     locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
-        locked is None or locked.lifecycle_status != TenantLifecycleStatus.READY.value
+        locked is None
+        or locked.lifecycle_status != TenantLifecycleStatus.READY.value
         or locked.ownership_status != 'adopted'
     ):
         raise ValueError('Tenant authority changed while preparing handoff.')
@@ -356,13 +371,16 @@ def prepare_release_handoff_plan_committed(
         'provider_handoff_verified': False,
         'release_authorized': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id,
-        target_type=_PLAN_TARGET, target_id=tenant_id,
-        action='tenant.release.handoff_plan_prepared',
-        summary='Prepared successor handoff plan; provider and governance unchanged.',
-        metadata_json=evidence,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_PLAN_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.handoff_plan_prepared',
+            summary='Prepared successor handoff plan; provider and governance unchanged.',
+            metadata_json=evidence,
+        )
+    )
     db.session.commit()
     return evidence
 
@@ -382,7 +400,9 @@ _APPROVAL_DRIFT_LABELS = {
 
 
 def _handoff_approval_drift_categories(
-    *, plan: Mapping[str, Any], fresh: Mapping[str, Any],
+    *,
+    plan: Mapping[str, Any],
+    fresh: Mapping[str, Any],
 ) -> tuple[str, ...]:
     """Report changed *categories* only; never expose RBAC subjects or provider policies.
 
@@ -392,9 +412,15 @@ def _handoff_approval_drift_categories(
     that a changed digest is harmless.
     """
     problems: set[str] = set()
-    if any(fresh.get(key) != plan.get(key) for key in (
-        'tenant_id', 'cluster_id', 'generation', 'provider',
-    )):
+    if any(
+        fresh.get(key) != plan.get(key)
+        for key in (
+            'tenant_id',
+            'cluster_id',
+            'generation',
+            'provider',
+        )
+    ):
         problems.add('tenant_scope')
 
     def keyed(items: Any, *, scoped: bool) -> dict[tuple[str, str, str], Mapping[str, Any]] | None:
@@ -429,9 +455,15 @@ def _handoff_approval_drift_categories(
                 problems.add('provider_resource_version')
             if not scoped:
                 continue
-            if any(first.get(field) != current.get(field) for field in (
-                'ownership', 'handoff', 'managed_by', 'authority',
-            )):
+            if any(
+                first.get(field) != current.get(field)
+                for field in (
+                    'ownership',
+                    'handoff',
+                    'managed_by',
+                    'authority',
+                )
+            ):
                 problems.add('ownership')
             for field, category in (
                 ('capsule_spec_sha256', 'capsule_spec'),
@@ -442,21 +474,29 @@ def _handoff_approval_drift_categories(
             ):
                 if first.get(field) != current.get(field):
                     problems.add(category)
-            if first != current and not any(category in problems for category in (
-                'provider_identity', 'provider_resource_version', 'ownership',
-                'capsule_spec', 'namespaced_related', 'cluster_quota', 'rbac_lineage',
-            )):
+            if first != current and not any(
+                category in problems
+                for category in (
+                    'provider_identity',
+                    'provider_resource_version',
+                    'ownership',
+                    'capsule_spec',
+                    'namespaced_related',
+                    'cluster_quota',
+                    'rbac_lineage',
+                )
+            ):
                 problems.add('fingerprint')
 
     if fresh.get('handoff_fingerprint') != plan.get('handoff_fingerprint') and not problems:
         problems.add('fingerprint')
-    return tuple(
-        _APPROVAL_DRIFT_LABELS[key] for key in _APPROVAL_DRIFT_LABELS if key in problems
-    )
+    return tuple(_APPROVAL_DRIFT_LABELS[key] for key in _APPROVAL_DRIFT_LABELS if key in problems)
 
 
 def _handoff_approval_drift_message(
-    *, plan: Mapping[str, Any], fresh: Mapping[str, Any],
+    *,
+    plan: Mapping[str, Any],
+    fresh: Mapping[str, Any],
 ) -> str:
     categories = _handoff_approval_drift_categories(plan=plan, fresh=fresh)
     if not categories:
@@ -465,10 +505,7 @@ def _handoff_approval_drift_message(
     summary = '; '.join(categories[:3])
     if len(categories) > 3:
         summary += '; additional scope drift'
-    return (
-        'Provider or governance evidence changed; prepare a new plan. '
-        f'Changed: {summary}.'
-    )
+    return f'Provider or governance evidence changed; prepare a new plan. Changed: {summary}.'
 
 
 def approve_release_handoff_plan_committed(
@@ -493,13 +530,12 @@ def approve_release_handoff_plan_committed(
         raise ValueError('Handoff approval window expired; prepare a new plan.')
     # Provider review commits the preflight AuditEvent. Acquire the row lock
     # afterwards and recheck both plan identity and prior approval under lock.
-    fresh = review_tenant_release_preflight_committed(
-        tenant_id=tenant_id, actor_user_id=actor_user_id
-    )
+    fresh = review_tenant_release_preflight_committed(tenant_id=tenant_id, actor_user_id=actor_user_id)
     _can_confirm_plan(fresh)
     tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
-        tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
+        tenant is None
+        or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
         or tenant.ownership_status != 'adopted'
     ):
         raise ValueError('Tenant authority changed during handoff review.')
@@ -532,19 +568,24 @@ def approve_release_handoff_plan_committed(
         'provider_handoff_verified': False,
         'release_authorized': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id,
-        target_type=_APPROVAL_TARGET, target_id=tenant_id,
-        action='tenant.release.handoff_acknowledged',
-        summary='Independent handoff acknowledgement; external provider ownership not yet transferred.',
-        metadata_json=accepted,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_APPROVAL_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.handoff_acknowledged',
+            summary='Independent handoff acknowledgement; external provider ownership not yet transferred.',
+            metadata_json=accepted,
+        )
+    )
     db.session.commit()
     return accepted
 
 
 def _confirm_safe_native_restart_history(
-    tenant_id: str, plan: dict[str, Any], *,
+    tenant_id: str,
+    plan: dict[str, Any],
+    *,
     independently_authorized_executor: bool = False,
 ) -> int:
     """Return whether canonical zero-transfer observations need a fresh recheck.
@@ -572,6 +613,7 @@ def _confirm_safe_native_restart_history(
             raise ValueError('Provider handoff execution exists; independent recovery assessment is required.')
         # Revalidate the exact same plan's committed executor sequence.
         from app.kubernetes.tenant.native_no_transfer_recovery import _source_history
+
         _source_history(tenant_id, plan)
 
     observations = native_handoff_readback_history(tenant_id)
@@ -591,7 +633,11 @@ def _confirm_safe_native_restart_history(
 
 
 def restart_expired_native_release_handoff_plan_committed(
-    *, tenant_id: str, actor_user_id: int, plan_sha256: str, confirmed: bool,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
+    confirmed: bool,
 ) -> dict[str, Any]:
     """Explicitly supersede an *expired* approved Native plan, without provider mutation.
 
@@ -604,7 +650,8 @@ def restart_expired_native_release_handoff_plan_committed(
     plan = latest_release_handoff_plan(tenant_id)
     approval = latest_release_handoff_approval(tenant_id)
     if (
-        not plan or not approval
+        not plan
+        or not approval
         or plan.get('status') != 'pending_independent_approval'
         or plan.get('tenant_id') != tenant_id
         or plan.get('plan_sha256') != plan_sha256
@@ -639,27 +686,32 @@ def restart_expired_native_release_handoff_plan_committed(
     # Historical executor evidence is never erased or inferred safe from 0/2.
     from app.kubernetes.tenant.native_handoff_executor import native_handoff_execution_history
     from app.kubernetes.tenant.native_no_transfer_recovery import (
-        _verify_original_provider_state, require_authorized_no_transfer_restart,
+        _verify_original_provider_state,
+        require_authorized_no_transfer_restart,
     )
+
     attempts = native_handoff_execution_history(tenant_id)
-    has_original_attempt = any(
-        isinstance(item, dict) and item.get('plan_sha256') == plan_sha256
-        for item in attempts
-    )
+    has_original_attempt = any(isinstance(item, dict) and item.get('plan_sha256') == plan_sha256 for item in attempts)
     recovery_decision = (
         require_authorized_no_transfer_restart(
-            tenant_id=tenant_id, plan=plan, actor_user_id=actor_user_id,
+            tenant_id=tenant_id,
+            plan=plan,
+            actor_user_id=actor_user_id,
         )
-        if has_original_attempt else None
+        if has_original_attempt
+        else None
     )
     prior_zero_transfer_count = _confirm_safe_native_restart_history(
-        tenant_id, plan, independently_authorized_executor=recovery_decision is not None,
+        tenant_id,
+        plan,
+        independently_authorized_executor=recovery_decision is not None,
     )
 
     # This authorized provider read commits a new snapshot. Never restart based
     # on expired UID/resourceVersion or the old dry-run/approval alone.
     fresh = review_tenant_release_preflight_committed(
-        tenant_id=tenant_id, actor_user_id=actor_user_id,
+        tenant_id=tenant_id,
+        actor_user_id=actor_user_id,
     )
     _can_confirm_plan(fresh)
     if (
@@ -674,15 +726,18 @@ def restart_expired_native_release_handoff_plan_committed(
 
     if recovery_decision is not None:
         live_proof = _verify_original_provider_state(
-            tenant_id=tenant_id, plan=plan,
-            actor_user_id=actor_user_id, fresh=fresh,
+            tenant_id=tenant_id,
+            plan=plan,
+            actor_user_id=actor_user_id,
+            fresh=fresh,
         )
         if live_proof['provider_proof_sha256'] != recovery_decision['provider_proof_sha256']:
             raise ValueError('Live provider proof changed since independent recovery authorization.')
 
     tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
-        tenant is None or tenant.provider_key != 'native_kubernetes'
+        tenant is None
+        or tenant.provider_key != 'native_kubernetes'
         or tenant.reconciliation_authority != 'native_kubernetes'
         or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
         or tenant.ownership_status != 'adopted'
@@ -693,7 +748,8 @@ def restart_expired_native_release_handoff_plan_committed(
     current = latest_release_handoff_plan(tenant_id)
     acknowledged = latest_release_handoff_approval(tenant_id)
     if (
-        not current or not acknowledged
+        not current
+        or not acknowledged
         or current.get('plan_sha256') != plan_sha256
         or acknowledged.get('plan_sha256') != plan_sha256
         or acknowledged.get('status') != 'acknowledged_pending_provider_handoff'
@@ -701,13 +757,24 @@ def restart_expired_native_release_handoff_plan_committed(
         raise ValueError('Another handoff operation replaced the expired plan.')
     # Recheck entire committed history after the row lock. If a concurrent
     # observer/executor recorded unsafe evidence, do not supersede this plan.
-    if _confirm_safe_native_restart_history(
-        tenant_id, current, independently_authorized_executor=recovery_decision is not None,
-    ) != prior_zero_transfer_count:
+    if (
+        _confirm_safe_native_restart_history(
+            tenant_id,
+            current,
+            independently_authorized_executor=recovery_decision is not None,
+        )
+        != prior_zero_transfer_count
+    ):
         raise ValueError('Provider handoff history changed during restart; recovery review required.')
-    if recovery_decision is not None and require_authorized_no_transfer_restart(
-        tenant_id=tenant_id, plan=current, actor_user_id=actor_user_id,
-    ) != recovery_decision:
+    if (
+        recovery_decision is not None
+        and require_authorized_no_transfer_restart(
+            tenant_id=tenant_id,
+            plan=current,
+            actor_user_id=actor_user_id,
+        )
+        != recovery_decision
+    ):
         raise ValueError('Independent recovery decision changed during restart.')
     if _checked_recently(current.get('requested_at')) and _checked_recently(acknowledged.get('approved_at')):
         raise ValueError('The current handoff is not expired.')
@@ -731,19 +798,21 @@ def restart_expired_native_release_handoff_plan_committed(
         'no_transfer_recovery_assessment_sha256': (
             recovery_decision['assessment_sha256'] if recovery_decision else None
         ),
-        'no_transfer_recovery_authorized_by': (
-            recovery_decision['authorized_by'] if recovery_decision else None
-        ),
+        'no_transfer_recovery_authorized_by': (recovery_decision['authorized_by'] if recovery_decision else None),
         'provider_mutation_performed': False,
         'provider_handoff_verified': False,
         'release_authorized': False,
         'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_PLAN_TARGET, target_id=tenant_id,
-        action='tenant.release.handoff_plan_restarted',
-        summary='Restarted expired approved Native handoff plan after matching provider read-back.',
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_PLAN_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.handoff_plan_restarted',
+            summary='Restarted expired approved Native handoff plan after matching provider read-back.',
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt

@@ -302,15 +302,15 @@ def test_browser_timezone_redetection_reuses_canonical_operational_toast_without
     assert 'data-operational-toast-message' in toast_template
     assert 'window.showOperationalToast = (toast) =>' in toast_runtime
     assert 'initialiseToast(toast)' in toast_runtime
-    assert "window.showOperationalToast?.(toast)" in runtime
-    assert "if (messageNode) messageNode.textContent = message" in runtime
+    assert 'window.showOperationalToast?.(toast)' in runtime
+    assert 'if (messageNode) messageNode.textContent = message' in runtime
     assert "'Browser timezone unavailable'" in runtime
-    assert "if (!timezone)" in runtime
-    assert "const unchanged = timezone === previousTimezone" in runtime
+    assert 'if (!timezone)' in runtime
+    assert 'const unchanged = timezone === previousTimezone' in runtime
     assert 'No preference was saved.' in runtime
     assert "detectButton?.addEventListener('click', () => {" in runtime
-    assert "        detect()\n        syncMode()" in runtime
-    assert "fetch(" not in runtime
-    assert "kaori:notifications-changed" not in runtime
-    assert "Activity Audit" not in runtime
+    assert '        detect()\n        syncMode()' in runtime
+    assert 'fetch(' not in runtime
+    assert 'kaori:notifications-changed' not in runtime
+    assert 'Activity Audit' not in runtime
     assert 'Detect Again' in settings_docs

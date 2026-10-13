@@ -23,7 +23,7 @@ def test_external_capsule_access_drift_uses_committed_evidence_not_live_reconcil
     assert 'reconcile_provider_access_grant(' not in service
 
     assert "@tenant_bp.post('/external-access/analyze')" in route
-    assert '@permission_required(\'tenant.manage\')' in route
+    assert "@permission_required('tenant.manage')" in route
     assert 'evaluate_tenant_access_drift_committed(' in route
     assert '_csrf()' in route
 

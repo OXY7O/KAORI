@@ -36,7 +36,8 @@ def _valid_webhook_url(value: str) -> bool:
             and parsed.username is None
             and parsed.password is None
             and parsed.port in (None, 443)
-            and not parsed.query and not parsed.fragment
+            and not parsed.query
+            and not parsed.fragment
             and _WEBHOOK_PATH.fullmatch(parsed.path)
         )
     except ValueError:
@@ -67,13 +68,16 @@ def send_discord_message(
         separators=(',', ':'),
     ).encode('utf-8')
     request = Request(
-        webhook_url, data=payload,
+        webhook_url,
+        data=payload,
         headers={'Content-Type': 'application/json; charset=utf-8'},
         method='POST',
     )
     try:
         with build_opener(
-            ProxyHandler({}), HTTPSHandler(context=ssl.create_default_context()), DenyRedirects(),
+            ProxyHandler({}),
+            HTTPSHandler(context=ssl.create_default_context()),
+            DenyRedirects(),
         ).open(request, timeout=max(int(timeout_seconds), 1)) as response:
             status = int(getattr(response, 'status', 204) or 204)
             raw = response.read(8192) if status == 200 else b''

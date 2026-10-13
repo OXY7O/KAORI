@@ -27,14 +27,13 @@ def runtime_fleet():
             model = implementation.record_model
             if model is None or (
                 implementation.runtime_overview_builder is None
-                and module.integration_type not in {
-                    'container_orchestrator', 'metrics_source', 'alert_source'
-                }
+                and module.integration_type not in {'container_orchestrator', 'metrics_source', 'alert_source'}
             ):
                 continue
             canonical = IntegrationInstance
             readiness = (
-                model.readiness_status if module.integration_type == 'container_orchestrator'
+                model.readiness_status
+                if module.integration_type == 'container_orchestrator'
                 else canonical.readiness_status
             )
             ready = case(
@@ -57,10 +56,7 @@ def runtime_fleet():
             else:
                 # All other current providers use a collection of validated
                 # capability names/profiles. Empty persisted evidence is attention.
-                missing = (
-                    model.capabilities.is_(None)
-                    | cast(model.capabilities, String).in_(('[]', '{}', 'null'))
-                )
+                missing = model.capabilities.is_(None) | cast(model.capabilities, String).in_(('[]', '{}', 'null'))
                 attention = case((missing, 1), else_=0)
             provider = provider_kind(module.integration_type, implementation.provider_key)
             projections.append(
@@ -125,24 +121,28 @@ def runtime_stats(fleet: Any | None) -> dict[str, int]:
     keys = ('total', 'healthy', 'degraded', 'unhealthy', 'not_observed', 'capability_attention')
     if fleet is None:
         return dict.fromkeys(keys, 0)
+
     def count_when(predicate: Any):
         return func.coalesce(func.sum(case((predicate, 1), else_=0)), 0)
-    row = db.session.execute(
-        select(
-            func.count().label('total'),
-            count_when(fleet.c.health_status == 'healthy').label('healthy'),
-            count_when(fleet.c.health_status == 'degraded').label('degraded'),
-            count_when(fleet.c.health_status == 'unhealthy').label('unhealthy'),
-            count_when(fleet.c.health_status == 'not_observed').label('not_observed'),
-            count_when(fleet.c.capability_attention > 0).label('capability_attention'),
-        ).select_from(fleet)
-    ).mappings().one()
+
+    row = (
+        db.session.execute(
+            select(
+                func.count().label('total'),
+                count_when(fleet.c.health_status == 'healthy').label('healthy'),
+                count_when(fleet.c.health_status == 'degraded').label('degraded'),
+                count_when(fleet.c.health_status == 'unhealthy').label('unhealthy'),
+                count_when(fleet.c.health_status == 'not_observed').label('not_observed'),
+                count_when(fleet.c.capability_attention > 0).label('capability_attention'),
+            ).select_from(fleet)
+        )
+        .mappings()
+        .one()
+    )
     return {key: int(row[key] or 0) for key in keys}
 
 
-def runtime_page(
-    fleet: Any | None, *, page: int, per_page: int
-) -> tuple[list[Any], dict[str, Any]]:
+def runtime_page(fleet: Any | None, *, page: int, per_page: int) -> tuple[list[Any], dict[str, Any]]:
     if fleet is None:
         window = build_pagination_window(total_items=0, page=page, per_page=per_page)
         return [], pagination_payload(window)
@@ -154,15 +154,20 @@ def runtime_page(
         (fleet.c.health_status == 'healthy', 3),
         else_=2,
     )
-    rows = db.session.execute(
-        select(fleet)
-        .order_by(
-            health_rank,
-            fleet.c.provider_label,
-            func.lower(fleet.c.instance_name),
-            fleet.c.integration_type,
-            fleet.c.canonical_id,
+    rows = (
+        db.session.execute(
+            select(fleet)
+            .order_by(
+                health_rank,
+                fleet.c.provider_label,
+                func.lower(fleet.c.instance_name),
+                fleet.c.integration_type,
+                fleet.c.canonical_id,
+            )
+            .offset(window.offset)
+            .limit(window.per_page)
         )
-        .offset(window.offset).limit(window.per_page)
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     return rows, pagination_payload(window)

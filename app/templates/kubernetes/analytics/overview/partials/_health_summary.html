@@ -42,53 +42,48 @@
             'sliders-horizontal',
             'analytics-overview-refresh-indicator',
             eyebrow='Analytics Overview'
-        ) %}
+            ) %}
             {% call shared_readiness.controls_grid() %}
-                {{ shared_readiness.selector(
-                    'analytics-overview-cluster-filter',
-                    'cluster_id',
-                    'Cluster',
-                    payload.clusters,
-                    payload.selected_cluster_id
-                ) }}
-                {{ shared_readiness.selector(
-                    'analytics-overview-time-range-filter',
-                    'time_range',
-                    'Time Range',
-                    payload.allowed_time_ranges,
-                    payload.selected_time_range
-                ) }}
+                {{ shared_readiness.selector('analytics-overview-cluster-filter',
+                                'cluster_id',
+                                'Cluster',
+                                payload.clusters,
+                                payload.selected_cluster_id) }}
+                {{ shared_readiness.selector('analytics-overview-time-range-filter',
+                                'time_range',
+                                'Time Range',
+                                payload.allowed_time_ranges,
+                                payload.selected_time_range) }}
             {% endcall %}
             <div class="space-y-3">
                 {% call shared_readiness.readiness_grid() %}
                     {{ analytics_workspace.metrics_source_card(payload.metrics_source) }}
-                    {{ shared_readiness.snapshot_card(
-                        'Latest Analytics Data Snapshot',
-                        'Committed worker datasets used by the overview tabs.',
-                        snapshot.status|default('Unavailable'),
-                        snapshot_tone,
-                        snapshot.latest_generated_at|default('Not Available'),
-                        snapshot.latest_dataset|default('No Snapshot'),
-                        worker_attempt=snapshot.latest_attempt_at|default('Not Available'),
-                        coverage=(snapshot.current_dataset_count|default(0)) ~ '/' ~ (snapshot.expected_dataset_count|default(7)) ~ ' Current'
+                    {{ shared_readiness.snapshot_card('Latest Analytics Data Snapshot',
+                                        'Committed worker datasets used by the overview tabs.',
+                                        snapshot.status|default('Unavailable') ,
+                    snapshot_tone,
+                    snapshot.latest_generated_at|default('Not Available'),
+                    snapshot.latest_dataset|default('No Snapshot'),
+                    worker_attempt=snapshot.latest_attempt_at|default('Not Available'),
+                    coverage=(snapshot.current_dataset_count|default(0)) ~ '/' ~ (snapshot.expected_dataset_count|default(7)) ~ ' Current'
                     ) }}
                 {% endcall %}
                 {% if issue_count %}
-                        <div class="{{ overview_surface.attention_strip_classes() }}">
-                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    <span class="{{ overview_surface.semantic_icon_classes('warning') }}">
-                                        <i data-lucide="triangle-alert" class="h-4 w-4"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-content-primary">{{ issue_count }} Dataset{{ '' if issue_count == 1 else 's' }} {{ 'Needs' if issue_count == 1 else 'Need' }} Attention</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ snapshot.description|default("Review stale, pending, or failed worker datasets before relying on cross-domain conclusions.") }}</p>
-                                    </div>
+                    <div class="{{ overview_surface.attention_strip_classes() }}">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="{{ overview_surface.semantic_icon_classes('warning') }}">
+                                    <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ issue_count }} Dataset{{ '' if issue_count == 1 else 's' }} {{ 'Needs' if issue_count == 1 else 'Need' }} Attention</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ snapshot.description|default("Review stale, pending, or failed worker datasets before relying on cross-domain conclusions.") }}</p>
                                 </div>
-                                <div class="shrink-0 sm:pt-1">{{ table_label.status_label('Refresh Required', 'warning', size='compact') }}</div>
                             </div>
+                            <div class="shrink-0 sm:pt-1">{{ table_label.status_label('Refresh Required', 'warning', size='compact') }}</div>
                         </div>
-                    {% endif %}
+                    </div>
+                {% endif %}
             </div>
         {% endcall %}
     </form>

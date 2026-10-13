@@ -11,8 +11,7 @@ from app.integrations.registry.providers.harbor.governance import (
 
 def _states():
     return {
-        name: _state(supported=True, observed=True)
-        for name in ('retention', 'immutability', 'replication', 'webhook')
+        name: _state(supported=True, observed=True) for name in ('retention', 'immutability', 'replication', 'webhook')
     }
 
 

@@ -5,9 +5,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions.db import db
 from app.integrations.deletion import DeletionBlocked, asset_owner_deletion_guard
 from app.integrations.registry.providers.harbor.application.contracts import HarborRegistrationInput
-from app.integrations.registry.providers.harbor.transport_policy import validate_harbor_endpoint
 from app.integrations.registry.providers.harbor.client import HarborClient
 from app.integrations.registry.providers.harbor.contracts import HarborConnectionResult
+from app.integrations.registry.providers.harbor.transport_policy import validate_harbor_endpoint
 from app.models.harbor import HarborInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.platform_operations.jobs.service import acquire_resource_admission_locks

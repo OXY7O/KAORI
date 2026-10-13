@@ -28,7 +28,10 @@ def notification_delivery_retry_delay_seconds() -> int:
 
 def notification_delivery_recovery_enabled() -> bool:
     return str(os.getenv('NOTIFICATION_DELIVERY_RECOVERY_ENABLED', 'false')).strip().lower() in {
-        '1', 'true', 'yes', 'on'
+        '1',
+        'true',
+        'yes',
+        'on',
     }
 
 
@@ -45,9 +48,7 @@ def build_notification_beat_schedule() -> dict[str, dict[str, object]]:
             'schedule': crontab(minute=f'*/{interval}'),
             'options': {'queue': queue},
         }
-    if str(os.getenv('ALERT_INTELLIGENCE_NOTIFICATION_ENABLED', 'true')).strip().lower() in {
-        '1', 'true', 'yes', 'on'
-    }:
+    if str(os.getenv('ALERT_INTELLIGENCE_NOTIFICATION_ENABLED', 'true')).strip().lower() in {'1', 'true', 'yes', 'on'}:
         interval = _bounded_int('ALERT_INTELLIGENCE_NOTIFICATION_INTERVAL_MINUTES', 1, 1, 60)
         schedule['alert-intelligence-notification-dispatch'] = {
             'task': (

@@ -42,7 +42,7 @@ def test_metrics_source_status_uses_one_canonical_card_contract() -> None:
 
     assert 'macro render(status' in source
     assert 'shared_readiness.source_card(' in source
-    assert "metric_source_state=status.state" in source
+    assert 'metric_source_state=status.state' in source
     assert "first_icon='zap'" in source
     assert "second_icon='clock-3'" in source
     assert 'Metrics Source Status' in source

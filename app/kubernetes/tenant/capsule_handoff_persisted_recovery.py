@@ -4,6 +4,7 @@ Correlates a supplied chronological AuditEvent history and optional
 provider read-back candidate. A read-back checksum or human review is not
 independent Kubernetes authority or permission to retry.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -19,15 +20,21 @@ from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 
 
 def review_capsule_persisted_recovery_case(
-    *, tenant_id: str, plan: Mapping[str, Any],
-    related: Mapping[str, Any], accepted_actor_user_id: int,
+    *,
+    tenant_id: str,
+    plan: Mapping[str, Any],
+    related: Mapping[str, Any],
+    accepted_actor_user_id: int,
     committed_rows: list[Any],
     readback_candidate: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Derive an investigation-only recovery docket for one canonical attempt."""
     snapshot = inspect_capsule_persistence_snapshot(
-        tenant_id=tenant_id, plan=plan, related=related,
-        accepted_actor_user_id=accepted_actor_user_id, rows=committed_rows,
+        tenant_id=tenant_id,
+        plan=plan,
+        related=related,
+        accepted_actor_user_id=accepted_actor_user_id,
+        rows=committed_rows,
     )
     status = snapshot['status']
     blockers = ['audit_write_once_durability_unverified']
@@ -58,9 +65,11 @@ def review_capsule_persisted_recovery_case(
             recovery_state = 'provider_readback_missing_manual_recovery'
         else:
             correlation = inspect_capsule_audit_readback_link(
-                plan=plan, related=related,
+                plan=plan,
+                related=related,
                 accepted_actor_user_id=accepted_actor_user_id,
-                rows=committed_rows, readback_candidate=readback_candidate,
+                rows=committed_rows,
+                readback_candidate=readback_candidate,
             )
             if not correlation.get('recorded_readback_matches_candidate'):
                 raise ValueError('Capsule recorded provider read-back is uncorrelated.')
@@ -74,7 +83,8 @@ def review_capsule_persisted_recovery_case(
     if snapshot.get('recorded_attempt_count') != (1 if committed_rows else 0):
         raise ValueError('Capsule committed history attempt count is inconsistent.')
     return {
-        'status': recovery_state, 'tenant_id': tenant_id,
+        'status': recovery_state,
+        'tenant_id': tenant_id,
         'plan_sha256': plan['plan_sha256'],
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'worklist_sha256': snapshot['worklist_sha256'],
@@ -84,11 +94,14 @@ def review_capsule_persisted_recovery_case(
         'readback_claim_sha256': correlation_sha,
         'readback_claim_correlated': correlated,
         'blockers': blockers,
-        'recovery_case_sha256': _digest({
-            'plan_sha256': plan['plan_sha256'],
-            'history_sha256': snapshot['history_sha256'],
-            'readback_sha256': correlation_sha, 'blockers': blockers,
-        }),
+        'recovery_case_sha256': _digest(
+            {
+                'plan_sha256': plan['plan_sha256'],
+                'history_sha256': snapshot['history_sha256'],
+                'readback_sha256': correlation_sha,
+                'blockers': blockers,
+            }
+        ),
         'audit_storage_append_only_verified': False,
         'audit_stream_completeness_verified': False,
         'readback_authoritative_verified': False,

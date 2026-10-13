@@ -11,13 +11,13 @@ from app.integrations.kernel.registry import (
 from app.integrations.registry.collectors import register_registry_collector
 from app.integrations.registry.governance_contracts import register_registry_governance_collector
 from app.integrations.registry.providers.harbor.adapter import runtime_adapter
-from app.integrations.registry.providers.harbor.runtime_overview import build_runtime_overview_rows
 from app.integrations.registry.providers.harbor.capabilities import (
     COMPATIBILITY_PROFILES,
     CORE_CAPABILITY_KEYS,
 )
 from app.integrations.registry.providers.harbor.governance import collector as governance_collector
 from app.integrations.registry.providers.harbor.inventory import collector as inventory_collector
+from app.integrations.registry.providers.harbor.runtime_overview import build_runtime_overview_rows
 from app.integrations.registry.providers.harbor.security import collector as security_collector
 from app.integrations.registry.security_collectors import register_registry_security_collector
 from app.models.harbor import HarborInstance

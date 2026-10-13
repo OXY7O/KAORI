@@ -9,12 +9,10 @@ def read(path: str) -> str:
 
 def test_audit_context_uses_trace_reference_definition_list_pattern() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
-    trace = detail.split('{% if item.trace_references %}', 1)[1].split(
-        '<section data-activity-audit-context', 1
-    )[0]
-    context = detail.split('<section data-activity-audit-context', 1)[1].split(
-        '{% if item.additional_evidence %}', 1
-    )[0]
+    trace = detail.split('{% if item.trace_references %}', 1)[1].split('<section data-activity-audit-context', 1)[0]
+    context = detail.split('<section data-activity-audit-context', 1)[1].split('{% if item.additional_evidence %}', 1)[
+        0
+    ]
     assert 'grid gap-px bg-outline-subtle sm:grid-cols-2' in trace
     assert 'grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2' in context
     assert context.count('<dl class="divide-y divide-outline-subtle">') == 2
@@ -36,12 +34,10 @@ def test_audit_context_uses_trace_reference_definition_list_pattern() -> None:
 
 def test_trace_icon_matches_violet_section_identity() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
-    trace = detail.split('{% if item.trace_references %}', 1)[1].split(
-        '<section data-activity-audit-context', 1
-    )[0]
-    context = detail.split('<section data-activity-audit-context', 1)[1].split(
-        '{% if item.additional_evidence %}', 1
-    )[0]
+    trace = detail.split('{% if item.trace_references %}', 1)[1].split('<section data-activity-audit-context', 1)[0]
+    context = detail.split('<section data-activity-audit-context', 1)[1].split('{% if item.additional_evidence %}', 1)[
+        0
+    ]
     assert 'bg-kaori-soft text-kaori-primary' in trace
     assert 'bg-kaori-soft text-kaori-primary' in context
     assert 'bg-surface-subtle text-content-secondary' not in trace

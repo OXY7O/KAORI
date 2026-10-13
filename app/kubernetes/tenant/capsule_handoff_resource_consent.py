@@ -6,6 +6,7 @@ candidates are eligible for review; no provider-owned/foreign/quota CR may
 enter this manifest. The proposed consent is NOT a committed AuditEvent,
 cryptographic signer proof, or a provider PATCH authorization.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -16,56 +17,93 @@ from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 from app.kubernetes.tenant.release_handoff_approval import _checked_recently, _plan_hash
 
 _VERSION = 'capsule-resource-successor-consent/v1'
-_FIELDS = frozenset({
-    'contract_version', 'tenant_id', 'cluster_id', 'generation',
-    'plan_sha256', 'handoff_fingerprint', 'worklist_sha256',
-    'resource_review_sha256', 'change_reference', 'reviewed_by',
-    'accepted_by', 'accepted_at', 'transfer_targets',
-})
-_TARGET_FIELDS = frozenset({
-    'kind', 'namespace', 'name', 'uid', 'resource_version',
-    'policy_sha256', 'metadata_sha256', 'decision', 'proposed_label_keys',
-})
-_CANDIDATES = frozenset({
-    'candidate_kaori_metadata_handoff_review',
-    'explicit_kaori_metadata_handoff_review',
-})
+_FIELDS = frozenset(
+    {
+        'contract_version',
+        'tenant_id',
+        'cluster_id',
+        'generation',
+        'plan_sha256',
+        'handoff_fingerprint',
+        'worklist_sha256',
+        'resource_review_sha256',
+        'change_reference',
+        'reviewed_by',
+        'accepted_by',
+        'accepted_at',
+        'transfer_targets',
+    }
+)
+_TARGET_FIELDS = frozenset(
+    {
+        'kind',
+        'namespace',
+        'name',
+        'uid',
+        'resource_version',
+        'policy_sha256',
+        'metadata_sha256',
+        'decision',
+        'proposed_label_keys',
+    }
+)
+_CANDIDATES = frozenset(
+    {
+        'candidate_kaori_metadata_handoff_review',
+        'explicit_kaori_metadata_handoff_review',
+    }
+)
 _ALLOWED_LABELS = {
-    'Namespace': frozenset({
-        'app.kubernetes.io/managed-by', 'kaori.io/tenant-id',
-        'kaori.io/environment', 'kaori.io/resource-profile',
-        'kaori.io/tenant-generation', 'kaori.io/profile-id',
-    }),
-    'ResourceQuota': frozenset({
-        'app.kubernetes.io/managed-by', 'kaori.io/tenant-id',
-        'kaori.io/environment', 'kaori.io/resource-profile',
-        'kaori.io/tenant-generation', 'kaori.io/profile-id',
-    }),
-    'LimitRange': frozenset({
-        'app.kubernetes.io/managed-by', 'kaori.io/tenant-id',
-        'kaori.io/environment', 'kaori.io/resource-profile',
-        'kaori.io/tenant-generation', 'kaori.io/profile-id',
-    }),
-    'RoleBinding': frozenset({
-        'app.kubernetes.io/managed-by', 'kaori.io/tenant-id',
-        'kaori.io/access-grant',
-    }),
+    'Namespace': frozenset(
+        {
+            'app.kubernetes.io/managed-by',
+            'kaori.io/tenant-id',
+            'kaori.io/environment',
+            'kaori.io/resource-profile',
+            'kaori.io/tenant-generation',
+            'kaori.io/profile-id',
+        }
+    ),
+    'ResourceQuota': frozenset(
+        {
+            'app.kubernetes.io/managed-by',
+            'kaori.io/tenant-id',
+            'kaori.io/environment',
+            'kaori.io/resource-profile',
+            'kaori.io/tenant-generation',
+            'kaori.io/profile-id',
+        }
+    ),
+    'LimitRange': frozenset(
+        {
+            'app.kubernetes.io/managed-by',
+            'kaori.io/tenant-id',
+            'kaori.io/environment',
+            'kaori.io/resource-profile',
+            'kaori.io/tenant-generation',
+            'kaori.io/profile-id',
+        }
+    ),
+    'RoleBinding': frozenset(
+        {
+            'app.kubernetes.io/managed-by',
+            'kaori.io/tenant-id',
+            'kaori.io/access-grant',
+        }
+    ),
 }
 
 
 def _target_key(item: Mapping[str, Any]) -> tuple[str, str, str]:
     ns, kind, name = (item.get(field) for field in ('namespace', 'kind', 'name'))
-    if (
-        not isinstance(ns, str)
-        or not isinstance(kind, str) or not kind
-        or not isinstance(name, str) or not name
-    ):
+    if not isinstance(ns, str) or not isinstance(kind, str) or not kind or not isinstance(name, str) or not name:
         raise ValueError('Capsule consent resource identity is malformed.')
     return ns, kind, name
 
 
 def inspect_capsule_resource_consent(
-    *, plan: Mapping[str, Any],
+    *,
+    plan: Mapping[str, Any],
     resource_report: Mapping[str, Any],
     approval: Mapping[str, Any],
     acceptance: Mapping[str, Any],
@@ -73,9 +111,16 @@ def inspect_capsule_resource_consent(
 ) -> dict[str, Any]:
     """Check one explicit source-scoped human consent proposal, never grant it."""
     if (
-        not all(isinstance(item, Mapping) for item in (
-            plan, resource_report, approval, acceptance, manifest,
-        ))
+        not all(
+            isinstance(item, Mapping)
+            for item in (
+                plan,
+                resource_report,
+                approval,
+                acceptance,
+                manifest,
+            )
+        )
         or set(manifest) != _FIELDS
         or manifest.get('contract_version') != _VERSION
         or plan.get('provider') != 'capsule'
@@ -91,7 +136,8 @@ def inspect_capsule_resource_consent(
     ):
         raise ValueError('Capsule per-resource consent requires the exact unadmitted plan/review.')
     if any(
-        manifest.get(field) != expected for field, expected in (
+        manifest.get(field) != expected
+        for field, expected in (
             ('tenant_id', plan.get('tenant_id')),
             ('cluster_id', plan.get('cluster_id')),
             ('generation', plan.get('generation')),
@@ -107,8 +153,10 @@ def inspect_capsule_resource_consent(
     reviewer = approval.get('approved_by')
     successor = acceptance.get('accepted_by')
     if (
-        type(requester) is not int or type(reviewer) is not int
-        or type(successor) is not int or len({requester, reviewer, successor}) != 3
+        type(requester) is not int
+        or type(reviewer) is not int
+        or type(successor) is not int
+        or len({requester, reviewer, successor}) != 3
         or type(manifest.get('reviewed_by')) is not int
         or type(manifest.get('accepted_by')) is not int
         or manifest['reviewed_by'] != reviewer
@@ -124,24 +172,31 @@ def inspect_capsule_resource_consent(
         or acceptance.get('generation') != plan.get('generation')
         or acceptance.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
         or acceptance.get('consent_verified') is not True
-        or any(approval.get(key) is not False for key in (
-            'provider_handoff_verified', 'release_authorized',
-        ))
-        or any(acceptance.get(key) is not False for key in (
-            'provider_mutation_performed', 'provider_handoff_verified',
-            'release_authorized', 'secret_material_persisted',
-        ))
+        or any(
+            approval.get(key) is not False
+            for key in (
+                'provider_handoff_verified',
+                'release_authorized',
+            )
+        )
+        or any(
+            acceptance.get(key) is not False
+            for key in (
+                'provider_mutation_performed',
+                'provider_handoff_verified',
+                'release_authorized',
+                'secret_material_persisted',
+            )
+        )
         or not _checked_recently(plan.get('requested_at'))
         or not _checked_recently(approval.get('approved_at'))
         or not _checked_recently(acceptance.get('accepted_at'))
         or not _checked_recently(manifest.get('accepted_at'))
     ):
         raise ValueError('Capsule per-resource consent lacks independent current human identities.')
-    if (
-        not isinstance(manifest['accepted_at'], str)
-        or datetime.fromisoformat(manifest['accepted_at']).astimezone(UTC)
-        < datetime.fromisoformat(acceptance['accepted_at']).astimezone(UTC)
-    ):
+    if not isinstance(manifest['accepted_at'], str) or datetime.fromisoformat(manifest['accepted_at']).astimezone(
+        UTC
+    ) < datetime.fromisoformat(acceptance['accepted_at']).astimezone(UTC):
         raise ValueError('Capsule resource consent must follow successor acceptance.')
     resources = resource_report.get('resources')
     targets = manifest.get('transfer_targets')
@@ -175,27 +230,43 @@ def inspect_capsule_resource_consent(
         if source is None or key in observed:
             raise ValueError('Capsule consent includes foreign, provider-owned or duplicate resource.')
         observed.add(key)
-        if any(item.get(field) != source.get(field) for field in (
-            'kind', 'namespace', 'name', 'uid', 'resource_version',
-            'policy_sha256', 'metadata_sha256',
-        )) or item.get('decision') != 'proposed_metadata_labels_only':
+        if (
+            any(
+                item.get(field) != source.get(field)
+                for field in (
+                    'kind',
+                    'namespace',
+                    'name',
+                    'uid',
+                    'resource_version',
+                    'policy_sha256',
+                    'metadata_sha256',
+                )
+            )
+            or item.get('decision') != 'proposed_metadata_labels_only'
+        ):
             raise ValueError('Capsule consent target is stale or attempts an unapproved operation.')
         labels = item.get('proposed_label_keys')
         if (
-            not isinstance(labels, list) or not labels
+            not isinstance(labels, list)
+            or not labels
             or not all(isinstance(label, str) for label in labels)
             or len(labels) != len(set(labels))
             or any(label not in _ALLOWED_LABELS[source['kind']] for label in labels)
         ):
             raise ValueError('Capsule metadata-only consent contains foreign or unsafe label keys.')
-        reviewed.append({
-            'kind': source['kind'], 'namespace': source['namespace'],
-            'name': source['name'], 'uid': source['uid'],
-            'resource_version': source['resource_version'],
-            'source_policy_sha256': source.get('policy_sha256'),
-            'source_metadata_sha256': source.get('metadata_sha256'),
-            'label_keys_sha256': _digest(sorted(labels)),
-        })
+        reviewed.append(
+            {
+                'kind': source['kind'],
+                'namespace': source['namespace'],
+                'name': source['name'],
+                'uid': source['uid'],
+                'resource_version': source['resource_version'],
+                'source_policy_sha256': source.get('policy_sha256'),
+                'source_metadata_sha256': source.get('metadata_sha256'),
+                'label_keys_sha256': _digest(sorted(labels)),
+            }
+        )
     reviewed.sort(key=lambda row: (row['namespace'], row['kind'], row['name']))
     return {
         'status': 'per_resource_successor_consent_shape_reviewed_not_committed',

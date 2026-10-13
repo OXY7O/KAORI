@@ -10,8 +10,7 @@ def test_create_and_edit_have_safe_database_failure_feedback() -> None:
     source = ROUTES.read_text(encoding='utf-8')
     tree = ast.parse(source)
     functions = {
-        node.name: ast.get_source_segment(source, node)
-        for node in tree.body if isinstance(node, ast.FunctionDef)
+        node.name: ast.get_source_segment(source, node) for node in tree.body if isinstance(node, ast.FunctionDef)
     }
 
     for route_name, operation, event_type in (
@@ -34,8 +33,9 @@ def test_create_and_edit_have_safe_database_failure_feedback() -> None:
 
 
 def test_service_already_rolls_back_failed_create_update_commits() -> None:
-    service = (Path(__file__).resolve().parents[3] /
-               'app/access/identity_providers/service.py').read_text(encoding='utf-8')
+    service = (Path(__file__).resolve().parents[3] / 'app/access/identity_providers/service.py').read_text(
+        encoding='utf-8'
+    )
     for method in ('create_identity_provider', 'update_identity_provider'):
         source = service.split(f'def {method}(', 1)[1]
         source = source.split('\ndef ', 1)[0]

@@ -17,11 +17,19 @@ def canonical_harbor_origin(value: str) -> str | None:
     except ValueError:
         return None
     if (
-        parsed.scheme != 'https' or not hostname or not hostname.isascii()
-        or hostname.endswith('.') or '%' in hostname or '\\' in hostname
-        or ':' in hostname or '@' in parsed.netloc
-        or parsed.username is not None or parsed.password is not None
-        or parsed.path not in ('', '/') or parsed.query or parsed.fragment
+        parsed.scheme != 'https'
+        or not hostname
+        or not hostname.isascii()
+        or hostname.endswith('.')
+        or '%' in hostname
+        or '\\' in hostname
+        or ':' in hostname
+        or '@' in parsed.netloc
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.path not in ('', '/')
+        or parsed.query
+        or parsed.fragment
         or not all(part and len(part) <= 63 for part in hostname.split('.'))
     ):
         return None

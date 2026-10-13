@@ -7,16 +7,28 @@ TEMPLATE = ROOT / 'app/templates/kubernetes/analytics/alerts/partials/_cluster_s
 def test_operator_first_signal_evidence_sections_keep_original_semantics() -> None:
     source = TEMPLATE.read_text(encoding='utf-8')
     for label in (
-        'Operator Decision', 'Evidence Boundary', 'Signal Posture',
-        'Alert Lifecycle', 'Alert Severity Profile', 'Investigation Focus',
+        'Operator Decision',
+        'Evidence Boundary',
+        'Signal Posture',
+        'Alert Lifecycle',
+        'Alert Severity Profile',
+        'Investigation Focus',
     ):
         assert label in source
     for field in (
-        'overview.total_signals', 'overview.active_alerts', 'overview.anomalies',
-        'overview.pending_alerts', 'overview.resolved_alerts',
-        'overview.critical_alerts', 'overview.warning_alerts', 'overview.info_alerts',
-        'overview.fallback_used', 'overview.fallback_reason', 'overview.evidence_complete',
-        'overview.insight.dominant_signal', 'overview.insight.dominant_anomaly',
+        'overview.total_signals',
+        'overview.active_alerts',
+        'overview.anomalies',
+        'overview.pending_alerts',
+        'overview.resolved_alerts',
+        'overview.critical_alerts',
+        'overview.warning_alerts',
+        'overview.info_alerts',
+        'overview.fallback_used',
+        'overview.fallback_reason',
+        'overview.evidence_complete',
+        'overview.insight.dominant_signal',
+        'overview.insight.dominant_anomaly',
         'overview.insight.action_hint',
     ):
         assert field in source

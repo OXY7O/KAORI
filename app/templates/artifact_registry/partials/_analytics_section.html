@@ -237,8 +237,12 @@
                   hx-sync="closest section:replace"
                   class="mt-5 {{ table_ui.filter_layout_classes() }}">
                 <input type="hidden" name="alert_page" value="1">
-                <input type="hidden" name="provider_id" value="{{ analytics.selected_provider_id or '' }}">
-                <input type="hidden" name="snapshot_window" value="{{ analytics.snapshot_window }}">
+                <input type="hidden"
+                       name="provider_id"
+                       value="{{ analytics.selected_provider_id or '' }}">
+                <input type="hidden"
+                       name="snapshot_window"
+                       value="{{ analytics.snapshot_window }}">
                 <input type="hidden"
                        name="alert_per_page"
                        value="{{ analytics.alert_pagination.per_page }}">
@@ -307,7 +311,8 @@
                             </tr>
                         {% else %}
                             <tr>
-                                <td colspan="6" class="{{ table_ui.cell_classes() }} py-8 text-center text-content-muted">
+                                <td colspan="6"
+                                    class="{{ table_ui.cell_classes() }} py-8 text-center text-content-muted">
                                     {% if analytics.snapshot_count == 0 %}
                                         No committed Registry alert evidence is available. Check Analytics collection and source readiness.
                                     {% elif analytics.alert_filters.search or analytics.alert_filters.severity != 'all' or analytics.alert_filters.state != 'all' or analytics.alert_filters.source != 'all' %}

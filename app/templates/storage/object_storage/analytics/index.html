@@ -17,8 +17,8 @@
             {% include "storage/object_storage/analytics/partials/_dependency_blocker.html" %}
         {% else %}
             {{ section_tracker.render('object-storage-analytics-load-tracker',
-                                      title='Loading Object Storage Analytics',
-                                      description='Reading committed Object Storage analytics evidence.') }}
+                        title='Loading Object Storage Analytics',
+                        description='Reading committed Object Storage analytics evidence.') }}
             {% if system %}
                 {% include "storage/object_storage/analytics/partials/_controls.html" %}
             {% endif %}

@@ -4,7 +4,6 @@ import json
 from typing import Any
 from urllib.request import HTTPRedirectHandler, Request
 
-
 from app.models.notification_channel import NotificationChannel
 
 
@@ -34,6 +33,5 @@ def positive_int(value: Any, *, default: int) -> int:
 class DenyRedirects(HTTPRedirectHandler):
     """Fail closed for provider HTTP redirects, including to private network targets."""
 
-    def redirect_request(self, request: Request, fp: Any, code: int, msg: str,
-                         headers: Any, newurl: str) -> None:
+    def redirect_request(self, request: Request, fp: Any, code: int, msg: str, headers: Any, newurl: str) -> None:
         return None

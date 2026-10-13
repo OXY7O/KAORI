@@ -16,180 +16,167 @@
     'sliders-horizontal',
     'object-storage-analytics-refresh-indicator',
     eyebrow='Analytics Overview' if page_key == 'overview' else page.title
-) %}
-
-        <form id="object-storage-analytics-controls"
-              method="get"
-              data-analytics-refresh-request="true"
-              hx-get="{{ url_for('analytics.object_storage_' ~ page_key) }}"
-              hx-target="#object-storage-analytics-page"
-              hx-select="#object-storage-analytics-page"
-              hx-swap="outerHTML"
-              hx-push-url="true"
-              hx-sync="#object-storage-analytics-page:replace"
-              hx-indicator="#object-storage-analytics-refresh-indicator"
-              hx-trigger="change delay:120ms"
-              data-analytics-preserve-tab
-              class="{{ shared_readiness.filter_layout_classes() }}">
-            <input type="hidden" name="tab" value="">
-            {% call shared_readiness.controls_grid() %}
-                {{ shared_readiness.selector(
-                    'object-storage-system-filter',
-                    'system_id',
-                    'Object Storage System',
-                    systems,
-                    system.id if system else none
-                ) }}
-                {% if page_key == 'alerts' %}
-                    {{ shared_readiness.selector(
-                        'object-storage-alert-source-filter',
-                        'source',
-                        'Alert Source',
-                        [
-                            {'value': 'auto', 'label': 'Automatic · Alertmanager Preferred'},
-                            {'value': 'alertmanager', 'label': 'Alertmanager'},
-                            {'value': 'metrics_source', 'label': 'Metrics Source'}
-                        ],
-                        selected_alert_source
-                    ) }}
-                {% elif page_key == 'forecast' %}
-                    {{ shared_readiness.selector(
-                        'object-storage-history-window-filter',
-                        'history_window',
-                        'History Window',
-                        forecast_history_windows,
-                        selected_forecast_history_window
-                    ) }}
-                {% else %}
-                    {{ shared_readiness.selector(
-                        'object-storage-time-range-filter',
-                        'time_range',
-                        'Time Range',
-                        allowed_time_ranges,
-                        selected_time_range
-                    ) }}
-                {% endif %}
-            {% endcall %}
-        </form>
-        <div class="space-y-3">
-            {% call shared_readiness.readiness_grid() %}
-                {% if page_key == 'alerts' %}
-                    {{ shared_readiness.source_card(
-                        'Alert Source Status',
-                        'Selected alert stream and committed Alertmanager source evidence.',
-                        alert_source.label,
-                        alert_source.tone,
-                        'Selected Alert Stream',
-                        alert_source.resolved_label,
-                        'Alertmanager Lifecycle',
-                        alertmanager.label ~ ' · ' ~ alertmanager.profile,
-                        icon=none
-                    ) }}
-                {% else %}
-                    {{ shared_readiness.source_card(
-                        'Metrics Source Status',
-                        'Metrics Contract At Collection · ' ~ metrics_readiness.profile_label,
-                        metrics_readiness.label,
-                        metrics_readiness.tone,
-                        'Metrics Source',
-                        metrics_source.provider_label ~ (' · ' ~ metrics_source.instance_name if metrics_source.instance_name else ''),
-                        'Committed Inventory',
-                        inventory_observed_at|user_datetime('Not Collected'),
-                        icon=none
-                    ) }}
-                {% endif %}
-                {{ shared_readiness.snapshot_card(
-                    'Latest Analytics Data Snapshot',
-                    'Committed worker datasets used by this page.',
-                    analytics_materialization.label,
-                    analytics_materialization.tone,
-                    analytics_materialization.generated_at|user_datetime('Unavailable') if analytics_materialization.generated_at else 'Unavailable',
-                    'Object Storage Analytics · ' ~ (selected_time_range|upper),
-                    analytics_materialization.expires_at|user_datetime('Not Scheduled') if analytics_materialization.expires_at|default(none) else 'Not Scheduled',
-                    analytics_materialization.last_attempt_at|user_datetime('Unavailable') if analytics_materialization.last_attempt_at else 'Unavailable'
-                ) }}
-            {% endcall %}
+    ) %}
+    <form id="object-storage-analytics-controls"
+          method="get"
+          data-analytics-refresh-request="true"
+          hx-get="{{ url_for('analytics.object_storage_' ~ page_key) }}"
+          hx-target="#object-storage-analytics-page"
+          hx-select="#object-storage-analytics-page"
+          hx-swap="outerHTML"
+          hx-push-url="true"
+          hx-sync="#object-storage-analytics-page:replace"
+          hx-indicator="#object-storage-analytics-refresh-indicator"
+          hx-trigger="change delay:120ms"
+          data-analytics-preserve-tab
+          class="{{ shared_readiness.filter_layout_classes() }}">
+        <input type="hidden" name="tab" value="">
+        {% call shared_readiness.controls_grid() %}
+            {{ shared_readiness.selector('object-storage-system-filter',
+                        'system_id',
+                        'Object Storage System',
+                        systems,
+                        system.id if system else none) }}
             {% if page_key == 'alerts' %}
-                <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">Metrics Snapshot Source</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">
-                            {{ metrics_source.provider_label }}
-                            {% if metrics_source.instance_name %}· {{ metrics_source.instance_name }}{% endif %}
-                        </p>
-                    </div>
-                    {{ table_label.status_label(metrics_source.label, metrics_source.tone, size='compact') }}
-                </div>
-                {% if alert_source.fallback_reason %}
-                    <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3"
-                         role="status">
-                        <div class="flex items-start gap-2">
-                            <i data-lucide="route"
-                               class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
-                            <div>
-                                <p class="text-sm font-semibold text-content-primary">Fallback Alert Source Active</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert_source.fallback_reason }}</p>
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
-                {% if not alert_source.connected %}
-                    <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3"
-                         role="status">
-                        <div class="flex items-start gap-2">
-                            <i data-lucide="triangle-alert"
-                               class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
-                            <div>
-                                <p class="text-sm font-semibold text-content-primary">Alert Stream Unavailable</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert_source.detail }}</p>
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
+                {{ shared_readiness.selector('object-storage-alert-source-filter',
+                                'source',
+                                'Alert Source',
+                                [
+                                {'value': 'auto', 'label': 'Automatic · Alertmanager Preferred'},
+                                {'value': 'alertmanager', 'label': 'Alertmanager'},
+                                {'value': 'metrics_source', 'label': 'Metrics Source'}
+                                ],
+                                selected_alert_source) }}
             {% elif page_key == 'forecast' %}
-                <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">Forecast Worker Snapshot</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">
-                            {{ selected_forecast_history_window|upper }} · {{ forecast_materialization.method }}
-                        </p>
+                {{ shared_readiness.selector('object-storage-history-window-filter',
+                                'history_window',
+                                'History Window',
+                                forecast_history_windows,
+                                selected_forecast_history_window) }}
+            {% else %}
+                {{ shared_readiness.selector('object-storage-time-range-filter',
+                                'time_range',
+                                'Time Range',
+                                allowed_time_ranges,
+                                selected_time_range) }}
+            {% endif %}
+        {% endcall %}
+    </form>
+    <div class="space-y-3">
+        {% call shared_readiness.readiness_grid() %}
+            {% if page_key == 'alerts' %}
+                {{ shared_readiness.source_card('Alert Source Status',
+                                'Selected alert stream and committed Alertmanager source evidence.',
+                                alert_source.label,
+                                alert_source.tone,
+                                'Selected Alert Stream',
+                                alert_source.resolved_label,
+                                'Alertmanager Lifecycle',
+                                alertmanager.label ~ ' · ' ~ alertmanager.profile,
+                                icon=none) }}
+            {% else %}
+                {{ shared_readiness.source_card('Metrics Source Status',
+                                'Metrics Contract At Collection · ' ~ metrics_readiness.profile_label,
+                                metrics_readiness.label,
+                                metrics_readiness.tone,
+                                'Metrics Source',
+                                metrics_source.provider_label ~ (' · ' ~ metrics_source.instance_name if metrics_source.instance_name else '') ,
+                'Committed Inventory',
+                inventory_observed_at|user_datetime('Not Collected'),
+                icon=none
+                ) }}
+            {% endif %}
+            {{ shared_readiness.snapshot_card('Latest Analytics Data Snapshot',
+                        'Committed worker datasets used by this page.',
+                        analytics_materialization.label,
+                        analytics_materialization.tone,
+                        analytics_materialization.generated_at|user_datetime('Unavailable') if analytics_materialization.generated_at else 'Unavailable',
+            'Object Storage Analytics · ' ~ (selected_time_range|upper),
+            analytics_materialization.expires_at|user_datetime('Not Scheduled') if analytics_materialization.expires_at|default(none) else 'Not Scheduled',
+            analytics_materialization.last_attempt_at|user_datetime('Unavailable') if analytics_materialization.last_attempt_at else 'Unavailable'
+            ) }}
+        {% endcall %}
+        {% if page_key == 'alerts' %}
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">Metrics Snapshot Source</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        {{ metrics_source.provider_label }}
+                        {% if metrics_source.instance_name %}· {{ metrics_source.instance_name }}{% endif %}
+                    </p>
+                </div>
+                {{ table_label.status_label(metrics_source.label, metrics_source.tone, size='compact') }}
+            </div>
+            {% if alert_source.fallback_reason %}
+                <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3"
+                     role="status">
+                    <div class="flex items-start gap-2">
+                        <i data-lucide="route"
+                           class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-content-primary">Fallback Alert Source Active</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert_source.fallback_reason }}</p>
+                        </div>
                     </div>
-                    {{ table_label.status_label(forecast_materialization.label, forecast_materialization.tone, size='compact') }}
                 </div>
             {% endif %}
+            {% if not alert_source.connected %}
+                <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3"
+                     role="status">
+                    <div class="flex items-start gap-2">
+                        <i data-lucide="triangle-alert"
+                           class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-content-primary">Alert Stream Unavailable</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ alert_source.detail }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% elif page_key == 'forecast' %}
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">Forecast Worker Snapshot</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        {{ selected_forecast_history_window|upper }} · {{ forecast_materialization.method }}
+                    </p>
+                </div>
+                {{ table_label.status_label(forecast_materialization.label, forecast_materialization.tone, size='compact') }}
+            </div>
+        {% endif %}
+    </div>
+    {% if analytics_materialization.stale or analytics_materialization.refresh_dispatched or analytics_materialization.dispatch_error %}
+        <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3"
+             role="status">
+            <div class="flex items-start gap-2">
+                <i data-lucide="refresh-cw"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                <div>
+                    <p class="text-sm font-semibold text-content-primary">Analytics Snapshot Refresh</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        {% if analytics_materialization.dispatch_error %}
+                            {{ analytics_materialization.dispatch_error }} The last usable committed snapshot remains visible when it is inside the stale-grace window.
+                        {% elif analytics_materialization.refresh_dispatched %}
+                            A newer {{ selected_time_range|upper }} snapshot has been queued. This page continues to read the committed snapshot; it does not query providers directly.
+                        {% else %}
+                            The current snapshot is stale but still inside the governed fallback window.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
         </div>
-        {% if analytics_materialization.stale or analytics_materialization.refresh_dispatched or analytics_materialization.dispatch_error %}
-            <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3"
-                 role="status">
-                <div class="flex items-start gap-2">
-                    <i data-lucide="refresh-cw"
-                       class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
-                    <div>
-                        <p class="text-sm font-semibold text-content-primary">Analytics Snapshot Refresh</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">
-                            {% if analytics_materialization.dispatch_error %}
-                                {{ analytics_materialization.dispatch_error }} The last usable committed snapshot remains visible when it is inside the stale-grace window.
-                            {% elif analytics_materialization.refresh_dispatched %}
-                                A newer {{ selected_time_range|upper }} snapshot has been queued. This page continues to read the committed snapshot; it does not query providers directly.
-                            {% else %}
-                                The current snapshot is stale but still inside the governed fallback window.
-                            {% endif %}
-                        </p>
-                    </div>
+    {% endif %}
+    {% if query_diagnostics|default([]) and not dependency_blocker %}
+        <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3 text-sm text-content-secondary"
+             role="status">
+            <div class="flex items-start gap-2">
+                <i data-lucide="triangle-alert"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
+                <div>
+                    <p class="font-semibold text-content-primary">Operational Metrics Degraded</p>
+                    <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ query_diagnostics[0] }}</p>
                 </div>
             </div>
-        {% endif %}
-        {% if query_diagnostics|default([]) and not dependency_blocker %}
-            <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3 text-sm text-content-secondary"
-                 role="status">
-                <div class="flex items-start gap-2">
-                    <i data-lucide="triangle-alert"
-                       class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
-                    <div>
-                        <p class="font-semibold text-content-primary">Operational Metrics Degraded</p>
-                        <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ query_diagnostics[0] }}</p>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
+        </div>
+    {% endif %}
 {% endcall %}

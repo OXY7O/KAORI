@@ -80,9 +80,7 @@ def load_topology_records(
     # A deep graph may be bounded per family only when every parent Namespace
     # fits in the same established graph budget.
     shallow_budget = max_nodes if selection.depth == '1' else None
-    namespaces = _load_namespaces(
-        cluster_ids, namespace, max_nodes=shallow_budget, totals=source_totals
-    )
+    namespaces = _load_namespaces(cluster_ids, namespace, max_nodes=shallow_budget, totals=source_totals)
     if selection.depth == '1':
         family_budget = shallow_budget
     elif max_nodes is not None and len(clusters) + len(namespaces) <= max_nodes:
@@ -94,7 +92,9 @@ def load_topology_records(
         family_budget = None
 
     pods = _load_pods(
-        cluster_ids, namespace, selection,
+        cluster_ids,
+        namespace,
+        selection,
         max_nodes=family_budget if selection.scope in {'all', 'compute'} else None,
         totals=source_totals,
     )
@@ -103,36 +103,32 @@ def load_topology_records(
         cluster_by_id={cluster.id: cluster for cluster in clusters},
         latest_cluster_inventory=latest_inventory,
         namespaces=namespaces,
-        nodes=_load_nodes(
-            cluster_ids, namespace, pods, selection, max_nodes=family_budget, totals=source_totals
-        ),
-        workloads=_load_workloads(
-            cluster_ids, namespace, selection, max_nodes=family_budget, totals=source_totals
-        ),
+        nodes=_load_nodes(cluster_ids, namespace, pods, selection, max_nodes=family_budget, totals=source_totals),
+        workloads=_load_workloads(cluster_ids, namespace, selection, max_nodes=family_budget, totals=source_totals),
         services=_load_services(
-            cluster_ids, namespace, selection,
+            cluster_ids,
+            namespace,
+            selection,
             # Networking Pods are selected against all committed Service
             # selectors, including Services omitted by the visible graph.
-            max_nodes=(
-                None if selection.scope == 'networking' and selection.include_pods
-                else family_budget
-            ),
+            max_nodes=(None if selection.scope == 'networking' and selection.include_pods else family_budget),
             totals=source_totals,
         ),
-        ingresses=_load_ingresses(
-            cluster_ids, namespace, selection, max_nodes=family_budget, totals=source_totals
-        ),
+        ingresses=_load_ingresses(cluster_ids, namespace, selection, max_nodes=family_budget, totals=source_totals),
         configurations=_load_configurations(
             cluster_ids, namespace, selection, max_nodes=family_budget, totals=source_totals
         ),
         storage_items=_load_storage(
-            cluster_ids, namespace, selection,
+            cluster_ids,
+            namespace,
+            selection,
             max_nodes=family_budget if not namespace else None,
             totals=source_totals,
         ),
         pods=pods,
         source_totals=source_totals,
     )
+
 
 def _current_query(model, cluster_ids: list[str]):
     return filter_current_generation(model.query, model).filter(model.cluster_id.in_(cluster_ids))
@@ -197,6 +193,7 @@ def _load_pods(
     query = query.order_by(PodInventory.cluster_id.asc(), PodInventory.namespace.asc(), PodInventory.pod_name.asc())
     return _materialize_family(query, kind='pod', max_nodes=max_nodes, totals=totals)
 
+
 def _load_nodes(
     cluster_ids: list[str],
     namespace: str,
@@ -239,10 +236,13 @@ def _load_workloads(
     if max_nodes is not None:
         query = _visible_namespace_query(query, WorkloadInventory, cluster_ids)
     query = query.order_by(
-        WorkloadInventory.cluster_id.asc(), WorkloadInventory.namespace.asc(),
-        WorkloadInventory.workload_type.asc(), WorkloadInventory.name.asc(),
+        WorkloadInventory.cluster_id.asc(),
+        WorkloadInventory.namespace.asc(),
+        WorkloadInventory.workload_type.asc(),
+        WorkloadInventory.name.asc(),
     )
     return _materialize_family(query, kind='workload', max_nodes=max_nodes, totals=totals)
+
 
 def _load_services(
     cluster_ids: list[str],
@@ -258,10 +258,12 @@ def _load_services(
     if max_nodes is not None:
         query = _visible_namespace_query(query, ServiceInventory, cluster_ids)
     query = query.order_by(
-        ServiceInventory.cluster_id.asc(), ServiceInventory.namespace.asc(),
+        ServiceInventory.cluster_id.asc(),
+        ServiceInventory.namespace.asc(),
         ServiceInventory.service_name.asc(),
     )
     return _materialize_family(query, kind='service', max_nodes=max_nodes, totals=totals)
+
 
 def _load_ingresses(
     cluster_ids: list[str],
@@ -277,10 +279,12 @@ def _load_ingresses(
     if max_nodes is not None:
         query = _visible_namespace_query(query, IngressInventory, cluster_ids)
     query = query.order_by(
-        IngressInventory.cluster_id.asc(), IngressInventory.namespace.asc(),
+        IngressInventory.cluster_id.asc(),
+        IngressInventory.namespace.asc(),
         IngressInventory.ingress_name.asc(),
     )
     return _materialize_family(query, kind='ingress', max_nodes=max_nodes, totals=totals)
+
 
 def _load_configurations(
     cluster_ids: list[str],
@@ -296,8 +300,10 @@ def _load_configurations(
     if max_nodes is not None:
         query = _visible_namespace_query(query, ConfigurationInventory, cluster_ids)
     ordering = (
-        ConfigurationInventory.cluster_id.asc(), ConfigurationInventory.namespace.asc(),
-        ConfigurationInventory.object_type.asc(), ConfigurationInventory.name.asc(),
+        ConfigurationInventory.cluster_id.asc(),
+        ConfigurationInventory.namespace.asc(),
+        ConfigurationInventory.object_type.asc(),
+        ConfigurationInventory.name.asc(),
     )
     if max_nodes is None:
         return query.order_by(*ordering).all()
@@ -311,6 +317,7 @@ def _load_configurations(
         *_materialize_family(configmaps.order_by(*ordering), kind='configmap', max_nodes=max_nodes, totals=totals),
         *_materialize_family(secrets.order_by(*ordering), kind='secret', max_nodes=max_nodes, totals=totals),
     ]
+
 
 def _load_storage(
     cluster_ids: list[str],
@@ -329,8 +336,10 @@ def _load_storage(
             | (StorageInventory.namespace.is_(None) & (StorageInventory.storage_type == 'PersistentVolume'))
         )
     ordering = (
-        StorageInventory.cluster_id.asc(), StorageInventory.storage_type.asc(),
-        StorageInventory.namespace.asc(), StorageInventory.name.asc(),
+        StorageInventory.cluster_id.asc(),
+        StorageInventory.storage_type.asc(),
+        StorageInventory.namespace.asc(),
+        StorageInventory.name.asc(),
     )
     if max_nodes is None:
         items = query.order_by(*ordering).all()
@@ -339,13 +348,15 @@ def _load_storage(
     # topology graph node. Scoped PVC/PV bindings preserve legacy loading.
     claims = _visible_namespace_query(
         query.filter(StorageInventory.storage_type == 'PersistentVolumeClaim'),
-        StorageInventory, cluster_ids,
+        StorageInventory,
+        cluster_ids,
     )
     volumes = query.filter(StorageInventory.storage_type == 'PersistentVolume')
     return [
         *_materialize_family(claims.order_by(*ordering), kind='pvc', max_nodes=max_nodes, totals=totals),
         *_materialize_family(volumes.order_by(*ordering), kind='pv', max_nodes=max_nodes, totals=totals),
     ]
+
 
 def _storage_for_namespace(items: list[StorageInventory], namespace: str) -> list[StorageInventory]:
     claims = [item for item in items if item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace]

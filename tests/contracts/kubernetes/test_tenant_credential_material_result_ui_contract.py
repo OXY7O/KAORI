@@ -60,7 +60,9 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     assert template.count('<h1') == 1
     assert template.count('operational_section_card.render(') == 3
     assert template.index('Credential Context') < template.index('One-time view — copy before leaving')
-    assert template.index('One-time view — copy before leaving') < template.index('aria-label="Generated secret material"')
+    assert template.index('One-time view — copy before leaving') < template.index(
+        'aria-label="Generated secret material"'
+    )
     assert template.index('aria-label="Generated secret material"') < template.index("'Delivery Workflow'")
     assert template.index("'Delivery Workflow'") < template.index("'Workflow Example'")
     assert template.index("'Workflow Example'") < template.index('Entitlement until')
@@ -118,7 +120,7 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     assert "material_title = 'Approved Access Kubeconfig'" in route
     assert "delivery_label = 'Governed Individual Access'" in route
     assert "material_credential_valid_until=material.access_package.get('valid_until')" in route
-    assert "material_credential_valid_until=material.expires_at" not in route
+    assert 'material_credential_valid_until=material.expires_at' not in route
     # The sole page-level clipboard source is the non-secret ServiceAccount identifier.
     assert template.count('data-kaori-copy-source') == 1
     assert '<code data-kaori-copy-source' in template
@@ -163,10 +165,10 @@ def test_material_exposure_remains_one_time_no_store_and_non_persistent() -> Non
     assert "response.headers['Pragma'] = 'no-cache'" in route
     assert "response.headers['Referrer-Policy'] = 'no-referrer'" in route
     assert "response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'" in route
-    assert "data-kaori-sensitive-material" in copy_component
-    assert "data-kaori-copy-source" in copy_component
-    assert "data-kaori-copy-button" in copy_component
-    assert "data-kaori-download-button" in copy_component
+    assert 'data-kaori-sensitive-material' in copy_component
+    assert 'data-kaori-copy-source' in copy_component
+    assert 'data-kaori-copy-button' in copy_component
+    assert 'data-kaori-download-button' in copy_component
     assert "window.addEventListener('pagehide'" in js
     assert "node.textContent = ''" in js
-    assert "tenant_credential_material.js" in read('app/templates/kubernetes/tenant/credential_material.html')
+    assert 'tenant_credential_material.js' in read('app/templates/kubernetes/tenant/credential_material.html')

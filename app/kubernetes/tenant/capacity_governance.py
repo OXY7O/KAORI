@@ -25,7 +25,6 @@ from app.kubernetes.tenant.capacity_allocation_state import (
     _committed_tenant_allocation,
     _committed_tenant_allocations,
 )
-from app.kubernetes.tenant.capacity_limit_exposure import assess_limit_exposure
 from app.kubernetes.tenant.capacity_governance_support import (
     _GIB,
     _budget,
@@ -51,6 +50,7 @@ from app.kubernetes.tenant.capacity_governance_support import (
 from app.kubernetes.tenant.capacity_governance_support import (
     _quantity_gib_text as _quantity_gib_text,
 )
+from app.kubernetes.tenant.capacity_limit_exposure import assess_limit_exposure
 from app.models import Cluster
 from app.models.tenant import (
     Tenant,
@@ -151,11 +151,13 @@ def upsert_capacity_policy(source: Mapping[str, Any]) -> TenantCapacityPolicy:
         raise ValueError('Limit Exposure mode must be Observe or Enforce.')
     cpu_ratio = _operator_limit_ratio(
         source.get('cpu_limit_ratio') or getattr(policy, 'cpu_limit_ratio', '1.50'),
-        name='CPU Limit Exposure', upper='4',
+        name='CPU Limit Exposure',
+        upper='4',
     )
     memory_ratio = _operator_limit_ratio(
         source.get('memory_limit_ratio') or getattr(policy, 'memory_limit_ratio', '1.00'),
-        name='Memory Limit Exposure', upper='2',
+        name='Memory Limit Exposure',
+        upper='2',
     )
     policy.limit_exposure_mode = mode
     policy.cpu_limit_ratio = cpu_ratio
@@ -198,13 +200,9 @@ def _build_capacity_governance_summary_from_inputs(
     committed, committed_count, unbounded_namespaces = committed_state
     limits, _, unknown_limits = limits_state or (CapacityVector(cpu=None, memory_bytes=None), 0, [])
     exposure_mode = getattr(policy, 'limit_exposure_mode', 'observe') if policy is not None else 'observe'
-    cpu_ratio = (
-        Decimal(getattr(policy, 'cpu_limit_ratio', '1.50') or '1.50')
-        if policy is not None else Decimal('1.50')
-    )
+    cpu_ratio = Decimal(getattr(policy, 'cpu_limit_ratio', '1.50') or '1.50') if policy is not None else Decimal('1.50')
     memory_ratio = (
-        Decimal(getattr(policy, 'memory_limit_ratio', '1.00') or '1.00')
-        if policy is not None else Decimal('1.00')
+        Decimal(getattr(policy, 'memory_limit_ratio', '1.00') or '1.00') if policy is not None else Decimal('1.00')
     )
 
     def exposure(budget: CapacityVector | None, *, ready: bool) -> dict[str, Any]:
@@ -217,7 +215,6 @@ def _build_capacity_governance_summary_from_inputs(
             evidence_ready=ready,
             unknown_sources=unknown_limits,
         )
-
 
     if policy is None:
         return {
@@ -486,7 +483,10 @@ def _committed_allocation_with_tenant_override(
         TenantNamespace.query.filter(
             TenantNamespace.cluster_id == tenant.cluster_id,
             TenantNamespace.provisioning_status.notin_(
-                (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+                (
+                    TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                    TenantNamespaceProvisioningStatus.RELEASED.value,
+                )
             ),
         )
         .order_by(TenantNamespace.namespace.asc())
@@ -557,16 +557,22 @@ def enforce_capsule_tenant_resource_quota_preflight(
                 'tenant_shared' if str(proposed_scope or 'Tenant') == 'Tenant' else 'tenant_namespace_template'
             ),
             current_limits=_capsule_tenant_quota_vector(
-                current_quota_hard, scope=current_scope, namespace_count=namespace_count,
+                current_quota_hard,
+                scope=current_scope,
+                namespace_count=namespace_count,
                 quota_vector_factory=quota_limit_vector,
             ),
             proposed_limits=_capsule_tenant_quota_vector(
-                proposed_quota_hard, scope=proposed_scope, namespace_count=namespace_count,
+                proposed_quota_hard,
+                scope=proposed_scope,
+                namespace_count=namespace_count,
                 quota_vector_factory=quota_limit_vector,
             ),
             limit_committed_state=_committed_allocation_with_tenant_override(
-                tenant=tenant, quota_hard=current_quota_hard,
-                scope=current_scope, namespace_count=namespace_count,
+                tenant=tenant,
+                quota_hard=current_quota_hard,
+                scope=current_scope,
+                namespace_count=namespace_count,
                 quota_vector_factory=quota_limit_vector,
             ),
         ),
@@ -596,10 +602,7 @@ def _enforce_allocation_preflight(
         request.allocation_scope == 'namespace'
         and request.replacement_namespace is not None
         and request.operation == 'increase'
-        and any(
-            value is None
-            for value in (request.current.cpu, request.current.memory_bytes, request.current.pods)
-        )
+        and any(value is None for value in (request.current.cpu, request.current.memory_bytes, request.current.pods))
     )
     replacement_other: CapacityVector | None = None
     replacement_unknown_sources: list[str] = []
@@ -658,7 +661,10 @@ def _enforce_allocation_preflight(
                     budget=budget.available,
                     committed_before=replacement_other,
                     current_allocation=CapacityVector(
-                        cpu=_ZERO, memory_bytes=_ZERO, pods=_ZERO, storage_bytes=_ZERO,
+                        cpu=_ZERO,
+                        memory_bytes=_ZERO,
+                        pods=_ZERO,
+                        storage_bytes=_ZERO,
                     ),
                     proposed_allocation=request.proposed,
                     capacity_evidence_available=True,
@@ -691,7 +697,8 @@ def _enforce_allocation_preflight(
     limit_mode = str(getattr(policy, 'limit_exposure_mode', 'observe') or 'observe') if policy else 'observe'
     limit_evidence: dict[str, Any] = {'mode': limit_mode, 'enforced': False, 'planning_only': True}
     limit_positive = (
-        request.current_limits is not None and request.proposed_limits is not None
+        request.current_limits is not None
+        and request.proposed_limits is not None
         and any(
             next_value is None or current_value is None or next_value > current_value
             for current_value, next_value in (
@@ -705,7 +712,10 @@ def _enforce_allocation_preflight(
         if request.proposed_limits is None:
             if pure.allowed:
                 pure = replace(
-                    pure, allowed=False, decision='block', state='Unknown',
+                    pure,
+                    allowed=False,
+                    decision='block',
+                    state='Unknown',
                     reason='Limit Exposure proposal is missing; operator Enforce mode fails closed.',
                 )
         else:
@@ -720,14 +730,16 @@ def _enforce_allocation_preflight(
             elif request.replacement_namespace is not None:
                 # An existing Native Namespace is replaced exactly once.
                 other_limits, _, unknown_limit_sources = _committed_tenant_allocation(
-                    cluster_id, replace_namespace=request.replacement_namespace,
+                    cluster_id,
+                    replace_namespace=request.replacement_namespace,
                     quota_vector_factory=quota_limit_vector,
                 )
                 projected_limits = _add_capacity_vectors(other_limits, request.proposed_limits)
                 projection = 'other_committed_plus_proposed'
             else:
                 limit_before, _, unknown_limit_sources = _committed_tenant_allocation(
-                    cluster_id, quota_vector_factory=quota_limit_vector,
+                    cluster_id,
+                    quota_vector_factory=quota_limit_vector,
                 )
                 projected_limits = _project(
                     limit_before,
@@ -750,8 +762,11 @@ def _enforce_allocation_preflight(
             limit_evidence['assessment'] = report
             if pure.allowed and report['state'] in {'Unknown', 'Overcommitted'}:
                 pure = replace(
-                    pure, allowed=False, decision='block', state=report['state'],
-                    reason=f"Limit Exposure admission blocked: {report['reason']}",
+                    pure,
+                    allowed=False,
+                    decision='block',
+                    state=report['state'],
+                    reason=f'Limit Exposure admission blocked: {report["reason"]}',
                 )
 
     decision = _persist_decision(
@@ -834,8 +849,7 @@ def _persist_decision(
                         'current_unbounded_preserved': True,
                     }
                 }
-                if evidence.replacement_other_committed is not None
-                and request.replacement_namespace is not None
+                if evidence.replacement_other_committed is not None and request.replacement_namespace is not None
                 else {}
             ),
         },

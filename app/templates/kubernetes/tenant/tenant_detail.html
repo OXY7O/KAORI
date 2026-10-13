@@ -5,9 +5,7 @@
 {% block dashboard_content %}
     <div class="min-w-0 space-y-6"
          data-tenant-workspace="tenants"
-         data-kaori-tenant-detail-page>
-        {% include "kubernetes/tenant/partials/_tenant_management_detail.html" %}
-    </div>
+         data-kaori-tenant-detail-page>{% include "kubernetes/tenant/partials/_tenant_management_detail.html" %}</div>
 {% endblock dashboard_content %}
 {% block tenant_scripts %}
     <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>

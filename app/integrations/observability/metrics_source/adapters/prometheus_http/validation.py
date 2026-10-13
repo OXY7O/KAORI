@@ -36,21 +36,25 @@ def _valid_core_response(key: str, payload: Any) -> bool:
                 return False
             samples = item.get('value' if kind == 'vector' else 'values')
             if kind == 'vector':
-                if (not isinstance(samples, list) or len(samples) != 2
+                if (
+                    not isinstance(samples, list)
+                    or len(samples) != 2
                     or not isinstance(samples[0], (int, float))
-                    or not isinstance(samples[1], str)):
+                    or not isinstance(samples[1], str)
+                ):
                     return False
             elif not isinstance(samples, list) or not all(
-                isinstance(sample, list) and len(sample) == 2
+                isinstance(sample, list)
+                and len(sample) == 2
                 and isinstance(sample[0], (int, float))
-                and isinstance(sample[1], str) for sample in samples
+                and isinstance(sample[1], str)
+                for sample in samples
             ):
                 return False
         return True
     if key == 'series_discovery':
         return isinstance(data, list) and all(
-            isinstance(item, Mapping)
-            and all(isinstance(k, str) and isinstance(v, str) for k, v in item.items())
+            isinstance(item, Mapping) and all(isinstance(k, str) and isinstance(v, str) for k, v in item.items())
             for item in data
         )
     if key == 'label_discovery':

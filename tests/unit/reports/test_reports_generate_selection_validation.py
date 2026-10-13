@@ -45,7 +45,9 @@ def test_inventory_content_is_locked_but_tampering_is_rejected() -> None:
         MultiDict([('report_type', report_type), ('sections', 'invalid_section')]),
         for_submission=True,
     )
-    assert state['sections'] == list(next(item['default_sections'] for item in REPORT_TYPE_OPTIONS if item['value'] == report_type))
+    assert state['sections'] == list(
+        next(item['default_sections'] for item in REPORT_TYPE_OPTIONS if item['value'] == report_type)
+    )
     assert 'Inventory report sections are fixed by the published contract.' in _validate_sections(state, report_type)
 
 

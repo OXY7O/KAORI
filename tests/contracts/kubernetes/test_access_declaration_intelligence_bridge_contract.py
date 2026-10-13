@@ -29,12 +29,15 @@ def test_access_drift_reuses_existing_intelligence_rule_and_committed_evidence()
     # External subject ownership without a correlated Grant cannot be
     # elevated into the runtime-audit-only unmanaged-principal Intelligence rule.
     for foreign_code in (
-        'external_capsule_owner', 'external_native_rolebinding',
+        'external_capsule_owner',
+        'external_native_rolebinding',
         'unverified_kaori_grant_marker',
     ):
         assert foreign_code not in service
     assert "return 'kubernetes.tenant.access.grant_drift'" in service
-    assert "'kubernetes.tenant.access.unmanaged_principal'" not in (
-        service.split('def access_declaration_rule_key(', 1)[1]
-        .split('def _access_declaration_findings(', 1)[0]
+    assert (
+        "'kubernetes.tenant.access.unmanaged_principal'"
+        not in (
+            service.split('def access_declaration_rule_key(', 1)[1].split('def _access_declaration_findings(', 1)[0]
+        )
     )

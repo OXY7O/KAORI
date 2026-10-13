@@ -2,6 +2,7 @@
 
 These contracts are authored while CI/CD and runtime provider mutation HOLD.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,10 +27,10 @@ def test_recovery_is_scoped_to_verified_native_handback_in_tenant_detail():
     Environment().parse(partial)
     assert "tenant.provider_key == 'native_kubernetes' and tenant.lifecycle_status == 'released'" in detail
     assert "handback_receipt and handback_receipt.status == 'verified'" in partial
-    assert "partials/_native_residual_recovery.html" in detail
+    assert 'partials/_native_residual_recovery.html' in detail
     assert 'id="tenant-native-residual-recovery"' in partial
     assert 'name="tenant-governance"' in detail
-    assert 'tenant_detail_open_section == \'handback\'' in detail
+    assert "tenant_detail_open_section == 'handback'" in detail
     assert "'Handback Verified' if handback_receipt" in detail
     assert 'Recovery Verified' in partial
     assert 'Recovery Review Required' in partial
@@ -47,7 +48,7 @@ def test_recovery_forms_use_existing_htmx_csrf_loading_and_independent_actor_gua
         'approve_native_residual_cleanup_route',
         'execute_native_residual_cleanup_route',
     ):
-        assert f"tenant.{route}" in partial
+        assert f'tenant.{route}' in partial
     assert partial.count('name="csrf_token"') == 4
     assert partial.count('hx-target="#tenant-management-detail"') == 4
     assert partial.count('hx-select="#tenant-management-detail"') == 4
@@ -56,10 +57,10 @@ def test_recovery_forms_use_existing_htmx_csrf_loading_and_independent_actor_gua
     assert partial.count('name="tenant_detail_section" value="handback"') == 4
     assert partial.count('name="tenant_detail_id"') == 4
     assert 'name="plan_sha256" value="{{ recovery_plan.plan_sha256 }}"' in partial
-    assert "recovery_plan.requested_by != current_user.id" in partial
-    assert "recovery_approval.approved_by == current_user.id" in partial
-    assert "row.native_residual_plan_current" in partial
-    assert "row.native_residual_approval_current" in partial
+    assert 'recovery_plan.requested_by != current_user.id' in partial
+    assert 'recovery_approval.approved_by == current_user.id' in partial
+    assert 'row.native_residual_plan_current' in partial
+    assert 'row.native_residual_approval_current' in partial
     assert 'name="change_reference"' in partial
     assert 'confirm_native_residual_execute' in partial
     assert 'required' in partial
@@ -82,13 +83,13 @@ def test_ordinary_tenant_get_only_reads_committed_projected_recovery_receipts():
 def test_verified_cleanup_handoff_is_navigation_not_automatic_adopt():
     partial, routes, discovery = source(PARTIAL), source(ROUTES), source(DISCOVERY)
     assert "url_for('tenant.tenants', section='discovery')" in partial
-    assert "Open Discovery &amp; Review Adoption" in partial
+    assert 'Open Discovery &amp; Review Adoption' in partial
     assert 'This link does not adopt automatically' in partial
     assert 'Review Adoption' in discovery
     assert 'adopt_discovered_tenant_committed' in routes
     assert 'adopt_discovered_tenant_committed(' not in partial
-    assert "if recovery_verified" in partial
-    assert "if recovery_execution" in partial
+    assert 'if recovery_verified' in partial
+    assert 'if recovery_execution' in partial
     assert 'No retry or automatic cleanup is available' in partial
 
 
@@ -98,11 +99,11 @@ def test_route_blocks_unknown_mutation_result_and_keeps_audit_feedback():
         "@tenant_bp.post('/tenants/<string:tenant_id>/decommission')", 1
     )[0]
     assert 'execute_native_residual_cleanup_committed(' in block
-    assert 'confirmed=request.form.get(\'confirm_native_residual_execute\') == \'execute\'' in block
+    assert "confirmed=request.form.get('confirm_native_residual_execute') == 'execute'" in block
     assert 'except Exception:' in block
     assert 'Provider Recovery Needs Manual Review' in block
     assert 'Do not retry, manually delete labels, or force Re-adopt' in block
-    assert '_tenant_section_redirect(\'registry\')' in block
+    assert "_tenant_section_redirect('registry')" in block
     assert 'tenant.release.native_residual_cleanup_verified' not in block
 
 
@@ -129,7 +130,7 @@ def test_recovery_redesign_uses_readable_steps_and_distinct_assessment_plan_sect
     assert 'only rendered' not in partial  # No invented mutation capability.
     assert partial.count('name="csrf_token"') == 4
     assert partial.count('type="submit"') == 4
-    assert partial.count('href="{{ url_for(\'tenant.tenants\', section=\'discovery\') }}"') == 2
+    assert partial.count("href=\"{{ url_for('tenant.tenants', section='discovery') }}\"") == 2
 
 
 def test_recovery_redesign_preserves_distinct_sensitive_workflow_forms():

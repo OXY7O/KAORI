@@ -5,6 +5,7 @@ replay. Never restart if any Capsule handoff attempt/START exists. The
 PostgreSQL write-once ledger role/trigger posture is verified before trusting
 the absence of an attempt: an absent ledger is NOT evidence of no execution.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -17,8 +18,13 @@ from app.kubernetes.tenant.capsule_handoff_start_writer import (
     _require_postgres_ledger_write_once_guards,
 )
 from app.kubernetes.tenant.release_handoff_approval import (
-    _PLAN_HASH_FIELDS, _PLAN_TARGET, _can_confirm_plan, _checked_recently,
-    _complete_provider_snapshot, _plan_hash, latest_release_handoff_approval,
+    _PLAN_HASH_FIELDS,
+    _PLAN_TARGET,
+    _can_confirm_plan,
+    _checked_recently,
+    _complete_provider_snapshot,
+    _plan_hash,
+    latest_release_handoff_approval,
     latest_release_handoff_plan,
 )
 from app.kubernetes.tenant.release_preflight import review_tenant_release_preflight_committed
@@ -44,41 +50,46 @@ def _ensure_capsule_no_execution_history(tenant_id: str) -> None:
         if db.session.get_bind().dialect.name != 'postgresql':
             raise ValueError('Capsule restart requires protected PostgreSQL START history.')
         _require_postgres_ledger_write_once_guards(db.session)
-        started = (
-            CapsuleHandoffLedgerEvent.query
-            .filter_by(tenant_id=tenant_id).limit(1).first()
-        )
+        started = CapsuleHandoffLedgerEvent.query.filter_by(tenant_id=tenant_id).limit(1).first()
         if started is not None:
             raise ValueError(
-                'Capsule START/attempt history exists; independent recovery is '
-                'required and G1 may not be restarted.'
+                'Capsule START/attempt history exists; independent recovery is required and G1 may not be restarted.'
             )
         for target in _ATTEMPT_TARGETS:
-            if AuditEvent.query.filter_by(
-                target_type=target, target_id=tenant_id,
-            ).limit(1).first() is not None:
+            if (
+                AuditEvent.query.filter_by(
+                    target_type=target,
+                    target_id=tenant_id,
+                )
+                .limit(1)
+                .first()
+                is not None
+            ):
                 raise ValueError(
-                    'Capsule provider execution or Released history exists; '
-                    'independent recovery is required.'
+                    'Capsule provider execution or Released history exists; independent recovery is required.'
                 )
     except SQLAlchemyError as exc:
         raise ValueError(
-            'Capsule immutable START ledger could not be verified; '
-            'install/verify database guards before restart.'
+            'Capsule immutable START ledger could not be verified; install/verify database guards before restart.'
         ) from exc
 
 
 def _assert_expired_acknowledged_capsule(
-    *, tenant_id: str, actor_user_id: int,
-    plan_sha256: str, plan: dict[str, Any] | None,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
+    plan: dict[str, Any] | None,
     approval: dict[str, Any] | None,
 ) -> None:
     if (
-        not plan or not approval
+        not plan
+        or not approval
         or plan.get('provider') != 'capsule'
         or plan.get('status') != 'pending_independent_approval'
         or plan.get('tenant_id') != tenant_id
-        or not isinstance(plan_sha256, str) or len(plan_sha256) != 64
+        or not isinstance(plan_sha256, str)
+        or len(plan_sha256) != 64
         or plan.get('plan_sha256') != plan_sha256
         or _plan_hash(plan) != plan_sha256
         or plan.get('requested_by') != actor_user_id
@@ -91,10 +102,7 @@ def _assert_expired_acknowledged_capsule(
         or approval.get('provider_handoff_verified') is not False
         or approval.get('release_authorized') is not False
     ):
-        raise ValueError(
-            'Only the original requester may restart the exact independently '
-            'acknowledged Capsule plan.'
-        )
+        raise ValueError('Only the original requester may restart the exact independently acknowledged Capsule plan.')
     for value in (plan.get('requested_at'), approval.get('approved_at')):
         try:
             timestamp = datetime.fromisoformat(str(value or ''))
@@ -107,7 +115,11 @@ def _assert_expired_acknowledged_capsule(
 
 
 def restart_expired_capsule_handoff_plan_committed(
-    *, tenant_id: str, actor_user_id: int, plan_sha256: str, confirmed: bool,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
+    confirmed: bool,
 ) -> dict[str, Any]:
     """Prepare a fresh SHA only after expiration, a protected empty ledger,
     and an exact fresh authoritative provider scope and governance review.
@@ -119,12 +131,16 @@ def restart_expired_capsule_handoff_plan_committed(
     plan = latest_release_handoff_plan(tenant_id)
     approval = latest_release_handoff_approval(tenant_id)
     _assert_expired_acknowledged_capsule(
-        tenant_id=tenant_id, actor_user_id=actor_user_id,
-        plan_sha256=plan_sha256, plan=plan, approval=approval,
+        tenant_id=tenant_id,
+        actor_user_id=actor_user_id,
+        plan_sha256=plan_sha256,
+        plan=plan,
+        approval=approval,
     )
     _ensure_capsule_no_execution_history(tenant_id)
     fresh = review_tenant_release_preflight_committed(
-        tenant_id=tenant_id, actor_user_id=actor_user_id,
+        tenant_id=tenant_id,
+        actor_user_id=actor_user_id,
     )
     _complete_provider_snapshot(fresh)
     _can_confirm_plan(fresh)
@@ -142,9 +158,11 @@ def restart_expired_capsule_handoff_plan_committed(
         )
     locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
-        locked is None or locked.lifecycle_status != TenantLifecycleStatus.READY.value
+        locked is None
+        or locked.lifecycle_status != TenantLifecycleStatus.READY.value
         or locked.ownership_status != 'adopted'
-        or locked.provider_key != 'capsule' or locked.provider_state != 'capsule'
+        or locked.provider_key != 'capsule'
+        or locked.provider_state != 'capsule'
         or locked.reconciliation_authority != 'capsule'
         or locked.cluster_id != plan.get('cluster_id')
         or locked.generation != plan.get('generation')
@@ -153,8 +171,11 @@ def restart_expired_capsule_handoff_plan_committed(
     current = latest_release_handoff_plan(tenant_id)
     decision = latest_release_handoff_approval(tenant_id)
     _assert_expired_acknowledged_capsule(
-        tenant_id=tenant_id, actor_user_id=actor_user_id,
-        plan_sha256=plan_sha256, plan=current, approval=decision,
+        tenant_id=tenant_id,
+        actor_user_id=actor_user_id,
+        plan_sha256=plan_sha256,
+        plan=current,
+        approval=decision,
     )
     _ensure_capsule_no_execution_history(tenant_id)
 
@@ -190,12 +211,15 @@ def restart_expired_capsule_handoff_plan_committed(
         'release_authorized': False,
         'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id,
-        target_type=_PLAN_TARGET, target_id=tenant_id,
-        action='tenant.release.capsule_expired_plan_restarted',
-        summary='Restarted expired approved Capsule plan after protected zero-attempt proof and fresh provider preflight.',
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_PLAN_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.capsule_expired_plan_restarted',
+            summary='Restarted expired approved Capsule plan after protected zero-attempt proof and fresh provider preflight.',
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt

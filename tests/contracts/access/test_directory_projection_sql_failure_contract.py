@@ -13,8 +13,7 @@ def test_directory_projection_catches_all_sql_transaction_failures() -> None:
     source = ROUTES.read_text(encoding='utf-8')
     tree = ast.parse(source)
     handler = next(
-        node for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == 'provision_identity'
+        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'provision_identity'
     )
     code = ast.get_source_segment(source, handler)
     assert code is not None

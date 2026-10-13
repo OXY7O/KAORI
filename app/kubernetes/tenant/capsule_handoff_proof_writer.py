@@ -9,6 +9,7 @@ that inserts BOTH proof rows together, then checks committed read-back. A
 successful SQL COMMIT is not proof of authenticated collector origin, human
 consent, database backups or authority to patch/release Kubernetes resources.
 """
+
 from __future__ import annotations
 
 import re
@@ -31,19 +32,22 @@ from app.kubernetes.tenant.capsule_handoff_resource_admission import (
 from app.kubernetes.tenant.capsule_handoff_resource_consent import (
     inspect_capsule_resource_consent,
 )
-from app.kubernetes.tenant.native_platform_admin_authority import require_platform_admin_actor
-from app.kubernetes.tenant.release_handoff_approval import (
-    _checked_recently, _plan_hash, latest_release_handoff_approval,
-    latest_release_handoff_plan,
-)
-from app.kubernetes.tenant.release_preflight import latest_tenant_release_preflight
 from app.kubernetes.tenant.capsule_successor_acceptance import (
     require_current_capsule_acceptance,
 )
+from app.kubernetes.tenant.native_platform_admin_authority import require_platform_admin_actor
+from app.kubernetes.tenant.release_handoff_approval import (
+    _checked_recently,
+    _plan_hash,
+    latest_release_handoff_approval,
+    latest_release_handoff_plan,
+)
+from app.kubernetes.tenant.release_preflight import latest_tenant_release_preflight
 from app.models.audit import AuditEvent
 from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent
 from app.models.capsule_handoff_proof import (
-    CapsuleHandoffAuditBatch, CapsuleHandoffResourceConsentRecord,
+    CapsuleHandoffAuditBatch,
+    CapsuleHandoffResourceConsentRecord,
 )
 from app.models.tenant import Tenant, TenantLifecycleStatus
 
@@ -51,30 +55,38 @@ _CAPSULE_PROOF_WRITER_ENABLED = False
 _AUTHENTICATED_PROVENANCE_AND_CONSENT_WRITER_ENABLED = False
 _SHA = re.compile(r'[a-f0-9]{64}\Z')
 _TABLE_GUARDS = {
-    'capsule_handoff_audit_batches': frozenset({
-        'tr_capsule_batch_deny_update', 'tr_capsule_batch_deny_delete',
-        'tr_capsule_batch_deny_truncate',
-    }),
-    'capsule_handoff_resource_consent_records': frozenset({
-        'tr_capsule_consent_deny_update', 'tr_capsule_consent_deny_delete',
-        'tr_capsule_consent_deny_truncate',
-    }),
+    'capsule_handoff_audit_batches': frozenset(
+        {
+            'tr_capsule_batch_deny_update',
+            'tr_capsule_batch_deny_delete',
+            'tr_capsule_batch_deny_truncate',
+        }
+    ),
+    'capsule_handoff_resource_consent_records': frozenset(
+        {
+            'tr_capsule_consent_deny_update',
+            'tr_capsule_consent_deny_delete',
+            'tr_capsule_consent_deny_truncate',
+        }
+    ),
 }
-_REQUIRED_CONSTRAINTS = frozenset({
-    'uq_capsule_audit_batch_global_id',
-    'uq_capsule_audit_batch_tenant_once',
-    'uq_capsule_audit_batch_plan_once',
-    'uq_capsule_audit_batch_full_scope',
-    'ck_capsule_audit_batch_generation',
-    'ck_capsule_audit_batch_digest_shape',
-    'uq_capsule_resource_consent_tenant_once',
-    'uq_capsule_resource_consent_plan_once',
-    'uq_capsule_resource_consent_manifest',
-    'fk_capsule_resource_consent_exact_audit_batch',
-    'ck_capsule_resource_consent_target_count',
-    'ck_capsule_resource_consent_independent_actors',
-    'ck_capsule_resource_consent_digest_shape',
-})
+_REQUIRED_CONSTRAINTS = frozenset(
+    {
+        'uq_capsule_audit_batch_global_id',
+        'uq_capsule_audit_batch_tenant_once',
+        'uq_capsule_audit_batch_plan_once',
+        'uq_capsule_audit_batch_full_scope',
+        'ck_capsule_audit_batch_generation',
+        'ck_capsule_audit_batch_digest_shape',
+        'uq_capsule_resource_consent_tenant_once',
+        'uq_capsule_resource_consent_plan_once',
+        'uq_capsule_resource_consent_manifest',
+        'fk_capsule_resource_consent_exact_audit_batch',
+        'ck_capsule_resource_consent_target_count',
+        'ck_capsule_resource_consent_independent_actors',
+        'ck_capsule_resource_consent_digest_shape',
+    }
+)
 
 
 def _aware_iso(value: Any) -> datetime:
@@ -90,32 +102,49 @@ def _aware_iso(value: Any) -> datetime:
 
 
 def build_capsule_proof_pair_candidate(
-    *, plan: Mapping[str, Any], related: Mapping[str, Any],
-    approval: Mapping[str, Any], acceptance: Mapping[str, Any],
-    claims: list[Mapping[str, Any]], collector_receipt: Mapping[str, Any],
+    *,
+    plan: Mapping[str, Any],
+    related: Mapping[str, Any],
+    approval: Mapping[str, Any],
+    acceptance: Mapping[str, Any],
+    claims: list[Mapping[str, Any]],
+    collector_receipt: Mapping[str, Any],
     consent_manifest: Mapping[str, Any],
-    trusted_collector_id: str, trusted_key_id: str,
+    trusted_collector_id: str,
+    trusted_key_id: str,
     trusted_hmac_key: bytes | None,
 ) -> dict[str, Any]:
     """Pure normalized INSERT candidates; no trust promotion or persistence."""
     resource_report = assess_capsule_resource_handoff_scope(
-        plan=plan, related=related,
+        plan=plan,
+        related=related,
     )
     docket = review_capsule_origin_consent_docket(
-        plan=plan, related=related, approval=approval, acceptance=acceptance,
-        claims=claims, collector_receipt=collector_receipt,
+        plan=plan,
+        related=related,
+        approval=approval,
+        acceptance=acceptance,
+        claims=claims,
+        collector_receipt=collector_receipt,
         consent_manifest=consent_manifest,
         trusted_collector_id=trusted_collector_id,
-        trusted_key_id=trusted_key_id, trusted_hmac_key=trusted_hmac_key,
+        trusted_key_id=trusted_key_id,
+        trusted_hmac_key=trusted_hmac_key,
     )
     collector = inspect_capsule_collector_receipt(
-        resource_report=resource_report, claims=claims, receipt=collector_receipt,
+        resource_report=resource_report,
+        claims=claims,
+        receipt=collector_receipt,
         trusted_collector_id=trusted_collector_id,
-        trusted_key_id=trusted_key_id, trusted_hmac_key=trusted_hmac_key,
+        trusted_key_id=trusted_key_id,
+        trusted_hmac_key=trusted_hmac_key,
     )
     consent = inspect_capsule_resource_consent(
-        plan=plan, resource_report=resource_report, approval=approval,
-        acceptance=acceptance, manifest=consent_manifest,
+        plan=plan,
+        resource_report=resource_report,
+        approval=approval,
+        acceptance=acceptance,
+        manifest=consent_manifest,
     )
     if (
         docket['collector_receipt_sha256'] != collector['collector_receipt_sha256']
@@ -157,12 +186,18 @@ def build_capsule_proof_pair_candidate(
         'accepted_at': _aware_iso(consent_manifest['accepted_at']),
     }
     if (
-        any(type(consent_row[k]) is not int or consent_row[k] <= 0
-            for k in ('requester_user_id', 'reviewer_user_id', 'successor_user_id'))
-        or len({
-            consent_row['requester_user_id'], consent_row['reviewer_user_id'],
-            consent_row['successor_user_id'],
-        }) != 3
+        any(
+            type(consent_row[k]) is not int or consent_row[k] <= 0
+            for k in ('requester_user_id', 'reviewer_user_id', 'successor_user_id')
+        )
+        or len(
+            {
+                consent_row['requester_user_id'],
+                consent_row['reviewer_user_id'],
+                consent_row['successor_user_id'],
+            }
+        )
+        != 3
     ):
         raise ValueError('Capsule proof requires exact, distinct current human actors.')
     return {
@@ -185,7 +220,8 @@ def _require_postgres_proof_storage_guards(session: Any) -> None:
 
     A catalog SELECT cannot prove DBA-level protection or backup durability.
     """
-    triggers = session.execute(text("""
+    triggers = session.execute(
+        text("""
         SELECT c.relname AS table_name, t.tgname AS trigger_name, t.tgenabled AS trigger_state
         FROM pg_trigger AS t
         JOIN pg_class AS c ON c.oid = t.tgrelid
@@ -193,29 +229,33 @@ def _require_postgres_proof_storage_guards(session: Any) -> None:
             'capsule_handoff_audit_batches'::regclass,
             'capsule_handoff_resource_consent_records'::regclass
         ) AND NOT t.tgisinternal
-    """)).all()
+    """)
+    ).all()
     observed: dict[str, dict[str, str]] = {table: {} for table in _TABLE_GUARDS}
     for table, name, state in triggers:
         if table in observed and isinstance(name, str) and isinstance(state, str):
             observed[table][name] = state
     if any(
-        not required.issubset(observed[table])
-        or any(observed[table][name] not in ('O', 'A') for name in required)
+        not required.issubset(observed[table]) or any(observed[table][name] not in ('O', 'A') for name in required)
         for table, required in _TABLE_GUARDS.items()
     ):
         raise ValueError('Capsule proof write-once trigger is missing or disabled.')
-    constraints = session.execute(text("""
+    constraints = session.execute(
+        text("""
         SELECT con.conname, con.convalidated
         FROM pg_constraint AS con
         WHERE con.conrelid IN (
             'capsule_handoff_audit_batches'::regclass,
             'capsule_handoff_resource_consent_records'::regclass
         )
-    """)).all()
+    """)
+    ).all()
     validated = {name for name, is_valid in constraints if is_valid is True}
     if not _REQUIRED_CONSTRAINTS.issubset(validated):
         raise ValueError('Capsule proof uniqueness, actor or composite scope constraints are absent or invalid.')
-    permissions = session.execute(text("""
+    permissions = (
+        session.execute(
+            text("""
         SELECT c.relname AS table_name,
                has_table_privilege(current_user, c.oid, 'SELECT') AS may_select,
                has_table_privilege(current_user, c.oid, 'INSERT') AS may_insert,
@@ -233,28 +273,45 @@ def _require_postgres_proof_storage_guards(session: Any) -> None:
             'capsule_handoff_audit_batches'::regclass,
             'capsule_handoff_resource_consent_records'::regclass
         )
-    """)).mappings().all()
+    """)
+        )
+        .mappings()
+        .all()
+    )
     if (
         len(permissions) != len(_TABLE_GUARDS)
         or {row['table_name'] for row in permissions} != set(_TABLE_GUARDS)
         or any(
             row['may_select'] is not True
             or row['may_insert'] is not True
-            or any(row[key] is not False for key in (
-                'may_update', 'may_delete', 'may_truncate',
-                'is_owner', 'member_of_owner', 'may_create',
-            ))
+            or any(
+                row[key] is not False
+                for key in (
+                    'may_update',
+                    'may_delete',
+                    'may_truncate',
+                    'is_owner',
+                    'member_of_owner',
+                    'may_create',
+                )
+            )
             for row in permissions
         )
     ):
         raise ValueError('Capsule proof writer requires restricted INSERT-only database role.')
-    settings = session.execute(text("""
+    settings = (
+        session.execute(
+            text("""
         SELECT current_setting('fsync') AS fsync,
                current_setting('synchronous_commit') AS synchronous_commit,
                current_setting('session_replication_role') AS replication_role,
                (SELECT rolsuper OR rolcreaterole OR rolcreatedb
                 FROM pg_roles WHERE rolname = current_user) AS elevated
-    """)).mappings().one()
+    """)
+        )
+        .mappings()
+        .one()
+    )
     if (
         settings['fsync'] != 'on'
         or settings['synchronous_commit'] not in ('on', 'remote_write', 'remote_apply')
@@ -269,10 +326,15 @@ def _stored_matches(stored: Any, expected: Mapping[str, Any]) -> bool:
 
 
 def commit_capsule_proof_pair_staged(
-    *, tenant_id: str, actor_user_id: int, expected_plan_sha256: str,
-    claims: list[Mapping[str, Any]], collector_receipt: Mapping[str, Any],
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    expected_plan_sha256: str,
+    claims: list[Mapping[str, Any]],
+    collector_receipt: Mapping[str, Any],
     consent_manifest: Mapping[str, Any],
-    trusted_collector_id: str, trusted_key_id: str,
+    trusted_collector_id: str,
+    trusted_key_id: str,
     trusted_hmac_key: bytes | None,
     explicit_operator_confirmation: bool = False,
 ) -> dict[str, Any]:
@@ -289,8 +351,10 @@ def commit_capsule_proof_pair_staged(
             'collector and authenticated human admission remain blocked.'
         )
     if (
-        not isinstance(tenant_id, str) or not tenant_id
-        or type(actor_user_id) is not int or actor_user_id <= 0
+        not isinstance(tenant_id, str)
+        or not tenant_id
+        or type(actor_user_id) is not int
+        or actor_user_id <= 0
         or not isinstance(expected_plan_sha256, str)
         or not _SHA.fullmatch(expected_plan_sha256)
         or explicit_operator_confirmation is not True
@@ -322,23 +386,32 @@ def commit_capsule_proof_pair_staged(
             _require_postgres_proof_storage_guards(session)
             # Never restrict history checks to the newest plan: one previous
             # Tenant record, even partial, requires separate human recovery.
-            if session.execute(
-                select(CapsuleHandoffAuditBatch.id)
-                .where(CapsuleHandoffAuditBatch.tenant_id == tenant_id).limit(1)
-            ).first() or session.execute(
-                select(CapsuleHandoffResourceConsentRecord.id)
-                .where(CapsuleHandoffResourceConsentRecord.tenant_id == tenant_id).limit(1)
-            ).first():
+            if (
+                session.execute(
+                    select(CapsuleHandoffAuditBatch.id).where(CapsuleHandoffAuditBatch.tenant_id == tenant_id).limit(1)
+                ).first()
+                or session.execute(
+                    select(CapsuleHandoffResourceConsentRecord.id)
+                    .where(CapsuleHandoffResourceConsentRecord.tenant_id == tenant_id)
+                    .limit(1)
+                ).first()
+            ):
                 raise ValueError('Capsule proof history already exists: no replay, reset or auto-retry.')
-            if session.execute(
-                select(CapsuleHandoffLedgerEvent.id)
-                .where(CapsuleHandoffLedgerEvent.tenant_id == tenant_id).limit(1)
-            ).first() or session.execute(
-                select(AuditEvent.id).where(
-                    AuditEvent.target_type == 'kubernetes_tenant_release_capsule_handoff_execution',
-                    AuditEvent.target_id == tenant_id,
-                ).limit(1)
-            ).first():
+            if (
+                session.execute(
+                    select(CapsuleHandoffLedgerEvent.id)
+                    .where(CapsuleHandoffLedgerEvent.tenant_id == tenant_id)
+                    .limit(1)
+                ).first()
+                or session.execute(
+                    select(AuditEvent.id)
+                    .where(
+                        AuditEvent.target_type == 'kubernetes_tenant_release_capsule_handoff_execution',
+                        AuditEvent.target_id == tenant_id,
+                    )
+                    .limit(1)
+                ).first()
+            ):
                 raise ValueError('Prior Capsule START/legacy execution evidence forbids retroactive consent.')
             plan = latest_release_handoff_plan(tenant_id)
             approval = latest_release_handoff_approval(tenant_id)
@@ -363,18 +436,24 @@ def commit_capsule_proof_pair_staged(
             ):
                 raise ValueError('Capsule approved plan or preflight scope changed under the Tenant lock.')
             acceptance = require_current_capsule_acceptance(
-                tenant_id=tenant_id, plan=plan, approval=approval,
+                tenant_id=tenant_id,
+                plan=plan,
+                approval=approval,
             )
             if acceptance.get('accepted_by') != actor_user_id:
                 raise ValueError('Capsule proof actor must equal the accepted X.509 successor.')
             related = preflight.get('capsule_related_inventory')
             pair = build_capsule_proof_pair_candidate(
-                plan=plan, related=related, approval=approval,
-                acceptance=acceptance, claims=claims,
+                plan=plan,
+                related=related,
+                approval=approval,
+                acceptance=acceptance,
+                claims=claims,
                 collector_receipt=collector_receipt,
                 consent_manifest=consent_manifest,
                 trusted_collector_id=trusted_collector_id,
-                trusted_key_id=trusted_key_id, trusted_hmac_key=trusted_hmac_key,
+                trusted_key_id=trusted_key_id,
+                trusted_hmac_key=trusted_hmac_key,
             )
             session.add(CapsuleHandoffAuditBatch(**pair['batch_values']))
             session.flush()  # parent FK exists, but flush is NOT durability.
@@ -383,17 +462,14 @@ def commit_capsule_proof_pair_staged(
         # Context manager COMMIT is a single all-or-none database write.
         # A lost COMMIT acknowledgement is an UNKNOWN result: never retry.
         batch = session.execute(
-            select(CapsuleHandoffAuditBatch)
-            .where(CapsuleHandoffAuditBatch.tenant_id == tenant_id)
+            select(CapsuleHandoffAuditBatch).where(CapsuleHandoffAuditBatch.tenant_id == tenant_id)
         ).scalar_one()
         consent = session.execute(
-            select(CapsuleHandoffResourceConsentRecord)
-            .where(CapsuleHandoffResourceConsentRecord.tenant_id == tenant_id)
+            select(CapsuleHandoffResourceConsentRecord).where(
+                CapsuleHandoffResourceConsentRecord.tenant_id == tenant_id
+            )
         ).scalar_one()
-        if (
-            not _stored_matches(batch, pair['batch_values'])
-            or not _stored_matches(consent, pair['consent_values'])
-        ):
+        if not _stored_matches(batch, pair['batch_values']) or not _stored_matches(consent, pair['consent_values']):
             raise ValueError('Committed Capsule proof differs from canonical batch/consent read-back.')
         return {
             'status': 'proof_pair_commit_acknowledged_origin_and_provider_still_unverified',

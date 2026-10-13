@@ -28,11 +28,15 @@ def build_compatibility_registry(
     filter_value = support if support in SUPPORT_FILTERS else 'all'
     needle = query.casefold()
     products = tuple(
-        item for item in catalog
-        if (not needle or any(
-            needle in str(item.get(field, '')).casefold()
-            for field in ('product', 'contract_profile', 'capability_summary', 'qualified_versions')
-        ))
+        item
+        for item in catalog
+        if (
+            not needle
+            or any(
+                needle in str(item.get(field, '')).casefold()
+                for field in ('product', 'contract_profile', 'capability_summary', 'qualified_versions')
+            )
+        )
         and (
             filter_value == 'all'
             or (filter_value == 'includes-current' and 'current' in str(item['support_label']).casefold())

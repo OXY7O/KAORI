@@ -30,8 +30,7 @@
     {% endif %}
     {% set response_time = status.response_time_ms|default(none) %}
     {% set checked_at = status.last_checked_at|default(status.checked_at|default(none)) %}
-    {{ shared_readiness.source_card(
-        'Metrics Source Status',
+    {{ shared_readiness.source_card('Metrics Source Status',
         message,
         label,
         tone,
@@ -39,10 +38,10 @@
         response_time ~ ' ms' if response_time is not none else 'No Response',
         'Checked At',
         checked_at|user_datetime('Not Recorded') if checked_at else 'Not Recorded',
-        icon=none,
-        extra_class=extra_class,
-        metric_source_state=status.state|default(status.status|default('unknown')),
-        first_icon='zap',
-        second_icon='clock-3'
+    icon=none,
+    extra_class=extra_class,
+    metric_source_state=status.state|default(status.status|default('unknown')),
+    first_icon='zap',
+    second_icon='clock-3'
     ) }}
 {%- endmacro %}

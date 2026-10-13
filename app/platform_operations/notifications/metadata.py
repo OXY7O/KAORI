@@ -26,27 +26,29 @@ _SENSITIVE_METADATA_TOKENS = (
 )
 # Only known non-secret references are exempt. Generic *_ref / *_id suffixes
 # are not trusted because a producer could mislabel an actual credential.
-_SAFE_SENSITIVE_KEYS = frozenset({
-    'secret_name',
-    'secret_id',
-    'secret_ref',
-    'secret_reference',
-    'credential_owner',
-    'credential_id',
-    'credential_ref',
-    'credential_reference',
-    'credential_name',
-    'token_id',
-    'token_ref',
-    'token_name',
-    'access_token_id',
-    'certificate_id',
-    'kubeconfig_name',
-    'secret_recorded',
-    'secret_material_persisted',
-    'secret_env',
-    'secret_env_var',
-})
+_SAFE_SENSITIVE_KEYS = frozenset(
+    {
+        'secret_name',
+        'secret_id',
+        'secret_ref',
+        'secret_reference',
+        'credential_owner',
+        'credential_id',
+        'credential_ref',
+        'credential_reference',
+        'credential_name',
+        'token_id',
+        'token_ref',
+        'token_name',
+        'access_token_id',
+        'certificate_id',
+        'kubeconfig_name',
+        'secret_recorded',
+        'secret_material_persisted',
+        'secret_env',
+        'secret_env_var',
+    }
+)
 _MAX_METADATA_DEPTH = 12
 _MAX_METADATA_ENTRIES = 500
 _MAX_METADATA_TEXT = 4096

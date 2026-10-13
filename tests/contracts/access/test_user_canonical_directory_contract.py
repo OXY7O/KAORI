@@ -42,12 +42,12 @@ def test_user_directory_uses_shared_registry_interactions() -> None:
 def test_user_directory_html_targets_cannot_replace_summary_or_hero() -> None:
     page = source('app/templates/access/users/partials/_content.html')
     route = source('app/access/users/routes.py')
-    assert "partials/_summary_cards.html" in page
-    assert "partials/_directory.html" in page
+    assert 'partials/_summary_cards.html' in page
+    assert 'partials/_directory.html' in page
     assert "request.headers.get('HX-Target') == 'user-directory'" in route
     assert "render_template('access/users/partials/_directory.html', **payload)" in route
     assert "render_template('access/users/partials/_content.html', **payload)" in route
     assert "render_template('access/users/index.html', **payload)" in route
     assert "request.headers.get('HX-History-Restore-Request') != 'true'" in route
-    assert "hero_oob=True" in route
-    assert "toast_oob=True" in route
+    assert 'hero_oob=True' in route
+    assert 'toast_oob=True' in route

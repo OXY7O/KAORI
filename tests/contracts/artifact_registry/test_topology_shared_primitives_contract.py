@@ -26,11 +26,18 @@ def test_shared_topology_primitives_render_both_domain_template_ids() -> None:
         rendered = str(primitives.resource_row_template(template_id))
         assert f'id="{template_id}"' in rendered
         for item in (
-            'data-list-icon-shell', 'data-list-icon', 'data-list-name',
-            'data-list-kind', 'data-list-type', 'data-list-cluster',
-            'data-list-namespace', 'data-list-status',
-            'data-list-status-dot', 'data-list-status-text',
-            'data-list-relationships', 'data-list-details',
+            'data-list-icon-shell',
+            'data-list-icon',
+            'data-list-name',
+            'data-list-kind',
+            'data-list-type',
+            'data-list-cluster',
+            'data-list-namespace',
+            'data-list-status',
+            'data-list-status-dot',
+            'data-list-status-text',
+            'data-list-relationships',
+            'data-list-details',
         ):
             assert item in rendered
         assert 'View Details' in rendered
@@ -67,8 +74,10 @@ def test_both_topologies_consume_the_same_presentation_primitives() -> None:
     assert 'topology_parts.toolbar_export_classes()' in registry
 
     for macro in (
-        'resource_row_template', 'field_row_template',
-        'relationship_row_template', 'relationship_summary_item_template',
+        'resource_row_template',
+        'field_row_template',
+        'relationship_row_template',
+        'relationship_summary_item_template',
         'relationship_empty_template',
     ):
         assert f'topology_parts.{macro}(' in k8s_rows
@@ -89,10 +98,10 @@ def test_registry_typography_and_semantics_match_k8s_not_provider_health() -> No
         assert style in registry
         assert style in k8s
     assert "const displayLabel = (value) => String(value || 'Not Reported')" in registry
-    assert "const evidenceStatus = (data) =>" in registry
+    assert 'const evidenceStatus = (data) =>' in registry
     assert "data.type === 'artifact'" in registry
-    assert "critical > 0" in registry
-    assert "high > 0" in registry
+    assert 'critical > 0' in registry
+    assert 'high > 0' in registry
     assert "readiness.status === 'ready' ? 'info'" in registry
-    assert "payload.summary.omitted_bindings" in registry
+    assert 'payload.summary.omitted_bindings' in registry
     assert 'max-w-[18rem]' in _read('app/templates/components/topology_primitives.html')

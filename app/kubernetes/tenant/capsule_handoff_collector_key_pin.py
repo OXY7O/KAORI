@@ -5,6 +5,7 @@ independent provenance by supplying a matching self-asserted key hash.
 A future Vault/KMS-backed credential broker must supply operator-pinned
 key identity, actual key/verify handle and an authenticated origin.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -18,10 +19,18 @@ from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 
 _SHA = re.compile(r'[0-9a-f]{64}\Z')
 _ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9._:-]{2,119}\Z')
-_FIELDS = frozenset({
-    'contract_version', 'cluster_id', 'collector_id', 'key_id',
-    'key_fingerprint_sha256', 'issued_at', 'expires_at', 'state',
-})
+_FIELDS = frozenset(
+    {
+        'contract_version',
+        'cluster_id',
+        'collector_id',
+        'key_id',
+        'key_fingerprint_sha256',
+        'issued_at',
+        'expires_at',
+        'state',
+    }
+)
 
 
 def _at(value: Any) -> datetime:
@@ -37,9 +46,14 @@ def _at(value: Any) -> datetime:
 
 
 def inspect_capsule_collector_key_pin(
-    *, descriptor: Mapping[str, Any], cluster_id: str,
-    collector_id: str, key_id: str, backend_key_material: bytes | None,
-    pinned_fingerprint_sha256: str, now: datetime | None = None,
+    *,
+    descriptor: Mapping[str, Any],
+    cluster_id: str,
+    collector_id: str,
+    key_id: str,
+    backend_key_material: bytes | None,
+    pinned_fingerprint_sha256: str,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     """Match exact expected key/collector scope, grant no source authority.
 
@@ -48,9 +62,9 @@ def inspect_capsule_collector_key_pin(
     been removed from Vault/KMS or all backend nodes.
     """
     if (
-        not isinstance(descriptor, Mapping) or set(descriptor) != _FIELDS
-        or any(not isinstance(x, str) or not _ID.fullmatch(x)
-               for x in (cluster_id, collector_id, key_id))
+        not isinstance(descriptor, Mapping)
+        or set(descriptor) != _FIELDS
+        or any(not isinstance(x, str) or not _ID.fullmatch(x) for x in (cluster_id, collector_id, key_id))
         or type(backend_key_material) is not bytes
         or len(backend_key_material) < 32
         or not isinstance(pinned_fingerprint_sha256, str)

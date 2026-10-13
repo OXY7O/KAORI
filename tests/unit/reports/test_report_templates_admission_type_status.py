@@ -1,6 +1,10 @@
 from werkzeug.datastructures import MultiDict
 
-from app.reports.report_templates.service import create_custom_template, get_template_form_state, validate_template_form_state
+from app.reports.report_templates.service import (
+    create_custom_template,
+    get_template_form_state,
+    validate_template_form_state,
+)
 
 
 def test_unknown_type_rejected_without_persistence() -> None:
@@ -24,6 +28,7 @@ def test_missing_type_and_unknown_status_are_not_defaulted() -> None:
 
 def test_known_type_does_not_mutate_submitted_status() -> None:
     from app.reports.catalog import REPORT_TYPE_SPECS
+
     name = REPORT_TYPE_SPECS[0].value
     state = get_template_form_state(MultiDict([('name', 'OK'), ('report_type', name), ('status', 'draft')]))
     assert state['report_type'] == name

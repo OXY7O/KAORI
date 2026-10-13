@@ -41,7 +41,6 @@ def test_tenant_is_a_kubernetes_sidebar_capability_under_v21() -> None:
     assert 'data-kaori-sidebar-capability="{{ child[\'key\'] }}"' in sidebar
 
 
-
 def test_tenant_generated_credential_material_preserves_tenants_navigation_and_breadcrumb() -> None:
     workspace_navigation = _read('app/common/workspace_navigation.py')
     breadcrumb_source = _read('app/common/navigation.py')
@@ -51,13 +50,16 @@ def test_tenant_generated_credential_material_preserves_tenants_navigation_and_b
 
     assert "'tenant.generate_credential_material_route': 'tenants'" in workspace_navigation
     assert "'tenant.generate_credential_material_route': 'Access Material'" in breadcrumb_source
-    assert "request.endpoint in ['tenant.tenants', 'tenant.tenant_detail', 'tenant.generate_credential_material_route']" in sidebar_tenant
-    assert "def generate_credential_material_route(credential_id: int):" in route
+    assert (
+        "request.endpoint in ['tenant.tenants', 'tenant.tenant_detail', 'tenant.generate_credential_material_route']"
+        in sidebar_tenant
+    )
+    assert 'def generate_credential_material_route(credential_id: int):' in route
     assert "tenant_page='tenants'" in route
-    assert "data-kaori-hero-profile=\"transactional-admin\"" in material
-    assert "page_hero.shell_classes()" in material
-    assert "{% block dashboard_content %}" in material
-    assert "{% block tenant_content %}" not in material
+    assert 'data-kaori-hero-profile="transactional-admin"' in material
+    assert 'page_hero.shell_classes()' in material
+    assert '{% block dashboard_content %}' in material
+    assert '{% block tenant_content %}' not in material
 
 
 def test_tenant_routes_own_only_five_primary_destinations() -> None:
@@ -273,5 +275,8 @@ def test_tenant_detail_runtime_navigation_projection_is_tenants_not_overview():
 
     assert _capability_active_key('kubernetes_tenant', 'tenant.tenant_detail') == 'tenants'
     assert [item['label'] for item in build_navigation_breadcrumb('tenant.tenant_detail')] == [
-        'Kubernetes', 'Tenant', 'Tenants', 'Tenant Details',
+        'Kubernetes',
+        'Tenant',
+        'Tenants',
+        'Tenant Details',
     ]

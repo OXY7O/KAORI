@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-
 from typing import Any
 
 from celery.exceptions import CeleryError
@@ -35,13 +34,14 @@ from app.artifact_registry.presentation import (
     build_runtime_binding_detail,
     build_runtime_usage,
 )
-from app.artifact_registry.presentation_topology import build_dependency_topology
 from app.artifact_registry.presentation_common import _providers as _active_registry_sources
+from app.artifact_registry.presentation_topology import build_dependency_topology
 from app.artifact_registry.security.job_adapter import (
     build_registry_security_sync_state,
     get_registry_security_sync_job,
 )
-from app.artifact_registry.security.presentation import _providers as _eligible_security_sources, build_security
+from app.artifact_registry.security.presentation import _providers as _eligible_security_sources
+from app.artifact_registry.security.presentation import build_security
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
 from app.artifact_registry.webhooks import RegistryWebhookAuthError, ingest_webhook
 from app.dashboards.common.operational import (
@@ -508,8 +508,14 @@ def analytics() -> ResponseReturnValue:
         alert_args = {
             key: value
             for key in (
-                'provider_id', 'snapshot_window', 'alert_q', 'alert_severity',
-                'alert_state', 'alert_source', 'alert_page', 'alert_per_page',
+                'provider_id',
+                'snapshot_window',
+                'alert_q',
+                'alert_severity',
+                'alert_state',
+                'alert_source',
+                'alert_page',
+                'alert_per_page',
             )
             if (value := request.args.get(key))
         }

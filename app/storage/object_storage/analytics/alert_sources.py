@@ -380,9 +380,7 @@ def _scoped_metrics_alert_expression(consumer: MetricsConsumer) -> str:
     ).all()
     for peer in peers:
         peer_exact = {
-            matcher.label: matcher.value
-            for matcher in parse_matchers(peer.selector_json)
-            if matcher.operator == '='
+            matcher.label: matcher.value for matcher in parse_matchers(peer.selector_json) if matcher.operator == '='
         }
         if not any(key in peer_exact and peer_exact[key] != value for key, value in exact.items()):
             raise BindingSelectorError(

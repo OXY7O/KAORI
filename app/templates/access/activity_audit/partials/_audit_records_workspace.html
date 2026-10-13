@@ -4,21 +4,19 @@
          class="{{ table_ui.block_classes() }}"
          aria-label="Activity Audit Records">
     {% set audit_record_tabs = [
-        ('activity', 'Activity Register', 'list-filter', url_for('access.activity_audit.index', view='activity')),
-    ] %}
+            ('activity', 'Activity Register', 'list-filter', url_for('access.activity_audit.index', view='activity')),
+        ] %}
     {% if has_administrative_sources %}
         {% set audit_record_tabs = audit_record_tabs + [
-            ('administrative', 'Administrative Evidence', 'file-clock', url_for('access.activity_audit.index', view='administrative'))
-        ] %}
+                    ('administrative', 'Administrative Evidence', 'file-clock', url_for('access.activity_audit.index', view='administrative'))
+                ] %}
     {% endif %}
-    {{ framed_tabs.render_navigation(
-        audit_record_tabs,
+    {{ framed_tabs.render_navigation(audit_record_tabs,
         selected_audit_tab,
         prefix='audit-records',
         aria_label='Audit Record Sources',
         hx_target='#activity-audit-records',
-        hx_select='#activity-audit-records'
-    ) }}
+        hx_select='#activity-audit-records') }}
     {% set embedded = true %}
     {% if selected_audit_tab == 'administrative' %}
         {% include "access/activity_audit/partials/_administrative_evidence.html" %}

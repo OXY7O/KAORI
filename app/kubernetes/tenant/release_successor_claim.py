@@ -28,20 +28,21 @@ _TARGET = 'kubernetes_tenant_release_successor_claim'
 
 
 def latest_release_successor_claim(tenant_id: str) -> dict[str, Any] | None:
-    row = (
-        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).first()
-    )
+    row = AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id).order_by(AuditEvent.id.desc()).first()
     return dict(row.metadata_json or {}) if row else None
 
 
 def _require_matching_approval(
-    *, tenant_id: str, plan_sha256: str,
-    plan: dict[str, Any] | None, approval: dict[str, Any] | None,
+    *,
+    tenant_id: str,
+    plan_sha256: str,
+    plan: dict[str, Any] | None,
+    approval: dict[str, Any] | None,
 ) -> None:
     """A local second-operator acknowledgement is NOT successor acceptance."""
     if (
-        not plan or not approval
+        not plan
+        or not approval
         or len(plan_sha256) != 64
         or plan.get('tenant_id') != tenant_id
         or plan.get('plan_sha256') != plan_sha256
@@ -61,7 +62,10 @@ def _require_matching_approval(
 
 
 def record_release_successor_claim_committed(
-    *, tenant_id: str, actor_user_id: int, plan_sha256: str,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
     successor_reference: str,
 ) -> dict[str, Any]:
     """Commit an *unverified* external reference; never claim verified acceptance.
@@ -73,13 +77,12 @@ def record_release_successor_claim_committed(
     reference = _valid_reference(successor_reference, name='External successor reference')
     plan = latest_release_handoff_plan(tenant_id)
     approval = latest_release_handoff_approval(tenant_id)
-    _require_matching_approval(
-        tenant_id=tenant_id, plan_sha256=plan_sha256, plan=plan, approval=approval
-    )
+    _require_matching_approval(tenant_id=tenant_id, plan_sha256=plan_sha256, plan=plan, approval=approval)
     assert plan is not None
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
+        tenant is None
+        or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
         or tenant.ownership_status != 'adopted'
         or tenant.cluster_id != plan.get('cluster_id')
         or tenant.generation != plan.get('generation')
@@ -89,9 +92,7 @@ def record_release_successor_claim_committed(
 
     # Explicit authorized provider observation; normal UI continues reading
     # only committed AuditEvent evidence. No Kubernetes write is performed.
-    fresh = review_tenant_release_preflight_committed(
-        tenant_id=tenant_id, actor_user_id=actor_user_id
-    )
+    fresh = review_tenant_release_preflight_committed(tenant_id=tenant_id, actor_user_id=actor_user_id)
     _can_confirm_plan(fresh)
     if (
         fresh.get('tenant_id') != tenant_id
@@ -105,7 +106,8 @@ def record_release_successor_claim_committed(
 
     locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
-        locked is None or locked.lifecycle_status != TenantLifecycleStatus.READY.value
+        locked is None
+        or locked.lifecycle_status != TenantLifecycleStatus.READY.value
         or locked.ownership_status != 'adopted'
         or locked.cluster_id != plan.get('cluster_id')
         or locked.generation != plan.get('generation')
@@ -113,7 +115,8 @@ def record_release_successor_claim_committed(
     ):
         raise ValueError('Tenant authority changed during successor reference review.')
     _require_matching_approval(
-        tenant_id=tenant_id, plan_sha256=plan_sha256,
+        tenant_id=tenant_id,
+        plan_sha256=plan_sha256,
         plan=latest_release_handoff_plan(tenant_id),
         approval=latest_release_handoff_approval(tenant_id),
     )
@@ -140,11 +143,15 @@ def record_release_successor_claim_committed(
         'release_authorized': False,
         'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action='tenant.release.successor_reference_recorded',
-        summary='Recorded unverified external successor reference; ownership unchanged.',
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.successor_reference_recorded',
+            summary='Recorded unverified external successor reference; ownership unchanged.',
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt

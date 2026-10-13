@@ -11,13 +11,11 @@ def source(path: str) -> str:
 
 def test_freshness_consumes_normalized_route_scope() -> None:
     routes = source('app/kubernetes/inventory/routes.py')
-    assert "g.inventory_effective_cluster_id = effective_cluster_id" in routes
-    assert "get_inventory_freshness_context(cluster_id=effective_cluster_id)" in routes
-    assert "_inventory_cluster_scope(raw_cluster_id)" in routes
+    assert 'g.inventory_effective_cluster_id = effective_cluster_id' in routes
+    assert 'get_inventory_freshness_context(cluster_id=effective_cluster_id)' in routes
+    assert '_inventory_cluster_scope(raw_cluster_id)' in routes
     assert "g.inventory_effective_cluster_id = context['filters']['cluster_id']" in routes
-    assert "selected[0].name if cluster_id and selected_count == 1" in source(
-        'app/kubernetes/inventory/overview.py'
-    )
+    assert 'selected[0].name if cluster_id and selected_count == 1' in source('app/kubernetes/inventory/overview.py')
 
 
 def test_unchanged_protected_htmx_route_order() -> None:

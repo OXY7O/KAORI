@@ -32,7 +32,7 @@ def test_provider_registry_uses_shared_htmx_controls_and_provider_tab() -> None:
 def test_provider_detail_expansion_and_permissions_remain() -> None:
     s = (ROOT / 'app/templates/access/identity_providers/partials/_registry.html').read_text(encoding='utf-8')
     assert "expandable.toggle_button('identity-providers'" in s
-    assert "expandable.static_detail_row(detail_row_id, detail_target_id, 6)" in s
+    assert 'expandable.static_detail_row(detail_row_id, detail_target_id, 6)' in s
     assert '"access/identity_providers/partials/_provider_detail.html"' in s
     assert "current_user.has_permission('identity_providers.manage')" in s
     assert 'components/states/_empty_state.html' in s

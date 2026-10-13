@@ -29,5 +29,5 @@ def test_administration_mutations_refresh_hero_overview_and_posture():
 
 def test_admin_overview_tab_navigation_preserves_current_url_parameters():
     page = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
-    assert 'setTab(\'secret-reveal\')' in page
+    assert "setTab('secret-reveal')" in page
     assert 'history.replaceState(null' not in page

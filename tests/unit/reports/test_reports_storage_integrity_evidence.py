@@ -2,7 +2,9 @@ from app.reports.storage.service import build_storage_integrity_presentation
 
 
 def test_scan_evidence_is_exposed_in_template_schema():
-    result = build_storage_integrity_presentation({'checked_count': 2, 'total_reference_count': 3, 'available_count': 2, 'missing_count': 0, 'error_count': 0})
+    result = build_storage_integrity_presentation(
+        {'checked_count': 2, 'total_reference_count': 3, 'available_count': 2, 'missing_count': 0, 'error_count': 0}
+    )
     assert (result['checked'], result['available'], result['missing'], result['errors']) == (2, 2, 0, 0)
     assert result['status'] == 'Partial Coverage'
     assert result['is_limited']

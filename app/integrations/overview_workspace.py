@@ -36,16 +36,13 @@ def _visible_runtime_rows(specs: list[Any]) -> list[dict[str, Any]]:
     """Hydrate only the visible provider records and their latest observations."""
     if not specs:
         return []
-    observation_ids = {
-        int(item['observation_id'])
-        for item in specs if item['observation_id'] is not None
-    }
+    observation_ids = {int(item['observation_id']) for item in specs if item['observation_id'] is not None}
     observations = (
         db.session.scalars(
-            select(IntegrationRuntimeObservation).where(
-                IntegrationRuntimeObservation.id.in_(observation_ids)
-            )
-        ).all() if observation_ids else []
+            select(IntegrationRuntimeObservation).where(IntegrationRuntimeObservation.id.in_(observation_ids))
+        ).all()
+        if observation_ids
+        else []
     )
     latest = {(row.integration_type, row.instance_id): row for row in observations}
     by_type: dict[str, list[int]] = defaultdict(list)
@@ -66,14 +63,8 @@ def _visible_runtime_rows(specs: list[Any]) -> list[dict[str, Any]]:
         if integration_type == 'container_orchestrator':
             options.append(selectinload(KubernetesConnection.cluster))
         else:
-            options = [
-                selectinload(model.integration_instance).selectinload(
-                    IntegrationInstance.bindings
-                )
-            ]
-        records = db.session.scalars(
-            select(model).where(model.id.in_(ids)).options(*options)
-        ).all()
+            options = [selectinload(model.integration_instance).selectinload(IntegrationInstance.bindings)]
+        records = db.session.scalars(select(model).where(model.id.in_(ids)).options(*options)).all()
         for record in records:
             core_rows[(integration_type, record.id)] = builder(record, latest)
 
@@ -143,40 +134,46 @@ def build_integrations_overview(
     global_stats = runtime_stats(fleet)
     selected = (
         runtime_filter(
-            fleet, integration_type=integration_type, health=health,
+            fleet,
+            integration_type=integration_type,
+            health=health,
             readiness=readiness,
         )
-        if fleet is not None else None
+        if fleet is not None
+        else None
     )
     filtered_stats = runtime_stats(selected)
     specs, pagination = runtime_page(selected, page=page, per_page=per_page)
-    context.update({
-        'runtime_rows': _visible_runtime_rows(specs),
-        'runtime_stats': filtered_stats,
-        'runtime_global_stats': global_stats,
-        'runtime_scope_label': _runtime_scope_label(
-            integration_type=integration_type, health=health, readiness=readiness,
-        ),
-        'runtime_pagination': pagination,
-        'runtime_has_targets': bool(global_stats['total']),
-        'selected_integration_type': integration_type,
-        'selected_health': health,
-        'selected_readiness': readiness,
-        'integration_type_options': [
-            {'value': module.integration_type, 'label': module.runtime_label or module.label}
-            for module in modules
-        ],
-        'health_options': [
-            {'value': 'healthy', 'label': 'Healthy'},
-            {'value': 'degraded', 'label': 'Degraded'},
-            {'value': 'unhealthy', 'label': 'Unhealthy'},
-            {'value': 'not_observed', 'label': 'Not Observed'},
-        ],
-        'runtime_readiness_options': [
-            {'value': 'ready', 'label': 'Ready'},
-            {'value': 'degraded', 'label': 'Degraded'},
-            {'value': 'blocked', 'label': 'Blocked'},
-            {'value': 'validation_required', 'label': 'Validation Required'},
-        ],
-    })
+    context.update(
+        {
+            'runtime_rows': _visible_runtime_rows(specs),
+            'runtime_stats': filtered_stats,
+            'runtime_global_stats': global_stats,
+            'runtime_scope_label': _runtime_scope_label(
+                integration_type=integration_type,
+                health=health,
+                readiness=readiness,
+            ),
+            'runtime_pagination': pagination,
+            'runtime_has_targets': bool(global_stats['total']),
+            'selected_integration_type': integration_type,
+            'selected_health': health,
+            'selected_readiness': readiness,
+            'integration_type_options': [
+                {'value': module.integration_type, 'label': module.runtime_label or module.label} for module in modules
+            ],
+            'health_options': [
+                {'value': 'healthy', 'label': 'Healthy'},
+                {'value': 'degraded', 'label': 'Degraded'},
+                {'value': 'unhealthy', 'label': 'Unhealthy'},
+                {'value': 'not_observed', 'label': 'Not Observed'},
+            ],
+            'runtime_readiness_options': [
+                {'value': 'ready', 'label': 'Ready'},
+                {'value': 'degraded', 'label': 'Degraded'},
+                {'value': 'blocked', 'label': 'Blocked'},
+                {'value': 'validation_required', 'label': 'Validation Required'},
+            ],
+        }
+    )
     return context

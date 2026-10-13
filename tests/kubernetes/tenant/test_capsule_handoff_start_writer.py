@@ -3,6 +3,7 @@
 No database migration, SQL writes, provider API calls, or CI/CD are executed
 while source integration into the DevContainer review branch is held.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -29,17 +30,25 @@ def _scope():
     ]
     related_sha = _digest({'resources': [], 'lists': lists})
     shared = {
-        'served_version': 'v1beta2', 'list_resource_version': 'grq-list-rv',
-        'resources': [], 'count': 0,
-    }
-    shared['scope_sha256'] = _digest({
-        'api_version': 'v1beta2', 'list_resource_version': 'grq-list-rv',
+        'served_version': 'v1beta2',
+        'list_resource_version': 'grq-list-rv',
         'resources': [],
-    })
+        'count': 0,
+    }
+    shared['scope_sha256'] = _digest(
+        {
+            'api_version': 'v1beta2',
+            'list_resource_version': 'grq-list-rv',
+            'resources': [],
+        }
+    )
     components = [
         {
-            'kind': 'CapsuleTenant', 'name': 'kaori-demo',
-            'uid': 'cr-uid', 'resource_version': '3', 'authority': 'capsule',
+            'kind': 'CapsuleTenant',
+            'name': 'kaori-demo',
+            'uid': 'cr-uid',
+            'resource_version': '3',
+            'authority': 'capsule',
             'ownership': 'external_or_unattributed',
             'handoff': 'external_acceptance_required',
             'capsule_spec_sha256': 'a' * 64,
@@ -49,29 +58,38 @@ def _scope():
             'capsule_rbac_lineage_sha256': 'b' * 64,
         },
         {
-            'kind': 'Namespace', 'name': 'demo-dev',
-            'namespace': 'demo-dev', 'uid': 'namespace-uid',
-            'resource_version': '19', 'authority': 'capsule',
+            'kind': 'Namespace',
+            'name': 'demo-dev',
+            'namespace': 'demo-dev',
+            'uid': 'namespace-uid',
+            'resource_version': '19',
+            'authority': 'capsule',
             'ownership': 'kaori_marker_correlated',
             'handoff': 'external_acceptance_required',
         },
     ]
     plan = {
-        'tenant_id': 'tenant-id', 'cluster_id': 'cluster-id',
-        'generation': 1, 'provider': 'capsule',
-        'requested_by': 10, 'requested_at': datetime.now(UTC).isoformat(),
+        'tenant_id': 'tenant-id',
+        'cluster_id': 'cluster-id',
+        'generation': 1,
+        'provider': 'capsule',
+        'requested_by': 10,
+        'requested_at': datetime.now(UTC).isoformat(),
         'provider_identity': [
             {'kind': 'CapsuleTenant', 'name': 'kaori-demo', 'uid': 'cr-uid', 'resource_version': '3'},
             {'kind': 'Namespace', 'name': 'demo-dev', 'uid': 'namespace-uid', 'resource_version': '19'},
         ],
         'handoff_components': components,
         'handoff_fingerprint': handoff_fingerprint(components),
-        'successor_owner': 'platform-team', 'change_reference': 'CHG-20261011',
+        'successor_owner': 'platform-team',
+        'change_reference': 'CHG-20261011',
     }
     plan['plan_sha256'] = _plan_hash(plan)
     related = {
-        'resources': [], 'resource_count': 0,
-        'list_snapshots': lists, 'resource_sha256': related_sha,
+        'resources': [],
+        'resource_count': 0,
+        'list_snapshots': lists,
+        'resource_sha256': related_sha,
         'global_quota': shared,
     }
     return plan, related
@@ -79,8 +97,11 @@ def _scope():
 
 def _candidate(plan, related, *, attempt_id='00000000-0000-4000-8000-000000000001'):
     return build_capsule_start_candidate(
-        tenant_id='tenant-id', actor_user_id=30,
-        plan=plan, related=related, attempt_id=attempt_id,
+        tenant_id='tenant-id',
+        actor_user_id=30,
+        plan=plan,
+        related=related,
+        attempt_id=attempt_id,
         event_at=datetime.now(UTC),
     )
 
@@ -101,15 +122,18 @@ def test_start_candidate_has_exact_canonical_scope_and_no_credentials_or_provide
         assert forbidden not in str(event)
 
 
-@pytest.mark.parametrize('change', [
-    lambda p, r: p.update(plan_sha256='f' * 64),
-    lambda p, r: p.update(tenant_id='other-tenant'),
-    lambda p, r: p.update(provider='native_kubernetes'),
-    lambda p, r: p['handoff_components'][1].update(uid='rotated'),
-    lambda p, r: r.update(resource_sha256='bad'),
-    lambda p, r: r['list_snapshots'][0].update(list_resource_version='new-rv'),
-    lambda p, r: r['global_quota'].update(scope_sha256='f' * 64),
-])
+@pytest.mark.parametrize(
+    'change',
+    [
+        lambda p, r: p.update(plan_sha256='f' * 64),
+        lambda p, r: p.update(tenant_id='other-tenant'),
+        lambda p, r: p.update(provider='native_kubernetes'),
+        lambda p, r: p['handoff_components'][1].update(uid='rotated'),
+        lambda p, r: r.update(resource_sha256='bad'),
+        lambda p, r: r['list_snapshots'][0].update(list_resource_version='new-rv'),
+        lambda p, r: r['global_quota'].update(scope_sha256='f' * 64),
+    ],
+)
 def test_changed_plan_or_inventory_cannot_produce_a_valid_start(change):
     plan, related = _scope()
     change(plan, related)
@@ -117,10 +141,15 @@ def test_changed_plan_or_inventory_cannot_produce_a_valid_start(change):
         _candidate(plan, related)
 
 
-@pytest.mark.parametrize('attempt_id', [
-    '', 'not-a-uuid', '00000000-0000-4000-8000-000000000001X',
-    'abcdefab-cdef-4abc-8abc-abcdefabcdef'.upper(),
-])
+@pytest.mark.parametrize(
+    'attempt_id',
+    [
+        '',
+        'not-a-uuid',
+        '00000000-0000-4000-8000-000000000001X',
+        'abcdefab-cdef-4abc-8abc-abcdefabcdef'.upper(),
+    ],
+)
 def test_invalid_attempt_identity_is_rejected_by_event_projection(attempt_id):
     plan, related = _scope()
     with pytest.raises(ValueError):
@@ -134,9 +163,11 @@ def test_write_is_statically_disabled_before_any_auth_or_sql_session():
         with patch('app.kubernetes.tenant.capsule_handoff_start_writer.require_platform_admin_actor') as auth:
             with pytest.raises(PermissionError, match='source-staged only'):
                 commit_capsule_start_staged(
-                    tenant_id='tenant-id', actor_user_id=30,
+                    tenant_id='tenant-id',
+                    actor_user_id=30,
                     expected_plan_sha256=plan['plan_sha256'],
-                    preflight={}, provider_authority={},
+                    preflight={},
+                    provider_authority={},
                     explicit_operator_confirmation=True,
                 )
             database.session.assert_not_called()
@@ -148,9 +179,11 @@ def test_confirmed_or_unconfirmed_input_cannot_turn_on_the_writer():
     for confirmed in (False, True):
         with pytest.raises(PermissionError):
             commit_capsule_start_staged(
-                tenant_id='tenant-id', actor_user_id=30,
+                tenant_id='tenant-id',
+                actor_user_id=30,
                 expected_plan_sha256=plan['plan_sha256'],
-                preflight={}, provider_authority={},
+                preflight={},
+                provider_authority={},
                 explicit_operator_confirmation=confirmed,
             )
 
@@ -164,9 +197,11 @@ def test_current_admission_always_denies_execution_even_if_writer_gate_changed(m
     # available. A forged caller cannot get past ordinary argument guards.
     with pytest.raises(ValueError, match='authenticated Capsule START request'):
         module.commit_capsule_start_staged(
-            tenant_id='tenant-id', actor_user_id=30,
+            tenant_id='tenant-id',
+            actor_user_id=30,
             expected_plan_sha256=plan['plan_sha256'],
-            preflight={}, provider_authority={},
+            preflight={},
+            provider_authority={},
             explicit_operator_confirmation=False,
         )
 
@@ -200,18 +235,23 @@ class _PostgresReviewSession:
 
 def _postgres_state():
     return {
-        'fsync_setting': 'on', 'sync_commit': 'on',
+        'fsync_setting': 'on',
+        'sync_commit': 'on',
         'replication_role': 'origin',
-        'elevated': False, 'is_owner': False,
-        'member_of_owner': False, 'may_insert': True,
-        'may_update': False, 'may_delete': False,
+        'elevated': False,
+        'is_owner': False,
+        'member_of_owner': False,
+        'may_insert': True,
+        'may_update': False,
+        'may_delete': False,
         'may_truncate': False,
     }
 
 
 def _postgres_triggers():
     return [
-        (name, 'O') for name in (
+        (name, 'O')
+        for name in (
             'tr_capsule_ledger_guard_insert',
             'tr_capsule_ledger_deny_update',
             'tr_capsule_ledger_deny_delete',
@@ -226,42 +266,43 @@ def test_staged_db_guard_requires_all_triggers_without_sql_write():
     assert session.calls == 2
 
 
-@pytest.mark.parametrize('missing', [
-    'tr_capsule_ledger_guard_insert',
-    'tr_capsule_ledger_deny_update',
-    'tr_capsule_ledger_deny_delete',
-    'tr_capsule_ledger_deny_truncate',
-])
+@pytest.mark.parametrize(
+    'missing',
+    [
+        'tr_capsule_ledger_guard_insert',
+        'tr_capsule_ledger_deny_update',
+        'tr_capsule_ledger_deny_delete',
+        'tr_capsule_ledger_deny_truncate',
+    ],
+)
 def test_staged_db_guard_rejects_disabled_or_missing_immutability_triggers(missing):
-    triggers = [
-        item for item in _postgres_triggers() if item[0] != missing
-    ]
+    triggers = [item for item in _postgres_triggers() if item[0] != missing]
     with pytest.raises(ValueError, match='missing or disabled'):
         _require_postgres_ledger_write_once_guards(
             _PostgresReviewSession(triggers, _postgres_state()),
         )
-    disabled = [
-        (name, 'D' if name == missing else mode)
-        for name, mode in _postgres_triggers()
-    ]
+    disabled = [(name, 'D' if name == missing else mode) for name, mode in _postgres_triggers()]
     with pytest.raises(ValueError, match='missing or disabled'):
         _require_postgres_ledger_write_once_guards(
             _PostgresReviewSession(disabled, _postgres_state()),
         )
 
 
-@pytest.mark.parametrize('field,bad_value', [
-    ('fsync_setting', 'off'),
-    ('sync_commit', 'off'),
-    ('replication_role', 'replica'),
-    ('elevated', True),
-    ('is_owner', True),
-    ('member_of_owner', True),
-    ('may_insert', False),
-    ('may_update', True),
-    ('may_delete', True),
-    ('may_truncate', True),
-])
+@pytest.mark.parametrize(
+    'field,bad_value',
+    [
+        ('fsync_setting', 'off'),
+        ('sync_commit', 'off'),
+        ('replication_role', 'replica'),
+        ('elevated', True),
+        ('is_owner', True),
+        ('member_of_owner', True),
+        ('may_insert', False),
+        ('may_update', True),
+        ('may_delete', True),
+        ('may_truncate', True),
+    ],
+)
 def test_staged_db_guard_rejects_privileged_or_nondurable_execution_role(field, bad_value):
     state = _postgres_state()
     state[field] = bad_value

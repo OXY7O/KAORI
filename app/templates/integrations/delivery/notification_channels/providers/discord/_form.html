@@ -1,6 +1,7 @@
 <div class="grid gap-4 sm:grid-cols-2">
     <div>
-        <label for="discord-destination" class="{{ table_ui.filter_label_classes() }}">Destination Label</label>
+        <label for="discord-destination"
+               class="{{ table_ui.filter_label_classes() }}">Destination Label</label>
         <input id="discord-destination"
                name="discord_destination"
                value="{{ form_channel.discord_destination if form_channel else '' }}"
@@ -9,7 +10,8 @@
         <p class="mt-1 text-xs leading-5 text-content-muted">Human-readable name; the webhook decides which Discord channel receives messages.</p>
     </div>
     <div>
-        <label for="discord-webhook-url" class="{{ table_ui.filter_label_classes() }}">Discord Webhook URL</label>
+        <label for="discord-webhook-url"
+               class="{{ table_ui.filter_label_classes() }}">Discord Webhook URL</label>
         <input id="discord-webhook-url"
                name="discord_webhook_url"
                type="password"

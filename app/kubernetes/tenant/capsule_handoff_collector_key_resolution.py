@@ -5,6 +5,7 @@ Broker and policy MUST eventually be independently registered server-side
 This file registers neither, reads no secrets, and does not contact Vault.
 Never pass request-supplied broker, pin policy or key material as trust.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -29,11 +30,19 @@ class CapsuleCollectorKeyBroker(Protocol):
     """Privileged backend connector, NOT a user-controlled receipt or payload."""
 
     def read_key(
-        self, *, cluster_id: str, collector_id: str, key_id: str,
+        self,
+        *,
+        cluster_id: str,
+        collector_id: str,
+        key_id: str,
     ) -> bytes: ...
 
     def read_pin(
-        self, *, cluster_id: str, collector_id: str, key_id: str,
+        self,
+        *,
+        cluster_id: str,
+        collector_id: str,
+        key_id: str,
     ) -> Mapping[str, Any]: ...
 
 
@@ -41,12 +50,17 @@ class CapsuleCollectorPinPolicy(Protocol):
     """Independent operator-owned policy (not supplied by collector itself)."""
 
     def expected_fingerprint(
-        self, *, cluster_id: str, collector_id: str, key_id: str,
+        self,
+        *,
+        cluster_id: str,
+        collector_id: str,
+        key_id: str,
     ) -> str: ...
 
 
 def review_capsule_collector_via_broker_staged(
-    *, resource_report: Mapping[str, Any],
+    *,
+    resource_report: Mapping[str, Any],
     claims: list[Mapping[str, Any]],
     receipt: Mapping[str, Any],
     broker: CapsuleCollectorKeyBroker,
@@ -71,9 +85,14 @@ def review_capsule_collector_via_broker_staged(
         not isinstance(resource_report, Mapping)
         or not isinstance(receipt, Mapping)
         or not isinstance(claims, list)
-        or not all(isinstance(x, str) and x for x in (
-            expected_cluster_id, expected_collector_id, expected_key_id,
-        ))
+        or not all(
+            isinstance(x, str) and x
+            for x in (
+                expected_cluster_id,
+                expected_collector_id,
+                expected_key_id,
+            )
+        )
         or resource_report.get('cluster_id') != expected_cluster_id
         or receipt.get('cluster_id') != expected_cluster_id
         or receipt.get('collector_id') != expected_collector_id
@@ -88,28 +107,37 @@ def review_capsule_collector_via_broker_staged(
     key: bytes | None = None
     try:
         pin = broker.read_pin(
-            cluster_id=expected_cluster_id, collector_id=expected_collector_id,
+            cluster_id=expected_cluster_id,
+            collector_id=expected_collector_id,
             key_id=expected_key_id,
         )
         expected_fingerprint = operator_policy.expected_fingerprint(
-            cluster_id=expected_cluster_id, collector_id=expected_collector_id,
+            cluster_id=expected_cluster_id,
+            collector_id=expected_collector_id,
             key_id=expected_key_id,
         )
         key = broker.read_key(
-            cluster_id=expected_cluster_id, collector_id=expected_collector_id,
+            cluster_id=expected_cluster_id,
+            collector_id=expected_collector_id,
             key_id=expected_key_id,
         )
         matched = inspect_capsule_collector_key_pin(
-            descriptor=pin, cluster_id=expected_cluster_id,
-            collector_id=expected_collector_id, key_id=expected_key_id,
+            descriptor=pin,
+            cluster_id=expected_cluster_id,
+            collector_id=expected_collector_id,
+            key_id=expected_key_id,
             backend_key_material=key,
-            pinned_fingerprint_sha256=expected_fingerprint, now=instant,
+            pinned_fingerprint_sha256=expected_fingerprint,
+            now=instant,
         )
         reviewed = inspect_capsule_collector_receipt(
-            resource_report=resource_report, claims=claims, receipt=receipt,
+            resource_report=resource_report,
+            claims=claims,
+            receipt=receipt,
             trusted_collector_id=expected_collector_id,
             trusted_key_id=expected_key_id,
-            trusted_hmac_key=key, now=instant,
+            trusted_hmac_key=key,
+            now=instant,
         )
     except Exception:
         # Do not surface exceptions from a future secret broker, including
@@ -117,10 +145,7 @@ def review_capsule_collector_via_broker_staged(
         raise ValueError('Capsule collector key or audit receipt could not be verified.') from None
     finally:
         key = None
-    if (
-        matched.get('key_material_matches_pin') is not True
-        or reviewed.get('collector_mac_verified') is not True
-    ):
+    if matched.get('key_material_matches_pin') is not True or reviewed.get('collector_mac_verified') is not True:
         raise ValueError('Capsule collector pin and receipt validation disagreed.')
     return {
         'status': 'backend_broker_pin_and_collector_mac_correlated_unadmitted',
@@ -131,10 +156,13 @@ def review_capsule_collector_via_broker_staged(
         'resource_review_sha256': resource_report['resource_review_sha256'],
         'pin_record_sha256': matched['pin_record_sha256'],
         'collector_receipt_sha256': reviewed['collector_receipt_sha256'],
-        'key_scope_sha256': _digest({
-            'cluster_id': expected_cluster_id,
-            'collector_id': expected_collector_id, 'key_id': expected_key_id,
-        }),
+        'key_scope_sha256': _digest(
+            {
+                'cluster_id': expected_cluster_id,
+                'collector_id': expected_collector_id,
+                'key_id': expected_key_id,
+            }
+        ),
         'key_material_matches_pin': True,
         'collector_mac_verified': True,
         'server_broker_registration_verified': False,

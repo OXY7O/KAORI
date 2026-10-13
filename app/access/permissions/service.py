@@ -281,9 +281,7 @@ def build_permission_registry_summary() -> dict[str, Any]:
         for key, module, action, description in DEFAULT_PERMISSIONS
     }
     database_permissions = (
-        Permission.query.options(lazyload(Permission.role_permissions))
-        .order_by(Permission.key.asc())
-        .all()
+        Permission.query.options(lazyload(Permission.role_permissions)).order_by(Permission.key.asc()).all()
     )
     database_by_key = {permission.key: permission for permission in database_permissions}
     mapping_counts = {

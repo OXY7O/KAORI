@@ -41,25 +41,38 @@ def test_incident_readiness_redesign_uses_committed_control_evidence() -> None:
     assert 'class="mt-3 flex flex-col items-center gap-3"' in content
     assert 'class="min-w-0 w-full text-center"' in content
     assert 'mt-3 flex flex-wrap items-center gap-4' not in content
-    assert "analysis_surface.snapshot_shell_classes()" in content
-    assert "analysis_surface.nested_evidence_card_classes(" in content
-    assert "analysis_surface.guidance_card_classes()" in content
+    assert 'analysis_surface.snapshot_shell_classes()' in content
+    assert 'analysis_surface.nested_evidence_card_classes(' in content
+    assert 'analysis_surface.guidance_card_classes()' in content
 
     for section in (
-        'Readiness Posture', 'Readiness Score', 'Response Control Readiness',
-        'Control Evidence Snapshot', 'Signal Pressure', 'Readiness Checks',
-        'Incident Decision', 'Escalation Gate', 'Needs Attention',
+        'Readiness Posture',
+        'Readiness Score',
+        'Response Control Readiness',
+        'Control Evidence Snapshot',
+        'Signal Pressure',
+        'Readiness Checks',
+        'Incident Decision',
+        'Escalation Gate',
+        'Needs Attention',
         'What This Means',
     ):
         assert section in content
     for field in (
-        'incident_readiness.score', 'incident_readiness.label',
-        'incident_readiness.recommended_action', 'incident_readiness.source_score',
-        'incident_readiness.ownership_score', 'incident_readiness.routing_ready',
-        'incident_readiness.critical_signals', 'incident_readiness.warning_signals',
-        'incident_readiness.anomaly_signals', 'incident_readiness.silence_risk',
-        'incident_readiness.inhibition_risk', 'incident_readiness.checks',
-        'check.status', 'check.description',
+        'incident_readiness.score',
+        'incident_readiness.label',
+        'incident_readiness.recommended_action',
+        'incident_readiness.source_score',
+        'incident_readiness.ownership_score',
+        'incident_readiness.routing_ready',
+        'incident_readiness.critical_signals',
+        'incident_readiness.warning_signals',
+        'incident_readiness.anomaly_signals',
+        'incident_readiness.silence_risk',
+        'incident_readiness.inhibition_risk',
+        'incident_readiness.checks',
+        'check.status',
+        'check.description',
     ):
         assert field in content
 
@@ -69,12 +82,12 @@ def test_incident_readiness_redesign_uses_committed_control_evidence() -> None:
     assert "if check.status != 'pass'" in content
     assert 'if has_checks' in content
     assert 'value if has_checks else' in content
-    assert "status_indicator_label(check.status|title" in content
+    assert 'status_indicator_label(check.status|title' in content
     assert 'aria-label="Incident decision and handoff readiness"' in content
     assert 'caption class="sr-only"' in content
     assert 'min-w-[34rem] table-fixed' in content
     assert "fill_classes='h-full rounded-full bg-kaori-primary'" in content
-    assert "progress_bar.semantic_bar" not in content
+    assert 'progress_bar.semantic_bar' not in content
     assert '35% weight' not in content
     assert 'Last 24 hours' not in content
     assert 'Last updated' not in content
@@ -83,7 +96,7 @@ def test_incident_readiness_redesign_uses_committed_control_evidence() -> None:
     assert "'ownership_score': ownership_score" in source
     assert "'source_score': source_score" in source
     assert "'checks': checks" in source
-    assert "score -= 15" in source
+    assert 'score -= 15' in source
 
 
 def test_incident_readiness_attentional_copy_does_not_hide_handoff_gaps() -> None:

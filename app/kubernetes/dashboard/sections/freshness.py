@@ -56,16 +56,11 @@ def build_data_freshness(
             fleet_metrics_count, fleet_cluster_count
         )
         metrics_source_description = (
-            'All Clusters shows committed capacity by cluster. '
-            'Select a cluster for detailed analytics.'
+            'All Clusters shows committed capacity by cluster. Select a cluster for detailed analytics.'
         )
 
-        alert_status, alert_tone, alert_value = _fleet_coverage(
-            fleet_alerts_count, fleet_cluster_count
-        )
-        alert_description = (
-            'All Clusters shows committed alerts by cluster. Select a cluster for source details.'
-        )
+        alert_status, alert_tone, alert_value = _fleet_coverage(fleet_alerts_count, fleet_cluster_count)
+        alert_description = 'All Clusters shows committed alerts by cluster. Select a cluster for source details.'
 
     has_reports = reporting_snapshot.generated_reports > 0
 

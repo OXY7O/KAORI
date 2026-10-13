@@ -33,9 +33,15 @@ def _origin(value: str) -> str | None:
     try:
         parsed = urlsplit(value)
         if (
-            parsed.scheme != 'https' or not parsed.hostname or parsed.username is not None
-            or parsed.password is not None or parsed.path not in ('', '/')
-            or parsed.query or parsed.fragment or parsed.port is None and ':' in parsed.netloc
+            parsed.scheme != 'https'
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.path not in ('', '/')
+            or parsed.query
+            or parsed.fragment
+            or parsed.port is None
+            and ':' in parsed.netloc
         ):
             return None
         port = parsed.port
@@ -95,8 +101,10 @@ def send_ntfy_message(
         try:
             link = urlsplit(message.action_url)
             if (
-                link.scheme in {'http', 'https'} and link.hostname
-                and link.username is None and link.password is None
+                link.scheme in {'http', 'https'}
+                and link.hostname
+                and link.username is None
+                and link.password is None
                 and not any(ord(ch) < 33 or ord(ch) == 127 for ch in message.action_url)
             ):
                 header['X-Click'] = message.action_url
@@ -116,7 +124,8 @@ def send_ntfy_message(
         # Never inherit HTTP_PROXY/HTTPS_PROXY; require an operator-approved
         # origin and network-layer egress controls for self-managed endpoints.
         with build_opener(ProxyHandler({}), HTTPSHandler(context=context), DenyRedirects()).open(
-            request, timeout=max(int(timeout_seconds), 1),
+            request,
+            timeout=max(int(timeout_seconds), 1),
         ) as response:
             status = int(getattr(response, 'status', 200) or 200)
             raw = response.read(16384)

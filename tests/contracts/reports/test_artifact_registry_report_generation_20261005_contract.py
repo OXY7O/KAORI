@@ -110,8 +110,8 @@ def test_registry_analysis_combines_dashboard_alert_intelligence_and_recommendat
     assert "build_overview_section('capacity', provider_id=instance_id)" in payload
     assert "build_overview_section('signals', provider_id=instance_id)" in payload
     assert 'build_overview(provider_id=instance_id)' not in payload
-    assert "state.last_committed_at is None" in payload
-    assert "Selected Artifact Registry has no committed inventory evidence." in payload
+    assert 'state.last_committed_at is None' in payload
+    assert 'Selected Artifact Registry has no committed inventory evidence.' in payload
     assert "'artifact_registry_alerts_actions':" in payload
     assert "'recommendations': recommendations" in payload
     assert "'live_provider_requests': 'Excluded during report rendering'" in payload

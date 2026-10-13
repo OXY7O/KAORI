@@ -14,10 +14,7 @@ SPECIALIZED_OVERVIEW_TYPES = frozenset({'container_orchestrator', 'metrics_sourc
 
 def canonical_operational(record: Any, *, kubernetes: bool = False) -> bool:
     """Canonical active lifecycle and effective source switch gate Ready."""
-    canonical = (
-        record.integration_instance if kubernetes else
-        getattr(record, 'integration_instance', record)
-    )
+    canonical = record.integration_instance if kubernetes else getattr(record, 'integration_instance', record)
     return bool(
         getattr(record, 'enabled', True)
         and getattr(canonical, 'enabled', False)
@@ -31,7 +28,6 @@ def effective_runtime_readiness(record: Any, *, kubernetes: bool = False) -> str
     return str(record.readiness_status or 'validation_required')
 
 
-
 def build_overview_stats(
     *,
     kubernetes_connections: list[KubernetesConnection],
@@ -41,7 +37,11 @@ def build_overview_stats(
 ) -> dict[str, int]:
     target_states = [
         *(
-            (True, canonical_operational(connection, kubernetes=True), connection.readiness_status or 'validation_required')
+            (
+                True,
+                canonical_operational(connection, kubernetes=True),
+                connection.readiness_status or 'validation_required',
+            )
             for connection in kubernetes_connections
         ),
         *(
@@ -52,7 +52,10 @@ def build_overview_stats(
             (bool(item.endpoint), canonical_operational(item), item.readiness_status or 'validation_required')
             for item in alertmanager_instances
         ),
-        *((True, canonical_operational(item), item.readiness_status or 'validation_required') for item in extension_instances),
+        *(
+            (True, canonical_operational(item), item.readiness_status or 'validation_required')
+            for item in extension_instances
+        ),
     ]
     total = len(target_states)
     configured = sum(1 for is_configured, _, _ in target_states if is_configured)
@@ -167,7 +170,10 @@ def build_provider_portfolio_counts(
             [(bool(item.endpoint), canonical_operational(item), item.readiness_status) for item in metrics_sources]
         ),
         'alert_source': portfolio_counts(
-            [(bool(item.endpoint), canonical_operational(item), item.readiness_status) for item in alertmanager_instances]
+            [
+                (bool(item.endpoint), canonical_operational(item), item.readiness_status)
+                for item in alertmanager_instances
+            ]
         ),
     }
     for integration_type in {item.integration_type for item in extension_instances}:

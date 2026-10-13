@@ -426,12 +426,10 @@ def test_harbor_index_uses_batch_fleet_readiness_with_visible_detail_resolution(
     source = read('app/integrations/registry/providers/harbor/application/presentation.py')
     assert 'ready_metric_ids = registry_metrics_ready_provider_ids(identities)' in source
     assert 'binding_counts: dict[str, int] = {}' in source
-    assert "IntegrationBinding.asset_key.in_([str(identity_id) for identity_id in identity_ids])" in source
-    assert "for row in coverage_page_rows:" in source
+    assert 'IntegrationBinding.asset_key.in_([str(identity_id) for identity_id in identity_ids])' in source
+    assert 'for row in coverage_page_rows:' in source
     assert "registry_metrics_readiness(row['identity'])" in source
-    assert source.index('for row in coverage_page_rows:') < source.index(
-        "registry_metrics_readiness(row['identity'])"
-    )
+    assert source.index('for row in coverage_page_rows:') < source.index("registry_metrics_readiness(row['identity'])")
     assert 'metrics = registry_metrics_readiness(identity)' not in source
     assert 'inventory_eligibility = registry_inventory_eligibility(identity)' not in source
 
@@ -441,7 +439,10 @@ def test_harbor_full_coverage_is_not_required_for_core_provider_readiness() -> N
     overview = read('app/templates/integrations/registry/providers/harbor/index.html')
     coverage = read('app/templates/integrations/registry/providers/harbor/partials/_coverage.html')
     docs = read('app/integrations/registry/providers/harbor/README.md')
-    assert "item['status'] == 'ready' for item in (api_status, inventory_status, metrics_status, webhook_status)" in presentation
+    assert (
+        "item['status'] == 'ready' for item in (api_status, inventory_status, metrics_status, webhook_status)"
+        in presentation
+    )
     assert "'label': 'Full Coverage'" in presentation
     assert 'Core readiness is separate.' in overview
     assert 'optional integration dimensions do not gate core provider readiness.' in coverage

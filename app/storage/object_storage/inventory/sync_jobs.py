@@ -54,17 +54,13 @@ def enqueue_all_object_storage_inventory_sync(
             raise NoEligibleObjectStorageTargets(
                 'A confirmed-empty inventory reconciliation requires an authenticated manual job.'
             )
-        target = next(
-            (row for row in targets if row['system_id'] == confirm_empty_system_id), None
-        )
+        target = next((row for row in targets if row['system_id'] == confirm_empty_system_id), None)
         if target is None:
             raise NoEligibleObjectStorageTargets(
                 'The selected system is no longer eligible for Object Storage Inventory Sync.'
             )
         system = ObjectStorageSystem.query.filter_by(id=confirm_empty_system_id).first()
-        previous_count = ObjectStorageBucket.query.filter_by(
-            object_storage_system_id=confirm_empty_system_id
-        ).count()
+        previous_count = ObjectStorageBucket.query.filter_by(object_storage_system_id=confirm_empty_system_id).count()
         if system is None or system.inventory_observed_at is None or previous_count <= 0:
             raise NoEligibleObjectStorageTargets(
                 'Only a previously observed, nonempty system can be reconciled as empty.'

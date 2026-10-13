@@ -10,17 +10,24 @@ from app.integrations.delivery.notification_channels.contracts import Notificati
 
 def channel() -> SimpleNamespace:
     return SimpleNamespace(
-        provider_key='telegram', destination='channel-A', provider_config={},
+        provider_key='telegram',
+        destination='channel-A',
+        provider_config={},
         credential_payload='{"bot_token":"secret"}',
-        last_delivery_status='never', last_delivery_at=None,
-        last_delivery_message=None, last_delivery_attempt_at=None,
+        last_delivery_status='never',
+        last_delivery_at=None,
+        last_delivery_message=None,
+        last_delivery_attempt_at=None,
     )
 
 
 def message() -> NotificationMessage:
     return NotificationMessage(
-        title='Report Ready', body='Committed evidence', severity='info',
-        action_url='/reports/generated/41', action_label='Open Report',
+        title='Report Ready',
+        body='Committed evidence',
+        severity='info',
+        action_url='/reports/generated/41',
+        action_label='Open Report',
     )
 
 
@@ -39,11 +46,14 @@ def test_encrypted_replay_snapshot_and_transport_change_guard(monkeypatch: pytes
 
 def test_queued_intent_is_committed_before_transport(monkeypatch: pytest.MonkeyPatch) -> None:
     commits: list[tuple[str, int]] = []
-    row = SimpleNamespace(payload_json={'report_id': 41}, attempt_count=0,
-                          status='queued', error_message=None, updated_at=None)
-    monkeypatch.setattr(service, 'db', SimpleNamespace(
-        session=SimpleNamespace(commit=lambda: commits.append((row.status, row.attempt_count)))
-    ))
+    row = SimpleNamespace(
+        payload_json={'report_id': 41}, attempt_count=0, status='queued', error_message=None, updated_at=None
+    )
+    monkeypatch.setattr(
+        service,
+        'db',
+        SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append((row.status, row.attempt_count)))),
+    )
     monkeypatch.setattr(service, '_transport_snapshot', lambda *_: 'enc:v1:replay')
     service._begin_delivery_attempt(row, channel(), message())
     assert commits == [('queued', 1)]
@@ -52,11 +62,10 @@ def test_queued_intent_is_committed_before_transport(monkeypatch: pytest.MonkeyP
 
 def test_delivery_outcome_is_separate_durable_commit(monkeypatch: pytest.MonkeyPatch) -> None:
     commits: list[str] = []
-    row = SimpleNamespace(status='queued', error_message=None, sent_at=None,
-                          provider_message_id=None, updated_at=None)
-    monkeypatch.setattr(service, 'db', SimpleNamespace(session=SimpleNamespace(
-        commit=lambda: commits.append(row.status)
-    )))
+    row = SimpleNamespace(status='queued', error_message=None, sent_at=None, provider_message_id=None, updated_at=None)
+    monkeypatch.setattr(
+        service, 'db', SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append(row.status)))
+    )
     service._record_delivery_outcome(row, channel(), service.DeliveryResult(False, 'provider down'))
     assert commits == ['failed']
     assert row.error_message == 'provider down'
@@ -82,8 +91,13 @@ def test_retry_stale_threshold_exceeds_transport_timeout(monkeypatch: pytest.Mon
 def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     item = SimpleNamespace(
-        attempt_count=1, status='failed', channel=channel(), domain='kubernetes',
-        event_type='report.generated', severity='info', updated_at=None,
+        attempt_count=1,
+        status='failed',
+        channel=channel(),
+        domain='kubernetes',
+        event_type='report.generated',
+        severity='info',
+        updated_at=None,
     )
 
     class Column:
@@ -117,8 +131,7 @@ def test_due_recovery_claims_a_row_before_replaying(monkeypatch: pytest.MonkeyPa
         def first(self) -> SimpleNamespace | None:
             return item if calls.count('locked') == 1 else None
 
-    columns = SimpleNamespace(query=Query(), status=Column(), updated_at=Column(),
-                              attempt_count=Column(), id=Column())
+    columns = SimpleNamespace(query=Query(), status=Column(), updated_at=Column(), attempt_count=Column(), id=Column())
     monkeypatch.setattr(service, 'NotificationDelivery', columns)
     monkeypatch.setattr(service, 'or_', lambda *_: True)
     monkeypatch.setattr(service, '_replay_message', lambda *_: message())

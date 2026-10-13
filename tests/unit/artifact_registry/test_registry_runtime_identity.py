@@ -16,14 +16,17 @@ from app.models.registry import RegistryArtifact
 
 
 def _artifact() -> RegistryArtifact:
-    return cast(RegistryArtifact, SimpleNamespace(
-        digest='sha256:abc',
-        repository=SimpleNamespace(
-            name='service',
-            project=SimpleNamespace(name='team'),
+    return cast(
+        RegistryArtifact,
+        SimpleNamespace(
+            digest='sha256:abc',
+            repository=SimpleNamespace(
+                name='service',
+                project=SimpleNamespace(name='team'),
+            ),
+            tags=[SimpleNamespace(name='latest')],
         ),
-        tags=[SimpleNamespace(name='latest')],
-    ))
+    )
 
 
 @pytest.mark.parametrize(
@@ -62,11 +65,14 @@ def test_registry_authority_retains_configured_nondefault_port():
 
 
 def test_distinct_containers_and_init_containers_keep_identity():
-    pod = cast(PodInventory, SimpleNamespace(
-        container_names=['api', 'sidecar'],
-        container_images=['harbor.example/team/service:latest'] * 2,
-        init_container_images=['harbor.example/team/service:latest'],
-    ))
+    pod = cast(
+        PodInventory,
+        SimpleNamespace(
+            container_names=['api', 'sidecar'],
+            container_images=['harbor.example/team/service:latest'] * 2,
+            init_container_images=['harbor.example/team/service:latest'],
+        ),
+    )
     assert list(_container_rows(pod)) == [
         ('harbor.example/team/service:latest', 'api', 'container', 0),
         ('harbor.example/team/service:latest', 'sidecar', 'container', 1),

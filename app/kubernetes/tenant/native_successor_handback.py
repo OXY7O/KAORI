@@ -4,6 +4,7 @@ No automatic Re-adoption: the successor first consents using TokenReview/SAR;
 only exact successor ownership labels are removed with UID/RV conditional PATCH.
 The canonical Discovery workflow then creates a NEW adopted generation.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -12,50 +13,64 @@ from typing import Any
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.native_handoff_dry_run import (
-    _CONTENT_TYPE, _MARKER_KEYS, _dry_run_patch, _label_path, _read_resource,
-    _resource_metadata, _retained_provider_metadata, _spec, _stable_sha256,
+    _CONTENT_TYPE,
+    _MARKER_KEYS,
+    _dry_run_patch,
+    _label_path,
+    _read_resource,
+    _resource_metadata,
+    _retained_provider_metadata,
+    _spec,
+    _stable_sha256,
 )
 from app.kubernetes.tenant.native_handoff_readback import _latest_native_dry_run
 from app.kubernetes.tenant.native_platform_admin_authority import (
-    require_platform_admin_actor, verify_native_provider_admin_authority,
+    require_platform_admin_actor,
+    verify_native_provider_admin_authority,
 )
 from app.kubernetes.tenant.release_handoff_approval import _plan_hash
 from app.kubernetes.tenant.release_preflight import _release_dependency_counts
 from app.models import Cluster
 from app.models.audit import AuditEvent
 from app.models.tenant import (
-    Tenant, TenantEnvironment, TenantLifecycleStatus,
-    TenantNamespace, TenantNamespaceProvisioningStatus,
+    Tenant,
+    TenantEnvironment,
+    TenantLifecycleStatus,
+    TenantNamespace,
+    TenantNamespaceProvisioningStatus,
 )
 
 _TARGET = 'kubernetes_tenant_verified_native_successor_handback'
 
 
 def latest_native_successor_handback(tenant_id: str) -> dict[str, Any] | None:
-    event = (
-        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).first()
-    )
+    event = AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id).order_by(AuditEvent.id.desc()).first()
     return dict(event.metadata_json or {}) if event else None
 
 
 def _validate_released_component(
-    *, item: dict[str, Any], live: Any, successor_owner: str,
+    *,
+    item: dict[str, Any],
+    live: Any,
+    successor_owner: str,
 ) -> None:
     name, uid, _, labels = _resource_metadata(live)
     if (
-        name != item.get('name') or uid != item.get('uid')
+        name != item.get('name')
+        or uid != item.get('uid')
         or labels.get('app.kubernetes.io/managed-by') != successor_owner
         or any(key in labels for key in _MARKER_KEYS if key != 'app.kubernetes.io/managed-by')
         or item.get('spec_sha256') != _stable_sha256(_spec(live))
-        or item.get('retained_metadata_sha256')
-        != _stable_sha256(_retained_provider_metadata(live))
+        or item.get('retained_metadata_sha256') != _stable_sha256(_retained_provider_metadata(live))
     ):
         raise ValueError('Released provider resource is no longer owned and preserved by the verified successor.')
 
 
 def handback_native_successor_governance_committed(
-    *, tenant_id: str, actor_user_id: int, release_plan_sha256: str,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    release_plan_sha256: str,
     confirmed: bool,
 ) -> dict[str, Any]:
     """Relinquish a verified successor-owned Native generation for future Discovery."""
@@ -64,7 +79,8 @@ def handback_native_successor_governance_committed(
     require_platform_admin_actor(actor_user_id)
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.RELEASED.value
+        tenant is None
+        or tenant.lifecycle_status != TenantLifecycleStatus.RELEASED.value
         or tenant.provider_key != 'native_kubernetes'
         or tenant.provider_state != 'native'
         or tenant.ownership_status != 'adopted'
@@ -89,7 +105,8 @@ def handback_native_successor_governance_committed(
         raise ValueError('Former KAORI dependencies unexpectedly remain active.')
     previous = _latest_native_dry_run(tenant_id)
     if (
-        not previous or previous.get('plan_sha256') != release_plan_sha256
+        not previous
+        or previous.get('plan_sha256') != release_plan_sha256
         or previous.get('handoff_fingerprint') != release.get('handoff_fingerprint')
         or previous.get('status') != 'dry_run_passed'
     ):
@@ -115,23 +132,30 @@ def handback_native_successor_governance_committed(
     # Retain external Namespace ownership until quota and LimitRange controls
     # have been safely relinquished. This constrains partial-failure exposure.
     order = {'ResourceQuota': 0, 'LimitRange': 1, 'Namespace': 2}
-    live_before.sort(key=lambda pair: (
-        str(pair[0].get('namespace') or ''),
-        order.get(str(pair[0].get('kind')), 99), str(pair[0].get('name')),
-    ))
+    live_before.sort(
+        key=lambda pair: (
+            str(pair[0].get('namespace') or ''),
+            order.get(str(pair[0].get('kind')), 99),
+            str(pair[0].get('name')),
+        )
+    )
     # Construct an ephemeral *handback* scope from genuine successor-owned live
     # objects, not from fictional KAORI marker correlation.
     contract = {
-        'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
-        'generation': tenant.generation, 'provider': 'native_kubernetes',
+        'tenant_id': tenant_id,
+        'cluster_id': tenant.cluster_id,
+        'generation': tenant.generation,
+        'provider': 'native_kubernetes',
         'handoff_fingerprint': release['handoff_fingerprint'],
         'provider_identity': release['verified_components'],
-        'successor_owner': owner, 'change_reference': release_plan_sha256,
+        'successor_owner': owner,
+        'change_reference': release_plan_sha256,
         'requested_by': actor_user_id,
         'requested_at': datetime.now(UTC).isoformat(),
         'handoff_components': [
             {
-                'kind': item['kind'], 'name': item['name'],
+                'kind': item['kind'],
+                'name': item['name'],
                 'namespace': item.get('namespace') or item['name'],
                 'uid': item['uid'],
                 'resource_version': _resource_metadata(live)[2],
@@ -143,7 +167,8 @@ def handback_native_successor_governance_committed(
     }
     contract['plan_sha256'] = _plan_hash(contract)
     authority = verify_native_provider_admin_authority(
-        cluster=cluster, components=contract['handoff_components'],
+        cluster=cluster,
+        components=contract['handoff_components'],
     )
     if authority.get('resource_authority_verified') is not True:
         raise ValueError('The configured Kubernetes provider connection lacks handback authority.')
@@ -155,26 +180,32 @@ def handback_native_successor_governance_committed(
         raise ValueError('Platform Admin provider identity changed after the verified Release.')
     locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
-        locked is None or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
+        locked is None
+        or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
         or locked.generation != tenant.generation
         or latest_native_successor_handback(tenant_id)
     ):
         raise ValueError('Released Tenant handback was replaced or is already in progress.')
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action='tenant.release.successor_handback_started',
-        summary='Explicit authenticated external Native governance handback started.',
-        metadata_json={
-            'status': 'in_progress', 'tenant_id': tenant_id,
-            'release_plan_sha256': release_plan_sha256,
-            'provider_username': authority['provider_username'],
-            'provider_credential_id': authority['provider_credential_id'],
-            'authority_mode': 'platform_admin_governed',
-            'accepted_by_platform_admin': actor_user_id,
-            'handback_plan_sha256': contract['plan_sha256'],
-            'secret_material_persisted': False,
-        },
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.successor_handback_started',
+            summary='Explicit authenticated external Native governance handback started.',
+            metadata_json={
+                'status': 'in_progress',
+                'tenant_id': tenant_id,
+                'release_plan_sha256': release_plan_sha256,
+                'provider_username': authority['provider_username'],
+                'provider_credential_id': authority['provider_credential_id'],
+                'authority_mode': 'platform_admin_governed',
+                'accepted_by_platform_admin': actor_user_id,
+                'handback_plan_sha256': contract['plan_sha256'],
+                'secret_material_persisted': False,
+            },
+        )
+    )
     db.session.commit()
     verified: list[dict[str, Any]] = []
     errors: list[str] = []
@@ -212,24 +243,32 @@ def handback_native_successor_governance_committed(
             current = _read_resource(core, item)
             _, uid, rv, labels = _resource_metadata(current)
             if (
-                uid != item['uid'] or rv == _resource_metadata(before)[2]
+                uid != item['uid']
+                or rv == _resource_metadata(before)[2]
                 or 'app.kubernetes.io/managed-by' in labels
                 or _spec(current) != _spec(before)
                 or _retained_provider_metadata(current) != _retained_provider_metadata(before)
             ):
                 raise ValueError('Provider post-handback read-back failed.')
-            verified.append({
-                'namespace': item.get('namespace'), 'kind': kind, 'name': name,
-                'uid': uid, 'resource_version': rv,
-                'spec_preserved': True, 'foreign_metadata_preserved': True,
-            })
+            verified.append(
+                {
+                    'namespace': item.get('namespace'),
+                    'kind': kind,
+                    'name': name,
+                    'uid': uid,
+                    'resource_version': rv,
+                    'spec_preserved': True,
+                    'foreign_metadata_preserved': True,
+                }
+            )
         except Exception as exc:
-            errors.append(f"{item.get('kind')}/{item.get('name')}: {type(exc).__name__}")
+            errors.append(f'{item.get("kind")}/{item.get("name")}: {type(exc).__name__}')
             break
     complete = not errors and len(verified) == len(items)
     receipt = {
         'status': 'verified' if complete else 'partial_handback_recovery_required',
-        'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
+        'tenant_id': tenant_id,
+        'cluster_id': tenant.cluster_id,
         'generation': tenant.generation,
         'release_plan_sha256': release_plan_sha256,
         'handback_plan_sha256': contract['plan_sha256'],
@@ -254,17 +293,20 @@ def handback_native_successor_governance_committed(
         locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
         latest = latest_native_successor_handback(tenant_id)
         if (
-            locked is None or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
+            locked is None
+            or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
             or locked.generation != release['generation']
-            or not latest or latest.get('status') != 'in_progress'
+            or not latest
+            or latest.get('status') != 'in_progress'
             or latest.get('handback_plan_sha256') != contract['plan_sha256']
         ):
             raise ValueError('Concurrent Released lineage or handback operation changed.')
         rows = (
-            TenantNamespace.query.join(
-                TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id
-            ).filter(TenantEnvironment.tenant_id == tenant_id)
-            .order_by(TenantNamespace.id.asc()).with_for_update().all()
+            TenantNamespace.query.join(TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
+            .filter(TenantEnvironment.tenant_id == tenant_id)
+            .order_by(TenantNamespace.id.asc())
+            .with_for_update()
+            .all()
         )
         namespaces = {item['name']: item for item in verified if item['kind'] == 'Namespace'}
         if len(rows) != len(namespaces):
@@ -273,12 +315,14 @@ def handback_native_successor_governance_committed(
             matching = namespaces.get(row.namespace)
             if (
                 row.provisioning_status != TenantNamespaceProvisioningStatus.RELEASED.value
-                or not matching or row.provider_reference != matching['uid']
+                or not matching
+                or row.provider_reference != matching['uid']
             ):
                 raise ValueError('Released Namespace identity changed during handback finalization.')
             evidence = dict(row.provisioning_evidence_json or {})
             evidence['handback_governance'] = {
-                'status': 'verified', 'release_plan_sha256': release_plan_sha256,
+                'status': 'verified',
+                'release_plan_sha256': release_plan_sha256,
                 'provider_uid': matching['uid'],
                 'resource_version': matching['resource_version'],
                 'successor_owner': owner,
@@ -286,26 +330,32 @@ def handback_native_successor_governance_committed(
             row.provisioning_evidence_json = evidence
         evidence = dict(tenant.provider_evidence_json or {})
         evidence['handback_governance'] = {
-            'status': 'verified', 'release_plan_sha256': release_plan_sha256,
+            'status': 'verified',
+            'release_plan_sha256': release_plan_sha256,
             'provider_uid': evidence.get('provider_uid'),
             'provider_resource_versions': {
-                item['name']: item['resource_version']
-                for item in verified if item['kind'] == 'Namespace'
+                item['name']: item['resource_version'] for item in verified if item['kind'] == 'Namespace'
             },
             'successor_owner': owner,
         }
         tenant.provider_evidence_json = evidence
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action=(
-            'tenant.release.native_successor_handback_verified'
-            if complete else 'tenant.release.native_successor_handback_recovery_required'
-        ),
-        summary=(
-            'Platform Admin relinquished Native governance metadata; fresh Discovery/Re-adopt is eligible.'
-            if complete else 'Incomplete Native successor handback; recovery required before Re-adopt.'
-        ),
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action=(
+                'tenant.release.native_successor_handback_verified'
+                if complete
+                else 'tenant.release.native_successor_handback_recovery_required'
+            ),
+            summary=(
+                'Platform Admin relinquished Native governance metadata; fresh Discovery/Re-adopt is eligible.'
+                if complete
+                else 'Incomplete Native successor handback; recovery required before Re-adopt.'
+            ),
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt

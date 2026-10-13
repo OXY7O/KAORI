@@ -22,8 +22,13 @@ from app.artifact_registry.presentation_overview import _provider_health_status,
     ],
 )
 def test_provider_composite_health_does_not_hide_unassessed_artifacts(
-    readiness: str, status: str, critical: int, high: int,
-    artifacts: int, scanned: int, label: str,
+    readiness: str,
+    status: str,
+    critical: int,
+    high: int,
+    artifacts: int,
+    scanned: int,
+    label: str,
 ) -> None:
     state = SimpleNamespace(status=status, last_error=None)
     actual, tone, reason = _provider_health_status(
@@ -31,8 +36,10 @@ def test_provider_composite_health_does_not_hide_unassessed_artifacts(
         state=state,
         snapshot={'is_stale': False},
         security={
-            'critical': critical, 'high': high,
-            'artifacts': artifacts, 'scanned': scanned,
+            'critical': critical,
+            'high': high,
+            'artifacts': artifacts,
+            'scanned': scanned,
         },
         inventory_ready=True,
     )
@@ -48,13 +55,17 @@ def test_provider_composite_health_does_not_hide_unassessed_artifacts(
     [(0, 0, 'No Artifacts'), (10, 0, 'Required'), (10, 2, 'Partial'), (10, 10, 'Available')],
 )
 def test_selected_provider_security_freshness_tracks_coverage(
-    total: int, scanned: int, label: str,
+    total: int,
+    scanned: int,
+    label: str,
 ) -> None:
     from datetime import UTC, datetime
 
     status, tone, _value = _security_freshness_status(
-        artifact_total=total, scanned_count=scanned,
-        committed_at=datetime.now(UTC), latest_security_at=datetime.now(UTC) if scanned else None,
+        artifact_total=total,
+        scanned_count=scanned,
+        committed_at=datetime.now(UTC),
+        latest_security_at=datetime.now(UTC) if scanned else None,
     )
     assert status == label
     if label == 'Partial':
@@ -64,11 +75,10 @@ def test_selected_provider_security_freshness_tracks_coverage(
 def test_security_aggregation_only_counts_successfully_scanned_vulnerabilities() -> None:
     from pathlib import Path
 
-    source = (
-        Path(__file__).resolve().parents[3] /
-        'app/artifact_registry/presentation_overview.py'
-    ).read_text(encoding='utf-8')
+    source = (Path(__file__).resolve().parents[3] / 'app/artifact_registry/presentation_overview.py').read_text(
+        encoding='utf-8'
+    )
     grouped = source.split('security_counts_query = (', 1)[1].split('scoped_provider_ids =', 1)[0]
-    assert grouped.count("func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)") >= 3
+    assert grouped.count('func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)') >= 3
     assert "RegistryArtifact.vulnerability_summary['critical'].as_integer()" in grouped
     assert "RegistryArtifact.vulnerability_summary['high'].as_integer()" in grouped

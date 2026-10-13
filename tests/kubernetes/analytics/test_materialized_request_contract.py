@@ -193,7 +193,9 @@ def test_pending_generation_never_queues_second_job_on_page_refresh(monkeypatch)
         result=SnapshotResult(None, None, 'pending', False),
     )
     monkeypatch.setattr(
-        materialization_requests, '_dependency_state', lambda **_kwargs: (None, None),
+        materialization_requests,
+        '_dependency_state',
+        lambda **_kwargs: (None, None),
     )
 
     def unexpected_dispatch(**_kwargs):
@@ -215,7 +217,9 @@ def test_failed_generation_can_be_queued_for_explicit_page_retry(monkeypatch) ->
         result=SnapshotResult(None, None, 'failed', False),
     )
     monkeypatch.setattr(
-        materialization_requests, '_dependency_state', lambda **_kwargs: (None, None),
+        materialization_requests,
+        '_dependency_state',
+        lambda **_kwargs: (None, None),
     )
     captured = []
 

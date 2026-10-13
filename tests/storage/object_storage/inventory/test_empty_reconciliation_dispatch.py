@@ -18,7 +18,11 @@ from app.storage.object_storage.inventory import job_adapter
     ],
 )
 def test_empty_reconciliation_dispatch_requires_explicit_authenticated_manual_authority(
-    monkeypatch, trigger, actor, confirmation, phrase,
+    monkeypatch,
+    trigger,
+    actor,
+    confirmation,
+    phrase,
 ) -> None:
     def forbidden(**_kwargs):
         pytest.fail('Unsafe request must never enqueue provider inventory sync')
@@ -54,11 +58,13 @@ def test_scoped_empty_reconciliation_dispatch_forwards_exact_selected_id(monkeyp
         },
     )
     assert result.status == 'queued'
-    assert calls == [{
-        'requested_by_user_id': 7,
-        'trigger_type': 'manual',
-        'confirm_empty_system_id': 'storage-1',
-    }]
+    assert calls == [
+        {
+            'requested_by_user_id': 7,
+            'trigger_type': 'manual',
+            'confirm_empty_system_id': 'storage-1',
+        }
+    ]
 
 
 def test_existing_scheduled_inventory_remains_normal_without_reconciliation(monkeypatch) -> None:
@@ -70,7 +76,8 @@ def test_existing_scheduled_inventory_remains_normal_without_reconciliation(monk
 
     monkeypatch.setattr(job_adapter, 'enqueue_all_object_storage_inventory_sync', enqueue)
     result = job_adapter.dispatch_object_storage_inventory_sync(
-        requested_by_user_id=None, trigger_type='scheduled',
+        requested_by_user_id=None,
+        trigger_type='scheduled',
     )
     assert result.status == 'queued'
     assert calls[0]['confirm_empty_system_id'] is None
@@ -94,5 +101,5 @@ def test_confirmed_empty_action_reuses_protected_job_configuration_and_csrf() ->
     assert 'name="confirmation_phrase"' in template
     assert 'CONFIRM EMPTY' in template
     assert "resource_group='object-storage-inventory:global'" in sync_jobs
-    assert "targets = [target]" in sync_jobs
-    assert "empty_reconciliation_evidence" in tasks
+    assert 'targets = [target]' in sync_jobs
+    assert 'empty_reconciliation_evidence' in tasks

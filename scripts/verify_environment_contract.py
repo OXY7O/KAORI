@@ -220,8 +220,7 @@ def verify() -> None:
             + ', '.join(leaking_bootstrap)
         )
     missing_development = sorted(
-        ((common_keys | development_compose_keys) - DEVCONTAINER_BOOTSTRAP_SECRET_KEYS)
-        - development_keys
+        ((common_keys | development_compose_keys) - DEVCONTAINER_BOOTSTRAP_SECRET_KEYS) - development_keys
     )
     if missing_development:
         raise AssertionError('.env.example is missing environment contract keys: ' + ', '.join(missing_development))

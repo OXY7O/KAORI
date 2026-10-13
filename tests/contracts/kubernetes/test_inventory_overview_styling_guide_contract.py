@@ -93,7 +93,7 @@ def test_inventory_overview_uses_grouped_counts_and_fresh_health_semantics() -> 
     assert 'ConfigurationInventory' in backend
     assert "'asset_catalog': asset_catalog" in backend
     assert "'configuration': _grouped_current_counts(ConfigurationInventory, cluster_ids)" in backend
-    assert "if connected and _collection_evidence_complete(inventory.collection_evidence):" in backend
+    assert 'if connected and _collection_evidence_complete(inventory.collection_evidence):' in backend
     assert 'healthy_clusters += 1' in backend
     assert 'def _inventory_guidance(' in backend
     assert "'active_signal_count': active_signal_count" in backend

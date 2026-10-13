@@ -21,8 +21,11 @@ from app.kubernetes.tenant.native_handoff_dry_run import (
 
 
 def classify_native_handoff_component(
-    *, before: Mapping[str, Any], current: Any,
-    tenant_id: str, successor_owner: str,
+    *,
+    before: Mapping[str, Any],
+    current: Any,
+    tenant_id: str,
+    successor_owner: str,
 ) -> dict[str, Any]:
     """Classify one exact provider object without mutating it."""
     key = (before.get('namespace'), before.get('kind'), before.get('name'), before.get('uid'))
@@ -32,16 +35,17 @@ def classify_native_handoff_component(
         or before.get('live_provider_unchanged') is not True
         or before.get('kind') not in {'Namespace', 'ResourceQuota', 'LimitRange'}
         or not all(isinstance(part, str) and part for part in key[1:])
-        or not tenant_id or not successor_owner or successor_owner == 'kaori'
+        or not tenant_id
+        or not successor_owner
+        or successor_owner == 'kaori'
     ):
         raise ValueError('No exact, passing Native preview and successor scope exists.')
     name, uid, resource_version, labels = _resource_metadata(current)
     if name != key[2] or uid != key[3] or not resource_version:
         raise ValueError('Provider object identity changed during ownership handoff.')
-    if (
-        before.get('spec_sha256') != _stable_sha256(_spec(current))
-        or before.get('retained_metadata_sha256') != _stable_sha256(_retained_provider_metadata(current))
-    ):
+    if before.get('spec_sha256') != _stable_sha256(_spec(current)) or before.get(
+        'retained_metadata_sha256'
+    ) != _stable_sha256(_retained_provider_metadata(current)):
         raise ValueError('Provider resource spec or external metadata changed during handoff.')
     if (
         resource_version == before.get('resource_version')
@@ -71,9 +75,11 @@ def classify_native_handoff_component(
 
 
 def summarize_native_handoff_recovery(
-    *, previewed_components: list[dict[str, Any]],
+    *,
+    previewed_components: list[dict[str, Any]],
     live_components: Mapping[tuple[str, str, str, str], Any],
-    tenant_id: str, successor_owner: str,
+    tenant_id: str,
+    successor_owner: str,
 ) -> dict[str, Any]:
     """Normalize full provider inventory, including safe partial-failure evidence.
 
@@ -83,16 +89,22 @@ def summarize_native_handoff_recovery(
     if not previewed_components or len(previewed_components) > 100:
         raise ValueError('Handoff preview inventory is empty or exceeds the bounded scope.')
     keys = [
-        (str(item.get('namespace') or ''), str(item.get('kind') or ''),
-         str(item.get('name') or ''), str(item.get('uid') or ''))
+        (
+            str(item.get('namespace') or ''),
+            str(item.get('kind') or ''),
+            str(item.get('name') or ''),
+            str(item.get('uid') or ''),
+        )
         for item in previewed_components
     ]
     if len(set(keys)) != len(keys) or set(live_components) != set(keys):
         raise ValueError('Live provider handoff inventory does not match the exact preview.')
     components = [
         classify_native_handoff_component(
-            before=before, current=live_components[key],
-            tenant_id=tenant_id, successor_owner=successor_owner,
+            before=before,
+            current=live_components[key],
+            tenant_id=tenant_id,
+            successor_owner=successor_owner,
         )
         for before, key in zip(previewed_components, keys, strict=True)
     ]
@@ -118,7 +130,9 @@ def summarize_native_handoff_recovery(
 
 
 def readback_proves_handoff_not_started(
-    receipt: Mapping[str, Any], *, plan: Mapping[str, Any],
+    receipt: Mapping[str, Any],
+    *,
+    plan: Mapping[str, Any],
 ) -> bool:
     """Narrow audit classification for an expired-plan restart, not authorization.
 
@@ -127,7 +141,8 @@ def readback_proves_handoff_not_started(
     The restart service still performs fresh authoritative provider preflight.
     """
     selected = [
-        item for item in (plan.get('handoff_components') or [])
+        item
+        for item in (plan.get('handoff_components') or [])
         if isinstance(item, dict) and item.get('handoff') == 'external_acceptance_required'
     ]
     recovery = receipt.get('recovery')
@@ -167,8 +182,10 @@ def readback_proves_handoff_not_started(
 
     def identity(item: Mapping[str, Any]) -> tuple[str, str, str, str]:
         return (
-            str(item.get('namespace') or ''), str(item.get('kind') or ''),
-            str(item.get('name') or ''), str(item.get('uid') or ''),
+            str(item.get('namespace') or ''),
+            str(item.get('kind') or ''),
+            str(item.get('name') or ''),
+            str(item.get('uid') or ''),
         )
 
     expected = {identity(item): item for item in selected}

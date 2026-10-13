@@ -2,6 +2,7 @@
 
 No PostgreSQL/database or Docker daemon is contacted.
 """
+
 from __future__ import annotations
 
 import json
@@ -22,15 +23,17 @@ def _sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     pgdata = tmp_path / 'pgdata'
     pgdata.mkdir()
     secret_dir = workspace / 'secrets' / 'devcontainer'
-    scope.update({
-        'ROOT': workspace,
-        'APP_ENV': workspace / '.env',
-        'PG_DATA': pgdata,
-        'SECRET_DIR': secret_dir,
-        'ADMIN_ENV': secret_dir / 'postgres-bootstrap.env',
-        'MIGRATOR_ENV': secret_dir / 'postgres-migrate.env',
-        'BACKUP_ENV': secret_dir / 'application-env-before-three-role.bak',
-    })
+    scope.update(
+        {
+            'ROOT': workspace,
+            'APP_ENV': workspace / '.env',
+            'PG_DATA': pgdata,
+            'SECRET_DIR': secret_dir,
+            'ADMIN_ENV': secret_dir / 'postgres-bootstrap.env',
+            'MIGRATOR_ENV': secret_dir / 'postgres-migrate.env',
+            'BACKUP_ENV': secret_dir / 'application-env-before-three-role.bak',
+        }
+    )
     (workspace / '.env.example').write_text(
         'APP_ENV=development\n'
         'POSTGRES_DB=kaori\n'
@@ -46,7 +49,8 @@ def _sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 def test_fresh_volume_generates_repo_ignored_credentials_and_runtime_url(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     main, s = _sandbox(tmp_path, monkeypatch)
     main()
@@ -66,7 +70,8 @@ def test_fresh_volume_generates_repo_ignored_credentials_and_runtime_url(
 
 
 def test_old_local_db_url_with_empty_pg_volume_is_backed_up_before_reconciliation(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     main, s = _sandbox(tmp_path, monkeypatch)
     old = (
@@ -86,7 +91,8 @@ def test_old_local_db_url_with_empty_pg_volume_is_backed_up_before_reconciliatio
 
 
 def test_preexisting_postgresql_data_never_gets_new_login_credentials(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     main, s = _sandbox(tmp_path, monkeypatch)
     (s['PG_DATA'] / 'PG_VERSION').write_text('16\n')
@@ -97,7 +103,8 @@ def test_preexisting_postgresql_data_never_gets_new_login_credentials(
 
 
 def test_partial_cluster_directory_fails_closed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     main, s = _sandbox(tmp_path, monkeypatch)
     (s['PG_DATA'] / 'global').mkdir()
@@ -106,7 +113,8 @@ def test_partial_cluster_directory_fails_closed(
 
 
 def test_partial_secrets_and_missing_app_env_are_rejected(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     main, s = _sandbox(tmp_path, monkeypatch)
     main()
@@ -120,7 +128,8 @@ def test_partial_secrets_and_missing_app_env_are_rejected(
 
 
 def test_existing_mismatched_runtime_url_aborts_without_replacement(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     main, s = _sandbox(tmp_path, monkeypatch)
     main()
@@ -131,12 +140,20 @@ def test_existing_mismatched_runtime_url_aborts_without_replacement(
     assert s['APP_ENV'].read_text() == modified
 
 
-@pytest.mark.parametrize('name', [
-    'KAORI_MIGRATOR_PASSWORD', 'KAORI_RUNTIME_PASSWORD',
-    'KAORI_DB_MIGRATION_URL', 'PGPASSWORD', 'POSTGRES_PASSWORD_FILE',
-])
+@pytest.mark.parametrize(
+    'name',
+    [
+        'KAORI_MIGRATOR_PASSWORD',
+        'KAORI_RUNTIME_PASSWORD',
+        'KAORI_DB_MIGRATION_URL',
+        'PGPASSWORD',
+        'POSTGRES_PASSWORD_FILE',
+    ],
+)
 def test_privileged_credentials_refused_in_shared_app_env(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    name: str,
 ) -> None:
     main, s = _sandbox(tmp_path, monkeypatch)
     s['APP_ENV'].write_text(f'APP_ENV=development\n{name}=secret\n')
@@ -146,12 +163,11 @@ def test_privileged_credentials_refused_in_shared_app_env(
 
 
 def test_untrusted_external_database_url_cannot_be_overwritten(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     main, s = _sandbox(tmp_path, monkeypatch)
-    s['APP_ENV'].write_text(
-        'APP_ENV=development\nDATABASE_URL=postgresql://owner:secret@external.example:5432/prod\n'
-    )
+    s['APP_ENV'].write_text('APP_ENV=development\nDATABASE_URL=postgresql://owner:secret@external.example:5432/prod\n')
     with pytest.raises(SystemExit, match='outside the approved local'):
         main()
     assert not s['ADMIN_ENV'].exists()
@@ -177,9 +193,5 @@ def test_native_windows_docker_command_checks_actual_db_volume() -> None:
 def test_live_secret_directory_ignored_by_git_and_docker_build() -> None:
     assert '/secrets/' in (ROOT / '.gitignore').read_text()
     assert '/secrets/' in (ROOT / '.dockerignore').read_text()
-    assert (
-        ROOT / '.devcontainer/examples/postgres-bootstrap.env.example'
-    ).is_file()
-    assert (
-        ROOT / '.devcontainer/examples/postgres-migrate.env.example'
-    ).is_file()
+    assert (ROOT / '.devcontainer/examples/postgres-bootstrap.env.example').is_file()
+    assert (ROOT / '.devcontainer/examples/postgres-migrate.env.example').is_file()

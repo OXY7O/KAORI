@@ -16,11 +16,11 @@ def test_external_access_inspection_reuses_tenant_workspaces_and_never_autogrant
 
     assert "tenant.provider_key != 'capsule'" in observation
     assert "'v1beta2' not in snapshot.tenant_api_versions" in observation
-    assert "source_uid != expected_uid" in observation
-    assert "AuditEvent.query.filter_by(target_type=_TARGET" in observation
+    assert 'source_uid != expected_uid' in observation
+    assert 'AuditEvent.query.filter_by(target_type=_TARGET' in observation
     assert "'rbac_mutation_performed': False" in observation
     assert "'identity_import_performed': False" in observation
-    assert "get_cluster_custom_object(" in observation
+    assert 'get_cluster_custom_object(' in observation
     assert 'patch_cluster_custom_object(' not in observation
     assert 'create_access_grant_committed(' not in observation
     assert 'add_user_membership_committed(' not in observation
@@ -33,7 +33,7 @@ def test_external_access_inspection_reuses_tenant_workspaces_and_never_autogrant
 
     assert "'recent_external_capsule_access'" in service
     assert "'external_capsule_tenants'" in service
-    assert ".limit(5).all()" in service
+    assert '.limit(5).all()' in service
     assert '_external_capsule_access_inventory.html' in workspace
     assert 'Inspect External Access' in ui
     assert 'role.permissions_sha256' not in ui

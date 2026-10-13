@@ -220,20 +220,20 @@ def test_registry_inventory_catalog_matches_canonical_kubernetes_card_hierarchy(
 
     assert "section_intro.render('Inventory Assets'," in overview
     assert "id='registry-asset-catalog'" in overview
-    assert "operational_section_card.render(" in overview
-    assert "header_badge=asset_badge" in overview
+    assert 'operational_section_card.render(' in overview
+    assert 'header_badge=asset_badge' in overview
     assert "table_label.metadata_label(inventory.asset_catalog|length ~ ' Asset Types', icon='layers-3')" in overview
     assert "body_classes='p-5'" in overview
-    assert "sm:grid-cols-2 xl:grid-cols-3" in overview
-    assert "inventory_asset_card.render(asset.title" in overview
-    assert "url_for(asset.endpoint)" in overview
-    assert "header_badge=asset_badge" in kubernetes
+    assert 'sm:grid-cols-2 xl:grid-cols-3' in overview
+    assert 'inventory_asset_card.render(asset.title' in overview
+    assert 'url_for(asset.endpoint)' in overview
+    assert 'header_badge=asset_badge' in kubernetes
     assert 'data-kaori-inventory-identity-icon' in cards
 
     assert "section_intro.render('Fleet Inventory Posture'," in overview
     assert "'Registry Fleet Evidence'" in overview
     assert "body_classes='p-0'" in overview
-    assert "posture_grid.render(inventory.fleet_posture_metrics, columns=3)" in overview
+    assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3)' in overview
     assert 'operational_callout.render(' not in overview
     assert "'fleet_posture_metrics': [" in presentation
     for label in ('Committed Providers', 'Snapshot Attention', 'Project Visibility'):

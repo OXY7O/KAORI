@@ -194,7 +194,9 @@ def collect_ingress_tls_usage(cluster: Cluster) -> dict[tuple[str, str], dict[st
     networking_api = build_kubernetes_client(cluster).networking_api()
     _collect_pages(
         lambda token: networking_api.list_ingress_for_all_namespaces(
-            limit=_TLS_PAGE_SIZE, _continue=token, _request_timeout=_TLS_REQUEST_TIMEOUT_SECONDS,
+            limit=_TLS_PAGE_SIZE,
+            _continue=token,
+            _request_timeout=_TLS_REQUEST_TIMEOUT_SECONDS,
         ),
         consume_page,
         kind='Ingress',
@@ -223,6 +225,7 @@ def collect_ingress_tls_usage(cluster: Cluster) -> dict[tuple[str, str], dict[st
         ]
 
     return usage_map
+
 
 def _coverage_evidence(
     *,
@@ -380,7 +383,9 @@ def collect_tls_certificate_batch(
         core_api = build_kubernetes_client(cluster).core_api()
         _collect_pages(
             lambda token: core_api.list_secret_for_all_namespaces(
-                limit=_TLS_PAGE_SIZE, _continue=token, _request_timeout=_TLS_REQUEST_TIMEOUT_SECONDS,
+                limit=_TLS_PAGE_SIZE,
+                _continue=token,
+                _request_timeout=_TLS_REQUEST_TIMEOUT_SECONDS,
             ),
             consume_page,
             kind='Secret',

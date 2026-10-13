@@ -1024,9 +1024,7 @@ def _verify_registry_blocked_hero_actions() -> None:
         source = _read(TEMPLATES / relative)
         calls = re.findall(r'page_hero\.context_card\((.*?)\)\s*}}', source, re.DOTALL)
         if len(calls) != expected_count:
-            raise AssertionError(
-                f'{relative}: expected {expected_count} Hero context-card calls, got {len(calls)}'
-            )
+            raise AssertionError(f'{relative}: expected {expected_count} Hero context-card calls, got {len(calls)}')
         for call in calls:
             if f'blocked={predicate}' not in call or 'blocked_info=' not in call:
                 raise AssertionError(

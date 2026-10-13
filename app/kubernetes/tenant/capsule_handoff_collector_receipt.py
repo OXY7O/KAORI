@@ -8,6 +8,7 @@ originated the mutation, or that an unrecorded/replayed batch never existed.
 No key is stored, logged, returned, read from user input, or wired into a
 runtime endpoint. Caller must supply server-owned key material out-of-band.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -26,12 +27,22 @@ from app.kubernetes.tenant.capsule_handoff_related_inventory import _canonical, 
 _SHA = re.compile(r'[a-f0-9]{64}\Z')
 _ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9._:-]{2,119}\Z')
 _MAX_AGE_SECONDS = 300
-_FIELDS = frozenset({
-    'contract_version', 'collector_id', 'key_id', 'batch_id',
-    'tenant_id', 'cluster_id', 'plan_sha256', 'worklist_sha256',
-    'resource_review_sha256', 'claims_sha256', 'captured_at',
-    'auth_tag_sha256',
-})
+_FIELDS = frozenset(
+    {
+        'contract_version',
+        'collector_id',
+        'key_id',
+        'batch_id',
+        'tenant_id',
+        'cluster_id',
+        'plan_sha256',
+        'worklist_sha256',
+        'resource_review_sha256',
+        'claims_sha256',
+        'captured_at',
+        'auth_tag_sha256',
+    }
+)
 _VERSION = 'capsule-apiserver-collector-receipt/v1'
 
 
@@ -49,7 +60,8 @@ def _utc_recent(value: Any, *, now: datetime) -> bool:
 
 
 def inspect_capsule_collector_receipt(
-    *, resource_report: Mapping[str, Any],
+    *,
+    resource_report: Mapping[str, Any],
     claims: list[Mapping[str, Any]],
     receipt: Mapping[str, Any],
     trusted_collector_id: str,
@@ -95,8 +107,7 @@ def inspect_capsule_collector_receipt(
         or receipt['worklist_sha256'] != resource_report.get('worklist_sha256')
         or receipt['resource_review_sha256'] != resource_report.get('resource_review_sha256')
         or any(
-            not isinstance(receipt[field], str)
-            or not _SHA.fullmatch(receipt[field])
+            not isinstance(receipt[field], str) or not _SHA.fullmatch(receipt[field])
             for field in ('claims_sha256', 'auth_tag_sha256')
         )
         or receipt['claims_sha256'] != _digest(claims)
@@ -129,8 +140,10 @@ def inspect_capsule_collector_receipt(
         'plan_sha256': resource_report['plan_sha256'],
         'worklist_sha256': resource_report['worklist_sha256'],
         'resource_review_sha256': resource_report['resource_review_sha256'],
-        'collector_id': trusted_collector_id, 'key_id': trusted_key_id,
-        'batch_id': receipt['batch_id'], 'claims_sha256': receipt['claims_sha256'],
+        'collector_id': trusted_collector_id,
+        'key_id': trusted_key_id,
+        'batch_id': receipt['batch_id'],
+        'claims_sha256': receipt['claims_sha256'],
         'collector_receipt_sha256': _digest(dict(receipt)),
         'collector_mac_verified': True,
         'collector_key_source_independently_attested': False,
@@ -139,6 +152,7 @@ def inspect_capsule_collector_receipt(
         'kubernetes_controller_identity_authenticated': False,
         'controller_origin_attested': False,
         'resource_specific_handoff_admitted': False,
-        'provider_execution_admitted': False, 'release_authorized': False,
+        'provider_execution_admitted': False,
+        'release_authorized': False,
         'secret_material_persisted': False,
     }

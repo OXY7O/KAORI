@@ -3,7 +3,6 @@ from __future__ import annotations
 from flask import Blueprint, render_template
 
 from app.access.rbac.decorators import any_permission_required
-
 from app.kubernetes.operations.configmaps.routes import (
     configmap_delete_target,
     configmap_editor,

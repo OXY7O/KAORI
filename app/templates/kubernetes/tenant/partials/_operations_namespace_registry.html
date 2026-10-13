@@ -114,20 +114,27 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(item.namespace, item.ownership_status|replace('_', ' ') |title ~ ' ownership', 'folder-tree') }}</td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.environment.tenant.name }}">{{ item.environment.tenant.name }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ item.environment.environment|title }}">{{ item.environment.environment|title }}</p>
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ item.environment.tenant.name }}">{{ item.environment.tenant.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ item.environment.environment|title }}">{{ item.environment.environment|title }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.resource_profile.name if item.resource_profile else 'No profile' }}">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="Snapshot v{{ item.resource_profile_version or '—' }}">Snapshot v{{ item.resource_profile_version or '—' }}</p>
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ item.resource_profile.name if item.resource_profile else 'No profile' }}">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="Snapshot v{{ item.resource_profile_version or '—' }}">Snapshot v{{ item.resource_profile_version or '—' }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}">{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}">{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}
-                            <p class="mt-1 text-xs leading-5 text-content-muted min-w-0 max-w-full truncate" title="{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
                         </td>
                     </tr>
                 {% else %}
@@ -144,14 +151,14 @@
         </table>
     </div>
     {{ registry_ui.footer('tenant.operations',
-            registry_id,
-            loading_id,
-            operations_namespace_pagination,
-            query_params,
-            operations_namespace_pagination.allowed_per_page,
-            resource_label='Namespaces',
-            rows_aria_label='Namespace rows per page',
-            control_name='operations-namespace',
-            page_param='ops_namespace_page',
-            per_page_param='ops_namespace_per_page') }}
+        registry_id,
+        loading_id,
+        operations_namespace_pagination,
+        query_params,
+        operations_namespace_pagination.allowed_per_page,
+        resource_label='Namespaces',
+        rows_aria_label='Namespace rows per page',
+        control_name='operations-namespace',
+        page_param='ops_namespace_page',
+        per_page_param='ops_namespace_per_page') }}
 </section>

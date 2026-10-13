@@ -10,9 +10,9 @@ from werkzeug.exceptions import NotFound
 
 from app.artifact_registry.correlation import runtime_correlation_evidence_readiness, runtime_input_signature
 from app.common.pagination import paginate_sequence
-from app.extensions.db import db
 from app.dashboards.common.operational import normalize_operational_tab
 from app.definitions.loader import load_definition_document
+from app.extensions.db import db
 from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.dashboard_recommendations import get_dashboard_recommendation_findings
@@ -135,25 +135,24 @@ def _registry_analytics_inputs_changed(snapshot: RegistryAnalyticsSnapshot | Non
     if runtime_input_signature(db.session) != evidence.get('correlation_input_signature'):
         return True
 
-    artifacts = RegistryArtifact.query.join(
-        RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
-    ).join(
-        RegistryProject, RegistryRepository.project_id == RegistryProject.id
-    ).filter(RegistryProject.integration_instance_id == source_id)
+    artifacts = (
+        RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(RegistryProject.integration_instance_id == source_id)
+    )
     latest_scan = artifacts.with_entities(func.max(RegistryArtifact.scan_completed_at)).scalar()
     scan_time = latest_scan.isoformat() if latest_scan else None
     if scan_time != evidence.get('security_latest_scan_at'):
         return True
 
-    latest_runtime = RegistryWorkloadBinding.query.join(
-        RegistryArtifact, RegistryWorkloadBinding.artifact_id == RegistryArtifact.id
-    ).join(
-        RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
-    ).join(
-        RegistryProject, RegistryRepository.project_id == RegistryProject.id
-    ).filter(
-        RegistryProject.integration_instance_id == source_id
-    ).with_entities(func.max(RegistryWorkloadBinding.observed_at)).scalar()
+    latest_runtime = (
+        RegistryWorkloadBinding.query.join(RegistryArtifact, RegistryWorkloadBinding.artifact_id == RegistryArtifact.id)
+        .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(RegistryProject.integration_instance_id == source_id)
+        .with_entities(func.max(RegistryWorkloadBinding.observed_at))
+        .scalar()
+    )
     runtime_time = latest_runtime.isoformat() if latest_runtime else None
     return runtime_time != evidence.get('runtime_observed_at')
 
@@ -184,17 +183,24 @@ def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict
     metrics = sections.get('metrics')
     governance = sections.get('evidence')
     partial = bool(
-        isinstance(metrics, dict) and metrics.get('status') != 'ready'
-        or isinstance(governance, dict) and governance.get('governance_status') not in {'ready', None}
+        isinstance(metrics, dict)
+        and metrics.get('status') != 'ready'
+        or isinstance(governance, dict)
+        and governance.get('governance_status') not in {'ready', None}
     )
     current = bool(valid and not stale and not inputs_changed and not partial)
     return {
         'status': snapshot.status,
         'label': (
-            'Current Snapshot' if current else
-            'Inputs Changed' if valid and inputs_changed else
-            'Stale Snapshot' if stale else
-            'Partial Evidence' if partial else 'Unavailable'
+            'Current Snapshot'
+            if current
+            else 'Inputs Changed'
+            if valid and inputs_changed
+            else 'Stale Snapshot'
+            if stale
+            else 'Partial Evidence'
+            if partial
+            else 'Unavailable'
         ),
         'tone': 'normal' if current else ('warning' if stale or inputs_changed or partial else 'unknown'),
         'generated_at': snapshot.generated_at,
@@ -358,8 +364,7 @@ def _registry_capacity_summary(
                 'label': 'Quota Utilization',
                 'value': f'{quota_utilization:.1f}%' if quota_utilization is not None else 'N/A',
                 'description': (
-                    f'{_fmt_bytes(round(float(posture["total_usage"])))} / '
-                    f'{_fmt_bytes(round(total_quota))} quota.'
+                    f'{_fmt_bytes(round(float(posture["total_usage"])))} / {_fmt_bytes(round(total_quota))} quota.'
                     if total_quota > 0
                     else 'No committed project quota denominator is available.'
                 ),
@@ -397,9 +402,7 @@ def _registry_capacity_forecast(
         'artifact_growth_per_day': (f'{float(growth["artifacts_per_day"]):.1f} artifacts/day' if observed else 'N/A'),
         'nearest_quota_days': f'{nearest_days:.1f} days' if nearest_days is not None else 'N/A',
         'risk': posture['risk'],
-        'detail': (
-            'Registry growth uses committed inventory changes and Metrics Source quota evidence.'
-        ),
+        'detail': ('Registry growth uses committed inventory changes and Metrics Source quota evidence.'),
     }
 
 
@@ -705,17 +708,20 @@ def _overview_kpi_values(
     if not committed_provider_ids:
         return {'projects': 0, 'repositories': 0, 'artifacts': 0, 'tags': 0}
 
-    project_query = RegistryProject.query.filter(
-        RegistryProject.integration_instance_id.in_(committed_provider_ids)
-    )
+    project_query = RegistryProject.query.filter(RegistryProject.integration_instance_id.in_(committed_provider_ids))
     repository_query = RegistryRepository.query.join(RegistryProject).filter(
         RegistryProject.integration_instance_id.in_(committed_provider_ids)
     )
-    artifact_query = RegistryArtifact.query.join(RegistryRepository).join(RegistryProject).filter(
-        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    artifact_query = (
+        RegistryArtifact.query.join(RegistryRepository)
+        .join(RegistryProject)
+        .filter(RegistryProject.integration_instance_id.in_(committed_provider_ids))
     )
-    tag_query = RegistryTag.query.join(RegistryArtifact).join(RegistryRepository).join(RegistryProject).filter(
-        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    tag_query = (
+        RegistryTag.query.join(RegistryArtifact)
+        .join(RegistryRepository)
+        .join(RegistryProject)
+        .filter(RegistryProject.integration_instance_id.in_(committed_provider_ids))
     )
     return {
         'projects': project_query.count(),
@@ -736,13 +742,15 @@ def _latest_registry_analytics(
     ranked = (
         db.session.query(
             RegistryAnalyticsSnapshot.id.label('snapshot_id'),
-            func.row_number().over(
+            func.row_number()
+            .over(
                 partition_by=RegistryAnalyticsSnapshot.integration_instance_id,
                 order_by=(
                     RegistryAnalyticsSnapshot.generated_at.desc(),
                     RegistryAnalyticsSnapshot.id.desc(),
                 ),
-            ).label('ordinal'),
+            )
+            .label('ordinal'),
         )
         .filter(
             RegistryAnalyticsSnapshot.integration_instance_id.in_(provider_ids),
@@ -752,9 +760,7 @@ def _latest_registry_analytics(
         .subquery()
     )
     rows = (
-        RegistryAnalyticsSnapshot.query.join(
-            ranked, RegistryAnalyticsSnapshot.id == ranked.c.snapshot_id
-        )
+        RegistryAnalyticsSnapshot.query.join(ranked, RegistryAnalyticsSnapshot.id == ranked.c.snapshot_id)
         .filter(ranked.c.ordinal == 1)
         .all()
     )

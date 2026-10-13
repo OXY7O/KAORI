@@ -78,9 +78,9 @@ def test_profile_workspace_is_full_width_without_right_information_column() -> N
     assert "identity_context.identity_state == 'Ready'" in profile
     assert "table_label.metadata_label('Local Identity', 'database')" in profile
     assert "table_label.status_indicator_label('Identity Linked', 'normal')" in profile
-    assert "table_label.status_label(identity_context.identity_state, identity_context.identity_tone)" in profile
+    assert 'table_label.status_label(identity_context.identity_state, identity_context.identity_tone)' in profile
     assert 'Provider Ready' not in profile
-    assert "identity_context.provider_name != identity_context.type_label" in profile
+    assert 'identity_context.provider_name != identity_context.type_label' in profile
     assert 'RBAC permissions enforced after authentication.' in profile
     assert 'Super Admin authority requires a Local Database identity.' in profile
     assert 'Password hashes and resets' in profile
@@ -123,7 +123,7 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert 'Session Ended' in activity
     assert "metadata.get('result_reason')" not in activity
     assert "table_label.status_indicator_label('Success', 'normal')" in activity
-    assert "is_logout and is_success" in activity
+    assert 'is_logout and is_success' in activity
     assert "table_label.metadata_label('Recorded', 'check')" in activity
     assert 'data-authentication-summary="compact-strip"' in activity
     assert 'data-authentication-event-feed="primary"' in activity
@@ -149,7 +149,7 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert 'Event Summary' in activity
     assert 'activity_summary.total' in activity
     assert 'max 5' in activity
-    assert "if activity_summary.failed" in activity
+    assert 'if activity_summary.failed' in activity
     assert 'None in this sample' in activity
     assert "table_label.status_indicator_label('Observed', 'critical')" in activity
     assert "table_label.status_indicator_label('Review', 'critical')" not in activity

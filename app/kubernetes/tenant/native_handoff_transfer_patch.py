@@ -44,9 +44,11 @@ def build_native_successor_handoff_patch(
     # Reuse the exact current proof of original KAORI ownership, UID, RV and
     # tenant ID. Never broaden the patch to quotas, RBAC or lifecycle fields.
     operations = build_native_handoff_patch(component, resource, tenant_id=tenant_id)
-    operations.append({
-        'op': 'add',
-        'path': _label_path('app.kubernetes.io/managed-by'),
-        'value': owner,
-    })
+    operations.append(
+        {
+            'op': 'add',
+            'path': _label_path('app.kubernetes.io/managed-by'),
+            'value': owner,
+        }
+    )
     return operations

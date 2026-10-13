@@ -4,6 +4,7 @@ Plan and approval AuditEvents are the sole decision authority. Multiple eligible
 viewers see the same committed request; inbox presentation creates no votes,
 permissions or provider writes. This never selects a named approver.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -26,7 +27,7 @@ _DISPLAY_LIMIT = 8
 
 def _plan_is_current(requested_at: object, now: datetime) -> bool:
     try:
-        timestamp = datetime.fromisoformat(str(requested_at or ""))
+        timestamp = datetime.fromisoformat(str(requested_at or ''))
     except (TypeError, ValueError):
         return False
     if timestamp.tzinfo is None:
@@ -45,42 +46,39 @@ def _present_handoff_request(
     now: datetime,
 ) -> dict[str, Any] | None:
     """Project one decision status from committed evidence (never infer approval)."""
-    sha = str(plan.get("plan_sha256") or "")
-    if len(sha) != 64 or str(plan.get("requested_by") or "") == str(user_id):
+    sha = str(plan.get('plan_sha256') or '')
+    if len(sha) != 64 or str(plan.get('requested_by') or '') == str(user_id):
         return None
-    if plan.get("status") != "pending_independent_approval":
+    if plan.get('status') != 'pending_independent_approval':
         return None
     evidence = approvals.get(sha)
     if sha != current_sha:
-        state = "Superseded"
-    elif evidence and evidence.get("status") == "acknowledged_pending_provider_handoff":
-        state = (
-            "Approved"
-            if str(evidence.get("approved_by") or "") == str(user_id)
-            else "Resolved by another reviewer"
-        )
-    elif not _plan_is_current(plan.get("requested_at"), now):
-        state = "Expired"
+        state = 'Superseded'
+    elif evidence and evidence.get('status') == 'acknowledged_pending_provider_handoff':
+        state = 'Approved' if str(evidence.get('approved_by') or '') == str(user_id) else 'Resolved by another reviewer'
+    elif not _plan_is_current(plan.get('requested_at'), now):
+        state = 'Expired'
     else:
-        state = "Pending"
+        state = 'Pending'
 
     return {
-        "tenant_name": tenant.name,
-        "tenant_id": str(tenant.id),
-        "plan_sha256": sha,
-        "state": state,
-        "is_pending": state == "Pending",
-        "requested_at": plan.get("requested_at"),
-        "change_reference": str(plan.get("change_reference") or ""),
-        "action_url": (
+        'tenant_name': tenant.name,
+        'tenant_id': str(tenant.id),
+        'plan_sha256': sha,
+        'state': state,
+        'is_pending': state == 'Pending',
+        'requested_at': plan.get('requested_at'),
+        'change_reference': str(plan.get('change_reference') or ''),
+        'action_url': (
             url_for(
-                "tenant.tenant_detail",
+                'tenant.tenant_detail',
                 tenant_id=tenant.id,
-                tenant_detail_section="release",
-                release_step="approval",
-                _anchor="tenant-release-governance",
+                tenant_detail_section='release',
+                release_step='approval',
+                _anchor='tenant-release-governance',
             )
-            if state == "Pending" else None
+            if state == 'Pending'
+            else None
         ),
     }
 
@@ -93,27 +91,24 @@ def get_tenant_release_work_inbox(*, user_id: int) -> dict[str, Any]:
     """
     viewer = User.query.filter_by(id=user_id).first()
     if (
-        viewer is None or not viewer.is_active
-        or not viewer.has_permission("tenant.manage")
-        or not viewer.has_permission("integrations.manage")
+        viewer is None
+        or not viewer.is_active
+        or not viewer.has_permission('tenant.manage')
+        or not viewer.has_permission('integrations.manage')
     ):
-        return {"items": [], "pending_count": 0, "total_count": 0}
+        return {'items': [], 'pending_count': 0, 'total_count': 0}
 
     plans = (
-        AuditEvent.query.filter_by(target_type=_PLAN_TARGET)
-        .order_by(AuditEvent.id.desc())
-        .limit(_HISTORY_LIMIT)
-        .all()
+        AuditEvent.query.filter_by(target_type=_PLAN_TARGET).order_by(AuditEvent.id.desc()).limit(_HISTORY_LIMIT).all()
     )
     ids = {str(row.target_id) for row in plans}
     if not ids:
-        return {"items": [], "pending_count": 0, "total_count": 0}
+        return {'items': [], 'pending_count': 0, 'total_count': 0}
 
     tenants = {
         str(tenant.id): tenant
         for tenant in Tenant.query.filter(Tenant.id.in_(ids)).all()
-        if tenant.ownership_status == "adopted"
-        and tenant.lifecycle_status == TenantLifecycleStatus.READY.value
+        if tenant.ownership_status == 'adopted' and tenant.lifecycle_status == TenantLifecycleStatus.READY.value
     }
     approvals = (
         AuditEvent.query.filter_by(target_type=_APPROVAL_TARGET)
@@ -125,7 +120,7 @@ def get_tenant_release_work_inbox(*, user_id: int) -> dict[str, Any]:
     approvals_by_sha: dict[str, dict[str, Any]] = {}
     for row in approvals:
         evidence = dict(row.metadata_json or {})
-        sha = str(evidence.get("plan_sha256") or "")
+        sha = str(evidence.get('plan_sha256') or '')
         if sha and sha not in approvals_by_sha:
             approvals_by_sha[sha] = evidence
 
@@ -135,7 +130,7 @@ def get_tenant_release_work_inbox(*, user_id: int) -> dict[str, Any]:
     for row in plans:
         tenant_id = str(row.target_id)
         plan = dict(row.metadata_json or {})
-        current_by_tenant.setdefault(tenant_id, str(plan.get("plan_sha256") or ""))
+        current_by_tenant.setdefault(tenant_id, str(plan.get('plan_sha256') or ''))
         tenant = tenants.get(tenant_id)
         if tenant is None:
             continue
@@ -152,9 +147,9 @@ def get_tenant_release_work_inbox(*, user_id: int) -> dict[str, Any]:
 
     # Prioritize current work over resolved history; preserve recent event order
     # within each group (stable sort). Committed approval state remains authority.
-    presented.sort(key=lambda item: not item["is_pending"])
+    presented.sort(key=lambda item: not item['is_pending'])
     return {
-        "items": presented[:_DISPLAY_LIMIT],
-        "pending_count": sum(bool(item["is_pending"]) for item in presented),
-        "total_count": len(presented),
+        'items': presented[:_DISPLAY_LIMIT],
+        'pending_count': sum(bool(item['is_pending']) for item in presented),
+        'total_count': len(presented),
     }

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
-SOURCE = (
-    Path(__file__).resolve().parents[3] / 'app/artifact_registry/presentation_inventory.py'
-).read_text(encoding='utf-8')
+SOURCE = (Path(__file__).resolve().parents[3] / 'app/artifact_registry/presentation_inventory.py').read_text(
+    encoding='utf-8'
+)
 
 
 def _section(name: str, next_name: str | None = None) -> str:
@@ -26,7 +25,7 @@ def test_repository_modal_limits_sql_artifact_and_tag_previews() -> None:
     assert 'RegistryArtifact.query.filter_by(repository_id=repository.id).count()' in section
     assert 'RegistryArtifact.digest.asc()' in section
     assert '.limit(25).all()' in section
-    assert "func.row_number().over(" in section
+    assert 'func.row_number().over(' in section
     assert 'tagged.c.tag_rank <= 3' in section
     assert 'RegistryTag.artifact_id.in_(artifact_ids)' in section
     assert 'repository.artifacts' not in section
@@ -43,7 +42,11 @@ def test_artifact_modal_limits_tag_rows_without_loading_all_tags() -> None:
 
 
 def test_detail_modal_contract_and_provider_boundaries_are_unchanged() -> None:
-    for name in ('build_inventory_project_detail', 'build_inventory_repository_detail', 'build_inventory_artifact_detail'):
+    for name in (
+        'build_inventory_project_detail',
+        'build_inventory_repository_detail',
+        'build_inventory_artifact_detail',
+    ):
         assert f'def {name}(' in SOURCE
     assert '_inventory_detail_provider_context(' in SOURCE
     assert 'build_client' not in SOURCE

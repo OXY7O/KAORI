@@ -108,13 +108,17 @@ def test_tls_validity_projection_filters_sorts_and_preserves_committed_facts(gov
     now = datetime.now(UTC)
     with governance_repository_app.app_context():
         cluster = Cluster(id='as-of-cluster', name='As-of', environment='production', status='connected')
-        db.session.add_all([
-            cluster,
-            TLSCertificateCollectionState(
-                cluster_id=cluster.id, secret_collection_status='collected',
-                ingress_mapping_status='collected', collected_at=now,
-            ),
-        ])
+        db.session.add_all(
+            [
+                cluster,
+                TLSCertificateCollectionState(
+                    cluster_id=cluster.id,
+                    secret_collection_status='collected',
+                    ingress_mapping_status='collected',
+                    collected_at=now,
+                ),
+            ]
+        )
         entries = (
             ('expired-now', now - timedelta(hours=2), 'healthy', 100),
             ('critical-now', now + timedelta(days=3), 'healthy', 100),
@@ -124,11 +128,18 @@ def test_tls_validity_projection_filters_sorts_and_preserves_committed_facts(gov
             ('parse-unknown', now - timedelta(days=3), 'unknown', None),
         )
         for name, expires_at, stored, days in entries:
-            db.session.add(TLSCertificateInventory(
-                cluster_id=cluster.id, namespace='default', secret_name=name,
-                status=stored, days_remaining=days, not_after=expires_at,
-                coverage_state='no_declared_hosts', collected_at=now - timedelta(days=2),
-            ))
+            db.session.add(
+                TLSCertificateInventory(
+                    cluster_id=cluster.id,
+                    namespace='default',
+                    secret_name=name,
+                    status=stored,
+                    days_remaining=days,
+                    not_after=expires_at,
+                    coverage_state='no_declared_hosts',
+                    collected_at=now - timedelta(days=2),
+                )
+            )
         db.session.commit()
 
         all_rows = service.get_tls_certificate_page({'cluster_id': cluster.id, 'per_page': '50'})
@@ -139,13 +150,18 @@ def test_tls_validity_projection_filters_sorts_and_preserves_committed_facts(gov
         assert all_rows['summary']['invalid'] == 1
         assert all_rows['summary']['unknown'] == 1
         assert [row.secret_name for row in all_rows['records'][:3]] == [
-            'expired-now', 'parse-invalid', 'critical-now',
+            'expired-now',
+            'parse-invalid',
+            'critical-now',
         ]
 
         for status, expected in (
-            ('expired', 'expired-now'), ('critical', 'critical-now'),
-            ('warning', 'renewal-now'), ('healthy', 'healthy-now'),
-            ('invalid', 'parse-invalid'), ('unknown', 'parse-unknown'),
+            ('expired', 'expired-now'),
+            ('critical', 'critical-now'),
+            ('warning', 'renewal-now'),
+            ('healthy', 'healthy-now'),
+            ('invalid', 'parse-invalid'),
+            ('unknown', 'parse-unknown'),
         ):
             result = service.get_tls_certificate_page({'cluster_id': cluster.id, 'status': status})
             assert [r.secret_name for r in result['records']] == [expected]
@@ -170,15 +186,22 @@ def test_failed_tls_secret_sync_does_not_advance_collected_evidence_clock(govern
         db.session.add(cluster)
         db.session.flush()
         service._persist_collection_state(
-            cluster.id, secret_status='collected', ingress_status='collected',
-            secret_detail=None, ingress_detail=None, collected_at=old,
+            cluster.id,
+            secret_status='collected',
+            ingress_status='collected',
+            secret_detail=None,
+            ingress_detail=None,
+            collected_at=old,
         )
         db.session.commit()
 
         service._persist_collection_state(
-            cluster.id, secret_status='collection_failed',
-            ingress_status='collected', secret_detail='API failure',
-            ingress_detail=None, collected_at=now,
+            cluster.id,
+            secret_status='collection_failed',
+            ingress_status='collected',
+            secret_detail='API failure',
+            ingress_detail=None,
+            collected_at=now,
         )
         db.session.commit()
         state = db.session.get(TLSCertificateCollectionState, cluster.id)
@@ -190,8 +213,12 @@ def test_failed_tls_secret_sync_does_not_advance_collected_evidence_clock(govern
         # Complete Secret collection with failed Ingress mapping is a new
         # Secret snapshot but not complete governance coverage.
         service._persist_collection_state(
-            cluster.id, secret_status='collected', ingress_status='permission_unavailable',
-            secret_detail=None, ingress_detail='Ingress API denied', collected_at=now,
+            cluster.id,
+            secret_status='collected',
+            ingress_status='permission_unavailable',
+            secret_detail=None,
+            ingress_detail='Ingress API denied',
+            collected_at=now,
         )
         db.session.commit()
         state = db.session.get(TLSCertificateCollectionState, cluster.id)
@@ -206,13 +233,19 @@ def test_incomplete_tls_collection_keeps_last_known_good_inventory(governance_re
     old = now - timedelta(days=3)
     with governance_repository_app.app_context():
         cluster = Cluster(id='failed-collector', name='Failed collector', environment='production', status='connected')
-        db.session.add_all([
-            cluster,
-            TLSCertificateInventory(
-                cluster_id=cluster.id, namespace='default', secret_name='last-good',
-                status='healthy', coverage_state='fully_covered', collected_at=old,
-            ),
-        ])
+        db.session.add_all(
+            [
+                cluster,
+                TLSCertificateInventory(
+                    cluster_id=cluster.id,
+                    namespace='default',
+                    secret_name='last-good',
+                    status='healthy',
+                    coverage_state='fully_covered',
+                    collected_at=old,
+                ),
+            ]
+        )
         db.session.commit()
 
         monkeypatch.setattr(

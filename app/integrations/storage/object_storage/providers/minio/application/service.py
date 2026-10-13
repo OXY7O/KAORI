@@ -185,9 +185,9 @@ def update_minio_instance(instance: MinioInstance, values: MinioRegistrationInpu
 
     metadata = dict(canonical.metadata_json or {})
     if source_changed:
-        metadata['object_storage_connection_generation'] = int(
-            metadata.get('object_storage_connection_generation') or 0
-        ) + 1
+        metadata['object_storage_connection_generation'] = (
+            int(metadata.get('object_storage_connection_generation') or 0) + 1
+        )
     canonical.metadata_json = {
         **metadata,
         'asset_type': OBJECT_STORAGE_SYSTEM_SCOPE,

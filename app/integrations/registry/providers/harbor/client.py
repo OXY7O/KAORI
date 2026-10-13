@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 import os
+from collections.abc import Callable
 from time import perf_counter, sleep
 from typing import Any
 from urllib.parse import quote
@@ -11,12 +11,12 @@ from requests import Response
 from requests.auth import HTTPBasicAuth
 
 from app.integrations.registry.providers.harbor.contracts import HarborConnectionResult, HarborRetryPolicy
-from app.integrations.registry.providers.harbor.transport_policy import validate_harbor_endpoint
 from app.integrations.registry.providers.harbor.exceptions import (
     HarborAuthError,
     HarborConnectionError,
     HarborResponseError,
 )
+from app.integrations.registry.providers.harbor.transport_policy import validate_harbor_endpoint
 
 _TRANSIENT_STATUS_CODES = frozenset({429, 502, 503, 504})
 
@@ -26,7 +26,6 @@ def _direct_get(url: str, **kwargs: Any) -> Response:
     with requests.Session() as session:
         session.trust_env = False
         return session.get(url, allow_redirects=False, **kwargs)
-
 
 
 class HarborClient:

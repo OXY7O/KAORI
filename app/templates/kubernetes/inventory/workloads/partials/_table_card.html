@@ -23,8 +23,8 @@
     header_actions=inventory_header_actions,
     result_count=pagination.total_items,
     title_extra=info_tip.render('k8s-inventory-workloads-title', 'Workload Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
-        'Managed Pods: Pod replicas managed by the workload controller, including its observed desired and current state.',
-        'Update Strategy: Controls how a workload rolls out changes, such as RollingUpdate or Recreate; the displayed value is configuration evidence, not a rollout result.'
+    'Managed Pods: Pod replicas managed by the workload controller, including its observed desired and current state.',
+    'Update Strategy: Controls how a workload rolls out changes, such as RollingUpdate or Recreate; the displayed value is configuration evidence, not a rollout result.'
     ], placement='right', variant='guide')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">

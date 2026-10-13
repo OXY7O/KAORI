@@ -719,9 +719,7 @@ def build_storage_posture(
         return {
             'label': 'Limited Evidence',
             'tone': 'unknown',
-            'reason': (
-                f'{complete_domains}/3 storage evidence domains complete; gaps remain Unknown.'
-            ),
+            'reason': (f'{complete_domains}/3 storage evidence domains complete; gaps remain Unknown.'),
             'evidence_complete': False,
             'critical_count': 0,
             'warning_count': 0,

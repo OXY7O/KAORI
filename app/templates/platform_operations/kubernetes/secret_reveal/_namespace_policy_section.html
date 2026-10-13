@@ -94,7 +94,8 @@
                name="per_page"
                value="{{ namespace_pagination.per_page }}">
         <div class="min-w-[220px] flex-1">
-            <label for="secret-reveal-namespace-search" class="{{ table_ui.filter_label_classes() }}">Search Namespace</label>
+            <label for="secret-reveal-namespace-search"
+                   class="{{ table_ui.filter_label_classes() }}">Search Namespace</label>
             <div class="relative">
                 <i data-lucide="search"
                    class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
@@ -108,8 +109,10 @@
             </div>
         </div>
         <div class="min-w-[220px] flex-1">
-            <label for="secret-reveal-namespace-policy-filter" class="{{ table_ui.filter_label_classes() }}">Reveal Policy</label>
-            <select id="secret-reveal-namespace-policy-filter" name="namespace_policy"
+            <label for="secret-reveal-namespace-policy-filter"
+                   class="{{ table_ui.filter_label_classes() }}">Reveal Policy</label>
+            <select id="secret-reveal-namespace-policy-filter"
+                    name="namespace_policy"
                     class="{{ table_ui.filter_select_classes() }}">
                 {% for value, label in namespace_filter_options.items() %}
                     <option value="{{ value }}"

@@ -59,18 +59,30 @@ def test_kubernetes_inventory_modal_values_keep_identifiers_without_copy_control
         assert 'data-kaori-copy-root' not in template, resource
 
     for path, expected in (
-        ('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html',
-         "inventory_technical_row('UID', namespace.uid)"),
-        ('app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html',
-         "inventory_technical_row('UID', workload.uid)"),
-        ('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html',
-         "inventory_technical_row('Kubernetes UID', pod.uid)"),
-        ('app/templates/kubernetes/inventory/services/partials/_service_detail_content.html',
-         "inventory_technical_row('Kubernetes UID', service.uid)"),
-        ('app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html',
-         "inventory_technical_row('Kubernetes UID', ingress.uid)"),
-        ('app/templates/kubernetes/inventory/storage/partials/_storage_detail_content.html',
-         "inventory_technical_row('Kubernetes UID', item.uid)"),
+        (
+            'app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html',
+            "inventory_technical_row('UID', namespace.uid)",
+        ),
+        (
+            'app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html',
+            "inventory_technical_row('UID', workload.uid)",
+        ),
+        (
+            'app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html',
+            "inventory_technical_row('Kubernetes UID', pod.uid)",
+        ),
+        (
+            'app/templates/kubernetes/inventory/services/partials/_service_detail_content.html',
+            "inventory_technical_row('Kubernetes UID', service.uid)",
+        ),
+        (
+            'app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html',
+            "inventory_technical_row('Kubernetes UID', ingress.uid)",
+        ),
+        (
+            'app/templates/kubernetes/inventory/storage/partials/_storage_detail_content.html',
+            "inventory_technical_row('Kubernetes UID', item.uid)",
+        ),
     ):
         assert expected in read(path)
 
@@ -116,7 +128,6 @@ def test_shared_inventory_renderers_ignore_legacy_copyable_inputs() -> None:
     assert 'data-kaori-copy-button' in source
 
 
-
 def test_cluster_and_node_detail_section_descriptions_are_concise() -> None:
     cluster = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
@@ -145,8 +156,6 @@ def test_cluster_and_node_detail_section_descriptions_are_concise() -> None:
     assert 'Placement eligibility, readiness, pressure conditions' not in node
 
 
-
-
 def test_cluster_breakdown_uses_existing_metadata_badge_without_health_claim() -> None:
     cluster = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
     shared = read('app/templates/components/details/_detail_content.html')
@@ -157,11 +166,12 @@ def test_cluster_breakdown_uses_existing_metadata_badge_without_health_claim() -
         "description='Committed objects by resource type.')"
     ) in cluster
     assert "macro inventory_section(title, icon, badge=None, badge_type='metadata'" in shared
-    assert "table_label.metadata_label(badge, none, false, badge_size)" in shared
-    assert "Cluster name, version, connection." in cluster
-    assert "Collection, source, freshness." in cluster
+    assert 'table_label.metadata_label(badge, none, false, badge_size)' in shared
+    assert 'Cluster name, version, connection.' in cluster
+    assert 'Collection, source, freshness.' in cluster
     assert 'data-kaori-inventory-section-description' in shared
     assert 'break-words text-xs leading-5' in shared
+
 
 def test_namespace_detail_context_is_compact_and_uid_has_no_clipboard_control() -> None:
     from jinja2 import Environment, FileSystemLoader

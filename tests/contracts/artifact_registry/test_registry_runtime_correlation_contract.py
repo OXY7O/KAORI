@@ -149,16 +149,16 @@ def test_runtime_generation_freshness_and_active_scope_contract() -> None:
     assert 'def runtime_input_signature(' in correlation
     assert 'ClusterInventory.collected_at' in correlation
     assert 'RegistryCollectionState.last_committed_at' in correlation
-    assert "if runtime_input_signature(materialization_session) != input_signature:" in correlation
+    assert 'if runtime_input_signature(materialization_session) != input_signature:' in correlation
     assert "'input_signature': input_signature" in correlation
-    assert "latest_success.result_summary_json" in presentation
+    assert 'latest_success.result_summary_json' in presentation
     assert "status, tone = 'Inputs Changed', 'warning'" in presentation
     assert "description = 'Inputs changed or correlation lacks generation proof; rebuild.'" in presentation
     assert 'or the previous correlation has no input-generation proof.' not in presentation
     assert 'RegistryProject.integration_instance_id.in_(active_source_ids)' in presentation
     assert 'RegistryProject.integration_instance_id.in_(source_ids)' in presentation
-    assert "IntegrationInstance.enabled.is_(True)" in prerequisites
-    assert "def _runtime_scope_id(name: str)" in routes
+    assert 'IntegrationInstance.enabled.is_(True)' in prerequisites
+    assert 'def _runtime_scope_id(name: str)' in routes
 
 
 def test_runtime_read_and_materialization_bounded_projection() -> None:
@@ -179,9 +179,7 @@ def test_runtime_read_and_materialization_bounded_projection() -> None:
 def test_runtime_binding_detail_template_compiles_and_handles_optional_containers() -> None:
     from jinja2 import Environment
 
-    source = (
-        ROOT / 'app/templates/artifact_registry/partials/_runtime_binding_detail.html'
-    ).read_text()
+    source = (ROOT / 'app/templates/artifact_registry/partials/_runtime_binding_detail.html').read_text()
     env = Environment(autoescape=True)
     # Plain Jinja lacks application filters; register stubs for compilation.
     env.filters['environment_name'] = lambda value, empty='Not Set': value
@@ -213,6 +211,7 @@ def test_runtime_binding_detail_template_compiles_and_handles_optional_container
     assert "detail.inventory_technical_row('Image Reference'" in source
     assert 'Security Exposure' in source
     assert 'Correlation Evidence' in source
+
 
 def test_pod_inventory_refresh_preserves_runtime_binding_foreign_keys() -> None:
     persistence = (ROOT / 'app/kubernetes/inventory/persistence.py').read_text()
