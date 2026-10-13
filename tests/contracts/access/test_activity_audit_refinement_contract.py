@@ -263,7 +263,9 @@ def test_activity_detail_links_only_permissioned_committed_source_workspaces() -
     assert "current_user.has_permission('jobs.view')" in routes
     assert "current_user.has_permission('tenant.view')" in routes
     assert "current_user.has_permission('tenant.manage')" in routes
-    assert 'if not can_view_jobs and not can_view_tenants:' in links
+    # Deny links unless one of the separately permissioned committed sources is visible.
+    assert 'if not can_view_jobs and not can_view_tenants and not can_view_deliveries:' in links
+    assert 'if can_view_deliveries:' in links
     assert "metadata.get('job_public_id')" in links
     assert 'JobExecution.query.filter_by(public_id=job_id).first()' in links
     assert "url_for('jobs.executions', execution_tab='registry', search=job_id)" in links
@@ -305,8 +307,13 @@ def test_activity_audit_administrative_source_scope_is_read_only_and_permission_
     assert "AuditEvent.target_type.in_(specification['target_types'])" in source
     assert 'paginate_query(query, page=page, per_page=normalized_per_page)' in source
     assert 'if selected not in available:' in source
-    assert 'if can_view_jobs and event.target_type' in source
-    assert 'job = JobExecution.query.filter_by(public_id=event.target_id).first()' in source
+    # The visible page is resolved in one permission-gated batched lookup;
+    # restoring an N+1 query would be a regression, not a contract repair.
+    assert "event.target_type == 'job_execution' and event.target_id" in source
+    assert 'JobExecution.public_id.in_(job_ids)' in source
+    assert 'if can_view_jobs and job_ids' in source
+    assert 'job = hot_jobs.get(str(event.target_id))' in source
+    assert 'JobExecution.query.filter_by(public_id=event.target_id).first()' not in source
     assert 'redact_operational_text(event.summary, limit=255)' in source
     assert 'FK only (not a snapshot)' in source
     assert 'metadata_json' not in partial
@@ -372,7 +379,8 @@ def test_activity_audit_inventory_hierarchy_and_shared_two_tab_workspace() -> No
     assert "'display_action': display_action" in source
     assert 'job_operation_label(job.operation)' in source
     assert 'redact_operational_text(' in source
-    assert 'display_action = f"{specification[' in source
+    assert 'display_action = f\'{specification["label"]}' in source
+    assert 'action_suffix.replace("_", " ").title()' in source
     assert "'status_tone': status_tone" in source
     assert "'actor_detail': 'Actor FK · not a snapshot'" in source
     assert "action_suffix.endswith('partially_succeeded')" in source
