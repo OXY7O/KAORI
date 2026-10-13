@@ -4,6 +4,7 @@ import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from unittest.mock import patch
 
 from playwright.sync_api import Page, expect
 
@@ -791,3 +792,97 @@ def test_notification_center_filters_and_rows_survive_htmx_reset(
         expect(page.locator('[data-kaori-clear-filters]')).to_have_count(0)
         assert_document_fits_viewport(page)
         expect(page.get_by_text('No Matching Notifications')).to_be_visible()
+
+
+def test_failed_generated_report_detail_is_truthful_and_responsive(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """UAT-RPT-003: render the real failed-detail template in a controlled browser."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+    report_id = 47
+    failure_message = 'Report queue registration failed in the isolated QA fixture.'
+    payload = {
+        'page_title': 'Report Detail',
+        'page_subtitle': 'Review report metadata, artifacts, and recovery evidence.',
+        'registry_return_url': '/reports/generated',
+        'poll_interval_seconds': None,
+        'job_execution': None,
+        'artifact_access_notice': None,
+        'report': {
+            'id': report_id,
+            'name': 'Controlled Failed Report',
+            'raw_status': 'failed',
+            'status': 'Failed',
+            'report_icon': 'file-x',
+            'report_type': 'Inventory Overview',
+            'scope': 'QA Fixture',
+            'scope_label': 'Cluster',
+            'secondary_scope': 'All Namespaces',
+            'period': '30 days',
+            'output_format': 'CSV',
+            'artifact_label': 'CSV',
+            'generate_artifact_label': 'Generate Artifact',
+            'file_state': {'icon': 'file-x', 'tone': 'red', 'label': 'Not Generated'},
+            'can_download_artifact': False,
+            'can_generate_artifact': False,
+            'can_restore_report': False,
+            'can_archive_report': False,
+            'file_path': None,
+            'file_exists': False,
+            'file_size': 'N/A',
+            'storage_backend_label': 'No Artifact',
+            'storage_object_key': 'N/A',
+            'storage_uri_display': 'N/A',
+            'generated_by': 'QA Fixture Operator',
+            'generated_by_meta': {'status_label': 'Test Fixture'},
+            'created_at': '2026-10-13',
+            'sections': [{'label': 'Inventory Assets'}],
+            'sections_count': 1,
+            'error_message': failure_message,
+        },
+    }
+
+    with (
+        patch('app.reports.generated.routes.get_report_detail_payload', return_value=payload),
+        _browser_evidence(page, 'uat-rpt-003-failed-report-detail', viewport_name),
+    ):
+        _login(page, kaori_authenticated_base_url)
+        response = page.goto(
+            f'{kaori_authenticated_base_url}/reports/generated/{report_id}',
+            wait_until='networkidle',
+        )
+        assert response is not None
+        assert response.ok
+
+        detail = page.locator('[data-generated-report-detail]')
+        expect(detail).to_be_visible()
+        expect(page.get_by_role('heading', name='Controlled Failed Report')).to_be_visible()
+        expect(page.locator('[data-generated-detail-generation-note]')).to_contain_text(
+            failure_message
+        )
+        expect(page.get_by_text('No Job Execution Linked', exact=True)).to_be_visible()
+        expect(page.locator('[data-generated-detail-primary-action="download"]')).to_have_count(0)
+        expect(page.locator('[data-generated-detail-primary-action="regenerate"]')).to_have_count(0)
+        assert detail.get_attribute('hx-trigger') is None
+        assert_document_fits_viewport(page)
+        assert_locator_within_document_width(
+            page,
+            page.locator('[data-generated-detail-report-actions]'),
+            label='Failed report detail actions',
+        )
+        page.screenshot(
+            path=str(EVIDENCE_ROOT / f'uat-rpt-003-failed-detail-light-{viewport_name}.png'),
+            full_page=True,
+            animations='disabled',
+        )
+
+        _load_persisted_visual_theme(page, 'dark')
+        expect(page.locator('[data-generated-detail-generation-note]')).to_contain_text(
+            failure_message
+        )
+        expect(page.locator('[data-generated-detail-primary-action="download"]')).to_have_count(0)
+        assert page.locator('[data-generated-report-detail]').get_attribute('hx-trigger') is None
+        assert_document_fits_viewport(page)
