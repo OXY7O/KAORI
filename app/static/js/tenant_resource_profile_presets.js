@@ -282,13 +282,19 @@
         detailTabs.forEach((button, index) => {
             button.addEventListener('click', () => selectDetail(button.dataset.tenantAllocationDetailTab))
             button.addEventListener('keydown', (event) => {
-                const move = ['ArrowRight', 'ArrowDown'].includes(event.key) ? 1
-                    : ['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 0
+                const move = ['ArrowRight', 'ArrowDown'].includes(event.key)
+                    ? 1
+                    : ['ArrowLeft', 'ArrowUp'].includes(event.key)
+                      ? -1
+                      : 0
                 if (!move && event.key !== 'Home' && event.key !== 'End') return
                 event.preventDefault()
-                const next = event.key === 'Home' ? 0
-                    : event.key === 'End' ? detailTabs.length - 1
-                      : (index + move + detailTabs.length) % detailTabs.length
+                const next =
+                    event.key === 'Home'
+                        ? 0
+                        : event.key === 'End'
+                          ? detailTabs.length - 1
+                          : (index + move + detailTabs.length) % detailTabs.length
                 selectDetail(detailTabs[next].dataset.tenantAllocationDetailTab, true)
             })
         })
@@ -305,12 +311,16 @@
         const displayValue = (source, key, value) => {
             if (value === null || value === undefined || value === '') {
                 const boundedQuotaKeys = [
-                    'requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory',
-                    'pods', 'requests.storage',
+                    'requests.cpu',
+                    'limits.cpu',
+                    'requests.memory',
+                    'limits.memory',
+                    'pods',
+                    'requests.storage',
                 ]
-                return source === 'storage_policy'
-                    || (source === 'quota' && boundedQuotaKeys.includes(key))
-                    ? 'Unbounded' : 'Not declared'
+                return source === 'storage_policy' || (source === 'quota' && boundedQuotaKeys.includes(key))
+                    ? 'Unbounded'
+                    : 'Not declared'
             }
             return String(value)
         }
@@ -318,7 +328,8 @@
         const renderAdvancedComparison = (current, profile, namespaceId, profileId) => {
             const recorded = current?.advanced_evidence
             const recordedControls = recorded?.recorded ? recorded.controls || {} : {}
-            const proposedControls = profileId === 'adopted_baseline' ? recordedControls : profile?.advanced_controls || {}
+            const proposedControls =
+                profileId === 'adopted_baseline' ? recordedControls : profile?.advanced_controls || {}
             const evaluated = advancedPreflight[namespaceId]?.[profileId] || {}
             let visible = 0
 
@@ -342,15 +353,16 @@
                         : currentControl.state === 'unsupported'
                           ? 'Unavailable · Recorded'
                           : 'Configured · Recorded'
-                const proposedStatus = profileId === 'adopted_baseline'
-                    ? 'Same as current · Not verified'
-                    : !requested
-                      ? 'Not configured'
-                      : proposedControl?.state === 'enabled'
-                        ? 'Supported · Preflight'
-                        : proposedControl?.state === 'unsupported'
-                          ? 'Unavailable · Preflight'
-                          : 'Configured · Preflight pending'
+                const proposedStatus =
+                    profileId === 'adopted_baseline'
+                        ? 'Same as current · Not verified'
+                        : !requested
+                          ? 'Not configured'
+                          : proposedControl?.state === 'enabled'
+                            ? 'Supported · Preflight'
+                            : proposedControl?.state === 'unsupported'
+                              ? 'Unavailable · Preflight'
+                              : 'Configured · Preflight pending'
                 if (currentCell) {
                     currentCell.textContent = currentStatus
                     currentCell.title = currentControl?.reason || 'No verified provider execution evidence.'
@@ -373,9 +385,19 @@
             if (!match) return null
             const multipliers = {
                 m: 0.001,
-                k: 1e3, K: 1e3, M: 1e6, G: 1e9, T: 1e12, P: 1e15, E: 1e18,
-                Ki: 2 ** 10, Mi: 2 ** 20, Gi: 2 ** 30,
-                Ti: 2 ** 40, Pi: 2 ** 50, Ei: 2 ** 60,
+                k: 1e3,
+                K: 1e3,
+                M: 1e6,
+                G: 1e9,
+                T: 1e12,
+                P: 1e15,
+                E: 1e18,
+                Ki: 2 ** 10,
+                Mi: 2 ** 20,
+                Gi: 2 ** 30,
+                Ti: 2 ** 40,
+                Pi: 2 ** 50,
+                Ei: 2 ** 60,
             }
             const value = Number(match[1]) * (multipliers[match[2]] ?? 1)
             return Number.isFinite(value) ? value : null
@@ -438,16 +460,23 @@
                 cell.classList.toggle('text-content-primary', !differs)
             })
 
-            const changed = current && proposed ? highlightDimensions.flatMap(([label, source, key]) => {
-                const before = contractValue(current, source, key)
-                const after = contractValue(proposed, source, key)
-                return classifyChange(before, after) ? [{ label, source, key, before, after }] : []
-            }) : []
+            const changed =
+                current && proposed
+                    ? highlightDimensions.flatMap(([label, source, key]) => {
+                          const before = contractValue(current, source, key)
+                          const after = contractValue(proposed, source, key)
+                          return classifyChange(before, after) ? [{ label, source, key, before, after }] : []
+                      })
+                    : []
 
             const count = form.querySelector('[data-tenant-allocation-highlight-count]')
-            if (count) count.textContent = !current || !proposed
-                ? 'Choose contracts' : changed.length === 0
-                  ? 'No changes' : `${changed.length} changes`
+            if (count)
+                count.textContent =
+                    !current || !proposed
+                        ? 'Choose contracts'
+                        : changed.length === 0
+                          ? 'No changes'
+                          : `${changed.length} changes`
 
             const rows = Array.from(form.querySelectorAll('[data-tenant-allocation-highlight-item]'))
             rows.forEach((row, index) => {
@@ -503,8 +532,12 @@
     // capacity approval or Native ResourceQuota ownership from this diff.
     const renderCapsuleQuotaPreview = (form, current, proposed) => {
         const dimensions = [
-            'requests.cpu', 'limits.cpu', 'requests.memory',
-            'limits.memory', 'pods', 'requests.storage',
+            'requests.cpu',
+            'limits.cpu',
+            'requests.memory',
+            'limits.memory',
+            'pods',
+            'requests.storage',
         ]
         const value = (quota, key) => quota?.[key] ?? null
         const formatted = (quota, key) => {
@@ -524,9 +557,8 @@
             return
         }
         const changed = dimensions.filter((key) => formatted(current, key) !== formatted(proposed, key)).length
-        summary.textContent = changed === 0
-            ? 'No quota differences'
-            : `${changed} of 6 quota dimensions differ · Read only`
+        summary.textContent =
+            changed === 0 ? 'No quota differences' : `${changed} of 6 quota dimensions differ · Read only`
     }
 
     const initSharedAllocationForm = (form) => {
@@ -563,7 +595,11 @@
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
             if (proposedCpu) proposedCpu.textContent = proposed ? requestValue(proposed.quota, 'cpu') : '—'
             if (proposedMemory) proposedMemory.textContent = proposed ? requestValue(proposed.quota, 'memory') : '—'
-            renderCapsuleQuotaPreview(form, current ? current.current_quota || {} : null, proposed ? proposed.quota || {} : null)
+            renderCapsuleQuotaPreview(
+                form,
+                current ? current.current_quota || {} : null,
+                proposed ? proposed.quota || {} : null
+            )
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -616,7 +652,11 @@
             }
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
             if (proposedSummary) proposedSummary.textContent = proposed ? quotaSummary(proposed.quota) : '—'
-            renderCapsuleQuotaPreview(form, current ? current.current_quota || {} : null, proposed ? proposed.quota || {} : null)
+            renderCapsuleQuotaPreview(
+                form,
+                current ? current.current_quota || {} : null,
+                proposed ? proposed.quota || {} : null
+            )
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -649,7 +689,11 @@
             if (nextProfile) nextProfile.textContent = proposed ? proposedLabel : '—'
             if (summary) summary.textContent = state ? quotaSummary(state.desired_quota) : '—'
             if (proposedSummary) proposedSummary.textContent = proposed ? quotaSummary(proposed.quota) : '—'
-            renderCapsuleQuotaPreview(form, state ? state.desired_quota || {} : null, proposed ? proposed.quota || {} : null)
+            renderCapsuleQuotaPreview(
+                form,
+                state ? state.desired_quota || {} : null,
+                proposed ? proposed.quota || {} : null
+            )
         }
 
         tenantSelect?.addEventListener('change', render)

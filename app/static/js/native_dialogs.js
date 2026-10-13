@@ -39,8 +39,7 @@
     let pendingDialogId = null
     document.addEventListener('htmx:beforeSwap', (event) => {
         const workspace = event.detail?.target || event.target
-        if (!(workspace instanceof HTMLElement) || workspace.id !== 'tenant-admin-workspace')
-            return
+        if (!(workspace instanceof HTMLElement) || workspace.id !== 'tenant-admin-workspace') return
         const opened = workspace.querySelector(
             'dialog[data-kaori-native-dialog][data-kaori-dialog-preserve-on-swap][open]'
         )
@@ -49,8 +48,7 @@
 
     document.addEventListener('htmx:afterSwap', (event) => {
         const workspace = event.detail?.target || event.target
-        if (!(workspace instanceof HTMLElement) || workspace.id !== 'tenant-admin-workspace')
-            return
+        if (!(workspace instanceof HTMLElement) || workspace.id !== 'tenant-admin-workspace') return
         const targetId = pendingDialogId
         pendingDialogId = null
         if (!targetId) return
@@ -67,9 +65,7 @@
     // Tenant. Never auto-open an arbitrary ID: the server emits this marker
     // only when the Tenant is present on the authorized registry page.
     const openSelectedDialog = (root = document) => {
-        const dialog = root.querySelector?.(
-            'dialog[data-kaori-native-dialog][data-kaori-dialog-auto-open]'
-        )
+        const dialog = root.querySelector?.('dialog[data-kaori-native-dialog][data-kaori-dialog-auto-open]')
         if (dialog instanceof HTMLDialogElement) showDialog(dialog)
     }
     if (document.readyState === 'loading') {
@@ -79,8 +75,7 @@
     }
     document.addEventListener('htmx:afterSwap', (event) => {
         const workspace = event.detail?.target || event.target
-        if (workspace instanceof HTMLElement && workspace.id === 'tenant-admin-workspace')
-            openSelectedDialog(workspace)
+        if (workspace instanceof HTMLElement && workspace.id === 'tenant-admin-workspace') openSelectedDialog(workspace)
     })
 
     const closeDialog = (control) => {
@@ -99,7 +94,11 @@
             // Opt-in native dialog transition keeps only one top-layer dialog
             // active while the browser owns focus containment and restoration.
             const current = opener.closest(dialogSelector)
-            if (opener.matches('[data-kaori-dialog-transition]') && current instanceof HTMLDialogElement && current.open)
+            if (
+                opener.matches('[data-kaori-dialog-transition]') &&
+                current instanceof HTMLDialogElement &&
+                current.open
+            )
                 current.close()
             openDialog(opener)
             return

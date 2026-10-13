@@ -1099,7 +1099,10 @@ const startTopologyWorkspace = () => {
         counts.forEach(({ relationship, outbound, count }) => {
             const chip = cloneTemplate('topology-relationship-summary-item-template')
             if (!chip) return
-            const labels = relationshipSummaryLabels[relationship] || [titleCaseText(relationship), titleCaseText(relationship)]
+            const labels = relationshipSummaryLabels[relationship] || [
+                titleCaseText(relationship),
+                titleCaseText(relationship),
+            ]
             text(chip, '[data-summary-label]', `${labels[outbound ? 0 : 1]} · ${count}`)
             const swatch = chip.querySelector('[data-summary-swatch]')
             if (swatch) swatch.style.backgroundColor = edgeColor(relationship)
@@ -2077,8 +2080,12 @@ const startTopologyWorkspace = () => {
             if (visible?.nodes().length && rect.width >= 120 && rect.height >= 120) {
                 const box = visible.renderedBoundingBox({ includeLabels: true, includeOverlays: false })
                 const margin = 20
-                if (box.x1 < margin || box.y1 < margin || box.x2 > rect.width - margin ||
-                    box.y2 > rect.height - margin) {
+                if (
+                    box.x1 < margin ||
+                    box.y1 < margin ||
+                    box.x2 > rect.width - margin ||
+                    box.y2 > rect.height - margin
+                ) {
                     window.requestAnimationFrame(fitGraphToCanvas)
                 }
             }

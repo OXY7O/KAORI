@@ -121,11 +121,13 @@
             const guidance = document.createElement('p')
             guidance.className = 'mt-2 text-xs leading-5'
             if (status === 401 || status === 403) {
-                guidance.textContent = 'Your session or Tenant management permission needs attention. Sign in again or contact an administrator.'
+                guidance.textContent =
+                    'Your session or Tenant management permission needs attention. Sign in again or contact an administrator.'
             } else if (status === 404) {
                 guidance.textContent = 'This review is unavailable. Refresh the page and try again.'
             } else if (status >= 500) {
-                guidance.textContent = 'The review could not be prepared. Refresh Discovery and retry. Contact an administrator if it continues.'
+                guidance.textContent =
+                    'The review could not be prepared. Refresh Discovery and retry. Contact an administrator if it continues.'
             } else if (kind === 'target' || kind === 'swap') {
                 guidance.textContent = 'The review could not be displayed. Refresh Discovery and try again.'
             } else {
@@ -175,8 +177,7 @@
 
     document.addEventListener('htmx:beforeRequest', (event) => {
         const requestElement = event.detail?.elt || event.target
-        if (!(requestElement instanceof HTMLElement) || !requestElement.matches('[data-tenant-adoption-load]'))
-            return
+        if (!(requestElement instanceof HTMLElement) || !requestElement.matches('[data-tenant-adoption-load]')) return
         opener = requestElement
         preflightPending = true
     })
@@ -192,8 +193,10 @@
     })
 
     const isPreflightRequest = (event) =>
-        Boolean(event.detail?.elt?.closest?.('[data-tenant-adoption-load]') ||
-            event.target?.closest?.('[data-tenant-adoption-load]'))
+        Boolean(
+            event.detail?.elt?.closest?.('[data-tenant-adoption-load]') ||
+            event.target?.closest?.('[data-tenant-adoption-load]')
+        )
 
     document.addEventListener('htmx:responseError', (event) => {
         if (isPreflightRequest(event)) reportPreflightFailure(event)
