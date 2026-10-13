@@ -12,7 +12,11 @@ ENGINEERING = ROOT / 'docs' / 'engineering'
 FEATURES = ENGINEERING / 'uat' / 'features'
 CATALOG = ENGINEERING / 'KAORI_UAT_SCENARIO_CATALOG.md'
 CASES = ENGINEERING / 'KAORI_UAT_ALL_CASES.md'
-CATALOG_IDS = re.compile(r'^\| .(UAT-[A-Z]+-\d{3}). \| (Positive|Negative) \| (Both|UI|Non-UI) \| (High|Medium|Low) \|', re.M)
+CATALOG_IDS = re.compile(
+    r'^\| \x60(UAT-[A-Z]+-\d{3})\x60 \| (Positive|Negative) \| '
+    r'(Both|UI|Non-UI) \| (High|Medium|Low) \|',
+    re.MULTILINE,
+)
 CASE_IDS = re.compile(r'^### (UAT-[A-Z]+-\d{3}) —', re.M)
 SCENARIO = re.compile(r'^  Scenario: (UAT-[A-Z]+-\d{3}) - ', re.M)
 
