@@ -56,7 +56,9 @@ def test_audit_filter_runs_before_sql_limit_with_namespace_authority(monkeypatch
     rows = module._scoped_audit_evidence(['tenant-1'], 'cluster-1', namespace='uat', namespace_ids={123})
     assert rows == []
     assert [call[0] for call in query.calls] == ['filter', 'filter', 'order_by', 'limit', 'all']
-    scoped_predicate = query.calls[1][1][0]
-    assert 'tenant_namespace_id' in scoped_predicate
-    assert 'kubernetes_namespace' in scoped_predicate
+    # Namespace name and immutable namespace id are independent SQL clauses,
+    # both applied before the 250-row audit window.
+    name_predicate, id_predicate = query.calls[1][1]
+    assert 'kubernetes_namespace' in name_predicate
+    assert 'tenant_namespace_id' in id_predicate
     assert query.calls[-2] == ('limit', 250)
