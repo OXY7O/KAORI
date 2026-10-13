@@ -7,7 +7,6 @@ from sqlalchemy import and_, func, or_, select
 
 from app.extensions.db import db
 from app.models.report import ReportSchedule
-
 from app.reports.scope import KUBERNETES_CLUSTER_ASSET_TYPE
 
 

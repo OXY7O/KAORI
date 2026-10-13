@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from flask import Blueprint, abort, render_template, request
-from flask_login import current_user
 from flask.typing import ResponseReturnValue
+from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.intelligence.overview import get_intelligence_overview_payload

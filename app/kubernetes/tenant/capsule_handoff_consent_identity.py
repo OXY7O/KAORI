@@ -6,6 +6,7 @@ MAC checker is deliberately unregistered and source-disabled before any
 backend key access. Its future caller must use an authenticated server-side
 IdP/key policy, never accept a browser-provided signing key.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -25,14 +26,31 @@ _SHA = re.compile(r'[a-f0-9]{64}\Z')
 _ID = re.compile(r'[A-Za-z0-9][A-Za-z0-9._:-]{2,119}\Z')
 _VERSION = 'capsule-resource-human-session-attestation/v1'
 _ACTIONS = ('independent_review', 'successor_acceptance')
-_FIELDS = frozenset({
-    'contract_version', 'attestation_id', 'issuer_id', 'key_id',
-    'action', 'actor_user_id', 'session_sha256', 'challenge_sha256',
-    'authentication_method', 'authenticated_at', 'issued_at', 'expires_at',
-    'tenant_id', 'cluster_id', 'generation', 'plan_sha256',
-    'worklist_sha256', 'resource_review_sha256',
-    'consent_manifest_sha256', 'resource_scope_sha256', 'mac_sha256',
-})
+_FIELDS = frozenset(
+    {
+        'contract_version',
+        'attestation_id',
+        'issuer_id',
+        'key_id',
+        'action',
+        'actor_user_id',
+        'session_sha256',
+        'challenge_sha256',
+        'authentication_method',
+        'authenticated_at',
+        'issued_at',
+        'expires_at',
+        'tenant_id',
+        'cluster_id',
+        'generation',
+        'plan_sha256',
+        'worklist_sha256',
+        'resource_review_sha256',
+        'consent_manifest_sha256',
+        'resource_scope_sha256',
+        'mac_sha256',
+    }
+)
 _AUTH_METHOD = 'phishing_resistant_mfa'
 _MAX_AGE = timedelta(minutes=5)
 _MAX_LIFETIME = timedelta(minutes=5)
@@ -65,10 +83,15 @@ def _date(value: Any) -> datetime:
 
 
 def inspect_capsule_consent_session_attestations(
-    *, plan: Mapping[str, Any], resource_report: Mapping[str, Any],
-    approval: Mapping[str, Any], acceptance: Mapping[str, Any],
-    manifest: Mapping[str, Any], attestations: list[Mapping[str, Any]],
-    expected_issuer_id: str, expected_key_id: str,
+    *,
+    plan: Mapping[str, Any],
+    resource_report: Mapping[str, Any],
+    approval: Mapping[str, Any],
+    acceptance: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+    attestations: list[Mapping[str, Any]],
+    expected_issuer_id: str,
+    expected_key_id: str,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Require exactly two independent actor-bound, SHA-bound claimed receipts.
@@ -77,14 +100,20 @@ def inspect_capsule_consent_session_attestations(
     hash, factor claim or issuer ID is not authority to enter execution.
     """
     consent = inspect_capsule_resource_consent(
-        plan=plan, resource_report=resource_report,
-        approval=approval, acceptance=acceptance, manifest=manifest,
+        plan=plan,
+        resource_report=resource_report,
+        approval=approval,
+        acceptance=acceptance,
+        manifest=manifest,
     )
     if (
-        not isinstance(attestations, list) or len(attestations) != 2
+        not isinstance(attestations, list)
+        or len(attestations) != 2
         or not all(isinstance(x, Mapping) and set(x) == _FIELDS for x in attestations)
-        or not isinstance(expected_issuer_id, str) or not _ID.fullmatch(expected_issuer_id)
-        or not isinstance(expected_key_id, str) or not _ID.fullmatch(expected_key_id)
+        or not isinstance(expected_issuer_id, str)
+        or not _ID.fullmatch(expected_issuer_id)
+        or not isinstance(expected_key_id, str)
+        or not _ID.fullmatch(expected_key_id)
     ):
         raise ValueError('Capsule consent needs exactly two bounded IdP assertion envelopes.')
     instant = datetime.now(UTC) if now is None else now
@@ -107,7 +136,8 @@ def inspect_capsule_consent_session_attestations(
         except (ValueError, TypeError, AttributeError) as exc:
             raise ValueError('Capsule human attestation UUID is invalid.') from exc
         signed_at, expires_at, authenticated_at = (
-            _date(item['issued_at']), _date(item['expires_at']),
+            _date(item['issued_at']),
+            _date(item['expires_at']),
             _date(item['authenticated_at']),
         )
         if (
@@ -119,20 +149,25 @@ def inspect_capsule_consent_session_attestations(
             or type(item['actor_user_id']) is not int
             or item['actor_user_id'] != expected_ids[index]
             or item['authentication_method'] != _AUTH_METHOD
-            or any(not isinstance(item[k], str) or not _SHA.fullmatch(item[k])
-                   for k in ('session_sha256', 'challenge_sha256', 'mac_sha256'))
+            or any(
+                not isinstance(item[k], str) or not _SHA.fullmatch(item[k])
+                for k in ('session_sha256', 'challenge_sha256', 'mac_sha256')
+            )
             or item['session_sha256'] in sessions
             or item['challenge_sha256'] in challenges
-            or any(item.get(field) != expected for field, expected in (
-                ('tenant_id', plan['tenant_id']),
-                ('cluster_id', plan['cluster_id']),
-                ('generation', plan['generation']),
-                ('plan_sha256', plan['plan_sha256']),
-                ('worklist_sha256', consent['worklist_sha256']),
-                ('resource_review_sha256', consent['resource_review_sha256']),
-                ('consent_manifest_sha256', consent['resource_consent_manifest_sha256']),
-                ('resource_scope_sha256', consent['resource_scope_sha256']),
-            ))
+            or any(
+                item.get(field) != expected
+                for field, expected in (
+                    ('tenant_id', plan['tenant_id']),
+                    ('cluster_id', plan['cluster_id']),
+                    ('generation', plan['generation']),
+                    ('plan_sha256', plan['plan_sha256']),
+                    ('worklist_sha256', consent['worklist_sha256']),
+                    ('resource_review_sha256', consent['resource_review_sha256']),
+                    ('consent_manifest_sha256', consent['resource_consent_manifest_sha256']),
+                    ('resource_scope_sha256', consent['resource_scope_sha256']),
+                )
+            )
             or not authenticated_at <= signed_at <= instant < expires_at
             or instant - signed_at > _MAX_AGE
             or signed_at - authenticated_at > _MAX_AGE
@@ -145,14 +180,12 @@ def inspect_capsule_consent_session_attestations(
         times.append(signed_at)
     reviewed_at = _date(approval.get('approved_at'))
     prior_acceptance_at = _date(acceptance.get('accepted_at'))
-    if not (
-        reviewed_at <= times[0] <= times[1] <= accepted_at <= instant
-        and prior_acceptance_at <= times[1]
-    ):
+    if not (reviewed_at <= times[0] <= times[1] <= accepted_at <= instant and prior_acceptance_at <= times[1]):
         raise ValueError('Capsule review and successor confirmation chronology is invalid.')
     return {
         'status': 'distinct_idp_session_claims_correlated_not_authenticated',
-        'tenant_id': plan['tenant_id'], 'plan_sha256': plan['plan_sha256'],
+        'tenant_id': plan['tenant_id'],
+        'plan_sha256': plan['plan_sha256'],
         'worklist_sha256': consent['worklist_sha256'],
         'resource_review_sha256': consent['resource_review_sha256'],
         'consent_manifest_sha256': consent['resource_consent_manifest_sha256'],
@@ -173,10 +206,15 @@ def inspect_capsule_consent_session_attestations(
 
 
 def review_capsule_consent_idp_mac_staged(
-    *, plan: Mapping[str, Any], resource_report: Mapping[str, Any],
-    approval: Mapping[str, Any], acceptance: Mapping[str, Any],
-    manifest: Mapping[str, Any], attestations: list[Mapping[str, Any]],
-    expected_issuer_id: str, expected_key_id: str,
+    *,
+    plan: Mapping[str, Any],
+    resource_report: Mapping[str, Any],
+    approval: Mapping[str, Any],
+    acceptance: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+    attestations: list[Mapping[str, Any]],
+    expected_issuer_id: str,
+    expected_key_id: str,
     broker: CapsuleConsentIssuerKeyBroker,
     operator_policy: CapsuleConsentIssuerPolicy,
     now: datetime | None = None,
@@ -188,21 +226,31 @@ def review_capsule_consent_idp_mac_staged(
             'operator-registered IdP and replay-safe step-up authentication.'
         )
     reviewed = inspect_capsule_consent_session_attestations(
-        plan=plan, resource_report=resource_report, approval=approval,
-        acceptance=acceptance, manifest=manifest, attestations=attestations,
-        expected_issuer_id=expected_issuer_id, expected_key_id=expected_key_id, now=now,
+        plan=plan,
+        resource_report=resource_report,
+        approval=approval,
+        acceptance=acceptance,
+        manifest=manifest,
+        attestations=attestations,
+        expected_issuer_id=expected_issuer_id,
+        expected_key_id=expected_key_id,
+        now=now,
     )
     key: bytes | None = None
     try:
         pinned = operator_policy.expected_key_fingerprint(
-            issuer_id=expected_issuer_id, key_id=expected_key_id,
+            issuer_id=expected_issuer_id,
+            key_id=expected_key_id,
         )
         key = broker.read_verification_key(
-            issuer_id=expected_issuer_id, key_id=expected_key_id,
+            issuer_id=expected_issuer_id,
+            key_id=expected_key_id,
         )
         if (
-            type(key) is not bytes or len(key) < 32
-            or not isinstance(pinned, str) or not _SHA.fullmatch(pinned)
+            type(key) is not bytes
+            or len(key) < 32
+            or not isinstance(pinned, str)
+            or not _SHA.fullmatch(pinned)
             or not hmac.compare_digest(hashlib.sha256(key).hexdigest(), pinned)
         ):
             raise ValueError('Capsule IdP key is not pinned.')

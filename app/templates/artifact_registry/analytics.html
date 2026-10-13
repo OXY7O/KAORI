@@ -40,14 +40,14 @@
                                 analytics.data_readiness.label,
                                 analytics.data_readiness.tone,
                                 [
-                                ('database-backup', 'Snapshots', analytics.snapshot_count ~ '/' ~ analytics.provider_count, 'Materialized Registry analytics evidence'),
-                                ('layout-dashboard', 'Workspace', analytics.page_title, 'Lazy-loaded bounded analytics section')
-                                ],
-                                'Open Intelligence',
-                                url_for('intelligence.recommendations', domain='registry'),
-                                action_icon='brain-circuit',
-                                blocked=analytics.setup.is_blocked,
-                                blocked_info='Register and validate a Registry provider to materialize analytics evidence.'
+                                ('database-backup', 'Snapshots', analytics.snapshot_count ~ '/' ~ analytics.provider_count, 'Materialized Registry analytics evidence') ,
+                ('layout-dashboard', 'Workspace', analytics.page_title, 'Lazy-loaded bounded analytics section')
+                ],
+                'Open Intelligence',
+                url_for('intelligence.recommendations', domain='registry'),
+                action_icon='brain-circuit',
+                blocked=analytics.setup.is_blocked,
+                blocked_info='Register and validate a Registry provider to materialize analytics evidence.'
                 ) }}
             </div>
         </section>
@@ -55,8 +55,8 @@
             {% include "artifact_registry/components/_setup_blocker.html" %}
         {% else %}
             {{ section_tracker.render('artifact-registry-analytics-load-tracker',
-                                      title='Loading Registry Analytics',
-                                      description='Preparing committed Registry analytics sections.') }}
+                        title='Loading Registry Analytics',
+                        description='Preparing committed Registry analytics sections.') }}
             <span class="hidden"
                   aria-hidden="true"
                   hx-get="{{ url_for('artifact_registry.analytics_materialization_resolve', section=analytics.active_tab, provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window, alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none, alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none, alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none, alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none, alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none, alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none) }}"
@@ -67,73 +67,66 @@
                   hx-sync="#artifact-registry-analytics-page:replace"></span>
             {% include "artifact_registry/partials/_analytics_controls_readiness.html" %}
             {% if analytics.active_tab == 'overview' %}
-            <section id="artifact-registry-analytics-summary"
-                     data-analytics-lazy-section="true"
-                     data-analytics-load-state="idle"
-                     hx-get="{{ url_for('artifact_registry.analytics_section', section='summary', provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window) }}"
-                     hx-trigger="load"
-                     hx-target="this"
-                     hx-swap="outerHTML">
-                {{ section_loading.section('Analytics Summary',
-                                'Loading committed Registry analytical posture.',
-                                'chart-column') }}
-            </section>
-            <section class="space-y-3" aria-labelledby="artifact-registry-analytics-domains-heading">
-                {{ section_intro.render('Explore Analytics',
-                                         'Normal navigation reads committed KAORI evidence and never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests.',
-                                         'artifact-registry-analytics-domains-heading') }}
-                {% set analytics_domains = [
-                    ('Growth', 'trending-up', 'Artifact and storage trends from committed snapshots.', 'artifact_registry.analytics_growth'),
-                    ('Capacity', 'gauge', 'Quota pressure, headroom, and qualified forecasts.', 'artifact_registry.analytics_capacity'),
-                    ('Usage', 'activity', 'Runtime demand, pull evidence, and usage concentration.', 'artifact_registry.analytics_usage'),
-                    ('Risk', 'shield-alert', 'Security findings correlated with runtime exposure.', 'artifact_registry.analytics_risk'),
-                    ('Governance', 'scale', 'Policy and replication coverage gaps.', 'artifact_registry.analytics_governance'),
-                    ('Alerts & Anomalies', 'triangle-alert', 'Committed alerts, source state, and fallback.', 'artifact_registry.analytics_alerts'),
-                    ('Insights', 'sparkles', 'Derived signals and central Intelligence drill-down.', 'artifact_registry.analytics_insights')
-                ] %}
-                {% call section_card.render('Analytics Domains',
-                                            'Choose one focused analytical capability without loading unrelated sections.',
-                                            'layout-grid',
-                                            body_classes='p-0') %}
-                    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                        {% for label, icon, description, endpoint in analytics_domains %}
-                            <a href="{{ url_for(endpoint) }}"
-                               class="group flex min-h-28 flex-col justify-between gap-3 bg-surface-card p-4 transition-colors hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus"
-                               aria-label="Open {{ label }} Analytics">
-                                <div class="flex items-start gap-3">
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
-                                          aria-hidden="true">
-                                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <h3 class="text-sm font-semibold text-content-primary">{{ label }}</h3>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                <section id="artifact-registry-analytics-summary"
+                         data-analytics-lazy-section="true"
+                         data-analytics-load-state="idle"
+                         hx-get="{{ url_for('artifact_registry.analytics_section', section='summary', provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window) }}"
+                         hx-trigger="load"
+                         hx-target="this"
+                         hx-swap="outerHTML">
+                    {{ section_loading.section('Analytics Summary',
+                                        'Loading committed Registry analytical posture.',
+                                        'chart-column') }}
+                </section>
+                <section class="space-y-3"
+                         aria-labelledby="artifact-registry-analytics-domains-heading">
+                    {{ section_intro.render('Explore Analytics',
+                                        'Normal navigation reads committed KAORI evidence and never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests.',
+                                        'artifact-registry-analytics-domains-heading') }}
+                    {% set analytics_domains = [('Growth', 'trending-up', 'Artifact and storage trends from committed snapshots.', 'artifact_registry.analytics_growth'), ('Capacity', 'gauge', 'Quota pressure, headroom, and qualified forecasts.', 'artifact_registry.analytics_capacity'), ('Usage', 'activity', 'Runtime demand, pull evidence, and usage concentration.', 'artifact_registry.analytics_usage'), ('Risk', 'shield-alert', 'Security findings correlated with runtime exposure.', 'artifact_registry.analytics_risk'), ('Governance', 'scale', 'Policy and replication coverage gaps.', 'artifact_registry.analytics_governance'), ('Alerts & Anomalies', 'triangle-alert', 'Committed alerts, source state, and fallback.', 'artifact_registry.analytics_alerts'), ('Insights', 'sparkles', 'Derived signals and central Intelligence drill-down.', 'artifact_registry.analytics_insights')] %}
+                    {% call section_card.render('Analytics Domains',
+                        'Choose one focused analytical capability without loading unrelated sections.',
+                        'layout-grid',
+                        body_classes='p-0') %}
+                        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                            {% for label, icon, description, endpoint in analytics_domains %}
+                                <a href="{{ url_for(endpoint) }}"
+                                   class="group flex min-h-28 flex-col justify-between gap-3 bg-surface-card p-4 transition-colors hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus"
+                                   aria-label="Open {{ label }} Analytics">
+                                    <div class="flex items-start gap-3">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
+                                              aria-hidden="true">
+                                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <h3 class="text-sm font-semibold text-content-primary">{{ label }}</h3>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <span class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary dark:text-kaori-accent">
-                                    Open Analysis <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                </span>
-                            </a>
-                        {% endfor %}
-                    </div>
-                {% endcall %}
-            </section>
+                                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary dark:text-kaori-accent">
+                                        Open Analysis <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    </span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endcall %}
+                </section>
             {% else %}
-            <section id="artifact-registry-analytics-workspace"
-                     class="{{ section_card.shell_classes() }}"
-                     aria-label="{{ analytics.page_title }} workspace">
-                <div id="artifact-registry-analytics-active-section"
-                     data-analytics-lazy-section="true"
-                     data-analytics-load-state="idle"
-                     hx-get="{{ url_for('artifact_registry.analytics_section', section=analytics.active_tab, provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window, alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none, alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none, alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none, alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none, alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none, alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none) }}"
-                     hx-trigger="load"
-                     hx-target="this"
-                     hx-swap="outerHTML">
-                    {{ section_loading.section(analytics.page_title,
-                            'Preparing committed Analytics evidence for the active workspace.',
-                            analytics.page_icon) }}
-                </div>
-            </section>
+                <section id="artifact-registry-analytics-workspace"
+                         class="{{ section_card.shell_classes() }}"
+                         aria-label="{{ analytics.page_title }} workspace">
+                    <div id="artifact-registry-analytics-active-section"
+                         data-analytics-lazy-section="true"
+                         data-analytics-load-state="idle"
+                         hx-get="{{ url_for('artifact_registry.analytics_section', section=analytics.active_tab, provider_id=analytics.selected_provider_id, snapshot_window=analytics.snapshot_window, alert_q=analytics.alert_filters.search if analytics.active_tab == 'alerts' else none, alert_severity=analytics.alert_filters.severity if analytics.active_tab == 'alerts' else none, alert_state=analytics.alert_filters.state if analytics.active_tab == 'alerts' else none, alert_source=analytics.alert_filters.source if analytics.active_tab == 'alerts' else none, alert_page=analytics.alert_filters.page if analytics.active_tab == 'alerts' else none, alert_per_page=analytics.alert_filters.per_page if analytics.active_tab == 'alerts' else none) }}"
+                         hx-trigger="load"
+                         hx-target="this"
+                         hx-swap="outerHTML">
+                        {{ section_loading.section(analytics.page_title,
+                                                'Preparing committed Analytics evidence for the active workspace.',
+                                                analytics.page_icon) }}
+                    </div>
+                </section>
             {% endif %}
         {% endif %}
     </div>

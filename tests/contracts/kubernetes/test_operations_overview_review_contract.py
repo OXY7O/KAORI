@@ -50,7 +50,6 @@ def test_kubernetes_operations_copy_keeps_provider_authority_and_live_target_gui
     assert 'Select and verify a live target in its workspace.' in overview
 
 
-
 def test_operations_overview_supporting_copy_is_compact_and_responsive() -> None:
     overview = read('app/templates/kubernetes/operations/overview.html')
     descriptions = (

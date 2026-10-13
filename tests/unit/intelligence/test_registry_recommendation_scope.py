@@ -7,7 +7,9 @@ from app.intelligence.registry_recommendations import _artifact_evidence, _ident
 
 
 def _identity_row(*, enabled=True):
-    return SimpleNamespace(id=17, name='Registry A', enabled=enabled, lifecycle_status='active', provider_key='harbor', metadata_json={})
+    return SimpleNamespace(
+        id=17, name='Registry A', enabled=enabled, lifecycle_status='active', provider_key='harbor', metadata_json={}
+    )
 
 
 def _project():
@@ -17,7 +19,9 @@ def _project():
 def _artifact(scan_status: str):
     repository = SimpleNamespace(project=_project(), name='image')
     return SimpleNamespace(
-        id=10, repository=repository, digest='sha256:abc',
+        id=10,
+        repository=repository,
+        digest='sha256:abc',
         tags=[SimpleNamespace(name='stable')],
         scan_status=scan_status,
         vulnerability_summary={'critical': 8, 'high': 15},
@@ -28,8 +32,11 @@ def _artifact(scan_status: str):
 def test_unusable_scan_does_not_reuse_old_critical_vulnerability_summary() -> None:
     row = _artifact('failed')
     evidence = _artifact_evidence(
-        row, identity=_identity_row(), provider_key='harbor',
-        provider_label='Harbor', bindings=[SimpleNamespace(namespace='prod', workload_name='web', pod_name='web-1')],
+        row,
+        identity=_identity_row(),
+        provider_key='harbor',
+        provider_label='Harbor',
+        bindings=[SimpleNamespace(namespace='prod', workload_name='web', pod_name='web-1')],
     )
     assert evidence['critical_count'] == 0
     assert evidence['high_count'] == 0
@@ -39,8 +46,11 @@ def test_unusable_scan_does_not_reuse_old_critical_vulnerability_summary() -> No
 def test_usable_scan_preserves_normalized_findings() -> None:
     row = _artifact('success')
     evidence = _artifact_evidence(
-        row, identity=_identity_row(), provider_key='harbor',
-        provider_label='Harbor', bindings=[],
+        row,
+        identity=_identity_row(),
+        provider_key='harbor',
+        provider_label='Harbor',
+        bindings=[],
     )
     assert evidence['critical_count'] == 8
 

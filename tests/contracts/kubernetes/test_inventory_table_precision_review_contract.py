@@ -10,8 +10,14 @@ def read(relative: str) -> str:
 
 def test_kubernetes_inventory_tables_keep_bounded_columns() -> None:
     for family in (
-        'storage', 'ingresses', 'configuration', 'pods',
-        'services', 'nodes', 'namespaces', 'workloads',
+        'storage',
+        'ingresses',
+        'configuration',
+        'pods',
+        'services',
+        'nodes',
+        'namespaces',
+        'workloads',
     ):
         content = read(f'{family}/partials/_table_content.html')
         assert '!table-fixed' in content, family
@@ -62,7 +68,7 @@ def test_namespace_widths_prioritize_names_and_preserve_control_pairs() -> None:
     assert "table_ui.table_classes('min-w-[78rem] !table-fixed')" in table
     assert 'overflow-x-auto overscroll-x-contain' in table
     assert table.count('grid-cols-[6rem_minmax(0,1fr)]') == 2
-    assert 'table_ui.namespace_identity(namespace.namespace, \'w-full min-w-0\')' in table
+    assert "table_ui.namespace_identity(namespace.namespace, 'w-full min-w-0')" in table
     assert "table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment, 'w-full min-w-0')" in table
 
 
@@ -131,8 +137,8 @@ def test_ingress_publication_uses_proportional_space_and_two_level_evidence() ->
 def test_pod_references_use_shared_full_width_evidence_bands() -> None:
     detail = read('pods/partials/_pod_detail_content.html')
     assert 'aria-label="Pod Configuration and Storage References"' in detail
-    assert 'configuration references exist.\', embedded=true)' in detail
-    assert 'storage references exist.\', embedded=true)' in detail
+    assert "configuration references exist.', embedded=true)" in detail
+    assert "storage references exist.', embedded=true)" in detail
     assert 'grid gap-4 border-t border-outline-subtle p-4 lg:grid-cols-2' not in detail
 
 
@@ -160,6 +166,7 @@ def test_pod_columns_prioritize_identity_scope_and_placement() -> None:
     assert 'technical_value.render(pod.placement_secondary)' in table
     assert 'table_label.metadata_label(pod.owner_kind_label)' in table
     assert 'resource_detail_modal.detail_button(pod.id' in table
+
 
 def test_service_columns_prioritize_long_identity_and_scope() -> None:
     table = read('services/partials/_table_content.html')

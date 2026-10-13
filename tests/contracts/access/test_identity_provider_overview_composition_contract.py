@@ -41,7 +41,7 @@ def test_posture_and_governance_form_one_audit_style_overview() -> None:
     assert 'data-kaori-idp-posture-context' not in overview
     assert 'No external provider has been registered.' not in overview
     assert 'Configured means the adapter contract is complete;' not in overview
-    assert "table_label.status_indicator_label(summary.posture_label, summary.posture_tone)" in overview
+    assert 'table_label.status_indicator_label(summary.posture_label, summary.posture_tone)' in overview
 
     for boundary in (
         'Provider / Adapter Boundary',
@@ -85,21 +85,19 @@ def test_index_keeps_overview_above_activity_style_record_tabs() -> None:
     page = read('app/templates/access/identity_providers/index.html')
     workspace = read('app/templates/access/identity_providers/partials/_workspace.html')
     tabs = read('app/templates/access/identity_providers/partials/_tabs.html')
-    audit_workspace = read(
-        'app/templates/access/activity_audit/partials/_audit_records_workspace.html'
-    )
+    audit_workspace = read('app/templates/access/activity_audit/partials/_audit_records_workspace.html')
 
     for template in (page, workspace, tabs):
         Environment().parse(template)
 
     assert page.index('partials/_overview.html') < page.index('partials/_workspace.html')
-    assert "section_intro.render(" in page
+    assert 'section_intro.render(' in page
     assert '<section id="identity-provider-workspace"' in workspace
-    assert "table_ui.block_classes()" in workspace
+    assert 'table_ui.block_classes()' in workspace
     assert 'data-kaori-idp-records-workspace' in workspace
     assert "active_tab == 'directory'" in workspace
-    assert "partials/_registry.html" in workspace
-    assert "partials/_directory_provisioning_strip.html" in workspace
+    assert 'partials/_registry.html' in workspace
+    assert 'partials/_directory_provisioning_strip.html' in workspace
     assert '{% set embedded = true %}' in workspace
 
     assert 'framed_tabs.render_navigation(' in tabs
@@ -120,11 +118,11 @@ def test_registry_filters_preserved_and_separately_targeted() -> None:
     Environment().parse(registry)
     Environment().parse(shared)
 
-    assert "embedded|default(false)" in registry
+    assert 'embedded|default(false)' in registry
     assert 'id="identity-provider-registry"' in registry
-    assert "registry_ui.filter_form(" in registry
-    assert "registry_ui.clear_filters_link(" in registry
-    assert "registry_ui.footer(" in registry
+    assert 'registry_ui.filter_form(' in registry
+    assert 'registry_ui.clear_filters_link(' in registry
+    assert 'registry_ui.footer(' in registry
     assert 'name="tab" value="providers"' in registry
     assert "footer_query.pop('per_page', none)" in registry
     assert 'expandable.static_detail_row(' in registry
@@ -142,9 +140,7 @@ def test_registry_filters_preserved_and_separately_targeted() -> None:
 
 
 def test_directory_tab_is_read_only_summary_with_scoped_workflow_launch() -> None:
-    directory = read(
-        'app/templates/access/identity_providers/partials/_directory_provisioning_strip.html'
-    )
+    directory = read('app/templates/access/identity_providers/partials/_directory_provisioning_strip.html')
     Environment().parse(directory)
 
     assert "current_user.has_permission('identity_providers.provision')" in directory

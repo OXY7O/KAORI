@@ -87,14 +87,12 @@
 </div>
 {% set footer_query = pagination_query.copy() %}
 {% set _ = footer_query.pop('per_page', none) %}
-{{ registry_ui.footer(
-    'users.index',
-    'user-directory',
-    'users-refresh-indicator',
-    pagination,
-    footer_query,
-    per_page_options,
-    resource_label='Users',
-    rows_aria_label='Rows Per Page',
-    control_name='user-directory'
-) }}
+{{ registry_ui.footer('users.index',
+'user-directory',
+'users-refresh-indicator',
+pagination,
+footer_query,
+per_page_options,
+resource_label='Users',
+rows_aria_label='Rows Per Page',
+control_name='user-directory') }}

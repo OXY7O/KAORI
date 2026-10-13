@@ -25,9 +25,7 @@ def test_self_subject_access_review_unavailable_is_not_authorization(monkeypatch
 
 
 @pytest.mark.parametrize(('allowed', 'expected'), [(True, True), (False, False)])
-def test_self_subject_access_review_returns_observed_authorization(
-    monkeypatch, allowed, expected
-):
+def test_self_subject_access_review_returns_observed_authorization(monkeypatch, allowed, expected):
     class Review:
         def __init__(self, _api):
             pass

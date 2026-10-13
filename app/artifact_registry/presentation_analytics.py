@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from werkzeug.exceptions import NotFound
-from typing import Any
 
 from app.artifact_registry.analytics_job_adapter import (
     analytics_snapshot_matches_window,
@@ -17,7 +17,6 @@ from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.models.registry import RegistryAnalyticsSnapshot
 
-
 _REGISTRY_ANALYTICS_PAGE_DETAILS = {
     'overview': (
         'Analytics Overview',
@@ -26,9 +25,7 @@ _REGISTRY_ANALYTICS_PAGE_DETAILS = {
     ),
     'growth': ('Growth Analytics', 'Review artifact growth, inventory deltas, and storage expansion.', 'trending-up'),
     'capacity': ('Capacity Analytics', 'Review quotas, headroom, and materialized capacity forecasts.', 'gauge'),
-    'usage': (
-        'Usage Analytics', 'Review pull activity, runtime-used artifacts, and demand concentration.', 'activity'
-    ),
+    'usage': ('Usage Analytics', 'Review pull activity, runtime-used artifacts, and demand concentration.', 'activity'),
     'risk': (
         'Risk Analytics',
         'Correlate committed security findings and Kubernetes runtime exposure.',
@@ -77,9 +74,7 @@ def build_analytics_shell(
     provider_options = _providers()
     selected_provider_id = _registry_analytics_scope(provider_id, provider_options)
     selected_window = normalize_registry_analytics_window(snapshot_window)
-    readiness = build_registry_analytics_readiness(
-        provider_id=selected_provider_id, snapshot_window=selected_window
-    )
+    readiness = build_registry_analytics_readiness(provider_id=selected_provider_id, snapshot_window=selected_window)
     return {
         'setup': overview['setup'],
         'provider_count': readiness['registered_count'],
@@ -289,9 +284,8 @@ def _analytics_snapshot_view(identity: Any, snapshot: RegistryAnalyticsSnapshot 
         **sections,
     }
 
-def _collect_analytics_rows(
-    identities: list[Any], *, snapshot_window: str = '24h'
-) -> dict[str, Any]:
+
+def _collect_analytics_rows(identities: list[Any], *, snapshot_window: str = '24h') -> dict[str, Any]:
     bundle: dict[str, Any] = {
         'aggregate': _analytics_aggregate(),
         'latest_rows': [],
@@ -456,6 +450,7 @@ def _analytics_growth_summary(
         ),
     }
 
+
 def _analytics_capacity_outlook(
     forecast_rows: list[dict[str, Any]],
     *,
@@ -489,8 +484,7 @@ def _analytics_capacity_outlook(
         'highest_utilization': highest_utilization,
         'growth_bytes_per_day': growth['size_per_day'],
         'growth_display': (
-            f'{_fmt_bytes(round(growth["size_per_day"]))}/day'
-            if growth['size_per_day'] is not None else 'N/A'
+            f'{_fmt_bytes(round(growth["size_per_day"]))}/day' if growth['size_per_day'] is not None else 'N/A'
         ),
         'quota_headroom_bytes': quota_headroom,
         'quota_headroom_display': _fmt_bytes(round(quota_headroom)) if quota_headroom is not None else 'N/A',
@@ -677,15 +671,19 @@ def _analytics_alert_page(
             started = (
                 datetime.fromisoformat(raw_start.replace('Z', '+00:00'))
                 if isinstance(raw_start, str)
-                else raw_start if isinstance(raw_start, datetime) else None
+                else raw_start
+                if isinstance(raw_start, datetime)
+                else None
             )
         except ValueError:
             started = None
-        filtered_rows.append({
-            **row,
-            'effective_state': effective_state,
-            'starts_at_display': present_user_datetime(started, empty='Not Observed'),
-        })
+        filtered_rows.append(
+            {
+                **row,
+                'effective_state': effective_state,
+                'starts_at_display': present_user_datetime(started, empty='Not Observed'),
+            }
+        )
     page_rows, pagination = paginate_sequence(
         filtered_rows,
         page=page,

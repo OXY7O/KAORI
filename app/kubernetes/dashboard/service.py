@@ -8,13 +8,13 @@ from app.intelligence.alert_intelligence.dashboard_cases import (
     active_recommendation_alert_cases,
     active_recommendation_alert_cases_by_asset,
 )
-from app.kubernetes.analytics.materialization.service import read_snapshots
 from app.kubernetes.analytics.materialization.keys import (
     CAPACITY_DATASET_KEY,
     DASHBOARD_ALERTS_DATASET_KEY,
     FORECAST_DATASET_KEY,
     TOP_CONSUMERS_DATASET_KEY,
 )
+from app.kubernetes.analytics.materialization.service import read_snapshots
 from app.kubernetes.dashboard.repository import (
     count_records,
     count_records_with_values,

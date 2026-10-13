@@ -26,9 +26,9 @@ def test_unified_summary_renders_one_surface_and_preserves_all_four_facts() -> N
 
 def test_audit_context_uses_full_width_values_in_two_responsive_groups() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
-    context = detail.split('<section data-activity-audit-context', 1)[1].split(
-        '{% if item.additional_evidence %}', 1
-    )[0]
+    context = detail.split('<section data-activity-audit-context', 1)[1].split('{% if item.additional_evidence %}', 1)[
+        0
+    ]
     assert 'Committed actor identity and target attribution.' in context
     assert 'grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2' in context
     assert context.count('<dl class="divide-y divide-outline-subtle">') == 2
@@ -45,13 +45,14 @@ def test_audit_context_uses_full_width_values_in_two_responsive_groups() -> None
     ):
         assert value in context
 
+
 def test_evidence_authorities_and_optional_metadata_are_preserved() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
     assert 'data-activity-outcome="recorded"' in detail
     assert 'data-activity-related-sources="committed-only"' in detail
     assert 'item.trace_references' in detail
     assert 'item.changed_fields' in detail
-    assert "view_more.render(" in detail
+    assert 'view_more.render(' in detail
     assert 'data-activity-metadata-layout="responsive-pairs"' in detail
     assert 'item.technical_evidence' in detail
     for forbidden in ('onclick=', 'hx-post=', '<form', 'style='):

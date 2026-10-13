@@ -3,6 +3,7 @@
 These regressions are AUTHORED ONLY; do not execute while DevContainer
 review and CI/CD gates remain held.
 """
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -30,17 +31,26 @@ def _scope():
     related_sha = _digest({'resources': rows, 'lists': lists})
     global_quota = {
         'status': 'observed_not_handoff_authorized',
-        'served_version': 'v1beta2', 'list_resource_version': 'global-rv',
-        'resources': [], 'count': 0, 'blockers': [],
-    }
-    global_quota['scope_sha256'] = _digest({
-        'api_version': 'v1beta2', 'list_resource_version': 'global-rv',
+        'served_version': 'v1beta2',
+        'list_resource_version': 'global-rv',
         'resources': [],
-    })
+        'count': 0,
+        'blockers': [],
+    }
+    global_quota['scope_sha256'] = _digest(
+        {
+            'api_version': 'v1beta2',
+            'list_resource_version': 'global-rv',
+            'resources': [],
+        }
+    )
     components = [
         {
-            'kind': 'CapsuleTenant', 'name': 'demo', 'uid': 'cr-uid',
-            'resource_version': '3', 'authority': 'capsule',
+            'kind': 'CapsuleTenant',
+            'name': 'demo',
+            'uid': 'cr-uid',
+            'resource_version': '3',
+            'authority': 'capsule',
             'ownership': 'external_or_unattributed',
             'handoff': 'external_acceptance_required',
             'capsule_spec_sha256': 'a' * 64,
@@ -50,30 +60,40 @@ def _scope():
             'capsule_rbac_lineage_sha256': 'b' * 64,
         },
         {
-            'kind': 'Namespace', 'name': 'demo-dev', 'namespace': 'demo-dev',
-            'uid': 'ns-uid', 'resource_version': '9',
-            'authority': 'capsule', 'ownership': 'kaori_marker_correlated',
+            'kind': 'Namespace',
+            'name': 'demo-dev',
+            'namespace': 'demo-dev',
+            'uid': 'ns-uid',
+            'resource_version': '9',
+            'authority': 'capsule',
+            'ownership': 'kaori_marker_correlated',
             'handoff': 'external_acceptance_required',
         },
     ]
     from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 
     plan = {
-        'tenant_id': 'tenant-1', 'cluster_id': 'cluster-1', 'generation': 1,
-        'provider': 'capsule', 'requested_by': 10,
+        'tenant_id': 'tenant-1',
+        'cluster_id': 'cluster-1',
+        'generation': 1,
+        'provider': 'capsule',
+        'requested_by': 10,
         'requested_at': datetime.now(UTC).isoformat(),
         'handoff_fingerprint': handoff_fingerprint(components),
         'provider_identity': [
             {'kind': 'CapsuleTenant', 'name': 'demo', 'uid': 'cr-uid', 'resource_version': '3'},
             {'kind': 'Namespace', 'name': 'demo-dev', 'uid': 'ns-uid', 'resource_version': '9'},
         ],
-        'successor_owner': 'platform-team', 'change_reference': 'CHG-1011',
+        'successor_owner': 'platform-team',
+        'change_reference': 'CHG-1011',
         'handoff_components': components,
     }
     plan['plan_sha256'] = _plan_hash(plan)
     related = {
         'status': 'read_only_related_inventory',
-        'resources': rows, 'resource_count': 0, 'list_snapshots': lists,
+        'resources': rows,
+        'resource_count': 0,
+        'list_snapshots': lists,
         'resource_sha256': related_sha,
         'global_quota': global_quota,
     }
@@ -81,50 +101,71 @@ def _scope():
 
 
 def _event(
-    plan, related, *,
-    event_type='started', prior=None, attempt_id=_ATTEMPT,
-    seconds=0, actor=30,
+    plan,
+    related,
+    *,
+    event_type='started',
+    prior=None,
+    attempt_id=_ATTEMPT,
+    seconds=0,
+    actor=30,
 ):
     worklist = build_capsule_handoff_worklist(plan=plan, related=related)
     outcome = {
-        'started': 'unknown', 'partial': 'unknown',
+        'started': 'unknown',
+        'partial': 'unknown',
         'readback_candidate': 'readback_observed',
         'recovery_reviewed': 'review_only',
     }[event_type]
     count = sum(
-        item['decision'] in (
+        item['decision']
+        in (
             'candidate_kaori_metadata_handoff_review',
             'explicit_kaori_metadata_handoff_review',
-        ) for item in worklist['items']
+        )
+        for item in worklist['items']
     )
     event = {
         'contract_version': 'capsule-handoff-attempt/v1',
-        'event_type': event_type, 'attempt_id': attempt_id,
+        'event_type': event_type,
+        'attempt_id': attempt_id,
         'sequence': prior['sequence'] + 1 if prior else 1,
         'event_at': (datetime.now(UTC) + timedelta(seconds=seconds)).isoformat(),
-        'tenant_id': plan['tenant_id'], 'cluster_id': plan['cluster_id'],
-        'generation': plan['generation'], 'plan_sha256': plan['plan_sha256'],
+        'tenant_id': plan['tenant_id'],
+        'cluster_id': plan['cluster_id'],
+        'generation': plan['generation'],
+        'plan_sha256': plan['plan_sha256'],
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'worklist_sha256': worklist['inventory_sha256'],
         'actor_user_id': 31 if event_type == 'recovery_reviewed' else actor,
         'previous_event_sha256': prior['event_sha256'] if prior else None,
-        'event_sha256': None, 'outcome': outcome,
+        'event_sha256': None,
+        'outcome': outcome,
         'readback_sha256': None,
         'expected_count': count,
-        'observed_count': 0, 'pending_count': 0, 'transferred_count': 0,
+        'observed_count': 0,
+        'pending_count': 0,
+        'transferred_count': 0,
         'ambiguous_count': 0,
-        'provider_handoff_verified': False, 'release_authorized': False,
-        'resume_authorized': False, 'auto_retry_authorized': False,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+        'resume_authorized': False,
+        'auto_retry_authorized': False,
         'secret_material_persisted': False,
     }
     if event_type in ('readback_candidate', 'recovery_reviewed'):
         event.update(
-            readback_sha256='f' * 64, observed_count=count, transferred_count=count,
+            readback_sha256='f' * 64,
+            observed_count=count,
+            transferred_count=count,
         )
     if prior is not None and event_type == 'recovery_reviewed':
         for field in (
-            'readback_sha256', 'observed_count', 'pending_count',
-            'transferred_count', 'ambiguous_count',
+            'readback_sha256',
+            'observed_count',
+            'pending_count',
+            'transferred_count',
+            'ambiguous_count',
         ):
             event[field] = prior[field]
     event['event_sha256'] = _event_checksum(event)
@@ -133,7 +174,10 @@ def _event(
 
 def _projection(plan, related, events):
     return project_capsule_attempt_history(
-        plan=plan, related=related, accepted_actor_user_id=30, events=events,
+        plan=plan,
+        related=related,
+        accepted_actor_user_id=30,
+        events=events,
     )
 
 
@@ -174,11 +218,18 @@ def test_claimed_complete_readback_is_not_authoritative_or_released():
     plan, related = _scope()
     started = _event(plan, related)
     readback = _event(
-        plan, related, event_type='readback_candidate', prior=started, seconds=1,
+        plan,
+        related,
+        event_type='readback_candidate',
+        prior=started,
+        seconds=1,
     )
     review = _event(
-        plan, related, event_type='recovery_reviewed',
-        prior=readback, seconds=2,
+        plan,
+        related,
+        event_type='recovery_reviewed',
+        prior=readback,
+        seconds=2,
     )
     projection = _projection(plan, related, [started, readback])
     assert projection['status'] == 'readback_claim_requires_independent_provider_verification'
@@ -188,19 +239,22 @@ def test_claimed_complete_readback_is_not_authoritative_or_released():
     assert _projection(plan, related, [started, readback, review])['release_authorized'] is False
 
 
-@pytest.mark.parametrize('mutator', [
-    lambda events: events[0].update(plan_sha256='a' * 64),
-    lambda events: events[0].update(handoff_fingerprint='f' * 64),
-    lambda events: events[0].update(actor_user_id=31),
-    lambda events: events[0].update(tenant_id='foreign'),
-    lambda events: events[0].update(outcome='readback_observed'),
-    lambda events: events[0].update(provider_handoff_verified=True),
-    lambda events: events[0].update(event_type='provider_handoff_verified'),
-    lambda events: events[0].update(secret='private-credential-value'),
-    lambda events: events[0].update(sequence=0),
-    lambda events: events[0].update(event_at='2026-10-11'),
-    lambda events: events[0].update(event_sha256='c' * 64),
-])
+@pytest.mark.parametrize(
+    'mutator',
+    [
+        lambda events: events[0].update(plan_sha256='a' * 64),
+        lambda events: events[0].update(handoff_fingerprint='f' * 64),
+        lambda events: events[0].update(actor_user_id=31),
+        lambda events: events[0].update(tenant_id='foreign'),
+        lambda events: events[0].update(outcome='readback_observed'),
+        lambda events: events[0].update(provider_handoff_verified=True),
+        lambda events: events[0].update(event_type='provider_handoff_verified'),
+        lambda events: events[0].update(secret='private-credential-value'),
+        lambda events: events[0].update(sequence=0),
+        lambda events: events[0].update(event_at='2026-10-11'),
+        lambda events: events[0].update(event_sha256='c' * 64),
+    ],
+)
 def test_tampered_receipts_unknown_authorization_or_secrets_fail_closed(mutator):
     plan, related = _scope()
     events = [_event(plan, related)]

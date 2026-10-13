@@ -17,9 +17,7 @@ _ATTENTION_DISPATCH_STATUSES = {'failed', 'partially_succeeded', 'evidence_faile
 
 def build_job_configuration_attention_summary() -> int:
     """Count persisted policy dispatch attention without creating missing policies."""
-    return JobPolicy.query.filter(
-        JobPolicy.last_dispatch_status.in_(_ATTENTION_DISPATCH_STATUSES)
-    ).count()
+    return JobPolicy.query.filter(JobPolicy.last_dispatch_status.in_(_ATTENTION_DISPATCH_STATUSES)).count()
 
 
 def _policy_status(policy: JobPolicy) -> dict[str, str]:
@@ -169,8 +167,7 @@ def _selected_job_context(definition: JobDefinition, policy: JobPolicy) -> dict[
             ),
             'tone': 'warning' if policy.last_dispatch_status == 'evidence_failed' else 'critical',
             'message': (
-                policy.last_dispatch_message
-                or 'Review the canonical JobExecution before starting another run.'
+                policy.last_dispatch_message or 'Review the canonical JobExecution before starting another run.'
             ),
         }
         if policy.last_dispatch_status in {'failed', 'evidence_failed'}

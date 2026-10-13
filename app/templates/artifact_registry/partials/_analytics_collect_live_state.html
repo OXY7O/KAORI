@@ -3,14 +3,9 @@
 {% set readiness = analytics_readiness if analytics_readiness is defined else analytics.data_readiness %}
 <div id="artifact-registry-analytics-collect-live-state"
      class="mt-2 min-w-0"
-     {% if readiness.is_active and readiness.active_job_public_id %}
-         hx-get="{{ url_for('artifact_registry.analytics_collect_status', public_id=readiness.active_job_public_id) }}"
-         hx-trigger="every 1s"
-         hx-target="this"
-         hx-swap="outerHTML swap:0ms settle:0ms"
-         hx-sync="this:replace"
-     {% endif %}>
-    <div class="flex flex-wrap items-center gap-2 text-xs text-content-secondary" role="status">
+     {% if readiness.is_active and readiness.active_job_public_id %} hx-get="{{ url_for('artifact_registry.analytics_collect_status', public_id=readiness.active_job_public_id) }}" hx-trigger="every 1s" hx-target="this" hx-swap="outerHTML swap:0ms settle:0ms" hx-sync="this:replace" {% endif %}>
+    <div class="flex flex-wrap items-center gap-2 text-xs text-content-secondary"
+         role="status">
         <span class="font-semibold">Analytics Collection Worker</span>
         {{ table_label.status_label(readiness.execution_label, readiness.execution_tone, size='compact') }}
         <span>{{ readiness.execution_helper }}</span>
@@ -18,8 +13,8 @@
     {% if readiness.active_job %}
         <div class="mt-2">
             {{ progress_bar.job_progress(readiness.active_job,
-                                         label='Registry analytics materialization progress',
-                                         compact=true) }}
+                        label='Registry analytics materialization progress',
+                        compact=true) }}
         </div>
     {% endif %}
 </div>

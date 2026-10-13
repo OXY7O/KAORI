@@ -3,10 +3,8 @@ from types import SimpleNamespace
 from app.integrations.delivery.notification_channels.service import _report_id_for_delivery
 
 
-def delivery(event_type='report.generated', asset_type='report', asset_key='42',
-             event_key='report.generated:42'):
-    return SimpleNamespace(event_type=event_type, asset_type=asset_type,
-                           asset_key=asset_key, event_key=event_key)
+def delivery(event_type='report.generated', asset_type='report', asset_key='42', event_key='report.generated:42'):
+    return SimpleNamespace(event_type=event_type, asset_type=asset_type, asset_key=asset_key, event_key=event_key)
 
 
 def test_report_identity_is_exact_and_source_owned() -> None:

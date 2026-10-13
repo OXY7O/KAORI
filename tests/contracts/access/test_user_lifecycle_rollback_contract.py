@@ -10,13 +10,16 @@ from sqlalchemy.exc import OperationalError
 from app.access.users import service
 
 
-@pytest.mark.parametrize('operation', [
-    'activate_user_account',
-    'deactivate_user_account',
-    'reset_user_password',
-    'restore_user_account',
-    'delete_user_account',
-])
+@pytest.mark.parametrize(
+    'operation',
+    [
+        'activate_user_account',
+        'deactivate_user_account',
+        'reset_user_password',
+        'restore_user_account',
+        'delete_user_account',
+    ],
+)
 def test_user_lifecycle_db_failure_rolls_back(monkeypatch, operation: str) -> None:
     class Session:
         rolls = 0
@@ -31,7 +34,9 @@ def test_user_lifecycle_db_failure_rolls_back(monkeypatch, operation: str) -> No
     monkeypatch.setattr(service, 'db', SimpleNamespace(session=session))
     monkeypatch.setattr(service, 'record_admin_event', lambda **kwargs: None)
     user = SimpleNamespace(
-        username='test-user', account_is_active=True, deleted_at=None,
+        username='test-user',
+        account_is_active=True,
+        deleted_at=None,
         updated_at=datetime(2026, 10, 12, tzinfo=UTC),
         set_password=lambda password: None,
     )
@@ -45,8 +50,7 @@ def test_user_lifecycle_db_failure_rolls_back(monkeypatch, operation: str) -> No
 
 
 def test_route_feedback_preserves_fail_closed_lifecycle_and_reset_forms() -> None:
-    source = (Path(__file__).resolve().parents[3] /
-              'app/access/users/routes.py').read_text(encoding='utf-8')
+    source = (Path(__file__).resolve().parents[3] / 'app/access/users/routes.py').read_text(encoding='utf-8')
     for method, call in (
         ('activate', 'activate_user_account('),
         ('deactivate', 'deactivate_user_account('),

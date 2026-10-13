@@ -164,8 +164,7 @@
                                            placeholder="Filter committed delivery event"
                                            class="{{ table_ui.filter_input_classes() }}">
                                 </div>
-                                <button type="submit"
-                                        class="{{ table_ui.action_classes() }}">Find Deliveries</button>
+                                <button type="submit" class="{{ table_ui.action_classes() }}">Find Deliveries</button>
                                 {% if payload.delivery_filter %}
                                     <a href="{{ url_for('notification_channels.index', tab='delivery') }}"
                                        hx-get="{{ url_for('notification_channels.index', tab='delivery') }}"
@@ -224,9 +223,7 @@
                                                         <a href="{{ delivery.report_source_url }}"
                                                            class="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                                             Open Report
-                                                            <i data-lucide="arrow-up-right"
-                                                               class="h-3.5 w-3.5"
-                                                               aria-hidden="true"></i>
+                                                            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                         </a>
                                                     {% endif %}
                                                 </td>

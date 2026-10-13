@@ -9,9 +9,9 @@ from sqlalchemy import and_, func, or_
 
 from app.extensions.db import db
 from app.models.notification import Notification
-from app.platform_operations.notifications.metadata import redact_operational_metadata, redact_operational_text
 from app.platform_operations.data_lifecycle.retention.policy_service import resolve_policy
 from app.platform_operations.data_lifecycle.retention.types import ArchiveBoundary, PartialCleanupError, RetentionPolicy
+from app.platform_operations.notifications.metadata import redact_operational_metadata, redact_operational_text
 
 
 class OperationalActivityArchiveDomain:
@@ -193,9 +193,7 @@ class OperationalActivityArchiveDomain:
                 'message': redact_operational_text(notification.message) if notification.message is not None else None,
                 'detail': redact_operational_text(notification.detail) if notification.detail is not None else None,
                 'action_url': (
-                    redact_operational_text(notification.action_url, limit=500)
-                    if notification.action_url
-                    else None
+                    redact_operational_text(notification.action_url, limit=500) if notification.action_url else None
                 ),
                 'metadata': redact_operational_metadata(notification.metadata_json),
                 'created_at': _isoformat(notification.created_at),

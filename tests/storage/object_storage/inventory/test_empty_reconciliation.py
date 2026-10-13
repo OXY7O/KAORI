@@ -36,14 +36,18 @@ class _Session:
 
 def _snapshot(*, buckets=(), warnings: int = 0):
     return SimpleNamespace(
-        buckets=tuple(buckets), warning_count=warnings, latency_ms=3, usage_stats_mode='disabled',
+        buckets=tuple(buckets),
+        warning_count=warnings,
+        latency_ms=3,
+        usage_stats_mode='disabled',
     )
 
 
 def _system(*, previously_collected: bool = True):
     old = datetime(2026, 10, 1, tzinfo=UTC)
     return SimpleNamespace(
-        id='storage-1', name='Storage One',
+        id='storage-1',
+        name='Storage One',
         buckets=[SimpleNamespace(name='previous')] if previously_collected else [],
         inventory_observed_at=old if previously_collected else None,
     )
@@ -62,7 +66,8 @@ def setup(monkeypatch):
 def _instance(system):
     return SimpleNamespace(
         integration_instance=SimpleNamespace(enabled=True, lifecycle_status='active', metadata_json={}),
-        readiness_status='ready', object_storage_system=system,
+        readiness_status='ready',
+        object_storage_system=system,
     )
 
 
@@ -76,7 +81,8 @@ def _authorization(system, *, count: int = 1):
 
 
 def test_first_successfully_observed_zero_bucket_snapshot_is_committed(
-    setup: _Session, monkeypatch,
+    setup: _Session,
+    monkeypatch,
 ) -> None:
     system = _system(previously_collected=False)
     monkeypatch.setattr(sync, 'collect_instance_bucket_inventory', lambda *_a, **_kw: _snapshot())
@@ -89,7 +95,8 @@ def test_first_successfully_observed_zero_bucket_snapshot_is_committed(
 
 
 def test_ordinary_sync_refuses_suspicious_empty_and_keeps_last_good(
-    setup: _Session, monkeypatch,
+    setup: _Session,
+    monkeypatch,
 ) -> None:
     system = _system()
     previous = system.inventory_observed_at
@@ -103,7 +110,8 @@ def test_ordinary_sync_refuses_suspicious_empty_and_keeps_last_good(
 
 
 def test_operator_authorized_empty_requires_two_independent_discoveries(
-    setup: _Session, monkeypatch,
+    setup: _Session,
+    monkeypatch,
 ) -> None:
     system = _system()
     confirmation = _authorization(system)
@@ -130,7 +138,9 @@ def test_operator_authorized_empty_requires_two_independent_discoveries(
 
 @pytest.mark.parametrize('kind', ['changed_snapshot', 'second_discovery_nonempty', 'second_discovery_warning'])
 def test_reconciliation_fails_closed_on_drift_or_disagreement(
-    setup: _Session, monkeypatch, kind: str,
+    setup: _Session,
+    monkeypatch,
+    kind: str,
 ) -> None:
     system = _system()
     authorization = _authorization(system)
@@ -157,14 +167,17 @@ def test_reconciliation_fails_closed_on_drift_or_disagreement(
     assert system.inventory_observed_at == datetime(2026, 10, 1, tzinfo=UTC)
 
 
-@pytest.mark.parametrize('payload', [
-    {},
-    {'Buckets': None},
-    {'Buckets': [], 'IsTruncated': True},
-    {'Buckets': [], 'NextContinuationToken': 'more'},
-    {'Buckets': [{'Name': ''}]},
-    {'Buckets': ['invalid-record']},
-])
+@pytest.mark.parametrize(
+    'payload',
+    [
+        {},
+        {'Buckets': None},
+        {'Buckets': [], 'IsTruncated': True},
+        {'Buckets': [], 'NextContinuationToken': 'more'},
+        {'Buckets': [{'Name': ''}]},
+        {'Buckets': ['invalid-record']},
+    ],
+)
 def test_incomplete_bucket_discovery_is_not_authoritative_empty(payload) -> None:
     from app.integrations.storage.object_storage.providers.minio.client import _bucket_inventory
     from app.integrations.storage.object_storage.providers.minio.contracts import MinioConnectionError
@@ -175,7 +188,8 @@ def test_incomplete_bucket_discovery_is_not_authoritative_empty(payload) -> None
 
 
 def test_successful_inventory_sync_commits_current_source_generation(
-    setup: _Session, monkeypatch,
+    setup: _Session,
+    monkeypatch,
 ) -> None:
     system = _system(previously_collected=False)
     instance = _instance(system)
@@ -192,7 +206,8 @@ def test_successful_inventory_sync_commits_current_source_generation(
 
 
 def test_failed_inventory_sync_does_not_promote_previous_source_generation(
-    setup: _Session, monkeypatch,
+    setup: _Session,
+    monkeypatch,
 ) -> None:
     system = _system()
     instance = _instance(system)

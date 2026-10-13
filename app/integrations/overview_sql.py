@@ -27,8 +27,17 @@ def overview_portfolio_counts() -> tuple[dict[str, dict[str, int]], dict[str, in
     modules = registry.all()
     if not modules:
         return {}, dict.fromkeys(
-            ('total', 'configured', 'ready', 'readiness_review',
-             'validation_required', 'not_configured', 'attention', 'blocked'), 0
+            (
+                'total',
+                'configured',
+                'ready',
+                'readiness_review',
+                'validation_required',
+                'not_configured',
+                'attention',
+                'blocked',
+            ),
+            0,
         )
 
     configured = case(
@@ -66,10 +75,12 @@ def overview_portfolio_counts() -> tuple[dict[str, dict[str, int]], dict[str, in
             count_when(ready).label('ready'),
             count_when(and_(eligible, state == 'degraded')).label('degraded'),
             count_when(and_(eligible, state.in_(blocked_states))).label('blocked'),
-            count_when(and_(
-                eligible,
-                ~state.in_(('ready', 'degraded', *blocked_states)),
-            )).label('validation_required'),
+            count_when(
+                and_(
+                    eligible,
+                    ~state.in_(('ready', 'degraded', *blocked_states)),
+                )
+            ).label('validation_required'),
             count_when(disabled).label('disabled'),
         )
         .select_from(identity)
@@ -90,10 +101,18 @@ def overview_portfolio_counts() -> tuple[dict[str, dict[str, int]], dict[str, in
     counts: dict[str, dict[str, int]] = {}
     for record in db.session.execute(statement).mappings():
         category = str(record['integration_type'])
-        values = {key: int(record[key] or 0) for key in (
-            'total', 'configured', 'ready', 'degraded',
-            'blocked', 'validation_required', 'disabled',
-        )}
+        values = {
+            key: int(record[key] or 0)
+            for key in (
+                'total',
+                'configured',
+                'ready',
+                'degraded',
+                'blocked',
+                'validation_required',
+                'disabled',
+            )
+        }
         values['not_configured'] = values['total'] - values['configured']
         values['attention'] = values['total'] - values['ready']
         counts[category] = values
@@ -101,9 +120,7 @@ def overview_portfolio_counts() -> tuple[dict[str, dict[str, int]], dict[str, in
         name: sum(values[name] for values in counts.values())
         for name in ('total', 'configured', 'ready', 'blocked', 'not_configured')
     }
-    totals['readiness_review'] = sum(
-        values['configured'] - values['ready'] for values in counts.values()
-    )
+    totals['readiness_review'] = sum(values['configured'] - values['ready'] for values in counts.values())
     totals['validation_required'] = totals['readiness_review']
     totals['attention'] = totals['total'] - totals['ready']
     return counts, totals

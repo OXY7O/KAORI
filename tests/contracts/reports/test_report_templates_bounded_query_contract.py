@@ -5,7 +5,9 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_registry_paginates_custom_templates_in_sql_not_python() -> None:
     source = (ROOT / 'app/reports/report_templates/service.py').read_text()
-    payload = source.split('def get_report_templates_payload(', 1)[1].split('def get_custom_template_aggregate_items(', 1)[0]
+    payload = source.split('def get_report_templates_payload(', 1)[1].split(
+        'def get_custom_template_aggregate_items(', 1
+    )[0]
     assert 'get_all_template_items()' not in payload
     assert 'get_custom_template_filtered_query(selected_filters)' in payload
     assert '.offset(custom_offset)' in payload

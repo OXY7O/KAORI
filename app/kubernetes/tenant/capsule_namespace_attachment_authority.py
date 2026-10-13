@@ -21,7 +21,11 @@ def _text(obj: Any, attr: str, *, alt: str = '') -> str:
 
 
 def validate_capsule_existing_tenant_target(
-    tenant: Any, *, cluster_id: str, capsule_name: str, capsule_uid: str,
+    tenant: Any,
+    *,
+    cluster_id: str,
+    capsule_name: str,
+    capsule_uid: str,
 ) -> None:
     """Do not reparent a Namespace across Capsule or cluster authority."""
     if not capsule_name or not capsule_uid or str(tenant.cluster_id) != cluster_id:
@@ -72,9 +76,7 @@ def validate_capsule_namespace_attachment(
     if not isinstance(labels, Mapping):
         raise ValueError('Capsule Namespace labels are malformed.')
     claims = {
-        str(labels[key]).strip()
-        for key in _CAPSULE_TENANT_LABEL_KEYS
-        if key in labels and str(labels[key]).strip()
+        str(labels[key]).strip() for key in _CAPSULE_TENANT_LABEL_KEYS if key in labels and str(labels[key]).strip()
     }
     references = _value(meta, 'owner_references') or _value(meta, 'ownerReferences') or []
     if not isinstance(references, list):
@@ -92,20 +94,22 @@ def validate_capsule_namespace_attachment(
     if owners and owners != {capsule_name}:
         raise ValueError('Namespace Capsule ownerReference belongs to another Tenant.')
     capsule_owners = [
-        owner for owner in references
+        owner
+        for owner in references
         if _text(owner, 'kind') == 'Tenant'
         and _text(owner, 'api_version', alt='apiVersion').startswith('capsule.clastix.io/')
     ]
-    if any(
-        _text(owner, 'uid') != capsule_uid
-        for owner in capsule_owners
-    ):
+    if any(_text(owner, 'uid') != capsule_uid for owner in capsule_owners):
         raise ValueError('Namespace Capsule ownerReference UID belongs to another generation.')
     if not (capsule_name in claims or capsule_name in owners or name in status_namespace_names):
         raise ValueError('Namespace has no authoritative Capsule Tenant correlation.')
     return {
-        'namespace': name, 'namespace_uid': uid, 'namespace_resource_version': resource_version,
-        'capsule_tenant_name': capsule_name, 'capsule_tenant_uid': capsule_uid,
+        'namespace': name,
+        'namespace_uid': uid,
+        'namespace_resource_version': resource_version,
+        'capsule_tenant_name': capsule_name,
+        'capsule_tenant_uid': capsule_uid,
         'capsule_tenant_resource_version': capsule_rv,
-        'authority': 'capsule', 'provider_mutation_performed': False,
+        'authority': 'capsule',
+        'provider_mutation_performed': False,
     }

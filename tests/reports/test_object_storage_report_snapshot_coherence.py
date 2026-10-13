@@ -8,8 +8,11 @@ from app.storage.object_storage.analytics import service as analytics_service
 def test_object_storage_report_reuses_one_pinned_snapshot(monkeypatch) -> None:
     cutoff = datetime(2026, 10, 12, tzinfo=UTC)
     system = SimpleNamespace(
-        id='system-a', name='storage-uat', environment='uat',
-        status='active', inventory_observed_at=cutoff,
+        id='system-a',
+        name='storage-uat',
+        environment='uat',
+        status='active',
+        inventory_observed_at=cutoff,
     )
     shared = {'schema': 'object-storage-analytics.v1'}
     state = {'generated_at': cutoff, 'stale': False, 'label': 'Current'}
@@ -26,9 +29,12 @@ def test_object_storage_report_reuses_one_pinned_snapshot(monkeypatch) -> None:
         if name == 'overview':
             return {
                 'metrics': {
-                    'capacity_total_display': '10 GiB', 'usage_total_display': '4 GiB',
-                    'capacity_free_display': '6 GiB', 'utilization_display': '40%',
-                    'bucket_count_display': '1', 'object_count_display': '2',
+                    'capacity_total_display': '10 GiB',
+                    'usage_total_display': '4 GiB',
+                    'capacity_free_display': '6 GiB',
+                    'utilization_display': '40%',
+                    'bucket_count_display': '1',
+                    'object_count_display': '2',
                     'bucket_rows': [{'name': 'logs', 'usage_bytes': 4096}],
                 },
                 'metrics_source': {'label': 'Ready'},
@@ -42,7 +48,8 @@ def test_object_storage_report_reuses_one_pinned_snapshot(monkeypatch) -> None:
     monkeypatch.setattr(reports, 'validate_report_instance', lambda report: None)
     monkeypatch.setattr(reports, 'require_object_storage_system', lambda report: system.id)
     monkeypatch.setattr(
-        reports, 'db',
+        reports,
+        'db',
         SimpleNamespace(session=SimpleNamespace(get=lambda model, key: system)),
     )
     monkeypatch.setattr(reports, 'read_analytics_snapshot', read)
@@ -61,7 +68,8 @@ def test_object_storage_render_path_cannot_dispatch_missing_snapshot(monkeypatch
 
     monkeypatch.setattr(analytics_service, '_queue_analytics_snapshot_refresh', forbidden)
     monkeypatch.setattr(
-        analytics_service, 'analytics_snapshot_blocker',
+        analytics_service,
+        'analytics_snapshot_blocker',
         lambda *args, **kwargs: {'detail': 'No committed evidence'},
     )
     context = {'metrics_source': {}, 'metrics_readiness': {}}

@@ -34,11 +34,15 @@ def _format_percent(value: float | None) -> str:
 
 def _active_object_storage_providers() -> dict[str, IntegrationInstance]:
     """Only committed enabled/active integration instances authorize active findings."""
-    providers = IntegrationInstance.query.filter(
-        IntegrationInstance.integration_type == 'object_storage',
-        IntegrationInstance.enabled.is_(True),
-        IntegrationInstance.lifecycle_status == 'active',
-    ).order_by(IntegrationInstance.id.asc()).all()
+    providers = (
+        IntegrationInstance.query.filter(
+            IntegrationInstance.integration_type == 'object_storage',
+            IntegrationInstance.enabled.is_(True),
+            IntegrationInstance.lifecycle_status == 'active',
+        )
+        .order_by(IntegrationInstance.id.asc())
+        .all()
+    )
     identities: dict[str, IntegrationInstance] = {}
     for provider in providers:
         metadata = provider.metadata_json if isinstance(provider.metadata_json, dict) else {}
@@ -62,6 +66,7 @@ def _provider_identity(
     metadata = identity.metadata_json if isinstance(identity.metadata_json, dict) else {}
     provider_label = str(metadata.get('provider_label') or provider_key.replace('_', ' ').title() or 'Object Storage')
     return provider_key, provider_label
+
 
 def _finding(
     rule: dict[str, Any],
@@ -332,10 +337,14 @@ def build_object_storage_recommendation_findings(
             provider_key, provider_label = _provider_identity(system, providers)
             if provider_key != 'minio':
                 continue
-            findings.extend(_forecast_findings(
-                rules=rules, system=system,
-                provider_key=provider_key, provider_label=provider_label,
-            ))
+            findings.extend(
+                _forecast_findings(
+                    rules=rules,
+                    system=system,
+                    provider_key=provider_key,
+                    provider_label=provider_label,
+                )
+            )
             for bucket in system.buckets:
                 # A recently collected system cannot make an older bucket
                 # projection a currently assessed governance or capacity risk.
@@ -346,13 +355,23 @@ def build_object_storage_recommendation_findings(
                     observed = observed.replace(tzinfo=UTC)
                 if observed < cutoff:
                     continue
-                findings.extend(_quota_findings(
-                    rules=rules, system=system, bucket=bucket,
-                    provider_key=provider_key, provider_label=provider_label,
-                ))
-                findings.extend(_governance_findings(
-                    rules=rules, system=system, bucket=bucket,
-                    provider_key=provider_key, provider_label=provider_label,
-                ))
+                findings.extend(
+                    _quota_findings(
+                        rules=rules,
+                        system=system,
+                        bucket=bucket,
+                        provider_key=provider_key,
+                        provider_label=provider_label,
+                    )
+                )
+                findings.extend(
+                    _governance_findings(
+                        rules=rules,
+                        system=system,
+                        bucket=bucket,
+                        provider_key=provider_key,
+                        provider_label=provider_label,
+                    )
+                )
         last_id = str(systems[-1].id)
     return findings

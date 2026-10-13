@@ -54,12 +54,12 @@
     </section>
     {% set can_reconcile = current_user.has_permission(definition.execute_permission) and current_user.has_permission(definition.domain_execute_permission) %}
     {% if selected_job.empty_reconciliation_targets and can_reconcile %}
-        <section class="{{ operational_section.shell_classes() }}" aria-labelledby="registry-confirm-empty-title">
+        <section class="{{ operational_section.shell_classes() }}"
+                 aria-labelledby="registry-confirm-empty-title">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <p class="text-xs font-semibold text-status-warning-text">Guarded Recovery · Manual Only</p>
-                <h3 id="registry-confirm-empty-title" class="mt-1 text-base font-semibold text-content-primary">
-                    Confirm an Empty Registry Inventory
-                </h3>
+                <h3 id="registry-confirm-empty-title"
+                    class="mt-1 text-base font-semibold text-content-primary">Confirm an Empty Registry Inventory</h3>
                 <p class="mt-2 text-xs leading-5 text-content-secondary">
                     Use only after independently verifying all projects were deliberately removed from the selected Registry.
                     Scheduled sync always preserves the last-good snapshot after unexpected zero discovery.
@@ -76,10 +76,13 @@
                 <input type="hidden" name="empty_reconciliation" value="confirm">
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
-                        <label for="registry-confirm-empty-instance" class="block text-xs font-semibold text-content-secondary">
+                        <label for="registry-confirm-empty-instance"
+                               class="block text-xs font-semibold text-content-secondary">
                             Registry provider to reconcile
                         </label>
-                        <select id="registry-confirm-empty-instance" name="confirm_empty_instance_id" required
+                        <select id="registry-confirm-empty-instance"
+                                name="confirm_empty_instance_id"
+                                required
                                 class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary">
                             <option value="">Select a previously nonempty Registry</option>
                             {% for candidate in selected_job.empty_reconciliation_targets %}
@@ -90,11 +93,16 @@
                         </select>
                     </div>
                     <div>
-                        <label for="registry-confirm-empty-phrase" class="block text-xs font-semibold text-content-secondary">
+                        <label for="registry-confirm-empty-phrase"
+                               class="block text-xs font-semibold text-content-secondary">
                             Enter CONFIRM EMPTY to authorize verification
                         </label>
-                        <input id="registry-confirm-empty-phrase" type="text" name="confirmation_phrase"
-                               placeholder="CONFIRM EMPTY" required autocomplete="off"
+                        <input id="registry-confirm-empty-phrase"
+                               type="text"
+                               name="confirmation_phrase"
+                               placeholder="CONFIRM EMPTY"
+                               required
+                               autocomplete="off"
                                class="mt-2 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary">
                     </div>
                 </div>

@@ -170,9 +170,7 @@ def firing_routes(case: AlertCase) -> list[FiringRoute]:
     # Channel defaults apply only when no explicit governed policy owns this
     # domain. A configured rule that does not match severity/matchers must not
     # silently widen to an ungoverned broadcast.
-    governed = AlertRoutingPolicy.query.filter(
-        AlertRoutingPolicy.domains_json.is_not(None)
-    ).all()
+    governed = AlertRoutingPolicy.query.filter(AlertRoutingPolicy.domains_json.is_not(None)).all()
     if any(case.domain in (policy.domains_json or []) for policy in governed):
         return []
 

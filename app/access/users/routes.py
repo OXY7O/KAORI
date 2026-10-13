@@ -37,12 +37,12 @@ from app.access.users.service import (
     get_user,
     lock_active_super_admin_boundary,
     lock_user_for_mutation,
-    user_version_matches,
-    user_version_token,
     persist_created_user,
     persist_updated_user,
     reset_user_password,
     restore_user_account,
+    user_version_matches,
+    user_version_token,
 )
 from app.models import User
 
@@ -87,10 +87,7 @@ def reject(title: str, message: str, *, status: str = 'warning', target: User | 
 def index():
     filters = normalize_user_filters(request.args.to_dict())
     payload = build_users_payload(filters, actor=cast(User, current_user))
-    if (
-        request.headers.get('HX-Request') == 'true'
-        and request.headers.get('HX-History-Restore-Request') != 'true'
-    ):
+    if request.headers.get('HX-Request') == 'true' and request.headers.get('HX-History-Restore-Request') != 'true':
         # Registry interactions own only the directory fragment. Lifecycle
         # mutations continue to refresh the entire users-page-content + OOB Hero.
         if request.headers.get('HX-Target') == 'user-directory':
@@ -276,7 +273,12 @@ def activate(user_id: int):
         activate_user_account(actor=actor, user=user)
     except SQLAlchemyError:
         current_app.logger.exception('User activation transaction failed for user id %s.', user.id)
-        return reject('Activation failed', 'This account could not be activated. No change was saved.', status='error', target=user)
+        return reject(
+            'Activation failed',
+            'This account could not be activated. No change was saved.',
+            status='error',
+            target=user,
+        )
     return finish(
         user_management_feedback(
             actor=actor,
@@ -304,7 +306,12 @@ def deactivate(user_id: int):
         deactivate_user_account(actor=actor, user=user)
     except SQLAlchemyError:
         current_app.logger.exception('User deactivation transaction failed for user id %s.', user.id)
-        return reject('Deactivation failed', 'This account could not be deactivated. No change was saved.', status='error', target=user)
+        return reject(
+            'Deactivation failed',
+            'This account could not be deactivated. No change was saved.',
+            status='error',
+            target=user,
+        )
     return finish(
         user_management_feedback(
             actor=actor,
@@ -367,7 +374,12 @@ def restore(user_id: int):
         restore_user_account(actor=actor, user=user)
     except SQLAlchemyError:
         current_app.logger.exception('User restoration transaction failed for user id %s.', user.id)
-        return reject('Restoration failed', 'This account could not be restored. No change was saved.', status='error', target=user)
+        return reject(
+            'Restoration failed',
+            'This account could not be restored. No change was saved.',
+            status='error',
+            target=user,
+        )
     return finish(
         user_management_feedback(
             actor=actor,
@@ -395,7 +407,9 @@ def delete(user_id: int):
         delete_user_account(actor=actor, user=user)
     except SQLAlchemyError:
         current_app.logger.exception('User soft deletion transaction failed for user id %s.', user.id)
-        return reject('Deletion failed', 'This account could not be deleted. No change was saved.', status='error', target=user)
+        return reject(
+            'Deletion failed', 'This account could not be deleted. No change was saved.', status='error', target=user
+        )
     return finish(
         user_management_feedback(
             actor=actor,

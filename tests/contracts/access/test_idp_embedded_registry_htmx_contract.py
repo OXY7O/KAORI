@@ -14,18 +14,12 @@ ROUTES_PATH = ROOT / 'app/access/identity_providers/routes.py'
 def test_htmx_registry_target_is_rendered_embedded() -> None:
     source = ROUTES_PATH.read_text(encoding='utf-8')
     tree = ast.parse(source)
-    view = next(
-        node for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == 'index'
-    )
+    view = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'index')
     code = ast.get_source_segment(source, view)
     assert code is not None
     assert "request.headers.get('HX-Target') == 'identity-provider-workspace'" in code
     assert "render_template('access/identity_providers/partials/_workspace.html', **payload)" in code
-    assert (
-        "render_template('access/identity_providers/partials/_registry.html', "
-        'embedded=True, **payload)'
-    ) in code
+    assert ("render_template('access/identity_providers/partials/_registry.html', embedded=True, **payload)") in code
     assert "request.headers.get('HX-History-Restore-Request') != 'true'" in code
     assert "render_template('access/identity_providers/index.html', **payload)" in code
 
@@ -47,15 +41,13 @@ def test_registry_root_is_frameless_when_embedded_but_standalone_is_framed() -> 
 
 
 def test_workspace_owns_frame_without_disturbing_registry_interactions() -> None:
-    workspace = (
-        ROOT / 'app/templates/access/identity_providers/partials/_workspace.html'
-    ).read_text(encoding='utf-8')
+    workspace = (ROOT / 'app/templates/access/identity_providers/partials/_workspace.html').read_text(encoding='utf-8')
     registry = REGISTRY_PATH.read_text(encoding='utf-8')
 
     assert 'class="{{ table_ui.block_classes() }}"' in workspace
     assert '{% set embedded = true %}' in workspace
-    assert "partials/_tabs.html" in workspace
-    assert "partials/_registry.html" in workspace
+    assert 'partials/_tabs.html' in workspace
+    assert 'partials/_registry.html' in workspace
     for interaction in (
         'registry_ui.filter_form(',
         'registry_ui.clear_filters_link(',

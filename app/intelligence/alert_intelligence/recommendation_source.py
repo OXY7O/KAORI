@@ -62,12 +62,13 @@ _GROUPED_ASSET_TYPES = {
 }
 
 
-
-_REGISTRY_RUNTIME_RULES = frozenset({
-    'registry.security.critical_runtime_vulnerability',
-    'registry.security.scan_evidence_missing',
-    'registry.runtime.tag_only_correlation',
-})
+_REGISTRY_RUNTIME_RULES = frozenset(
+    {
+        'registry.security.critical_runtime_vulnerability',
+        'registry.security.scan_evidence_missing',
+        'registry.runtime.tag_only_correlation',
+    }
+)
 
 
 def _registry_runtime_source_posture(
@@ -114,7 +115,9 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         if not finding_key:
             stats['skipped'] += 1
             continue
-        available, source_reason = _source_evidence_posture_for_finding(finding, readiness_cache=runtime_readiness_cache)
+        available, source_reason = _source_evidence_posture_for_finding(
+            finding, readiness_cache=runtime_readiness_cache
+        )
         if not available:
             state = RecommendationAlertState.query.filter_by(finding_key=finding_key).first()
             if state is not None and state.alert_case_id is not None:
@@ -202,7 +205,10 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         stats['promoted'] += 1
 
     _reconcile_missing_recommendation_states(
-        fresh_keys=fresh_keys, now=now, stats=stats, readiness_cache=runtime_readiness_cache,
+        fresh_keys=fresh_keys,
+        now=now,
+        stats=stats,
+        readiness_cache=runtime_readiness_cache,
     )
     db.session.commit()
     return stats
@@ -767,7 +773,9 @@ def _refresh_grouped_case(case: AlertCase, *, grouping_mode: str, now: datetime)
 
 
 def _source_evidence_posture_for_finding(
-    finding: dict[str, Any], *, readiness_cache: dict[str, str] | None = None,
+    finding: dict[str, Any],
+    *,
+    readiness_cache: dict[str, str] | None = None,
 ) -> tuple[bool, str]:
     evidence = _finding_evidence(finding)
     asset_key = str(
@@ -789,7 +797,9 @@ def _source_evidence_posture_for_finding(
 
 
 def _source_evidence_posture_for_state(
-    state: RecommendationAlertState, *, readiness_cache: dict[str, str] | None = None,
+    state: RecommendationAlertState,
+    *,
+    readiness_cache: dict[str, str] | None = None,
 ) -> tuple[bool, str]:
     rule = catalog_rule(state.rule_key) or {}
     source = _source_evidence_posture(
@@ -810,8 +820,10 @@ def _source_evidence_posture_for_state(
     if rule_key.startswith('kubernetes.tls_secret.'):
         collection = db.session.get(TLSCertificateCollectionState, state.asset_key)
         if (
-            collection is None or collection.secret_collection_status != TLS_COLLECTION_COLLECTED
-            or collection.collected_at is None or _as_utc(collection.collected_at) < cutoff
+            collection is None
+            or collection.secret_collection_status != TLS_COLLECTION_COLLECTED
+            or collection.collected_at is None
+            or _as_utc(collection.collected_at) < cutoff
         ):
             return False, 'source_unavailable'
     if state.domain == 'object_storage':
@@ -837,25 +849,23 @@ def _source_evidence_posture_for_state(
             return False, 'source_unavailable'
         values = forecast.payload_json.get('forecast')
         if not isinstance(values, dict) or not all(
-            isinstance(values.get(key), (int, float))
-            for key in ('days_to_capacity', 'growth_per_day')
+            isinstance(values.get(key), (int, float)) for key in ('days_to_capacity', 'growth_per_day')
         ):
             return False, 'source_unavailable'
     if rule_key.startswith('registry.security.critical_runtime_vulnerability'):
         runtime_artifacts = db.session.query(RegistryWorkloadBinding.artifact_id).distinct()
         incomplete_scan = (
-            RegistryArtifact.query.join(
-                RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id
-            ).join(
-                RegistryProject, RegistryRepository.project_id == RegistryProject.id
-            ).filter(
+            RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+            .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+            .filter(
                 RegistryProject.integration_instance_id == int(state.asset_key),
                 RegistryArtifact.id.in_(runtime_artifacts),
                 or_(
                     RegistryArtifact.scan_status.is_(None),
                     ~RegistryArtifact.scan_status.in_(tuple(SUCCESSFUL_REGISTRY_SCAN_STATUSES)),
                 ),
-            ).first()
+            )
+            .first()
         )
         if incomplete_scan is not None:
             return False, 'source_unavailable'

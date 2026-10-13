@@ -50,17 +50,26 @@
         </div>
     </aside>
 {%- endmacro %}
-
 {# Refresh only external Hero state. Normal provider pages keep committed state;
    binding and validation/runtime HTMX responses update it without reloading. #}
 {% macro state_oob(posture_key, readiness, capability_count) -%}
     {% if request.headers.get('HX-Request') == 'true' %}
         {% set readiness_value = readiness or 'validation_required' %}
         {% set source_posture = 'Ready' if readiness_value == 'ready' else ('Attention' if readiness_value in ['degraded', 'blocked'] else 'Configured') %}
-        <span id="{{ posture_key }}-hero-readiness" hx-swap-oob="innerHTML" class="hidden">{{ readiness_value|replace('_', ' ')|title }}</span>
-        <span id="{{ posture_key }}-hero-capabilities" hx-swap-oob="innerHTML" class="hidden">{{ capability_count }} Validated Capabilities</span>
-        <span id="{{ posture_key }}-posture-status" hx-swap-oob="innerHTML" class="hidden">{{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture, display='text') }}</span>
-        <span id="{{ posture_key }}-posture-readiness" hx-swap-oob="innerHTML" class="hidden">{{ readiness_value|replace('_', ' ')|title }}</span>
-        <span id="{{ posture_key }}-posture-capabilities" hx-swap-oob="innerHTML" class="hidden">{{ capability_count }}</span>
+        <span id="{{ posture_key }}-hero-readiness"
+              hx-swap-oob="innerHTML"
+              class="hidden">{{ readiness_value|replace('_', ' ') |title }}</span>
+        <span id="{{ posture_key }}-hero-capabilities"
+              hx-swap-oob="innerHTML"
+              class="hidden">{{ capability_count }} Validated Capabilities</span>
+        <span id="{{ posture_key }}-posture-status"
+              hx-swap-oob="innerHTML"
+              class="hidden">{{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture, display='text') }}</span>
+        <span id="{{ posture_key }}-posture-readiness"
+              hx-swap-oob="innerHTML"
+              class="hidden">{{ readiness_value|replace('_', ' ') |title }}</span>
+        <span id="{{ posture_key }}-posture-capabilities"
+              hx-swap-oob="innerHTML"
+              class="hidden">{{ capability_count }}</span>
     {% endif %}
 {%- endmacro %}

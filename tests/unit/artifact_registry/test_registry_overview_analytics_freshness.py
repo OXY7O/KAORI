@@ -30,7 +30,11 @@ def _snapshot(*, expired: bool = False, payload: bool = True, expiry: bool = Tru
     ],
 )
 def test_selected_analytics_evidence_requires_usable_ready_payload(
-    snapshot, label, current, stale, monkeypatch,
+    snapshot,
+    label,
+    current,
+    stale,
+    monkeypatch,
 ) -> None:
     from app.artifact_registry import presentation_common
 
@@ -56,7 +60,10 @@ def test_selected_analytics_evidence_requires_usable_ready_payload(
     ],
 )
 def test_fleet_analytics_never_calls_expired_evidence_ready(
-    current: int, stale: int, total: int, label: str,
+    current: int,
+    stale: int,
+    total: int,
+    label: str,
 ) -> None:
     context = {
         'latest_committed_at': None,

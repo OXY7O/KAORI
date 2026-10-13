@@ -9,7 +9,11 @@ def test_create_edit_handlers_handle_all_sql_errors_without_leaking_details() ->
     source = (ROOT / 'app/access/users/routes.py').read_text(encoding='utf-8')
     for name, ending, expected in (
         ('create()', 'edit(user_id: int)', 'The user could not be created due to a database error. Please retry.'),
-        ('edit(user_id: int)', 'activate(user_id: int)', 'The user changes could not be saved due to a database error. Please retry.'),
+        (
+            'edit(user_id: int)',
+            'activate(user_id: int)',
+            'The user changes could not be saved due to a database error. Please retry.',
+        ),
     ):
         section = source.split(f'def {name}:', 1)[1].split(f'def {ending}:', 1)[0]
         assert 'except IntegrityError:' in section

@@ -35,7 +35,10 @@ def _allocation(*, label_claims=None, owner_claims=None):
 
 def _select(allocation, **kwargs):
     return select_capsule_namespace_attachment_candidate(
-        allocation, namespace='team-app', capsule_tenant_name='blue-tenant', **kwargs,
+        allocation,
+        namespace='team-app',
+        capsule_tenant_name='blue-tenant',
+        **kwargs,
     )
 
 
@@ -43,7 +46,9 @@ def test_capsule_namespace_attachment_matches_exact_uid_rv_and_authority_without
     payload = _allocation()
     copy = deepcopy(payload)
     selected = _select(
-        payload, expected_uid='ns-uid-101', expected_resource_version='42',
+        payload,
+        expected_uid='ns-uid-101',
+        expected_resource_version='42',
     )
     assert selected['uid'] == 'ns-uid-101'
     assert selected['resource_version'] == '42'
@@ -51,11 +56,14 @@ def test_capsule_namespace_attachment_matches_exact_uid_rv_and_authority_without
     assert payload == copy
 
 
-@pytest.mark.parametrize('claims', [
-    [],
-    ['foreign-tenant'],
-    ['blue-tenant', 'foreign-tenant'],
-])
+@pytest.mark.parametrize(
+    'claims',
+    [
+        [],
+        ['foreign-tenant'],
+        ['blue-tenant', 'foreign-tenant'],
+    ],
+)
 def test_status_only_or_conflicting_capsule_label_cannot_claim_namespace(claims):
     with pytest.raises(ValueError, match='unambiguous Tenant'):
         _select(_allocation(label_claims=claims))
@@ -71,14 +79,18 @@ def test_capsule_owner_ref_disagrees_with_label_fails_closed():
         _select(_allocation(owner_claims=['foreign-tenant']))
 
 
-@pytest.mark.parametrize('expected_uid,expected_rv', [
-    ('replaced-uid', '42'),
-    ('ns-uid-101', '43'),
-])
+@pytest.mark.parametrize(
+    'expected_uid,expected_rv',
+    [
+        ('replaced-uid', '42'),
+        ('ns-uid-101', '43'),
+    ],
+)
 def test_capsule_namespace_attachment_rejects_stale_preflight(expected_uid, expected_rv):
     with pytest.raises(ValueError, match='changed'):
         _select(
-            _allocation(), expected_uid=expected_uid,
+            _allocation(),
+            expected_uid=expected_uid,
             expected_resource_version=expected_rv,
         )
 
@@ -89,18 +101,19 @@ def test_capsule_namespace_already_missing_or_multiple_provider_correlations():
     with pytest.raises(ValueError, match='uniquely correlated'):
         _select(missing)
     duplicated = _allocation()
-    duplicated['correlated_namespaces'].append(
-        deepcopy(duplicated['correlated_namespaces'][0])
-    )
+    duplicated['correlated_namespaces'].append(deepcopy(duplicated['correlated_namespaces'][0]))
     with pytest.raises(ValueError, match='uniquely correlated'):
         _select(duplicated)
 
 
-@pytest.mark.parametrize('field,value', [
-    ('authority_unsupported_dimensions', ['unsupported API']),
-    ('authority_ambiguous_dimensions', ['mixed authority']),
-    ('ambiguous_dimensions', ['external ownership ambiguity']),
-])
+@pytest.mark.parametrize(
+    'field,value',
+    [
+        ('authority_unsupported_dimensions', ['unsupported API']),
+        ('authority_ambiguous_dimensions', ['mixed authority']),
+        ('ambiguous_dimensions', ['external ownership ambiguity']),
+    ],
+)
 def test_capsule_attachment_rejects_unsupported_or_ambiguous_authority(field, value):
     payload = _allocation()
     payload[field] = value

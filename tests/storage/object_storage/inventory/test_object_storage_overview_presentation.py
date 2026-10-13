@@ -111,7 +111,9 @@ def test_unassessed_protection_and_exposure_never_project_green_clean_fleet_stat
 
 def test_partial_exposure_coverage_is_warning_even_with_zero_public_assets() -> None:
     assessed = _BucketPostureStub('configured', 'enabled', 'enabled', 'enabled', 'private', 'collected')
-    missing = _BucketPostureStub('not_collected', 'not_collected', 'not_collected', 'not_collected', 'unknown', 'not_collected')
+    missing = _BucketPostureStub(
+        'not_collected', 'not_collected', 'not_collected', 'not_collected', 'unknown', 'not_collected'
+    )
     posture = _overview_bucket_posture([assessed, missing])
     assert posture['protection_assessed'] == 1
     assert posture['exposure_assessed'] == 1
@@ -158,24 +160,39 @@ def test_sql_fleet_bucket_aggregate_matches_existing_pure_posture(monkeypatch) -
         samples = [
             _BucketPostureStub('configured', 'enabled', 'enabled', 'configured', 'private', 'collected'),
             _BucketPostureStub(
-                'not_configured', 'not_collected', 'not_collected', 'not_collected',
-                'unknown', 'not_collected',
+                'not_configured',
+                'not_collected',
+                'not_collected',
+                'not_collected',
+                'unknown',
+                'not_collected',
             ),
             _BucketPostureStub('not_collected', 'disabled', 'enabled', 'enabled', 'restricted', 'collected'),
             _BucketPostureStub('configured', 'enabled', 'enabled', 'enforced', 'public', 'not_collected'),
             _BucketPostureStub(
-                'not_collected', 'enabled', 'not_supported', 'enabled',
-                'not_collected', 'not_collected',
+                'not_collected',
+                'enabled',
+                'not_supported',
+                'enabled',
+                'not_collected',
+                'not_collected',
             ),
         ]
         for index, data in enumerate(samples, start=1):
-            session.add(ObjectStorageBucket(
-                id=index, name=f'bucket-{index}', object_storage_system_id='storage-a',
-                quota_state=data.quota_state, versioning_state=data.versioning_state,
-                immutability_state=data.immutability_state, encryption_state=data.encryption_state,
-                exposure_state=data.exposure_state, usage_stats_state=data.usage_stats_state,
-                observed_at=datetime.now(UTC),
-            ))
+            session.add(
+                ObjectStorageBucket(
+                    id=index,
+                    name=f'bucket-{index}',
+                    object_storage_system_id='storage-a',
+                    quota_state=data.quota_state,
+                    versioning_state=data.versioning_state,
+                    immutability_state=data.immutability_state,
+                    encryption_state=data.encryption_state,
+                    exposure_state=data.exposure_state,
+                    usage_stats_state=data.usage_stats_state,
+                    observed_at=datetime.now(UTC),
+                )
+            )
         session.commit()
         assert aggregates.bucket_fleet_posture() == _overview_bucket_posture(samples)
         assert aggregates.bucket_usage_summary()['buckets'] == len(samples)
@@ -203,19 +220,31 @@ def test_storage_inventory_system_row_qualifies_source_changed_evidence() -> Non
 
     observed = datetime.now(UTC)
     system = SimpleNamespace(
-        id='system-1', name='System One', description=None, environment='uat',
-        status='unknown', buckets=[SimpleNamespace(name='prior-bucket')],
+        id='system-1',
+        name='System One',
+        description=None,
+        environment='uat',
+        status='unknown',
+        buckets=[SimpleNamespace(name='prior-bucket')],
         inventory_observed_at=observed,
     )
     connection = SimpleNamespace(
-        id=7, declared_release=None, endpoint='https://s3.example.invalid',
-        region='us-east-1', addressing_style='path', compatibility_profile=None,
-        readiness_status='validation_required', last_validated_at=None, last_checked_at=None,
+        id=7,
+        declared_release=None,
+        endpoint='https://s3.example.invalid',
+        region='us-east-1',
+        addressing_style='path',
+        compatibility_profile=None,
+        readiness_status='validation_required',
+        last_validated_at=None,
+        last_checked_at=None,
     )
     metadata = {'object_storage_connection_generation': 2, 'object_storage_inventory_generation': 1}
     owner = SimpleNamespace(
-        identity=SimpleNamespace(metadata_json=metadata), record=connection,
-        provider_key='minio', provider=SimpleNamespace(label='MinIO'),
+        identity=SimpleNamespace(metadata_json=metadata),
+        record=connection,
+        provider_key='minio',
+        provider=SimpleNamespace(label='MinIO'),
     )
     row = _system_row(system, owner=owner, owner_resolved=True)
     assert row['inventory_source_changed'] is True

@@ -22,8 +22,7 @@ _TEAMS_WORKFLOW_SUFFIXES = ('.environment.api.powerplatform.com', '.logic.azure.
 class _NoWorkflowRedirects(HTTPRedirectHandler):
     """Never forward a secret-bearing Workflow URL to a redirected endpoint."""
 
-    def redirect_request(self, request: Request, fp: Any, code: int, msg: str,
-                         headers: Any, newurl: str) -> None:
+    def redirect_request(self, request: Request, fp: Any, code: int, msg: str, headers: Any, newurl: str) -> None:
         return None
 
 
@@ -70,9 +69,7 @@ def send_microsoft_teams_message(
     try:
         # urllib's default redirect handler may follow a 30x away from the
         # approved Workflows host (and a Workflow URL itself is secret).
-        with build_opener(_NoWorkflowRedirects()).open(
-            request, timeout=max(int(timeout_seconds), 1)
-        ) as response:
+        with build_opener(_NoWorkflowRedirects()).open(request, timeout=max(int(timeout_seconds), 1)) as response:
             status = int(getattr(response, 'status', 200) or 200)
     except HTTPError as exc:
         return DeliveryResult(False, f'Microsoft Teams Workflow rejected the request with HTTP {exc.code}.')

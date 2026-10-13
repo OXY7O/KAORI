@@ -11,39 +11,60 @@ from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 
 
 def _plan_and_approval():
-    components = [{
-        'kind': 'Namespace', 'name': 'dev', 'namespace': 'dev', 'uid': 'ns-1',
-        'resource_version': '8', 'handoff': 'external_acceptance_required',
-        'ownership': 'kaori_marker_correlated',
-    }]
+    components = [
+        {
+            'kind': 'Namespace',
+            'name': 'dev',
+            'namespace': 'dev',
+            'uid': 'ns-1',
+            'resource_version': '8',
+            'handoff': 'external_acceptance_required',
+            'ownership': 'kaori_marker_correlated',
+        }
+    ]
     identity = [{'kind': 'Namespace', 'name': 'dev', 'uid': 'ns-1', 'resource_version': '8'}]
     plan = {
-        'tenant_id': 'tenant-1', 'cluster_id': 'cluster-1', 'generation': 2,
-        'provider': 'native_kubernetes', 'provider_identity': identity,
+        'tenant_id': 'tenant-1',
+        'cluster_id': 'cluster-1',
+        'generation': 2,
+        'provider': 'native_kubernetes',
+        'provider_identity': identity,
         'handoff_fingerprint': handoff_fingerprint(components),
-        'successor_owner': 'platform-team', 'change_reference': 'CHG-2026-109',
-        'requested_by': 1, 'requested_at': datetime.now(UTC).isoformat(),
+        'successor_owner': 'platform-team',
+        'change_reference': 'CHG-2026-109',
+        'requested_by': 1,
+        'requested_at': datetime.now(UTC).isoformat(),
     }
     plan['plan_sha256'] = _plan_hash(plan)
     approval = {
         'plan_sha256': plan['plan_sha256'],
         'status': 'acknowledged_pending_provider_handoff',
-        'requested_by': 1, 'approved_by': 2,
+        'requested_by': 1,
+        'approved_by': 2,
         'approved_at': datetime.now(UTC).isoformat(),
         'handoff_fingerprint': plan['handoff_fingerprint'],
-        'provider_handoff_verified': False, 'release_authorized': False,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
     }
     snapshot = {
-        'tenant_id': 'tenant-1', 'cluster_id': 'cluster-1', 'generation': 2,
-        'provider': 'native_kubernetes', 'status': 'blocked',
+        'tenant_id': 'tenant-1',
+        'cluster_id': 'cluster-1',
+        'generation': 2,
+        'provider': 'native_kubernetes',
+        'status': 'blocked',
         'checked_at': datetime.now(UTC).isoformat(),
-        'handoff_components': components, 'live_provider_identity': identity,
+        'handoff_components': components,
+        'live_provider_identity': identity,
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'handoff_required_count': 1,
         'dependency_counts': {
-            'credentials': 0, 'Access Grants': 0, 'Memberships': 0,
-            'enabled Groups': 0, 'managed resources': 0,
-            'advanced capabilities': 0, 'domain reservations': 0,
+            'credentials': 0,
+            'Access Grants': 0,
+            'Memberships': 0,
+            'enabled Groups': 0,
+            'managed resources': 0,
+            'advanced capabilities': 0,
+            'domain reservations': 0,
             'exposure policies': 0,
         },
         'blockers': [
@@ -54,24 +75,29 @@ def _plan_and_approval():
     return plan, approval, snapshot
 
 
-@pytest.mark.parametrize('damage', [
-    lambda p, a: a.update(approved_by=1),
-    lambda p, a: a.update(approved_at='2026-09-01T00:00:00+00:00'),
-    lambda p, a: p.update(requested_at='2026-09-01T00:00:00+00:00'),
-    lambda p, a: a.update(status='pending_independent_approval'),
-    lambda p, a: a.update(handoff_fingerprint='stale'),
-    lambda p, a: a.update(provider_handoff_verified=True),
-    lambda p, a: a.update(release_authorized=True),
-    lambda p, a: p.update(successor_owner='forged'),
-    lambda p, a: a.update(plan_sha256='a' * 64),
-])
+@pytest.mark.parametrize(
+    'damage',
+    [
+        lambda p, a: a.update(approved_by=1),
+        lambda p, a: a.update(approved_at='2026-09-01T00:00:00+00:00'),
+        lambda p, a: p.update(requested_at='2026-09-01T00:00:00+00:00'),
+        lambda p, a: a.update(status='pending_independent_approval'),
+        lambda p, a: a.update(handoff_fingerprint='stale'),
+        lambda p, a: a.update(provider_handoff_verified=True),
+        lambda p, a: a.update(release_authorized=True),
+        lambda p, a: p.update(successor_owner='forged'),
+        lambda p, a: a.update(plan_sha256='a' * 64),
+    ],
+)
 def test_external_reference_refuses_unapproved_or_tampered_handoff(damage):
     plan, approval, _ = _plan_and_approval()
     damage(plan, approval)
     with pytest.raises(ValueError, match='independently acknowledged'):
         module._require_matching_approval(
-            tenant_id='tenant-1', plan_sha256=plan['plan_sha256'],
-            plan=plan, approval=approval,
+            tenant_id='tenant-1',
+            plan_sha256=plan['plan_sha256'],
+            plan=plan,
+            approval=approval,
         )
 
 
@@ -94,8 +120,11 @@ class _Session:
 def _mock_context(monkeypatch, *, change_provider=False, previous=None):
     plan, approval, snapshot = _plan_and_approval()
     tenant = SimpleNamespace(
-        lifecycle_status='ready', ownership_status='adopted',
-        cluster_id='cluster-1', generation=2, provider_key='native_kubernetes',
+        lifecycle_status='ready',
+        ownership_status='adopted',
+        cluster_id='cluster-1',
+        generation=2,
+        provider_key='native_kubernetes',
     )
 
     class _Query:
@@ -117,9 +146,14 @@ def _mock_context(monkeypatch, *, change_provider=False, previous=None):
     prior = {'plan_sha256': plan['plan_sha256']} if previous == 'same_plan' else previous
     monkeypatch.setattr(module, 'latest_release_successor_claim', lambda _: prior)
     if change_provider:
-        snapshot['live_provider_identity'] = [{
-            'kind': 'Namespace', 'name': 'dev', 'uid': 'replaced', 'resource_version': '9',
-        }]
+        snapshot['live_provider_identity'] = [
+            {
+                'kind': 'Namespace',
+                'name': 'dev',
+                'uid': 'replaced',
+                'resource_version': '9',
+            }
+        ]
     monkeypatch.setattr(module, 'review_tenant_release_preflight_committed', lambda **_: snapshot)
     return plan, session
 
@@ -127,8 +161,10 @@ def _mock_context(monkeypatch, *, change_provider=False, previous=None):
 def test_successor_reference_is_audited_but_never_authorizes_transfer(monkeypatch):
     plan, session = _mock_context(monkeypatch)
     receipt = module.record_release_successor_claim_committed(
-        tenant_id='tenant-1', actor_user_id=3,
-        plan_sha256=plan['plan_sha256'], successor_reference='EXT-ACK-2026-123',
+        tenant_id='tenant-1',
+        actor_user_id=3,
+        plan_sha256=plan['plan_sha256'],
+        successor_reference='EXT-ACK-2026-123',
     )
     assert receipt['status'] == 'external_reference_unverified'
     assert receipt['external_successor_verified'] is False
@@ -143,15 +179,19 @@ def test_successor_reference_rejects_stale_provider_and_duplicate(monkeypatch):
     plan, session = _mock_context(monkeypatch, change_provider=True)
     with pytest.raises(ValueError, match='Provider changed'):
         module.record_release_successor_claim_committed(
-            tenant_id='tenant-1', actor_user_id=3,
-            plan_sha256=plan['plan_sha256'], successor_reference='EXT-ACK-2026-123',
+            tenant_id='tenant-1',
+            actor_user_id=3,
+            plan_sha256=plan['plan_sha256'],
+            successor_reference='EXT-ACK-2026-123',
         )
     assert session.commits == 0
     plan, session = _mock_context(monkeypatch, previous='same_plan')
     with pytest.raises(ValueError, match='already recorded'):
         module.record_release_successor_claim_committed(
-            tenant_id='tenant-1', actor_user_id=3,
-            plan_sha256=plan['plan_sha256'], successor_reference='EXT-ACK-2026-123',
+            tenant_id='tenant-1',
+            actor_user_id=3,
+            plan_sha256=plan['plan_sha256'],
+            successor_reference='EXT-ACK-2026-123',
         )
     assert session.commits == 0
 
@@ -160,6 +200,8 @@ def test_successor_reference_rejects_stale_provider_and_duplicate(monkeypatch):
 def test_successor_reference_rejects_unsafe_input(reference):
     with pytest.raises(ValueError, match='External successor reference'):
         module.record_release_successor_claim_committed(
-            tenant_id='tenant-1', actor_user_id=3,
-            plan_sha256='a' * 64, successor_reference=reference,
+            tenant_id='tenant-1',
+            actor_user_id=3,
+            plan_sha256='a' * 64,
+            successor_reference=reference,
         )

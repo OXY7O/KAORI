@@ -200,7 +200,9 @@
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}
     {{ framed_workspace_tabs.badge_oob('alertmanager', 'scope', (binding_total|string) ~ ' Bindings') }}
-    <span id="alertmanager-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (binding_total|string) ~ ' Bindings' }}</span>
+    <span id="alertmanager-hero-binding-count"
+          hx-swap-oob="innerHTML"
+          class="hidden">{{ (binding_total|string) ~ ' Bindings' }}</span>
 {% endif %}
 {% if not scope_oob|default(false) %}
     {% include "components/operation_feedback_oob.html" %}

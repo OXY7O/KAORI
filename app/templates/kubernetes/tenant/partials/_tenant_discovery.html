@@ -130,7 +130,8 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[9%]">Live Status</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">KAORI Classification</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Governed Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[17%]">Review</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[17%]">Review</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -143,8 +144,10 @@
                             {{ table_ui.cluster_identity(row.cluster.name, row.cluster.environment, 'min-w-0 max-w-full') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ row.provider_label }}">{{ row.provider_label }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ 'Provider authority' if row.provider_key == 'capsule' else 'Kubernetes namespace' }}">{{ 'Provider authority' if row.provider_key == 'capsule' else 'Kubernetes namespace' }}</p>
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ row.provider_label }}">{{ row.provider_label }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ 'Provider authority' if row.provider_key == 'capsule' else 'Kubernetes namespace' }}">{{ 'Provider authority' if row.provider_key == 'capsule' else 'Kubernetes namespace' }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             {{ table_label.status_label(row.provider_status, row.provider_tone) }}
@@ -154,8 +157,10 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
                             {% if row.tenant_name %}
-                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ row.tenant_name }}">{{ row.tenant_name }}</p>
-                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="Committed KAORI Tenant">Committed KAORI Tenant</p>
+                                <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                                   title="{{ row.tenant_name }}">{{ row.tenant_name }}</p>
+                                <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                                   title="Committed KAORI Tenant">Committed KAORI Tenant</p>
                             {% else %}
                                 <span class="text-xs text-content-muted">Not governed</span>
                             {% endif %}
@@ -177,7 +182,9 @@
                                             hx-disabled-elt="this"
                                             class="{{ table_ui.action_classes() }} min-w-0 max-w-full text-center"
                                             title="{{ 'Verify provider membership, UID and resourceVersion before attaching this Namespace to its existing Capsule Tenant.' if is_capsule_attachment else 'Review provider authority and allocation evidence before adopting this Tenant.' }}">
-                                        <i data-lucide="{{ 'link-2' if is_capsule_attachment else 'clipboard-check' }}" class="h-4 w-4" aria-hidden="true"></i>
+                                        <i data-lucide="{{ 'link-2' if is_capsule_attachment else 'clipboard-check' }}"
+                                           class="h-4 w-4"
+                                           aria-hidden="true"></i>
                                         {{ 'Review Attachment' if is_capsule_attachment else 'Review Adoption' }}
                                     </button>
                                 {% elif row.management_status == 'Discovered' %}

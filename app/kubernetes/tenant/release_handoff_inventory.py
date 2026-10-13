@@ -40,8 +40,13 @@ def _marker_state(*, labels: Mapping[str, Any], tenant_id: str) -> str:
 
 
 def _component(
-    *, kind: str, name: str, uid: str, version: str,
-    labels: Mapping[str, Any], tenant_id: str,
+    *,
+    kind: str,
+    name: str,
+    uid: str,
+    version: str,
+    labels: Mapping[str, Any],
+    tenant_id: str,
 ) -> dict[str, str]:
     if not name or not uid or not version:
         raise ValueError(f'{kind} handoff lacks complete provider identity.')
@@ -54,8 +59,10 @@ def _component(
         'ownership': marker,
         'managed_by': _string(labels.get(_MANAGER_KEY)),
         'handoff': (
-            'owner_review_required' if marker == 'marker_conflict'
-            else 'external_acceptance_required' if marker == 'kaori_marker_correlated'
+            'owner_review_required'
+            if marker == 'marker_conflict'
+            else 'external_acceptance_required'
+            if marker == 'kaori_marker_correlated'
             else 'observe_only'
         ),
     }
@@ -74,10 +81,12 @@ def native_namespace_handoff_evidence(
         raise ValueError('Namespace identity changed before Release handoff.')
     components = [
         _component(
-            kind='Namespace', name=namespace_name,
+            kind='Namespace',
+            name=namespace_name,
             uid=_string(_field(meta, 'uid')),
             version=_string(_field(meta, 'resource_version') or _field(meta, 'resourceVersion')),
-            labels=labels, tenant_id=tenant_id,
+            labels=labels,
+            tenant_id=tenant_id,
         )
     ]
     sources = observation.get('source_resources')
@@ -89,16 +98,19 @@ def native_namespace_handoff_evidence(
         kind = _string(source.get('kind'))
         if kind not in {'ResourceQuota', 'LimitRange'}:
             raise ValueError('Unsupported allocation source in Release handoff.')
-        components.append(_component(
-            kind=kind, name=_string(source.get('name')),
-            uid=_string(source.get('uid')),
-            version=_string(source.get('resource_version')),
-            labels={
-                _MANAGER_KEY: source.get('managed_by'),
-                _TENANT_ID_KEY: source.get('tenant_id'),
-            },
-            tenant_id=tenant_id,
-        ))
+        components.append(
+            _component(
+                kind=kind,
+                name=_string(source.get('name')),
+                uid=_string(source.get('uid')),
+                version=_string(source.get('resource_version')),
+                labels={
+                    _MANAGER_KEY: source.get('managed_by'),
+                    _TENANT_ID_KEY: source.get('tenant_id'),
+                },
+                tenant_id=tenant_id,
+            )
+        )
     blockers = []
     if observation.get('control_state') != 'observed':
         blockers.append(f'{namespace_name} provider allocation authority is ambiguous or unavailable.')
@@ -141,7 +153,10 @@ def _capsule_spec_sha256(spec: Any) -> str:
             raise ValueError(f'Capsule Tenant {name} handoff schema is unsupported.')
     try:
         canonical = json.dumps(
-            spec, sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+            spec,
+            sort_keys=True,
+            separators=(',', ':'),
+            ensure_ascii=True,
             allow_nan=False,
         ).encode('utf-8')
     except (TypeError, ValueError, OverflowError) as exc:
@@ -161,7 +176,8 @@ def capsule_tenant_handoff_evidence(
         raise ValueError('Capsule Tenant handoff schema is incomplete.')
     spec_sha256 = _capsule_spec_sha256(spec)
     component = _component(
-        kind='CapsuleTenant', name=_string(metadata.get('name')),
+        kind='CapsuleTenant',
+        name=_string(metadata.get('name')),
         uid=_string(metadata.get('uid')),
         version=_string(metadata.get('resourceVersion')),
         labels={_MANAGER_KEY: (metadata.get('labels') or {}).get(_MANAGER_KEY)},
@@ -189,7 +205,10 @@ _CAPSULE_SPEC_TENANT_PROJECTION = 'kaori.io/tenant'
 
 
 def capsule_spec_projects_namespace_tenant_label(
-    *, capsule_spec: Any, capsule_name: str, labels: Mapping[str, Any],
+    *,
+    capsule_spec: Any,
+    capsule_name: str,
+    labels: Mapping[str, Any],
 ) -> bool:
     """Recognize one exact Capsule-spec projection for GET-only preservation.
 
@@ -198,7 +217,8 @@ def capsule_spec_projects_namespace_tenant_label(
     """
     if (
         not isinstance(capsule_spec, Mapping)
-        or not isinstance(capsule_name, str) or not capsule_name
+        or not isinstance(capsule_name, str)
+        or not capsule_name
         or not isinstance(labels, Mapping)
         or labels.get(_CAPSULE_SPEC_TENANT_PROJECTION) != capsule_name
     ):
@@ -210,15 +230,16 @@ def capsule_spec_projects_namespace_tenant_label(
     if not isinstance(metadata, Mapping):
         return False
     declared = metadata.get('labels')
-    return (
-        isinstance(declared, Mapping)
-        and declared.get(_CAPSULE_SPEC_TENANT_PROJECTION) == capsule_name
-    )
+    return isinstance(declared, Mapping) and declared.get(_CAPSULE_SPEC_TENANT_PROJECTION) == capsule_name
 
 
 def capsule_namespace_handoff_evidence(
-    *, record: Any, namespace: Any, tenant_name: str,
-    status_namespace_names: set[str], tenant_id: str,
+    *,
+    record: Any,
+    namespace: Any,
+    tenant_name: str,
+    status_namespace_names: set[str],
+    tenant_id: str,
     capsule_spec: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, str], list[str]]:
     """Verify a Namespace still belongs to the authoritative Capsule Tenant."""
@@ -230,18 +251,17 @@ def capsule_namespace_handoff_evidence(
     uid = _string(_field(meta, 'uid'))
     if name != _string(record.namespace) or uid != _string(record.provider_reference):
         raise ValueError('Capsule Namespace name/UID differs from the committed adoption record.')
-    claims = {
-        _string(labels.get(key))
-        for key in _CAPSULE_TENANT_LABEL_KEYS
-        if _string(labels.get(key))
-    }
+    claims = {_string(labels.get(key)) for key in _CAPSULE_TENANT_LABEL_KEYS if _string(labels.get(key))}
     blockers: list[str] = []
     if (claims and claims != {tenant_name}) or (not claims and name not in status_namespace_names):
         blockers.append(f'Capsule Namespace/{name} has no verifiable Tenant ownership correlation.')
     component = _component(
-        kind='Namespace', name=name, uid=uid,
+        kind='Namespace',
+        name=name,
+        uid=uid,
         version=_string(_field(meta, 'resource_version') or _field(meta, 'resourceVersion')),
-        labels=labels, tenant_id=tenant_id,
+        labels=labels,
+        tenant_id=tenant_id,
     )
     component['authority'] = 'capsule'
     # G0 must not mark an object "Observed / External" when it still
@@ -251,11 +271,14 @@ def capsule_namespace_handoff_evidence(
     # KAORI tenant-id key. Do not infer ownership from its matching value.
     if component['ownership'] == 'external_or_unattributed':
         unknown_kaori = {
-            key for key in labels if key.startswith('kaori.io/')
+            key
+            for key in labels
+            if key.startswith('kaori.io/')
             and not (
                 key == _CAPSULE_SPEC_TENANT_PROJECTION
                 and capsule_spec_projects_namespace_tenant_label(
-                    capsule_spec=capsule_spec, capsule_name=tenant_name,
+                    capsule_spec=capsule_spec,
+                    capsule_name=tenant_name,
                     labels=labels,
                 )
             )
@@ -278,10 +301,10 @@ def handoff_fingerprint(components: list[dict[str, str]]) -> str:
     canonical = sorted(
         components,
         key=lambda item: (
-            item.get('namespace', ''), item.get('kind', ''),
-            item.get('name', ''), item.get('uid', ''),
+            item.get('namespace', ''),
+            item.get('kind', ''),
+            item.get('name', ''),
+            item.get('uid', ''),
         ),
     )
-    return hashlib.sha256(
-        json.dumps(canonical, sort_keys=True, separators=(',', ':')).encode()
-    ).hexdigest()
+    return hashlib.sha256(json.dumps(canonical, sort_keys=True, separators=(',', ':')).encode()).hexdigest()

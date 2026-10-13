@@ -65,8 +65,11 @@ def test_active_native_and_capsule_workflow_roles_stay_explicit():
     observed_native = _row('native-observed', control='adopted_observed', namespace_id=3)
     observed_capsule = _row('capsule-observed', provider='capsule', control='adopted_observed', namespace_id=4)
     released_capsule = _row(
-        'capsule-released', tenant_status='released', provider='capsule',
-        control='adopted_observed', namespace_id=5,
+        'capsule-released',
+        tenant_status='released',
+        provider='capsule',
+        control='adopted_observed',
+        namespace_id=5,
     )
     managed, cutover = _allocation_workflow_target_options(
         [managed_native, managed_capsule, observed_native, observed_capsule, released_capsule]
@@ -89,30 +92,35 @@ def test_stale_post_cannot_mutate_terminal_managed_generation(monkeypatch, termi
     monkeypatch.setattr(
         tenant_service,
         'db',
-        SimpleNamespace(session=SimpleNamespace(
-            get=lambda model, _object_id: (
-                record if model is tenant_service.TenantNamespace else profile
+        SimpleNamespace(
+            session=SimpleNamespace(
+                get=lambda model, _object_id: record if model is tenant_service.TenantNamespace else profile
             )
-        )),
+        ),
     )
     with pytest.raises(ValueError, match='Released or deprovisioned Namespace'):
-        tenant_service.change_native_namespace_allocation({
-            'tenant_namespace_id': '1',
-            'resource_profile_id': '3',
-        })
+        tenant_service.change_native_namespace_allocation(
+            {
+                'tenant_namespace_id': '1',
+                'resource_profile_id': '3',
+            }
+        )
 
 
 @pytest.mark.parametrize('terminal', ['released', 'deprovisioned'])
 def test_stale_post_cannot_cutover_terminal_observed_generation(monkeypatch, terminal):
     record = _row('ready-tenant', namespace_status=terminal, control='adopted_observed')
     monkeypatch.setattr(
-        tenant_service, 'db',
+        tenant_service,
+        'db',
         SimpleNamespace(session=SimpleNamespace(get=lambda _model, _object_id: record)),
     )
     with pytest.raises(ValueError, match='Released or deprovisioned Namespace'):
-        tenant_service.cutover_adopted_namespace_allocation({
-            'tenant_namespace_id': '1',
-        })
+        tenant_service.cutover_adopted_namespace_allocation(
+            {
+                'tenant_namespace_id': '1',
+            }
+        )
 
 
 def test_active_selector_and_terminal_post_guards_are_wired_into_existing_registry():
@@ -120,9 +128,7 @@ def test_active_selector_and_terminal_post_guards_are_wired_into_existing_regist
 
     root = Path(__file__).resolve().parents[3]
     registry = (root / 'app/kubernetes/tenant/registry_context.py').read_text(encoding='utf-8')
-    forms = (root / 'app/templates/kubernetes/tenant/partials/_allocation_change.html').read_text(
-        encoding='utf-8'
-    )
+    forms = (root / 'app/templates/kubernetes/tenant/partials/_allocation_change.html').read_text(encoding='utf-8')
     assert 'namespace_options = TenantNamespace.query.order_by(' in registry
     assert 'namespace_allocation_options, namespace_cutover_options = _allocation_workflow_target_options(' in registry
     assert "'namespace_options': namespace_options" in registry

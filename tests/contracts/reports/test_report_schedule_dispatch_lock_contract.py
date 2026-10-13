@@ -38,7 +38,7 @@ def test_due_schedule_rereads_locked_row_and_checks_active_run() -> None:
     assert '.execution_options(populate_existing=True)' in source
     assert "ReportScheduleRun.status.in_(('started', 'queued'))" in source
     assert "if trigger_source == 'scheduler':" in source
-    assert "skipped = success and report_id is None" in source
+    assert 'skipped = success and report_id is None' in source
     assert "run.status == 'started'" in source
     assert "run.trigger_source == 'scheduler'" in failures
     assert 'timedelta(minutes=5)' in failures

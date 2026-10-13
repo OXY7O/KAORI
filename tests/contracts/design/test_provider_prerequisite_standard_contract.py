@@ -92,6 +92,7 @@ def test_provider_prerequisite_standard_is_locked_in_documentation() -> None:
     assert 'normal operational content is not rendered' in standard.lower()
     assert 'Registry / Harbor operational consumers must adopt this contract' in standard
 
+
 def test_registry_blocked_hero_contract_is_admitted_by_existing_hero_gate() -> None:
     import runpy
 
@@ -103,9 +104,11 @@ def test_shared_context_card_renders_info_not_action_when_blocked() -> None:
     from jinja2 import Environment, FileSystemLoader
 
     templates = ROOT / 'app/templates'
-    hero = Environment(loader=FileSystemLoader(str(templates)), autoescape=True).get_template(
-        'components/page_hero.html'
-    ).module
+    hero = (
+        Environment(loader=FileSystemLoader(str(templates)), autoescape=True)
+        .get_template('components/page_hero.html')
+        .module
+    )
     args = (
         'Registry inventory posture',
         'Committed State',

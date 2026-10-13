@@ -7,12 +7,18 @@ def _inputs():
     return {
         'summary': {'findings': 0, 'critical': 0, 'warning': 0, 'registered_assets': 3},
         'alerts': {
-            'critical': 0, 'warning': 0, 'source_unknown': 0,
-            'verification_pending': 0, 'postmortem_required': 0,
-            'delivery_failures': 0, 'active': 0,
+            'critical': 0,
+            'warning': 0,
+            'source_unknown': 0,
+            'verification_pending': 0,
+            'postmortem_required': 0,
+            'delivery_failures': 0,
+            'active': 0,
         },
         'automation': {
-            'failures': 0, 'pending_governance': 0, 'execution_label': 'Execution Disabled',
+            'failures': 0,
+            'pending_governance': 0,
+            'execution_label': 'Execution Disabled',
         },
     }
 
@@ -27,9 +33,7 @@ def test_empty_findings_with_missing_evidence_is_not_clear() -> None:
 
 
 def test_recent_inventory_with_no_findings_is_not_provider_healthy_claim() -> None:
-    posture = _overview_posture(
-        **_inputs(), evidence={'recent': 3, 'total': 3, 'complete': True}
-    )
+    posture = _overview_posture(**_inputs(), evidence={'recent': 3, 'total': 3, 'complete': True})
     assert posture['label'] == 'No Active Findings'
     assert posture['tone'] == 'info'
     assert 'not a provider-health claim' in posture['helper']
@@ -38,6 +42,7 @@ def test_recent_inventory_with_no_findings_is_not_provider_healthy_claim() -> No
 def test_verification_failed_outcome_forces_control_attention() -> None:
     payload = _inputs()
     payload['automation']['failures'] = 1
-    assert _overview_posture(
-        **payload, evidence={'recent': 3, 'total': 3, 'complete': True}
-    )['label'] == 'Control Attention'
+    assert (
+        _overview_posture(**payload, evidence={'recent': 3, 'total': 3, 'complete': True})['label']
+        == 'Control Attention'
+    )

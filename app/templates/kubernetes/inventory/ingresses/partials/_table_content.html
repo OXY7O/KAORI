@@ -8,17 +8,13 @@
         <caption class="sr-only">Committed Kubernetes Ingress inventory for the active cluster, namespace, class, TLS, and search filters.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[24%]">Ingress</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Scope</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Publication</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">TLS References</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[9%]">Routing</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[24%]">Ingress</th>
-                <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[22%]">Scope</th>
-                <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[25%]">Publication</th>
-                <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[10%]">TLS References</th>
-                <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[9%]">Routing</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
+                    class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -43,12 +39,15 @@
                         </div>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ ingress.tls_reference_label }}">{{ ingress.tls_reference_label }}</p>
+                        <p class="truncate text-sm font-semibold text-content-primary"
+                           title="{{ ingress.tls_reference_label }}">{{ ingress.tls_reference_label }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ ingress.tls_host_count }} declared TLS {{ 'host' if ingress.tls_host_count == 1 else 'hosts' }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ ingress.routing_label }}">{{ ingress.routing_label }}</p>
-                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ ingress.routing_supporting }}">{{ ingress.routing_supporting }}</p>
+                        <p class="truncate text-sm font-semibold text-content-primary"
+                           title="{{ ingress.routing_label }}">{{ ingress.routing_label }}</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                           title="{{ ingress.routing_supporting }}">{{ ingress.routing_supporting }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">{{ resource_detail_modal.detail_button(ingress.id, url_for('inventory.ingress_details', ingress_id=ingress.id) , ingress.name, 'Ingress') }}</td>
                 </tr>

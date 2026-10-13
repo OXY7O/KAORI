@@ -271,13 +271,13 @@ def _present_record(
     if evaluated_status not in ('invalid', 'unknown'):
         if record.not_after is not None:
             evaluated_days, evaluated_status, _ = classify_certificate_validity(
-                record.not_after, now=evaluated_at, policy=validity_policy,
+                record.not_after,
+                now=evaluated_at,
+                policy=validity_policy,
             )
         else:
             evaluated_days, evaluated_status = None, 'unknown'
-    status_label, status_tone, status_icon = _STATUS_PRESENTATION.get(
-        evaluated_status, _STATUS_PRESENTATION['unknown']
-    )
+    status_label, status_tone, status_icon = _STATUS_PRESENTATION.get(evaluated_status, _STATUS_PRESENTATION['unknown'])
     coverage_label, coverage_tone, coverage_icon = _COVERAGE_PRESENTATION.get(
         record.coverage_state or TLS_COVERAGE_NOT_REPORTED,
         _COVERAGE_PRESENTATION[TLS_COVERAGE_NOT_REPORTED],
@@ -537,7 +537,8 @@ def get_tls_certificate_detail(certificate_id: int) -> TLSCertificateInventory |
         return None
     state = db.session.get(TLSCertificateCollectionState, record.cluster_id)
     return _present_record(
-        record, state,
+        record,
+        state,
         evaluated_at=datetime.now(UTC),
         validity_policy=validity_policy_from_config(current_app.config),
     )

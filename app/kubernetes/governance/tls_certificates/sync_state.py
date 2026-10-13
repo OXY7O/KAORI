@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import func
-from typing import Any
 
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
@@ -38,7 +38,8 @@ def _first_relevant(jobs: list[JobExecution], cluster_id: str | None) -> JobExec
 
 
 def _successful_job_evidence_times(
-    jobs: list[JobExecution], cluster_ids: list[str],
+    jobs: list[JobExecution],
+    cluster_ids: list[str],
 ) -> dict[str, datetime]:
     """Bounded fallback for completed successful zero-certificate collections.
 
@@ -125,27 +126,31 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
     latest_job = _first_relevant(recent_jobs, cluster_id)
     interval_minutes = max(int(policy.interval_minutes or 360), 1)
     stale_after = timedelta(minutes=interval_minutes + min(max(interval_minutes // 4, 15), 180))
-    scoped_ids = (
-        [str(cluster_id)] if cluster_id
-        else [
-            str(row[0]) for row in db.session.query(Cluster.id).all()
-        ]
+    scoped_ids = [str(cluster_id)] if cluster_id else [str(row[0]) for row in db.session.query(Cluster.id).all()]
+    states = (
+        {
+            str(state.cluster_id): state
+            for state in TLSCertificateCollectionState.query.filter(
+                TLSCertificateCollectionState.cluster_id.in_(scoped_ids)
+            ).all()
+        }
+        if scoped_ids
+        else {}
     )
-    states = {
-        str(state.cluster_id): state
-        for state in TLSCertificateCollectionState.query.filter(
-            TLSCertificateCollectionState.cluster_id.in_(scoped_ids)
-        ).all()
-    } if scoped_ids else {}
-    record_times = {
-        str(cid): collected
-        for cid, collected in db.session.query(
-            TLSCertificateInventory.cluster_id,
-            func.max(TLSCertificateInventory.collected_at),
-        ).filter(
-            TLSCertificateInventory.cluster_id.in_(scoped_ids)
-        ).group_by(TLSCertificateInventory.cluster_id).all()
-    } if scoped_ids else {}
+    record_times = (
+        {
+            str(cid): collected
+            for cid, collected in db.session.query(
+                TLSCertificateInventory.cluster_id,
+                func.max(TLSCertificateInventory.collected_at),
+            )
+            .filter(TLSCertificateInventory.cluster_id.in_(scoped_ids))
+            .group_by(TLSCertificateInventory.cluster_id)
+            .all()
+        }
+        if scoped_ids
+        else {}
+    )
     freshness_source, is_stale, collection_exceptions = _collection_freshness(
         cluster_ids=scoped_ids,
         states=states,

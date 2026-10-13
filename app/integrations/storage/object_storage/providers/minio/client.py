@@ -121,10 +121,7 @@ def _bucket_inventory(
         not isinstance(rows, list)
         or payload.get('IsTruncated')
         or payload.get('NextContinuationToken')
-        or any(
-            not isinstance(item, dict) or not str(item.get('Name') or '').strip()
-            for item in rows
-        )
+        or any(not isinstance(item, dict) or not str(item.get('Name') or '').strip() for item in rows)
     ):
         raise MinioConnectionError(
             'ListBuckets returned incomplete or malformed inventory evidence. '

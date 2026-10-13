@@ -6,6 +6,7 @@ Create Date: 2026-10-13
 
 Source-only until explicitly admitted through KAORI schema gates.
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -38,9 +39,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        'ck_tenant_capacity_limit_exposure_mode', 'tenant_capacity_policies', type_='check'
-    )
+    op.drop_constraint('ck_tenant_capacity_limit_exposure_mode', 'tenant_capacity_policies', type_='check')
     op.drop_column('tenant_capacity_policies', 'memory_limit_ratio')
     op.drop_column('tenant_capacity_policies', 'cpu_limit_ratio')
     op.drop_column('tenant_capacity_policies', 'limit_exposure_mode')

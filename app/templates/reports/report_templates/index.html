@@ -460,26 +460,26 @@
                                         {% if template.source == 'system' %}
                                             {% if template.can_duplicate %}
                                                 <form method="POST" action="{{ template.duplicate_href }}">
-                                                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
-                                                <button type="submit"
-                                                        data-operation-submit
-                                                        data-loading-label="Creating Custom Template..."
-                                                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
-                                            </form>
+                                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                    <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
+                                                    <button type="submit"
+                                                            data-operation-submit
+                                                            data-loading-label="Creating Custom Template..."
+                                                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
+                                                </form>
                                             {% endif %}
                                         {% else %}
                                             <a href="{{ template.edit_href }}"
                                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Template</a>
                                             {% if template.can_duplicate %}
-                                            <form method="POST" action="{{ template.duplicate_href }}">
-                                                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
-                                                <button type="submit"
-                                                        data-operation-submit
-                                                        data-loading-label="Duplicating Template..."
-                                                        class="{{ table_ui.action_classes() }}"><i data-lucide="copy" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Duplicate</span></button>
-                                            </form>
+                                                <form method="POST" action="{{ template.duplicate_href }}">
+                                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                    <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
+                                                    <button type="submit"
+                                                            data-operation-submit
+                                                            data-loading-label="Duplicating Template..."
+                                                            class="{{ table_ui.action_classes() }}"><i data-lucide="copy" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Duplicate</span></button>
+                                                </form>
                                             {% endif %}
                                             <button type="button"
                                                     data-kaori-dialog-open
@@ -560,7 +560,9 @@
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                 <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
                 {% if payload.get('form_errors') %}
-                    <div role="alert" aria-live="assertive" data-template-server-validation
+                    <div role="alert"
+                         aria-live="assertive"
+                         data-template-server-validation
                          class="rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft px-4 py-3 text-sm text-status-critical-text">
                         <p class="font-semibold">Report Template Validation Failed</p>
                         <ul class="mt-2 list-disc space-y-1 pl-5">

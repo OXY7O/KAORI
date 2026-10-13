@@ -3,6 +3,7 @@
 Regression fixtures authored for #1231; tests are NOT executed under
 the currently active CI/CD, runtime and Kubernetes provider HOLD.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -28,19 +29,32 @@ def _capsule_context():
 
 
 def _stub_capsule_discovery(monkeypatch):
-    monkeypatch.setattr(adoption, '_read_capsule_tenant', lambda *_: (
-        'v1beta2',
-        {'metadata': {
-            'name': 'capsule-demo', 'uid': 'capsule-uid',
-            'resourceVersion': '57', 'labels': {},
-        }},
-    ))
+    monkeypatch.setattr(
+        adoption,
+        '_read_capsule_tenant',
+        lambda *_: (
+            'v1beta2',
+            {
+                'metadata': {
+                    'name': 'capsule-demo',
+                    'uid': 'capsule-uid',
+                    'resourceVersion': '57',
+                    'labels': {},
+                }
+            },
+        ),
+    )
     monkeypatch.setattr(adoption, '_capsule_phase', lambda *_: 'Ready')
     monkeypatch.setattr(adoption, '_managed_capsule_map', lambda *_: {})
     monkeypatch.setattr(adoption, '_managed_namespace_map', lambda *_: {})
-    monkeypatch.setattr(adoption, 'observe_capsule_tenant_allocation', lambda *_args, **_kw: {
-        'control_state': 'observed', 'correlated_namespaces': [],
-    })
+    monkeypatch.setattr(
+        adoption,
+        'observe_capsule_tenant_allocation',
+        lambda *_args, **_kw: {
+            'control_state': 'observed',
+            'correlated_namespaces': [],
+        },
+    )
     monkeypatch.setattr(adoption, 'qualify_capsule_tenant_adoption', lambda **_kw: ('capsule', {}))
     monkeypatch.setattr(adoption, '_apply_capsule_allocation_capability_state', lambda *_a, **_kw: None)
 
@@ -104,10 +118,18 @@ def _capsule_allocation():
         'control_state': 'observed',
         'allocation_authority': 'capsule_tenant_resource_quotas',
         'correlated_namespaces': [
-            {'name': 'demo-dev', 'uid': 'ns-uid-1', 'resource_version': '41',
-             'allocation': {'quota': {'requests.cpu': '1'}}},
-            {'name': 'demo-uat', 'uid': 'ns-uid-2', 'resource_version': '72',
-             'allocation': {'quota': {'requests.memory': '1Gi'}}},
+            {
+                'name': 'demo-dev',
+                'uid': 'ns-uid-1',
+                'resource_version': '41',
+                'allocation': {'quota': {'requests.cpu': '1'}},
+            },
+            {
+                'name': 'demo-uat',
+                'uid': 'ns-uid-2',
+                'resource_version': '72',
+                'allocation': {'quota': {'requests.memory': '1Gi'}},
+            },
         ],
     }
 
@@ -128,7 +150,9 @@ def test_capsule_all_namespace_handbacks_are_verified_with_individual_rv_before_
     monkeypatch.setattr(adoption, 'db', SimpleNamespace(session=writes))
     with pytest.raises(ValueError, match='stale handback'):
         adoption._capsule_namespace_records(
-            context, SimpleNamespace(), _capsule_allocation(),
+            context,
+            SimpleNamespace(),
+            _capsule_allocation(),
         )
     assert observed == [
         ('cluster-a', 'demo-dev', 'ns-uid-1', 'capsule-demo', '41'),
@@ -153,39 +177,52 @@ def test_capsule_namespace_re_adopt_uses_each_verified_uid_rv_for_new_generation
     monkeypatch.setattr(adoption, 'db', SimpleNamespace(session=session))
     monkeypatch.setattr(adoption, '_next_namespace_generation', lambda **_kw: 8)
     rows = adoption._capsule_namespace_records(
-        context, SimpleNamespace(), _capsule_allocation(),
+        context,
+        SimpleNamespace(),
+        _capsule_allocation(),
     )
     assert checks == [('demo-dev', 'ns-uid-1', '41'), ('demo-uat', 'ns-uid-2', '72')]
     assert len(rows) == len(records) == 2
     assert [row.provider_reference for row in rows] == ['ns-uid-1', 'ns-uid-2']
     assert [row.generation for row in rows] == [8, 8]
     assert [row.provisioning_evidence_json['resource_version'] for row in rows] == ['41', '72']
-    assert all(row.provisioning_evidence_json['provider_mutation_performed'] is False
-               for row in rows)
+    assert all(row.provisioning_evidence_json['provider_mutation_performed'] is False for row in rows)
 
 
-@pytest.mark.parametrize(('previous_rv', 'observed_rv'), [
-    ('41', '42'), ('41', None), (None, '41'),
-])
+@pytest.mark.parametrize(
+    ('previous_rv', 'observed_rv'),
+    [
+        ('41', '42'),
+        ('41', None),
+        (None, '41'),
+    ],
+)
 def test_managed_released_handoff_stays_fail_closed_for_stale_or_missing_rv(
-    previous_rv, observed_rv,
+    previous_rv,
+    observed_rv,
 ):
     provider = {
         'provider_mutation_performed': True,
         'handback_governance': {
-            'status': 'verified', 'release_plan_sha256': 'plan-sha',
-            'successor_owner': 'successor', 'provider_uid': 'ns-uid-1',
+            'status': 'verified',
+            'release_plan_sha256': 'plan-sha',
+            'successor_owner': 'successor',
+            'provider_uid': 'ns-uid-1',
             'resource_version': previous_rv,
         },
     }
     release = {
-        'status': 'released', 'plan_sha256': 'plan-sha',
-        'successor_owner': 'successor', 'release_mode': 'managed_handoff',
+        'status': 'released',
+        'plan_sha256': 'plan-sha',
+        'successor_owner': 'successor',
+        'release_mode': 'managed_handoff',
     }
     with pytest.raises(ValueError):
         adoption._require_re_adoption_handback_for_managed_release(
-            provider_evidence=provider, release_evidence=release,
-            provider_uid='ns-uid-1', resource_version=observed_rv,
+            provider_evidence=provider,
+            release_evidence=release,
+            provider_uid='ns-uid-1',
+            resource_version=observed_rv,
         )
 
 
@@ -193,42 +230,63 @@ def test_matching_verified_managed_handback_is_reviewable_but_not_automatic_read
     provider = {
         'provider_mutation_performed': True,
         'handback_governance': {
-            'status': 'verified', 'release_plan_sha256': 'plan-sha',
-            'successor_owner': 'successor', 'provider_uid': 'ns-uid-1',
+            'status': 'verified',
+            'release_plan_sha256': 'plan-sha',
+            'successor_owner': 'successor',
+            'provider_uid': 'ns-uid-1',
             'resource_version': '41',
         },
     }
     release = {
-        'status': 'released', 'plan_sha256': 'plan-sha',
-        'successor_owner': 'successor', 'release_mode': 'managed_handoff',
+        'status': 'released',
+        'plan_sha256': 'plan-sha',
+        'successor_owner': 'successor',
+        'release_mode': 'managed_handoff',
     }
-    assert adoption._require_re_adoption_handback_for_managed_release(
-        provider_evidence=provider, release_evidence=release,
-        provider_uid='ns-uid-1', resource_version='41',
-    ) is None
+    assert (
+        adoption._require_re_adoption_handback_for_managed_release(
+            provider_evidence=provider,
+            release_evidence=release,
+            provider_uid='ns-uid-1',
+            resource_version='41',
+        )
+        is None
+    )
 
 
-@pytest.mark.parametrize(('provider_key', 'reference', 'namespace_versions'), [
-    ('capsule', 'capsule-demo', {'demo-dev': 'unrelated-ns-rv'}),
-    ('native_kubernetes', 'demo-dev', {'demo-dev': '57'}),
-])
+@pytest.mark.parametrize(
+    ('provider_key', 'reference', 'namespace_versions'),
+    [
+        ('capsule', 'capsule-demo', {'demo-dev': 'unrelated-ns-rv'}),
+        ('native_kubernetes', 'demo-dev', {'demo-dev': '57'}),
+    ],
+)
 def test_released_predecessor_selects_own_provider_handback_resource_version(
-    monkeypatch, provider_key, reference, namespace_versions,
+    monkeypatch,
+    provider_key,
+    reference,
+    namespace_versions,
 ):
     """Capsule cluster-scoped Tenant CR must not resolve its RV from a Namespace map."""
     prior = SimpleNamespace(
-        id='old-tenant', generation=3, correlation_id='prior-correlation',
+        id='old-tenant',
+        generation=3,
+        correlation_id='prior-correlation',
         provider_key=provider_key,
         provider_evidence_json={
             'provider_uid': 'old-uid',
             'provider_mutation_performed': True,
             'release_governance': {
-                'status': 'released', 'release_mode': 'managed_handoff',
-                'tenant_id': 'old-tenant', 'plan_sha256': 'prior-plan',
-                'successor_owner': 'platform-team', 'released_at': '2026-10-11T00:00:00+00:00',
+                'status': 'released',
+                'release_mode': 'managed_handoff',
+                'tenant_id': 'old-tenant',
+                'plan_sha256': 'prior-plan',
+                'successor_owner': 'platform-team',
+                'released_at': '2026-10-11T00:00:00+00:00',
             },
             'handback_governance': {
-                'status': 'verified', 'provider_uid': 'old-uid',
+                'status': 'verified',
+                'provider_uid': 'old-uid',
                 'release_plan_sha256': 'prior-plan',
                 'successor_owner': 'platform-team',
                 'resource_version': '57' if provider_key == 'capsule' else 'stale-tenant-field',
@@ -251,16 +309,21 @@ def test_released_predecessor_selects_own_provider_handback_resource_version(
             return prior
 
     model = SimpleNamespace(
-        query=_Query(), lifecycle_status='released',
+        query=_Query(),
+        lifecycle_status='released',
         generation=SimpleNamespace(desc=lambda: 'newest-first'),
     )
     monkeypatch.setattr(adoption, 'Tenant', model)
     current = SimpleNamespace(
-        cluster_id='cluster-1', slug='demo',
-        provider_key=provider_key, provider_reference=reference,
+        cluster_id='cluster-1',
+        slug='demo',
+        provider_key=provider_key,
+        provider_reference=reference,
     )
     lineage = adoption._released_predecessor_evidence(
-        current, provider_uid='old-uid', resource_version='57',
+        current,
+        provider_uid='old-uid',
+        resource_version='57',
     )
     assert lineage['predecessor_tenant_id'] == 'old-tenant'
     assert lineage['predecessor_generation'] == 3

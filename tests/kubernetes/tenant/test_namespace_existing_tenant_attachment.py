@@ -23,9 +23,7 @@ def _tenant(**changes):
 
 
 def test_attaching_native_namespace_preserves_existing_cluster_and_authority():
-    validate_existing_tenant_attachment_target(
-        _tenant(), cluster_id='cluster-a', namespace='sandbox'
-    )
+    validate_existing_tenant_attachment_target(_tenant(), cluster_id='cluster-a', namespace='sandbox')
 
 
 @pytest.mark.parametrize(
@@ -41,9 +39,7 @@ def test_attaching_native_namespace_preserves_existing_cluster_and_authority():
 )
 def test_attachment_fails_closed_on_wrong_tenant_or_cluster(changes, cluster_id, namespace):
     with pytest.raises(ValueError):
-        validate_existing_tenant_attachment_target(
-            _tenant(**changes), cluster_id=cluster_id, namespace=namespace
-        )
+        validate_existing_tenant_attachment_target(_tenant(**changes), cluster_id=cluster_id, namespace=namespace)
 
 
 @pytest.mark.parametrize(

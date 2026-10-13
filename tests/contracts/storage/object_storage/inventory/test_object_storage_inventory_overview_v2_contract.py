@@ -85,9 +85,7 @@ def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
     assert 'Inventory Not Collected' in presentation
     assert 'Stale Snapshot' in presentation
     assert 'Provider Attention' in presentation
-    assert (
-        'Committed inventory; provider configuration and live health remain integration-owned.' in detail
-    )
+    assert 'Committed inventory; provider configuration and live health remain integration-owned.' in detail
     assert 'client.list_buckets' not in presentation
 
 
@@ -148,8 +146,8 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
     assert "section_intro.render('Inventory Assets'," in registry
     assert "table_label.metadata_label(overview.asset_catalog|length ~ ' Asset Types'" in catalog
     assert "table_label.metadata_label(inventory.asset_catalog|length ~ ' Asset Types'" in registry
-    assert "posture_grid.render(overview.fleet_posture_metrics, columns=4)" in fleet
-    assert "posture_grid.render(inventory.fleet_posture_metrics, columns=3)" in registry
+    assert 'posture_grid.render(overview.fleet_posture_metrics, columns=4)' in fleet
+    assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3)' in registry
     assert "body_classes='p-0'" in fleet
     assert "body_classes='p-5'" in catalog
     assert 'sm:grid-cols-2' in catalog
@@ -170,11 +168,27 @@ def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() ->
             ('chart-no-axes-column', 'Usage Collected', '3/3', 'Optional usage.', 'info'),
         ],
         'asset_catalog': [
-            {'title': 'Systems', 'count': 1, 'description': 'Committed systems.', 'endpoint': 'object_storage_inventory.systems', 'icon': 'server', 'action_label': 'Browse Systems'},
-            {'title': 'Buckets & Containers', 'count': 3, 'description': 'Committed assets.', 'endpoint': 'object_storage_inventory.buckets', 'icon': 'container', 'action_label': 'Browse Buckets & Containers'},
+            {
+                'title': 'Systems',
+                'count': 1,
+                'description': 'Committed systems.',
+                'endpoint': 'object_storage_inventory.systems',
+                'icon': 'server',
+                'action_label': 'Browse Systems',
+            },
+            {
+                'title': 'Buckets & Containers',
+                'count': 3,
+                'description': 'Committed assets.',
+                'endpoint': 'object_storage_inventory.buckets',
+                'icon': 'container',
+                'action_label': 'Browse Buckets & Containers',
+            },
         ],
     }
-    html_fleet = env.get_template('storage/object_storage/inventory/overview/partials/_fleet_posture.html').render(overview=overview)
+    html_fleet = env.get_template('storage/object_storage/inventory/overview/partials/_fleet_posture.html').render(
+        overview=overview
+    )
     html_catalog = env.get_template('storage/object_storage/inventory/overview/partials/_summary_cards.html').render(
         overview=overview, url_for=lambda endpoint: '/' + endpoint.replace('.', '/')
     )

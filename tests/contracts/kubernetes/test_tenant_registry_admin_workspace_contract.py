@@ -283,11 +283,11 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert 'Renew Credential' in registry
     assert 'No actions' in registry
     assert 'Read-only' in registry
-    assert 'credential.status == \'revoked\'' in registry
+    assert "credential.status == 'revoked'" in registry
     assert "credential.status == 'suspended'" in registry
     assert "credential.status in ['active', 'renewal_due']" in registry
     assert "credential.reconciliation_status == 'ready'" in registry
-    assert "and delivery_targets" in registry
+    assert 'and delivery_targets' in registry
     # More is a shared native dialog outside the scrolling table, not a clipped popover.
     assert registry.index('data-kaori-native-dialog') > registry.index('registry_ui.footer(')
     for route in (
@@ -525,8 +525,8 @@ def test_access_grant_and_boundaries_have_one_aligned_responsive_footer_contract
     assert workspace.count('<footer class="{{ grant_footer_classes }}">') == 2
     assert 'Effective access requires successful provider reconciliation.' in workspace
     assert 'Environment/Tenant may stay Pending until namespaces exist.' in workspace
-    assert 'action_button.classes(\'primary\') }} justify-self-end' in workspace
-    assert 'action_button.classes(\'secondary\') }} justify-self-end' in workspace
+    assert "action_button.classes('primary') }} justify-self-end" in workspace
+    assert "action_button.classes('secondary') }} justify-self-end" in workspace
     assert 'flex justify-end rounded-b-xl' not in workspace
     assert 'bg-surface-hover px-4 py-3' not in workspace
 
@@ -902,7 +902,7 @@ def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_conn
     assert base.count('_collection_snapshot_context.html') == 1
     assert '_collection_snapshot_compact.html' not in base
     assert '_live_connection_loader.html' not in base
-    assert 'tenant_page != \'overview\'' in base
+    assert "tenant_page != 'overview'" in base
     assert 'tenant.live_provider_connectivity' not in base
     assert '{% block tenant_content %}' in base
     assert (

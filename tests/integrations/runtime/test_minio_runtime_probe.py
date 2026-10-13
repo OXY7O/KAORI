@@ -26,9 +26,7 @@ def test_unqualified_fallback_head_rejects_non_success_status(monkeypatch, statu
 
 @pytest.mark.parametrize('status', [200, 204])
 def test_unqualified_fallback_head_accepts_only_2xx(monkeypatch, status: int) -> None:
-    monkeypatch.setattr(
-        runtime.requests, 'request', lambda *_args, **_kwargs: SimpleNamespace(status_code=status)
-    )
+    monkeypatch.setattr(runtime.requests, 'request', lambda *_args, **_kwargs: SimpleNamespace(status_code=status))
     result = runtime.probe_runtime_values(endpoint='https://s3.example.invalid', product='s3_compatible')
     assert result.connected is True
     assert result.status_code == status

@@ -451,25 +451,21 @@ def user_version_token(user: User) -> str:
     updated_at = user.updated_at
     if updated_at.tzinfo is None:
         updated_at = updated_at.replace(tzinfo=UTC)
-    return '|'.join((
-        updated_at.astimezone(UTC).isoformat(timespec='microseconds'),
-        str(user.role_id or ''),
-        str(int(user.account_is_active)),
-        str(int(user.is_super_admin)),
-        str(user.auth_session_version),
-        str(user.deleted_at.isoformat() if user.deleted_at is not None else ''),
-    ))
+    return '|'.join(
+        (
+            updated_at.astimezone(UTC).isoformat(timespec='microseconds'),
+            str(user.role_id or ''),
+            str(int(user.account_is_active)),
+            str(int(user.is_super_admin)),
+            str(user.auth_session_version),
+            str(user.deleted_at.isoformat() if user.deleted_at is not None else ''),
+        )
+    )
 
 
 def lock_user_for_mutation(user_id: int) -> User | None:
     """Lock and refresh the persisted user row before reviewing an Edit POST."""
-    return (
-        db.session.query(User)
-        .populate_existing()
-        .filter(User.id == int(user_id))
-        .with_for_update()
-        .one_or_none()
-    )
+    return db.session.query(User).populate_existing().filter(User.id == int(user_id)).with_for_update().one_or_none()
 
 
 def user_version_matches(user: User, token: str | None) -> bool:
@@ -510,11 +506,14 @@ def persist_updated_user(*, actor: User, user: User) -> None:
 def activate_user_account(*, actor: User, user: User) -> None:
     try:
         set_user_active(user, True)
-        record_admin_event(actor=actor, action='user.activated', target=user, summary=f'Activated user {user.username}.')
+        record_admin_event(
+            actor=actor, action='user.activated', target=user, summary=f'Activated user {user.username}.'
+        )
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
         raise
+
 
 def deactivate_user_account(*, actor: User, user: User) -> None:
     try:
@@ -527,6 +526,7 @@ def deactivate_user_account(*, actor: User, user: User) -> None:
         db.session.rollback()
         raise
 
+
 def reset_user_password(*, actor: User, user: User, password: str) -> None:
     try:
         user.set_password(password)
@@ -538,6 +538,7 @@ def reset_user_password(*, actor: User, user: User, password: str) -> None:
         db.session.rollback()
         raise
 
+
 def restore_user_account(*, actor: User, user: User) -> None:
     try:
         restore_user(user)
@@ -547,10 +548,13 @@ def restore_user_account(*, actor: User, user: User) -> None:
         db.session.rollback()
         raise
 
+
 def delete_user_account(*, actor: User, user: User) -> None:
     try:
         soft_delete_user(user)
-        record_admin_event(actor=actor, action='user.deleted', target=user, summary=f'Soft deleted user {user.username}.')
+        record_admin_event(
+            actor=actor, action='user.deleted', target=user, summary=f'Soft deleted user {user.username}.'
+        )
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()

@@ -32,7 +32,7 @@
         none,
         none,
         header_actions=header_actions,
-    result_count=profile_pagination.total_items) }}
+        result_count=profile_pagination.total_items) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.resource_profiles',
@@ -83,7 +83,8 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Contract</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[26%]">Allocation</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Usage</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[9%]">Action</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[9%]">Action</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -105,10 +106,10 @@
                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-1.5">
-                                    {{ table_label.status_label(profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ')|title),
-                                        'info' if profile.profile_class == 'custom' else 'normal') }}
+                                    {{ table_label.status_label(profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ') |title),
+                                    'info' if profile.profile_class == 'custom' else 'normal') }}
                                     {{ table_label.status_label('Enabled' if profile.enabled else 'Disabled',
-                                        'normal' if profile.enabled else 'unknown') }}
+                                                                        'normal' if profile.enabled else 'unknown') }}
                                 </div>
                                 <p class="mt-1.5 truncate text-xs text-content-muted"
                                    title="Version {{ profile.version }} · {{ 'Editable Values' if profile.profile_class == 'custom' else 'Versioned Controls' }}">
@@ -123,11 +124,13 @@
                                     ('Memory', profile.quota_hard_json.get('requests.memory') or 'Not Managed'),
                                     ('Pods', profile.quota_hard_json.get('pods') or 'Not Managed'),
                                     ('Storage', profile.quota_hard_json.get('requests.storage') or 'Not Managed')
-                                ] %}
+                                    ] %}
                                     <div class="min-w-0">
                                         <dt class="text-xs text-content-muted">{{ label }}</dt>
                                         <dd class="mt-0.5 break-words text-xs font-semibold leading-5 text-content-primary"
-                                            title="{{ label }}: {{ value }}">{{ value }}</dd>
+                                            title="{{ label }}: {{ value }}">
+                                            {{ value }}
+                                        </dd>
                                     </div>
                                 {% endfor %}
                             </dl>
@@ -166,13 +169,13 @@
         </table>
     </div>
     {{ registry_ui.footer('tenant.resource_profiles',
-            registry_id,
-            loading_id,
-            profile_pagination,
-            query_params,
-            profile_pagination.allowed_per_page,
-            resource_label='Resource Profiles',
-            rows_aria_label='Resource Profile rows per page',
-            control_name='resource-profile') }}
+        registry_id,
+        loading_id,
+        profile_pagination,
+        query_params,
+        profile_pagination.allowed_per_page,
+        resource_label='Resource Profiles',
+        rows_aria_label='Resource Profile rows per page',
+        control_name='resource-profile') }}
     {% include "kubernetes/tenant/partials/_resource_profile_management_dialogs.html" %}
 </section>

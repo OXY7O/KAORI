@@ -6,6 +6,7 @@ RBAC intent hashes and Kubernetes managedFields cannot independently prove
 which authenticated controller created a resource. Never grant dry-run/live
 PATCH from caller-supplied provenance claims.
 """
+
 from __future__ import annotations
 
 import re
@@ -23,16 +24,20 @@ from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 
 _SHA = re.compile(r'[0-9a-f]{64}\Z')
 _RELATED = frozenset({'ResourceQuota', 'LimitRange', 'RoleBinding'})
-_NO_TRANSFER = frozenset({
-    'provider_cr_preservation_review_required',
-    'preserve_cluster_scoped_quota',
-    'preserve_foreign_provider_control',
-    'preserve_existing_provider_namespace',
-})
-_TRANSFER_CANDIDATES = frozenset({
-    'candidate_kaori_metadata_handoff_review',
-    'explicit_kaori_metadata_handoff_review',
-})
+_NO_TRANSFER = frozenset(
+    {
+        'provider_cr_preservation_review_required',
+        'preserve_cluster_scoped_quota',
+        'preserve_foreign_provider_control',
+        'preserve_existing_provider_namespace',
+    }
+)
+_TRANSFER_CANDIDATES = frozenset(
+    {
+        'candidate_kaori_metadata_handoff_review',
+        'explicit_kaori_metadata_handoff_review',
+    }
+)
 
 
 def _sha(value: Any) -> bool:
@@ -40,7 +45,9 @@ def _sha(value: Any) -> bool:
 
 
 def assess_capsule_resource_handoff_scope(
-    *, plan: Mapping[str, Any], related: Mapping[str, Any],
+    *,
+    plan: Mapping[str, Any],
+    related: Mapping[str, Any],
     controller_audit_claims: list[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Index every Capsule/Namespace/quota/limit/RBAC identity, grant no rights.
@@ -50,20 +57,28 @@ def assess_capsule_resource_handoff_scope(
     KAORI labels does not prove controller provenance or accepted consent.
     """
     if (
-        not isinstance(plan, Mapping) or not isinstance(related, Mapping)
+        not isinstance(plan, Mapping)
+        or not isinstance(related, Mapping)
         or plan.get('provider') != 'capsule'
-        or not isinstance(plan.get('tenant_id'), str) or not plan['tenant_id']
-        or not isinstance(plan.get('cluster_id'), str) or not plan['cluster_id']
+        or not isinstance(plan.get('tenant_id'), str)
+        or not plan['tenant_id']
+        or not isinstance(plan.get('cluster_id'), str)
+        or not plan['cluster_id']
         or not _sha(plan.get('plan_sha256'))
         or _plan_hash(dict(plan)) != plan['plan_sha256']
         or handoff_fingerprint(plan.get('handoff_components')) != plan.get('handoff_fingerprint')
     ):
         raise ValueError('Capsule per-resource review requires the exact SHA-bound plan.')
     cr, namespaces = validate_capsule_handoff_scope(plan['handoff_components'])
-    if not all(_sha(cr.get(name)) for name in (
-        'capsule_spec_sha256', 'capsule_related_resources_sha256',
-        'capsule_shared_quota_sha256', 'capsule_rbac_lineage_sha256',
-    )):
+    if not all(
+        _sha(cr.get(name))
+        for name in (
+            'capsule_spec_sha256',
+            'capsule_related_resources_sha256',
+            'capsule_shared_quota_sha256',
+            'capsule_rbac_lineage_sha256',
+        )
+    ):
         raise ValueError('Capsule plan lacks full quota, RBAC and spec provenance digests.')
     worklist = build_capsule_handoff_worklist(plan=plan, related=related)
     observed = related.get('resources')
@@ -121,10 +136,12 @@ def assess_capsule_resource_handoff_scope(
                     or source['resource_version'] != item['resource_version']
                 ):
                     raise ValueError('Capsule Namespace metadata transfer is not exact-source bounded.')
-                blockers.extend((
-                    'namespace_kaori_marker_only_not_authenticated_origin',
-                    'namespace_exact_metadata_only_successor_handoff_not_admitted',
-                ))
+                blockers.extend(
+                    (
+                        'namespace_kaori_marker_only_not_authenticated_origin',
+                        'namespace_exact_metadata_only_successor_handoff_not_admitted',
+                    )
+                )
             elif decision == 'operator_origin_investigation':
                 blockers.append('namespace_ownership_unattributed_or_foreign')
             else:
@@ -143,10 +160,12 @@ def assess_capsule_resource_handoff_scope(
             if decision in _TRANSFER_CANDIDATES:
                 if decision != 'explicit_kaori_metadata_handoff_review' or origin != 'kaori_correlated':
                     raise ValueError('Capsule related-resource transfer has ambiguous ownership.')
-                blockers.extend((
-                    'kaori_label_correlation_not_authenticated_controller_provenance',
-                    'resource_specific_metadata_only_successor_handoff_not_admitted',
-                ))
+                blockers.extend(
+                    (
+                        'kaori_label_correlation_not_authenticated_controller_provenance',
+                        'resource_specific_metadata_only_successor_handoff_not_admitted',
+                    )
+                )
                 if kind == 'RoleBinding':
                     if (
                         not _sha(src.get('binding_contract_sha256'))
@@ -164,33 +183,38 @@ def assess_capsule_resource_handoff_scope(
                 blockers.append('namespaced_foreign_policy_must_be_preserved')
         else:
             raise ValueError('Unrecognized Capsule resource kind in governance inventory.')
-        results.append({
-            'kind': kind, 'namespace': namespace, 'name': name,
-            'uid': item['uid'], 'resource_version': item['resource_version'],
-            'policy_sha256': item.get('policy_sha256'),
-            'metadata_sha256': (
-                related_map[(namespace, kind, name)].get('metadata_sha256')
-                if kind in _RELATED else None
-            ),
-            'inventory_decision': decision,
-            'observed_origin': origin,
-            'provenance_status': (
-                'source_correlated_not_controller_attested'
-                if decision in _TRANSFER_CANDIDATES
-                else 'preserve_or_manual_origin_review'
-            ),
-            'controller_identity_authenticated': False,
-            'controller_origin_attested': False,
-            'independent_resource_consent_verified': False,
-            'metadata_only_handoff_admitted': False,
-            'provider_spec_mutation_allowed': False,
-            'provider_execution_admitted': False,
-            'blockers': blockers,
-        })
+        results.append(
+            {
+                'kind': kind,
+                'namespace': namespace,
+                'name': name,
+                'uid': item['uid'],
+                'resource_version': item['resource_version'],
+                'policy_sha256': item.get('policy_sha256'),
+                'metadata_sha256': (
+                    related_map[(namespace, kind, name)].get('metadata_sha256') if kind in _RELATED else None
+                ),
+                'inventory_decision': decision,
+                'observed_origin': origin,
+                'provenance_status': (
+                    'source_correlated_not_controller_attested'
+                    if decision in _TRANSFER_CANDIDATES
+                    else 'preserve_or_manual_origin_review'
+                ),
+                'controller_identity_authenticated': False,
+                'controller_origin_attested': False,
+                'independent_resource_consent_verified': False,
+                'metadata_only_handoff_admitted': False,
+                'provider_spec_mutation_allowed': False,
+                'provider_execution_admitted': False,
+                'blockers': blockers,
+            }
+        )
     if len(results) != worklist['item_count']:
         raise ValueError('Capsule per-resource investigation omitted provider objects.')
     audit = correlate_capsule_controller_audit_claims(
-        tenant_id=plan['tenant_id'], cluster_id=plan['cluster_id'],
+        tenant_id=plan['tenant_id'],
+        cluster_id=plan['cluster_id'],
         resources=results,
         claims=[] if controller_audit_claims is None else controller_audit_claims,
     )
@@ -202,9 +226,7 @@ def assess_capsule_resource_handoff_scope(
         if claim is not None:
             row['blockers'].append('controller_audit_claim_source_authentication_not_proven')
     candidates = [row for row in results if row['inventory_decision'] in _TRANSFER_CANDIDATES]
-    unresolved = [
-        row for row in results if row['inventory_decision'] not in _NO_TRANSFER
-    ]
+    unresolved = [row for row in results if row['inventory_decision'] not in _NO_TRANSFER]
     return {
         'status': 'resource_specific_controller_provenance_unverified',
         'tenant_id': plan['tenant_id'],
@@ -221,9 +243,12 @@ def assess_capsule_resource_handoff_scope(
         'resource_review_sha256': _digest(results),
         'controller_audit_claim_count': audit['claim_count'],
         'controller_audit_source_authenticated': False,
-        'blockers': sorted(set(
-            reason for row in results for reason in row['blockers']
-        ) | set(related['blockers']) | set(quota['blockers']) | set(lineage['blockers'])),
+        'blockers': sorted(
+            set(reason for row in results for reason in row['blockers'])
+            | set(related['blockers'])
+            | set(quota['blockers'])
+            | set(lineage['blockers'])
+        ),
         'controller_origin_verified': False,
         'resource_specific_handoff_admitted': False,
         'dry_run_admitted': False,

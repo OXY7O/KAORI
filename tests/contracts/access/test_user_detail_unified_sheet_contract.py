@@ -35,16 +35,17 @@ def test_user_detail_is_one_compact_full_width_resource_sheet() -> None:
         "'Lifecycle', 'history'",
         "'Administrative Actions', 'settings-2'",
     )
-    assert [detail.index(x) for x in sections] == sorted(
-        detail.index(x) for x in sections
-    )
+    assert [detail.index(x) for x in sections] == sorted(detail.index(x) for x in sections)
 
 
 def test_identity_and_authentication_evidence_is_retained() -> None:
     detail = source('app/templates/access/users/partials/_user_detail.html')
     for evidence in (
-        'user.id', 'user.username', 'user.display_name',
-        'user.email', 'user_view.source.label',
+        'user.id',
+        'user.username',
+        'user.display_name',
+        'user.email',
+        'user_view.source.label',
         'identity_context.credential_owner',
         'identity_context.provider_name',
         'identity_context.identity_state',
@@ -59,12 +60,8 @@ def test_identity_and_authentication_evidence_is_retained() -> None:
     assert 'sm:grid-cols-2' in detail
     assert "stacked_detail_row('Email', user.email, break_all=true)" in detail
     # Email and Display Name must share the same two-column Identity row.
-    identity = detail.split('data-kaori-user-identity-facts>', 1)[1].split(
-        '{% endcall %}', 1
-    )[0]
-    assert 'sm:grid-cols-2' in detail.split(
-        'data-kaori-user-identity-facts>', 1
-    )[0].split('<div class="grid')[-1]
+    identity = detail.split('data-kaori-user-identity-facts>', 1)[1].split('{% endcall %}', 1)[0]
+    assert 'sm:grid-cols-2' in detail.split('data-kaori-user-identity-facts>', 1)[0].split('<div class="grid')[-1]
     assert "stacked_detail_row('Display Name'," in identity
     assert "stacked_detail_row('Email'," in identity
     assert 'sm:col-span-2' not in identity
@@ -76,9 +73,11 @@ def test_authorization_and_lifecycle_long_values_have_readable_rows() -> None:
     detail = source('app/templates/access/users/partials/_user_detail.html')
 
     for evidence in (
-        'user_view.role.label', 'user_view.role.state_label',
+        'user_view.role.label',
+        'user_view.role.state_label',
         "'Enabled' if user.is_super_admin else 'Disabled'",
-        'user_view.access.label', 'user_view.access.tone',
+        'user_view.access.label',
+        'user_view.access.tone',
         'user_view.access.reason',
         'user_view.lifecycle.label',
         'user.created_at|user_datetime("-")',
@@ -100,26 +99,24 @@ def test_user_detail_uses_adaptive_grids_without_empty_right_columns() -> None:
         # Inspect each specific grid and its content, not unrelated sibling bands.
         header = detail.split(f'data-kaori-user-{marker}-facts>', 1)[0]
         classes = header.rsplit('<div class="', 1)[1].split('"', 1)[0]
-        fields = detail.split(f'data-kaori-user-{marker}-facts>', 1)[1].split(
-            '{% endcall %}', 1
-        )[0]
+        fields = detail.split(f'data-kaori-user-{marker}-facts>', 1)[1].split('{% endcall %}', 1)[0]
         return classes, fields
 
     identity_classes, identity = fact_grid('identity')
     assert 'sm:grid-cols-2' in identity_classes
     assert 'lg:grid-cols-3' not in identity_classes
-    assert identity.index("stacked_detail_row('Display Name'") < identity.index(
-        "stacked_detail_row('Email'"
-    )
+    assert identity.index("stacked_detail_row('Display Name'") < identity.index("stacked_detail_row('Email'")
     assert 'sm:col-span-2' not in identity
     assert "stacked_detail_row('Email', user.email, break_all=true)" in identity
 
     auth_classes, authentication = fact_grid('authentication')
     assert 'sm:grid-cols-2' in auth_classes
     assert 'lg:grid-cols-3' in auth_classes
-    assert authentication.index('Identity Source') < authentication.index(
-        'Credential Owner'
-    ) < authentication.index("'Provider'")
+    assert (
+        authentication.index('Identity Source')
+        < authentication.index('Credential Owner')
+        < authentication.index("'Provider'")
+    )
     assert 'lg:col-span-2' in authentication
     assert "stacked_detail_row('Last Authentication'," in authentication
 
@@ -151,8 +148,11 @@ def test_user_actions_stay_guarded_without_duplicate_edit() -> None:
     assert "actions.get('can_edit')" in table
 
     for permission in (
-        'can_reset_password', 'can_restore',
-        'can_deactivate', 'can_activate', 'can_delete',
+        'can_reset_password',
+        'can_restore',
+        'can_deactivate',
+        'can_activate',
+        'can_delete',
     ):
         assert f"actions.get('{permission}')" in detail
     for contract in (
@@ -185,18 +185,32 @@ def test_user_compact_toggle_keeps_shared_expandable_contract() -> None:
     env = Environment(loader=FileSystemLoader(str(TEMPLATES)), autoescape=True)
     toggle = env.get_template('components/details/_expandable_row.html').module.toggle_button
 
-    compact = str(toggle('users', 2, '', 'user-detail-content-2',
-                         'user-detail-row-2', open_label='Details',
-                         close_label='Hide Details', compact=True))
+    compact = str(
+        toggle(
+            'users',
+            2,
+            '',
+            'user-detail-content-2',
+            'user-detail-row-2',
+            open_label='Details',
+            close_label='Hide Details',
+            compact=True,
+        )
+    )
     normal = str(toggle('roles', 3, '', 'role-detail-content-3', 'role-detail-row-3'))
 
     for attribute in (
-        'data-detail-toggle', 'data-detail-group="users"',
-        'data-detail-item="2"', 'data-detail-target="user-detail-content-2"',
+        'data-detail-toggle',
+        'data-detail-group="users"',
+        'data-detail-item="2"',
+        'data-detail-target="user-detail-content-2"',
         'data-detail-row="user-detail-row-2"',
-        'data-detail-open-label="Details"', 'data-detail-close-label="Hide Details"',
-        'data-detail-toggle-label', 'data-detail-chevron',
-        'data-detail-leading-icon', 'aria-expanded="false"',
+        'data-detail-open-label="Details"',
+        'data-detail-close-label="Hide Details"',
+        'data-detail-toggle-label',
+        'data-detail-chevron',
+        'data-detail-leading-icon',
+        'aria-expanded="false"',
         'aria-controls="user-detail-row-2"',
     ):
         assert attribute in compact

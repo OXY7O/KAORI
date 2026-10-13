@@ -212,7 +212,6 @@ def _analytics_snapshot_posture(
     return 'Stale Snapshot', 'warning', 'All available snapshots have expired; prior evidence remains readable.'
 
 
-
 _AUTO_RETRY_COOLDOWN = timedelta(minutes=5)
 
 
@@ -246,9 +245,7 @@ def build_registry_analytics_readiness(
     if provider_id is not None:
         eligible_ids = [value for value in eligible_ids if value == provider_id]
     registered = IntegrationInstance.query.filter_by(integration_type='registry')
-    registered_count = (
-        registered.filter_by(id=provider_id).count() if provider_id is not None else registered.count()
-    )
+    registered_count = registered.filter_by(id=provider_id).count() if provider_id is not None else registered.count()
     policy = JobPolicy.query.filter_by(job_key=ANALYTICS_JOB_KEY).first()
     jobs = JobExecution.query.filter(
         JobExecution.job_type == ANALYTICS_JOB_TYPE,
@@ -286,10 +283,7 @@ def build_registry_analytics_readiness(
 
     from app.artifact_registry.presentation_common import _analytics_snapshot_view
 
-    current = [
-        item for item in snapshots
-        if _analytics_snapshot_view(item)['is_current']
-    ]
+    current = [item for item in snapshots if _analytics_snapshot_view(item)['is_current']]
     label, tone, helper = _analytics_snapshot_posture(
         eligible_count=len(eligible_ids),
         covered_count=len(snapshots),
@@ -341,19 +335,11 @@ def build_registry_analytics_readiness(
         'active_job_public_id': active.public_id if active is not None else None,
         'active_job': present_job_execution(active) if active is not None else None,
         'latest_job': present_job_execution(latest) if latest is not None else None,
-        'last_success_label': present_user_datetime(
-            success.completed_at if success else None, empty='Never'
-        ),
-        'last_attempt_label': present_user_datetime(
-            latest.created_at if latest else None, empty='Never'
-        ),
-        'automatic_label': 'Enabled' if policy and policy.enabled else (
-            'Manual Only' if policy else 'Not Configured'
-        ),
+        'last_success_label': present_user_datetime(success.completed_at if success else None, empty='Never'),
+        'last_attempt_label': present_user_datetime(latest.created_at if latest else None, empty='Never'),
+        'automatic_label': 'Enabled' if policy and policy.enabled else ('Manual Only' if policy else 'Not Configured'),
         'interval_label': present_interval(policy.interval_minutes) if policy else 'Not Configured',
-        'next_run_label': present_user_datetime(
-            policy.next_run_at if policy else None, empty='Not Scheduled'
-        ),
+        'next_run_label': present_user_datetime(policy.next_run_at if policy else None, empty='Not Scheduled'),
         'latest_status': latest.status if latest else None,
         'latest_attempt_at': latest.created_at if latest else None,
         'collection_warning': None,

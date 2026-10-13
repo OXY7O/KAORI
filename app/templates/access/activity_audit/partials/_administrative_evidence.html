@@ -24,18 +24,17 @@
                 </span>
                 {% if administrative_evidence.has_active_filters %}
                     {% set reset_url = url_for('access.activity_audit.index',
-                        view='administrative',
-                        admin_per_page=administrative_evidence.pagination.per_page) %}
-                    {{ registry_ui.clear_filters_action(
-                        reset_url,
-                        table_ui.action_classes(),
-                        hx_get=reset_url,
-                        target='#activity-administrative-evidence',
-                        select='#activity-administrative-evidence',
-                        indicator='#administrative-activity-loading',
-                        push_url='true',
-                        sync='closest section:replace',
-                        marker='activity-administrative-evidence'
+                                            view='administrative',
+                                        admin_per_page=administrative_evidence.pagination.per_page) %}
+                    {{ registry_ui.clear_filters_action(reset_url,
+                                        table_ui.action_classes() ,
+                    hx_get=reset_url,
+                    target='#activity-administrative-evidence',
+                    select='#activity-administrative-evidence',
+                    indicator='#administrative-activity-loading',
+                    push_url='true',
+                    sync='closest section:replace',
+                    marker='activity-administrative-evidence'
                     ) }}
                 {% endif %}
             </div>
@@ -54,23 +53,19 @@
             aria_label='Administrative source filters',
             page_param='admin_page',
             per_page_param='admin_per_page'
-        ) %}
+            ) %}
             <input type="hidden" name="view" value="administrative">
             <div class="min-w-0 sm:min-w-80">
-                <label class="{{ table_ui.filter_label_classes() }}" for="administrative-search">
-                    Search Activity
-                </label>
-                {{ table_ui.search_field(
-                    'admin_search',
-                    administrative_evidence.filters.search,
-                    'Action, summary or source ID',
-                    'administrative-search'
-                ) }}
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="administrative-search">Search Activity</label>
+                {{ table_ui.search_field('admin_search',
+                                administrative_evidence.filters.search,
+                                'Action, summary or source ID',
+                                'administrative-search') }}
             </div>
             <div class="min-w-0">
-                <label class="{{ table_ui.filter_label_classes() }}" for="administrative-source-scope">
-                    Source Scope
-                </label>
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="administrative-source-scope">Source Scope</label>
                 <select id="administrative-source-scope"
                         name="admin_scope"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -83,9 +78,8 @@
                 </select>
             </div>
             <div class="min-w-0">
-                <label class="{{ table_ui.filter_label_classes() }}" for="administrative-outcome">
-                    Outcome
-                </label>
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="administrative-outcome">Outcome</label>
                 <select id="administrative-outcome"
                         name="admin_outcome"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -98,9 +92,8 @@
                 </select>
             </div>
             <div class="min-w-0">
-                <label class="{{ table_ui.filter_label_classes() }}" for="administrative-time-range">
-                    Recorded Time
-                </label>
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="administrative-time-range">Recorded Time</label>
                 <select id="administrative-time-range"
                         name="admin_time_range"
                         class="{{ table_ui.filter_select_classes() }}">
@@ -147,18 +140,13 @@
                                           title="{{ row.actor_detail }}">{{ row.actor_reference }}</span>
                                 </div>
                             </td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.status_label, row.status_tone) }}</td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.status_label(row.status_label, row.status_tone) }}
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="whitespace-nowrap text-sm font-medium text-content-secondary">
-                                    {{ row.created_at|user_datetime }}
-                                </p>
+                                <p class="whitespace-nowrap text-sm font-medium text-content-secondary">{{ row.created_at|user_datetime }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
                                 {% if row.job_url %}
-                                    <a href="{{ row.job_url }}"
-                                       class="{{ table_ui.action_classes() }}">
+                                    <a href="{{ row.job_url }}" class="{{ table_ui.action_classes() }}">
                                         Open Job
                                         <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
                                     </a>
@@ -196,14 +184,13 @@
         {% include "components/states/_empty_state.html" %}
     {% endif %}
     {% set administrative_query = {
-        'view': 'administrative',
-        'admin_scope': administrative_evidence.scope,
-        'admin_search': administrative_evidence.filters.search,
-        'admin_outcome': administrative_evidence.filters.outcome,
-        'admin_time_range': administrative_evidence.filters.time_range
-    } %}
-    {{ registry_ui.footer(
-        'access.activity_audit.index',
+            'view': 'administrative',
+            'admin_scope': administrative_evidence.scope,
+            'admin_search': administrative_evidence.filters.search,
+            'admin_outcome': administrative_evidence.filters.outcome,
+            'admin_time_range': administrative_evidence.filters.time_range
+        } %}
+    {{ registry_ui.footer('access.activity_audit.index',
         'activity-administrative-evidence',
         'administrative-activity-loading',
         administrative_evidence.pagination,
@@ -213,6 +200,5 @@
         rows_aria_label='Administrative Events per page',
         control_name='administrative-evidence',
         page_param='admin_page',
-        per_page_param='admin_per_page'
-    ) }}
+        per_page_param='admin_per_page') }}
 </section>

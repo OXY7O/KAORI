@@ -2,6 +2,7 @@
 
 This remains a source-level contract; real rendered Visual QA is a separate gate.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -39,13 +40,10 @@ def test_one_primary_action_has_hierarchy_and_shared_clipboard_terminal() -> Non
     assert 'border-l-4 border-kaori-primary' in source
     assert 'bg-surface-card shadow-sm' in source
     assert 'data-kaori-setup-command' in source
-    assert "terminal_command.render(bootstrap_command" in source
+    assert 'terminal_command.render(bootstrap_command' in source
     assert "copy_label='Copy Command'" in source
     assert "copy_label='Copy Command', compact=true" in source
-    assert (
-        'docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml '
-        'run --rm db-bootstrap'
-    ) in source
+    assert ('docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap') in source
     assert 'Windows PowerShell' in source
     assert "config.get('APP_ENV') == 'development'" in source
 
@@ -54,7 +52,7 @@ def test_steps_are_unboxed_and_existing_component_boxed_default_survives() -> No
     source = TEMPLATE.read_text(encoding='utf-8')
     shared = FLOW.read_text(encoding='utf-8')
 
-    assert "operational_flow_steps.render(initialization_flow_rows" in source
+    assert 'operational_flow_steps.render(initialization_flow_rows' in source
     assert "variant='inline'" in source
     assert 'Run the Initial KAORI Database Bootstrap' in source
     assert 'border-l-2 border-outline-default' in shared
@@ -71,7 +69,7 @@ def test_semantic_safety_readiness_and_advanced_remain_fail_closed() -> None:
     assert source.count('<h1 ') == 1
     assert 'aria-labelledby="setup-required-title"' in source
     assert 'data-kaori-auth-setup-heading-authority="readiness-workspace"' in source
-    assert "readiness.setup_required" in source
+    assert 'readiness.setup_required' in source
     assert "table_label.status_indicator_label('Reachable', 'normal')" in source
     assert "table_label.status_indicator_label('Not Installed', 'warning')" in source
     assert "table_label.status_indicator_label('Unavailable', 'critical')" in source
@@ -97,7 +95,7 @@ def test_authentication_design_authority_and_existing_verifier_are_updated() -> 
     assert 'REJECTED' in doc
     assert 'one primary action panel' in doc.lower()
     assert 'operational_flow_steps.render(..., variant=' in doc
-    assert "data-kaori-setup-design=\"command-first\"" in verifier
+    assert 'data-kaori-setup-design="command-first"' in verifier
     assert "data-kaori-setup-outer-frame' not in setup" in verifier
     assert "variant='inline'" in verifier
 
@@ -111,9 +109,7 @@ def test_normal_zoom_has_one_light_canvas_without_rejected_heavy_frame() -> None
     assert 'max-w-4xl rounded-xl border border-outline-subtle bg-surface-card' in source
     assert 'px-4 py-4 shadow-sm sm:px-5 sm:py-5 lg:px-6' in source
     assert 'bg-surface-page px-3 py-3 sm:px-4 sm:py-4' in source
-    assert source.index('data-kaori-setup-canvas="light"') < source.index(
-        'data-kaori-setup-readiness-strip'
-    )
+    assert source.index('data-kaori-setup-canvas="light"') < source.index('data-kaori-setup-readiness-strip')
     # The inline rail and warning do not become more peer cards.
     assert 'data-kaori-setup-identity-card' not in source
     assert 'data-kaori-setup-outer-frame' not in source

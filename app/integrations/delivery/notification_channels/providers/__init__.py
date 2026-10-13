@@ -11,8 +11,14 @@ from app.integrations.delivery.notification_channels.contracts import (
 )
 from app.integrations.delivery.notification_channels.providers.discord import (
     form_view as discord_form_view,
+)
+from app.integrations.delivery.notification_channels.providers.discord import (
     parse_form as parse_discord_form,
+)
+from app.integrations.delivery.notification_channels.providers.discord import (
     send_discord_message,
+)
+from app.integrations.delivery.notification_channels.providers.discord import (
     validate_form as validate_discord_form,
 )
 from app.integrations.delivery.notification_channels.providers.email import (
@@ -41,14 +47,26 @@ from app.integrations.delivery.notification_channels.providers.microsoft_teams i
 )
 from app.integrations.delivery.notification_channels.providers.ntfy import (
     form_view as ntfy_form_view,
+)
+from app.integrations.delivery.notification_channels.providers.ntfy import (
     parse_form as parse_ntfy_form,
+)
+from app.integrations.delivery.notification_channels.providers.ntfy import (
     send_ntfy_message,
+)
+from app.integrations.delivery.notification_channels.providers.ntfy import (
     validate_form as validate_ntfy_form,
 )
 from app.integrations.delivery.notification_channels.providers.slack import (
     form_view as slack_form_view,
+)
+from app.integrations.delivery.notification_channels.providers.slack import (
     parse_form as parse_slack_form,
+)
+from app.integrations.delivery.notification_channels.providers.slack import (
     send_slack_message,
+)
+from app.integrations.delivery.notification_channels.providers.slack import (
     validate_form as validate_slack_form,
 )
 from app.integrations.delivery.notification_channels.providers.telegram import (
@@ -56,10 +74,10 @@ from app.integrations.delivery.notification_channels.providers.telegram import (
 )
 from app.integrations.delivery.notification_channels.providers.telegram import (
     normalize_telegram_topic_id,
-    parse_form as parse_telegram_form,
+    send_telegram_message,
 )
 from app.integrations.delivery.notification_channels.providers.telegram import (
-    send_telegram_message,
+    parse_form as parse_telegram_form,
 )
 from app.integrations.delivery.notification_channels.providers.telegram import (
     validate_form as validate_telegram_form,
@@ -164,8 +182,11 @@ def _send_ntfy(
     timeout_seconds: int,
 ) -> DeliveryResult:
     return send_ntfy_message(
-        credentials=credentials, destination=destination, provider_config=provider_config,
-        message=message, timeout_seconds=timeout_seconds,
+        credentials=credentials,
+        destination=destination,
+        provider_config=provider_config,
+        message=message,
+        timeout_seconds=timeout_seconds,
     )
 
 
@@ -177,8 +198,11 @@ def _send_slack(
     timeout_seconds: int,
 ) -> DeliveryResult:
     return send_slack_message(
-        credentials=credentials, destination=destination, provider_config=provider_config,
-        message=message, timeout_seconds=timeout_seconds,
+        credentials=credentials,
+        destination=destination,
+        provider_config=provider_config,
+        message=message,
+        timeout_seconds=timeout_seconds,
     )
 
 
@@ -190,8 +214,11 @@ def _send_discord(
     timeout_seconds: int,
 ) -> DeliveryResult:
     return send_discord_message(
-        credentials=credentials, destination=destination, provider_config=provider_config,
-        message=message, timeout_seconds=timeout_seconds,
+        credentials=credentials,
+        destination=destination,
+        provider_config=provider_config,
+        message=message,
+        timeout_seconds=timeout_seconds,
     )
 
 

@@ -165,4 +165,4 @@
 {% if request.headers.get('HX-Request') == 'true' %}
     {{ framed_workspace_tabs.badge_oob("metrics-source", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}
 {% endif %}
-{{ provider_detail_posture.state_oob('metrics-source', instance.readiness_status, capability_summary.observed|default(0)) }}
+{{ provider_detail_posture.state_oob('metrics-source', instance.readiness_status, capability_summary.observed|default(0) ) }}

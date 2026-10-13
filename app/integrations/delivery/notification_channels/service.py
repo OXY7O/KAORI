@@ -141,8 +141,7 @@ def notification_channel_summary() -> dict[str, Any]:
     delivery_failed = [channel for channel in eligible if channel.last_delivery_status == 'failed']
     validation_failed = [channel for channel in enabled if channel.test_status == 'failed']
     validation_required = [
-        channel for channel in enabled
-        if not channel.configured or channel.test_status not in {'success', 'failed'}
+        channel for channel in enabled if not channel.configured or channel.test_status not in {'success', 'failed'}
     ]
     # The aggregate must not hide an unhealthy enabled destination behind
     # another channel's successful historical delivery.
@@ -256,13 +255,13 @@ def _delivery_registry_page(
     query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
     rows, pagination = paginate_query(query, page=page, per_page=per_page)
     # An exact, permissioned page-local read: no per-delivery report query.
-    report_ids = {
-        report_id for row in rows
-        if (report_id := _report_id_for_delivery(row)) is not None
-    } if can_view_reports else set()
+    report_ids = (
+        {report_id for row in rows if (report_id := _report_id_for_delivery(row)) is not None}
+        if can_view_reports
+        else set()
+    )
     report_lookup = (
-        {report.id: report for report in Report.query.filter(Report.id.in_(report_ids)).all()}
-        if report_ids else {}
+        {report.id: report for report in Report.query.filter(Report.id.in_(report_ids)).all()} if report_ids else {}
     )
     return [
         {
@@ -334,7 +333,8 @@ def dispatch_alert_notification(
         stats['eligible'] += 1
         delivery = (
             NotificationDelivery.query.filter_by(channel_id=channel.id, event_key=event_key)
-            .with_for_update(skip_locked=True).first()
+            .with_for_update(skip_locked=True)
+            .first()
         )
         if delivery is not None:
             if delivery.status == 'sent':
@@ -499,7 +499,8 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
             continue
         delivery = (
             NotificationDelivery.query.filter_by(channel_id=channel.id, event_key=event.event_key)
-            .with_for_update(skip_locked=True).first()
+            .with_for_update(skip_locked=True)
+            .first()
         )
         if delivery is not None:
             if delivery.status == 'sent':
@@ -583,25 +584,33 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
     return stats
 
 
-
 def _transport_snapshot(channel: NotificationChannel, message: NotificationMessage) -> str:
     """Commit an encrypted, immutable replay envelope without exporting provider secrets."""
-    return encrypt_credential(json.dumps({
-        'channel': {
-            'provider_key': channel.provider_key,
-            'destination': channel.destination,
-            'provider_config': channel.provider_config,
-            'credential_payload': channel.credential_payload,
-        },
-        'message': {
-            'title': message.title,
-            'body': message.body,
-            'severity': message.severity,
-            'action_url': message.action_url,
-            'action_label': message.action_label,
-            'content_format': message.content_format,
-        },
-    }, sort_keys=True, separators=(',', ':'))) or ''
+    return (
+        encrypt_credential(
+            json.dumps(
+                {
+                    'channel': {
+                        'provider_key': channel.provider_key,
+                        'destination': channel.destination,
+                        'provider_config': channel.provider_config,
+                        'credential_payload': channel.credential_payload,
+                    },
+                    'message': {
+                        'title': message.title,
+                        'body': message.body,
+                        'severity': message.severity,
+                        'action_url': message.action_url,
+                        'action_label': message.action_label,
+                        'content_format': message.content_format,
+                    },
+                },
+                sort_keys=True,
+                separators=(',', ':'),
+            )
+        )
+        or ''
+    )
 
 
 def _replay_message(delivery: NotificationDelivery, channel: NotificationChannel) -> NotificationMessage | None:

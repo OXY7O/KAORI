@@ -4,20 +4,23 @@ Takes separately acquired Kubernetes observations; never fetches, PATCHes,
 persists, or proves that caller supplied fresh authenticated read-back. This
 is NOT independent provider verification nor an admitted Release receipt.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any
 
 from app.kubernetes.tenant.capsule_handoff_contract import (
-    _identity, verify_capsule_cr_preserved, validate_capsule_handoff_scope,
+    _identity,
     classify_capsule_related_metadata_readback,
-)
-from app.kubernetes.tenant.capsule_handoff_related_inventory import (
-    classify_capsule_related_resource,
+    validate_capsule_handoff_scope,
+    verify_capsule_cr_preserved,
 )
 from app.kubernetes.tenant.capsule_handoff_recovery import classify_capsule_namespace_handoff
-from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
+from app.kubernetes.tenant.capsule_handoff_related_inventory import (
+    _digest,
+    classify_capsule_related_resource,
+)
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.release_handoff_approval import _plan_hash
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
@@ -26,24 +29,25 @@ _MAX_RESOURCES = 300
 
 
 def _fingerprints(
-    related: Mapping[str, Any], *, names: set[str],
+    related: Mapping[str, Any],
+    *,
+    names: set[str],
 ) -> tuple[str, str]:
     """Recompute complete candidate LIST digests, rejecting missing scopes."""
     rows, lists = related.get('resources'), related.get('list_snapshots')
     quota = related.get('global_quota')
     if (
-        not isinstance(rows, list) or len(rows) > _MAX_RESOURCES
-        or not isinstance(lists, list) or not isinstance(quota, Mapping)
+        not isinstance(rows, list)
+        or len(rows) > _MAX_RESOURCES
+        or not isinstance(lists, list)
+        or not isinstance(quota, Mapping)
         or not isinstance(quota.get('resources'), list)
         or quota.get('served_version') not in ('v1beta1', 'v1beta2')
         or not isinstance(quota.get('list_resource_version'), str)
         or not quota['list_resource_version']
     ):
         raise ValueError('Capsule read-back provider LIST coverage is malformed.')
-    expected_lists = {
-        (ns, kind) for ns in names
-        for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
-    }
+    expected_lists = {(ns, kind) for ns in names for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')}
     observed_lists: list[tuple[str, str]] = []
     counts: dict[tuple[str, str], int] = {}
     for item in lists:
@@ -52,9 +56,12 @@ def _fingerprints(
         ns, kind = item.get('namespace'), item.get('kind')
         rv, count = item.get('list_resource_version'), item.get('count')
         if (
-            not isinstance(ns, str) or not isinstance(kind, str)
-            or not isinstance(rv, str) or not rv
-            or type(count) is not int or not 0 <= count <= 100
+            not isinstance(ns, str)
+            or not isinstance(kind, str)
+            or not isinstance(rv, str)
+            or not rv
+            or type(count) is not int
+            or not 0 <= count <= 100
         ):
             raise ValueError('Capsule read-back has incomplete LIST scope/revisions.')
         observed_lists.append((ns, kind))
@@ -85,11 +92,13 @@ def _fingerprints(
     if len(quota['resources']) > 100:
         raise ValueError('Capsule cluster quota read-back exceeds admitted list bound.')
     related_sha = _digest({'resources': rows, 'lists': lists})
-    quota_sha = _digest({
-        'api_version': quota['served_version'],
-        'list_resource_version': quota['list_resource_version'],
-        'resources': quota['resources'],
-    })
+    quota_sha = _digest(
+        {
+            'api_version': quota['served_version'],
+            'list_resource_version': quota['list_resource_version'],
+            'resources': quota['resources'],
+        }
+    )
     if (
         related_sha != related.get('resource_sha256')
         or quota_sha != quota.get('scope_sha256')
@@ -102,10 +111,12 @@ def _fingerprints(
     return related_sha, quota_sha
 
 
-
 def _review_related_scope(
-    *, plan: Mapping[str, Any], worklist: Mapping[str, Any],
-    source_related: Mapping[str, Any], current_related: Mapping[str, Any],
+    *,
+    plan: Mapping[str, Any],
+    worklist: Mapping[str, Any],
+    source_related: Mapping[str, Any],
+    current_related: Mapping[str, Any],
     evidence: Mapping[tuple[str, str, str], Mapping[str, Any]] | None,
 ) -> tuple[list[dict[str, str]], int, int, list[str]]:
     """Accept only explainable per-object metadata deltas across complete LISTs.
@@ -113,10 +124,8 @@ def _review_related_scope(
     Raw caller-supplied before/after bodies and label consent are NOT
     authenticated provider snapshots or human authority.
     """
-    source = {(r['namespace'], r['kind'], r['name']): r
-              for r in source_related['resources']}
-    current = {(r['namespace'], r['kind'], r['name']): r
-               for r in current_related['resources']}
+    source = {(r['namespace'], r['kind'], r['name']): r for r in source_related['resources']}
+    current = {(r['namespace'], r['kind'], r['name']): r for r in current_related['resources']}
     candidates = {
         (r['namespace'], r['kind'], r['name']): r
         for r in worklist['items']
@@ -126,8 +135,7 @@ def _review_related_scope(
         not isinstance(evidence, Mapping)
         or set(evidence) != set(candidates)
         or any(
-            not isinstance(row, Mapping)
-            or set(row) != {'before', 'current', 'approved_label_keys'}
+            not isinstance(row, Mapping) or set(row) != {'before', 'current', 'approved_label_keys'}
             for row in evidence.values()
         )
     ):
@@ -135,16 +143,9 @@ def _review_related_scope(
     blockers: list[str] = []
     if set(source) != set(current):
         blockers.append('related_resource_add_delete_or_scope_drift')
-    original_lists = {
-        (row['namespace'], row['kind']): row
-        for row in source_related['list_snapshots']
-    }
-    new_lists = {
-        (row['namespace'], row['kind']): row
-        for row in current_related['list_snapshots']
-    }
-    capsule = next(row for row in plan['handoff_components']
-                   if row['kind'] == 'CapsuleTenant')
+    original_lists = {(row['namespace'], row['kind']): row for row in source_related['list_snapshots']}
+    new_lists = {(row['namespace'], row['kind']): row for row in current_related['list_snapshots']}
+    capsule = next(row for row in plan['handoff_components'] if row['kind'] == 'CapsuleTenant')
     transferred_scopes: set[tuple[str, str]] = set()
     observations: list[dict[str, str]] = []
     transferred = pending = 0
@@ -162,22 +163,37 @@ def _review_related_scope(
         else:
             entry = evidence[key]
             try:
-                if any(original.get(field) != work_item.get(field) for field in (
-                    'kind', 'namespace', 'name', 'uid', 'resource_version',
-                    'policy_sha256',
-                )):
+                if any(
+                    original.get(field) != work_item.get(field)
+                    for field in (
+                        'kind',
+                        'namespace',
+                        'name',
+                        'uid',
+                        'resource_version',
+                        'policy_sha256',
+                    )
+                ):
                     raise ValueError('Original Capsule LIST differs from approved worklist.')
                 projection, problems = classify_capsule_related_resource(
-                    resource=entry['current'], kind=key[1], namespace=key[0],
-                    tenant_id=plan['tenant_id'], capsule_name=capsule['name'],
+                    resource=entry['current'],
+                    kind=key[1],
+                    namespace=key[0],
+                    tenant_id=plan['tenant_id'],
+                    capsule_name=capsule['name'],
                     capsule_uid=capsule['uid'],
                 )
                 if projection != observed:
                     raise ValueError('Capsule current LIST disagrees with raw object.')
                 outcome = classify_capsule_related_metadata_readback(
-                    record=original, before=entry['before'], current=entry['current'],
-                    kind=key[1], namespace=key[0], tenant_id=plan['tenant_id'],
-                    capsule_name=capsule['name'], capsule_uid=capsule['uid'],
+                    record=original,
+                    before=entry['before'],
+                    current=entry['current'],
+                    kind=key[1],
+                    namespace=key[0],
+                    tenant_id=plan['tenant_id'],
+                    capsule_name=capsule['name'],
+                    capsule_uid=capsule['uid'],
                     successor_owner=str(plan.get('successor_owner') or ''),
                     approved_label_keys=entry['approved_label_keys'],
                 )
@@ -192,10 +208,15 @@ def _review_related_scope(
             transferred_scopes.add((key[0], key[1]))
         elif state == 'pending_provider_transfer':
             pending += 1
-        observations.append({
-            'kind': key[1], 'namespace': key[0], 'name': key[2],
-            'uid': work_item['uid'], 'state': state,
-        })
+        observations.append(
+            {
+                'kind': key[1],
+                'namespace': key[0],
+                'name': key[2],
+                'uid': work_item['uid'],
+                'state': state,
+            }
+        )
     for key, original in source.items():
         if key not in candidates and original != current.get(key):
             blockers.append('related_foreign_or_unadmitted_control_drift')
@@ -206,15 +227,10 @@ def _review_related_scope(
         if (
             set(original) != {'namespace', 'kind', 'list_resource_version', 'count'}
             or set(after) != set(original)
-            or any(
-                after[field] != original[field]
-                for field in ('namespace', 'kind', 'count')
-            )
+            or any(after[field] != original[field] for field in ('namespace', 'kind', 'count'))
         ):
             blockers.append('related_list_schema_scope_or_count_changed')
-        list_changed = (
-            after['list_resource_version'] != original['list_resource_version']
-        )
+        list_changed = after['list_resource_version'] != original['list_resource_version']
         if after['count'] != original['count']:
             blockers.append('related_list_resource_count_changed')
         if list_changed and scope not in transferred_scopes:
@@ -226,13 +242,15 @@ def _review_related_scope(
 
 
 def inspect_capsule_readback_candidate(
-    *, plan: Mapping[str, Any], source_related: Mapping[str, Any],
-    current_related: Mapping[str, Any], current_capsule_cr: Any,
+    *,
+    plan: Mapping[str, Any],
+    source_related: Mapping[str, Any],
+    current_related: Mapping[str, Any],
+    current_capsule_cr: Any,
     current_namespaces: Mapping[str, Any],
-    namespace_baselines: list[dict[str, Any]], tenant_id: str,
-    related_transfer_evidence: (
-        Mapping[tuple[str, str, str], Mapping[str, Any]] | None
-    ) = None,
+    namespace_baselines: list[dict[str, Any]],
+    tenant_id: str,
+    related_transfer_evidence: (Mapping[tuple[str, str, str], Mapping[str, Any]] | None) = None,
 ) -> dict[str, Any]:
     """Compare full exact-scope provider snapshots without asserting execution.
 
@@ -245,7 +263,8 @@ def inspect_capsule_readback_candidate(
         or not isinstance(current_related, Mapping)
         or not isinstance(current_namespaces, Mapping)
         or not isinstance(namespace_baselines, list)
-        or not isinstance(tenant_id, str) or not tenant_id
+        or not isinstance(tenant_id, str)
+        or not tenant_id
         or plan.get('tenant_id') != tenant_id
     ):
         raise ValueError('Capsule read-back requires canonical provider and Tenant scope.')
@@ -271,28 +290,24 @@ def inspect_capsule_readback_candidate(
         or not isinstance(lineage.get('blockers'), list)
         or source_related.get('status') != 'read_only_related_inventory'
         or not isinstance(source_related.get('blockers'), list)
-        or source_related.get('global_quota', {}).get('status')
-            != 'observed_not_handoff_authorized'
+        or source_related.get('global_quota', {}).get('status') != 'observed_not_handoff_authorized'
         or not isinstance(source_related['global_quota'].get('blockers'), list)
     ):
         raise ValueError('Capsule G3 source RBAC lineage or inventory posture is not plan-bound.')
     scoped_names = {row['name'] for row in namespaces}
     base_related_sha, base_quota_sha = _fingerprints(source_related, names=scoped_names)
-    if (
-        base_related_sha != cr.get('capsule_related_resources_sha256')
-        or base_quota_sha != cr.get('capsule_shared_quota_sha256')
+    if base_related_sha != cr.get('capsule_related_resources_sha256') or base_quota_sha != cr.get(
+        'capsule_shared_quota_sha256'
     ):
         raise ValueError('Capsule read-back original scope is no longer SHA-bound.')
     current_related_sha, current_quota_sha = _fingerprints(
-        current_related, names=scoped_names,
+        current_related,
+        names=scoped_names,
     )
     ns_by_name = {item['name']: item for item in namespaces}
     if set(current_namespaces) != set(ns_by_name):
         raise ValueError('Capsule read-back Namespace set is partial or includes foreign objects.')
-    required_baselines = {
-        item['name'] for item in namespaces
-        if item['handoff'] == 'external_acceptance_required'
-    }
+    required_baselines = {item['name'] for item in namespaces if item['handoff'] == 'external_acceptance_required'}
     baseline_by_name: dict[str, dict[str, Any]] = {}
     for row in namespace_baselines:
         if not isinstance(row, Mapping) or not isinstance(row.get('name'), str):
@@ -311,8 +326,8 @@ def inspect_capsule_readback_candidate(
     # valid source/current resource_sha256.
     allowed_handoff_warnings = {
         (
-            f"Capsule {item['kind']}/{item['namespace']}/{item['name']} "
-            "retains KAORI provider controls requiring separately admitted handoff."
+            f'Capsule {item["kind"]}/{item["namespace"]}/{item["name"]} '
+            'retains KAORI provider controls requiring separately admitted handoff.'
         )
         for item in worklist['items']
         if item['decision'] == 'explicit_kaori_metadata_handoff_review'
@@ -328,8 +343,7 @@ def inspect_capsule_readback_candidate(
             or quota_evidence.get('status') != 'observed_not_handoff_authorized'
             or not isinstance(quota_evidence.get('blockers'), list)
             or not isinstance(lineage_evidence, Mapping)
-            or lineage_evidence.get('status')
-                != 'contract_correlated_controller_origin_unverified'
+            or lineage_evidence.get('status') != 'contract_correlated_controller_origin_unverified'
             or lineage_evidence.get('controller_origin_verified') is not False
             or not isinstance(lineage_evidence.get('blockers'), list)
             or any(not isinstance(item, str) for item in evidence)
@@ -349,11 +363,12 @@ def inspect_capsule_readback_candidate(
     except (TypeError, ValueError, KeyError, AttributeError):
         blockers.append('capsule_cr_provider_spec_or_identity_drift')
         cr_observation = None
-    related_rows, related_transferred, related_pending, related_blockers = (
-        _review_related_scope(
-            plan=plan, worklist=worklist, source_related=source_related,
-            current_related=current_related, evidence=related_transfer_evidence,
-        )
+    related_rows, related_transferred, related_pending, related_blockers = _review_related_scope(
+        plan=plan,
+        worklist=worklist,
+        source_related=source_related,
+        current_related=current_related,
+        evidence=related_transfer_evidence,
     )
     blockers.extend(related_blockers)
     # An original KAORI handoff warning can remain on a still-pending
@@ -361,16 +376,15 @@ def inspect_capsule_readback_candidate(
     # this would contradict the current canonical controller inventory.
     pending_kaori_warnings = {
         (
-            f"Capsule {item['kind']}/{item['namespace']}/{item['name']} "
-            "retains KAORI provider controls requiring separately admitted handoff."
+            f'Capsule {item["kind"]}/{item["namespace"]}/{item["name"]} '
+            'retains KAORI provider controls requiring separately admitted handoff.'
         )
         for item in related_rows
         if item['state'] == 'pending_provider_transfer'
     }
     current_findings = current_related.get('blockers')
     if isinstance(current_findings, list) and any(
-        warning in allowed_handoff_warnings
-        and warning not in pending_kaori_warnings
+        warning in allowed_handoff_warnings and warning not in pending_kaori_warnings
         for warning in current_findings
         if isinstance(warning, str)
     ):
@@ -391,15 +405,15 @@ def inspect_capsule_readback_candidate(
         name = namespace['name']
         obj = current_namespaces[name]
         observed_name, observed_uid, observed_rv = _identity(obj)
-        if (
-            (observed_name, observed_uid) != (name, namespace['uid'])
-            or not observed_rv
-        ):
+        if (observed_name, observed_uid) != (name, namespace['uid']) or not observed_rv:
             blockers.append('namespace_uid_or_identity_drift')
-            rows.append({
-                'name': name, 'uid': str(observed_uid),
-                'state': 'identity_drift',
-            })
+            rows.append(
+                {
+                    'name': name,
+                    'uid': str(observed_uid),
+                    'state': 'identity_drift',
+                }
+            )
             continue
         if name not in baseline_by_name:
             # Observation-only namespace is not a transferable resource.
@@ -407,14 +421,18 @@ def inspect_capsule_readback_candidate(
                 blockers.append('observed_foreign_namespace_rv_drift')
             # Without full original metadata/spec baseline we cannot assert
             # provider preservation merely from matching UID/RV.
-            rows.append({
-                'name': name, 'uid': observed_uid,
-                'state': 'observe_only_preservation_unproven',
-            })
+            rows.append(
+                {
+                    'name': name,
+                    'uid': observed_uid,
+                    'state': 'observe_only_preservation_unproven',
+                }
+            )
             continue
         try:
             classified = classify_capsule_namespace_handoff(
-                baseline=baseline_by_name[name], current=obj,
+                baseline=baseline_by_name[name],
+                current=obj,
                 tenant_id=tenant_id,
                 successor_owner=str(plan.get('successor_owner') or ''),
             )

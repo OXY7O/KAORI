@@ -29,7 +29,9 @@ class QuerySpy:
 def test_capacity_filter_runs_before_sql_limit(monkeypatch) -> None:
     query = QuerySpy()
     model = SimpleNamespace(
-        query=query, cluster_id=column('cluster_id'), namespace=column('namespace'),
+        query=query,
+        cluster_id=column('cluster_id'),
+        namespace=column('namespace'),
         created_at=column('created_at'),
     )
     monkeypatch.setattr(module, 'TenantCapacityDecision', model)
@@ -51,9 +53,7 @@ def test_audit_filter_runs_before_sql_limit_with_namespace_authority(monkeypatch
         event_at=column('event_at'),
     )
     monkeypatch.setattr(module, 'TenantAuditEvidence', model)
-    rows = module._scoped_audit_evidence(
-        ['tenant-1'], 'cluster-1', namespace='uat', namespace_ids={123}
-    )
+    rows = module._scoped_audit_evidence(['tenant-1'], 'cluster-1', namespace='uat', namespace_ids={123})
     assert rows == []
     assert [call[0] for call in query.calls] == ['filter', 'filter', 'order_by', 'limit', 'all']
     scoped_predicate = query.calls[1][1][0]

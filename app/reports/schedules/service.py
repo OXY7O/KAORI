@@ -40,6 +40,10 @@ from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
 from app.reports.notifications import get_report_notification_channel_options
 from app.reports.schedules.delivery import get_recommended_actions, get_scheduler_context
+from app.reports.schedules.failures import mark_schedule_dispatch_failed
+from app.reports.schedules.presentation import DAY_OF_WEEK_OPTIONS
+from app.reports.schedules.presentation import serialize_run as _serialize_run
+from app.reports.schedules.presentation import title_case_period_options as _title_case_period_options
 from app.reports.schedules.read_models import (
     _get_run_schedule_options,
     _get_schedule_counts,
@@ -47,10 +51,6 @@ from app.reports.schedules.read_models import (
     _serialize_schedule_rows,
 )
 from app.reports.schedules.readiness import get_automation_posture
-from app.reports.schedules.failures import mark_schedule_dispatch_failed
-from app.reports.schedules.presentation import DAY_OF_WEEK_OPTIONS
-from app.reports.schedules.presentation import serialize_run as _serialize_run
-from app.reports.schedules.presentation import title_case_period_options as _title_case_period_options
 from app.reports.schedules.registry import filter_schedule_statement as _filter_schedule_statement
 from app.reports.schedules.registry import get_selected_filters as _get_selected_filters
 from app.reports.schedules.support import build_run_filter_options as _build_run_filter_options
@@ -470,9 +470,7 @@ def run_due_schedules(
     }
 
 
-def _retry_unadmitted_schedule(
-    schedule: ReportSchedule, *, failed_at: datetime, trigger_source: str
-) -> None:
+def _retry_unadmitted_schedule(schedule: ReportSchedule, *, failed_at: datetime, trigger_source: str) -> None:
     # A manual request never changes the automated cadence. Only work that was
     # not admitted to the report queue is eligible for a bounded scheduled retry.
     if trigger_source == 'scheduler' and schedule.is_enabled:
@@ -497,9 +495,7 @@ def execute_schedule(
         return False, 'Schedule not found.', None
     schedule = locked_schedule
     if trigger_source == 'scheduler' and (
-        not schedule.is_enabled
-        or schedule.next_run_at is None
-        or _ensure_utc(schedule.next_run_at) > datetime.now(UTC)
+        not schedule.is_enabled or schedule.next_run_at is None or _ensure_utc(schedule.next_run_at) > datetime.now(UTC)
     ):
         db.session.rollback()
         return True, 'Schedule is no longer due; no report was queued.', None
@@ -860,11 +856,7 @@ def _get_schedule_filter_options(
         'deliveries': [
             {'value': '', 'label': 'All Delivery'},
             {'value': 'none', 'label': 'No Notification'},
-            *[
-                {'value': item['value'], 'label': item['label']}
-                for item in delivery_catalog
-                if item.get('value')
-            ],
+            *[{'value': item['value'], 'label': item['label']} for item in delivery_catalog if item.get('value')],
         ],
     }
 

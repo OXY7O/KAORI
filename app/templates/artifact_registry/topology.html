@@ -7,7 +7,7 @@
     {% import "components/visualization_workspace.html" as visualization %}
     {% import "components/table.html" as table_ui %}
     {% import "components/info_tip.html" as info_tip %}
-{% import "components/topology_primitives.html" as topology_parts %}
+    {% import "components/topology_primitives.html" as topology_parts %}
     {% import "components/table_registry.html" as registry_ui %}
     {% import "components/segmented_tabs.html" as segmented_tabs %}
     {% import "components/table_label.html" as table_label %}
@@ -29,60 +29,59 @@
                     {% endcall %}
                 </div>
                 {{ page_hero.context_card('Cross-Domain Evidence',
-                    'Registry × Kubernetes',
-                    'Correlation Snapshot',
-                    runtime.snapshot.status,
-                    runtime.snapshot.tone,
-                    [
-                        ('database', 'Registry Scope', runtime.scope.source_label, 'Committed registry inventory'),
-                        ('boxes', 'Kubernetes Scope', runtime.scope.cluster_label, 'Committed Pod inventory')
-                    ],
-                    'Open Security',
-                    url_for('artifact_registry.security'),
-                    action_icon='shield-check',
-                    blocked=runtime.setup.is_blocked,
-                    blocked_info=runtime.setup.description,
-                    blocked_label='Correlation Prerequisites') }}
+                                'Registry × Kubernetes',
+                                'Correlation Snapshot',
+                                runtime.snapshot.status,
+                                runtime.snapshot.tone,
+                                [
+                                ('database', 'Registry Scope', runtime.scope.source_label, 'Committed registry inventory') ,
+                ('boxes', 'Kubernetes Scope', runtime.scope.cluster_label, 'Committed Pod inventory')
+                ],
+                'Open Security',
+                url_for('artifact_registry.security'),
+                action_icon='shield-check',
+                blocked=runtime.setup.is_blocked,
+                blocked_info=runtime.setup.description,
+                blocked_label='Correlation Prerequisites') }}
             </div>
         </section>
         {{ snapshot_context_bar.render(source_label=runtime.snapshot.source_label,
-            status=runtime.snapshot.status,
-            tone=runtime.snapshot.tone,
-            description=runtime.snapshot.description,
-            latest_collected=runtime.snapshot.latest_collected_at|user_datetime if runtime.snapshot.latest_collected_at else 'Not Materialized',
-            scope_label=runtime.snapshot.scope_label,
-            coverage_label=runtime.snapshot.coverage_label,
-            exceptions_label=runtime.snapshot.exceptions_label,
-            icon='waypoints',
-            title='Correlation Snapshot',
-            latest_supporting='Last successful Runtime Correlation.',
-            scope_supporting='Committed Registry × Kubernetes.',
-            coverage_supporting=runtime.snapshot.coverage_supporting,
-            exceptions_supporting=runtime.snapshot.exceptions_supporting,
-            coverage_tone=runtime.snapshot.coverage_tone,
-            exceptions_tone=runtime.snapshot.exceptions_tone,
-            metric_icon_palette='brand',
-            latest_label='Last Correlated',
-            scope_metric_label='Active Scope',
-            coverage_metric_label='Runtime Coverage',
-            exceptions_metric_label='Correlation Exceptions') }}
+                status=runtime.snapshot.status,
+                tone=runtime.snapshot.tone,
+                description=runtime.snapshot.description,
+                latest_collected=runtime.snapshot.latest_collected_at|user_datetime if runtime.snapshot.latest_collected_at else 'Not Materialized',
+                scope_label=runtime.snapshot.scope_label,
+                coverage_label=runtime.snapshot.coverage_label,
+                exceptions_label=runtime.snapshot.exceptions_label,
+                icon='waypoints',
+                title='Correlation Snapshot',
+                latest_supporting='Last successful Runtime Correlation.',
+                scope_supporting='Committed Registry × Kubernetes.',
+                coverage_supporting=runtime.snapshot.coverage_supporting,
+                exceptions_supporting=runtime.snapshot.exceptions_supporting,
+                coverage_tone=runtime.snapshot.coverage_tone,
+                exceptions_tone=runtime.snapshot.exceptions_tone,
+                metric_icon_palette='brand',
+                latest_label='Last Correlated',
+                scope_metric_label='Active Scope',
+                coverage_metric_label='Runtime Coverage',
+                exceptions_metric_label='Correlation Exceptions') }}
         <section class="space-y-3" aria-labelledby="registry-topology-section-title">
             {{ section_intro.render('Artifact Dependency Mapping',
-                'Inspect one bounded committed relationship graph at a time; explore the same slice in Resource List.',
-                'registry-topology-section-title') }}
-            {% set registry_topology_filters_active =
-                runtime.filters.source_id or runtime.filters.cluster_id or
-                runtime.filters.namespace or runtime.filters.match_type or
-                runtime.filters.exposure or runtime.filters.artifact_id or
-                runtime.filters.search %}
+                        'Inspect one bounded committed relationship graph at a time; explore the same slice in Resource List.',
+                        'registry-topology-section-title') }}
+            {% set registry_topology_filters_active = runtime.filters.source_id or runtime.filters.cluster_id or
+                            runtime.filters.namespace or runtime.filters.match_type or
+                            runtime.filters.exposure or runtime.filters.artifact_id or
+                        runtime.filters.search %}
             {% set registry_topology_header_actions = registry_ui.clear_filters_action(
-                url_for('artifact_registry.runtime_topology'),
-                table_ui.action_classes(),
-                marker='registry-topology-filters',
-                swap='',
-                id='registry-topology-clear-filters',
-                hidden=not registry_topology_filters_active
-            ) %}
+                            url_for('artifact_registry.runtime_topology'),
+                            table_ui.action_classes(),
+                            marker='registry-topology-filters',
+                            swap='',
+                            id='registry-topology-clear-filters',
+                            hidden=not registry_topology_filters_active
+                        ) %}
             {% call visualization.render(
                 'registry-topology-workspace',
                 'Artifact-to-Runtime Explorer',
@@ -94,7 +93,7 @@
                 loading_id='registry-topology-loading',
                 header_actions=registry_topology_header_actions,
                 action_classes=table_ui.action_classes()
-            ) %}
+                ) %}
                 <form id="registry-topology-filters"
                       action="{{ url_for('artifact_registry.runtime_topology') }}"
                       method="get"
@@ -105,7 +104,8 @@
                             <select name="source_id" class="{{ table_ui.filter_select_classes() }}">
                                 <option value="">All Registry Sources</option>
                                 {% for source in runtime.source_options %}
-                                    <option value="{{ source.id }}" {% if runtime.filters.source_id == source.id %}selected{% endif %}>{{ source.name }}</option>
+                                    <option value="{{ source.id }}"
+                                            {% if runtime.filters.source_id == source.id %}selected{% endif %}>{{ source.name }}</option>
                                 {% endfor %}
                             </select>
                         </label>
@@ -114,7 +114,8 @@
                             <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
                                 <option value="">All Kubernetes Clusters</option>
                                 {% for cluster in runtime.cluster_options %}
-                                    <option value="{{ cluster.id }}" {% if runtime.filters.cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                                    <option value="{{ cluster.id }}"
+                                            {% if runtime.filters.cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                                 {% endfor %}
                             </select>
                         </label>
@@ -123,7 +124,8 @@
                             <select name="namespace" class="{{ table_ui.filter_select_classes() }}">
                                 <option value="">All Namespaces</option>
                                 {% for namespace in runtime.namespace_options %}
-                                    <option value="{{ namespace }}" {% if runtime.filters.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
+                                    <option value="{{ namespace }}"
+                                            {% if runtime.filters.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
                                 {% endfor %}
                             </select>
                         </label>
@@ -132,7 +134,8 @@
                             <select name="match_type" class="{{ table_ui.filter_select_classes() }}">
                                 <option value="">All Match Types</option>
                                 {% for option in runtime.match_options %}
-                                    <option value="{{ option.value }}" {% if runtime.filters.match_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                    <option value="{{ option.value }}"
+                                            {% if runtime.filters.match_type == option.value %}selected{% endif %}>{{ option.label }}</option>
                                 {% endfor %}
                             </select>
                         </label>
@@ -141,7 +144,8 @@
                             <select name="exposure" class="{{ table_ui.filter_select_classes() }}">
                                 <option value="">All Exposure States</option>
                                 {% for option in runtime.exposure_options %}
-                                    <option value="{{ option.value }}" {% if runtime.filters.exposure == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                    <option value="{{ option.value }}"
+                                            {% if runtime.filters.exposure == option.value %}selected{% endif %}>{{ option.label }}</option>
                                 {% endfor %}
                             </select>
                         </label>
@@ -155,8 +159,11 @@
                         </label>
                     </div>
                     {% if runtime.filters.artifact_id %}
-                        <input type="hidden" name="artifact_id" value="{{ runtime.filters.artifact_id }}">
-                        <p id="registry-topology-artifact-focus" class="mt-2 text-xs text-content-muted">
+                        <input type="hidden"
+                               name="artifact_id"
+                               value="{{ runtime.filters.artifact_id }}">
+                        <p id="registry-topology-artifact-focus"
+                           class="mt-2 text-xs text-content-muted">
                             Focused on {{ runtime.artifact_filter_label }}.
                             <a class="font-semibold text-kaori-primary underline"
                                href="{{ url_for('artifact_registry.runtime_topology') }}">Clear artifact focus</a>
@@ -164,16 +171,17 @@
                     {% endif %}
                     <p id="registry-topology-scope-summary"
                        class="mt-3 text-xs font-medium text-kaori-primary"
-                       role="status" aria-live="polite">
-                        Filters update the committed graph automatically.
-                    </p>
+                       role="status"
+                       aria-live="polite">Filters update the committed graph automatically.</p>
                 </form>
                 <div id="registry-topology-warning"
                      role="alert"
-                     class="hidden border-b {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text"></div>
+                     class="hidden border-b {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
+                </div>
                 <div id="registry-topology-error"
                      role="alert"
-                     class="hidden border-b {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-5 py-3 text-xs text-status-critical-text"></div>
+                     class="hidden border-b {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-5 py-3 text-xs text-status-critical-text">
+                </div>
                 <div id="registry-topology-status"
                      role="status"
                      aria-live="polite"
@@ -183,47 +191,63 @@
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
                     <div class="flex flex-wrap items-center gap-2">
                         {{ segmented_tabs.render([
-                            ('graph', 'Graph', 'share-2'),
-                            ('list', 'Resource List', 'list-tree')
+                                                ('graph', 'Graph', 'share-2') ,
+                        ('list', 'Resource List', 'list-tree')
                         ], prefix='registry-topology-view', active_key='graph', aria_label='Dependency Topology View') }}
-                        <button id="registry-topology-controls-button" type="button"
+                        <button id="registry-topology-controls-button"
+                                type="button"
                                 class="{{ topology_parts.toolbar_button_classes() }}"
-                                aria-expanded="false" aria-controls="registry-topology-controls">
+                                aria-expanded="false"
+                                aria-controls="registry-topology-controls">
                             <i data-lucide="sliders-horizontal" class="h-4 w-4" aria-hidden="true"></i>
                             Controls
                         </button>
-                        <button id="registry-topology-details-button" type="button"
+                        <button id="registry-topology-details-button"
+                                type="button"
                                 class="{{ topology_parts.toolbar_button_classes() }}"
-                                aria-expanded="false" aria-controls="registry-topology-inspector">
+                                aria-expanded="false"
+                                aria-controls="registry-topology-inspector">
                             <i data-lucide="panel-right-open" class="h-4 w-4" aria-hidden="true"></i>
                             Details
                         </button>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <button id="registry-topology-fit" type="button" class="{{ topology_parts.toolbar_button_classes() }}">
-                            <i data-lucide="maximize-2" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        <button id="registry-topology-fit"
+                                type="button"
+                                class="{{ topology_parts.toolbar_button_classes() }}">
+                            <i data-lucide="maximize-2"
+                               class="h-4 w-4 text-kaori-primary"
+                               aria-hidden="true"></i>
                             Fit
                         </button>
-                        <button id="registry-topology-reset" type="button" class="{{ topology_parts.toolbar_button_classes() }}">
-                            <i data-lucide="rotate-ccw" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                        <button id="registry-topology-reset"
+                                type="button"
+                                class="{{ topology_parts.toolbar_button_classes() }}">
+                            <i data-lucide="rotate-ccw"
+                               class="h-4 w-4 text-kaori-primary"
+                               aria-hidden="true"></i>
                             Reset
                         </button>
                         <details class="relative">
                             <summary class="{{ topology_parts.toolbar_export_classes() }}">
-                                <i data-lucide="download" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
-                            Export
+                                <i data-lucide="download"
+                                   class="h-4 w-4 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                                Export
                                 <i data-lucide="chevron-down" class="h-3.5 w-3.5" aria-hidden="true"></i>
                             </summary>
                             <div class="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-outline-default bg-surface-card p-1.5 shadow-xl">
-                                <button id="registry-topology-export" type="button"
+                                <button id="registry-topology-export"
+                                        type="button"
                                         class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-content-secondary hover:bg-kaori-soft hover:text-kaori-primary">
                                     <i data-lucide="image-down" class="h-4 w-4" aria-hidden="true"></i>
-                            Export PNG
+                                    Export PNG
                                 </button>
-                                <button id="registry-topology-export-json" type="button"
+                                <button id="registry-topology-export-json"
+                                        type="button"
                                         class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-content-secondary hover:bg-kaori-soft hover:text-kaori-primary">
                                     <i data-lucide="braces" class="h-4 w-4" aria-hidden="true"></i>
-                            Export JSON
+                                    Export JSON
                                 </button>
                             </div>
                         </details>
@@ -243,8 +267,10 @@
                                 <h3 class="text-base font-semibold text-content-primary">Display Controls</h3>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Adjust how the committed relationships are drawn.</p>
                             </div>
-                            <button id="registry-topology-controls-close" type="button"
-                                    class="{{ topology_parts.drawer_close_classes() }}" aria-label="Close Display Controls">
+                            <button id="registry-topology-controls-close"
+                                    type="button"
+                                    class="{{ topology_parts.drawer_close_classes() }}"
+                                    aria-label="Close Display Controls">
                                 <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                             </button>
                         </div>
@@ -252,21 +278,26 @@
                             <div class="space-y-2.5">
                                 <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-subtle px-3 py-2 text-xs font-medium text-content-secondary">
                                     Resource Labels
-                                    <input id="registry-topology-labels" type="checkbox" checked
+                                    <input id="registry-topology-labels"
+                                           type="checkbox"
+                                           checked
                                            class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
                                 </label>
                                 <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-subtle px-3 py-2 text-xs font-medium text-content-secondary">
                                     Always Show Relationship Labels
-                                    <input id="registry-topology-edge-labels" type="checkbox"
+                                    <input id="registry-topology-edge-labels"
+                                           type="checkbox"
                                            class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
                                 </label>
                                 <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-subtle px-3 py-2 text-xs font-medium text-content-secondary">
                                     Group by Namespace
-                                    <input id="registry-topology-group-namespace" type="checkbox"
+                                    <input id="registry-topology-group-namespace"
+                                           type="checkbox"
                                            class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
                                 </label>
                                 <div class="rounded-lg border border-outline-subtle px-3 py-2.5">
-                                    <label for="registry-topology-layout" class="block text-xs font-semibold text-content-secondary">Layout Mode</label>
+                                    <label for="registry-topology-layout"
+                                           class="block text-xs font-semibold text-content-secondary">Layout Mode</label>
                                     <select id="registry-topology-layout"
                                             class="mt-2 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
                                         <option value="hierarchy">Hierarchy View</option>
@@ -283,7 +314,7 @@
                                         ('namespace', 'Namespace', 'layers-3', 'scope'),
                                         ('workload', 'Workload', 'boxes', 'compute'),
                                         ('pod', 'Pod', 'circle-dot', 'compute')
-                                    ] %}
+                                        ] %}
                                         <label class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-xs text-content-secondary hover:bg-surface-hover">
                                             <span class="inline-flex items-center gap-2">
                                                 <span class="flex h-6 w-6 items-center justify-center rounded-md border kaori-topology-domain-{{ domain }}">
@@ -293,7 +324,9 @@
                                             <span class="inline-flex items-center gap-2">
                                                 <span data-registry-topology-type-count="{{ value }}"
                                                       class="text-xs font-semibold text-content-muted">0</span>
-                                                <input type="checkbox" checked data-registry-topology-type="{{ value }}"
+                                                <input type="checkbox"
+                                                       checked
+                                                       data-registry-topology-type="{{ value }}"
                                                        class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
                                             </span>
                                         </label>
@@ -308,13 +341,16 @@
                                         ('contains', 'Contains (scope context)', 'contains'),
                                         ('owns', 'Owns (Pod hierarchy)', 'owns'),
                                         ('runtime_usage', 'Runtime usage (digest / tag evidence)', 'uses')
-                                    ] %}
+                                        ] %}
                                         <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-hover">
                                             <span class="inline-flex items-center gap-2">
-                                                <span class="h-0.5 w-7 shrink-0 kaori-topology-edge-{{ cls }}" aria-hidden="true"></span>
+                                                <span class="h-0.5 w-7 shrink-0 kaori-topology-edge-{{ cls }}"
+                                                      aria-hidden="true"></span>
                                                 {{ title }}
                                             </span>
-                                            <input type="checkbox" checked data-registry-topology-relationship="{{ kind }}"
+                                            <input type="checkbox"
+                                                   checked
+                                                   data-registry-topology-relationship="{{ kind }}"
                                                    class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
                                         </label>
                                     {% endfor %}
@@ -324,12 +360,14 @@
                         </div>
                     </aside>
                     <main class="min-w-0">
-                        <section id="registry-topology-view-panel-graph" role="tabpanel"
+                        <section id="registry-topology-view-panel-graph"
+                                 role="tabpanel"
                                  aria-labelledby="registry-topology-view-tab-graph">
                             <div id="registry-topology-canvas-shell"
                                  class="{{ visualization.canvas_classes() }} min-h-[38rem]">
                                 <div id="registry-topology-namespace-boundaries"
-                                     class="pointer-events-none absolute inset-0 z-0" aria-hidden="true"></div>
+                                     class="pointer-events-none absolute inset-0 z-0"
+                                     aria-hidden="true"></div>
                                 <div id="registry-topology-canvas"
                                      role="img"
                                      aria-label="Artifact Registry to Kubernetes committed dependency graph. Use Resource List for keyboard-accessible evidence."
@@ -338,33 +376,36 @@
                                      class="absolute inset-0 z-10 h-full w-full"></div>
                                 <div id="registry-topology-node-tooltip"
                                      role="tooltip"
-                                     class="pointer-events-none absolute z-30 hidden max-w-[20rem] rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-medium text-content-primary shadow-xl"></div>
+                                     class="pointer-events-none absolute z-30 hidden max-w-[20rem] rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-medium text-content-primary shadow-xl">
+                                </div>
                                 <div id="registry-topology-empty"
                                      class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
                                     <div class="pointer-events-auto w-full max-w-md">
-                                        {% set empty_state_icon = 'waypoints' %}
-                                        {% set empty_state_label = 'No Results' %}
-                                        {% set empty_state_title = 'No Committed Artifact Relationships Found' %}
-                                        {% set empty_state_description = 'Adjust the scope or refresh canonical correlation evidence. Missing or stale evidence never proves zero impact.' %}
-                                        {% set empty_state_variant = 'panel' %}
+                                        {% set empty_state_icon = "waypoints" %}
+                                        {% set empty_state_label = "No Results" %}
+                                        {% set empty_state_title = "No Committed Artifact Relationships Found" %}
+                                        {% set empty_state_description = "Adjust the scope or refresh canonical correlation evidence. Missing or stale evidence never proves zero impact." %}
+                                        {% set empty_state_variant = "panel" %}
                                         {% include 'components/states/_empty_state.html' %}
                                     </div>
                                 </div>
                             </div>
                         </section>
-                        <section id="registry-topology-view-panel-list" role="tabpanel"
+                        <section id="registry-topology-view-panel-list"
+                                 role="tabpanel"
                                  aria-labelledby="registry-topology-view-tab-list"
-                                 hidden class="kaori-visualization-canvas h-[38rem] min-w-0 overflow-auto overscroll-contain bg-surface-card">
+                                 hidden
+                                 class="kaori-visualization-canvas h-[38rem] min-w-0 overflow-auto overscroll-contain bg-surface-card">
                             <div class="flex items-center gap-1.5 border-b border-outline-subtle bg-surface-card px-5 py-3">
                                 <h3 class="text-sm font-semibold text-content-primary">Resource List</h3>
                                 {{ info_tip.render('registry-runtime-topology-resource-list-guide',
-                                    'Topology Resource List Guide',
-                                    'How to interpret committed Artifact Registry and Kubernetes relationships.',
-                                    items=[
-                                        'Artifact Exposure: Critical or High is a Registry scan finding, not Kubernetes health.',
-                                        'Correlation Readiness: Ready means committed evidence is qualified, not that the workload is healthy.',
-                                        'Resource Relationships: Visible links are bounded to the selected committed correlation snapshot.'
-                                    ], placement='right', variant='guide') }}
+                                                                'Topology Resource List Guide',
+                                                                'How to interpret committed Artifact Registry and Kubernetes relationships.',
+                                                                items=[
+                                                                'Artifact Exposure: Critical or High is a Registry scan finding, not Kubernetes health.',
+                                                                'Correlation Readiness: Ready means committed evidence is qualified, not that the workload is healthy.',
+                                                                'Resource Relationships: Visible links are bounded to the selected committed correlation snapshot.'
+                                                                ], placement='right', variant='guide') }}
                             </div>
                             <div class="min-w-[760px]">
                                 <table class="{{ table_ui.table_classes() }}">
@@ -380,7 +421,9 @@
                                             <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="registry-topology-resource-rows" class="{{ table_ui.body_classes() }}"></tbody>
+                                    <tbody id="registry-topology-resource-rows"
+                                           class="{{ table_ui.body_classes() }}">
+                                    </tbody>
                                 </table>
                             </div>
                             <div id="registry-topology-list-empty" class="hidden p-6">
@@ -392,24 +435,29 @@
                                 {% set empty_state_min_height = "min-h-[220px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </div>
-
                         </section>
                     </main>
                     <aside id="registry-topology-inspector"
-                           role="dialog" aria-modal="true" aria-labelledby="registry-topology-inspector-title"
+                           role="dialog"
+                           aria-modal="true"
+                           aria-labelledby="registry-topology-inspector-title"
                            class="{{ visualization.drawer_pane_classes('right') }}">
                         <div class="flex items-start justify-between gap-4 border-b border-outline-subtle px-4 py-4">
                             <div class="flex min-w-0 items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
                                     <i data-lucide="panel-right" class="h-4 w-4"></i>
                                 </span>
                                 <div>
-                                    <h3 id="registry-topology-inspector-title" class="text-base font-semibold text-content-primary">Topology Details</h3>
+                                    <h3 id="registry-topology-inspector-title"
+                                        class="text-base font-semibold text-content-primary">Topology Details</h3>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">Inspect a selected resource or relationship.</p>
                                 </div>
                             </div>
-                            <button id="registry-topology-inspector-close" type="button"
-                                    class="{{ topology_parts.drawer_close_classes() }}" aria-label="Close Topology Details">
+                            <button id="registry-topology-inspector-close"
+                                    type="button"
+                                    class="{{ topology_parts.drawer_close_classes() }}"
+                                    aria-label="Close Topology Details">
                                 <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                             </button>
                         </div>

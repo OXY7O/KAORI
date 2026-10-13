@@ -30,7 +30,11 @@
             <i data-lucide="{{ 'info' if guide_variant else 'circle-help' }}"
                class="h-3.5 w-3.5 shrink-0"
                aria-hidden="true"></i>
-            {% if guide_variant %}<span>Guide</span>{% elif button_text %}<span>{{ button_text }}</span>{% endif %}
+            {% if guide_variant %}
+                <span>Guide</span>
+            {% elif button_text %}
+                <span>{{ button_text }}</span>
+            {% endif %}
         </button>
         <span id="{{ id }}-tooltip"
               role="tooltip"

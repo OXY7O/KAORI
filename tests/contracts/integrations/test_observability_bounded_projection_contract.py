@@ -12,9 +12,7 @@ def source(path: str) -> str:
 def test_coverage_sql_before_projection_and_batch_provider_loader() -> None:
     coverage = source('app/integrations/coverage.py')
     query = source('app/integrations/coverage_query.py')
-    body = coverage.split('def build_provider_coverage(', 1)[1].split(
-        'def build_binding_workspace(', 1
-    )[0]
+    body = coverage.split('def build_provider_coverage(', 1)[1].split('def build_binding_workspace(', 1)[0]
     assert 'paged_coverage_scopes(' in body
     assert 'IntegrationBinding.id.in_(binding_ids)' in body
     assert 'for scoped in snapshot[' in body
@@ -52,12 +50,8 @@ def test_provider_details_resolve_only_visible_binding_page() -> None:
         assert "'operational_binding_total':" in detail
         assert "'resolution_scope_total':" in detail
         assert "'binding_registry_rows': binding_registry_rows" in detail
-    alert = source(
-        'app/integrations/observability/alert_source/providers/alertmanager/application/presentation.py'
-    )
-    index = alert.split('def build_inventory_context(', 1)[1].split(
-        'def _alertmanager_request_target(', 1
-    )[0]
+    alert = source('app/integrations/observability/alert_source/providers/alertmanager/application/presentation.py')
+    index = alert.split('def build_inventory_context(', 1)[1].split('def _alertmanager_request_target(', 1)[0]
     assert 'page_instances, pagination = paginate_query(' in index
     assert 'binding_summary' in index
     assert 'instances = list_instances()' not in index

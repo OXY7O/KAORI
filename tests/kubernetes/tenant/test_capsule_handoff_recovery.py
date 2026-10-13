@@ -1,4 +1,5 @@
 """#1229 Capsule read-back and crash/partial recovery must be non-retryable."""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -16,7 +17,9 @@ from app.kubernetes.tenant.capsule_handoff_recovery import (
 def _namespace(*, name='dev', uid='ns-uid', version='12'):
     return SimpleNamespace(
         metadata=SimpleNamespace(
-            name=name, uid=uid, resource_version=version,
+            name=name,
+            uid=uid,
+            resource_version=version,
             labels={
                 'app.kubernetes.io/managed-by': 'kaori',
                 'kaori.io/tenant-id': 'tenant-1',
@@ -26,7 +29,8 @@ def _namespace(*, name='dev', uid='ns-uid', version='12'):
             annotations={'foreign.example/retained': 'yes'},
             owner_references=[{'kind': 'Tenant', 'name': 'demo'}],
             finalizers=['capsule.clastix.io/namespace-protection'],
-            generation=1, deletion_timestamp=None,
+            generation=1,
+            deletion_timestamp=None,
             deletion_grace_period_seconds=None,
         ),
         spec={'quota': 'unmodified'},
@@ -35,8 +39,12 @@ def _namespace(*, name='dev', uid='ns-uid', version='12'):
 
 def _component():
     return {
-        'namespace': 'dev', 'kind': 'Namespace', 'name': 'dev',
-        'uid': 'ns-uid', 'resource_version': '12', 'authority': 'capsule',
+        'namespace': 'dev',
+        'kind': 'Namespace',
+        'name': 'dev',
+        'uid': 'ns-uid',
+        'resource_version': '12',
+        'authority': 'capsule',
         'handoff': 'external_acceptance_required',
         'ownership': 'kaori_marker_correlated',
     }
@@ -44,7 +52,9 @@ def _component():
 
 def _baseline():
     return capture_capsule_namespace_baseline(
-        _component(), _namespace(), tenant_id='tenant-1',
+        _component(),
+        _namespace(),
+        tenant_id='tenant-1',
         capsule_tenant_name='demo',
     )
 
@@ -69,33 +79,42 @@ def test_baseline_retains_only_provider_digests_not_raw_spec_or_foreign_values()
 def test_authoritative_readback_classifies_pending_and_transferred():
     baseline = _baseline()
     pending = classify_capsule_namespace_handoff(
-        baseline=baseline, current=_namespace(), tenant_id='tenant-1',
+        baseline=baseline,
+        current=_namespace(),
+        tenant_id='tenant-1',
         successor_owner='platform-team',
     )
     moved = classify_capsule_namespace_handoff(
-        baseline=baseline, current=_transferred(), tenant_id='tenant-1',
+        baseline=baseline,
+        current=_transferred(),
+        tenant_id='tenant-1',
         successor_owner='platform-team',
     )
     assert pending['state'] == 'pending_provider_transfer'
     assert moved['state'] == 'provider_markers_transferred'
 
 
-@pytest.mark.parametrize('mutation', [
-    lambda obj: setattr(obj.metadata, 'uid', 'new-uid'),
-    lambda obj: setattr(obj, 'spec', {'quota': 'changed'}),
-    lambda obj: obj.metadata.annotations.update({'foreign.example/retained': 'no'}),
-    lambda obj: obj.metadata.labels.update({'foreign.example/retained': 'no'}),
-    lambda obj: setattr(obj.metadata, 'finalizers', []),
-    lambda obj: obj.metadata.labels.update({'app.kubernetes.io/managed-by': 'other'}),
-    lambda obj: obj.metadata.labels.update({'kaori.io/new-control': 'unknown'}),
-    lambda obj: obj.metadata.labels.update({'capsule.clastix.io/tenant': 'someone-else'}),
-])
+@pytest.mark.parametrize(
+    'mutation',
+    [
+        lambda obj: setattr(obj.metadata, 'uid', 'new-uid'),
+        lambda obj: setattr(obj, 'spec', {'quota': 'changed'}),
+        lambda obj: obj.metadata.annotations.update({'foreign.example/retained': 'no'}),
+        lambda obj: obj.metadata.labels.update({'foreign.example/retained': 'no'}),
+        lambda obj: setattr(obj.metadata, 'finalizers', []),
+        lambda obj: obj.metadata.labels.update({'app.kubernetes.io/managed-by': 'other'}),
+        lambda obj: obj.metadata.labels.update({'kaori.io/new-control': 'unknown'}),
+        lambda obj: obj.metadata.labels.update({'capsule.clastix.io/tenant': 'someone-else'}),
+    ],
+)
 def test_recovery_fails_closed_on_identity_spec_metadata_or_claim_drift(mutation):
     obj = _transferred()
     mutation(obj)
     with pytest.raises(ValueError):
         classify_capsule_namespace_handoff(
-            baseline=_baseline(), current=obj, tenant_id='tenant-1',
+            baseline=_baseline(),
+            current=obj,
+            tenant_id='tenant-1',
             successor_owner='platform-team',
         )
 
@@ -115,7 +134,8 @@ def test_never_silently_retry_a_partial_or_fully_transferred_scope():
             ('dev', 'ns-uid'): _transferred(),
             ('prod', 'prod-uid'): prod,
         },
-        tenant_id='tenant-1', successor_owner='platform-team',
+        tenant_id='tenant-1',
+        successor_owner='platform-team',
     )
     assert result['status'] == 'provider_markers_transferred_consent_unverified'
     assert result['resume_authorized'] is False
@@ -134,7 +154,8 @@ def test_partial_recovery_status_does_not_grant_resume_or_release():
             ('dev', 'ns-uid'): _transferred(),
             ('prod', 'prod-uid'): _namespace(name='prod', uid='prod-uid'),
         },
-        tenant_id='tenant-1', successor_owner='platform-team',
+        tenant_id='tenant-1',
+        successor_owner='platform-team',
     )
     assert result['status'] == 'partial_handoff_recovery_required'
     assert result['transferred_count'] == 1
@@ -147,28 +168,36 @@ def test_recovery_rejects_missing_extra_or_duplicated_provider_objects():
     baseline = _baseline()
     with pytest.raises(ValueError):
         summarize_capsule_recovery(
-            baselines=[baseline], live_namespaces={}, tenant_id='tenant-1',
+            baselines=[baseline],
+            live_namespaces={},
+            tenant_id='tenant-1',
             successor_owner='platform-team',
         )
     with pytest.raises(ValueError):
         summarize_capsule_recovery(
             baselines=[baseline, deepcopy(baseline)],
             live_namespaces={('dev', 'ns-uid'): _namespace()},
-            tenant_id='tenant-1', successor_owner='platform-team',
+            tenant_id='tenant-1',
+            successor_owner='platform-team',
         )
 
 
-@pytest.mark.parametrize('tampered', [
-    [],
-    ['app.kubernetes.io/managed-by'],
-    ['app.kubernetes.io/managed-by', 'kaori.io/tenant-id', 'kaori.io/tenant-id'],
-    ['app.kubernetes.io/managed-by', 'kaori.io/tenant-id', {'unknown': 'key'}],
-])
+@pytest.mark.parametrize(
+    'tampered',
+    [
+        [],
+        ['app.kubernetes.io/managed-by'],
+        ['app.kubernetes.io/managed-by', 'kaori.io/tenant-id', 'kaori.io/tenant-id'],
+        ['app.kubernetes.io/managed-by', 'kaori.io/tenant-id', {'unknown': 'key'}],
+    ],
+)
 def test_untrusted_recovery_baseline_cannot_suppress_required_owner_checks(tampered):
     baseline = _baseline()
     baseline['label_keys_to_release'] = tampered
     with pytest.raises(ValueError, match='baseline'):
         classify_capsule_namespace_handoff(
-            baseline=baseline, current=_namespace(), tenant_id='tenant-1',
+            baseline=baseline,
+            current=_namespace(),
+            tenant_id='tenant-1',
             successor_owner='platform-team',
         )

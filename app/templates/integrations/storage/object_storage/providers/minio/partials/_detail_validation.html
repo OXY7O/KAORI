@@ -89,5 +89,4 @@
     {{ framed_workspace_tabs.badge_oob("minio", "validation", readiness_label) }}
 {% endif %}
 {% include "components/operation_feedback_oob.html" %}
-
 {{ provider_detail_posture.state_oob('minio', instance.readiness_status, capability_count) }}

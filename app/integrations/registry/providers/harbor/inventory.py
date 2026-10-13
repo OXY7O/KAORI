@@ -47,8 +47,7 @@ def _validated_tags(value: Any, *, digest: str) -> list[dict[str, Any]]:
     if value is None:
         return []
     if not isinstance(value, list) or any(
-        not isinstance(tag, dict) or not str(tag.get('name') or '').strip()
-        for tag in value
+        not isinstance(tag, dict) or not str(tag.get('name') or '').strip() for tag in value
     ):
         raise HarborResponseError(f'Harbor artifact {digest} has malformed tag inventory.')
     return value

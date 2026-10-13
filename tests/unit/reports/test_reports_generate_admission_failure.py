@@ -37,11 +37,14 @@ def test_create_rejects_empty_analytics_sections_before_storage_io(monkeypatch) 
 def test_create_rejects_invalid_analytics_sections_before_storage_io(monkeypatch) -> None:
     _block_persistence(monkeypatch)
     accepted, errors, report = create_report_request(
-        MultiDict([
-            ('report_type', _contract('analytics')),
-            ('period', '30d'),
-            ('sections', 'not_a_published_section'),
-        ]), None
+        MultiDict(
+            [
+                ('report_type', _contract('analytics')),
+                ('period', '30d'),
+                ('sections', 'not_a_published_section'),
+            ]
+        ),
+        None,
     )
     assert accepted is False and report is None
     assert 'One or more selected report sections are invalid.' in errors
@@ -59,11 +62,14 @@ def test_create_rejects_analytics_snapshot_before_storage_io(monkeypatch) -> Non
 def test_create_rejects_inventory_section_tampering_before_storage_io(monkeypatch) -> None:
     _block_persistence(monkeypatch)
     accepted, errors, report = create_report_request(
-        MultiDict([
-            ('report_type', _contract('inventory')),
-            ('period', 'snapshot'),
-            ('sections', 'tampered_section'),
-        ]), None
+        MultiDict(
+            [
+                ('report_type', _contract('inventory')),
+                ('period', 'snapshot'),
+                ('sections', 'tampered_section'),
+            ]
+        ),
+        None,
     )
     assert accepted is False and report is None
     assert 'Inventory report sections are fixed by the published contract.' in errors

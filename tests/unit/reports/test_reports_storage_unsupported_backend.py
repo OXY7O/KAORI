@@ -1,7 +1,9 @@
 from pathlib import Path
-from flask import Flask
-from app.reports.storage.service import get_configured_storage_backend_name, build_report_storage_backend
+
 import pytest
+from flask import Flask
+
+from app.reports.storage.service import build_report_storage_backend, get_configured_storage_backend_name
 
 
 def test_unsupported_backend_never_resolves_to_local():

@@ -7,16 +7,19 @@ provider PATCH, recovery retry, or Released transition.
 
 There is deliberately no INSERT/UPDATE/DELETE/commit, route or background job.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any
 
-from app.kubernetes.tenant.capsule_handoff_audit_envelope import (
-    _MAX_ROWS, _TARGET, inspect_capsule_audit_event_envelopes,
-)
 from app.kubernetes.tenant.capsule_handoff_attempt_state import (
     project_capsule_attempt_history,
+)
+from app.kubernetes.tenant.capsule_handoff_audit_envelope import (
+    _MAX_ROWS,
+    _TARGET,
+    inspect_capsule_audit_event_envelopes,
 )
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
 from app.models.audit import AuditEvent
@@ -32,8 +35,12 @@ def _metadata(row: Any) -> dict[str, Any]:
 
 
 def inspect_capsule_persistence_snapshot(
-    *, tenant_id: str, plan: Mapping[str, Any], related: Mapping[str, Any],
-    accepted_actor_user_id: int, rows: list[Any],
+    *,
+    tenant_id: str,
+    plan: Mapping[str, Any],
+    related: Mapping[str, Any],
+    accepted_actor_user_id: int,
+    rows: list[Any],
 ) -> dict[str, Any]:
     """Validate a complete caller-supplied history *shape*, not DB integrity.
 
@@ -42,15 +49,20 @@ def inspect_capsule_persistence_snapshot(
     records previously deleted from the shared AuditEvent table.
     """
     if (
-        not isinstance(tenant_id, str) or not tenant_id
-        or not isinstance(plan, Mapping) or plan.get('tenant_id') != tenant_id
+        not isinstance(tenant_id, str)
+        or not tenant_id
+        or not isinstance(plan, Mapping)
+        or plan.get('tenant_id') != tenant_id
         or not isinstance(related, Mapping)
-        or not isinstance(rows, list) or len(rows) > _MAX_ROWS
+        or not isinstance(rows, list)
+        or len(rows) > _MAX_ROWS
     ):
         raise ValueError('Capsule persistence snapshot has incomplete canonical scope.')
     projection = inspect_capsule_audit_event_envelopes(
-        plan=plan, related=related,
-        accepted_actor_user_id=accepted_actor_user_id, rows=rows,
+        plan=plan,
+        related=related,
+        accepted_actor_user_id=accepted_actor_user_id,
+        rows=rows,
     )
     status = projection['status']
     blocked = status not in ('no_attempt_observed_not_authorized',)
@@ -58,7 +70,8 @@ def inspect_capsule_persistence_snapshot(
         **projection,
         'persistence_status': (
             'existing_attempt_requires_independent_recovery_review'
-            if blocked else 'no_attempt_observed_storage_guarantees_missing'
+            if blocked
+            else 'no_attempt_observed_storage_guarantees_missing'
         ),
         'recorded_attempt_count': 1 if rows else 0,
         'new_attempt_blocked_by_history': blocked,
@@ -78,8 +91,11 @@ def inspect_capsule_persistence_snapshot(
 
 
 def read_capsule_committed_audit_history(
-    *, tenant_id: str, plan: Mapping[str, Any],
-    related: Mapping[str, Any], accepted_actor_user_id: int,
+    *,
+    tenant_id: str,
+    plan: Mapping[str, Any],
+    related: Mapping[str, Any],
+    accepted_actor_user_id: int,
 ) -> dict[str, Any]:
     """Read the unfiltered Capsule execution rows from SQL; NEVER write.
 
@@ -88,29 +104,39 @@ def read_capsule_committed_audit_history(
     remains possible until the future locked, unique, write-once ledger exists.
     """
     if (
-        not isinstance(tenant_id, str) or not tenant_id
-        or not isinstance(plan, Mapping) or plan.get('tenant_id') != tenant_id
+        not isinstance(tenant_id, str)
+        or not tenant_id
+        or not isinstance(plan, Mapping)
+        or plan.get('tenant_id') != tenant_id
         or not isinstance(related, Mapping)
-        or type(accepted_actor_user_id) is not int or accepted_actor_user_id <= 0
+        or type(accepted_actor_user_id) is not int
+        or accepted_actor_user_id <= 0
     ):
         raise ValueError('Canonical Capsule Tenant and accepted actor are required.')
     rows = (
         AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
-        .order_by(AuditEvent.id.asc()).limit(_MAX_ROWS + 1).all()
+        .order_by(AuditEvent.id.asc())
+        .limit(_MAX_ROWS + 1)
+        .all()
     )
     if len(rows) > _MAX_ROWS:
-        raise ValueError(
-            'Multiple, truncated or replayed Capsule attempt histories require independent recovery.'
-        )
+        raise ValueError('Multiple, truncated or replayed Capsule attempt histories require independent recovery.')
     return inspect_capsule_persistence_snapshot(
-        tenant_id=tenant_id, plan=plan, related=related,
-        accepted_actor_user_id=accepted_actor_user_id, rows=rows,
+        tenant_id=tenant_id,
+        plan=plan,
+        related=related,
+        accepted_actor_user_id=accepted_actor_user_id,
+        rows=rows,
     )
 
 
 def review_capsule_audit_append_candidate(
-    *, tenant_id: str, plan: Mapping[str, Any], related: Mapping[str, Any],
-    accepted_actor_user_id: int, committed_rows: list[Any],
+    *,
+    tenant_id: str,
+    plan: Mapping[str, Any],
+    related: Mapping[str, Any],
+    accepted_actor_user_id: int,
+    committed_rows: list[Any],
     candidate_event: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Check proposed event sequence, not whether an append is permitted.
@@ -121,8 +147,11 @@ def review_capsule_audit_append_candidate(
     outcome. This pure review cannot replace those atomic guarantees.
     """
     snapshot = inspect_capsule_persistence_snapshot(
-        tenant_id=tenant_id, plan=plan, related=related,
-        accepted_actor_user_id=accepted_actor_user_id, rows=committed_rows,
+        tenant_id=tenant_id,
+        plan=plan,
+        related=related,
+        accepted_actor_user_id=accepted_actor_user_id,
+        rows=committed_rows,
     )
     if (
         not isinstance(candidate_event, Mapping)
@@ -133,8 +162,10 @@ def review_capsule_audit_append_candidate(
     events = [_metadata(row) for row in committed_rows]
     events.append(dict(candidate_event))
     projected = project_capsule_attempt_history(
-        plan=plan, related=related,
-        accepted_actor_user_id=accepted_actor_user_id, events=events,
+        plan=plan,
+        related=related,
+        accepted_actor_user_id=accepted_actor_user_id,
+        events=events,
     )
     return {
         'status': 'candidate_event_schema_validated_storage_admission_blocked',
@@ -145,11 +176,13 @@ def review_capsule_audit_append_candidate(
         'prior_audit_anchor_sha256': snapshot['audit_record_anchor_sha256'],
         'candidate_event_sha256': candidate_event['event_sha256'],
         'expected_event_count': len(events),
-        'candidate_receipt_sha256': _digest({
-            'plan_sha256': plan.get('plan_sha256'),
-            'history_sha256': projected['history_sha256'],
-            'event_count': len(events),
-        }),
+        'candidate_receipt_sha256': _digest(
+            {
+                'plan_sha256': plan.get('plan_sha256'),
+                'history_sha256': projected['history_sha256'],
+                'event_count': len(events),
+            }
+        ),
         'append_authorized': False,
         'trusted_audit_persistence_verified': False,
         'database_write_once_enforced': False,

@@ -5,7 +5,9 @@ from types import SimpleNamespace
 from app.intelligence.registry_recommendations import _tag_only_finding_key
 
 
-def _parts(*, binding_id: int = 1, pod: str = 'api-1', image: str = 'harbor.example/demo/api:uat', digest: str = 'sha256:abc'):
+def _parts(
+    *, binding_id: int = 1, pod: str = 'api-1', image: str = 'harbor.example/demo/api:uat', digest: str = 'sha256:abc'
+):
     artifact = SimpleNamespace(digest=digest)
     identity = SimpleNamespace(id=6)
     binding = SimpleNamespace(
@@ -38,10 +40,11 @@ def test_tag_only_finding_key_distinguishes_real_resource_identity_changes() -> 
         _parts(digest='sha256:changed'),
     ]
     for new_artifact, new_identity, new_binding in changed:
-        assert _tag_only_finding_key(
-            'registry.runtime.tag_only_correlation', new_artifact, new_identity, new_binding
-        ) != reference
+        assert (
+            _tag_only_finding_key('registry.runtime.tag_only_correlation', new_artifact, new_identity, new_binding)
+            != reference
+        )
     changed_source = SimpleNamespace(id=7)
-    assert _tag_only_finding_key(
-        'registry.runtime.tag_only_correlation', artifact, changed_source, original
-    ) != reference
+    assert (
+        _tag_only_finding_key('registry.runtime.tag_only_correlation', artifact, changed_source, original) != reference
+    )

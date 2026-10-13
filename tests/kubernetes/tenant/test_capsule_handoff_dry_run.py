@@ -1,4 +1,5 @@
 """#1229 Capsule server dryRun=All: no live execution and no false readiness."""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -16,7 +17,9 @@ from app.kubernetes.tenant.release_handoff_inventory import _capsule_spec_sha256
 def _namespace():
     return SimpleNamespace(
         metadata=SimpleNamespace(
-            name='demo-dev', uid='ns-uid', resource_version='11',
+            name='demo-dev',
+            uid='ns-uid',
+            resource_version='11',
             labels={
                 'app.kubernetes.io/managed-by': 'kaori',
                 'kaori.io/tenant-id': 'tenant-uuid',
@@ -26,7 +29,8 @@ def _namespace():
             annotations={'foreign.example/annotation': 'preserved'},
             owner_references=[{'kind': 'Tenant', 'name': 'demo'}],
             finalizers=['capsule.clastix.io/protect'],
-            generation=1, deletion_timestamp=None,
+            generation=1,
+            deletion_timestamp=None,
             deletion_grace_period_seconds=None,
         ),
         spec={'finalizers': ['kubernetes']},
@@ -36,16 +40,24 @@ def _namespace():
 def _components():
     return [
         {
-            'kind': 'CapsuleTenant', 'name': 'demo', 'uid': 'cr-uid',
-            'resource_version': '5', 'authority': 'capsule',
+            'kind': 'CapsuleTenant',
+            'name': 'demo',
+            'uid': 'cr-uid',
+            'resource_version': '5',
+            'authority': 'capsule',
             'handoff': 'external_acceptance_required',
             'ownership': 'external_or_unattributed',
             'capsule_spec_sha256': _capsule_spec_sha256({'resourceQuotas': {'scope': 'Tenant'}}),
         },
         {
-            'kind': 'Namespace', 'name': 'demo-dev', 'namespace': 'demo-dev',
-            'uid': 'ns-uid', 'resource_version': '11', 'authority': 'capsule',
-            'handoff': 'external_acceptance_required', 'ownership': 'kaori_marker_correlated',
+            'kind': 'Namespace',
+            'name': 'demo-dev',
+            'namespace': 'demo-dev',
+            'uid': 'ns-uid',
+            'resource_version': '11',
+            'authority': 'capsule',
+            'handoff': 'external_acceptance_required',
+            'ownership': 'kaori_marker_correlated',
         },
     ]
 
@@ -79,7 +91,8 @@ class _Custom:
         self.calls.append((group, version, plural, name, kwargs))
         return {
             'metadata': {
-                'name': 'demo', 'uid': 'cr-uid',
+                'name': 'demo',
+                'uid': 'cr-uid',
                 'resourceVersion': '5',
                 'labels': {'capsule.clastix.io/policy': 'preserved'},
             },
@@ -90,8 +103,11 @@ class _Custom:
 def test_preview_uses_server_dry_run_only_and_rechecks_provider():
     core, custom = _Core(), _Custom()
     receipt = preview_capsule_handoff_scope(
-        custom=custom, core=core, components=_components(),
-        tenant_id='tenant-uuid', successor_owner='platform-team',
+        custom=custom,
+        core=core,
+        components=_components(),
+        tenant_id='tenant-uuid',
+        successor_owner='platform-team',
     )
     assert [call[0] for call in core.calls] == ['read', 'patch', 'read']
     assert len(custom.calls) == 2
@@ -128,8 +144,11 @@ def test_observed_capsule_namespace_preserves_foreign_manager_without_patch():
 
     core = _ObservedCore()
     result = preview_capsule_namespace_handoff(
-        core, component, tenant_id='tenant-uuid',
-        capsule_tenant_name='demo', successor_owner='platform-team',
+        core,
+        component,
+        tenant_id='tenant-uuid',
+        capsule_tenant_name='demo',
+        successor_owner='platform-team',
     )
     assert result['operation'] == 'observe_capsule_namespace_without_transfer'
     assert result['dry_run'] is False
@@ -137,9 +156,11 @@ def test_observed_capsule_namespace_preserves_foreign_manager_without_patch():
     assert [call[0] for call in core.calls] == ['read', 'read']
 
     full = preview_capsule_handoff_scope(
-        custom=_Custom(), core=_ObservedCore(),
+        custom=_Custom(),
+        core=_ObservedCore(),
         components=[_components()[0], component],
-        tenant_id='tenant-uuid', successor_owner='platform-team',
+        tenant_id='tenant-uuid',
+        successor_owner='platform-team',
     )
     assert full['status'] == 'preview_observed_coverage_incomplete'
     assert full['namespace_count'] == 1
@@ -147,7 +168,6 @@ def test_observed_capsule_namespace_preserves_foreign_manager_without_patch():
     assert full['dry_run_complete'] is False
     assert full['provider_handoff_verified'] is False
     assert full['release_authorized'] is False
-
 
 
 def test_capsule_spec_projected_tenant_label_is_preserved_without_namespace_patch():
@@ -160,10 +180,12 @@ def test_capsule_spec_projected_tenant_label_is_preserved_without_namespace_patc
     spec = {
         'resourceQuotas': {'scope': 'Tenant'},
         'namespaceOptions': {
-            'additionalMetadata': {'labels': {
-                'kaori.io/tenant': 'demo',
-                'cluster': 'kaori-local',
-            }},
+            'additionalMetadata': {
+                'labels': {
+                    'kaori.io/tenant': 'demo',
+                    'cluster': 'kaori-local',
+                }
+            },
         },
     }
 
@@ -185,8 +207,11 @@ def test_capsule_spec_projected_tenant_label_is_preserved_without_namespace_patc
 
     provider = _ProviderCore()
     receipt = preview_capsule_namespace_handoff(
-        provider, component, tenant_id='tenant-uuid',
-        capsule_tenant_name='demo', successor_owner='platform-team',
+        provider,
+        component,
+        tenant_id='tenant-uuid',
+        capsule_tenant_name='demo',
+        successor_owner='platform-team',
         capsule_spec=spec,
     )
     assert provider.reads == 2
@@ -203,8 +228,10 @@ def test_capsule_spec_projected_tenant_label_is_preserved_without_namespace_patc
     cr = dict(_components()[0])
     cr['capsule_spec_sha256'] = _capsule_spec_sha256(spec)
     whole = preview_capsule_handoff_scope(
-        custom=_SpecCustom(), core=_ProviderCore(),
-        components=[cr, component], tenant_id='tenant-uuid',
+        custom=_SpecCustom(),
+        core=_ProviderCore(),
+        components=[cr, component],
+        tenant_id='tenant-uuid',
         successor_owner='platform-team',
     )
     assert whole['namespace_preview_count'] == 0
@@ -213,11 +240,14 @@ def test_capsule_spec_projected_tenant_label_is_preserved_without_namespace_patc
     assert whole['release_authorized'] is False
 
 
-@pytest.mark.parametrize('declared', [
-    {'additionalMetadata': {'labels': {'kaori.io/tenant': 'other'}}},
-    {'additionalMetadata': {'labels': {}}},
-    {},
-])
+@pytest.mark.parametrize(
+    'declared',
+    [
+        {'additionalMetadata': {'labels': {'kaori.io/tenant': 'other'}}},
+        {'additionalMetadata': {'labels': {}}},
+        {},
+    ],
+)
 def test_capsule_unmatched_spec_projection_stays_ownership_blocker(declared):
     component = {
         **_components()[1],
@@ -239,16 +269,21 @@ def test_capsule_unmatched_spec_projection_stays_ownership_blocker(declared):
 
     with pytest.raises(ValueError, match='unclassified KAORI control'):
         preview_capsule_namespace_handoff(
-            _CoreNoPatch(), component, tenant_id='tenant-uuid',
-            capsule_tenant_name='demo', successor_owner='platform-team',
+            _CoreNoPatch(),
+            component,
+            tenant_id='tenant-uuid',
+            capsule_tenant_name='demo',
+            successor_owner='platform-team',
             capsule_spec={'namespaceOptions': declared},
         )
 
 
 def test_observed_capsule_namespace_blocks_unknown_kaori_control_label():
     component = {
-        **_components()[1], 'handoff': 'observe_only',
-        'ownership': 'external_or_unattributed', 'managed_by': '',
+        **_components()[1],
+        'handoff': 'observe_only',
+        'ownership': 'external_or_unattributed',
+        'managed_by': '',
     }
 
     class _OrphanMarkerCore:
@@ -264,37 +299,49 @@ def test_observed_capsule_namespace_blocks_unknown_kaori_control_label():
 
     with pytest.raises(ValueError, match='unclassified KAORI control labels'):
         preview_capsule_namespace_handoff(
-            _OrphanMarkerCore(), component, tenant_id='tenant-uuid',
-            capsule_tenant_name='demo', successor_owner='platform-team',
+            _OrphanMarkerCore(),
+            component,
+            tenant_id='tenant-uuid',
+            capsule_tenant_name='demo',
+            successor_owner='platform-team',
         )
 
 
 def test_observed_capsule_namespace_rejects_changed_manager():
     component = {
-        **_components()[1], 'handoff': 'observe_only',
-        'ownership': 'external_or_unattributed', 'managed_by': '',
+        **_components()[1],
+        'handoff': 'observe_only',
+        'ownership': 'external_or_unattributed',
+        'managed_by': '',
     }
+
     class _ForeignManagerCore:
         def read_namespace(self, name, **kwargs):
             resource = _namespace()
             resource.metadata.labels.pop('kaori.io/tenant-id')
             resource.metadata.labels['app.kubernetes.io/managed-by'] = 'capsule'
             return resource
+
         def patch_namespace(self, **kwargs):
             pytest.fail('Stale observed manager must not be patched')
 
     with pytest.raises(ValueError, match='manager changed'):
         preview_capsule_namespace_handoff(
-            _ForeignManagerCore(), component, tenant_id='tenant-uuid',
-            capsule_tenant_name='demo', successor_owner='platform-team',
+            _ForeignManagerCore(),
+            component,
+            tenant_id='tenant-uuid',
+            capsule_tenant_name='demo',
+            successor_owner='platform-team',
         )
 
 
 def test_preview_rejects_admission_that_mutates_finalizers():
     with pytest.raises(ValueError, match='provider-owned'):
         preview_capsule_namespace_handoff(
-            _Core(corrupt=True), _components()[1],
-            tenant_id='tenant-uuid', capsule_tenant_name='demo',
+            _Core(corrupt=True),
+            _components()[1],
+            tenant_id='tenant-uuid',
+            capsule_tenant_name='demo',
             successor_owner='platform-team',
         )
 
@@ -305,15 +352,21 @@ def test_preview_rejects_foreign_cr_drift_or_unsupported_scope_without_patching(
     core = _Core()
     with pytest.raises(ValueError, match='spec'):
         preview_capsule_handoff_scope(
-            custom=_Custom(), core=core, components=components,
-            tenant_id='tenant-uuid', successor_owner='platform-team',
+            custom=_Custom(),
+            core=core,
+            components=components,
+            tenant_id='tenant-uuid',
+            successor_owner='platform-team',
         )
     assert not core.calls
     components = _components()
     components[1]['kind'] = 'RoleBinding'
     with pytest.raises(ValueError):
         preview_capsule_handoff_scope(
-            custom=_Custom(), core=core, components=components,
-            tenant_id='tenant-uuid', successor_owner='platform-team',
+            custom=_Custom(),
+            core=core,
+            components=components,
+            tenant_id='tenant-uuid',
+            successor_owner='platform-team',
         )
     assert not core.calls

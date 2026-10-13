@@ -38,7 +38,9 @@ def build_tenant_inventory_snapshot() -> dict[str, Any]:
             Tenant.lifecycle_status.notin_(
                 (TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value)
             )
-        ).order_by(Tenant.name.asc(), Tenant.id.asc()).all()
+        )
+        .order_by(Tenant.name.asc(), Tenant.id.asc())
+        .all()
     )
     namespaces = (
         TenantNamespace.query.join(
@@ -51,7 +53,10 @@ def build_tenant_inventory_snapshot() -> dict[str, Any]:
                 (TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value)
             ),
             TenantNamespace.provisioning_status.notin_(
-                (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+                (
+                    TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                    TenantNamespaceProvisioningStatus.RELEASED.value,
+                )
             ),
         )
         .order_by(TenantNamespace.cluster_id.asc(), TenantNamespace.namespace.asc())

@@ -23,9 +23,7 @@ def test_configuration_dispatch_attention_is_read_only(monkeypatch):
         'JobPolicy',
         SimpleNamespace(
             query=Query(),
-            last_dispatch_status=SimpleNamespace(
-                in_=lambda values: statuses.append(set(values)) or 'matching'
-            ),
+            last_dispatch_status=SimpleNamespace(in_=lambda values: statuses.append(set(values)) or 'matching'),
         ),
     )
     assert configuration.build_job_configuration_attention_summary() == 2
@@ -47,9 +45,7 @@ def test_overview_warns_on_dispatch_failure_without_execution(monkeypatch):
 
     assert context['workspaces'][0]['status_label'] == 'Needs Attention'
     assert context['workspaces'][0]['status_tone'] == 'warning'
-    assert context['workspaces'][0]['metrics'][1] == (
-        'triangle-alert', 'Execution / Policy Alerts', '0 / 1'
-    )
+    assert context['workspaces'][0]['metrics'][1] == ('triangle-alert', 'Execution / Policy Alerts', '0 / 1')
     assert context['review_workspace_count'] == 1
     assert context['workspaces'][0]['action_endpoint'] == 'jobs.configuration'
     assert context['workspaces'][0]['action_label'] == 'Review Job Configuration'

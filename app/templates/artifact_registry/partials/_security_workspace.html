@@ -185,22 +185,22 @@
         <section class="space-y-3"
                  aria-labelledby="artifact-registry-security-summary-heading">
             {{ section_intro.render('Security Snapshot',
-                'Committed vulnerability, supply-chain, and runtime exposure indicators for the selected Registry scope.',
-                'artifact-registry-security-summary-heading') }}
+                        'Committed vulnerability, supply-chain, and runtime exposure indicators for the selected Registry scope.',
+                        'artifact-registry-security-summary-heading') }}
             {% if security.view == 'vulnerabilities' %}
                 {% set security_metrics = [
-                    ('octagon-alert', 'Critical Findings', security.critical, 'Critical findings in the latest committed scan.', 'critical' if security.critical else 'info'),
-                    ('triangle-alert', 'High Findings', security.high, 'High findings in the latest committed scan.', 'warning' if security.high else 'info'),
-                    ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Distinct artifact digests with critical or high findings.', 'warning' if security.affected_artifacts else 'info'),
-                    ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Kubernetes bindings using critical/high-risk artifacts.', 'critical' if security.runtime_exposed else 'info')
-                ] %}
+                                    ('octagon-alert', 'Critical Findings', security.critical, 'Critical findings in the latest committed scan.', 'critical' if security.critical else 'info'),
+                                    ('triangle-alert', 'High Findings', security.high, 'High findings in the latest committed scan.', 'warning' if security.high else 'info'),
+                                    ('package-search', 'Affected Artifacts', security.affected_artifacts, 'Distinct artifact digests with critical or high findings.', 'warning' if security.affected_artifacts else 'info'),
+                                    ('waypoints', 'Runtime Exposed', security.runtime_exposed, 'Kubernetes bindings using critical/high-risk artifacts.', 'critical' if security.runtime_exposed else 'info')
+                                ] %}
             {% else %}
                 {% set security_metrics = [
-                    ('badge-check', 'Signature Observed', security.signature_observed, 'Artifacts where the provider reports signature presence.', 'info'),
-                    ('file-check-2', 'SBOM Available', security.sbom_available, 'Artifacts with provider-observed SBOM availability.', 'info'),
-                    ('scan-search', 'Coverage Gaps', security.coverage_gaps, 'Artifacts missing signature or SBOM evidence.', 'warning' if security.coverage_gaps else 'info'),
-                    ('blocks', 'Security Sources', security.source_count, 'Registry sources represented in the active security scope.', 'info')
-                ] %}
+                                    ('badge-check', 'Signature Observed', security.signature_observed, 'Artifacts where the provider reports signature presence.', 'info'),
+                                    ('file-check-2', 'SBOM Available', security.sbom_available, 'Artifacts with provider-observed SBOM availability.', 'info'),
+                                    ('scan-search', 'Coverage Gaps', security.coverage_gaps, 'Artifacts missing signature or SBOM evidence.', 'warning' if security.coverage_gaps else 'info'),
+                                    ('blocks', 'Security Sources', security.source_count, 'Registry sources represented in the active security scope.', 'info')
+                                ] %}
             {% endif %}
             {% call section_card.render(
                 'Security Evidence Summary',
@@ -208,7 +208,7 @@
                 'shield-check',
                 body_classes='p-0',
                 aria_label=security.title ~ ' summary'
-            ) %}
+                ) %}
                 {{ posture_grid.render(security_metrics, columns=4) }}
             {% endcall %}
         </section>
@@ -332,9 +332,18 @@
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(row.source_name, 'Registry security source', 'blocks') }}</td>
                                                     <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.provider_label }}</span></td>
                                                     <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.artifact_count }}</span></td>
-                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.vulnerability.label, row.vulnerability.tone) }}<p class="mt-1 text-xs text-content-muted">{{ row.coverage.vulnerability }} / {{ row.artifact_count }} usable</p></td>
-                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.signature.label, row.signature.tone) }}<p class="mt-1 text-xs text-content-muted">{{ row.coverage.signature }} / {{ row.artifact_count }} signed</p></td>
-                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.sbom.label, row.sbom.tone) }}<p class="mt-1 text-xs text-content-muted">{{ row.coverage.sbom }} / {{ row.artifact_count }} available</p></td>
+                                                    <td class="{{ table_ui.cell_classes() }}">
+                                                        {{ table_label.status_indicator_label(row.vulnerability.label, row.vulnerability.tone) }}
+                                                        <p class="mt-1 text-xs text-content-muted">{{ row.coverage.vulnerability }} / {{ row.artifact_count }} usable</p>
+                                                    </td>
+                                                    <td class="{{ table_ui.cell_classes() }}">
+                                                        {{ table_label.status_indicator_label(row.signature.label, row.signature.tone) }}
+                                                        <p class="mt-1 text-xs text-content-muted">{{ row.coverage.signature }} / {{ row.artifact_count }} signed</p>
+                                                    </td>
+                                                    <td class="{{ table_ui.cell_classes() }}">
+                                                        {{ table_label.status_indicator_label(row.sbom.label, row.sbom.tone) }}
+                                                        <p class="mt-1 text-xs text-content-muted">{{ row.coverage.sbom }} / {{ row.artifact_count }} available</p>
+                                                    </td>
                                                     <td class="{{ table_ui.cell_classes(action=true) }}">
                                                         <div class="ml-auto w-fit">
                                                             <button type="button"
@@ -383,17 +392,17 @@
                                  aria-labelledby="artifact-registry-vulnerability-findings-heading">
                             <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                                 {{ section_intro.render('Vulnerability Findings',
-                                                        'Review committed scanner findings and their current runtime exposure.',
-                                                        'artifact-registry-vulnerability-findings-heading',
-                                                        extra_classes='min-w-0 flex-1') }}
+                                                                'Review committed scanner findings and their current runtime exposure.',
+                                                                'artifact-registry-vulnerability-findings-heading',
+                                                                extra_classes='min-w-0 flex-1') }}
                                 <div class="flex items-center gap-1 sm:justify-end">
                                     {{ table_label.status_label(security.finding_interpretation.title,
-                                                                security.finding_interpretation.tone,
-                                                                icon=security.finding_interpretation.icon) }}
+                                                                        security.finding_interpretation.tone,
+                                                                        icon=security.finding_interpretation.icon) }}
                                     {{ info_tip.render('artifact-registry-vulnerability-evidence-help',
-                                                       security.finding_interpretation.title,
-                                                       security.finding_interpretation.description,
-                                                       placement='left') }}
+                                                                        security.finding_interpretation.title,
+                                                                        security.finding_interpretation.description,
+                                                                        placement='left') }}
                                 </div>
                             </div>
                         {% endif %}
@@ -492,7 +501,8 @@
                                                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Package / Fix</th>
                                                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Runtime Exposure</th>
                                                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Evidence</th>
-                                                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
+                                                    <th scope="col"
+                                                        class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="{{ table_ui.body_classes() }}">
@@ -502,9 +512,7 @@
                                                     <tr class="{{ table_ui.row_classes() }}">
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                             {{ table_ui.title_cell(row.vulnerability_id, '', 'shield-alert') }}
-                                                            <div class="mt-1.5">
-                                                                {{ table_label.status_indicator_label(row.severity_label, severity_tone) }}
-                                                            </div>
+                                                            <div class="mt-1.5">{{ table_label.status_indicator_label(row.severity_label, severity_tone) }}</div>
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                             {{ table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search') }}
@@ -527,9 +535,7 @@
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                                                             {{ table_ui.title_cell(row.source_name, '', 'blocks') }}
-                                                            <div class="mt-1.5">
-                                                                {{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}
-                                                            </div>
+                                                            <div class="mt-1.5">{{ table_label.status_indicator_label(row.freshness.label, row.freshness.tone) }}</div>
                                                         </td>
                                                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                                                             <button type="button"

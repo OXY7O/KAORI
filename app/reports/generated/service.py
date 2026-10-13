@@ -744,7 +744,7 @@ def _serialize_report(
         str(getattr(report, 'scope_asset_label_snapshot', '') or '').strip()
         or (scope.label if scope is not None else '')
         or (
-            f"Registry Integration {getattr(report, 'scope_asset_id', '')}"
+            f'Registry Integration {getattr(report, "scope_asset_id", "")}'
             if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE
             else 'Asset Selection Missing'
         )
@@ -956,10 +956,7 @@ def archive_report_record(
     report_id: int,
 ) -> tuple[bool, str]:
     report = db.session.scalar(
-        select(Report)
-        .where(Report.id == report_id)
-        .with_for_update()
-        .execution_options(populate_existing=True)
+        select(Report).where(Report.id == report_id).with_for_update().execution_options(populate_existing=True)
     )
     if report is None:
         db.session.rollback()
@@ -1497,8 +1494,8 @@ def _get_scope_options() -> list[dict[str, str]]:
     for instance in get_active_registry_options():
         options.append(
             {
-                'value': f"{ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}:{instance['value']}",
-                'label': f"Artifact Registry · {instance['label']}",
+                'value': f'{ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}:{instance["value"]}',
+                'label': f'Artifact Registry · {instance["label"]}',
             }
         )
 

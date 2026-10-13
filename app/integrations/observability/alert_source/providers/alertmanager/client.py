@@ -79,10 +79,7 @@ class AlertmanagerClient:
                 'Alertmanager alerts response is not a list.',
             )
 
-        if any(
-            not isinstance(item, dict) or not isinstance(item.get('labels'), dict)
-            for item in response
-        ):
+        if any(not isinstance(item, dict) or not isinstance(item.get('labels'), dict) for item in response):
             raise AlertmanagerResponseError(
                 'Alertmanager alerts response contains a malformed alert record.',
             )

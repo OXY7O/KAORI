@@ -157,11 +157,12 @@ def test_registry_data_freshness_metrics_source_counts_validated_binding_coverag
     }
     partial = _fleet_freshness(context=context, provider_count=3, stats=stats)
     assert [item['label'] for item in partial] == [
-        'Inventory Snapshot', 'Metrics Source', 'Security Snapshot', 'Analytics Snapshot'
+        'Inventory Snapshot',
+        'Metrics Source',
+        'Security Snapshot',
+        'Analytics Snapshot',
     ]
-    assert (partial[1]['status'], partial[1]['tone'], partial[1]['value']) == (
-        'Partial', 'warning', '2 / 3 providers'
-    )
+    assert (partial[1]['status'], partial[1]['tone'], partial[1]['value']) == ('Partial', 'warning', '2 / 3 providers')
     assert 'not committed metrics snapshots' in partial[1]['description']
 
     stats['metrics_ready_count'] = 3

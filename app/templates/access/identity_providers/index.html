@@ -27,11 +27,9 @@
         {% include "access/identity_providers/partials/_overview.html" %}
         <section class="space-y-4" aria-labelledby="identity-provider-records-heading">
             {% import "components/section_intro.html" as section_intro %}
-            {{ section_intro.render(
-                'Provider Workspace',
-                'Review committed provider records and directory projection authority within their own workflows.',
-                'identity-provider-records-heading'
-            ) }}
+            {{ section_intro.render('Provider Workspace',
+                        'Review committed provider records and directory projection authority within their own workflows.',
+                        'identity-provider-records-heading') }}
             {% include "access/identity_providers/partials/_workspace.html" %}
         </section>
     </div>

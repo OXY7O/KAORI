@@ -3,6 +3,7 @@
 This is an operator investigation index, not a provider mutation plan.
 No credential, RBAC subject, mutable provider body, or PATCH is persisted.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -10,7 +11,8 @@ from typing import Any
 
 from app.kubernetes.tenant.capsule_handoff_contract import validate_capsule_handoff_scope
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
-    _digest, capsule_related_scope_sha256,
+    _digest,
+    capsule_related_scope_sha256,
 )
 
 _MAX_RELATED = 300
@@ -18,7 +20,9 @@ _MAX_GLOBAL = 100
 
 
 def build_capsule_handoff_worklist(
-    *, plan: Mapping[str, Any], related: Mapping[str, Any],
+    *,
+    plan: Mapping[str, Any],
+    related: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Classify source work, including foreign resources, before provider auth."""
     if not isinstance(plan, Mapping) or not isinstance(related, Mapping):
@@ -28,8 +32,10 @@ def build_capsule_handoff_worklist(
     lists = related.get('list_snapshots')
     quota = related.get('global_quota')
     if (
-        not isinstance(rows, list) or len(rows) > _MAX_RELATED
-        or not isinstance(lists, list) or len(lists) != len(namespaces) * 3
+        not isinstance(rows, list)
+        or len(rows) > _MAX_RELATED
+        or not isinstance(lists, list)
+        or len(lists) != len(namespaces) * 3
         or not isinstance(quota, Mapping)
         or not isinstance(quota.get('resources'), list)
         or len(quota['resources']) > _MAX_GLOBAL
@@ -44,14 +50,8 @@ def build_capsule_handoff_worklist(
     ):
         raise ValueError('Capsule worklist lacks SHA-bound complete authoritative inventory.')
     names = {row['name'] for row in namespaces}
-    expected_lists = {
-        (name, kind)
-        for name in names for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
-    }
-    list_keys = [
-        (item.get('namespace'), item.get('kind'))
-        for item in lists if isinstance(item, Mapping)
-    ]
+    expected_lists = {(name, kind) for name in names for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')}
+    list_keys = [(item.get('namespace'), item.get('kind')) for item in lists if isinstance(item, Mapping)]
     if len(list_keys) != len(lists) or len(set(list_keys)) != len(lists) or set(list_keys) != expected_lists:
         raise ValueError('Capsule worklist provider LIST scopes are incomplete or duplicated.')
     counts: dict[tuple[str, str], int] = {key: 0 for key in expected_lists}
@@ -67,18 +67,24 @@ def build_capsule_handoff_worklist(
             not isinstance(item, Mapping)
             or not isinstance(item.get('list_resource_version'), str)
             or not item['list_resource_version']
-            or type(item.get('count')) is not int or not 0 <= item['count'] <= 100
+            or type(item.get('count')) is not int
+            or not 0 <= item['count'] <= 100
             or item['count'] != counts[(item['namespace'], item['kind'])]
             for item in lists
         )
         or capsule_related_scope_sha256(
-            resources=rows, list_snapshots=lists,
-        ) != related.get('resource_sha256')
+            resources=rows,
+            list_snapshots=lists,
+        )
+        != related.get('resource_sha256')
         or related['resource_sha256'] != cr.get('capsule_related_resources_sha256')
-        or _digest({
-            'api_version': quota['served_version'],
-            'resources': quota['resources'],
-        }) != quota.get('scope_sha256')
+        or _digest(
+            {
+                'api_version': quota['served_version'],
+                'resources': quota['resources'],
+            }
+        )
+        != quota.get('scope_sha256')
         or quota['scope_sha256'] != cr.get('capsule_shared_quota_sha256')
     ):
         raise ValueError('Capsule worklist digest no longer matches the approved scope.')
@@ -86,8 +92,14 @@ def build_capsule_handoff_worklist(
     identities: set[tuple[str, str, str]] = set()
 
     def append(
-        *, kind: object, namespace: object, name: object,
-        uid: object, rv: object, action: str, evidence_sha256: object = None,
+        *,
+        kind: object,
+        namespace: object,
+        name: object,
+        uid: object,
+        rv: object,
+        action: str,
+        evidence_sha256: object = None,
     ) -> None:
         if (
             not all(isinstance(x, str) and x for x in (kind, name, uid, rv))
@@ -100,8 +112,12 @@ def build_capsule_handoff_worklist(
             raise ValueError('Capsule worklist contains duplicate provider targets.')
         identities.add(key)
         result = {
-            'kind': kind, 'namespace': namespace, 'name': name,
-            'uid': uid, 'resource_version': rv, 'decision': action,
+            'kind': kind,
+            'namespace': namespace,
+            'name': name,
+            'uid': uid,
+            'resource_version': rv,
+            'decision': action,
         }
         if evidence_sha256 is not None:
             if not isinstance(evidence_sha256, str) or len(evidence_sha256) != 64:
@@ -110,19 +126,24 @@ def build_capsule_handoff_worklist(
         tasks.append(result)
 
     append(
-        kind='CapsuleTenant', namespace='', name=cr['name'],
-        uid=cr['uid'], rv=cr['resource_version'],
+        kind='CapsuleTenant',
+        namespace='',
+        name=cr['name'],
+        uid=cr['uid'],
+        rv=cr['resource_version'],
         action='provider_cr_preservation_review_required',
         evidence_sha256=cr['capsule_spec_sha256'],
     )
     for ns in namespaces:
         append(
-            kind='Namespace', namespace='', name=ns['name'],
-            uid=ns['uid'], rv=ns['resource_version'],
+            kind='Namespace',
+            namespace='',
+            name=ns['name'],
+            uid=ns['uid'],
+            rv=ns['resource_version'],
             action=(
                 'candidate_kaori_metadata_handoff_review'
-                if ns['handoff'] == 'external_acceptance_required'
-                and ns['ownership'] == 'kaori_marker_correlated'
+                if ns['handoff'] == 'external_acceptance_required' and ns['ownership'] == 'kaori_marker_correlated'
                 else (
                     'operator_origin_investigation'
                     if ns['handoff'] == 'external_acceptance_required'
@@ -147,8 +168,12 @@ def build_capsule_handoff_worklist(
         else:
             raise ValueError('Capsule governance origin is unclassified.')
         append(
-            kind=obj['kind'], namespace=obj['namespace'], name=obj.get('name'),
-            uid=obj.get('uid'), rv=obj.get('resource_version'), action=action,
+            kind=obj['kind'],
+            namespace=obj['namespace'],
+            name=obj.get('name'),
+            uid=obj.get('uid'),
+            rv=obj.get('resource_version'),
+            action=action,
             evidence_sha256=obj.get('policy_sha256'),
         )
     for obj in quota['resources']:
@@ -162,17 +187,23 @@ def build_capsule_handoff_worklist(
         else:
             raise ValueError('Capsule global quota scope is unknown.')
         append(
-            kind='GlobalResourceQuota', namespace='', name=obj.get('name'),
-            uid=obj.get('uid'), rv=obj.get('resource_version'), action=action,
+            kind='GlobalResourceQuota',
+            namespace='',
+            name=obj.get('name'),
+            uid=obj.get('uid'),
+            rv=obj.get('resource_version'),
+            action=action,
             evidence_sha256=obj.get('policy_sha256'),
         )
     tasks.sort(key=lambda item: (item['namespace'], item['kind'], item['name']))
     manual = sum(
-        item['decision'] in {
+        item['decision']
+        in {
             'provider_cr_preservation_review_required',
             'candidate_kaori_metadata_handoff_review',
             'explicit_kaori_metadata_handoff_review',
-            'operator_origin_investigation', 'operator_selector_investigation',
+            'operator_origin_investigation',
+            'operator_selector_investigation',
         }
         for item in tasks
     )

@@ -12,24 +12,28 @@ from app.integrations.delivery.notification_channels.providers import microsoft_
 WORKFLOW_URL = 'https://abc.1.environment.api.powerplatform.com/workflow/token'
 
 
-@pytest.mark.parametrize('url,expected', [
-    (WORKFLOW_URL, True),
-    ('http://abc.1.environment.api.powerplatform.com/workflow/token', False),
-    ('https://localhost/secret', False),
-    ('https://malicious.example/path', False),
-    ('https://name:pass@abc.1.environment.api.powerplatform.com/workflow/token', False),
-    ('https://abc.1.environment.api.powerplatform.com:444/secret', False),
-    ('https://[bad-host', False),
-    ('https://abc.1.environment.api.powerplatform.com:notaport/secret', False),
-])
+@pytest.mark.parametrize(
+    'url,expected',
+    [
+        (WORKFLOW_URL, True),
+        ('http://abc.1.environment.api.powerplatform.com/workflow/token', False),
+        ('https://localhost/secret', False),
+        ('https://malicious.example/path', False),
+        ('https://name:pass@abc.1.environment.api.powerplatform.com/workflow/token', False),
+        ('https://abc.1.environment.api.powerplatform.com:444/secret', False),
+        ('https://[bad-host', False),
+        ('https://abc.1.environment.api.powerplatform.com:notaport/secret', False),
+    ],
+)
 def test_workflow_url_validation(url: str, expected: bool) -> None:
     assert teams._is_approved_workflow_url(url) is expected
 
 
 def test_redirect_to_unapproved_destination_is_not_followed() -> None:
     handler = teams._NoWorkflowRedirects()
-    assert handler.redirect_request(Request(WORKFLOW_URL), None, 302, 'Redirect', {},
-                                    'http://localhost/private') is None
+    assert (
+        handler.redirect_request(Request(WORKFLOW_URL), None, 302, 'Redirect', {}, 'http://localhost/private') is None
+    )
 
 
 def test_workflow_redirect_returns_safe_failure_without_forwarding_secret(

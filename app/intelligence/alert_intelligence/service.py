@@ -18,9 +18,9 @@ from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationInstance
 from app.models.inventory import ClusterInventory
-from app.models.registry import RegistryCollectionState
 from app.models.notification_channel import NotificationDelivery
 from app.models.object_storage import ObjectStorageSystem
+from app.models.registry import RegistryCollectionState
 from app.models.user import User
 
 _VALID_DOMAINS = {'kubernetes', 'object_storage', 'registry'}
@@ -76,19 +76,29 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             row for row in scoped_cases if row.source_state == 'resolved' or row.workflow_state == 'closed'
         ]
         filtered_active = _filter_cases(
-            active_cases, severity=severity, workflow=workflow, source_type=source_type,
-            search=search, source_state=source_state,
+            active_cases,
+            severity=severity,
+            workflow=workflow,
+            source_type=source_type,
+            search=search,
+            source_state=source_state,
         )
         filtered_history = _filter_cases(
-            history_cases, severity=severity, workflow='all', source_type=source_type, search=search,
+            history_cases,
+            severity=severity,
+            workflow='all',
+            source_type=source_type,
+            search=search,
         )
         active_page, active_pagination = paginate_sequence(
             [_serialize_case(row) for row in filtered_active],
-            page=args.get('page', 1), per_page=args.get('per_page', 5),
+            page=args.get('page', 1),
+            per_page=args.get('per_page', 5),
         )
         history_page, history_pagination = paginate_sequence(
             [_serialize_case(row) for row in filtered_history],
-            page=args.get('history_page', 1), per_page=args.get('history_per_page', 5),
+            page=args.get('history_page', 1),
+            per_page=args.get('history_per_page', 5),
         )
         selected_case = _selected_case(args.get('case'), scoped_cases)
         metrics = _case_counts_from_rows(active_cases, history_cases)
@@ -101,31 +111,36 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             or_(AlertCase.source_state == 'resolved', AlertCase.workflow_state == 'closed')
         )
         filtered_active = _filter_case_query(
-            active, severity=severity, workflow=workflow, source_type=source_type, search=search,
+            active,
+            severity=severity,
+            workflow=workflow,
+            source_type=source_type,
+            search=search,
             source_state=source_state,
         )
         filtered_history = _filter_case_query(
-            historical, severity=severity, workflow='all', source_type=source_type, search=search,
+            historical,
+            severity=severity,
+            workflow='all',
+            source_type=source_type,
+            search=search,
         )
         active_rows, active_pagination = paginate_query(
             filtered_active.options(selectinload(AlertCase.owner)),
-            page=args.get('page', 1), per_page=args.get('per_page', 5),
+            page=args.get('page', 1),
+            per_page=args.get('per_page', 5),
         )
         history_rows, history_pagination = paginate_query(
             filtered_history.options(selectinload(AlertCase.owner)),
-            page=args.get('history_page', 1), per_page=args.get('history_per_page', 5),
+            page=args.get('history_page', 1),
+            per_page=args.get('history_per_page', 5),
         )
         silences_by_case = _page_silences([*active_rows, *history_rows])
-        active_page = [
-            _serialize_case(row, silence=silences_by_case.get(row.id)) for row in active_rows
-        ]
-        history_page = [
-            _serialize_case(row, silence=silences_by_case.get(row.id)) for row in history_rows
-        ]
+        active_page = [_serialize_case(row, silence=silences_by_case.get(row.id)) for row in active_rows]
+        history_page = [_serialize_case(row, silence=silences_by_case.get(row.id)) for row in history_rows]
         selected_public_id = str(args.get('case') or '').strip()
         selected_case = (
-            scoped_cases.filter(AlertCase.public_id == selected_public_id).first()
-            if selected_public_id else None
+            scoped_cases.filter(AlertCase.public_id == selected_public_id).first() if selected_public_id else None
         )
         metrics = _case_counts_from_query(scoped_cases)
     snapshot = _snapshot_context(domain=domain, asset_key=selected_asset_key)
@@ -147,11 +162,15 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     selected_policy = _selected_routing_policy(args.get('policy'), all_routing)
     channels = notification_channel_options()
     templates = built_in_templates()
-    active_silences = [] if scope_invalid else _active_silence_rows(
-        domain=domain,
-        asset_key=selected_asset_key,
-        search=silence_search,
-        severity=silence_severity,
+    active_silences = (
+        []
+        if scope_invalid
+        else _active_silence_rows(
+            domain=domain,
+            asset_key=selected_asset_key,
+            search=silence_search,
+            severity=silence_severity,
+        )
     )
     silence_page, silence_pagination = paginate_sequence(
         active_silences,
@@ -184,8 +203,11 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
             'channels': channel_summary.get('eligible', 0),
         },
         'filters': {
-            'severity': severity, 'workflow': workflow, 'source': source_type,
-            'source_state': source_state, 'q': search,
+            'severity': severity,
+            'workflow': workflow,
+            'source': source_type,
+            'source_state': source_state,
+            'q': search,
         },
         'silence_filters': {'q': silence_search, 'severity': silence_severity},
         'routing_filters': {'q': routing_search, 'domain': routing_domain, 'status': routing_status},
@@ -259,7 +281,12 @@ def _case_rows(*, domain: str, asset_key: str):
 
 
 def _filter_case_query(
-    query, *, severity: str, workflow: str, source_type: str, search: str,
+    query,
+    *,
+    severity: str,
+    workflow: str,
+    source_type: str,
+    search: str,
     source_state: str = 'all',
 ):
     if severity != 'all':
@@ -273,15 +300,17 @@ def _filter_case_query(
     if search:
         escaped = search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
         pattern = '%' + escaped + '%'
-        query = query.filter(or_(
-            AlertCase.public_id.ilike(pattern, escape='\\'),
-            AlertCase.alert_name.ilike(pattern, escape='\\'),
-            AlertCase.asset_name.ilike(pattern, escape='\\'),
-            AlertCase.namespace.ilike(pattern, escape='\\'),
-            AlertCase.summary.ilike(pattern, escape='\\'),
-            AlertCase.source_ref.ilike(pattern, escape='\\'),
-            AlertCase.rule_key.ilike(pattern, escape='\\'),
-        ))
+        query = query.filter(
+            or_(
+                AlertCase.public_id.ilike(pattern, escape='\\'),
+                AlertCase.alert_name.ilike(pattern, escape='\\'),
+                AlertCase.asset_name.ilike(pattern, escape='\\'),
+                AlertCase.namespace.ilike(pattern, escape='\\'),
+                AlertCase.summary.ilike(pattern, escape='\\'),
+                AlertCase.source_ref.ilike(pattern, escape='\\'),
+                AlertCase.rule_key.ilike(pattern, escape='\\'),
+            )
+        )
     return query
 
 
@@ -321,12 +350,20 @@ def _case_counts_from_query(query) -> dict[str, int]:
         and_(historical, AlertCase.closure_reason == 'accepted_risk'),
         and_(historical, AlertCase.postmortem_status.in_(('required', 'draft'))),
     )
-    values = query.order_by(None).with_entities(
-        *(func.sum(case((condition, 1), else_=0)) for condition in conditions)
-    ).one()
+    values = (
+        query.order_by(None).with_entities(*(func.sum(case((condition, 1), else_=0)) for condition in conditions)).one()
+    )
     keys = (
-        'active', 'critical', 'source_unknown', 'acknowledged', 'verification_pending',
-        'resolved_today', 'resolved_total', 'closed', 'false_positive', 'accepted_risk',
+        'active',
+        'critical',
+        'source_unknown',
+        'acknowledged',
+        'verification_pending',
+        'resolved_today',
+        'resolved_total',
+        'closed',
+        'false_positive',
+        'accepted_risk',
         'postmortem_required',
     )
     return dict(zip(keys, (int(value or 0) for value in values), strict=True))
@@ -337,14 +374,19 @@ def _page_silences(rows: list[AlertCase]) -> dict[int, AlertSilence]:
         return {}
     now = datetime.now(UTC)
     result: dict[int, AlertSilence] = {}
-    for silence in AlertSilence.query.filter(
-        AlertSilence.case_id.in_([row.id for row in rows]),
-        AlertSilence.starts_at <= now,
-        AlertSilence.ends_at > now,
-        AlertSilence.revoked_at.is_(None),
-    ).order_by(AlertSilence.ends_at.desc()).all():
+    for silence in (
+        AlertSilence.query.filter(
+            AlertSilence.case_id.in_([row.id for row in rows]),
+            AlertSilence.starts_at <= now,
+            AlertSilence.ends_at > now,
+            AlertSilence.revoked_at.is_(None),
+        )
+        .order_by(AlertSilence.ends_at.desc())
+        .all()
+    ):
         result.setdefault(int(silence.case_id), silence)
     return result
+
 
 def _filter_cases(
     cases: list[AlertCase],
@@ -620,24 +662,33 @@ def _snapshot_context(*, domain: str, asset_key: str) -> dict[str, Any]:
         cutoff = now - timedelta(days=1)
         total = 1
         if domain == 'kubernetes':
-            recent = int(ClusterInventory.query.filter(
-                ClusterInventory.cluster_id == asset_key,
-                ClusterInventory.collected_at >= cutoff,
-                ClusterInventory.collected_at <= now,
-            ).first() is not None)
+            recent = int(
+                ClusterInventory.query.filter(
+                    ClusterInventory.cluster_id == asset_key,
+                    ClusterInventory.collected_at >= cutoff,
+                    ClusterInventory.collected_at <= now,
+                ).first()
+                is not None
+            )
         elif domain == 'object_storage':
-            recent = int(ObjectStorageSystem.query.filter(
-                ObjectStorageSystem.id == asset_key,
-                ObjectStorageSystem.inventory_observed_at >= cutoff,
-                ObjectStorageSystem.inventory_observed_at <= now,
-            ).first() is not None)
+            recent = int(
+                ObjectStorageSystem.query.filter(
+                    ObjectStorageSystem.id == asset_key,
+                    ObjectStorageSystem.inventory_observed_at >= cutoff,
+                    ObjectStorageSystem.inventory_observed_at <= now,
+                ).first()
+                is not None
+            )
         elif domain == 'registry':
-            recent = int(RegistryCollectionState.query.filter(
-                RegistryCollectionState.integration_instance_id == int(asset_key),
-                RegistryCollectionState.status == 'ready',
-                RegistryCollectionState.last_committed_at >= cutoff,
-                RegistryCollectionState.last_committed_at <= now,
-            ).first() is not None)
+            recent = int(
+                RegistryCollectionState.query.filter(
+                    RegistryCollectionState.integration_instance_id == int(asset_key),
+                    RegistryCollectionState.status == 'ready',
+                    RegistryCollectionState.last_committed_at >= cutoff,
+                    RegistryCollectionState.last_committed_at <= now,
+                ).first()
+                is not None
+            )
         else:
             recent = 0
     available = total > 0 and recent == total
@@ -655,6 +706,7 @@ def _snapshot_context(*, domain: str, asset_key: str) -> dict[str, Any]:
             'signal-specific evaluation may have separate readiness.'
         ),
     }
+
 
 def _active_silence_rows(
     *,
@@ -677,7 +729,8 @@ def _active_silence_rows(
         query = query.filter(AlertCase.severity == severity)
     rows = (
         query.options(selectinload(AlertSilence.case), selectinload(AlertSilence.created_by))
-        .order_by(AlertSilence.ends_at.asc()).all()
+        .order_by(AlertSilence.ends_at.asc())
+        .all()
     )
     result = [
         {
@@ -832,9 +885,7 @@ def _asset_options(domain: str, *, clusters: list[Cluster], systems: list[Object
 _INVALID_REGISTRY_SCOPE = '__invalid_registry_scope__'
 
 
-def _selected_asset_key(
-    args: MultiDict[str, str], assets: list[dict[str, str]], *, domain: str = ''
-) -> str:
+def _selected_asset_key(args: MultiDict[str, str], assets: list[dict[str, str]], *, domain: str = '') -> str:
     requested = str(args.get('asset') or 'all').strip()
     valid = {item['value'] for item in assets}
     if requested in valid:

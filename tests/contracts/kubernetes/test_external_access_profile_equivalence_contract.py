@@ -11,21 +11,24 @@ def test_native_foreign_role_equivalence_is_review_only_and_provider_authoritati
     assert "'import_authorized': False" in service
     assert "'effective_rbac_verified': False" in service
     assert "'identity_verified': False" in service
-    assert "read_namespaced_role_binding(" in service
-    assert "read_namespaced_role(" in service
-    assert "read_cluster_role(" in service
-    assert "_role_rules_signature(" in service
-    assert "review_native_external_role_profile_committed(" in routes
-    assert "review_capsule_external_role_profile_committed(" in routes
-    assert "read_capsule()" in service
-    assert "normalize_capsule_access_spec(" in service
-    assert "name=\"binding_index\"" in template
-    assert "name=\"binding_uid\"" in template
-    assert "Review Profile Match" in template
-    assert "recent_external_access_profile_reviews" in context
+    assert 'read_namespaced_role_binding(' in service
+    assert 'read_namespaced_role(' in service
+    assert 'read_cluster_role(' in service
+    assert '_role_rules_signature(' in service
+    assert 'review_native_external_role_profile_committed(' in routes
+    assert 'review_capsule_external_role_profile_committed(' in routes
+    assert 'read_capsule()' in service
+    assert 'normalize_capsule_access_spec(' in service
+    assert 'name="binding_index"' in template
+    assert 'name="binding_uid"' in template
+    assert 'Review Profile Match' in template
+    assert 'recent_external_access_profile_reviews' in context
     for token in (
-        'patch_namespaced_role(', 'patch_namespaced_role_binding(',
-        'create_namespaced_role_binding(', 'create_access_grant_committed(',
-        'release_adopted_tenant_committed(', 'delete_namespaced_role_binding(',
+        'patch_namespaced_role(',
+        'patch_namespaced_role_binding(',
+        'create_namespaced_role_binding(',
+        'create_access_grant_committed(',
+        'release_adopted_tenant_committed(',
+        'delete_namespaced_role_binding(',
     ):
         assert token not in service

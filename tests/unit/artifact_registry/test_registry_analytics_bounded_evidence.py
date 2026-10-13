@@ -7,9 +7,7 @@ ANALYTICS = (ROOT / 'app/artifact_registry/analytics.py').read_text()
 
 
 def test_registry_analytics_worker_streams_artifact_scalars_not_orm_estate():
-    worker = ANALYTICS.split('def _registry_bounded_state(', 1)[1].split(
-        'def _growth_payload(', 1
-    )[0]
+    worker = ANALYTICS.split('def _registry_bounded_state(', 1)[1].split('def _growth_payload(', 1)[0]
     assert 'yield_per(250)' in worker
     assert 'RegistryArtifact.id.in_(select(runtime_ids.c.artifact_id))' in worker
     assert '.with_entities(' in worker
@@ -18,17 +16,13 @@ def test_registry_analytics_worker_streams_artifact_scalars_not_orm_estate():
 
 
 def test_security_findings_require_usable_scan_status():
-    worker = ANALYTICS.split('def _registry_bounded_state(', 1)[1].split(
-        'def _growth_payload(', 1
-    )[0]
+    worker = ANALYTICS.split('def _registry_bounded_state(', 1)[1].split('def _growth_payload(', 1)[0]
     assert 'scan_ready = bool(registry_scan_evidence_ready(scan))' in worker
-    assert "summary = findings if isinstance(findings, dict) and scan_ready else {}" in worker
+    assert 'summary = findings if isinstance(findings, dict) and scan_ready else {}' in worker
 
 
 def test_governance_unconfigured_is_independent_from_absent_assessment():
-    worker = ANALYTICS.split('def _registry_bounded_state(', 1)[1].split(
-        'def _growth_payload(', 1
-    )[0]
+    worker = ANALYTICS.split('def _registry_bounded_state(', 1)[1].split('def _growth_payload(', 1)[0]
     assert "RegistryProjectGovernance.retention_status == 'not_configured'" in worker
     assert "RegistryProjectGovernance.immutability_status == 'not_configured'" in worker
     assert "RegistryProjectGovernance.retention_status == 'configured'" in worker

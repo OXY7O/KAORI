@@ -3,6 +3,7 @@
 Provider ResourceQuota hard limits are maximum declared ceilings, not actual
 node utilization or guaranteed scheduling. Missing limits are Unknown, not 0.
 """
+
 from __future__ import annotations
 
 from decimal import Decimal
@@ -42,13 +43,21 @@ def assess_limit_exposure(
     """Return honest planning evidence. This function cannot authorize a write."""
     ceiling = (
         limit_exposure_threshold(budget, cpu_ratio=cpu_ratio, memory_ratio=memory_ratio)
-        if budget is not None else CapacityVector(cpu=None, memory_bytes=None)
+        if budget is not None
+        else CapacityVector(cpu=None, memory_bytes=None)
     )
     missing = (
-        not evidence_ready or budget is None
-        or any(value is None for value in (
-            committed.cpu, committed.memory_bytes, ceiling.cpu, ceiling.memory_bytes,
-        ))
+        not evidence_ready
+        or budget is None
+        or any(
+            value is None
+            for value in (
+                committed.cpu,
+                committed.memory_bytes,
+                ceiling.cpu,
+                ceiling.memory_bytes,
+            )
+        )
         or bool(unknown_sources)
     )
     if missing:
@@ -58,8 +67,11 @@ def assess_limit_exposure(
         assert committed.cpu is not None and committed.memory_bytes is not None
         assert ceiling.cpu is not None and ceiling.memory_bytes is not None
         return _assess_known_limits(
-            committed=committed, ceiling=ceiling, mode=mode,
-            cpu_ratio=cpu_ratio, memory_ratio=memory_ratio,
+            committed=committed,
+            ceiling=ceiling,
+            mode=mode,
+            cpu_ratio=cpu_ratio,
+            memory_ratio=memory_ratio,
         )
     return {
         'mode': mode,
@@ -89,8 +101,12 @@ def assess_limit_exposure(
 
 
 def _assess_known_limits(
-    *, committed: CapacityVector, ceiling: CapacityVector,
-    mode: str, cpu_ratio: Decimal, memory_ratio: Decimal,
+    *,
+    committed: CapacityVector,
+    ceiling: CapacityVector,
+    mode: str,
+    cpu_ratio: Decimal,
+    memory_ratio: Decimal,
 ) -> dict[str, Any]:
     assert committed.cpu is not None and committed.memory_bytes is not None
     assert ceiling.cpu is not None and ceiling.memory_bytes is not None
@@ -101,7 +117,8 @@ def _assess_known_limits(
         cpu_percent = committed.cpu * _HUNDRED / ceiling.cpu if ceiling.cpu else None
         mem_percent = committed.memory_bytes * _HUNDRED / ceiling.memory_bytes if ceiling.memory_bytes else None
         state = (
-            'Near Capacity' if any(value is not None and value >= Decimal('90') for value in (cpu_percent, mem_percent))
+            'Near Capacity'
+            if any(value is not None and value >= Decimal('90') for value in (cpu_percent, mem_percent))
             else 'Healthy'
         )
         reason = 'Limit exposure is within the configured planning thresholds.'

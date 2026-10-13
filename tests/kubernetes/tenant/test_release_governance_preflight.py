@@ -48,18 +48,19 @@ def test_release_preflight_rejects_destructive_or_foreign_ownership_and_live_dep
 
 def test_mutated_and_unknown_namespace_provenance_have_distinct_handoff_authority():
     changed = _release_blockers(
-        _tenant(), [
-            _namespace(provisioning_evidence_json={'provider_mutation_performed': True})
-        ], counts={},
+        _tenant(),
+        [_namespace(provisioning_evidence_json={'provider_mutation_performed': True})],
+        counts={},
     )
     assert any('KAORI-mutated Namespace provider controls' in reason for reason in changed)
 
     unknown = _release_blockers(
-        _tenant(), [_namespace(provisioning_evidence_json={})], counts={},
+        _tenant(),
+        [_namespace(provisioning_evidence_json={})],
+        counts={},
     )
     assert any('missing or unverified provider mutation provenance' in reason for reason in unknown)
     assert all('independently approved external handoff is required' not in reason for reason in unknown)
-
 
 
 def test_managed_allocation_blocker_gives_provider_handoff_and_readback_context():
@@ -81,12 +82,16 @@ def test_managed_allocation_blocker_gives_provider_handoff_and_readback_context(
     assert _release_blockers(_tenant(), [_namespace()], counts={}) == []
 
 
-
 def test_external_adoption_without_active_dependencies_is_preflight_review_candidate_only():
-    assert _release_blockers(
-        _tenant(), [_namespace()], counts={
-            'Access Grants': 0,
-            'credentials': 0,
-            'Memberships': 0,
-        }
-    ) == []
+    assert (
+        _release_blockers(
+            _tenant(),
+            [_namespace()],
+            counts={
+                'Access Grants': 0,
+                'credentials': 0,
+                'Memberships': 0,
+            },
+        )
+        == []
+    )

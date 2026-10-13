@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 FAILED_DISPATCH_RETRY_MINUTES = 5
 
 
-def _record_failed_dispatch(
-    policy: JobPolicy, *, claim_next_run_at: datetime, now: datetime, message: str
-) -> bool:
+def _record_failed_dispatch(policy: JobPolicy, *, claim_next_run_at: datetime, now: datetime, message: str) -> bool:
     """Retry only a claim still owned by this dispatch; preserve concurrent policy edits."""
     if policy.last_dispatch_status != 'dispatching' or policy.next_run_at != claim_next_run_at:
         return False

@@ -159,7 +159,8 @@
                     </div>
                 </div>
                 {% if item.status != 'available' %}
-                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-4 text-sm leading-6 text-content-muted" role="status">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-4 text-sm leading-6 text-content-muted"
+                         role="status">
                         {{ item.status_label }} rules are read-only. Alert escalation can be configured only for Available rules with an implemented evaluator boundary.
                     </div>
                 {% elif current_user.has_permission('intelligence.decisions.create') %}
@@ -267,7 +268,8 @@
                     <p class="text-xs leading-5 text-content-muted">Accepted Risk only suppresses AlertCase promotion while active; findings remain non-compliant and become eligible again after expiry or revocation.</p>
                 </div>
                 {% if item.rule_exceptions.evaluation_issues %}
-                    <div class="mt-4 rounded-lg border border-status-warning bg-status-warning-soft px-4 py-3 text-sm text-content-primary" role="alert">
+                    <div class="mt-4 rounded-lg border border-status-warning bg-status-warning-soft px-4 py-3 text-sm text-content-primary"
+                         role="alert">
                         Recommendation evidence is incomplete. Accepted Risk candidates cannot be changed until the affected evaluator recovers.
                     </div>
                 {% endif %}

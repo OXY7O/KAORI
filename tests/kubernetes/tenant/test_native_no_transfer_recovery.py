@@ -2,6 +2,7 @@
 
 No Kubernetes mutation; provider reads are always mocked in focused tests.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -42,15 +43,23 @@ class HistoryQuery:
 
 def plan():
     return {
-        'tenant_id': 'tenant-a', 'cluster_id': 'cluster-a',
-        'generation': 2, 'plan_sha256': 'a' * 64,
+        'tenant_id': 'tenant-a',
+        'cluster_id': 'cluster-a',
+        'generation': 2,
+        'plan_sha256': 'a' * 64,
         'handoff_fingerprint': 'fingerprint',
-        'requested_by': 42, 'successor_owner': 'platform-team',
-        'handoff_components': [{
-            'kind': 'Namespace', 'name': 'demo', 'uid': 'uid-1',
-            'resource_version': '21', 'handoff': 'external_acceptance_required',
-            'ownership': 'kaori_marker_correlated',
-        }],
+        'requested_by': 42,
+        'successor_owner': 'platform-team',
+        'handoff_components': [
+            {
+                'kind': 'Namespace',
+                'name': 'demo',
+                'uid': 'uid-1',
+                'resource_version': '21',
+                'handoff': 'external_acceptance_required',
+                'ownership': 'kaori_marker_correlated',
+            }
+        ],
     }
 
 
@@ -72,28 +81,37 @@ def history(plan_data, *, mutate=False):
         'plan_sha256': plan_data['plan_sha256'],
         'handoff_fingerprint': plan_data['handoff_fingerprint'],
         'errors': ['ResourceQuota/tenant-resource-quota: ValueError'],
-        'verified_count': 0, 'expected_component_count': 1,
-        'verified_components': [], 'provider_mutation_performed': mutate,
-        'provider_handoff_verified': False, 'release_authorized': False,
+        'verified_count': 0,
+        'expected_component_count': 1,
+        'verified_components': [],
+        'provider_mutation_performed': mutate,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
         'checked_at': datetime.now(UTC).isoformat(),
     }
     return [
         SimpleNamespace(
-            id=1, actor_user_id=43,
+            id=1,
+            actor_user_id=43,
             target_type=recovery._EXECUTOR_TARGET,
-            action='tenant.release.native_handoff_started', metadata_json=started,
+            action='tenant.release.native_handoff_started',
+            metadata_json=started,
         ),
         SimpleNamespace(
-            id=2, actor_user_id=43,
+            id=2,
+            actor_user_id=43,
             target_type=recovery._EXECUTOR_TARGET,
-            action='tenant.release.native_handoff_recovery_required', metadata_json=failed,
+            action='tenant.release.native_handoff_recovery_required',
+            metadata_json=failed,
         ),
     ]
 
 
 def set_history(monkeypatch, rows):
     audit = SimpleNamespace(
-        id=Column(), target_type=Column(), target_id=Column(),
+        id=Column(),
+        target_type=Column(),
+        target_id=Column(),
         query=HistoryQuery(rows),
     )
     monkeypatch.setattr(recovery, 'AuditEvent', audit)
@@ -116,26 +134,20 @@ def repeated_history(plan_data):
     second = history(plan_data)
     second[0].id, second[1].id = 5, 6
     anchor = datetime.now(UTC)
-    first[0].metadata_json['started_at'] = (
-        anchor - timedelta(seconds=4)
-    ).isoformat()
-    first[1].metadata_json['checked_at'] = (
-        anchor - timedelta(seconds=3)
-    ).isoformat()
-    second[0].metadata_json['started_at'] = (
-        anchor - timedelta(seconds=2)
-    ).isoformat()
-    second[1].metadata_json['checked_at'] = (
-        anchor - timedelta(seconds=1)
-    ).isoformat()
+    first[0].metadata_json['started_at'] = (anchor - timedelta(seconds=4)).isoformat()
+    first[1].metadata_json['checked_at'] = (anchor - timedelta(seconds=3)).isoformat()
+    second[0].metadata_json['started_at'] = (anchor - timedelta(seconds=2)).isoformat()
+    second[1].metadata_json['checked_at'] = (anchor - timedelta(seconds=1)).isoformat()
     return first + second
 
 
 def test_assessment_records_all_failed_event_ids_and_rechecks_history(monkeypatch):
     p = plan()
     history_proof = {
-        'digest': 'd' * 64, 'executor_actor_id': 43,
-        'failed_event_id': 6, 'failed_event_ids': [2, 6],
+        'digest': 'd' * 64,
+        'executor_actor_id': 43,
+        'failed_event_id': 6,
+        'failed_event_ids': [2, 6],
         'attempt_count': 2,
     }
     observed = {
@@ -145,26 +157,34 @@ def test_assessment_records_all_failed_event_ids_and_rechecks_history(monkeypatc
     monkeypatch.setattr(recovery, '_require_expired_plan', lambda *_: p)
     monkeypatch.setattr(recovery, '_source_history', lambda *_: history_proof)
     monkeypatch.setattr(
-        recovery, '_verify_original_provider_state',
+        recovery,
+        '_verify_original_provider_state',
         lambda **_: observed,
     )
     monkeypatch.setattr(recovery, 'latest_release_handoff_plan', lambda *_: p)
     monkeypatch.setattr(recovery, 'Tenant', SimpleNamespace(query=LockedTenantQuery()))
+
     class Session:
         events = []
+
         def add(self, row):
             self.events.append(row)
+
         def commit(self):
             pass
 
     session = Session()
     monkeypatch.setattr(recovery, 'db', SimpleNamespace(session=session))
     monkeypatch.setattr(
-        recovery, 'AuditEvent', lambda **kwargs: SimpleNamespace(**kwargs),
+        recovery,
+        'AuditEvent',
+        lambda **kwargs: SimpleNamespace(**kwargs),
     )
     receipt = recovery.assess_native_no_transfer_recovery_committed(
-        tenant_id=p['tenant_id'], actor_user_id=p['requested_by'],
-        plan_sha256=p['plan_sha256'], confirmed=True,
+        tenant_id=p['tenant_id'],
+        actor_user_id=p['requested_by'],
+        plan_sha256=p['plan_sha256'],
+        confirmed=True,
     )
     assert receipt['failed_event_ids'] == [2, 6]
     assert receipt['attempt_count'] == 2
@@ -192,12 +212,25 @@ def test_multiple_failed_before_write_attempts_bind_every_immutable_event(monkey
     assert recovery._source_history(p['tenant_id'], p)['digest'] != old_digest
 
 
-@pytest.mark.parametrize('alteration', [
-    'orphan_start', 'orphan_failure', 'success', 'mutated_earlier',
-    'mutated_later', 'verified_earlier', 'unknown_earlier', 'different_actor',
-    'different_sha', 'different_fingerprint', 'overlapping_time',
-    'reordered', 'missing_terminal_fields', 'start_with_terminal_mutation',
-])
+@pytest.mark.parametrize(
+    'alteration',
+    [
+        'orphan_start',
+        'orphan_failure',
+        'success',
+        'mutated_earlier',
+        'mutated_later',
+        'verified_earlier',
+        'unknown_earlier',
+        'different_actor',
+        'different_sha',
+        'different_fingerprint',
+        'overlapping_time',
+        'reordered',
+        'missing_terminal_fields',
+        'start_with_terminal_mutation',
+    ],
+)
 def test_multiple_attempt_history_rejects_unsafe_sequence(monkeypatch, alteration):
     p = plan()
     rows = repeated_history(p)
@@ -241,18 +274,22 @@ def test_multi_attempt_history_includes_safe_readbacks_and_rejects_later_drift(m
     rows = repeated_history(p)
     # Include read-backs before, between, and after the actual executor pairs.
     for event_id in (0, 3, 4, 7):
-        rows.append(SimpleNamespace(
-            id=event_id, actor_user_id=42,
-            target_type=recovery._READBACK_TARGET,
-            action='tenant.release.native_provider_handoff_recovery_observed',
-            metadata_json={
-                'plan_sha256': p['plan_sha256'],
-                'status': 'provider_handoff_not_started',
-            },
-        ))
+        rows.append(
+            SimpleNamespace(
+                id=event_id,
+                actor_user_id=42,
+                target_type=recovery._READBACK_TARGET,
+                action='tenant.release.native_provider_handoff_recovery_observed',
+                metadata_json={
+                    'plan_sha256': p['plan_sha256'],
+                    'status': 'provider_handoff_not_started',
+                },
+            )
+        )
     rows.sort(key=lambda row: row.id)
     monkeypatch.setattr(
-        recovery, 'readback_proves_handoff_not_started',
+        recovery,
+        'readback_proves_handoff_not_started',
         lambda item, *, plan: item.get('status') == 'provider_handoff_not_started',
     )
     set_history(monkeypatch, rows)
@@ -273,10 +310,7 @@ def test_restart_rechecks_complete_multi_attempt_lineage(monkeypatch):
     a['failed_event_ids'] = [2, 6]
     a['attempt_count'] = 2
     a['failed_event_id'] = 6
-    a['assessment_sha256'] = recovery._sha({
-        key: value for key, value in a.items()
-        if key != 'assessment_sha256'
-    })
+    a['assessment_sha256'] = recovery._sha({key: value for key, value in a.items() if key != 'assessment_sha256'})
     decision = {
         'status': 'authorized_for_requester_restart',
         'plan_sha256': p['plan_sha256'],
@@ -284,26 +318,36 @@ def test_restart_rechecks_complete_multi_attempt_lineage(monkeypatch):
         'assessment_sha256': a['assessment_sha256'],
         'history_digest': a['history_digest'],
         'provider_proof_sha256': a['provider_proof_sha256'],
-        'assessed_by': p['requested_by'], 'authorized_by': 43,
+        'assessed_by': p['requested_by'],
+        'authorized_by': 43,
         'authorized_at': datetime.now(UTC).isoformat(),
     }
     monkeypatch.setattr(recovery, 'latest_no_transfer_decision', lambda *_: decision)
     source = {
-        'digest': a['history_digest'], 'executor_actor_id': 43,
-        'failed_event_id': 6, 'failed_event_ids': [2, 6],
+        'digest': a['history_digest'],
+        'executor_actor_id': 43,
+        'failed_event_id': 6,
+        'failed_event_ids': [2, 6],
         'attempt_count': 2,
     }
     monkeypatch.setattr(recovery, '_source_history', lambda *_: source)
     # Original executor (43) may independently review the two-pair proof;
     # the original requester (42) remains the only plan-renewal actor.
-    assert recovery.require_authorized_no_transfer_restart(
-        tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
-    ) == decision
+    assert (
+        recovery.require_authorized_no_transfer_restart(
+            tenant_id=p['tenant_id'],
+            plan=p,
+            actor_user_id=42,
+        )
+        == decision
+    )
 
     source['failed_event_ids'] = [6]
     with pytest.raises(ValueError, match='Provider execution evidence changed'):
         recovery.require_authorized_no_transfer_restart(
-            tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
+            tenant_id=p['tenant_id'],
+            plan=p,
+            actor_user_id=42,
         )
 
 
@@ -314,12 +358,15 @@ def test_unsafe_or_ambiguous_history_is_never_recoverable(monkeypatch, alteratio
     if alteration == 'missing_failure':
         rows.pop()
     elif alteration == 'readback':
-        rows.append(SimpleNamespace(
-            id=3, actor_user_id=43,
-            target_type=recovery._READBACK_TARGET,
-            action='tenant.release.native_handoff_readback_observed',
-            metadata_json={'plan_sha256': p['plan_sha256'], 'observed_count': 0},
-        ))
+        rows.append(
+            SimpleNamespace(
+                id=3,
+                actor_user_id=43,
+                target_type=recovery._READBACK_TARGET,
+                action='tenant.release.native_handoff_readback_observed',
+                metadata_json={'plan_sha256': p['plan_sha256'], 'observed_count': 0},
+            )
+        )
     elif alteration == 'verified_one':
         rows[-1].metadata_json['verified_count'] = 1
     elif alteration == 'unknown':
@@ -337,12 +384,15 @@ def test_wrong_executor_receipt_count_explains_blocker_without_bypassing_history
         recovery._source_history(p['tenant_id'], p)
 
     duplicate = history(p)
-    duplicate.append(SimpleNamespace(
-        id=3, actor_user_id=43,
-        target_type=recovery._EXECUTOR_TARGET,
-        action='tenant.release.native_handoff_recovery_required',
-        metadata_json=duplicate[-1].metadata_json.copy(),
-    ))
+    duplicate.append(
+        SimpleNamespace(
+            id=3,
+            actor_user_id=43,
+            target_type=recovery._EXECUTOR_TARGET,
+            action='tenant.release.native_handoff_recovery_required',
+            metadata_json=duplicate[-1].metadata_json.copy(),
+        )
+    )
     set_history(monkeypatch, duplicate)
     with pytest.raises(ValueError, match='found 3 same-plan executor receipts'):
         recovery._source_history(p['tenant_id'], p)
@@ -351,15 +401,18 @@ def test_wrong_executor_receipt_count_explains_blocker_without_bypassing_history
 def test_partial_provider_readback_explains_blocker_separately(monkeypatch):
     p = plan()
     events = history(p)
-    events.append(SimpleNamespace(
-        id=3, actor_user_id=43,
-        target_type=recovery._READBACK_TARGET,
-        action='tenant.release.native_provider_handoff_recovery_observed',
-        metadata_json={
-            'plan_sha256': p['plan_sha256'],
-            'status': 'provider_handoff_observed_acceptance_unverified',
-        },
-    ))
+    events.append(
+        SimpleNamespace(
+            id=3,
+            actor_user_id=43,
+            target_type=recovery._READBACK_TARGET,
+            action='tenant.release.native_provider_handoff_recovery_observed',
+            metadata_json={
+                'plan_sha256': p['plan_sha256'],
+                'status': 'provider_handoff_observed_acceptance_unverified',
+            },
+        )
+    )
     set_history(monkeypatch, events)
     with pytest.raises(ValueError, match='same-plan provider read-back receipts'):
         recovery._source_history(p['tenant_id'], p)
@@ -371,13 +424,15 @@ def test_canonical_zero_transfer_readback_is_digest_bound(monkeypatch):
     set_history(monkeypatch, initial)
     executor_only = recovery._source_history(p['tenant_id'], p)['digest']
     observed = SimpleNamespace(
-        id=3, actor_user_id=43,
+        id=3,
+        actor_user_id=43,
         target_type=recovery._READBACK_TARGET,
         action='tenant.release.native_handoff_readback_observed',
         metadata_json={'plan_sha256': p['plan_sha256'], 'status': 'provider_handoff_not_started'},
     )
     monkeypatch.setattr(
-        recovery, 'readback_proves_handoff_not_started',
+        recovery,
+        'readback_proves_handoff_not_started',
         lambda item, *, plan: item.get('status') == 'provider_handoff_not_started',
     )
     set_history(monkeypatch, initial + [observed])
@@ -402,10 +457,14 @@ def assessed(p, *, stale=False):
         'status': 'verified_no_transfer_pending_independent_review',
         'plan_sha256': p['plan_sha256'],
         'handoff_fingerprint': p['handoff_fingerprint'],
-        'assessed_by': 42, 'executor_actor_id': 43,
-        'history_digest': 'f' * 64, 'provider_proof_sha256': 'e' * 64,
-        'failed_event_id': 2, 'failed_event_ids': [2],
-        'attempt_count': 1, 'assessed_at': now,
+        'assessed_by': 42,
+        'executor_actor_id': 43,
+        'history_digest': 'f' * 64,
+        'provider_proof_sha256': 'e' * 64,
+        'failed_event_id': 2,
+        'failed_event_ids': [2],
+        'attempt_count': 1,
+        'assessed_at': now,
     }
     row['assessment_sha256'] = recovery._sha(row)
     return row
@@ -429,7 +488,8 @@ def setup_authorize(monkeypatch, *, stale=False):
     monkeypatch.setattr(recovery, 'latest_no_transfer_assessment', lambda *args: a)
     monkeypatch.setattr(recovery, 'latest_no_transfer_decision', lambda *args: None)
     monkeypatch.setattr(
-        recovery, '_source_history',
+        recovery,
+        '_source_history',
         lambda *args: {
             'digest': a['history_digest'],
             'executor_actor_id': a['executor_actor_id'],
@@ -438,12 +498,16 @@ def setup_authorize(monkeypatch, *, stale=False):
         },
     )
     monkeypatch.setattr(recovery, 'Tenant', SimpleNamespace(query=LockedTenantQuery()))
+
     class Session:
         events = []
+
         def add(self, item):
             self.events.append(item)
+
         def commit(self):
             pass
+
     session = Session()
     monkeypatch.setattr(recovery, 'db', SimpleNamespace(session=session))
     monkeypatch.setattr(recovery, 'AuditEvent', lambda **kwargs: SimpleNamespace(**kwargs))
@@ -454,18 +518,22 @@ def test_original_requester_cannot_approve_own_no_transfer_assessment(monkeypatc
     p, a, _ = setup_authorize(monkeypatch)
     with pytest.raises(ValueError, match='must differ'):
         recovery.authorize_native_no_transfer_recovery_committed(
-            tenant_id=p['tenant_id'], actor_user_id=p['requested_by'],
+            tenant_id=p['tenant_id'],
+            actor_user_id=p['requested_by'],
             plan_sha256=p['plan_sha256'],
-            assessment_sha256=a['assessment_sha256'], confirmed=True,
+            assessment_sha256=a['assessment_sha256'],
+            confirmed=True,
         )
 
 
 def test_original_failed_executor_can_review_only_canonical_no_transfer(monkeypatch):
     p, a, session = setup_authorize(monkeypatch)
     decision = recovery.authorize_native_no_transfer_recovery_committed(
-        tenant_id=p['tenant_id'], actor_user_id=a['executor_actor_id'],
+        tenant_id=p['tenant_id'],
+        actor_user_id=a['executor_actor_id'],
         plan_sha256=p['plan_sha256'],
-        assessment_sha256=a['assessment_sha256'], confirmed=True,
+        assessment_sha256=a['assessment_sha256'],
+        confirmed=True,
     )
     assert decision['authorized_by'] == a['executor_actor_id']
     assert decision['assessed_by'] != decision['authorized_by']
@@ -477,7 +545,8 @@ def test_original_failed_executor_can_review_only_canonical_no_transfer(monkeypa
 def test_executor_review_denied_if_complete_history_changed(monkeypatch):
     p, a, _ = setup_authorize(monkeypatch)
     monkeypatch.setattr(
-        recovery, '_source_history',
+        recovery,
+        '_source_history',
         lambda *_: {
             'digest': a['history_digest'],
             'executor_actor_id': a['executor_actor_id'],
@@ -487,32 +556,36 @@ def test_executor_review_denied_if_complete_history_changed(monkeypatch):
     )
     with pytest.raises(ValueError, match='history changed'):
         recovery.authorize_native_no_transfer_recovery_committed(
-            tenant_id=p['tenant_id'], actor_user_id=a['executor_actor_id'],
+            tenant_id=p['tenant_id'],
+            actor_user_id=a['executor_actor_id'],
             plan_sha256=p['plan_sha256'],
-            assessment_sha256=a['assessment_sha256'], confirmed=True,
+            assessment_sha256=a['assessment_sha256'],
+            confirmed=True,
         )
 
 
 def test_forged_assessor_cannot_get_executor_review(monkeypatch):
     p, a, _ = setup_authorize(monkeypatch)
     a['assessed_by'] = a['executor_actor_id']
-    a['assessment_sha256'] = recovery._sha({
-        k: v for k, v in a.items() if k != 'assessment_sha256'
-    })
+    a['assessment_sha256'] = recovery._sha({k: v for k, v in a.items() if k != 'assessment_sha256'})
     with pytest.raises(ValueError, match='Current exact'):
         recovery.authorize_native_no_transfer_recovery_committed(
-            tenant_id=p['tenant_id'], actor_user_id=44,
+            tenant_id=p['tenant_id'],
+            actor_user_id=44,
             plan_sha256=p['plan_sha256'],
-            assessment_sha256=a['assessment_sha256'], confirmed=True,
+            assessment_sha256=a['assessment_sha256'],
+            confirmed=True,
         )
 
 
 def test_independent_second_or_third_operator_can_authorize_only_new_restart(monkeypatch):
     p, a, session = setup_authorize(monkeypatch)
     decision = recovery.authorize_native_no_transfer_recovery_committed(
-        tenant_id=p['tenant_id'], actor_user_id=44,
+        tenant_id=p['tenant_id'],
+        actor_user_id=44,
         plan_sha256=p['plan_sha256'],
-        assessment_sha256=a['assessment_sha256'], confirmed=True,
+        assessment_sha256=a['assessment_sha256'],
+        confirmed=True,
     )
     assert decision['authorized_by'] == 44
     assert decision['assessment_sha256'] == a['assessment_sha256']
@@ -525,15 +598,19 @@ def test_expired_assessment_or_mismatched_sha_blocks_independent_decision(monkey
     p, a, _ = setup_authorize(monkeypatch, stale=True)
     with pytest.raises(ValueError, match='Current exact'):
         recovery.authorize_native_no_transfer_recovery_committed(
-            tenant_id=p['tenant_id'], actor_user_id=44,
+            tenant_id=p['tenant_id'],
+            actor_user_id=44,
             plan_sha256=p['plan_sha256'],
-            assessment_sha256=a['assessment_sha256'], confirmed=True,
+            assessment_sha256=a['assessment_sha256'],
+            confirmed=True,
         )
     with pytest.raises(ValueError, match='Current exact'):
         recovery.authorize_native_no_transfer_recovery_committed(
-            tenant_id=p['tenant_id'], actor_user_id=44,
+            tenant_id=p['tenant_id'],
+            actor_user_id=44,
             plan_sha256=p['plan_sha256'],
-            assessment_sha256='b' * 64, confirmed=True,
+            assessment_sha256='b' * 64,
+            confirmed=True,
         )
 
 
@@ -546,29 +623,45 @@ def test_decision_requires_same_fresh_actor_separated_evidence(monkeypatch):
         'assessment_sha256': a['assessment_sha256'],
         'history_digest': a['history_digest'],
         'provider_proof_sha256': a['provider_proof_sha256'],
-        'assessed_by': 42, 'authorized_by': 44,
+        'assessed_by': 42,
+        'authorized_by': 44,
         'authorized_at': datetime.now(UTC).isoformat(),
     }
     monkeypatch.setattr(recovery, 'latest_no_transfer_decision', lambda *args: d)
     monkeypatch.setattr(
-        recovery, '_source_history',
+        recovery,
+        '_source_history',
         lambda *args: {
-            'digest': a['history_digest'], 'executor_actor_id': 43,
-            'failed_event_id': 2, 'failed_event_ids': [2],
+            'digest': a['history_digest'],
+            'executor_actor_id': 43,
+            'failed_event_id': 2,
+            'failed_event_ids': [2],
             'attempt_count': 1,
         },
     )
-    assert recovery.require_authorized_no_transfer_restart(
-        tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
-    ) == d
+    assert (
+        recovery.require_authorized_no_transfer_restart(
+            tenant_id=p['tenant_id'],
+            plan=p,
+            actor_user_id=42,
+        )
+        == d
+    )
     d['authorized_by'] = 43
-    assert recovery.require_authorized_no_transfer_restart(
-        tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
-    ) == d
+    assert (
+        recovery.require_authorized_no_transfer_restart(
+            tenant_id=p['tenant_id'],
+            plan=p,
+            actor_user_id=42,
+        )
+        == d
+    )
     d['authorized_by'] = 42
     with pytest.raises(ValueError, match='absent or expired'):
         recovery.require_authorized_no_transfer_restart(
-            tenant_id=p['tenant_id'], plan=p, actor_user_id=42,
+            tenant_id=p['tenant_id'],
+            plan=p,
+            actor_user_id=42,
         )
 
 
@@ -587,7 +680,8 @@ def test_two_person_restart_rejects_changed_evidence_after_executor_review(monke
     }
     monkeypatch.setattr(recovery, 'latest_no_transfer_decision', lambda *_: decision)
     monkeypatch.setattr(
-        recovery, '_source_history',
+        recovery,
+        '_source_history',
         lambda *_: {
             'digest': 'changed' * 10,
             'executor_actor_id': a['executor_actor_id'],
@@ -598,22 +692,31 @@ def test_two_person_restart_rejects_changed_evidence_after_executor_review(monke
     )
     with pytest.raises(ValueError, match='Provider execution evidence changed'):
         recovery.require_authorized_no_transfer_restart(
-            tenant_id=p['tenant_id'], plan=p, actor_user_id=p['requested_by'],
+            tenant_id=p['tenant_id'],
+            plan=p,
+            actor_user_id=p['requested_by'],
         )
 
 
 def setup_read_only_provider_proof(monkeypatch):
     p = plan()
     preview = {
-        'kind': 'Namespace', 'name': 'demo', 'namespace': None,
-        'uid': 'uid-1', 'resource_version': '21',
+        'kind': 'Namespace',
+        'name': 'demo',
+        'namespace': None,
+        'uid': 'uid-1',
+        'resource_version': '21',
         'operation': 'metadata_only_json_patch_dry_run',
-        'dry_run': True, 'live_provider_unchanged': True,
-        'spec_sha256': 'spec-hash', 'retained_metadata_sha256': 'foreign-hash',
+        'dry_run': True,
+        'live_provider_unchanged': True,
+        'spec_sha256': 'spec-hash',
+        'retained_metadata_sha256': 'foreign-hash',
     }
     fresh = {
-        'tenant_id': p['tenant_id'], 'cluster_id': p['cluster_id'],
-        'generation': p['generation'], 'provider': 'native_kubernetes',
+        'tenant_id': p['tenant_id'],
+        'cluster_id': p['cluster_id'],
+        'generation': p['generation'],
+        'provider': 'native_kubernetes',
         'handoff_fingerprint': p['handoff_fingerprint'],
         'live_provider_identity': [{'kind': 'Namespace', 'name': 'demo', 'uid': 'uid-1', 'resource_version': '21'}],
         'handoff_components': p['handoff_components'],
@@ -621,7 +724,9 @@ def setup_read_only_provider_proof(monkeypatch):
     p['provider_identity'] = fresh['live_provider_identity']
     monkeypatch.setattr(recovery, '_can_confirm_plan', lambda value: None)
     monkeypatch.setattr(
-        recovery, '_latest_native_dry_run', lambda _: {
+        recovery,
+        '_latest_native_dry_run',
+        lambda _: {
             'plan_sha256': p['plan_sha256'],
             'handoff_fingerprint': p['handoff_fingerprint'],
             'status': 'dry_run_passed',
@@ -632,10 +737,19 @@ def setup_read_only_provider_proof(monkeypatch):
         },
     )
     monkeypatch.setattr(recovery, '_approved_component_for_preview', lambda **kwargs: p['handoff_components'][0])
-    monkeypatch.setattr(recovery, 'db', SimpleNamespace(session=SimpleNamespace(get=lambda *args: SimpleNamespace(kubernetes_connection=SimpleNamespace(verify_ssl=True)))))
+    monkeypatch.setattr(
+        recovery,
+        'db',
+        SimpleNamespace(
+            session=SimpleNamespace(
+                get=lambda *args: SimpleNamespace(kubernetes_connection=SimpleNamespace(verify_ssl=True))
+            )
+        ),
+    )
     core = object()
     monkeypatch.setattr(
-        recovery, 'runtime_adapter',
+        recovery,
+        'runtime_adapter',
         SimpleNamespace(build_client=lambda _: SimpleNamespace(core_api=lambda: core)),
     )
     monkeypatch.setattr(recovery, '_read_resource', lambda *args: object())
@@ -645,17 +759,23 @@ def setup_read_only_provider_proof(monkeypatch):
 def test_provider_assessment_uses_read_only_exact_original_evidence(monkeypatch):
     p, fresh = setup_read_only_provider_proof(monkeypatch)
     monkeypatch.setattr(
-        recovery, 'summarize_native_handoff_recovery',
+        recovery,
+        'summarize_native_handoff_recovery',
         lambda **kwargs: {
             'status': 'provider_handoff_not_started',
             'components': [{'state': 'pending_provider_transfer'}],
-            'transferred_count': 0, 'pending_count': 1,
-            'provider_spec_preserved': True, 'provider_resource_deleted': False,
+            'transferred_count': 0,
+            'pending_count': 1,
+            'provider_spec_preserved': True,
+            'provider_resource_deleted': False,
             'release_authorized': False,
         },
     )
     proof = recovery._verify_original_provider_state(
-        tenant_id=p['tenant_id'], plan=p, actor_user_id=42, fresh=fresh,
+        tenant_id=p['tenant_id'],
+        plan=p,
+        actor_user_id=42,
+        fresh=fresh,
     )
     assert len(proof['provider_proof_sha256']) == 64
     assert proof['verified_count'] == 1
@@ -664,35 +784,50 @@ def test_provider_assessment_uses_read_only_exact_original_evidence(monkeypatch)
 def test_provider_recovery_proof_rejects_unverified_tls(monkeypatch):
     p, fresh = setup_read_only_provider_proof(monkeypatch)
     monkeypatch.setattr(
-        recovery, 'db',
-        SimpleNamespace(session=SimpleNamespace(
-            get=lambda *args: SimpleNamespace(kubernetes_connection=SimpleNamespace(verify_ssl=False)),
-        )),
+        recovery,
+        'db',
+        SimpleNamespace(
+            session=SimpleNamespace(
+                get=lambda *args: SimpleNamespace(kubernetes_connection=SimpleNamespace(verify_ssl=False)),
+            )
+        ),
     )
     with pytest.raises(ValueError, match='Verified Kubernetes API TLS'):
         recovery._verify_original_provider_state(
-            tenant_id=p['tenant_id'], plan=p, actor_user_id=42, fresh=fresh,
+            tenant_id=p['tenant_id'],
+            plan=p,
+            actor_user_id=42,
+            fresh=fresh,
         )
 
 
 def test_provider_assessment_rejects_partial_markers_or_changed_inventory(monkeypatch):
     p, fresh = setup_read_only_provider_proof(monkeypatch)
     monkeypatch.setattr(
-        recovery, 'summarize_native_handoff_recovery',
+        recovery,
+        'summarize_native_handoff_recovery',
         lambda **kwargs: {
             'status': 'partial_handoff_recovery_required',
             'components': [{'state': 'provider_markers_transferred'}],
-            'transferred_count': 1, 'pending_count': 0,
-            'provider_spec_preserved': True, 'provider_resource_deleted': False,
+            'transferred_count': 1,
+            'pending_count': 0,
+            'provider_spec_preserved': True,
+            'provider_resource_deleted': False,
             'release_authorized': False,
         },
     )
     with pytest.raises(ValueError, match='Partial/unknown'):
         recovery._verify_original_provider_state(
-            tenant_id=p['tenant_id'], plan=p, actor_user_id=42, fresh=fresh,
+            tenant_id=p['tenant_id'],
+            plan=p,
+            actor_user_id=42,
+            fresh=fresh,
         )
     changed = {**fresh, 'handoff_fingerprint': 'different'}
     with pytest.raises(ValueError, match='Fresh provider identity'):
         recovery._verify_original_provider_state(
-            tenant_id=p['tenant_id'], plan=p, actor_user_id=42, fresh=changed,
+            tenant_id=p['tenant_id'],
+            plan=p,
+            actor_user_id=42,
+            fresh=changed,
         )

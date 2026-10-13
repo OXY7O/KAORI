@@ -153,4 +153,4 @@
 {% if request.headers.get('HX-Request') == 'true' %}
     {{ framed_workspace_tabs.badge_oob("alertmanager", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}
 {% endif %}
-{{ provider_detail_posture.state_oob('alertmanager', instance.readiness_status, capability_rows|selectattr('available')|list|length) }}
+{{ provider_detail_posture.state_oob('alertmanager', instance.readiness_status, capability_rows|selectattr('available') |list|length) }}

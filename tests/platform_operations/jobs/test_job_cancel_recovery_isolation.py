@@ -47,9 +47,9 @@ def test_revoke_failure_keeps_pending_cancel_and_recovers_other_jobs(monkeypatch
     canceling = _candidate(status='cancel_requested', task_id='cancel-job', minutes=10)
     queued = _candidate(status='queued', task_id='queued-job', minutes=12)
     query = SimpleNamespace(filter=lambda *_a, **_kw: SimpleNamespace(all=lambda: [canceling, queued]))
-    monkeypatch.setattr(service, 'JobExecution', SimpleNamespace(
-        query=query, status=SimpleNamespace(in_=lambda *_args: object())
-    ))
+    monkeypatch.setattr(
+        service, 'JobExecution', SimpleNamespace(query=query, status=SimpleNamespace(in_=lambda *_args: object()))
+    )
     commits = []
     monkeypatch.setattr(service.db, 'session', SimpleNamespace(commit=lambda: commits.append(True)))
 

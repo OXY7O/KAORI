@@ -52,7 +52,8 @@ def test_unavailable_numeric_security_sync_post_is_rejected_before_dispatch(monk
     monkeypatch.setattr(routes, '_eligible_security_sources', lambda: [])
     app = Flask(__name__)
     with app.test_request_context(
-        '/artifact-registry/security/sync', method='POST',
+        '/artifact-registry/security/sync',
+        method='POST',
         data={'source_id': '55'},
     ):
         with pytest.raises(NotFound):

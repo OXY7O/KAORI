@@ -36,7 +36,9 @@ ARTIFACT_KPI_CARDS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partial
 ARTIFACT_REPORTING = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_reporting.html'
 ARTIFACT_CAPACITY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity.html'
 ARTIFACT_FORECAST = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_forecast_risk.html'
-ARTIFACT_CAPACITY_SNAPSHOT = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity_snapshot.html'
+ARTIFACT_CAPACITY_SNAPSHOT = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity_snapshot.html'
+)
 ARTIFACT_CONSUMERS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_top_consumers.html'
 ARTIFACT_SIGNALS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signals.html'
 ARTIFACT_OPERATIONS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_operations.html'
@@ -639,9 +641,7 @@ def _verify_artifact_registry_dashboard(
     )
     if 'committed_count' in inventory_items:
         raise AssertionError('Registry Inventory Snapshot cannot reference KPI-local committed_count')
-    capacity_section = presentation.split("if section == 'capacity':", 1)[1].split(
-        "if section == 'signals':", 1
-    )[0]
+    capacity_section = presentation.split("if section == 'capacity':", 1)[1].split("if section == 'signals':", 1)[0]
     _require(
         capacity_section,
         (
@@ -653,7 +653,9 @@ def _verify_artifact_registry_dashboard(
     )
     if capacity_section.index('return context') >= capacity_section.index('return _overview_capacity_projection('):
         raise AssertionError('Registry Capacity must bypass evidence projection when no provider is selected')
-    capacity_projection = presentation.split('def _overview_capacity_projection(', 1)[1].split('def build_overview(', 1)[0]
+    capacity_projection = presentation.split('def _overview_capacity_projection(', 1)[1].split(
+        'def build_overview(', 1
+    )[0]
     _require(
         capacity_projection,
         (
@@ -799,7 +801,7 @@ def verify() -> None:
             "'alerts_connected': alerts_connected",
             "'alerts_fallback': alerts_fallback",
             "'alert_source_label': alert_source_label",
-            "_alert_view(payload)",
+            '_alert_view(payload)',
             "alerts_connected = analytics_usable and bool(alert_stream.get('connected'))",
             "alerts_fallback = alerts_connected and bool(alert_stream.get('fallback_used'))",
         ),
@@ -1202,7 +1204,8 @@ def verify() -> None:
     if (
         'if selected_provider is None:' not in signals_projection
         or signals_projection.index('return context') >= signals_projection.index('_registry_alerts(selected_provider)')
-        or signals_projection.index('return context') >= signals_projection.index('_registry_recommended_actions(selected_provider)')
+        or signals_projection.index('return context')
+        >= signals_projection.index('_registry_recommended_actions(selected_provider)')
     ):
         raise AssertionError('Registry unselected Signals must not evaluate cross-provider Intelligence findings')
     _require(
@@ -1360,9 +1363,7 @@ def verify() -> None:
     )
     _require(
         object_dashboard_service,
-        (
-            'Committed 24h alerts; Alertmanager primary, Metrics Source fallback.',
-        ),
+        ('Committed 24h alerts; Alertmanager primary, Metrics Source fallback.',),
         'Object Storage refreshed Alert Evidence Fleet copy',
     )
     _require(

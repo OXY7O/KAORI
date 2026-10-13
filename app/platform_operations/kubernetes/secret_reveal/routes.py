@@ -14,11 +14,10 @@ from flask import (
 )
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
-
-from app.extensions.db import db
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
+from app.extensions.db import db
 from app.kubernetes.operations.secrets.reveal_policy import (
     cluster_reveal_readiness_evidence,
     set_namespace_reveal_policy,

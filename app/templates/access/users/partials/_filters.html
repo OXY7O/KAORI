@@ -7,7 +7,7 @@
     filters.per_page,
     form_id='users-filter-form',
     aria_label='User Directory filters'
-) %}
+    ) %}
     <label class="min-w-0">
         <span class="{{ table_ui.filter_label_classes() }}">Search User</span>
         {{ table_ui.search_field('search', filters.search, 'Username, display name, or email', 'users-search') }}

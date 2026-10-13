@@ -4,6 +4,7 @@ A KAORI administrator's explicit decision and the Kubernetes connection's
 actual credentials are separate authorities. Neither relies on an external
 successor token, a fabricated IdP mapping, or typed ownership labels.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -11,11 +12,15 @@ from typing import Any
 
 from app.extensions.db import db
 from app.kubernetes.tenant.native_platform_admin_authority import (
-    require_platform_admin_actor, verify_native_provider_admin_authority,
+    require_platform_admin_actor,
+    verify_native_provider_admin_authority,
 )
 from app.kubernetes.tenant.release_handoff_approval import (
-    _can_confirm_plan, _checked_recently, _plan_hash,
-    latest_release_handoff_approval, latest_release_handoff_plan,
+    _can_confirm_plan,
+    _checked_recently,
+    _plan_hash,
+    latest_release_handoff_approval,
+    latest_release_handoff_plan,
 )
 from app.kubernetes.tenant.release_preflight import review_tenant_release_preflight_committed
 from app.models import Cluster
@@ -27,20 +32,21 @@ _MODE = 'platform_admin_governed'
 
 
 def latest_native_successor_acceptance(tenant_id: str) -> dict[str, Any] | None:
-    event = (
-        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).first()
-    )
+    event = AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id).order_by(AuditEvent.id.desc()).first()
     return dict(event.metadata_json or {}) if event else None
 
 
 def require_current_native_acceptance(
-    *, tenant_id: str, plan: dict[str, Any], approval: dict[str, Any],
+    *,
+    tenant_id: str,
+    plan: dict[str, Any],
+    approval: dict[str, Any],
 ) -> dict[str, Any]:
     """Fail closed on historical bearer-token receipts and stale plan generation."""
     accepted = latest_native_successor_acceptance(tenant_id)
     if (
-        not accepted or accepted.get('status') != 'platform_admin_handoff_accepted'
+        not accepted
+        or accepted.get('status') != 'platform_admin_handoff_accepted'
         or accepted.get('authority_mode') != _MODE
         or accepted.get('tenant_id') != tenant_id
         or accepted.get('cluster_id') != plan.get('cluster_id')
@@ -61,7 +67,11 @@ def require_current_native_acceptance(
 
 
 def accept_native_successor_handoff_committed(
-    *, tenant_id: str, actor_user_id: int, plan_sha256: str, confirmed: bool,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
+    confirmed: bool,
 ) -> dict[str, Any]:
     """Record explicit *human* Platform Admin acceptance after live kubeconfig proof."""
     if not confirmed:
@@ -70,9 +80,12 @@ def accept_native_successor_handoff_committed(
     plan = latest_release_handoff_plan(tenant_id)
     approval = latest_release_handoff_approval(tenant_id)
     if (
-        not plan or not approval
-        or plan.get('plan_sha256') != plan_sha256 or _plan_hash(plan) != plan_sha256
-        or plan.get('tenant_id') != tenant_id or plan.get('provider') != 'native_kubernetes'
+        not plan
+        or not approval
+        or plan.get('plan_sha256') != plan_sha256
+        or _plan_hash(plan) != plan_sha256
+        or plan.get('tenant_id') != tenant_id
+        or plan.get('provider') != 'native_kubernetes'
         or approval.get('plan_sha256') != plan_sha256
         or approval.get('status') != 'acknowledged_pending_provider_handoff'
         or approval.get('requested_by') != plan.get('requested_by')
@@ -86,7 +99,8 @@ def accept_native_successor_handoff_committed(
         raise ValueError('A fresh independent Native handoff approval is required.')
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
+        tenant is None
+        or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
         or tenant.ownership_status != 'adopted'
         or tenant.provider_key != 'native_kubernetes'
         or tenant.provider_state != 'native'
@@ -99,7 +113,8 @@ def accept_native_successor_handoff_committed(
     if cluster is None:
         raise ValueError('Native Kubernetes cluster is unavailable.')
     fresh = review_tenant_release_preflight_committed(
-        tenant_id=tenant_id, actor_user_id=actor_user_id,
+        tenant_id=tenant_id,
+        actor_user_id=actor_user_id,
     )
     _can_confirm_plan(fresh)
     if (
@@ -113,8 +128,7 @@ def accept_native_successor_handoff_committed(
     ):
         raise ValueError('Provider inventory changed after the independently approved plan.')
     components = [
-        dict(item) for item in plan['handoff_components']
-        if item.get('handoff') == 'external_acceptance_required'
+        dict(item) for item in plan['handoff_components'] if item.get('handoff') == 'external_acceptance_required'
     ]
     proof = verify_native_provider_admin_authority(cluster=cluster, components=components)
     locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
@@ -122,20 +136,25 @@ def accept_native_successor_handoff_committed(
     acknowledged = latest_release_handoff_approval(tenant_id)
     previous = latest_native_successor_acceptance(tenant_id)
     if (
-        locked is None or locked.lifecycle_status != TenantLifecycleStatus.READY.value
+        locked is None
+        or locked.lifecycle_status != TenantLifecycleStatus.READY.value
         or locked.generation != plan.get('generation')
-        or not current or current.get('plan_sha256') != plan_sha256
-        or not acknowledged or acknowledged.get('plan_sha256') != plan_sha256
+        or not current
+        or current.get('plan_sha256') != plan_sha256
+        or not acknowledged
+        or acknowledged.get('plan_sha256') != plan_sha256
         or not _checked_recently(current.get('requested_at'))
         or not _checked_recently(acknowledged.get('approved_at'))
-        or (previous and previous.get('plan_sha256') == plan_sha256
-            and previous.get('authority_mode') == _MODE)
+        or (previous and previous.get('plan_sha256') == plan_sha256 and previous.get('authority_mode') == _MODE)
     ):
         raise ValueError('Platform Admin acceptance is stale, already committed or superseded.')
     accepted = {
-        'status': 'platform_admin_handoff_accepted', 'authority_mode': _MODE,
-        'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
-        'generation': tenant.generation, 'plan_sha256': plan_sha256,
+        'status': 'platform_admin_handoff_accepted',
+        'authority_mode': _MODE,
+        'tenant_id': tenant_id,
+        'cluster_id': tenant.cluster_id,
+        'generation': tenant.generation,
+        'plan_sha256': plan_sha256,
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'provider_identity': plan['provider_identity'],
         'successor_owner': plan['successor_owner'],
@@ -154,13 +173,18 @@ def accept_native_successor_handoff_committed(
         'accepted_at': datetime.now(UTC).isoformat(),
         'provider_handoff_verified': False,
         'provider_mutation_performed': False,
-        'release_authorized': False, 'secret_material_persisted': False,
+        'release_authorized': False,
+        'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action='tenant.release.platform_admin_handoff_accepted',
-        summary='Authorized Platform Admin accepted exact Native governance handoff after kubeconfig identity and RBAC checks.',
-        metadata_json=accepted,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.platform_admin_handoff_accepted',
+            summary='Authorized Platform Admin accepted exact Native governance handoff after kubeconfig identity and RBAC checks.',
+            metadata_json=accepted,
+        )
+    )
     db.session.commit()
     return accepted

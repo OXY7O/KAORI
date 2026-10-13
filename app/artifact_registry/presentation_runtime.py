@@ -65,9 +65,7 @@ def _runtime_security_state(
     }
 
 
-def _runtime_security_index(
-    *, source_ids: list[int]
-) -> tuple[dict[int, dict[str, Any]], set[int], set[int], set[int]]:
+def _runtime_security_index(*, source_ids: list[int]) -> tuple[dict[int, dict[str, Any]], set[int], set[int], set[int]]:
     security_by_artifact: dict[int, dict[str, Any]] = {}
     critical_ids: set[int] = set()
     high_ids: set[int] = set()
@@ -447,8 +445,7 @@ def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
     )
     committed_signature = committed_summary.get('input_signature')
     inputs_changed = bool(
-        latest_correlated_at is not None
-        and (not committed_signature or committed_signature != current_signature)
+        latest_correlated_at is not None and (not committed_signature or committed_signature != current_signature)
     )
     setup = _runtime_prerequisite_guidance(
         prerequisites,
@@ -630,9 +627,7 @@ def _build_runtime_usage(request: RuntimeUsageRequest) -> dict[str, Any]:
     clusters = Cluster.query.order_by(Cluster.name.asc()).all()
     cluster_by_id = {str(item.id): item for item in clusters}
     prerequisites = correlation_prerequisites()
-    security_by_artifact, critical_ids, high_ids, scanned_ids = _runtime_security_index(
-        source_ids=list(source_by_id)
-    )
+    security_by_artifact, critical_ids, high_ids, scanned_ids = _runtime_security_index(source_ids=list(source_by_id))
     query, filters = _runtime_filtered_query(
         request,
         sources=sources,

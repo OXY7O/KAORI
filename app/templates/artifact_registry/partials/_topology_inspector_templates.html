@@ -5,7 +5,9 @@
 {% import "components/topology_primitives.html" as topology_parts %}
 <template id="registry-topology-inspector-empty-template">
     <div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-8 text-center">
-        <i data-lucide="mouse-pointer-click" class="mx-auto h-7 w-7 text-kaori-primary" aria-hidden="true"></i>
+        <i data-lucide="mouse-pointer-click"
+           class="mx-auto h-7 w-7 text-kaori-primary"
+           aria-hidden="true"></i>
         <p class="mt-3 text-sm font-semibold text-kaori-primary">Nothing Selected</p>
         <p class="mt-1 text-xs leading-5 text-content-secondary">Select an artifact, Kubernetes resource, or relationship to inspect committed evidence.</p>
     </div>
@@ -14,52 +16,68 @@
     <div class="space-y-4">
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
             <div class="flex items-start gap-3">
-                <span data-node-icon-shell class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border">
+                <span data-node-icon-shell
+                      class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border">
                     <i data-node-icon class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0 flex-1">
-                    <h4 data-node-label class="break-words text-base font-semibold text-content-primary"></h4>
+                    <h4 data-node-label
+                        class="break-words text-base font-semibold text-content-primary"></h4>
                     <p data-node-kind class="mt-1 text-xs text-content-muted"></p>
                     <div class="mt-2 flex flex-wrap gap-2">
-                        <span data-node-type class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark"></span>
+                        <span data-node-type
+                              class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark"></span>
                         <span data-node-status
                               class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold leading-5">
-                            <span data-node-status-dot class="h-1.5 w-1.5 rounded-full" aria-hidden="true"></span>
+                            <span data-node-status-dot
+                                  class="h-1.5 w-1.5 rounded-full"
+                                  aria-hidden="true"></span>
                             <span data-node-evidence></span>
                         </span>
                     </div>
                 </div>
             </div>
-            <p data-node-description class="mt-3 hidden text-xs leading-5 text-content-secondary"></p>
+            <p data-node-description
+               class="mt-3 hidden text-xs leading-5 text-content-secondary"></p>
         </section>
         <div class="grid grid-cols-2 gap-2">
-            <button type="button" data-highlight-path
+            <button type="button"
+                    data-highlight-path
                     class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary hover:border-outline-focus hover:bg-surface-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                 <i data-lucide="route" class="h-3.5 w-3.5" aria-hidden="true"></i><span data-highlight-label>Highlight Path</span>
             </button>
-            <button type="button" data-collapse-path
+            <button type="button"
+                    data-collapse-path
                     class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary hover:border-outline-focus hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                 <i data-lucide="fold-vertical" class="h-3.5 w-3.5" aria-hidden="true"></i><span data-collapse-label>No Loaded Children</span>
             </button>
         </div>
         {{ segmented_tabs.render([
-            ('details', 'Details', 'list-tree'),
-            ('relationships', 'Relationships', 'git-branch')
+                ('details', 'Details', 'list-tree') ,
+        ('relationships', 'Relationships', 'git-branch')
         ], prefix='registry-topology-inspector', active_key='details', aria_label='Topology Inspector', fill=true) }}
-        <div id="registry-topology-inspector-panel-details" role="tabpanel"
+        <div id="registry-topology-inspector-panel-details"
+             role="tabpanel"
              aria-labelledby="registry-topology-inspector-tab-details">
-            <dl data-node-fields class="divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-card px-3"></dl>
-            <section data-relationship-summary class="mt-4 hidden rounded-xl border border-outline-subtle bg-surface-elevated p-3">
+            <dl data-node-fields
+                class="divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-card px-3">
+            </dl>
+            <section data-relationship-summary
+                     class="mt-4 hidden rounded-xl border border-outline-subtle bg-surface-elevated p-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <h5 class="text-xs font-semibold text-content-primary">Relationship Summary</h5>
-                    <button type="button" data-open-relationships
+                    <button type="button"
+                            data-open-relationships
                             class="inline-flex min-h-8 items-center rounded-md px-2 text-xs font-semibold text-kaori-primary hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">View Relationships</button>
                 </div>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Visible committed relationships in the current graph scope.</p>
-                <div data-relationship-summary-items role="list" aria-label="Visible relationships by direction"
+                <div data-relationship-summary-items
+                     role="list"
+                     aria-label="Visible relationships by direction"
                      class="mt-3 flex flex-wrap gap-2"></div>
             </section>
-            <section data-node-minimap class="mt-4 hidden rounded-xl border border-outline-subtle bg-surface-card p-3">
+            <section data-node-minimap
+                     class="mt-4 hidden rounded-xl border border-outline-subtle bg-surface-card p-3">
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <h5 class="text-sm font-semibold text-content-primary">Artifact Runtime Topology Overview</h5>
@@ -67,8 +85,13 @@
                     </div>
                     <span class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark">Overview</span>
                 </div>
-                <canvas data-minimap width="400" height="144" class="mt-3 block h-36 w-full cursor-crosshair rounded-lg border border-outline-default bg-surface-card"
-                        role="button" tabindex="0" aria-label="Center the committed artifact topology in the main graph"></canvas>
+                <canvas data-minimap
+                        width="400"
+                        height="144"
+                        class="mt-3 block h-36 w-full cursor-crosshair rounded-lg border border-outline-default bg-surface-card"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Center the committed artifact topology in the main graph"></canvas>
             </section>
             <section data-node-runtime-bindings
                      aria-label="Visible Runtime Evidence"
@@ -85,14 +108,18 @@
                           class="kaori-semantic-label inline-flex min-h-6 shrink-0 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold text-kaori-primary-dark"></span>
                 </div>
                 <div data-runtime-evidence-rows class="space-y-2"></div>
-                <p data-runtime-evidence-more class="hidden text-xs leading-5 text-content-muted"></p>
+                <p data-runtime-evidence-more
+                   class="hidden text-xs leading-5 text-content-muted"></p>
             </section>
-            <a data-node-action class="mt-4 hidden min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+            <a data-node-action
+               class="mt-4 hidden min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                 <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>Open Runtime Usage
             </a>
         </div>
-        <div id="registry-topology-inspector-panel-relationships" role="tabpanel"
-             aria-labelledby="registry-topology-inspector-tab-relationships" hidden>
+        <div id="registry-topology-inspector-panel-relationships"
+             role="tabpanel"
+             aria-labelledby="registry-topology-inspector-tab-relationships"
+             hidden>
             <div data-node-relationships class="space-y-2"></div>
         </div>
     </div>
@@ -110,19 +137,17 @@
                 </div>
             </div>
         </section>
-        <dl data-edge-fields class="divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-card px-3"></dl>
+        <dl data-edge-fields
+            class="divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-card px-3">
+        </dl>
         <p class="text-xs leading-5 text-content-muted">Context relationships are structural. Tag-only identity has lower confidence than an immutable digest match.</p>
     </div>
 </template>
-{{ topology_parts.relationship_row_template('registry-topology-inspector-relationship-row-template') }}
-
-{{ topology_parts.resource_row_template('registry-topology-resource-list-row-template') }}
-
-{{ topology_parts.field_row_template('registry-topology-field-row-template') }}
-
-{{ topology_parts.relationship_summary_item_template('registry-topology-relationship-summary-item-template') }}
-{{ topology_parts.relationship_empty_template('registry-topology-relationships-empty-template') }}
-
+{{ topology_parts.relationship_row_template("registry-topology-inspector-relationship-row-template") }}
+{{ topology_parts.resource_row_template("registry-topology-resource-list-row-template") }}
+{{ topology_parts.field_row_template("registry-topology-field-row-template") }}
+{{ topology_parts.relationship_summary_item_template("registry-topology-relationship-summary-item-template") }}
+{{ topology_parts.relationship_empty_template("registry-topology-relationships-empty-template") }}
 <template id="registry-topology-runtime-evidence-row-template">
     <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <div class="flex items-start gap-3 border-b border-outline-subtle bg-surface-elevated px-3 py-3">
@@ -131,27 +156,39 @@
                 <i data-lucide="boxes" class="h-4 w-4"></i>
             </span>
             <div class="min-w-0 flex-1">
-                <p data-runtime-workload class="break-words text-xs font-semibold leading-5 text-content-primary"></p>
-                <p data-runtime-pod class="mt-0.5 break-all text-xs leading-5 text-content-muted"></p>
+                <p data-runtime-workload
+                   class="break-words text-xs font-semibold leading-5 text-content-primary"></p>
+                <p data-runtime-pod
+                   class="mt-0.5 break-all text-xs leading-5 text-content-muted"></p>
             </div>
         </div>
         <dl class="grid grid-cols-2 gap-3 px-3 py-3">
             <div class="min-w-0">
                 <dt class="text-xs font-medium text-content-muted">Cluster</dt>
-                <dd data-runtime-cluster class="mt-1 break-words text-xs font-semibold text-content-primary"></dd>
+                <dd data-runtime-cluster
+                    class="mt-1 break-words text-xs font-semibold text-content-primary">
+                </dd>
             </div>
             <div class="min-w-0">
                 <dt class="text-xs font-medium text-content-muted">Namespace</dt>
-                <dd data-runtime-namespace class="mt-1 break-words text-xs font-semibold text-content-primary"></dd>
+                <dd data-runtime-namespace
+                    class="mt-1 break-words text-xs font-semibold text-content-primary">
+                </dd>
             </div>
         </dl>
         <div class="flex flex-wrap items-center gap-2 border-t border-outline-subtle px-3 py-2.5">
-            <span data-runtime-match class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold">
-                <span data-runtime-match-dot class="h-1.5 w-1.5 rounded-full" aria-hidden="true"></span>
+            <span data-runtime-match
+                  class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold">
+                <span data-runtime-match-dot
+                      class="h-1.5 w-1.5 rounded-full"
+                      aria-hidden="true"></span>
                 <span data-runtime-match-text></span>
             </span>
-            <span data-runtime-security class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold">
-                <span data-runtime-security-dot class="h-1.5 w-1.5 rounded-full" aria-hidden="true"></span>
+            <span data-runtime-security
+                  class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold">
+                <span data-runtime-security-dot
+                      class="h-1.5 w-1.5 rounded-full"
+                      aria-hidden="true"></span>
                 <span data-runtime-security-text></span>
             </span>
         </div>

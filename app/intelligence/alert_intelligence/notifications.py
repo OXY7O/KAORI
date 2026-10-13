@@ -199,7 +199,8 @@ def _severity_escalation_due(case: AlertCase) -> bool:
 
 
 def _pending_resolved_channel_ids(
-    firing_channels: dict[int, bool], delivered_channel_ids: set[int],
+    firing_channels: dict[int, bool],
+    delivered_channel_ids: set[int],
 ) -> list[int]:
     """Per-channel idempotency. One sent destination must not strand retries."""
     return sorted(
@@ -222,7 +223,10 @@ def _dispatch_resolved(case: AlertCase) -> dict[str, int]:
     pending = _pending_resolved_channel_ids(firing_channels, delivered)
     for channel_id in pending:
         result = _deliver_case_event(
-            case, channel_id=channel_id, event_state='resolved', sequence='final',
+            case,
+            channel_id=channel_id,
+            event_state='resolved',
+            sequence='final',
         )
         stats['resolved'] += int(result['successful'])
         stats['failed'] += int(result['failed'])
@@ -243,11 +247,15 @@ def _dispatch_resolved(case: AlertCase) -> dict[str, int]:
 
 def _successful_resolved_channels(case: AlertCase) -> set[int]:
     event_key = f'alert-case:{case.public_id}:resolved:final'
-    rows = NotificationDelivery.query.filter(
-        NotificationDelivery.event_key == event_key,
-        NotificationDelivery.event_type == 'alert_ops.resolved',
-        NotificationDelivery.status == 'sent',
-    ).with_entities(NotificationDelivery.channel_id).all()
+    rows = (
+        NotificationDelivery.query.filter(
+            NotificationDelivery.event_key == event_key,
+            NotificationDelivery.event_type == 'alert_ops.resolved',
+            NotificationDelivery.status == 'sent',
+        )
+        .with_entities(NotificationDelivery.channel_id)
+        .all()
+    )
     return {int(row[0]) for row in rows}
 
 

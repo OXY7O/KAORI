@@ -14,11 +14,13 @@ def cluster():
 
 def test_alertmanager_valid_empty_list_is_a_real_success(monkeypatch, cluster) -> None:
     monkeypatch.setattr(
-        sources, 'get_alertmanager_alerts',
+        sources,
+        'get_alertmanager_alerts',
         lambda **_kwargs: {'connected': True, 'alerts': [], 'error': None},
     )
     monkeypatch.setattr(
-        sources, 'get_alertmanager_status',
+        sources,
+        'get_alertmanager_status',
         lambda **_kwargs: {'configured': True, 'label': 'Connected'},
     )
     alerts, status = sources.load_alertmanager_alerts(cluster=cluster)
@@ -42,7 +44,8 @@ def test_alertmanager_valid_empty_list_is_a_real_success(monkeypatch, cluster) -
 def test_alertmanager_malformed_payload_is_not_observed_zero(monkeypatch, cluster, invalid) -> None:
     monkeypatch.setattr(sources, 'get_alertmanager_alerts', lambda **_kwargs: invalid)
     monkeypatch.setattr(
-        sources, 'get_alertmanager_status',
+        sources,
+        'get_alertmanager_status',
         lambda **_kwargs: {'configured': True, 'label': 'Connected'},
     )
     alerts, status = sources.load_alertmanager_alerts(cluster=cluster)

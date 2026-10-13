@@ -2,6 +2,7 @@
 
 Candidate provenance never authorizes mutation, handoff, retry, or Released.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -11,7 +12,10 @@ from kubernetes.client.rest import ApiException
 
 from app.kubernetes.tenant.allocation_observation import _CAPSULE_TENANT_LABEL_KEYS
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
-    _canonical_value, _digest, _get, _owner_refs, _role_contract_sha256,
+    _canonical_value,
+    _digest,
+    _owner_refs,
+    _role_contract_sha256,
     _strings,
 )
 
@@ -29,8 +33,11 @@ def _bounded_custom_list(custom: Any) -> tuple[str, dict[str, Any]]:
     for version in _VERSIONS:
         try:
             response = custom.list_cluster_custom_object(
-                'capsule.clastix.io', version, 'globalresourcequotas',
-                limit=_MAX_GLOBAL_QUOTAS + 1, _request_timeout=5,
+                'capsule.clastix.io',
+                version,
+                'globalresourcequotas',
+                limit=_MAX_GLOBAL_QUOTAS + 1,
+                _request_timeout=5,
             )
         except ApiException as exc:
             if exc.status == 404:
@@ -44,8 +51,10 @@ def _bounded_custom_list(custom: Any) -> tuple[str, dict[str, Any]]:
         rv = meta.get('resourceVersion')
         items = response.get('items')
         if (
-            not isinstance(rv, str) or not rv
-            or meta.get('continue') or meta.get('remainingItemCount')
+            not isinstance(rv, str)
+            or not rv
+            or meta.get('continue')
+            or meta.get('remainingItemCount')
             or not isinstance(items, list)
             or len(items) > _MAX_GLOBAL_QUOTAS
         ):
@@ -99,10 +108,7 @@ def observe_capsule_global_quotas(*, custom: Any, tenant_name: str) -> dict[str,
         if not isinstance(meta, Mapping) or not isinstance(spec, Mapping):
             raise ValueError('Capsule global quota spec/metadata is incomplete.')
         name, uid, rv = meta.get('name'), meta.get('uid'), meta.get('resourceVersion')
-        if (
-            not all(isinstance(value, str) and value for value in (name, uid, rv))
-            or name in seen
-        ):
+        if not all(isinstance(value, str) and value for value in (name, uid, rv)) or name in seen:
             raise ValueError('Capsule global quota identity is missing or duplicated.')
         seen.add(name)
         labels = _strings(meta.get('labels'), label='global quota labels')
@@ -113,34 +119,46 @@ def observe_capsule_global_quotas(*, custom: Any, tenant_name: str) -> dict[str,
         scope, issues = _quota_selector_scope(spec, tenant_name)
         blockers.extend(issues)
         if scope == 'direct_tenant_selector' and (
-            labels.get(_KAORI_MANAGER) == 'kaori'
-            or any(key.startswith('kaori.io/') for key in labels)
+            labels.get(_KAORI_MANAGER) == 'kaori' or any(key.startswith('kaori.io/') for key in labels)
         ):
             blockers.append(
                 f'Capsule GlobalResourceQuota/{name} retains KAORI labels; independent scope review is required.'
             )
-        resources.append({
-            'kind': 'GlobalResourceQuota', 'name': name, 'uid': uid,
-            'resource_version': rv, 'api_version': version,
-            'scope': scope, 'policy_sha256': sha,
-            'metadata_sha256': _digest({
-                'labels': labels, 'annotations': annotations,
-                'ownerReferences': owners, 'finalizers': meta.get('finalizers') or [],
-            }),
-        })
+        resources.append(
+            {
+                'kind': 'GlobalResourceQuota',
+                'name': name,
+                'uid': uid,
+                'resource_version': rv,
+                'api_version': version,
+                'scope': scope,
+                'policy_sha256': sha,
+                'metadata_sha256': _digest(
+                    {
+                        'labels': labels,
+                        'annotations': annotations,
+                        'ownerReferences': owners,
+                        'finalizers': meta.get('finalizers') or [],
+                    }
+                ),
+            }
+        )
     resources.sort(key=lambda x: x['name'])
     return {
         'status': 'observed_not_handoff_authorized',
         'served_version': version,
         'list_resource_version': payload['metadata']['resourceVersion'],
-        'resources': resources, 'count': len(resources),
+        'resources': resources,
+        'count': len(resources),
         # Collection LIST RV is evidence of complete/current LIST, but it
         # may advance without changing a single relevant GlobalResourceQuota.
         # Bind each object UID/RV and complete policy/metadata SHA instead.
-        'scope_sha256': _digest({
-            'api_version': version,
-            'resources': resources,
-        }),
+        'scope_sha256': _digest(
+            {
+                'api_version': version,
+                'resources': resources,
+            }
+        ),
         'blockers': sorted(set(blockers)),
         'provider_mutation_performed': False,
         'provider_handoff_verified': False,
@@ -174,7 +192,10 @@ def _expected_scopes(selector: Any, namespaces: set[str]) -> set[str]:
 
 
 def _intent_bindings(
-    spec: Mapping[str, Any], namespaces: set[str], *, tenant_id: str,
+    spec: Mapping[str, Any],
+    namespaces: set[str],
+    *,
+    tenant_id: str,
 ) -> tuple[dict[str, str], list[str]]:
     if not isinstance(tenant_id, str) or not tenant_id:
         raise ValueError('Capsule RBAC intent requires the exact KAORI Tenant identity.')
@@ -208,10 +229,7 @@ def _intent_bindings(
             if not isinstance(binding, Mapping):
                 raise ValueError('Capsule RBAC spec binding is malformed.')
             labels = _strings(binding.get('labels'), label='Capsule spec RBAC labels')
-            claims_kaori = (
-                labels.get(_KAORI_MANAGER) == 'kaori'
-                or any(key.startswith('kaori.io/') for key in labels)
-            )
+            claims_kaori = labels.get(_KAORI_MANAGER) == 'kaori' or any(key.startswith('kaori.io/') for key in labels)
             if not claims_kaori:
                 continue  # Pure Capsule/external intent; preserve without transfer.
             if (
@@ -219,20 +237,15 @@ def _intent_bindings(
                 or not isinstance(labels.get(_GRANT_ID), str)
                 or not labels[_GRANT_ID]
                 or labels.get(_TENANT_ID) != tenant_id
-                or any(
-                    key.startswith('kaori.io/')
-                    and key not in (_GRANT_ID, _TENANT_ID)
-                    for key in labels
-                )
+                or any(key.startswith('kaori.io/') and key not in (_GRANT_ID, _TENANT_ID) for key in labels)
             ):
-                blockers.append(
-                    'Capsule RoleBinding intent has foreign, partial or unknown KAORI ownership.'
-                )
+                blockers.append('Capsule RoleBinding intent has foreign, partial or unknown KAORI ownership.')
                 continue
             signature = _role_contract_sha256(
                 role=binding.get('clusterRoleName'),
                 subjects=binding.get('subjects'),
-                grant=labels[_GRANT_ID], tenant=labels[_TENANT_ID],
+                grant=labels[_GRANT_ID],
+                tenant=labels[_TENANT_ID],
             )
             for ns in scope:
                 key = _digest({'namespace': ns, 'grant': labels[_GRANT_ID]})
@@ -245,17 +258,24 @@ def _intent_bindings(
 
 
 def inspect_capsule_role_binding_lineage(
-    *, capsule_spec: Any, related: Mapping[str, Any],
-    namespaces: list[dict[str, Any]], tenant_id: str,
+    *,
+    capsule_spec: Any,
+    related: Mapping[str, Any],
+    namespaces: list[dict[str, Any]],
+    tenant_id: str,
 ) -> dict[str, Any]:
     """Compare intent-vs-effective digest; never infer controller causality.
 
     Even an exact roleRef+subjects match does NOT verify the creating controller.
     """
     if (
-        not isinstance(capsule_spec, Mapping) or not isinstance(related, Mapping)
-        or not isinstance(namespaces, list) or not namespaces or len(namespaces) > 30
-        or not isinstance(tenant_id, str) or not tenant_id
+        not isinstance(capsule_spec, Mapping)
+        or not isinstance(related, Mapping)
+        or not isinstance(namespaces, list)
+        or not namespaces
+        or len(namespaces) > 30
+        or not isinstance(tenant_id, str)
+        or not tenant_id
     ):
         raise ValueError('Capsule RBAC lineage requires exact bounded provider scope.')
     ns_set = {item.get('name') for item in namespaces if isinstance(item, Mapping)}
@@ -277,10 +297,7 @@ def inspect_capsule_role_binding_lineage(
         if item.get('origin') != 'kaori_correlated':
             continue
         ns, combined = item.get('namespace'), item.get('grant_scope_sha256')
-        if (
-            not isinstance(ns, str) or ns not in ns_set
-            or not isinstance(combined, str) or len(combined) != 64
-        ):
+        if not isinstance(ns, str) or ns not in ns_set or not isinstance(combined, str) or len(combined) != 64:
             raise ValueError('Capsule KAORI RoleBinding has an unverifiable grant identity.')
         if combined in observed:
             raise ValueError('Duplicate effective KAORI Capsule RBAC grant.')
@@ -293,10 +310,12 @@ def inspect_capsule_role_binding_lineage(
             blockers.append('Capsule KAORI Access Grant contract differs from effective RoleBinding.')
     return {
         'status': 'contract_correlated_controller_origin_unverified',
-        'intent_count': len(intents), 'effective_kaori_count': len(observed),
+        'intent_count': len(intents),
+        'effective_kaori_count': len(observed),
         'lineage_sha256': _digest({'intents': sorted(intents.items()), 'observed': sorted(observed.items())}),
         'contract_correlated': not blockers,
         'controller_origin_verified': False,
         'blockers': sorted(set(blockers)),
-        'provider_mutation_performed': False, 'release_authorized': False,
+        'provider_mutation_performed': False,
+        'release_authorized': False,
     }

@@ -90,6 +90,7 @@ def test_capsule_tenant_quota_governance_uses_compact_action_footers() -> None:
     assert 'Take Over Allocation Governance' not in source
     assert 'Change Governed Allocation' not in source
 
+
 def test_capsule_quota_cutover_comparisons_preserve_distinct_provider_authorities() -> None:
     from jinja2 import Environment
 
@@ -108,8 +109,7 @@ def test_capsule_quota_cutover_comparisons_preserve_distinct_provider_authoritie
         assert 'ResourceQuota' in template or 'Tenant.spec.resourceQuotas' in template
         assert 'data-tenant-quota-metric-side=' in template
         assert 'data-tenant-quota-metric-key="{{ key }}"' in template
-        for dimension in ('requests.cpu', 'limits.cpu', 'requests.memory',
-                          'limits.memory', 'pods', 'requests.storage'):
+        for dimension in ('requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory', 'pods', 'requests.storage'):
             assert f"'{dimension}'" in template
         assert 'data-tenant-quota-change-summary aria-live="polite"' in template
         assert 'name="csrf_token"' in template
@@ -120,8 +120,8 @@ def test_capsule_quota_cutover_comparisons_preserve_distinct_provider_authoritie
     assert "url_for('tenant.cutover_capsule_shared_allocation_route')" in shared
     assert 'data-tenant-shared-allocation-tenant' in shared
     assert 'data-tenant-shared-allocation-profile' in shared
-    assert "not can_manage or not capsule_shared_cutover_supported or not profiles" in shared
-    assert "capsule_shared_cutover_state.values()" in shared
+    assert 'not can_manage or not capsule_shared_cutover_supported or not profiles' in shared
+    assert 'capsule_shared_cutover_state.values()' in shared
     assert 'Other allocation authorities' in shared
     assert 'Not applicable here' in shared
     assert 'Control Unavailable' in shared
@@ -148,8 +148,8 @@ def test_capsule_quota_cutover_comparisons_preserve_distinct_provider_authoritie
     assert 'No quota differences' in script
     assert 'of 6 quota dimensions differ · Read only' in script
     assert 'state ? state.desired_quota || {} : null' in script
-    assert 'tenantSelect?.addEventListener(\'change\', render)' in script
-    assert 'profileSelect?.addEventListener(\'change\', render)' in script
+    assert "tenantSelect?.addEventListener('change', render)" in script
+    assert "profileSelect?.addEventListener('change', render)" in script
 
 
 def test_capsule_tenant_quota_comparison_panels_have_symmetric_metadata_slots() -> None:
@@ -158,17 +158,13 @@ def test_capsule_tenant_quota_comparison_panels_have_symmetric_metadata_slots() 
     template = (ROOT / 'app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html').read_text(
         encoding='utf-8'
     )
-    script = (ROOT / 'app/static/js/tenant_resource_profile_presets.js').read_text(
-        encoding='utf-8'
-    )
-    native = (ROOT / 'app/templates/kubernetes/tenant/partials/_allocation_cutover.html').read_text(
-        encoding='utf-8'
-    )
+    script = (ROOT / 'app/static/js/tenant_resource_profile_presets.js').read_text(encoding='utf-8')
+    native = (ROOT / 'app/templates/kubernetes/tenant/partials/_allocation_cutover.html').read_text(encoding='utf-8')
     Environment(autoescape=True).parse(template)
 
     # Both Capsule form comparisons use one Current/Proposed anatomy, rather
     # than separate markup with different header counts or quota baselines.
-    assert template.count("{% for side, title, caption in [") == 2
+    assert template.count('{% for side, title, caption in [') == 2
     assert template.count('class="flex min-h-[8rem] flex-col"') == 2
     assert template.count('class="min-h-5 break-words text-sm font-semibold text-content-primary"') == 4
     assert template.count('class="min-h-5 break-words text-xs text-content-muted"') == 4

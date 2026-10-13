@@ -78,8 +78,7 @@ def _work_items(
     pending_inventory = [system.name for system in eligible if system.inventory_observed_at is None]
     if pending_inventory:
         diagnostics.extend(
-            f'{name}: Object Storage Inventory Sync Required before forecasting.'
-            for name in pending_inventory
+            f'{name}: Object Storage Inventory Sync Required before forecasting.' for name in pending_inventory
         )
     eligible = [system for system in eligible if system.inventory_observed_at is not None]
     if requested_system_id:
@@ -123,9 +122,7 @@ def _analytics_work_items(
     stale_grace_minutes = int(configuration.get('stale_grace_minutes') or 1440)
     time_ranges = _configured_time_ranges(policy)
     if requested_time_range:
-        time_ranges = (
-            [requested_time_range] if requested_time_range in ALLOWED_TIME_RANGE_VALUES else []
-        )
+        time_ranges = [requested_time_range] if requested_time_range in ALLOWED_TIME_RANGE_VALUES else []
     items: list[dict[str, Any]] = []
     for system in eligible:
         for time_range in time_ranges:
@@ -372,8 +369,7 @@ def build_object_storage_forecast_materialization_context(policy: JobPolicy) -> 
     pending_inventory = [system.name for system in eligible if system.inventory_observed_at is None]
     if pending_inventory:
         diagnostics.extend(
-            f'{name}: Object Storage Inventory Sync Required before forecasting.'
-            for name in pending_inventory
+            f'{name}: Object Storage Inventory Sync Required before forecasting.' for name in pending_inventory
         )
     eligible = [system for system in eligible if system.inventory_observed_at is not None]
     windows = _configured_windows(policy)

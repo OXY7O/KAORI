@@ -63,7 +63,10 @@ def test_kubernetes_fleet_freshness_uses_committed_coverage_not_scope_hint() -> 
         )
         assert len(rows) == 4
         assert [row.label for row in rows] == [
-            'Inventory Snapshot', 'Metrics Snapshot', 'Alert Snapshot', 'Report Artifacts'
+            'Inventory Snapshot',
+            'Metrics Snapshot',
+            'Alert Snapshot',
+            'Report Artifacts',
         ]
         assert rows[1].status == expected_metrics
         assert rows[2].status == expected_alerts

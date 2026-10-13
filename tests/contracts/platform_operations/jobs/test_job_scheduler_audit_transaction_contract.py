@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[4]
 
 
@@ -19,5 +18,5 @@ def test_post_dispatch_evidence_failure_does_not_enqueue_again() -> None:
     assert "current.last_dispatch_status = 'evidence_failed'" in error_branch
     assert " 'status': 'evidence_failed'" in error_branch
     assert "logger.exception('Could not persist degraded dispatch evidence" in error_branch
-    assert "dispatch_registered_job(" not in error_branch
+    assert 'dispatch_registered_job(' not in error_branch
     assert 'continue' in error_branch

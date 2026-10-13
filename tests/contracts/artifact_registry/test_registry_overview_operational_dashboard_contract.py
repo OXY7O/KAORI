@@ -40,7 +40,7 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     assert 'source_label=overview.kpi_source_label' in kpis
     assert "scope_label='Active Scope'" in kpis
     assert "body_classes='p-0'" not in signal
-    assert "grouped=true" not in signal
+    assert 'grouped=true' not in signal
     assert 'components/operational_signal_overview.html' in signal
     assert 'hx-trigger="load"' in signal
     assert 'hx-push-url="true"' in signal
@@ -234,7 +234,9 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     signals_projection = presentation.split("if section == 'signals':", 1)[1].split("if section == 'reporting':", 1)[0]
     assert 'if selected_provider is None:' in signals_projection
     assert signals_projection.index('return context') < signals_projection.index('_registry_alerts(selected_provider)')
-    assert signals_projection.index('return context') < signals_projection.index('_registry_recommended_actions(selected_provider)')
+    assert signals_projection.index('return context') < signals_projection.index(
+        '_registry_recommended_actions(selected_provider)'
+    )
     assert "'alerts': _registry_alerts(selected_provider)" in presentation
     assert "'recommended_actions': _registry_recommended_actions(selected_provider)" in presentation
     assert "'reporting': _registry_reporting(selected_provider)" in presentation
@@ -549,9 +551,9 @@ def test_artifact_registry_overview_kpi_cards_match_reference_dashboard_family()
     assert "body_classes='p-5'" in shell
     assert '<div class="{{ body_classes }}">{{ signal_content|safe }}</div>' in shell
     assert "body_classes='p-0'" not in signal
-    assert "grouped=true" not in signal
+    assert 'grouped=true' not in signal
     assert 'section_loading.kpis(item_count=4,' in signal
-    assert "macro kpis(" in skeleton and "grouped=false" in skeleton
+    assert 'macro kpis(' in skeleton and 'grouped=false' in skeleton
     assert 'h-28 animate-pulse rounded-lg bg-surface-hover' in skeleton
     assert 'resource_posture_grid.html' not in registry
     assert 'data-kaori-artifact-registry-operational-kpis' in registry
@@ -564,45 +566,42 @@ def test_registry_dashboard_kpi_projection_respects_active_committed_scope_and_e
     signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
     card = read('app/templates/artifact_registry/partials/_overview_kpi_cards.html')
 
-    scope = common.split('def _overview_scope_context(', 1)[1].split(
-        'def _overview_inventory_kpi_evidence(', 1
-    )[0]
+    scope = common.split('def _overview_scope_context(', 1)[1].split('def _overview_inventory_kpi_evidence(', 1)[0]
     assert 'scoped_provider_ids = [int(provider.id) for provider in scoped_providers]' in scope
     assert 'RegistryCollectionState.integration_instance_id.in_(scoped_provider_ids)' in scope
 
-    evidence = common.split('def _overview_inventory_kpi_evidence(', 1)[1].split(
-        'def _overview_kpi_values(', 1
-    )[0]
-    for token in ('eligible_ids', 'last_committed_at is not None', 'Not Collected', 'Partial Inventory (',
-                  'Committed Inventory'):
+    evidence = common.split('def _overview_inventory_kpi_evidence(', 1)[1].split('def _overview_kpi_values(', 1)[0]
+    for token in (
+        'eligible_ids',
+        'last_committed_at is not None',
+        'Not Collected',
+        'Partial Inventory (',
+        'Committed Inventory',
+    ):
         assert token in evidence
-    counter = common.split('def _overview_kpi_values(', 1)[1].split(
-        'def _latest_registry_analytics(', 1
-    )[0]
+    counter = common.split('def _overview_kpi_values(', 1)[1].split('def _latest_registry_analytics(', 1)[0]
     assert counter.count('RegistryProject.integration_instance_id.in_(committed_provider_ids)') == 4
     assert 'if not committed_provider_ids:' in counter
 
-    section = projection.split("if section == 'kpi_cards':", 1)[1].split(
-        "if section == 'provider_health':", 1
-    )[0]
+    section = projection.split("if section == 'kpi_cards':", 1)[1].split("if section == 'provider_health':", 1)[0]
     assert '_overview_inventory_kpi_evidence(scoped_providers, states)' in section
     assert "'kpi_source_label': source_label" in section
     assert section.count("if committed_count else 'Not Collected'") == 4
     assert 'source_label=overview.kpi_source_label' in card
 
-    ops = projection.split('def _overview_operations_projection(', 1)[1].split(
-        'def _overview_capacity_projection(', 1
-    )[0]
+    ops = projection.split('def _overview_operations_projection(', 1)[1].split('def _overview_capacity_projection(', 1)[
+        0
+    ]
     assert '_overview_inventory_kpi_evidence(scoped_providers, states)' in ops
     assert '_overview_inventory_evidence(committed_provider_ids)' in ops
     assert '_fleet_successfully_scanned_artifacts(committed_provider_ids)' in ops
     assert 'registry_metrics_ready_provider_ids(scoped_providers)' in ops
     assert 'scanned_count = sum(' not in ops
-    inventory = projection.split('def _overview_inventory_evidence(', 1)[1].split(
-        'def _overview_inventory_items(', 1
-    )[0]
+    inventory = projection.split('def _overview_inventory_evidence(', 1)[1].split('def _overview_inventory_items(', 1)[
+        0
+    ]
     assert inventory.count('RegistryProject.integration_instance_id.in_(committed_provider_ids)') == 3
-    assert "scope_status = overview.posture.label if overview.selected_provider" in signal
+    assert 'scope_status = overview.posture.label if overview.selected_provider' in signal
     assert "'Select a Registry Provider for Detailed Signals'" in signal
     assert "scope_tone = overview.posture.tone if overview.selected_provider else 'warning'" in signal
     assert '    scope_status,' in signal
@@ -616,11 +615,9 @@ def test_registry_operations_inventory_snapshot_500_regression_and_relative_upda
     object_signal = read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html')
     kubernetes_signal = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
 
-    inventory = registry.split('def _overview_inventory_items(', 1)[1].split(
-        'def _security_freshness_status(', 1
-    )[0]
+    inventory = registry.split('def _overview_inventory_items(', 1)[1].split('def _security_freshness_status(', 1)[0]
     assert 'has_committed_inventory: bool' in inventory
-    assert "if not has_committed_inventory:" in inventory
+    assert 'if not has_committed_inventory:' in inventory
     assert "item['value'] = 'Not Collected'" in inventory
     assert 'committed_count' not in inventory
 
@@ -630,7 +627,7 @@ def test_registry_operations_inventory_snapshot_500_regression_and_relative_upda
     assert 'has_committed_inventory=bool(committed_provider_ids)' in operations
 
     assert "'last_updated': _human_time(latest)" in common
-    assert "overview.last_updated" in signal
+    assert 'overview.last_updated' in signal
     assert 'overview.latest_committed_at|user_datetime' not in signal
     assert "'Updated ' ~ overview.last_updated" in signal
     assert "'Updated ' ~ dashboard.last_updated" in object_signal

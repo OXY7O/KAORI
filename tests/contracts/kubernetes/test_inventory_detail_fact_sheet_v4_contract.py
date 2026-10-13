@@ -95,7 +95,7 @@ def test_structured_metadata_json_is_pretty_printed_without_changing_data() -> N
     assert formatted.startswith('{\n  "apiVersion":')
     assert '\n    "name": "minio"' in formatted
     assert json.loads(formatted) == json.loads(value)
-    assert "café" in formatted
+    assert 'café' in formatted
     assert pretty_structured_json('[{"name":"pod"}]') == '[\n  {\n    "name": "pod"\n  }\n]'
 
     for plain_value in (None, 12, False, '', 'Plain annotation', '42', 'true', '"text"', '{broken', '[broken'):
@@ -117,11 +117,17 @@ def test_inventory_metadata_json_markup_is_indented_escaped_and_responsive() -> 
     value = '{"apiVersion":"networking.k8s.io/v1","spec":{"host":"<script>alert(1)</script>"}}'
 
     for embedded in (False, True):
-        markup = str(render('Ingress Annotations', {
-            'kubectl.kubernetes.io/last-applied-configuration': value,
-            'plain': 'unmodified value',
-            'invalid': '{broken',
-        }, embedded=embedded))
+        markup = str(
+            render(
+                'Ingress Annotations',
+                {
+                    'kubectl.kubernetes.io/last-applied-configuration': value,
+                    'plain': 'unmodified value',
+                    'invalid': '{broken',
+                },
+                embedded=embedded,
+            )
+        )
         assert markup.count('data-kaori-inventory-json-value') == 1
         assert '<script>' not in markup
         assert '&lt;script&gt;' in markup

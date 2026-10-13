@@ -6,20 +6,30 @@ from app.kubernetes.tenant.external_access_observation import normalize_capsule_
 
 
 def test_capsule_owners_and_foreign_bindings_stay_observed_not_auto_adopted() -> None:
-    result = normalize_capsule_access_spec({
-        'owners': [{'kind': 'User', 'name': 'external-admin'}],
-        'additionalRoleBindings': [{
-            'clusterRoleName': 'view',
-            'subjects': [{'kind': 'Group', 'name': 'engineering'}],
-        }],
-        'rules': [{
-            'namespaceSelector': {'matchLabels': {'env': 'production'}},
-            'permissions': {'bindings': [{
-                'clusterRoleName': 'edit',
-                'subjects': [{'kind': 'User', 'name': 'external-dev'}],
-            }]},
-        }],
-    })
+    result = normalize_capsule_access_spec(
+        {
+            'owners': [{'kind': 'User', 'name': 'external-admin'}],
+            'additionalRoleBindings': [
+                {
+                    'clusterRoleName': 'view',
+                    'subjects': [{'kind': 'Group', 'name': 'engineering'}],
+                }
+            ],
+            'rules': [
+                {
+                    'namespaceSelector': {'matchLabels': {'env': 'production'}},
+                    'permissions': {
+                        'bindings': [
+                            {
+                                'clusterRoleName': 'edit',
+                                'subjects': [{'kind': 'User', 'name': 'external-dev'}],
+                            }
+                        ]
+                    },
+                }
+            ],
+        }
+    )
     assert result['owner_count'] == 1
     assert result['external_count'] == 2
     assert result['kaori_count'] == 0
@@ -29,23 +39,25 @@ def test_capsule_owners_and_foreign_bindings_stay_observed_not_auto_adopted() ->
 
 
 def test_kaori_grant_marker_requires_both_manager_and_grant_id() -> None:
-    result = normalize_capsule_access_spec({
-        'additionalRoleBindings': [
-            {
-                'clusterRoleName': 'kaori-tenant-viewer-v1',
-                'labels': {
-                    'app.kubernetes.io/managed-by': 'kaori',
-                    'kaori.io/access-grant': 'grant-123',
+    result = normalize_capsule_access_spec(
+        {
+            'additionalRoleBindings': [
+                {
+                    'clusterRoleName': 'kaori-tenant-viewer-v1',
+                    'labels': {
+                        'app.kubernetes.io/managed-by': 'kaori',
+                        'kaori.io/access-grant': 'grant-123',
+                    },
+                    'subjects': [{'kind': 'User', 'name': 'super'}],
                 },
-                'subjects': [{'kind': 'User', 'name': 'super'}],
-            },
-            {
-                'clusterRoleName': 'kaori-tenant-viewer-v1',
-                'labels': {'app.kubernetes.io/managed-by': 'kaori'},
-                'subjects': [{'kind': 'User', 'name': 'not-imported'}],
-            },
-        ],
-    })
+                {
+                    'clusterRoleName': 'kaori-tenant-viewer-v1',
+                    'labels': {'app.kubernetes.io/managed-by': 'kaori'},
+                    'subjects': [{'kind': 'User', 'name': 'not-imported'}],
+                },
+            ],
+        }
+    )
     assert result['kaori_count'] == 1
     assert result['external_count'] == 1
     assert result['bindings'][0]['kaori_grant_id'] == 'grant-123'

@@ -3,6 +3,7 @@
 The Capsule Tenant CR is cluster-scoped; a Native Namespace SAR is not proof
 of Capsule authority. Kubernetes remains authoritative for access decisions.
 """
+
 from __future__ import annotations
 
 import re
@@ -36,10 +37,14 @@ def _capsule_admin_scope(components: list[dict[str, Any]]) -> list[dict[str, str
             raise ValueError('Capsule handoff provider scope is malformed.')
         kind, name = item.get('kind'), item.get('name')
         if (
-            not isinstance(kind, str) or kind not in {'CapsuleTenant', 'Namespace'}
-            or not isinstance(name, str) or not name.strip()
-            or not isinstance(item.get('uid'), str) or not item['uid']
-            or not isinstance(item.get('resource_version'), str) or not item['resource_version']
+            not isinstance(kind, str)
+            or kind not in {'CapsuleTenant', 'Namespace'}
+            or not isinstance(name, str)
+            or not name.strip()
+            or not isinstance(item.get('uid'), str)
+            or not item['uid']
+            or not isinstance(item.get('resource_version'), str)
+            or not item['resource_version']
             or item.get('authority') != 'capsule'
             or item.get('handoff') not in {'external_acceptance_required', 'observe_only'}
             or (kind, name) in seen
@@ -58,19 +63,23 @@ def _capsule_admin_scope(components: list[dict[str, Any]]) -> list[dict[str, str
             namespace_count += 1
             if item.get('namespace') != name:
                 raise ValueError('Capsule Namespace handoff scope is inconsistent.')
-        scope.append({
-            'kind': kind,
-            'name': name,
-            'uid': item['uid'],
-            'resource_version': item['resource_version'],
-        })
+        scope.append(
+            {
+                'kind': kind,
+                'name': name,
+                'uid': item['uid'],
+                'resource_version': item['resource_version'],
+            }
+        )
     if capsule_count != 1 or namespace_count == 0:
         raise ValueError('Capsule handoff must include one Tenant CR and its governed Namespaces.')
     return scope
 
 
 def verify_capsule_provider_admin_authority(
-    *, cluster: Any, components: list[dict[str, Any]],
+    *,
+    cluster: Any,
+    components: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Read-only SelfSubjectReview and exact-name get/patch SARs, no API mutation."""
     connection = _field(cluster, 'kubernetes_connection')
@@ -80,7 +89,8 @@ def verify_capsule_provider_admin_authority(
     provider = runtime_adapter.build_client(cluster)
     try:
         identity = provider.authentication_api().create_self_subject_review(
-            body=V1SelfSubjectReview(), _request_timeout=5,
+            body=V1SelfSubjectReview(),
+            _request_timeout=5,
         )
     except (ApiException, AttributeError):
         raise ValueError('Kubernetes SelfSubjectReview could not verify Capsule provider identity.') from None
@@ -91,14 +101,16 @@ def verify_capsule_provider_admin_authority(
     identifiers = _field(extra, 'authentication.kubernetes.io/credential-id', [])
     credential_id = (
         identifiers[0]
-        if isinstance(identifiers, (list, tuple)) and len(identifiers) == 1
+        if isinstance(identifiers, (list, tuple))
+        and len(identifiers) == 1
         and isinstance(identifiers[0], str)
         and identifiers[0].startswith('X509SHA256=')
         and len(identifiers[0]) > len('X509SHA256=')
         else ''
     )
     if (
-        not isinstance(username, str) or not username
+        not isinstance(username, str)
+        or not username
         or username.startswith(('system:serviceaccount:', 'system:node:'))
         or not isinstance(groups, (list, tuple))
         or not all(isinstance(group, str) and group for group in groups)
@@ -115,12 +127,11 @@ def verify_capsule_provider_admin_authority(
                 verb=verb,
                 namespace=None,
             )
-            review = V1SelfSubjectAccessReview(
-                spec=V1SelfSubjectAccessReviewSpec(resource_attributes=attributes)
-            )
+            review = V1SelfSubjectAccessReview(spec=V1SelfSubjectAccessReviewSpec(resource_attributes=attributes))
             try:
                 result = provider.authorization_api().create_self_subject_access_review(
-                    body=review, _request_timeout=5,
+                    body=review,
+                    _request_timeout=5,
                 )
             except (ApiException, AttributeError):
                 raise ValueError('Kubernetes SelfSubjectAccessReview failed for Capsule scope.') from None
@@ -130,9 +141,7 @@ def verify_capsule_provider_admin_authority(
                 or _field(status, 'denied') is True
                 or _field(status, 'evaluation_error')
             ):
-                raise ValueError(
-                    f"Provider lacks {verb} authority for {item['kind']}/{item['name']}."
-                )
+                raise ValueError(f'Provider lacks {verb} authority for {item["kind"]}/{item["name"]}.')
     return {
         'verification_source': 'kubernetes_self_subject_review',
         'authorization_source': 'kubernetes_self_subject_access_review',
@@ -149,7 +158,9 @@ def verify_capsule_provider_admin_authority(
 
 
 def verify_capsule_related_admin_authority(
-    *, provider: Any, candidates: list[dict[str, Any]],
+    *,
+    provider: Any,
+    candidates: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Check current exact-resource GET/PATCH SARs for dry-run candidates only.
 
@@ -163,12 +174,14 @@ def verify_capsule_related_admin_authority(
         'RoleBinding': ('rbac.authorization.k8s.io', 'rolebindings'),
     }
     if (
-        not isinstance(candidates, list) or len(candidates) > 300
+        not isinstance(candidates, list)
+        or len(candidates) > 300
         or any(
             not isinstance(item, Mapping)
             or item.get('kind') not in resource
-            or not all(isinstance(item.get(key), str) and item[key]
-                       for key in ('namespace', 'name', 'uid', 'resource_version'))
+            or not all(
+                isinstance(item.get(key), str) and item[key] for key in ('namespace', 'name', 'uid', 'resource_version')
+            )
             or item.get('decision') != 'explicit_kaori_metadata_handoff_review'
             for item in candidates
         )
@@ -183,14 +196,18 @@ def verify_capsule_related_admin_authority(
             review = V1SelfSubjectAccessReview(
                 spec=V1SelfSubjectAccessReviewSpec(
                     resource_attributes=V1ResourceAttributes(
-                        group=group, resource=plural, namespace=item['namespace'],
-                        name=item['name'], verb=verb,
+                        group=group,
+                        resource=plural,
+                        namespace=item['namespace'],
+                        name=item['name'],
+                        verb=verb,
                     ),
                 ),
             )
             try:
                 response = provider.authorization_api().create_self_subject_access_review(
-                    body=review, _request_timeout=5,
+                    body=review,
+                    _request_timeout=5,
                 )
             except (ApiException, AttributeError) as exc:
                 raise ValueError('Capsule related-resource provider SAR was unavailable.') from exc
@@ -201,7 +218,7 @@ def verify_capsule_related_admin_authority(
                 or _field(result, 'evaluation_error')
             ):
                 raise ValueError(
-                    f"Capsule provider denied {verb} for {item['kind']}/{item['namespace']}/{item['name']}."
+                    f'Capsule provider denied {verb} for {item["kind"]}/{item["namespace"]}/{item["name"]}.'
                 )
     return {
         'checked_count': len(candidates),

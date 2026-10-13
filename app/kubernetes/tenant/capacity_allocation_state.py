@@ -6,7 +6,7 @@ from decimal import Decimal
 from sqlalchemy.orm import joinedload
 
 from app.extensions.db import db
-from app.kubernetes.tenant.capacity import CapacityVector, quota_limit_vector, quota_request_vector
+from app.kubernetes.tenant.capacity import CapacityVector, quota_request_vector
 from app.models.tenant import (
     Tenant,
     TenantEnvironment,
@@ -38,9 +38,7 @@ def _active_namespace_allocation_query():
     Only verified terminal lifecycle transitions reclaim the logical budget.
     """
     return (
-        TenantNamespace.query.join(
-            TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id
-        )
+        TenantNamespace.query.join(TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
         .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
         .filter(
             TenantNamespace.provisioning_status.notin_(_TERMINAL_NAMESPACE_ALLOCATION_STATUSES),
@@ -163,7 +161,6 @@ def _aggregate_committed_allocation(
     ), unbounded
 
 
-
 def _other_committed_for_namespace_replacement(
     rows: list[TenantNamespace],
     *,
@@ -192,9 +189,7 @@ def _other_committed_for_namespace_replacement(
 
     tenant_id = str(target.environment.tenant_id)
     if tenant_id in shared_quota_by_tenant or tenant_id in ambiguous_shared_tenants:
-        raise ValueError(
-            'Atomic Native Namespace replacement is unavailable for shared or ambiguous Tenant authority.'
-        )
+        raise ValueError('Atomic Native Namespace replacement is unavailable for shared or ambiguous Tenant authority.')
 
     other_rows = [row for row in rows if row.id != target.id]
     committed, unbounded = _aggregate_committed_allocation(

@@ -4,7 +4,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/numbered_governance_steps.html" as numbered_steps %}
 {% set grant_flow = [('users-round', 'Membership', 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.'), ('shield-check', 'Profile', 'Choose a versioned least-privilege access contract.'), ('scope', 'Scope', 'Target Tenant, environment, or namespace explicitly.')] %}
-{% set grant_footer_classes = 'grid min-h-[4.5rem] grid-cols-1 items-center gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-3 sm:grid-cols-[minmax(0,1fr)_auto]' %}
+{% set grant_footer_classes = "grid min-h-[4.5rem] grid-cols-1 items-center gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-hover px-5 py-3 sm:grid-cols-[minmax(0,1fr)_auto]" %}
 <div class="space-y-5">
     <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch">
         <form id="access-grant-form"
@@ -221,9 +221,7 @@
                                 </span>
                                 <div class="min-w-0">
                                     <p class="text-xs font-semibold text-content-primary">Capsule RBAC Prerequisites</p>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">
-                                        Prepare the four approved ClusterRole manifests for kubectl.
-                                    </p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Prepare the four approved ClusterRole manifests for kubectl.</p>
                                 </div>
                             </div>
                             <button type="button"

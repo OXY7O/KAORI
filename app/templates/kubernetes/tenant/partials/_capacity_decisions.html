@@ -85,7 +85,8 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[27%]">Contract</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Admission</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Recorded</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -135,13 +136,13 @@
                             <p class="truncate text-sm font-semibold text-content-primary"
                                title="{{ profile_name }}">{{ profile_display }}</p>
                             <p class="mt-1 truncate text-xs text-content-muted">
-                                {% if adopted_profile %}Adopted · {% endif %}
+                                {% if adopted_profile %}Adopted ·{% endif %}
                                 {% if row.profile %}
-                                    {{ row.profile.profile_class|replace('_', ' ')|title }} · v{{ decision.resource_profile_version or row.profile.version }}
+                                    {{ row.profile.profile_class|replace('_', ' ') |title }} · v{{ decision.resource_profile_version or row.profile.version }}
                                 {% else %}
                                     Observed / Legacy
                                 {% endif %}
-                                · {{ decision.operation|replace('_', ' ')|title }}
+                                · {{ decision.operation|replace('_', ' ') |title }}
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
@@ -213,7 +214,7 @@
                                                     {{ table_label.status_label(decision.capacity_state, state_tone) }}
                                                 </div>
                                                 <p class="mt-3 text-xs font-semibold text-content-secondary">Decision Reason</p>
-                                                <p class="mt-1 whitespace-pre-line break-words text-sm leading-6 text-content-primary">{{ evidence.get('reason') or 'No committed explanation recorded.' }}</p>
+                                                <p class="mt-1 whitespace-pre-line break-words text-sm leading-6 text-content-primary">{{ evidence.get("reason") or 'No committed explanation recorded.' }}</p>
                                                 {% if decision.decision == 'block' %}
                                                     <p class="mt-2 text-xs leading-5 text-content-muted">
                                                         Blocked preflight does not authorize provider allocation mutation.
@@ -229,10 +230,12 @@
                                                        operation/scope follow below, never beside it. #}
                                                     <div class="col-span-2 min-w-0">
                                                         <dt class="text-xs text-content-muted">Resource Profile</dt>
-                                                        <dd class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary">{{ profile_name }}</dd>
+                                                        <dd class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary">
+                                                            {{ profile_name }}
+                                                        </dd>
                                                         <dd class="mt-1 text-xs text-content-muted">
                                                             {% if row.profile %}
-                                                                {{ row.profile.profile_class|replace('_', ' ')|title }} · v{{ decision.resource_profile_version or row.profile.version }}
+                                                                {{ row.profile.profile_class|replace('_', ' ') |title }} · v{{ decision.resource_profile_version or row.profile.version }}
                                                             {% else %}
                                                                 Observed / Legacy
                                                             {% endif %}
@@ -240,12 +243,14 @@
                                                     </div>
                                                     <div class="min-w-0">
                                                         <dt class="text-xs text-content-muted">Operation</dt>
-                                                        <dd class="mt-1 text-sm font-semibold text-content-primary">{{ decision.operation|replace('_', ' ')|title }}</dd>
+                                                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                                            {{ decision.operation|replace('_', ' ') |title }}
+                                                        </dd>
                                                     </div>
                                                     <div class="min-w-0">
                                                         <dt class="text-xs text-content-muted">Allocation Scope</dt>
                                                         <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
-                                                            {{ (evidence.get('allocation_scope') or 'Not recorded')|replace('_', ' ')|title }}
+                                                            {{ (evidence.get("allocation_scope") or 'Not recorded')|replace('_', ' ')|title }}
                                                         </dd>
                                                     </div>
                                                 </dl>
@@ -257,22 +262,26 @@
                                                 <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
                                                     <div class="min-w-0">
                                                         <dt class="text-xs text-content-muted">Recorded</dt>
-                                                        <dd class="mt-1 break-words text-xs font-medium tabular-nums text-content-primary">{{ row.created_at_label }}</dd>
+                                                        <dd class="mt-1 break-words text-xs font-medium tabular-nums text-content-primary">
+                                                            {{ row.created_at_label }}
+                                                        </dd>
                                                     </div>
                                                     <div class="min-w-0">
                                                         <dt class="text-xs text-content-muted">Data Cutoff</dt>
-                                                        <dd class="mt-1 break-words text-xs font-medium tabular-nums text-content-primary">{{ row.data_cutoff_label }}</dd>
+                                                        <dd class="mt-1 break-words text-xs font-medium tabular-nums text-content-primary">
+                                                            {{ row.data_cutoff_label }}
+                                                        </dd>
                                                     </div>
                                                     <div class="min-w-0">
                                                         <dt class="text-xs text-content-muted">Capacity Source</dt>
                                                         <dd class="mt-1 break-words text-xs font-medium text-content-primary">
-                                                            {{ capacity_source.get('dataset_key') or 'Not recorded' }}
+                                                            {{ capacity_source.get("dataset_key") or 'Not recorded' }}
                                                         </dd>
                                                     </div>
                                                     <div class="min-w-0">
                                                         <dt class="text-xs text-content-muted">Snapshot State</dt>
                                                         <dd class="mt-1 text-xs font-medium text-content-primary">
-                                                            {{ (capacity_source.get('snapshot_state') or 'Not recorded')|replace('_', ' ')|title }}
+                                                            {{ (capacity_source.get("snapshot_state") or 'Not recorded')|replace('_', ' ')|title }}
                                                         </dd>
                                                     </div>
                                                 </dl>
@@ -290,11 +299,15 @@
                                                 <dl class="grid gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3 text-xs sm:grid-cols-2 sm:px-5">
                                                     <div class="min-w-0">
                                                         <dt class="text-content-muted">Correlation ID</dt>
-                                                        <dd class="mt-1 break-all font-mono text-content-primary">{{ decision.correlation_id }}</dd>
+                                                        <dd class="mt-1 break-all font-mono text-content-primary">
+                                                            {{ decision.correlation_id }}
+                                                        </dd>
                                                     </div>
                                                     <div class="min-w-0">
                                                         <dt class="text-content-muted">Capacity Snapshot ID</dt>
-                                                        <dd class="mt-1 break-all font-mono text-content-primary">{{ capacity_source.get('snapshot_id') if capacity_source.get('snapshot_id') is not none else 'Not recorded' }}</dd>
+                                                        <dd class="mt-1 break-all font-mono text-content-primary">
+                                                            {{ capacity_source.get("snapshot_id") if capacity_source.get('snapshot_id') is not none else 'Not recorded' }}
+                                                        </dd>
                                                     </div>
                                                 </dl>
                                             </details>

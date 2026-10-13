@@ -8,7 +8,8 @@ from app.intelligence.recommendation_alerting import matches_alert_handling
 
 def _finding(*, domain: str, severity: str, handling: str = 'not_eligible') -> dict:
     return {
-        'domain': domain, 'severity': severity,
+        'domain': domain,
+        'severity': severity,
         'alert_handling': {'status': handling, 'eligible': handling == 'eligible'},
     }
 

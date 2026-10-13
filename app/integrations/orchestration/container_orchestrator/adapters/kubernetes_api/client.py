@@ -3,8 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import configure_weak_tls
-
 from kubernetes import client, config
 from kubernetes.client import (
     AppsV1Api,
@@ -17,6 +15,8 @@ from kubernetes.client import (
     StorageV1Api,
     VersionApi,
 )
+
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import configure_weak_tls
 
 
 class KubernetesClient:

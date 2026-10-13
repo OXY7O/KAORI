@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-
-from sqlalchemy import select
 from pathlib import Path
 
 from flask import current_app
+from sqlalchemy import select
 
 from app.extensions.db import db
 from app.models.report import Report
@@ -58,14 +57,14 @@ def generate_report_artifact(
         # A pending archive may have committed while the worker checked storage.
         # Lock and refresh before moving into Generating; never resurrect Archived.
         report = db.session.scalar(
-            select(Report)
-            .where(Report.id == report_id)
-            .with_for_update()
-            .execution_options(populate_existing=True)
+            select(Report).where(Report.id == report_id).with_for_update().execution_options(populate_existing=True)
         )
         if report is None or report.status == 'archived':
             db.session.rollback()
-            return False, 'Archived or missing report cannot be generated. The retained lifecycle state was not changed.'
+            return (
+                False,
+                'Archived or missing report cannot be generated. The retained lifecycle state was not changed.',
+            )
         validate_report_instance(report)
         artifact_format = get_report_artifact_format(report.output_format)
         report.status = 'generating'
@@ -117,10 +116,7 @@ def generate_report_artifact(
         db.session.rollback()
 
         failed_report = db.session.scalar(
-            select(Report)
-            .where(Report.id == report_id)
-            .with_for_update()
-            .execution_options(populate_existing=True)
+            select(Report).where(Report.id == report_id).with_for_update().execution_options(populate_existing=True)
         )
         failure_detail = (
             str(exc)

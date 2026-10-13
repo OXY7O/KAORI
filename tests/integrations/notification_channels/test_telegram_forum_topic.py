@@ -11,8 +11,7 @@ from app.integrations.delivery.notification_channels.contracts import (
     NotificationChannelFormInput,
     NotificationMessage,
 )
-from app.integrations.delivery.notification_channels.providers import _send_telegram
-from app.integrations.delivery.notification_channels.providers import telegram
+from app.integrations.delivery.notification_channels.providers import _send_telegram, telegram
 
 
 def _input(topic_id: object | None) -> NotificationChannelFormInput:
@@ -46,11 +45,16 @@ def test_invalid_telegram_topic_id_is_rejected(raw: str) -> None:
 
 @pytest.mark.parametrize('raw,expected', [('123', 123), (' 0042 ', 42), ('2147483647', 2147483647)])
 def test_valid_topic_is_normalized_and_exposed_for_edit(raw: str, expected: int) -> None:
-    parsed = telegram.parse_form(MultiDict({
-        'target_chat_id': '-1001234567890',
-        'telegram_topic_id': raw,
-        'bot_token': 'dummy',
-    }), None)
+    parsed = telegram.parse_form(
+        MultiDict(
+            {
+                'target_chat_id': '-1001234567890',
+                'telegram_topic_id': raw,
+                'bot_token': 'dummy',
+            }
+        ),
+        None,
+    )
     assert parsed[2] == {'message_thread_id': expected}
     assert telegram.validate_form(_input(expected)) == []
     channel = SimpleNamespace(destination='-1001234567890', provider_config=parsed[2])
@@ -58,9 +62,16 @@ def test_valid_topic_is_normalized_and_exposed_for_edit(raw: str, expected: int)
 
 
 def test_blank_topic_preserves_legacy_chat_only_delivery() -> None:
-    parsed = telegram.parse_form(MultiDict({
-        'target_chat_id': '-1001234567890', 'telegram_topic_id': '', 'bot_token': 'dummy',
-    }), None)
+    parsed = telegram.parse_form(
+        MultiDict(
+            {
+                'target_chat_id': '-1001234567890',
+                'telegram_topic_id': '',
+                'bot_token': 'dummy',
+            }
+        ),
+        None,
+    )
     assert parsed[2] == {}
     assert telegram.validate_form(_input(None)) == []
 
@@ -78,7 +89,8 @@ class _Response:
 
 @pytest.mark.parametrize('topic_id', [None, 123])
 def test_adapter_posts_thread_only_when_configured(
-    monkeypatch: pytest.MonkeyPatch, topic_id: int | None,
+    monkeypatch: pytest.MonkeyPatch,
+    topic_id: int | None,
 ) -> None:
     captured: list[dict[str, list[str]]] = []
 
@@ -154,8 +166,11 @@ def test_invalid_stored_topic_fails_closed_without_sending(
 
     monkeypatch.setattr(telegram, 'urlopen', forbid_transport)
     result = _send_telegram(
-        {'bot_token': 'dummy-token'}, '-1001234567890',
-        {'message_thread_id': 'invalid'}, _message(), 10,
+        {'bot_token': 'dummy-token'},
+        '-1001234567890',
+        {'message_thread_id': 'invalid'},
+        _message(),
+        10,
     )
     assert not result.success
     assert 'invalid' in result.message
@@ -163,21 +178,36 @@ def test_invalid_stored_topic_fails_closed_without_sending(
 
 @pytest.mark.parametrize('next_topic', [234, None])
 def test_changing_or_clearing_topic_invalidates_previous_test(
-    monkeypatch: pytest.MonkeyPatch, next_topic: int | None,
+    monkeypatch: pytest.MonkeyPatch,
+    next_topic: int | None,
 ) -> None:
     channel = SimpleNamespace(
-        name='KAORI Alert', provider_key='telegram', enabled=True,
-        credential_payload='{"bot_token":"dummy-token"}', destination='-1001234567890',
-        provider_config={'message_thread_id': 123}, minimum_severity='warning',
-        domains=['kubernetes'], event_types=['alert_ops.firing'], test_status='success',
-        test_message='Validated', last_tested_at=object(),
-        last_delivery_status='success', last_delivery_message='Sent',
-        last_delivery_attempt_at=object(), last_delivery_at=object(), updated_by_user_id=None,
+        name='KAORI Alert',
+        provider_key='telegram',
+        enabled=True,
+        credential_payload='{"bot_token":"dummy-token"}',
+        destination='-1001234567890',
+        provider_config={'message_thread_id': 123},
+        minimum_severity='warning',
+        domains=['kubernetes'],
+        event_types=['alert_ops.firing'],
+        test_status='success',
+        test_message='Validated',
+        last_tested_at=object(),
+        last_delivery_status='success',
+        last_delivery_message='Sent',
+        last_delivery_attempt_at=object(),
+        last_delivery_at=object(),
+        updated_by_user_id=None,
     )
     commits: list[bool] = []
-    monkeypatch.setattr(service, 'db', SimpleNamespace(
-        session=SimpleNamespace(commit=lambda: commits.append(True)),
-    ))
+    monkeypatch.setattr(
+        service,
+        'db',
+        SimpleNamespace(
+            session=SimpleNamespace(commit=lambda: commits.append(True)),
+        ),
+    )
     service.update_channel(channel, _input(next_topic), user_id=9)
     assert channel.provider_config == ({'message_thread_id': next_topic} if next_topic is not None else {})
     assert channel.test_status == 'not_tested'

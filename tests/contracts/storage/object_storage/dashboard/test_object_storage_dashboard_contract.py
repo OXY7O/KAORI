@@ -226,7 +226,7 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
     assert 'Utilization unavailable' in capacity
     assert 'Capacity Decision Notes' not in capacity
     assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in capacity
-    assert "dashboard.capacity.utilization if dashboard.capacity.utilization is number else none" in capacity
+    assert 'dashboard.capacity.utilization if dashboard.capacity.utilization is number else none' in capacity
     assert "'Used Capacity'" in capacity
     assert "'Free Capacity'" in capacity
     assert "'Usable Capacity'" in capacity
@@ -265,7 +265,10 @@ def test_capacity_dashboard_matches_kubernetes_forecast_and_top_consumer_pattern
         assert token in consumers
     assert 'consumer_panel' in kubernetes_consumers
     assert 'build_forecast_view(payload, state)' in service
-    assert 'Current committed bucket forecasts show no capacity pressure within the 90-day attention window. Continue monitoring growth and utilization.' in presentation
+    assert (
+        'Current committed bucket forecasts show no capacity pressure within the 90-day attention window. Continue monitoring growth and utilization.'
+        in presentation
+    )
     assert "'chart_items': [chart_item] if chart_item else []" in presentation
     assert "'usage': usage_items" in presentation
     assert "'requests': request_items" in presentation
@@ -302,7 +305,7 @@ def test_object_storage_forecast_uses_kubernetes_current_to_projected_comparison
     assert "'projected_percent_display': format_percent(projected_percent)" in presentation
     assert "'current_display': format_bytes(current)" in presentation
     assert "'projected_30d_display': format_bytes(projected)" in presentation
-    assert "if not dashboard.forecast.available" in forecast
+    assert 'if not dashboard.forecast.available' in forecast
     assert 'Forecast Conclusion' in forecast
 
 
@@ -394,6 +397,7 @@ def test_object_storage_dashboard_uses_fast_shell_without_rebuilding_overview_pe
 
     reporting_branch = section.split("elif section == 'reporting':", 1)[1]
     assert '_freshness(selected, systems)' not in reporting_branch
+
 
 def test_fleet_freshness_renders_four_distinct_committed_evidence_types(monkeypatch) -> None:
     from datetime import UTC, datetime
@@ -488,7 +492,7 @@ def test_object_storage_fleet_and_single_system_share_four_tile_renderer() -> No
     assert '_snapshot_payload(system)' in fleet_branch
     assert '_alert_view(payload)' in fleet_branch
     assert "'Fallback' if alert_fallback else 'Available'" in fleet_branch
-    assert "for item in dashboard.freshness" in overview
+    assert 'for item in dashboard.freshness' in overview
     assert 'evidence_tile.freshness(' in overview
     assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in overview
     assert '{% macro freshness(' in tile
@@ -649,15 +653,11 @@ def test_object_storage_fleet_inventory_freshness_qualifies_partial_and_missing(
         patch.object(service, 'forecast_snapshot_state', return_value={'usable': False}),
     ):
         partial = service._freshness(None, [one, missing])[0]
-        assert (partial['status'], partial['tone'], partial['value']) == (
-            'Partial', 'warning', '1 / 2 systems'
-        )
+        assert (partial['status'], partial['tone'], partial['value']) == ('Partial', 'warning', '1 / 2 systems')
         assert 'Latest inventory' in partial['description']
 
         none = service._freshness(None, [missing])[0]
-        assert (none['status'], none['tone'], none['value']) == (
-            'Not Collected', 'unknown', '0 / 1 systems'
-        )
+        assert (none['status'], none['tone'], none['value']) == ('Not Collected', 'unknown', '0 / 1 systems')
 
         empty = service._freshness(None, [])[0]
         assert empty['status'] == 'Not Collected'
@@ -676,12 +676,9 @@ def test_object_storage_selected_freshness_distinguishes_primary_fallback_and_mi
     monkeypatch.setattr(service, 'forecast_snapshot_state', lambda _snapshot: {'usable': False})
 
     for stream, expected in (
-        ({'connected': True, 'fallback_used': False, 'resolved_label': 'Alertmanager'},
-         ('Available', 'normal')),
-        ({'connected': True, 'fallback_used': True, 'resolved_label': 'Metrics Source'},
-         ('Fallback', 'warning')),
-        ({'connected': False, 'fallback_used': False, 'resolved_label': 'Unavailable'},
-         ('Unavailable', 'unknown')),
+        ({'connected': True, 'fallback_used': False, 'resolved_label': 'Alertmanager'}, ('Available', 'normal')),
+        ({'connected': True, 'fallback_used': True, 'resolved_label': 'Metrics Source'}, ('Fallback', 'warning')),
+        ({'connected': False, 'fallback_used': False, 'resolved_label': 'Unavailable'}, ('Unavailable', 'unknown')),
     ):
         monkeypatch.setattr(service, '_snapshot_payload', lambda _system: (None, {'usable': False}))
         monkeypatch.setattr(service, '_alert_view', lambda _payload, answer=stream: (answer, {}))
@@ -700,18 +697,25 @@ def test_system_health_requires_complete_committed_evidence_for_healthy(monkeypa
 
     observed = datetime.now(UTC)
     system = SimpleNamespace(
-        id='storage-1', name='Storage', environment='dev', status='connected',
-        inventory_observed_at=observed, buckets=[],
+        id='storage-1',
+        name='Storage',
+        environment='dev',
+        status='connected',
+        inventory_observed_at=observed,
+        buckets=[],
     )
     monkeypatch.setattr(
-        service, '_kaori_alert_posture',
+        service,
+        '_kaori_alert_posture',
         lambda _system: {'total': 0, 'critical': 0, 'warning': 0, 'info': 0},
     )
     primary = {'alert_streams': {'alertmanager': {'connected': True, 'rows': []}}}
-    fallback = {'alert_streams': {
-        'alertmanager': {'connected': False, 'configured': True},
-        'metrics_source': {'connected': True, 'rows': []},
-    }}
+    fallback = {
+        'alert_streams': {
+            'alertmanager': {'connected': False, 'configured': True},
+            'metrics_source': {'connected': True, 'rows': []},
+        }
+    }
     cases = [
         (primary, {'usable': True, 'state': 'ready', 'stale': False, 'label': 'Current'}, observed, 'Healthy'),
         (primary, {'usable': True, 'state': 'ready', 'stale': False, 'label': 'Current'}, None, 'Warning'),
@@ -725,7 +729,8 @@ def test_system_health_requires_complete_committed_evidence_for_healthy(monkeypa
     for payload, snapshot_state, inventory_at, expected in cases:
         system.inventory_observed_at = inventory_at
         monkeypatch.setattr(
-            service, '_snapshot_payload',
+            service,
+            '_snapshot_payload',
             lambda _system, result=(payload, snapshot_state): result,
         )
         row = service._health_rows([system])[0]
@@ -745,12 +750,17 @@ def test_system_health_keeps_observed_critical_alerts_prioritized(monkeypatch) -
     monkeypatch.setattr(service, 'bucket_usage_by_system', lambda _ids: {})
 
     system = SimpleNamespace(
-        id='storage-1', name='Storage', environment='dev', status='ready',
-        inventory_observed_at=None, buckets=[],
+        id='storage-1',
+        name='Storage',
+        environment='dev',
+        status='ready',
+        inventory_observed_at=None,
+        buckets=[],
     )
     monkeypatch.setattr(service, '_snapshot_payload', lambda _system: (None, {'usable': False}))
     monkeypatch.setattr(
-        service, '_kaori_alert_posture',
+        service,
+        '_kaori_alert_posture',
         lambda _system: {'total': 1, 'critical': 1, 'warning': 0, 'info': 0},
     )
     row = service._health_rows([system])[0]
@@ -772,9 +782,9 @@ def test_object_storage_dashboard_bucket_reads_are_bounded_to_visible_scope() ->
     assert 'system.buckets' not in summary
     assert 'bucket_usage_by_system([str(system.id) for system in systems])' in health
     assert 'system.buckets' not in health
-    assert "visible_systems, pagination = paginate_sequence(" in section
+    assert 'visible_systems, pagination = paginate_sequence(' in section
     assert "dashboard['health_rows'] = _health_rows(visible_systems)" in section
-    assert "bucket.object_storage_system_id.in_(system_ids)" in aggregates
+    assert 'bucket.object_storage_system_id.in_(system_ids)' in aggregates
     assert 'group_by(bucket.object_storage_system_id)' in aggregates
 
 
@@ -796,25 +806,42 @@ def test_object_storage_dashboard_sql_bucket_summary_preserves_selected_scope(mo
         monkeypatch.setattr(aggregates, 'db', SimpleNamespace(session=session))
         monkeypatch.setattr(service, 'db', SimpleNamespace(session=session))
         first = ObjectStorageSystem(
-            id='first', name='First', environment='test', status='ready',
+            id='first',
+            name='First',
+            environment='test',
+            status='ready',
             inventory_observed_at=datetime.now(UTC),
         )
         second = ObjectStorageSystem(
-            id='second', name='Second', environment='test', status='ready',
+            id='second',
+            name='Second',
+            environment='test',
+            status='ready',
             inventory_observed_at=datetime.now(UTC),
         )
         session.add_all([first, second])
-        session.add_all([
-            ObjectStorageBucket(
-                id=1, object_storage_system_id='first', name='one',
-                observed_at=datetime.now(UTC), size_bytes=10, object_count=3,
-                quota_state='configured', quota_bytes=100,
-            ),
-            ObjectStorageBucket(
-                id=2, object_storage_system_id='second', name='two',
-                observed_at=datetime.now(UTC), size_bytes=20, object_count=5,
-            ),
-        ])
+        session.add_all(
+            [
+                ObjectStorageBucket(
+                    id=1,
+                    object_storage_system_id='first',
+                    name='one',
+                    observed_at=datetime.now(UTC),
+                    size_bytes=10,
+                    object_count=3,
+                    quota_state='configured',
+                    quota_bytes=100,
+                ),
+                ObjectStorageBucket(
+                    id=2,
+                    object_storage_system_id='second',
+                    name='two',
+                    observed_at=datetime.now(UTC),
+                    size_bytes=20,
+                    object_count=5,
+                ),
+            ]
+        )
         session.commit()
 
         assert aggregates.bucket_usage_by_system(['first']) == {
@@ -829,7 +856,8 @@ def test_object_storage_dashboard_sql_bucket_summary_preserves_selected_scope(mo
         assert (fleet['buckets'], fleet['stored_bytes'], fleet['objects']) == (2, 30, 8)
         monkeypatch.setattr(service, '_snapshot_payload', lambda _system: (None, {'usable': False}))
         monkeypatch.setattr(
-            service, '_kaori_alert_posture',
+            service,
+            '_kaori_alert_posture',
             lambda _system: {'total': 0, 'critical': 0, 'warning': 0, 'info': 0},
         )
         health = service._health_rows([first])

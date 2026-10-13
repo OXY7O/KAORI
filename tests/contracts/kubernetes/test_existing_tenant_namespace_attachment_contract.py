@@ -15,7 +15,7 @@ def test_native_namespace_can_attach_to_existing_tenant_without_duplicate_tenant
     ui = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
     routes = read('app/kubernetes/tenant/routes.py')
 
-    assert "row = {" in preflight
+    assert 'row = {' in preflight
     assert "'tenant_adoption_existing_environments': existing_tenant_environments" in preflight
     assert "Tenant.provider_key == 'native_kubernetes'" in preflight
     assert "Tenant.lifecycle_status == 'ready'" in preflight
@@ -88,12 +88,12 @@ def test_native_adoption_destination_is_mutually_exclusive_for_create_and_attach
     assert "attachFields.classList.toggle('hidden', !isAttachment)" in js
     assert 'field.disabled = isAttachment' in js
     assert 'field.required = !isAttachment' in js
-    assert "createFields.querySelectorAll('[name=\"tenant_name\"], [name=\"environment\"]')" in js
+    assert 'createFields.querySelectorAll(\'[name="tenant_name"], [name="environment"]\')' in js
     assert 'selected?.dataset.tenantName' in js
     assert 'selected?.dataset.environmentName' in js
     assert 'tenant.textContent' in js
     assert 'environment.textContent' in js
-    assert "syncAdoptionDestination(modal)" in js
+    assert 'syncAdoptionDestination(modal)' in js
     assert "document.addEventListener('change'," in js
 
 
@@ -113,7 +113,6 @@ def test_adoption_confirmation_result_and_submit_action_follow_selected_mode():
     assert '{% if tenant_adoption_attachment_only %}' in ui
     assert 'Attach Capsule Namespace' in ui
     assert 'Adopted / Provider Mirrored' in ui
-
 
 
 def test_capsule_namespace_attachment_stays_in_discovery_not_tenant_detail():
@@ -161,14 +160,14 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
     assert 'id="tenant-adoption-preflight-slot"' in discovery
     assert 'data-tenant-adoption-modal' in preflight
     assert 'data-tenant-adoption-modal' in unavailable
-    assert "js/tenant_adoption_modal.js" in page
+    assert 'js/tenant_adoption_modal.js' in page
 
     # The HTMX target may be exposed through detail.target rather than event.target.
-    assert "event.detail?.target || event.target" in js
+    assert 'event.detail?.target || event.target' in js
     assert "target.id === 'tenant-adoption-preflight-slot'" in js
     assert "document.addEventListener('htmx:beforeRequest'" in js
-    assert "opener = requestElement" in js
-    assert "preflightPending = true" in js
+    assert 'opener = requestElement' in js
+    assert 'preflightPending = true' in js
     assert "document.addEventListener('htmx:afterSwap'" in js
     assert "document.addEventListener('htmx:afterSettle'" in js
     assert "document.addEventListener('htmx:afterRequest'" in js
@@ -181,36 +180,34 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
 
     assert "modal.dataset.tenantAdoptionActivated !== 'true'" in js
     assert "modal.dataset.tenantAdoptionActivated = 'true'" in js
-    assert "delete modal.dataset.tenantAdoptionActivated" in js
+    assert 'delete modal.dataset.tenantAdoptionActivated' in js
     # Form-specific sync cannot prevent the modal itself becoming visible.
     open_modal = js.split('const openModal = (modal, button = opener) => {', 1)[1]
     open_modal = open_modal.split('const closeModal = (modal) => {', 1)[0]
-    assert open_modal.index("modal.classList.remove('hidden')") < open_modal.index(
-        'syncAdoptionDestination(modal)'
-    )
+    assert open_modal.index("modal.classList.remove('hidden')") < open_modal.index('syncAdoptionDestination(modal)')
 
-    assert "if (load) reportPreflightFailure(event)" in js
-    assert "A successful afterRequest may precede the HTML swap" in js
-    assert "if (!revealPreflight(event)) reportPreflightFailure()" not in js
-    assert "event.detail?.successful === false" in js
+    assert 'if (load) reportPreflightFailure(event)' in js
+    assert 'A successful afterRequest may precede the HTML swap' in js
+    assert 'if (!revealPreflight(event)) reportPreflightFailure()' not in js
+    assert 'event.detail?.successful === false' in js
     assert "message.setAttribute('role', 'alert')" in js
     assert "message.setAttribute('data-tenant-adoption-request-error', '')" in js
-    assert "Adoption Review Unavailable" in js
-    assert "event.detail?.xhr?.status" in js
-    assert "message.append(title, guidance, safeState)" in js
+    assert 'Adoption Review Unavailable' in js
+    assert 'event.detail?.xhr?.status' in js
+    assert 'message.append(title, guidance, safeState)' in js
     assert "safeState.textContent = 'No adoption was performed.'" in js
-    assert "guidance.textContent" in js
-    assert "status >= 500" in js
+    assert 'guidance.textContent' in js
+    assert 'status >= 500' in js
     assert "kind === 'target'" in js
     # Operational UX must not expose implementation diagnostics or raw responses.
     for debug_copy in (
-        "Adoption preflight request failed (HTTP",
-        "DevContainer",
-        "Inspect the browser",
-        "Network",
-        "application logs",
-        "responseText",
-        "/discovery/preflight",
+        'Adoption preflight request failed (HTTP',
+        'DevContainer',
+        'Inspect the browser',
+        'Network',
+        'application logs',
+        'responseText',
+        '/discovery/preflight',
     ):
         assert debug_copy not in js
     assert "document.addEventListener('htmx:responseError'" in js
@@ -219,7 +216,7 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
     # HTMX replacement must not require per-page script initialization.
     assert "document.addEventListener('click'" in js
     assert "document.addEventListener('change'" in js
-    assert "syncAdoptionDestination(modal)" in js
+    assert 'syncAdoptionDestination(modal)' in js
 
 
 def test_adoption_preflight_templates_parse_as_valid_jinja() -> None:

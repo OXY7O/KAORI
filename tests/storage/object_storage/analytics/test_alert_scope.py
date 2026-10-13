@@ -39,11 +39,14 @@ def test_metrics_alert_scope_restricts_promql_to_asset_identity(monkeypatch) -> 
     assert 'alertstate=~"pending|firing"' in expression
 
 
-@pytest.mark.parametrize('selector', [
-    None,
-    {'matchers': []},
-    {'matchers': [{'label': 'job', 'operator': '=~', 'value': 'minio.*'}]},
-])
+@pytest.mark.parametrize(
+    'selector',
+    [
+        None,
+        {'matchers': []},
+        {'matchers': [{'label': 'job', 'operator': '=~', 'value': 'minio.*'}]},
+    ],
+)
 def test_missing_or_regex_only_identity_fails_closed(selector) -> None:
     with pytest.raises(BindingSelectorError, match='exact asset label'):
         alert_sources._scoped_metrics_alert_expression(_consumer(selector))
@@ -61,7 +64,8 @@ def test_two_systems_with_disjoint_exact_selectors_are_eligible(monkeypatch) -> 
     first = {'matchers': [{'label': 'instance', 'operator': '=', 'value': 'storage-a'}]}
     second = {'matchers': [{'label': 'instance', 'operator': '=', 'value': 'storage-b'}]}
     monkeypatch.setattr(
-        alert_sources.IntegrationBinding, 'query',
+        alert_sources.IntegrationBinding,
+        'query',
         _Rows([SimpleNamespace(selector_json=second)]),
     )
     expression = alert_sources._scoped_metrics_alert_expression(_consumer(first))

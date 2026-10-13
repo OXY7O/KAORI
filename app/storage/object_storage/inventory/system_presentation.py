@@ -342,7 +342,5 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
         latest=max((row['last_inventory_at'] for row in inventoried), default=None),
         missing_count=len(rows) - len(inventoried),
         stale_count=sum(_is_stale(row['last_inventory_at']) for row in inventoried),
-        provider_exception_count=sum(
-            row['status_tone'] in {'critical', 'warning', 'unknown'} for row in rows
-        ),
+        provider_exception_count=sum(row['status_tone'] in {'critical', 'warning', 'unknown'} for row in rows),
     )

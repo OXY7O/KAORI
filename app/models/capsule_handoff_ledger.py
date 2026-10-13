@@ -4,9 +4,10 @@ A dedicated SQL table, not the generic mutable AuditEvent journal.
 No service writes it until provider handoff admission is independently approved.
 Database trigger protections are authored in the paired Alembic migration.
 """
+
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Mapped, mapped_column
@@ -19,8 +20,10 @@ class CapsuleHandoffLedgerEvent(db.Model):
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
     tenant_id: Mapped[str] = mapped_column(
-        db.String(36), db.ForeignKey('tenants.id', ondelete='RESTRICT'),
-        nullable=False, index=True,
+        db.String(36),
+        db.ForeignKey('tenants.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
     )
     cluster_id: Mapped[str] = mapped_column(db.String(36), nullable=False)
     generation: Mapped[int] = mapped_column(db.Integer, nullable=False)
@@ -31,14 +34,16 @@ class CapsuleHandoffLedgerEvent(db.Model):
     sequence: Mapped[int] = mapped_column(db.Integer, nullable=False)
     event_type: Mapped[str] = mapped_column(db.String(32), nullable=False)
     actor_user_id: Mapped[int] = mapped_column(
-        db.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False,
+        db.ForeignKey('users.id', ondelete='RESTRICT'),
+        nullable=False,
     )
     event_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
     previous_event_sha256: Mapped[str | None] = mapped_column(db.String(64), nullable=True)
     event_sha256: Mapped[str] = mapped_column(db.String(64), nullable=False)
     event_json: Mapped[dict[str, Any]] = mapped_column(db.JSON, nullable=False)
     recorded_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True), nullable=False,
+        db.DateTime(timezone=True),
+        nullable=False,
         server_default=db.text('CURRENT_TIMESTAMP'),
     )
 

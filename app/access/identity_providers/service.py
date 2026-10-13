@@ -266,10 +266,7 @@ def ensure_provider_identity_continuity(
     provider: IdentityProvider, configuration: IdentityProviderConfiguration
 ) -> None:
     """Protect provider-id/subject links from a new identity authority or callback key."""
-    if (
-        provider.key == configuration.key
-        and provider.provider_key == configuration.provider_key
-    ):
+    if provider.key == configuration.key and provider.provider_key == configuration.provider_key:
         return
     if provider.identity_links.first() is not None:
         raise ProviderIdentityRebindError(

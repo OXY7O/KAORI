@@ -4,7 +4,6 @@ import hashlib
 from datetime import UTC, datetime
 from typing import Any
 
-
 from app.models import AuditEvent
 from app.models.tenant import (
     Tenant,
@@ -203,17 +202,21 @@ def _access_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     return findings
 
 
-_ACCESS_DECLARATION_TARGETS = frozenset({
-    'kubernetes_tenant_access_drift_evidence',
-    'kubernetes_tenant_native_access_drift_evidence',
-})
-_ACCESS_DECLARATION_GRANT_CODES = frozenset({
-    'revoked_grant_still_declared',
-    'active_grant_missing_capsule_declaration',
-    'active_grant_missing_native_declaration',
-    'native_grant_scope_mismatch',
-    'native_grant_role_reference_mismatch',
-})
+_ACCESS_DECLARATION_TARGETS = frozenset(
+    {
+        'kubernetes_tenant_access_drift_evidence',
+        'kubernetes_tenant_native_access_drift_evidence',
+    }
+)
+_ACCESS_DECLARATION_GRANT_CODES = frozenset(
+    {
+        'revoked_grant_still_declared',
+        'active_grant_missing_capsule_declaration',
+        'active_grant_missing_native_declaration',
+        'native_grant_scope_mismatch',
+        'native_grant_role_reference_mismatch',
+    }
+)
 _ACCESS_DECLARATION_MAX_AGE_SECONDS = 3600
 
 
@@ -234,11 +237,11 @@ def _access_declaration_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
         return []
     events = (
         AuditEvent.query.filter(AuditEvent.target_type.in_(_ACCESS_DECLARATION_TARGETS))
-        .order_by(AuditEvent.id.desc()).limit(300).all()
+        .order_by(AuditEvent.id.desc())
+        .limit(300)
+        .all()
     )
-    current_tenants = {
-        tenant.id: tenant for tenant in Tenant.query.filter_by(lifecycle_status='ready').all()
-    }
+    current_tenants = {tenant.id: tenant for tenant in Tenant.query.filter_by(lifecycle_status='ready').all()}
     seen: set[tuple[str, str]] = set()
     now = datetime.now(UTC)
     findings: list[dict[str, Any]] = []
@@ -249,9 +252,7 @@ def _access_declaration_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
         if tenant is None:
             continue
         provider = (
-            'native_kubernetes'
-            if event.target_type == 'kubernetes_tenant_native_access_drift_evidence'
-            else 'capsule'
+            'native_kubernetes' if event.target_type == 'kubernetes_tenant_native_access_drift_evidence' else 'capsule'
         )
         if tenant.provider_key != provider:
             continue
@@ -276,10 +277,7 @@ def _access_declaration_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
         age = (now - evaluated.astimezone(UTC)).total_seconds()
         if age < 0 or age > _ACCESS_DECLARATION_MAX_AGE_SECONDS:
             continue
-        source_observed_at = (
-            metadata.get('source_observed_at')
-            or metadata.get('observation_checked_at')
-        )
+        source_observed_at = metadata.get('source_observed_at') or metadata.get('observation_checked_at')
         try:
             source_observed = datetime.fromisoformat(str(source_observed_at or ''))
         except ValueError:
@@ -318,10 +316,7 @@ def _access_declaration_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
                 'declaration_code': code,
                 'subject': subject,
                 'source_event_id': event.id,
-                'source_observed_at': (
-                    metadata.get('source_observed_at')
-                    or metadata.get('observation_checked_at')
-                ),
+                'source_observed_at': (metadata.get('source_observed_at') or metadata.get('observation_checked_at')),
                 'evaluated_at': evaluated.isoformat(),
                 'source_evidence_sha256': metadata.get('source_evidence_sha256'),
                 'effective_rbac_verified': False,
@@ -329,7 +324,9 @@ def _access_declaration_findings(rules: dict[str, dict[str, Any]]) -> list[dict[
                 'affected_count': 1,
             }
             _append(
-                findings, rules, rule_key,
+                findings,
+                rules,
+                rule_key,
                 suffix=f'{tenant_id}:{provider}:{suffix}',
                 title=f'{tenant.name} Access Grant declaration requires review',
                 summary=(

@@ -43,7 +43,7 @@ def test_bucket_environment_filter_is_visible_preserved_and_clearable() -> None:
 
     assert "environment=request.args.get('environment'" in routes
     assert 'selected_environment=filters.environment' in routes
-    assert 'and (not filters.environment or row[\'environment\'] == filters.environment)' in presentation
+    assert "and (not filters.environment or row['environment'] == filters.environment)" in presentation
     assert 'name="environment"' in card
     assert 'id="object-storage-buckets-environment"' in card
     assert 'inventory.environments' in card

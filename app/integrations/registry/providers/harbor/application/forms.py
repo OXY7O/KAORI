@@ -70,7 +70,8 @@ class HarborInstanceForm(FlaskForm):
     def validate_endpoint(self, field: StringField) -> None:
         try:
             field.data = validate_harbor_endpoint(
-                str(field.data or '').strip(), verify_ssl=bool(self.verify_ssl.data),
+                str(field.data or '').strip(),
+                verify_ssl=bool(self.verify_ssl.data),
             )
         except ValueError as exc:
             raise ValidationError(str(exc)) from exc

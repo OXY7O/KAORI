@@ -84,7 +84,6 @@ def test_governance_sync_uses_registered_jobexecution_boundary() -> None:
     assert 'progress_bar.job_progress' in live_state
 
 
-
 def test_governance_latest_failed_refresh_never_looks_current() -> None:
     presenter = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text()
     builder = presenter.split('def build_governance(', 1)[1]
@@ -97,16 +96,18 @@ def test_governance_latest_failed_refresh_never_looks_current() -> None:
 
 def test_read_only_governance_sync_poll_preserves_mutating_sync_permission() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
-    sync = routes.split("def governance_sync() -> ResponseReturnValue:", 1)[0]
-    poll = routes.split("def governance_sync_status(public_id: str) -> ResponseReturnValue:", 1)[0]
+    sync = routes.split('def governance_sync() -> ResponseReturnValue:', 1)[0]
+    poll = routes.split('def governance_sync_status(public_id: str) -> ResponseReturnValue:', 1)[0]
     assert "@artifact_registry_bp.post('/governance/sync')" in sync
-    assert "@permission_required('artifact_registry.sync')" in sync.rsplit(
-        "@artifact_registry_bp.post('/governance/sync')", 1
-    )[1]
+    assert (
+        "@permission_required('artifact_registry.sync')"
+        in sync.rsplit("@artifact_registry_bp.post('/governance/sync')", 1)[1]
+    )
     assert "@artifact_registry_bp.get('/governance/sync/status/<string:public_id>')" in poll
-    assert "@permission_required('artifact_registry.view')" in poll.rsplit(
-        "@artifact_registry_bp.get('/governance/sync/status/<string:public_id>')", 1
-    )[1]
+    assert (
+        "@permission_required('artifact_registry.view')"
+        in poll.rsplit("@artifact_registry_bp.get('/governance/sync/status/<string:public_id>')", 1)[1]
+    )
     adapter = (ROOT / 'app/artifact_registry/governance_job_adapter.py').read_text()
     assert "latest_job.status == 'partially_succeeded'" in adapter
     assert "'Partial Evidence', 'warning'" in adapter
@@ -126,18 +127,22 @@ def test_governance_sync_matches_security_htmx_workspace_contract() -> None:
 
     # Use the approved Security evidence-operations UX without a new frontend
     # request pathway or duplicating registered JobExecution dispatch.
-    for fragment in ('hx-disabled-elt="find button"', 'hx-swap="outerHTML"',
-                     'name="csrf_token"', 'class="{{ action_button.classes(\'primary\') }}"'):
+    for fragment in (
+        'hx-disabled-elt="find button"',
+        'hx-swap="outerHTML"',
+        'name="csrf_token"',
+        'class="{{ action_button.classes(\'primary\') }}"',
+    ):
         assert fragment in security
         assert fragment in governance
-    assert "hx-post=\"{{ url_for('artifact_registry.governance_sync') }}\"" in governance
+    assert 'hx-post="{{ url_for(\'artifact_registry.governance_sync\') }}"' in governance
     assert 'hx-target="#artifact-registry-governance-workspace"' in governance
     assert 'name="tab" value="{{ governance.active_tab }}"' in governance
     assert 'name="page" value="{{ governance.pagination.page }}"' in governance
     assert 'name="per_page" value="{{ governance.pagination.per_page }}"' in governance
-    assert "governance.sync_state.is_active %}disabled" in governance
-    assert "Sync Governance" in governance
-    assert "artifact_registry.governance.sync" in governance
+    assert 'governance.sync_state.is_active %}disabled' in governance
+    assert 'Sync Governance' in governance
+    assert 'artifact_registry.governance.sync' in governance
 
     # After a canonical execution terminates, refresh committed Governance
     # evidence, not live provider mutation or a second collection mechanism.
@@ -145,41 +150,42 @@ def test_governance_sync_matches_security_htmx_workspace_contract() -> None:
     assert "url_for('artifact_registry.governance', tab=governance.active_tab" in governance
     assert 'hx-get="{{ url_for(' in governance
     assert 'artifactRegistryGovernanceSyncFinished' in routes
-    assert "hx-trigger=\"every 1s\"" in live
-    assert "progress_bar.job_progress" in live
-    assert "registry.footer(" in governance
-    assert "hx_select" in governance
+    assert 'hx-trigger="every 1s"' in live
+    assert 'progress_bar.job_progress' in live
+    assert 'registry.footer(' in governance
+    assert 'hx_select' in governance
 
     # Like Security, the sync operations panel contains only JobExecution
     # state/scheduling facts; Governance coverage cards are a separate section.
     assert 'aria-label="Governance evidence coverage"' in governance
-    assert governance.index('Last Successful</p>') < governance.index(
-        'aria-label="Governance evidence coverage"'
-    ) < governance.index('id="artifact-registry-governance-registry"')
-    assert "governance.posture_cards" in governance
+    assert (
+        governance.index('Last Successful</p>')
+        < governance.index('aria-label="Governance evidence coverage"')
+        < governance.index('id="artifact-registry-governance-registry"')
+    )
+    assert 'governance.posture_cards' in governance
 
-    get_handler = routes.split("def governance() -> ResponseReturnValue:", 1)[1].split(
-        "def governance_sync() -> ResponseReturnValue:", 1
+    get_handler = routes.split('def governance() -> ResponseReturnValue:', 1)[1].split(
+        'def governance_sync() -> ResponseReturnValue:', 1
     )[0]
-    post_handler = routes.split("def governance_sync() -> ResponseReturnValue:", 1)[1].split(
-        "def governance_sync_status(public_id: str)", 1
+    post_handler = routes.split('def governance_sync() -> ResponseReturnValue:', 1)[1].split(
+        'def governance_sync_status(public_id: str)', 1
     )[0]
-    assert "if is_htmx_request(request.headers)" in get_handler
+    assert 'if is_htmx_request(request.headers)' in get_handler
     assert "'artifact_registry/partials/_governance_workspace.html'" in get_handler
-    assert "dispatch_registered_job(" in post_handler
+    assert 'dispatch_registered_job(' in post_handler
     assert "job_key='artifact_registry.governance.sync'" in post_handler
-    assert "is_htmx = is_htmx_request(request.headers)" in post_handler
-    assert "queue_feedback=not is_htmx" in post_handler
+    assert 'is_htmx = is_htmx_request(request.headers)' in post_handler
+    assert 'queue_feedback=not is_htmx' in post_handler
     assert "'components/operational_toast.html'" in post_handler
-    assert "toast_oob=True" in post_handler
-    assert "governance=build_governance(" in post_handler
-    assert "active_tab=active_tab" in post_handler
-    assert "page=page" in post_handler
-    assert "per_page=per_page" in post_handler
+    assert 'toast_oob=True' in post_handler
+    assert 'governance=build_governance(' in post_handler
+    assert 'active_tab=active_tab' in post_handler
+    assert 'page=page' in post_handler
+    assert 'per_page=per_page' in post_handler
     assert 'hx-post' not in live
-    assert "artifact_registry.inventory.sync" not in post_handler
-    assert "HarborClient" not in post_handler
-
+    assert 'artifact_registry.inventory.sync' not in post_handler
+    assert 'HarborClient' not in post_handler
 
 
 def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
@@ -189,24 +195,24 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
     Environment().parse(workspace)
 
     start = workspace.index("content_tabs.render_links('registry-governance',")
-    end = workspace.index("{% endif %}", start)
+    end = workspace.index('{% endif %}', start)
     evidence = workspace[start:end]
     assert "tab='policies', page=1, per_page=governance.pagination.per_page))" in evidence
     assert "tab='replication', page=1, per_page=governance.pagination.per_page))" in evidence
-    assert "governance.project_count)" not in evidence
-    assert "governance.replication_count)" not in evidence
+    assert 'governance.project_count)' not in evidence
+    assert 'governance.replication_count)' not in evidence
     assert "hx_target='#artifact-registry-governance-registry'" in evidence
     assert "hx_select='#artifact-registry-governance-registry'" in evidence
     assert "hx_push_url='true'" in evidence
 
     assert 'components/table.html' in workspace
     assert workspace.count("table_ui.table_classes('min-w-[") == 2
-    assert workspace.count("table_ui.head_classes()") == 2
-    assert workspace.count("table_ui.body_classes()") == 2
-    assert workspace.count("table_ui.row_classes()") == 2
-    assert workspace.count("table_ui.title_cell(") == 2
-    assert workspace.count("table_ui.header_cell_classes()") == 12
-    assert workspace.count("table_ui.cell_classes()") == 12
+    assert workspace.count('table_ui.head_classes()') == 2
+    assert workspace.count('table_ui.body_classes()') == 2
+    assert workspace.count('table_ui.row_classes()') == 2
+    assert workspace.count('table_ui.title_cell(') == 2
+    assert workspace.count('table_ui.header_cell_classes()') == 12
+    assert workspace.count('table_ui.cell_classes()') == 12
     assert workspace.count('<caption class="sr-only">Committed Registry') == 2
     assert 'Project Governance</h2>' not in evidence
     assert 'Resilience Evidence</p>' not in evidence
@@ -221,10 +227,10 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
     assert 'No Replication Evidence Collected' in presenter
     assert 'row.retention_tone' in workspace and 'row.immutability_tone' in workspace
     assert "row.enabled is not none else 'Unknown'" in workspace
-    assert "row.destination_namespace" in workspace
+    assert 'row.destination_namespace' in workspace
     assert workspace.count("registry.footer('artifact_registry.governance'") == 2
     assert workspace.count('[5, 10, 25, 50]') == 2
-    assert "name=\"tab\" value=\"{{ governance.active_tab }}\"" in workspace
+    assert 'name="tab" value="{{ governance.active_tab }}"' in workspace
     assert 'artifactRegistryGovernanceSyncFinished from:body' in workspace
 
 
@@ -252,10 +258,10 @@ def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
         assert f'governance.filters.{value}' in evidence
     assert "'artifact-registry-governance-loading'" in evidence
     assert 'governance.pagination.total_items' in evidence
-    assert "No Policies Match Your Filters" in evidence
-    assert "No Replication Policies Match Your Filters" in evidence
-    assert "Project Governance</h2>" not in evidence
-    assert "Resilience Evidence</p>" not in evidence
+    assert 'No Policies Match Your Filters' in evidence
+    assert 'No Replication Policies Match Your Filters' in evidence
+    assert 'Project Governance</h2>' not in evidence
+    assert 'Resilience Evidence</p>' not in evidence
 
     assert 'def _governance_filtered_query(' in presentation
     assert 'query = _governance_filtered_query(' in presentation
@@ -267,13 +273,13 @@ def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
     assert "'retention_label'" in presentation
     assert "'immutability_label'" in presentation
     assert "observed_state = 'enabled' if enabled is True" in presentation
-    assert 'search=request.args.get(\'q\', \'\', type=str)' in routes
-    assert 'search = request.form.get(\'q\', \'\', type=str)' in routes
+    assert "search=request.args.get('q', '', type=str)" in routes
+    assert "search = request.form.get('q', '', type=str)" in routes
     assert 'provider=provider,' in routes
     assert 'retention=retention,' in routes
     assert 'immutability=immutability,' in routes
     assert 'state=state,' in routes
-    assert "governance.filters.search" in workspace
+    assert 'governance.filters.search' in workspace
     assert workspace.count("registry.footer('artifact_registry.governance'") == 2
     assert workspace.count('[5, 10, 25, 50]') == 2
     assert 'artifactRegistryGovernanceSyncFinished from:body' in workspace
@@ -290,8 +296,8 @@ def test_governance_table_filter_and_pagination_use_active_sql_scope() -> None:
     assert 'RegistryProject.integration_instance_id.in_(source_ids)' in query
     assert 'RegistryReplicationPolicy.integration_instance_id.in_(source_ids)' in query
     assert 'selected in source_ids' in query
-    assert "escaped = search.casefold().replace(" in query
-    assert "escape=" in query
+    assert 'escaped = search.casefold().replace(' in query
+    assert 'escape=' in query
     assert 'RegistryProjectGovernance.retention_status == retention' in query
     assert 'RegistryProjectGovernance.immutability_status == immutability' in query
     assert 'RegistryReplicationPolicy.enabled.is_(None)' in query
@@ -299,7 +305,7 @@ def test_governance_table_filter_and_pagination_use_active_sql_scope() -> None:
     assert 'RegistryReplicationPolicy.name.asc()' in query
     assert 'RegistryProjectGovernance.observed_at.desc()' in query
     assert "row['provider_label']" not in query
-    assert "identity_by_id = {int(item.id): item for item in identities}" in builder
+    assert 'identity_by_id = {int(item.id): item for item in identities}' in builder
     assert "'provider_options': [" in builder
     assert "'id': int(identity.id)" in builder
 
@@ -344,30 +350,30 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     # Human reference is the existing Tenant Estate grouped posture shell.
     # Governance alone adopts that composition; provider-committed state
     # labels remain visible rather than being replaced by icon-only tones.
-    assert "section_card.render(" in coverage
+    assert 'section_card.render(' in coverage
     assert "'Governance Evidence Estate'" in coverage
     assert "body_classes='p-0'" in coverage
-    assert "resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels)" in coverage
+    assert 'resource_posture_grid.render(coverage_metrics, columns=4, status_labels=coverage_status_labels)' in coverage
     assert 'class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"' not in coverage
-    assert "governance.posture_cards[0]" in coverage
-    assert "governance.posture_cards[1]" in coverage
-    assert "governance.posture_cards[2]" in coverage
-    assert "governance.posture_cards[3]" in coverage
-    for name in ("policy_coverage", "retention_coverage", "immutability_coverage", "replication_coverage"):
-        for field in (".label", ".value", ".detail", ".tone", ".status_label"):
+    assert 'governance.posture_cards[0]' in coverage
+    assert 'governance.posture_cards[1]' in coverage
+    assert 'governance.posture_cards[2]' in coverage
+    assert 'governance.posture_cards[3]' in coverage
+    for name in ('policy_coverage', 'retention_coverage', 'immutability_coverage', 'replication_coverage'):
+        for field in ('.label', '.value', '.detail', '.tone', '.status_label'):
             assert name + field in coverage
-    for icon in ("shield-check", "clock-3", "lock-keyhole", "git-compare-arrows"):
+    for icon in ('shield-check', 'clock-3', 'lock-keyhole', 'git-compare-arrows'):
         assert icon in coverage
 
     posture = (ROOT / 'app/templates/components/resource_posture_grid.html').read_text()
     tenant = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text()
     Environment().parse(posture)
-    assert "macro render(metrics, columns=3, status_labels=none)" in posture
-    assert "table_label.status_indicator_label(status_labels[loop.index0], tone)" in posture
-    assert "grid gap-px bg-outline-subtle" in posture
-    assert "[overflow-wrap:anywhere]" in posture
-    assert "resource_posture_grid.render(estate_metrics, columns=5)" in tenant
-    assert "status_labels=" not in tenant
+    assert 'macro render(metrics, columns=3, status_labels=none)' in posture
+    assert 'table_label.status_indicator_label(status_labels[loop.index0], tone)' in posture
+    assert 'grid gap-px bg-outline-subtle' in posture
+    assert '[overflow-wrap:anywhere]' in posture
+    assert 'resource_posture_grid.render(estate_metrics, columns=5)' in tenant
+    assert 'status_labels=' not in tenant
 
     # URL/HTMX-owned tabs reuse the shared content-tabs contract rather than
     # framed workspace tabs or bespoke client-side tab state.
@@ -381,25 +387,27 @@ def test_governance_coverage_and_evidence_follow_canonical_section_layout() -> N
     assert "hx_target='#artifact-registry-governance-registry'" in workspace
     assert "url_for('artifact_registry.governance', tab='policies', page=1" in workspace
     assert "url_for('artifact_registry.governance', tab='replication', page=1" in workspace
-    assert "macro render_links(" in tabs
-    assert "macro render(" in intro
+    assert 'macro render_links(' in tabs
+    assert 'macro render(' in intro
 
     # Existing committed policy/replication views, active row page sizes and
     # independent sync progress must not be affected by the presentation change.
     assert 'id="artifact-registry-governance-registry"' in workspace
-    assert 'governance.active_tab == \'policies\'' in workspace
+    assert "governance.active_tab == 'policies'" in workspace
     assert 'governance.rows' in workspace
     assert workspace.count("registry.footer('artifact_registry.governance'") == 2
     assert workspace.count('[5, 10, 25, 50]') == 2
-    assert "artifactRegistryGovernanceSyncFinished from:body" in workspace
+    assert 'artifactRegistryGovernanceSyncFinished from:body' in workspace
     assert "url_for('artifact_registry.governance_sync')" in workspace
 
 
 def test_registry_guidance_copy_keeps_provider_and_committed_evidence_authority() -> None:
     harbor = (ROOT / 'app/templates/integrations/registry/providers/harbor/index.html').read_text(encoding='utf-8')
     governance = (ROOT / 'app/artifact_registry/presentation_governance.py').read_text(encoding='utf-8')
-    assert 'KAORI uses committed Registry inventory and validated Metrics Source bindings for operational metrics.' in harbor
+    assert (
+        'KAORI uses committed Registry inventory and validated Metrics Source bindings for operational metrics.'
+        in harbor
+    )
     assert 'Harbor owns repositories, artifacts, policies, and runtime;' in harbor
     assert 'KAORI validates, normalizes, correlates, and commits evidence.' in harbor
     assert 'Committed project retention and immutability evidence.' in governance
-

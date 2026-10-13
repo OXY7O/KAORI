@@ -31,57 +31,60 @@
               hx-indicator="#artifact-registry-analytics-refresh-indicator"
               data-analytics-preserve-tab>
             {% if analytics.active_tab == 'alerts' %}
-                <input type="hidden" name="alert_q" value="{{ analytics.alert_filters.search }}">
-                <input type="hidden" name="alert_severity" value="{{ analytics.alert_filters.severity }}">
-                <input type="hidden" name="alert_state" value="{{ analytics.alert_filters.state }}">
-                <input type="hidden" name="alert_source" value="{{ analytics.alert_filters.source }}">
+                <input type="hidden"
+                       name="alert_q"
+                       value="{{ analytics.alert_filters.search }}">
+                <input type="hidden"
+                       name="alert_severity"
+                       value="{{ analytics.alert_filters.severity }}">
+                <input type="hidden"
+                       name="alert_state"
+                       value="{{ analytics.alert_filters.state }}">
+                <input type="hidden"
+                       name="alert_source"
+                       value="{{ analytics.alert_filters.source }}">
                 <input type="hidden" name="alert_page" value="1">
-                <input type="hidden" name="alert_per_page" value="{{ analytics.alert_filters.per_page }}">
+                <input type="hidden"
+                       name="alert_per_page"
+                       value="{{ analytics.alert_filters.per_page }}">
             {% endif %}
             {% call shared_readiness.controls_grid() %}
-                {{ shared_readiness.selector(
-                    'artifact-registry-analytics-provider',
-                    'provider_id',
-                    'Registry',
-                    analytics.provider_options,
-                    analytics.selected_provider_id,
-                    empty_label='All Registries'
-                ) }}
-                {{ shared_readiness.selector(
-                    'artifact-registry-analytics-window',
-                    'snapshot_window',
-                    'Time Range',
-                    analytics.time_range_options,
-                    analytics.snapshot_window,
-                    title='Select a measured Metrics Source history interval; unavailable source retention or range capability is reported explicitly.',
-                    legacy_value='current',
-                    legacy_label='Current (Instant)'
-                ) }}
+                {{ shared_readiness.selector('artifact-registry-analytics-provider',
+                                'provider_id',
+                                'Registry',
+                                analytics.provider_options,
+                                analytics.selected_provider_id,
+                                empty_label='All Registries') }}
+                {{ shared_readiness.selector('artifact-registry-analytics-window',
+                                'snapshot_window',
+                                'Time Range',
+                                analytics.time_range_options,
+                                analytics.snapshot_window,
+                                title='Select a measured Metrics Source history interval; unavailable source retention or range capability is reported explicitly.',
+                                legacy_value='current',
+                                legacy_label='Current (Instant)') }}
             {% endcall %}
         </form>
         <div class="space-y-3">
             {% call shared_readiness.readiness_grid() %}
-                {{ shared_readiness.source_card(
-                    'Registry Source Status',
-                    'Registry providers eligible for committed analytics snapshots.',
-                    'Eligible' if readiness.eligible_count else 'Blocked',
-                    'normal' if readiness.eligible_count else 'warning',
-                    'Ready Providers',
-                    readiness.eligible_count ~ ' / ' ~ readiness.registered_count,
-                    'Snapshot Coverage',
-                    readiness.covered_count ~ ' / ' ~ readiness.eligible_count,
-                    icon=none
-                ) }}
-                {{ shared_readiness.snapshot_card(
-                    'Latest Analytics Data Snapshot',
-                    'Committed worker datasets used by this page.',
-                    readiness.label,
-                    readiness.tone,
-                    readiness.latest_generated_at|user_datetime('Unavailable') if readiness.latest_generated_at else 'Unavailable',
-                    'Registry Analytics',
-                    readiness.latest_expiry_at|user_datetime('Not Scheduled') if readiness.latest_expiry_at else 'Not Scheduled',
-                    readiness.last_attempt_label,
-                    coverage=readiness.current_count ~ '/' ~ readiness.eligible_count ~ ' Current'
+                {{ shared_readiness.source_card('Registry Source Status',
+                                'Registry providers eligible for committed analytics snapshots.',
+                                'Eligible' if readiness.eligible_count else 'Blocked',
+                                'normal' if readiness.eligible_count else 'warning',
+                                'Ready Providers',
+                                readiness.eligible_count ~ ' / ' ~ readiness.registered_count,
+                                'Snapshot Coverage',
+                                readiness.covered_count ~ ' / ' ~ readiness.eligible_count,
+                                icon=none) }}
+                {{ shared_readiness.snapshot_card('Latest Analytics Data Snapshot',
+                                'Committed worker datasets used by this page.',
+                                readiness.label,
+                                readiness.tone,
+                                readiness.latest_generated_at|user_datetime('Unavailable') if readiness.latest_generated_at else 'Unavailable',
+                'Registry Analytics',
+                readiness.latest_expiry_at|user_datetime('Not Scheduled') if readiness.latest_expiry_at else 'Not Scheduled',
+                readiness.last_attempt_label,
+                coverage=readiness.current_count ~ '/' ~ readiness.eligible_count ~ ' Current'
                 ) }}
             {% endcall %}
             {% if readiness.current_count < readiness.eligible_count or readiness.execution_tone == 'critical' or readiness.collection_warning %}

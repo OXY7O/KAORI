@@ -53,4 +53,3 @@ def test_configmap_and_bulk_tls_guidance_is_compact_without_weakening_safety() -
     assert 'Only explicitly checked TLS Secrets can be updated; all unselected targets remain untouched.' in rotation
     assert 'Validate the uploaded certificate pair and every selected TLS Secret before applying an update.' in rotation
     assert "workflow_control('Controlled Bulk TLS Rotation'" in rotation
-

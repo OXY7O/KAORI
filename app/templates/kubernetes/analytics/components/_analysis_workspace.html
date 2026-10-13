@@ -55,10 +55,10 @@
             {% call shared_readiness.readiness_grid() %}
                 {{ metrics_source_status_panel.render(status) }}
                 {{ snapshot_card('Latest Data Snapshot',
-                                    'Committed worker data used by this page.',
-                                    snapshot_status,
-                                    snapshot_tone,
-                                    snapshot.generated_at|default(none) |user_datetime('Unavailable') if snapshot else 'Unavailable',
+                                'Committed worker data used by this page.',
+                                snapshot_status,
+                                snapshot_tone,
+                                snapshot.generated_at|default(none) |user_datetime('Unavailable') if snapshot else 'Unavailable',
                 snapshot.dataset_key|default('Analytics Snapshot') if snapshot else 'Analytics Snapshot',
                 snapshot.expires_at|default(none)|user_datetime('Not Scheduled') if snapshot else 'Not Scheduled',
                 snapshot.latest_worker_attempt_at|default(snapshot.last_attempt_at|default(snapshot.latest_job_started_at|default(none)))|user_datetime('Unavailable') if snapshot else 'Unavailable'
@@ -93,11 +93,11 @@
                                 {% if snapshot.last_error_remediation|default(none) %}
                                     <div class="mt-3">
                                         {{ analysis_surface.interpretation_content('Recommended Action',
-                                                                                    none,
-                                                                                    snapshot.last_error_remediation,
-                                                                                    'wrench',
-                                                                                    role='brand',
-                                                                                    compact=true) }}
+                                                                                none,
+                                                                                snapshot.last_error_remediation,
+                                                                                'wrench',
+                                                                                role='brand',
+                                                                                compact=true) }}
                                     </div>
                                 {% endif %}
                             </div>

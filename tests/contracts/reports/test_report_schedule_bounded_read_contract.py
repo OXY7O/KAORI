@@ -21,9 +21,7 @@ def _filters(**overrides: str) -> dict[str, str]:
 
 
 def test_schedule_registry_filter_compiles_to_database_predicates() -> None:
-    stmt = filter_schedule_statement(
-        _filters(status='active', cadence='monthly', report_type='tenant_governance')
-    )
+    stmt = filter_schedule_statement(_filters(status='active', cadence='monthly', report_type='tenant_governance'))
     sql = str(stmt)
     assert 'report_schedules.is_enabled' in sql
     assert 'report_schedules.cadence' in sql
@@ -31,9 +29,7 @@ def test_schedule_registry_filter_compiles_to_database_predicates() -> None:
 
 
 def test_asset_and_channel_filters_do_not_materialize_python_registry() -> None:
-    stmt = filter_schedule_statement(
-        _filters(asset='registry_integration:19', delivery='123')
-    )
+    stmt = filter_schedule_statement(_filters(asset='registry_integration:19', delivery='123'))
     sql = str(stmt)
     assert 'scope_asset_id' in sql
     assert 'notification_channel_ids' in sql
@@ -44,11 +40,11 @@ def test_selected_cluster_namespaces_are_permission_bound_and_demand_loaded() ->
     service = (ROOT / 'app/reports/schedules/service.py').read_text(encoding='utf-8')
     js = (ROOT / 'app/static/js/report_schedules.js').read_text(encoding='utf-8')
     support = (ROOT / 'app/reports/schedules/support.py').read_text(encoding='utf-8')
-    assert "def schedule_namespace_options()" in routes
+    assert 'def schedule_namespace_options()' in routes
     assert "@permission_required('reports.manage_schedules')" in routes
     assert '_get_namespace_options_by_cluster(selected_cluster_id)' in service
     assert 'get_report_namespace_options_by_cluster(cluster_id) if cluster_id else {}' in support
-    assert "encodeURIComponent(selectedCluster)" in js
+    assert 'encodeURIComponent(selectedCluster)' in js
     assert 'payload.cluster_id !== selectedCluster' in js
 
 

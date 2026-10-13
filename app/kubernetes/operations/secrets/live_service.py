@@ -291,6 +291,7 @@ def list_live_secrets(
     except (OSError, Urllib3HTTPError) as exc:
         raise _connection_error('list operation') from exc
 
+
 def read_live_secret(
     cluster_id: str | None,
     namespace: str | None,

@@ -47,7 +47,7 @@
         '#create-tenant-group-form',
         'Create Group',
         header_actions=header_actions,
-    result_count=group_pagination.total_items,
+        result_count=group_pagination.total_items,
         title_extra=title_info) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
@@ -102,7 +102,8 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Kubernetes Subject</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">State</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Updated</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[26%]">Actions</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[26%]">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -110,7 +111,8 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(group.name, group.slug, 'users') }}</td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ group.tenant.name }}">{{ group.tenant.name }}</p>
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ group.tenant.name }}">{{ group.tenant.name }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             <code class="text-xs text-content-secondary">{{ group.subject_name }}</code>
@@ -119,7 +121,8 @@
                             {{ table_label.status_label('Enabled' if group.enabled else 'Disabled', 'normal' if group.enabled else 'warning') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-xs font-medium text-content-secondary min-w-0 max-w-full truncate" title="{{ group.updated_at|user_datetime }}">{{ group.updated_at|user_datetime }}</p>
+                            <p class="text-xs font-medium text-content-secondary min-w-0 max-w-full truncate"
+                               title="{{ group.updated_at|user_datetime }}">{{ group.updated_at|user_datetime }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             <div class="flex min-w-[15rem] flex-wrap justify-end gap-2">
@@ -199,16 +202,16 @@
         </table>
     </div>
     {{ registry_ui.footer('tenant.tenants',
-            registry_id,
-            loading_id,
-            group_pagination,
-            query_params,
-            group_pagination.allowed_per_page,
-            resource_label='Groups',
-            rows_aria_label='Tenant group rows per page',
-            control_name='tenant-groups',
-            page_param='group_page',
-            per_page_param='group_per_page') }}
+        registry_id,
+        loading_id,
+        group_pagination,
+        query_params,
+        group_pagination.allowed_per_page,
+        resource_label='Groups',
+        rows_aria_label='Tenant group rows per page',
+        control_name='tenant-groups',
+        page_param='group_page',
+        per_page_param='group_per_page') }}
 </section>
 <div id="tenant-group-edit-modal"
      data-tenant-group-edit-modal

@@ -1,10 +1,10 @@
 from datetime import UTC, datetime
 
 from app.kubernetes.inventory.overview import (
+    _build_inventory_signals,
     _collection_evidence_complete,
     _collection_evidence_exceptions,
     _connection_presentation,
-    _build_inventory_signals,
     _inventory_guidance,
 )
 
@@ -46,8 +46,11 @@ def test_partial_collection_flags_overview_and_operator_guidance() -> None:
     )
     assert any(item['label'] == 'Collection Incomplete' for item in signals)
     guidance = _inventory_guidance(
-        connected=True, synced_at=observed, signals=signals,
-        connection_status='connected', collection_evidence={'inventory.pods': 'Failed'},
+        connected=True,
+        synced_at=observed,
+        signals=signals,
+        connection_status='connected',
+        collection_evidence={'inventory.pods': 'Failed'},
     )
     assert guidance['title'] == 'Review Collection Coverage'
     assert guidance['tone'] == 'warning'

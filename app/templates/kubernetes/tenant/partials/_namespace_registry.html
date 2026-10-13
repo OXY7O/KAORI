@@ -32,7 +32,7 @@
         none,
         none,
         header_actions=header_actions,
-    result_count=namespace_pagination.total_items) }}
+        result_count=namespace_pagination.total_items) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.namespace_provisioning',
@@ -96,7 +96,8 @@
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Tenant / Environment</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[32%]">Allocation</th>
                     <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">State</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -120,17 +121,17 @@
                     {% endif %}
                     {% set profile_display = profile_display|truncate(42, True, '…') %}
                     {% if provider_mirrored %}
-                        {% set control_label = 'Provider Mirrored' %}
+                        {% set control_label = "Provider Mirrored" %}
                     {% elif adopted_observed and allocation_control != 'control_unavailable' %}
-                        {% set control_label = 'Awaiting Takeover' %}
+                        {% set control_label = "Awaiting Takeover" %}
                     {% elif allocation_control == 'control_unavailable' %}
-                        {% set control_label = 'Control Unavailable' %}
+                        {% set control_label = "Control Unavailable" %}
                     {% elif allocation_control == 'kaori_managed' %}
-                        {% set control_label = 'KAORI Managed' %}
+                        {% set control_label = "KAORI Managed" %}
                     {% elif allocation_control %}
                         {% set control_label = allocation_control|replace('_', ' ')|title %}
                     {% elif adopted_observed %}
-                        {% set control_label = 'Observed · Not managed' %}
+                        {% set control_label = "Observed · Not managed" %}
                     {% else %}
                         {% set control_label = none %}
                     {% endif %}
@@ -149,7 +150,7 @@
                                     <p class="truncate text-sm font-semibold text-content-primary"
                                        title="{{ item.namespace }}">{{ item.namespace }}</p>
                                     <div class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                                        {{ table_label.status_label(item.ownership_status|replace('_', ' ')|title, 'normal' if item.ownership_status == 'managed' else 'info') }}
+                                        {{ table_label.status_label(item.ownership_status|replace('_', ' ') |title, 'normal' if item.ownership_status == 'managed' else 'info') }}
                                         <span class="text-xs tabular-nums text-content-muted">Gen {{ item.generation }}</span>
                                     </div>
                                 </div>
@@ -170,7 +171,7 @@
                             </p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
-                            {{ table_label.status_label(item.provisioning_status|replace('_', ' ')|title, state_tone) }}
+                            {{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}
                             {% if control_label %}
                                 <p class="mt-1 max-w-full truncate text-xs text-content-muted"
                                    title="Control: {{ control_label }}">Control: {{ control_label }}</p>
@@ -192,7 +193,8 @@
                                     aria-labelledby="{{ dialog_id }}-title"
                                     aria-describedby="{{ dialog_id }}-description"
                                     class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-3xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 text-left shadow-2xl sm:w-[calc(100vw-3rem)]">
-                                <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden text-left" role="document">
+                                <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden text-left"
+                                         role="document">
                                     <header class="flex shrink-0 items-start justify-between gap-4 border-b border-outline-subtle bg-surface-card px-4 py-4 text-left sm:px-6">
                                         <div class="flex min-w-0 items-start gap-3">
                                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
@@ -219,24 +221,33 @@
                                             <dl class="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3 sm:grid-cols-4">
                                                 <div class="min-w-0">
                                                     <dt class="text-xs text-content-muted">State</dt>
-                                                    <dd class="mt-1">{{ table_label.status_label(item.provisioning_status|replace('_', ' ')|title, state_tone) }}</dd>
+                                                    <dd class="mt-1">
+                                                        {{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}
+                                                    </dd>
                                                 </div>
                                                 <div class="min-w-0">
                                                     <dt class="text-xs text-content-muted">Ownership</dt>
-                                                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ item.ownership_status|replace('_', ' ')|title }}</dd>
+                                                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                                        {{ item.ownership_status|replace('_', ' ') |title }}
+                                                    </dd>
                                                 </div>
                                                 <div class="min-w-0">
                                                     <dt class="text-xs text-content-muted">Provider</dt>
-                                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ provider_name }}</dd>
+                                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                                        {{ provider_name }}
+                                                    </dd>
                                                 </div>
                                                 <div class="min-w-0">
                                                     <dt class="text-xs text-content-muted">Authority</dt>
-                                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ authority_name }}</dd>
+                                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                                        {{ authority_name }}
+                                                    </dd>
                                                 </div>
                                             </dl>
                                         </section>
                                         <section aria-labelledby="{{ dialog_id }}-allocation-title">
-                                            <h3 id="{{ dialog_id }}-allocation-title" class="text-sm font-semibold text-content-primary">Committed Allocation</h3>
+                                            <h3 id="{{ dialog_id }}-allocation-title"
+                                                class="text-sm font-semibold text-content-primary">Committed Allocation</h3>
                                             <p class="mt-1 text-xs leading-5 text-content-muted">Frozen Namespace ResourceQuota · Not live utilization</p>
                                             <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3">
                                                 <dl class="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
@@ -247,7 +258,7 @@
                                                         ('Memory Limits', quota.get('limits.memory')),
                                                         ('Pod Slots', quota.get('pods')),
                                                         ('Logical Storage', quota.get('requests.storage'))
-                                                    ] %}
+                                                        ] %}
                                                         <div class="min-w-0">
                                                             <dt class="text-xs text-content-muted">{{ label }}</dt>
                                                             <dd class="mt-1 break-words text-sm font-semibold tabular-nums text-content-primary">
@@ -264,13 +275,14 @@
                                                     <div class="min-w-0 sm:text-right">
                                                         <p class="text-xs text-content-muted">Effective Snapshot</p>
                                                         <p class="mt-1 text-sm font-semibold text-content-primary">
-                                                            v{{ item.resource_profile_version or '—' }}{% if item.allocation_customized %} · Customized{% endif %}
+                                                            v{{ item.resource_profile_version or '—' }}
+                                                            {% if item.allocation_customized %}· Customized{% endif %}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 {% if allocation_control %}
                                                     <p class="mt-2 break-words text-xs leading-5 text-content-secondary">
-                                                        Control: {{ allocation_control|replace('_', ' ')|title }}
+                                                        Control: {{ allocation_control|replace('_', ' ') |title }}
                                                     </p>
                                                 {% endif %}
                                             </div>
@@ -286,13 +298,9 @@
                                             <div class="mt-3 border-l-2 border-kaori-primary/30 pl-3 text-left">
                                                 <p class="whitespace-pre-line break-words text-sm leading-6 text-content-secondary">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
                                                 {% if adopted_observed %}
-                                                    <p class="mt-2 text-xs leading-5 text-content-muted">
-                                                        Observed allocation requires an explicit managed takeover.
-                                                    </p>
+                                                    <p class="mt-2 text-xs leading-5 text-content-muted">Observed allocation requires an explicit managed takeover.</p>
                                                 {% elif provider_mirrored %}
-                                                    <p class="mt-2 text-xs leading-5 text-content-muted">
-                                                        Capsule policy remains provider-owned and mirrored by KAORI.
-                                                    </p>
+                                                    <p class="mt-2 text-xs leading-5 text-content-muted">Capsule policy remains provider-owned and mirrored by KAORI.</p>
                                                 {% endif %}
                                             </div>
                                         </section>
@@ -303,7 +311,9 @@
                                                         <span class="block text-sm font-semibold text-content-primary">Quota &amp; LimitRange Details</span>
                                                         <span class="mt-1 block text-xs text-content-muted">Additional committed storage and container defaults</span>
                                                     </span>
-                                                    <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180" aria-hidden="true"></i>
+                                                    <i data-lucide="chevron-down"
+                                                       class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
+                                                       aria-hidden="true"></i>
                                                 </summary>
                                                 <div class="space-y-4 border-t border-outline-subtle px-4 py-4">
                                                     {% if storage_policy %}
@@ -313,7 +323,9 @@
                                                                 {% for label, value in [('Minimum', storage_policy.get('min')), ('Maximum', storage_policy.get('max'))] %}
                                                                     <div>
                                                                         <dt class="text-xs text-content-muted">{{ label }}</dt>
-                                                                        <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value if value is not none else 'Not declared' }}</dd>
+                                                                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                                                            {{ value if value is not none else 'Not declared' }}
+                                                                        </dd>
                                                                     </div>
                                                                 {% endfor %}
                                                             </dl>
@@ -328,10 +340,12 @@
                                                                     ('Memory Request', (limit_defaults.get('default_request') or {}).get('memory')),
                                                                     ('CPU Limit', (limit_defaults.get('default') or {}).get('cpu')),
                                                                     ('Memory Limit', (limit_defaults.get('default') or {}).get('memory'))
-                                                                ] %}
+                                                                    ] %}
                                                                     <div>
                                                                         <dt class="text-xs text-content-muted">{{ label }}</dt>
-                                                                        <dd class="mt-1 text-sm font-semibold text-content-primary">{{ value if value is not none else 'Not declared' }}</dd>
+                                                                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                                                            {{ value if value is not none else 'Not declared' }}
+                                                                        </dd>
                                                                     </div>
                                                                 {% endfor %}
                                                             </dl>
@@ -359,12 +373,12 @@
         </table>
     </div>
     {{ registry_ui.footer('tenant.namespace_provisioning',
-            registry_id,
-            loading_id,
-            namespace_pagination,
-            query_params,
-            namespace_pagination.allowed_per_page,
-            resource_label='Namespaces',
-            rows_aria_label='Namespace rows per page',
-            control_name='tenant-namespace') }}
+        registry_id,
+        loading_id,
+        namespace_pagination,
+        query_params,
+        namespace_pagination.allowed_per_page,
+        resource_label='Namespaces',
+        rows_aria_label='Namespace rows per page',
+        control_name='tenant-namespace') }}
 </section>

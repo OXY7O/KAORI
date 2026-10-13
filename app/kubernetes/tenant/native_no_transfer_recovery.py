@@ -5,6 +5,7 @@ different, authorized reviewer may acknowledge exact immutable evidence.
 The original requester must still create a NEW independently reviewed plan;
 no old acceptance, preview, or Release authorization is inherited.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -18,13 +19,17 @@ from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.native_handoff_dry_run import _read_resource
 from app.kubernetes.tenant.native_handoff_executor import _approved_component_for_preview, _component_key
-from app.kubernetes.tenant.native_handoff_recovery import (
-    readback_proves_handoff_not_started, summarize_native_handoff_recovery,
-)
 from app.kubernetes.tenant.native_handoff_readback import _latest_native_dry_run
+from app.kubernetes.tenant.native_handoff_recovery import (
+    readback_proves_handoff_not_started,
+    summarize_native_handoff_recovery,
+)
 from app.kubernetes.tenant.release_handoff_approval import (
-    _can_confirm_plan, _checked_recently, _plan_hash,
-    latest_release_handoff_approval, latest_release_handoff_plan,
+    _can_confirm_plan,
+    _checked_recently,
+    _plan_hash,
+    latest_release_handoff_approval,
+    latest_release_handoff_plan,
 )
 from app.kubernetes.tenant.release_preflight import review_tenant_release_preflight_committed
 from app.models import Cluster
@@ -38,16 +43,11 @@ _READBACK_TARGET = 'kubernetes_tenant_release_native_handoff_readback'
 
 
 def _sha(value: Any) -> str:
-    return hashlib.sha256(
-        json.dumps(value, sort_keys=True, separators=(',', ':')).encode()
-    ).hexdigest()
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
 def _latest(tenant_id: str, target: str) -> dict[str, Any] | None:
-    event = (
-        AuditEvent.query.filter_by(target_type=target, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).first()
-    )
+    event = AuditEvent.query.filter_by(target_type=target, target_id=tenant_id).order_by(AuditEvent.id.desc()).first()
     return dict(event.metadata_json or {}) if event else None
 
 
@@ -72,7 +72,9 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
         AuditEvent.query.filter(
             AuditEvent.target_id == tenant_id,
             AuditEvent.target_type.in_((_EXECUTOR_TARGET, _READBACK_TARGET)),
-        ).order_by(AuditEvent.id.asc()).all()
+        )
+        .order_by(AuditEvent.id.asc())
+        .all()
     )
     attempts: list[dict[str, Any]] = []
     observations: list[dict[str, Any]] = []
@@ -80,15 +82,14 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
         record = dict(event.metadata_json or {})
         sha = record.get('plan_sha256')
         if not isinstance(sha, str) or len(sha) != 64:
-            raise ValueError(
-                'Incomplete historical provider operation; '
-                'independent recovery investigation required.'
-            )
+            raise ValueError('Incomplete historical provider operation; independent recovery investigation required.')
         if sha != plan['plan_sha256']:
             continue
         item = {
-            'event_id': event.id, 'actor_id': event.actor_user_id,
-            'action': event.action, 'metadata': record,
+            'event_id': event.id,
+            'actor_id': event.actor_user_id,
+            'action': event.action,
+            'metadata': record,
         }
         if event.target_type == _EXECUTOR_TARGET:
             attempts.append(item)
@@ -102,10 +103,7 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
             'same-plan executor receipts. Inspect Activity Audit; '
             'recovery remains blocked.'
         )
-    if any(
-        not readback_proves_handoff_not_started(row['metadata'], plan=plan)
-        for row in observations
-    ):
+    if any(not readback_proves_handoff_not_started(row['metadata'], plan=plan) for row in observations):
         raise ValueError(
             'One or more same-plan provider read-back receipts are incomplete, '
             'unverified or partial. Canonical no-transfer read-back proof is '
@@ -113,8 +111,7 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
         )
 
     selected = [
-        row for row in plan.get('handoff_components', [])
-        if row.get('handoff') == 'external_acceptance_required'
+        row for row in plan.get('handoff_components', []) if row.get('handoff') == 'external_acceptance_required'
     ]
     if not selected:
         raise ValueError('Original approved Native recovery scope is empty.')
@@ -123,17 +120,14 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
     previous_finished_at: datetime | None = None
     failed_event_ids: list[int] = []
     for offset in range(0, len(attempts), 2):
-        started, failure = attempts[offset:offset + 2]
+        started, failure = attempts[offset : offset + 2]
         first, last = started['metadata'], failure['metadata']
         if (
             started['action'] != 'tenant.release.native_handoff_started'
             or failure['action'] != 'tenant.release.native_handoff_recovery_required'
             or type(started['actor_id']) is not int
             or started['actor_id'] != failure['actor_id']
-            or (
-                executor_actor_id is not None
-                and started['actor_id'] != executor_actor_id
-            )
+            or (executor_actor_id is not None and started['actor_id'] != executor_actor_id)
             or started['event_id'] >= failure['event_id']
             or first.get('status') != 'in_progress'
             or last.get('status') != 'partial_handoff_recovery_required'
@@ -149,9 +143,12 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
             or last.get('verified_components') != []
             or first.get('release_authorized') is not False
             or any(
-                key in first for key in (
-                    'provider_mutation_performed', 'provider_handoff_verified',
-                    'verified_count', 'verified_components',
+                key in first
+                for key in (
+                    'provider_mutation_performed',
+                    'provider_handoff_verified',
+                    'verified_count',
+                    'verified_components',
                 )
             )
             or first.get('tenant_id') != tenant_id
@@ -176,10 +173,11 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
         except ValueError as exc:
             raise ValueError('Executor audit chronology is incomplete.') from exc
         if (
-            began_at.tzinfo is None or failed_at.tzinfo is None
-            or began_at > failed_at or failed_at > datetime.now(UTC)
-            or (previous_finished_at is not None
-                and began_at <= previous_finished_at)
+            began_at.tzinfo is None
+            or failed_at.tzinfo is None
+            or began_at > failed_at
+            or failed_at > datetime.now(UTC)
+            or (previous_finished_at is not None and began_at <= previous_finished_at)
         ):
             raise ValueError('Executor audit chronology is not trustworthy.')
 
@@ -188,9 +186,12 @@ def _source_history(tenant_id: str, plan: dict[str, Any]) -> dict[str, Any]:
         failed_event_ids.append(failure['event_id'])
 
     return {
-        'digest': _sha({
-            'executor_attempts': attempts, 'external_readbacks': observations,
-        }),
+        'digest': _sha(
+            {
+                'executor_attempts': attempts,
+                'external_readbacks': observations,
+            }
+        ),
         'executor_actor_id': executor_actor_id,
         'failed_event_id': failed_event_ids[-1],
         'failed_event_ids': failed_event_ids,
@@ -202,9 +203,13 @@ def _require_expired_plan(tenant_id: str, plan_sha256: str) -> dict[str, Any]:
     plan = latest_release_handoff_plan(tenant_id)
     approved = latest_release_handoff_approval(tenant_id)
     if (
-        not plan or not approved or plan.get('plan_sha256') != plan_sha256
-        or plan.get('tenant_id') != tenant_id or plan.get('provider') != 'native_kubernetes'
-        or _plan_hash(plan) != plan_sha256 or len(plan_sha256) != 64
+        not plan
+        or not approved
+        or plan.get('plan_sha256') != plan_sha256
+        or plan.get('tenant_id') != tenant_id
+        or plan.get('provider') != 'native_kubernetes'
+        or _plan_hash(plan) != plan_sha256
+        or len(plan_sha256) != 64
         or plan.get('status') != 'pending_independent_approval'
         or approved.get('plan_sha256') != plan_sha256
         or approved.get('status') != 'acknowledged_pending_provider_handoff'
@@ -227,7 +232,8 @@ def _require_expired_plan(tenant_id: str, plan_sha256: str) -> dict[str, Any]:
         raise ValueError('A current plan cannot enter expired-plan recovery.')
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.provider_key != 'native_kubernetes'
+        tenant is None
+        or tenant.provider_key != 'native_kubernetes'
         or tenant.provider_state != 'native'
         or tenant.reconciliation_authority != 'native_kubernetes'
         or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
@@ -240,13 +246,17 @@ def _require_expired_plan(tenant_id: str, plan_sha256: str) -> dict[str, Any]:
 
 
 def _verify_original_provider_state(
-    *, tenant_id: str, plan: dict[str, Any], actor_user_id: int,
+    *,
+    tenant_id: str,
+    plan: dict[str, Any],
+    actor_user_id: int,
     fresh: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Fresh preflight and per-resource authoritative GET: no provider PATCH."""
     if fresh is None:
         fresh = review_tenant_release_preflight_committed(
-            tenant_id=tenant_id, actor_user_id=actor_user_id,
+            tenant_id=tenant_id,
+            actor_user_id=actor_user_id,
         )
     _can_confirm_plan(fresh)
     if (
@@ -261,12 +271,12 @@ def _verify_original_provider_state(
         raise ValueError('Fresh provider identity, allocation or dependency evidence changed.')
     dry_run = _latest_native_dry_run(tenant_id)
     selected = [
-        row for row in plan.get('handoff_components', [])
-        if row.get('handoff') == 'external_acceptance_required'
+        row for row in plan.get('handoff_components', []) if row.get('handoff') == 'external_acceptance_required'
     ]
     snapshots = (dry_run or {}).get('previewed_components')
     if (
-        not dry_run or dry_run.get('plan_sha256') != plan['plan_sha256']
+        not dry_run
+        or dry_run.get('plan_sha256') != plan['plan_sha256']
         or dry_run.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
         or dry_run.get('status') != 'dry_run_passed'
         or dry_run.get('provider_mutation_performed') is not False
@@ -289,8 +299,10 @@ def _verify_original_provider_state(
         core = runtime_adapter.build_client(cluster).core_api()
         live = {_component_key(row): _read_resource(core, row) for row in snapshots}
         proof = summarize_native_handoff_recovery(
-            previewed_components=snapshots, live_components=live,
-            tenant_id=tenant_id, successor_owner=plan['successor_owner'],
+            previewed_components=snapshots,
+            live_components=live,
+            tenant_id=tenant_id,
+            successor_owner=plan['successor_owner'],
         )
     except (ApiException, ValueError, TypeError, AttributeError) as exc:
         raise ValueError('Authoritative provider ownership, UID/RV or retained metadata differs.') from exc
@@ -311,7 +323,11 @@ def _verify_original_provider_state(
 
 
 def assess_native_no_transfer_recovery_committed(
-    *, tenant_id: str, actor_user_id: int, plan_sha256: str, confirmed: bool,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
+    confirmed: bool,
 ) -> dict[str, Any]:
     """Requester explicitly assesses a failed-before-write plan via GET-only provider proof."""
     if not confirmed:
@@ -321,21 +337,27 @@ def assess_native_no_transfer_recovery_committed(
         raise ValueError('Only the original requester may initiate no-transfer recovery assessment.')
     history = _source_history(tenant_id, plan)
     proof = _verify_original_provider_state(
-        tenant_id=tenant_id, plan=plan, actor_user_id=actor_user_id,
+        tenant_id=tenant_id,
+        plan=plan,
+        actor_user_id=actor_user_id,
     )
     tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
-        tenant is None or tenant.generation != plan['generation']
+        tenant is None
+        or tenant.generation != plan['generation']
         or latest_release_handoff_plan(tenant_id).get('plan_sha256') != plan_sha256
         or _source_history(tenant_id, plan)['digest'] != history['digest']
     ):
         raise ValueError('Concurrent provider history or Tenant state changed during assessment.')
     receipt = {
         'status': 'verified_no_transfer_pending_independent_review',
-        'tenant_id': tenant_id, 'cluster_id': plan['cluster_id'],
-        'generation': plan['generation'], 'plan_sha256': plan_sha256,
+        'tenant_id': tenant_id,
+        'cluster_id': plan['cluster_id'],
+        'generation': plan['generation'],
+        'plan_sha256': plan_sha256,
         'handoff_fingerprint': plan['handoff_fingerprint'],
-        'assessed_by': actor_user_id, 'executor_actor_id': history['executor_actor_id'],
+        'assessed_by': actor_user_id,
+        'executor_actor_id': history['executor_actor_id'],
         'failed_event_id': history['failed_event_id'],
         'failed_event_ids': history['failed_event_ids'],
         'attempt_count': history['attempt_count'],
@@ -343,23 +365,33 @@ def assess_native_no_transfer_recovery_committed(
         'provider_proof_sha256': proof['provider_proof_sha256'],
         'observed_components': proof['observed_components'],
         'assessed_at': datetime.now(UTC).isoformat(),
-        'provider_mutation_performed': False, 'release_authorized': False,
-        'provider_handoff_verified': False, 'secret_material_persisted': False,
+        'provider_mutation_performed': False,
+        'release_authorized': False,
+        'provider_handoff_verified': False,
+        'secret_material_persisted': False,
     }
     receipt['assessment_sha256'] = _sha(receipt)
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_ASSESS_TARGET, target_id=tenant_id,
-        action='tenant.release.native_no_transfer_assessed',
-        summary='Recorded authoritative, read-only no-transfer recovery assessment.',
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_ASSESS_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.native_no_transfer_assessed',
+            summary='Recorded authoritative, read-only no-transfer recovery assessment.',
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt
 
 
 def authorize_native_no_transfer_recovery_committed(
-    *, tenant_id: str, actor_user_id: int, plan_sha256: str,
-    assessment_sha256: str, confirmed: bool,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
+    assessment_sha256: str,
+    confirmed: bool,
 ) -> dict[str, Any]:
     """Second-person decision after canonical no-transfer proof, never Release."""
     if not confirmed:
@@ -407,8 +439,10 @@ def authorize_native_no_transfer_recovery_committed(
         raise ValueError('A concurrent reviewer already decided this recovery assessment.')
     receipt = {
         'status': 'authorized_for_requester_restart',
-        'tenant_id': tenant_id, 'cluster_id': plan['cluster_id'],
-        'generation': plan['generation'], 'plan_sha256': plan_sha256,
+        'tenant_id': tenant_id,
+        'cluster_id': plan['cluster_id'],
+        'generation': plan['generation'],
+        'plan_sha256': plan_sha256,
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'assessment_sha256': assessment_sha256,
         'history_digest': assessed['history_digest'],
@@ -417,28 +451,37 @@ def authorize_native_no_transfer_recovery_committed(
         'executor_actor_id': assessed['executor_actor_id'],
         'authorized_by': actor_user_id,
         'authorized_at': datetime.now(UTC).isoformat(),
-        'provider_mutation_performed': False, 'release_authorized': False,
+        'provider_mutation_performed': False,
+        'release_authorized': False,
         'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_DECISION_TARGET, target_id=tenant_id,
-        action='tenant.release.native_no_transfer_authorized',
-        summary='Independently authorized a fresh requester restart, not provider transfer.',
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_DECISION_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.native_no_transfer_authorized',
+            summary='Independently authorized a fresh requester restart, not provider transfer.',
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt
 
 
 def require_authorized_no_transfer_restart(
-    *, tenant_id: str, plan: dict[str, Any], actor_user_id: int,
+    *,
+    tenant_id: str,
+    plan: dict[str, Any],
+    actor_user_id: int,
 ) -> dict[str, Any]:
     """Admission helper, always revalidate provider history; never trust UI hints."""
     assessed = latest_no_transfer_assessment(tenant_id)
     decision = latest_no_transfer_decision(tenant_id)
     if (
         actor_user_id != plan['requested_by']
-        or not assessed or not decision
+        or not assessed
+        or not decision
         or assessed.get('status') != 'verified_no_transfer_pending_independent_review'
         or decision.get('status') != 'authorized_for_requester_restart'
         or assessed.get('plan_sha256') != plan['plan_sha256']
@@ -450,8 +493,10 @@ def require_authorized_no_transfer_restart(
         or decision.get('history_digest') != assessed.get('history_digest')
         or decision.get('provider_proof_sha256') != assessed.get('provider_proof_sha256')
         or decision.get('assessed_by') != plan['requested_by']
-        or decision.get('authorized_by') in {
-            plan['requested_by'], assessed.get('assessed_by'),
+        or decision.get('authorized_by')
+        in {
+            plan['requested_by'],
+            assessed.get('assessed_by'),
         }
         or not _checked_recently(assessed.get('assessed_at'))
         or not _checked_recently(decision.get('authorized_at'))

@@ -66,7 +66,10 @@ def _label_path(name: str) -> str:
 
 
 def build_native_handoff_patch(
-    component: Mapping[str, str], resource: Any, *, tenant_id: str,
+    component: Mapping[str, str],
+    resource: Any,
+    *,
+    tenant_id: str,
 ) -> list[dict[str, str]]:
     """Test immutable identity and owner labels, then remove ONLY KAORI markers.
 
@@ -78,11 +81,7 @@ def build_native_handoff_patch(
     if component.get('ownership') != 'kaori_marker_correlated':
         raise ValueError('Ownership marker is not verified as belonging to the same KAORI Tenant.')
     name, uid, rv, labels = _resource_metadata(resource)
-    if (
-        name != component.get('name')
-        or uid != component.get('uid')
-        or rv != component.get('resource_version')
-    ):
+    if name != component.get('name') or uid != component.get('uid') or rv != component.get('resource_version'):
         raise ValueError('Provider UID/resourceVersion differs from approved handoff evidence.')
     if labels.get('app.kubernetes.io/managed-by') != 'kaori' or labels.get('kaori.io/tenant-id') != tenant_id:
         raise ValueError('Provider KAORI ownership labels do not match the approved Tenant.')
@@ -115,7 +114,9 @@ def _read_resource(core: Any, component: Mapping[str, str]) -> Any:
 
 def _dry_run_patch(core: Any, component: Mapping[str, str], body: list[dict[str, str]]) -> Any:
     params = {
-        'body': body, 'dry_run': 'All', '_content_type': _CONTENT_TYPE,
+        'body': body,
+        'dry_run': 'All',
+        '_content_type': _CONTENT_TYPE,
         '_request_timeout': 5,
     }
     kind, name = component['kind'], component['name']
@@ -144,25 +145,23 @@ def _immutable_metadata(resource: Any) -> tuple[Any, ...]:
     meta = _metadata(resource)
     values = []
     for key in (
-        'owner_references', 'finalizers', 'generation',
-        'deletion_timestamp', 'deletion_grace_period_seconds',
+        'owner_references',
+        'finalizers',
+        'generation',
+        'deletion_timestamp',
+        'deletion_grace_period_seconds',
     ):
         value = _read(meta, key)
         if hasattr(value, 'to_dict'):
             value = value.to_dict()
         elif isinstance(value, list):
-            value = [
-                item.to_dict() if hasattr(item, 'to_dict') else item
-                for item in value
-            ]
+            value = [item.to_dict() if hasattr(item, 'to_dict') else item for item in value]
         values.append(value)
     return tuple(values)
 
 
 def _stable_sha256(value: Any) -> str:
-    return hashlib.sha256(
-        json.dumps(value, sort_keys=True, separators=(',', ':'), default=str).encode()
-    ).hexdigest()
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'), default=str).encode()).hexdigest()
 
 
 def _retained_provider_metadata(resource: Any) -> dict[str, Any]:
@@ -176,7 +175,10 @@ def _retained_provider_metadata(resource: Any) -> dict[str, Any]:
 
 
 def dry_run_native_handoff_component(
-    core: Any, component: Mapping[str, str], *, tenant_id: str,
+    core: Any,
+    component: Mapping[str, str],
+    *,
+    tenant_id: str,
 ) -> dict[str, Any]:
     """Server-side dry-run + returned-spec and unchanged-live-state verification."""
     before = _read_resource(core, component)
@@ -194,10 +196,7 @@ def dry_run_native_handoff_component(
         raise ValueError('Dry-run changed Kubernetes spec; ownership handoff is blocked.')
     if _immutable_metadata(before) != _immutable_metadata(preview):
         raise ValueError('Dry-run changed provider ownerReferences, finalizers or lifecycle metadata.')
-    expected_labels = {
-        key: value for key, value in before_identity[3].items()
-        if key not in _MARKER_KEYS
-    }
+    expected_labels = {key: value for key, value in before_identity[3].items() if key not in _MARKER_KEYS}
     if after_labels != expected_labels:
         raise ValueError('Dry-run changed unrelated Kubernetes labels; handoff is blocked.')
     before_annotations = _read(_metadata(before), 'annotations') or {}
@@ -215,28 +214,32 @@ def dry_run_native_handoff_component(
         raise ValueError('Kubernetes live state changed during dry-run verification.')
     return {
         'namespace': component.get('namespace'),
-        'kind': component['kind'], 'name': component['name'],
-        'uid': component['uid'], 'resource_version': component['resource_version'],
+        'kind': component['kind'],
+        'name': component['name'],
+        'uid': component['uid'],
+        'resource_version': component['resource_version'],
         'operation': 'metadata_only_json_patch_dry_run',
         'dry_run': True,
         'spec_unchanged': True,
         'live_provider_unchanged': True,
         'spec_sha256': _stable_sha256(_spec(before)),
         'retained_metadata_sha256': _stable_sha256(_retained_provider_metadata(before)),
-        'label_keys_to_release': [
-            key for key in _MARKER_KEYS if key in before_identity[3]
-        ],
+        'label_keys_to_release': [key for key in _MARKER_KEYS if key in before_identity[3]],
     }
 
 
 def dry_run_native_release_handoff_committed(
-    *, tenant_id: str, actor_user_id: int, plan_sha256: str,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
 ) -> dict[str, Any]:
     """Execute ONLY Kubernetes dry-run calls after independent approval."""
     plan = latest_release_handoff_plan(tenant_id)
     approved = latest_release_handoff_approval(tenant_id)
     if (
-        not plan or not approved
+        not plan
+        or not approved
         or plan.get('tenant_id') != tenant_id
         or plan.get('plan_sha256') != plan_sha256
         or _plan_hash(plan) != plan_sha256
@@ -253,7 +256,8 @@ def dry_run_native_release_handoff_committed(
         raise ValueError('Current, independently approved handoff plan is required.')
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.provider_key != 'native_kubernetes'
+        tenant is None
+        or tenant.provider_key != 'native_kubernetes'
         or tenant.reconciliation_authority != 'native_kubernetes'
         or tenant.ownership_status != 'adopted'
         or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
@@ -262,22 +266,16 @@ def dry_run_native_release_handoff_committed(
     ):
         raise ValueError('Only the exact approved Native adopted Tenant is eligible.')
     # Preflight is an explicitly authorized live read that commits new evidence.
-    fresh = review_tenant_release_preflight_committed(
-        tenant_id=tenant_id, actor_user_id=actor_user_id
-    )
+    fresh = review_tenant_release_preflight_committed(tenant_id=tenant_id, actor_user_id=actor_user_id)
     _can_confirm_plan(fresh)
-    if (
-        fresh.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
-        or fresh.get('live_provider_identity') != plan.get('provider_identity')
-    ):
+    if fresh.get('handoff_fingerprint') != plan.get('handoff_fingerprint') or fresh.get(
+        'live_provider_identity'
+    ) != plan.get('provider_identity'):
         raise ValueError('Provider ownership evidence changed after independent approval.')
     components = fresh['handoff_components']
     if len(components) > _MAX_COMPONENTS:
         raise ValueError('Native transfer scope is too large for a bounded dry-run.')
-    selected = [
-        item for item in components
-        if item.get('handoff') == 'external_acceptance_required'
-    ]
+    selected = [item for item in components if item.get('handoff') == 'external_acceptance_required']
     if not selected or any(item.get('ownership') != 'kaori_marker_correlated' for item in selected):
         raise ValueError('Native handoff requires exact KAORI-correlated ownership evidence.')
     keys = [(item.get('namespace'), item.get('kind'), item.get('name')) for item in selected]
@@ -291,29 +289,37 @@ def dry_run_native_release_handoff_committed(
     errors: list[str] = []
     for component in selected:
         try:
-            results.append(
-                dry_run_native_handoff_component(core, component, tenant_id=tenant_id)
-            )
+            results.append(dry_run_native_handoff_component(core, component, tenant_id=tenant_id))
         except Exception as exc:
             # Failed preview must still commit partial diagnostic evidence.
-            errors.append(f"{component['kind']}/{component['name']}: {type(exc).__name__}")
+            errors.append(f'{component["kind"]}/{component["name"]}: {type(exc).__name__}')
             break
     status = 'dry_run_passed' if not errors and len(results) == len(selected) else 'dry_run_failed'
     receipt = {
-        'status': status, 'tenant_id': tenant_id, 'cluster_id': tenant.cluster_id,
+        'status': status,
+        'tenant_id': tenant_id,
+        'cluster_id': tenant.cluster_id,
         'plan_sha256': plan_sha256,
         'handoff_fingerprint': fresh['handoff_fingerprint'],
-        'previewed_components': results, 'expected_component_count': len(selected),
-        'errors': errors, 'checked_at': datetime.now(UTC).isoformat(),
-        'provider_mutation_performed': False, 'provider_handoff_verified': False,
-        'release_authorized': False, 'dry_run_only': True,
+        'previewed_components': results,
+        'expected_component_count': len(selected),
+        'errors': errors,
+        'checked_at': datetime.now(UTC).isoformat(),
+        'provider_mutation_performed': False,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+        'dry_run_only': True,
         'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action=f'tenant.release.native_handoff.{status}',
-        summary='Native provider handoff dry-run; no provider mutation persisted.',
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action=f'tenant.release.native_handoff.{status}',
+            summary='Native provider handoff dry-run; no provider mutation persisted.',
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt

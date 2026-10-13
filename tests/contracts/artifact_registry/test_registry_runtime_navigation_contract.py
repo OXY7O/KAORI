@@ -22,13 +22,16 @@ def test_runtime_sidebar_is_capability_first_with_three_level_three_views() -> N
     catalog = _read('app/common/workspace_navigation_catalog.py')
     navigation = _read('app/common/workspace_navigation.py')
 
-    assert """'runtime',
+    assert (
+        """'runtime',
                 'Runtime',
                 'waypoints',
-                'artifact_registry.runtime_overview'""" in catalog
-    views = catalog.rsplit("    'artifact_registry_runtime': (", 1)[1].split(
-        "    'artifact_registry_analytics': (", 1
-    )[0]
+                'artifact_registry.runtime_overview'"""
+        in catalog
+    )
+    views = catalog.rsplit("    'artifact_registry_runtime': (", 1)[1].split("    'artifact_registry_analytics': (", 1)[
+        0
+    ]
     assert views.count('CapabilityViewDefinition(') == 3
     labels = (
         ('overview', 'Overview', 'artifact_registry.runtime_overview'),
@@ -67,15 +70,17 @@ def test_runtime_routes_and_navigation_remain_authorized_and_compatible() -> Non
     assert (
         "@artifact_registry_bp.get('/runtime/overview')\n"
         "@permission_required('artifact_registry.view')\n"
-        "def runtime_overview()"
+        'def runtime_overview()'
     ) in routes
     assert "'artifact_registry/runtime_overview.html'" in routes
-    assert "runtime=build_runtime_usage(**_runtime_topology_filters())" in routes
+    assert 'runtime=build_runtime_usage(**_runtime_topology_filters())' in routes
     assert "@artifact_registry_bp.get('/runtime')\n@permission_required('artifact_registry.view')" in routes
     assert "@artifact_registry_bp.get('/runtime/topology')\n@permission_required('artifact_registry.view')" in routes
-    assert "@artifact_registry_bp.get('/runtime/topology/data')\n@permission_required('artifact_registry.view')" in routes
+    assert (
+        "@artifact_registry_bp.get('/runtime/topology/data')\n@permission_required('artifact_registry.view')" in routes
+    )
     assert "@artifact_registry_bp.get('/runtime/<int:binding_id>/details')" in routes
-    assert "return jsonify(build_dependency_topology(**_runtime_topology_filters()))" in routes
+    assert 'return jsonify(build_dependency_topology(**_runtime_topology_filters()))' in routes
 
 
 def test_canonical_tabs_render_above_hero_not_inside_individual_pages() -> None:

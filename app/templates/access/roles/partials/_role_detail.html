@@ -23,20 +23,22 @@
         </header>
         {# Four committed facts; keep the canonical host summary extractor. #}
         {{ detail_ui.summary_strip([
-            ('Assigned Users', detail.assigned_users ~ (' User' if detail.assigned_users == 1 else ' Users'), ''),
-            ('Provider Defaults', detail.provider_mappings ~ (' Default' if detail.provider_mappings == 1 else ' Defaults'), ''),
-            ('Assignment Availability', 'Available' if role.is_active else 'Blocked', ''),
-            ('Permissions', detail.permission_count ~ (' Permission' if detail.permission_count == 1 else ' Permissions'), '')
+                ('Assigned Users', detail.assigned_users ~ (' User' if detail.assigned_users == 1 else ' Users') , ''),
+        ('Provider Defaults', detail.provider_mappings ~ (' Default' if detail.provider_mappings == 1 else ' Defaults'), ''),
+        ('Assignment Availability', 'Available' if role.is_active else 'Blocked', ''),
+        ('Permissions', detail.permission_count ~ (' Permission' if detail.permission_count == 1 else ' Permissions'), '')
         ], compact=true, borderless=true) }}
-        <div class="min-w-0 p-3 sm:p-5" data-kaori-role-detail-layout="unified-resource-sheet">
+        <div class="min-w-0 p-3 sm:p-5"
+             data-kaori-role-detail-layout="unified-resource-sheet">
             {% call detail_ui.resource_sheet() %}
                 {% call detail_ui.inventory_section(
                     'Role Identity', 'badge-info',
                     description='Committed role identity and baseline',
                     badge=detail.type_short,
                     compact_layout=true
-                ) %}
-                    <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2" data-kaori-role-identity-facts>
+                    ) %}
+                    <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2"
+                         data-kaori-role-identity-facts>
                         {{ detail_ui.stacked_detail_row('Role Name', role.display_name) }}
                         {{ detail_ui.stacked_detail_row('Role Key', role.name) }}
                         <div class="min-w-0">
@@ -48,11 +50,13 @@
                             <div class="mt-1">{{ table_label.status_label(detail.state_label, detail.state_tone, detail.state_icon) }}</div>
                         </div>
                     </div>
-                    <div class="mt-3 border-t border-outline-subtle pt-3" data-kaori-role-purpose>
+                    <div class="mt-3 border-t border-outline-subtle pt-3"
+                         data-kaori-role-purpose>
                         <p class="text-xs font-medium leading-5 text-content-muted">Operational Purpose</p>
                         <p class="mt-1 max-w-4xl break-words text-sm font-normal leading-6 text-content-primary [overflow-wrap:anywhere]">{{ role.description or 'No role description is defined.' }}</p>
                     </div>
-                    <div class="mt-3 border-t border-outline-subtle pt-3" data-kaori-role-baseline>
+                    <div class="mt-3 border-t border-outline-subtle pt-3"
+                         data-kaori-role-baseline>
                         <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
                             <p class="text-xs font-medium leading-5 text-content-muted">Baseline Integrity</p>
                             {{ table_label.status_label(detail.baseline_label, detail.baseline_tone, detail.baseline_icon) }}
@@ -60,15 +64,15 @@
                         <p class="mt-1 max-w-4xl break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ detail.baseline_detail }}</p>
                     </div>
                 {% endcall %}
-
                 {% call detail_ui.inventory_section(
                     'Assignment Impact', 'users-round',
                     description='Membership, provider defaults and authorization',
                     badge='Available' if role.is_active else 'Blocked',
                     badge_type='status', badge_tone='normal' if role.is_active else 'unknown',
                     compact_layout=true
-                ) %}
-                    <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-3" data-kaori-role-impact-facts>
+                    ) %}
+                    <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-3"
+                         data-kaori-role-impact-facts>
                         {{ detail_ui.stacked_detail_row('Assigned Users', detail.assigned_users) }}
                         {{ detail_ui.stacked_detail_row('Provider Defaults', detail.provider_mappings) }}
                         <div class="min-w-0">
@@ -86,18 +90,19 @@
                         </div>
                     {% endif %}
                 {% endcall %}
-
                 {% call detail_ui.inventory_section(
                     'Permission Coverage', 'key-round',
                     description='All effective capabilities by control module',
                     badge=detail.permission_count ~ (' Permission' if detail.permission_count == 1 else ' Permissions'),
                     compact_layout=true
-                ) %}
+                    ) %}
                     <p class="mb-1 text-xs leading-5 text-content-muted">
                         {{ detail.module_count }} control module{{ '' if detail.module_count == 1 else 's' }}. Cross-role comparison remains in Permission Catalog.
                     </p>
                     {% if detail.permission_modules %}
-                        <ul class="min-w-0 divide-y divide-outline-subtle" aria-label="Role permission coverage by module" data-kaori-role-permission-coverage>
+                        <ul class="min-w-0 divide-y divide-outline-subtle"
+                            aria-label="Role permission coverage by module"
+                            data-kaori-role-permission-coverage>
                             {% for module in detail.permission_modules %}
                                 <li class="min-w-0 space-y-2 py-3" data-kaori-role-module>
                                     <div class="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-2">
@@ -111,7 +116,8 @@
                                     {# Capabilities occupy their own full-width row, even for a single permission. #}
                                     <div class="min-w-0" data-kaori-role-module-capabilities>
                                         <p class="mb-1 text-xs font-medium leading-5 text-content-muted">Capabilities</p>
-                                        <div class="flex min-w-0 flex-wrap items-center gap-1.5" role="group"
+                                        <div class="flex min-w-0 flex-wrap items-center gap-1.5"
+                                             role="group"
                                              aria-label="{{ module.label }} effective capabilities">
                                             {% for permission in module.permissions %}
                                                 {{ table_label.metadata_label(permission.label, wrap=true) }}
@@ -125,13 +131,12 @@
                         {{ detail_ui.empty_evidence('No Permissions Assigned', 'This role currently grants no effective permission contracts.', 'key-round') }}
                     {% endif %}
                 {% endcall %}
-
                 {% call detail_ui.inventory_section(
                     'Administrative Boundary', 'shield-check',
                     description='Ownership and permitted role actions',
                     badge='Protected' if detail.mutation_protected else 'Custom',
                     compact_layout=true
-                ) %}
+                    ) %}
                     <div class="min-w-0" data-kaori-role-administrative-boundary>
                         <div class="grid min-w-0 gap-x-8 gap-y-3">
                             {% if detail.mutation_protected %}
@@ -152,7 +157,8 @@
                                 {{ detail_ui.stacked_detail_row('Deletion State', 'Eligible' if detail.delete_eligible else 'Blocked by active references') }}
                             {% endif %}
                         </div>
-                        <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-3" data-kaori-role-actions>
+                        <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-3"
+                             data-kaori-role-actions>
                             <a href="{{ url_for('access.roles.detail', role_id=role.id) }}"
                                class="{{ action_button.classes('secondary', false) }}"><i data-lucide="external-link" class="h-4 w-4"></i>Open Role</a>
                             {% if can_manage_roles and detail.mutation_protected %}

@@ -166,9 +166,7 @@ def preview_uploaded_pair(files: Any, target_ids: Iterable[int] | None = None) -
     requested_ids = [int(item) for item in (target_ids or []) if str(item).isdigit()]
 
     if requested_ids:
-        targets = TLSCertificateInventory.query.filter(
-            TLSCertificateInventory.id.in_(requested_ids)
-        ).all()
+        targets = TLSCertificateInventory.query.filter(TLSCertificateInventory.id.in_(requested_ids)).all()
 
     if validation.parsed_certificate and targets:
         for target in targets:
@@ -357,9 +355,7 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
         return _bulk_failure_result('Select a unique, valid set of TLS Secrets before applying.')
     targets = _selected_tls_targets(requested_ids)
     if {target.id for target in targets} != set(requested_ids):
-        return _bulk_failure_result(
-            'The selected TLS Secret target set changed. Refresh selection and validate again.'
-        )
+        return _bulk_failure_result('The selected TLS Secret target set changed. Refresh selection and validate again.')
 
     parsed = validation.parsed_certificate
     # Admit the entire selected group before the first provider write.

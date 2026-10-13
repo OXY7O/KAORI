@@ -8,13 +8,13 @@ from flask import current_app, has_app_context
 from sqlalchemy import select
 
 from app.common.analytics.coercion import as_dict as _as_dict
+from app.common.analytics.params import get_allowed_time_ranges
 from app.extensions.db import db
 from app.intelligence.recommendation_engine import (
     build_operational_recommendations,
     build_utilization_actionable_recommendations,
     count_actionable_recommendations,
 )
-from app.common.analytics.params import get_allowed_time_ranges
 from app.kubernetes.analytics.common.presentation import present_metrics_source_status
 from app.kubernetes.analytics.overview.health import build_health_summary
 from app.kubernetes.analytics.overview.schema import build_empty_overview_payload, classify_count_risk, classify_percent

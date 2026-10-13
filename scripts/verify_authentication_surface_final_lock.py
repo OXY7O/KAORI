@@ -179,8 +179,7 @@ def main() -> int:
     )
 
     require(
-        'data-kaori-setup-outer-frame' not in setup
-        and 'lg:col-span-2' not in setup,
+        'data-kaori-setup-outer-frame' not in setup and 'lg:col-span-2' not in setup,
         'Setup Required must not reintroduce the rejected nested-frame/sidebar design',
         errors,
     )
@@ -199,22 +198,20 @@ def main() -> int:
     require(
         'bg-surface-page px-3 py-3 sm:px-4 sm:py-4' in setup
         and 'max-w-4xl' in setup
-        and 'copy_label=\'Copy Command\', compact=true' in setup
+        and "copy_label='Copy Command', compact=true" in setup
         and 'mt-4" data-kaori-setup-advanced' in setup,
         'Setup Required compact spacing/terminal density drifted',
         errors,
     )
     require(
-        '<div class="space-y-5">' in setup
-        and 'lg:grid-cols-2' not in setup
-        and "label='Manual Bootstrap'" in setup,
+        '<div class="space-y-5">' in setup and 'lg:grid-cols-2' not in setup and "label='Manual Bootstrap'" in setup,
         'Setup Required manual bootstrap must use full-width advanced content',
         errors,
     )
     require(
-        "bash scripts/init_db.sh --bootstrap-admin" not in setup
-        and "flask --app run:app db upgrade" not in setup
-        and "flask --app run:app seed-rbac" not in setup,
+        'bash scripts/init_db.sh --bootstrap-admin' not in setup
+        and 'flask --app run:app db upgrade' not in setup
+        and 'flask --app run:app seed-rbac' not in setup,
         'Production setup must not render obsolete direct migration commands',
         errors,
     )

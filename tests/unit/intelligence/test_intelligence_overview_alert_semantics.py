@@ -18,15 +18,27 @@ def test_source_resolved_open_case_is_not_active() -> None:
     assert not is_active_alert_case(_case('firing', 'open', 'provider_alert'))
 
 
-def _posture(*, critical=0, warning=0, source_unknown=0, postmortem_required=0,
-             active=0, delivery_failures=0, verification_pending=0):
+def _posture(
+    *,
+    critical=0,
+    warning=0,
+    source_unknown=0,
+    postmortem_required=0,
+    active=0,
+    delivery_failures=0,
+    verification_pending=0,
+):
     return _overview_posture(
         summary={
-            'findings': 0, 'critical': 0, 'warning': 0,
+            'findings': 0,
+            'critical': 0,
+            'warning': 0,
             'registered_assets': 1,
         },
         alerts={
-            'active': active, 'critical': critical, 'warning': warning,
+            'active': active,
+            'critical': critical,
+            'warning': warning,
             'source_unknown': source_unknown,
             'postmortem_required': postmortem_required,
             'delivery_failures': delivery_failures,

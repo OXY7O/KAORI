@@ -19,19 +19,22 @@ def test_release_handoff_plan_is_committed_and_never_claims_provider_transfer():
     assert 'review_tenant_release_preflight_committed(' in service
     assert "'kubernetes_tenant_release_handoff_plan'" in service
     assert "'kubernetes_tenant_release_handoff_approval'" in service
-    assert 'actor_user_id == plan.get(\'requested_by\')' in service
+    assert "actor_user_id == plan.get('requested_by')" in service
     assert "'provider_handoff_verified': False" in service
     assert "'release_authorized': False" in service
     assert "'provider_mutation_performed': False" in service
-    assert 'if not _checked_recently(plan.get(\'requested_at\'))' in service
+    assert "if not _checked_recently(plan.get('requested_at'))" in service
     assert "fresh.get('handoff_fingerprint') != plan['handoff_fingerprint']" in service
     assert "existing.get('plan_sha256') == plan_sha256" in service
     assert 'db.session.commit()' in service
 
     for verb in (
-        'patch_namespaced_resource_quota', 'patch_namespaced_limit_range',
-        'patch_namespace(', 'create_namespaced_role_binding',
-        'delete_namespaced_role_binding', 'delete_namespace(',
+        'patch_namespaced_resource_quota',
+        'patch_namespaced_limit_range',
+        'patch_namespace(',
+        'create_namespaced_role_binding',
+        'delete_namespaced_role_binding',
+        'delete_namespace(',
         'patch_cluster_custom_object(',
     ):
         assert verb not in service
@@ -77,30 +80,30 @@ def test_handoff_preparation_cannot_replace_a_current_approval_request() -> None
     context = read('app/kubernetes/tenant/registry_context.py')
     modal = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
-    assert "def handoff_plan_preparation_state(" in service
-    assert "def _require_no_active_handoff_plan(" in service
-    lock = service.index("Tenant.query.filter_by(id=tenant_id).with_for_update()")
-    check = service.index(
-        "_require_no_active_handoff_plan(tenant_id=tenant_id, actor_user_id=actor_user_id)"
-    )
+    assert 'def handoff_plan_preparation_state(' in service
+    assert 'def _require_no_active_handoff_plan(' in service
+    lock = service.index('Tenant.query.filter_by(id=tenant_id).with_for_update()')
+    check = service.index('_require_no_active_handoff_plan(tenant_id=tenant_id, actor_user_id=actor_user_id)')
     write = service.index("action='tenant.release.handoff_plan_prepared'")
     assert lock < check < write
     assert "state == 'pending'" in service
     assert "state == 'acknowledged'" in service
     assert "state == 'blocked'" in service
-    assert "latest_release_handoff_plan(tenant_id)" in service
-    assert "latest_release_handoff_approval(tenant_id)" in service
+    assert 'latest_release_handoff_plan(tenant_id)' in service
+    assert 'latest_release_handoff_approval(tenant_id)' in service
 
-    assert "handoff_plan_preparation_state(" in context
+    assert 'handoff_plan_preparation_state(' in context
     assert "row['release_handoff_preparation_state']" in context
     assert "row.release_handoff_preparation_state == 'available'" in modal
-    assert "handoff_plan.requested_by == current_user.id" in modal
-    assert "Only the original requester may renew" in service
-    assert "The current handoff plan is locked." in modal
-    assert "Acknowledge as Independent Reviewer" in modal
-    assert "row.release_handoff_preparation_state == 'pending' and handoff_plan.requested_by != current_user.id" in modal
-    assert "External Reference Unverified" in modal
-    assert "not an additional approval" in modal
+    assert 'handoff_plan.requested_by == current_user.id' in modal
+    assert 'Only the original requester may renew' in service
+    assert 'The current handoff plan is locked.' in modal
+    assert 'Acknowledge as Independent Reviewer' in modal
+    assert (
+        "row.release_handoff_preparation_state == 'pending' and handoff_plan.requested_by != current_user.id" in modal
+    )
+    assert 'External Reference Unverified' in modal
+    assert 'not an additional approval' in modal
 
 
 def test_release_handoff_compact_guidance_preserves_legacy_approval_evidence() -> None:
@@ -116,4 +119,3 @@ def test_release_handoff_compact_guidance_preserves_legacy_approval_evidence() -
     assert '{{ blocker }}' in ui
     assert 'Before Release, its Namespace allocation controls must be handed over explicitly' in approval
     assert '_EXPECTED_HANDOFF_FRAGMENTS' in approval
-

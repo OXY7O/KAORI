@@ -38,7 +38,8 @@ def test_batched_metrics_source_readiness_has_constant_query_count(monkeypatch) 
     monkeypatch.setattr(IntegrationBinding, 'query', _Query(bindings, binding_hits))
     monkeypatch.setattr(MetricsSource, 'query', _Query([source], source_hits))
     monkeypatch.setattr(
-        observability, '_evaluate_binding',
+        observability,
+        '_evaluate_binding',
         lambda binding, _source, **_kw: SimpleNamespace(eligible=binding.asset_key == '1'),
     )
     fleet = [SimpleNamespace(id=i) for i in range(1, 101)]
@@ -51,7 +52,8 @@ def test_empty_fleet_does_not_query_metrics_binding_registry(monkeypatch) -> Non
     from app.models.integration import IntegrationBinding
 
     monkeypatch.setattr(
-        IntegrationBinding, 'query',
+        IntegrationBinding,
+        'query',
         _Query([], []),
     )
     assert observability.registry_metrics_ready_provider_ids([]) == set()

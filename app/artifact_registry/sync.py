@@ -326,7 +326,9 @@ def sync_registry_inventory(
                 'result': 'confirmed_empty',
             }
         counts = commit_registry_inventory(
-            identity, evidence, observed_at=observed_at,
+            identity,
+            evidence,
+            observed_at=observed_at,
             confirmed_empty=reconciliation_evidence is not None,
         )
         if reconciliation_evidence is not None:
@@ -360,6 +362,7 @@ def sync_registry_inventory(
         }
         logger.warning(
             'Authorized empty Registry Inventory reconciliation committed for provider %s by actor %s.',
-            identity.id, reconciliation_evidence['confirmed_by_user_id'],
+            identity.id,
+            reconciliation_evidence['confirmed_by_user_id'],
         )
     return result

@@ -2,6 +2,7 @@
 
 No Kubernetes read or write is permitted during normal Tenant detail GET.
 """
+
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -11,39 +12,57 @@ from werkzeug.exceptions import NotFound
 
 from app.kubernetes.tenant import route_common
 
-
 ADMIN = {'tenant.manage', 'integrations.manage', 'clusters.manage'}
 
 
-def _context(monkeypatch, *, perms=ADMIN, lifecycle='ready', provider='native_kubernetes',
-             selected='', evidence=None, release_step='', submitted_step=''):
+def _context(
+    monkeypatch,
+    *,
+    perms=ADMIN,
+    lifecycle='ready',
+    provider='native_kubernetes',
+    selected='',
+    evidence=None,
+    release_step='',
+    submitted_step='',
+):
     tenant = SimpleNamespace(
-        id='tenant-a', name='tenant-a', ownership_status='adopted',
-        lifecycle_status=lifecycle, provider_key=provider,
+        id='tenant-a',
+        name='tenant-a',
+        ownership_status='adopted',
+        lifecycle_status=lifecycle,
+        provider_key=provider,
         provider_state='capsule' if provider == 'capsule' else 'native',
         provider_evidence_json=evidence or {},
     )
     row = {'tenant': tenant, 'capsule_environment_options': ['development']}
     monkeypatch.setattr(
-        route_common, 'get_tenant_registry_context',
+        route_common,
+        'get_tenant_registry_context',
         lambda **_kwargs: {'tenant_rows': [row]},
     )
     monkeypatch.setattr(
-        route_common, 'current_user',
+        route_common,
+        'current_user',
         SimpleNamespace(has_permission=lambda code: code in perms),
     )
     monkeypatch.setattr(
-        route_common, 'request',
-        SimpleNamespace(values={
-            'tenant_detail_section': selected,
-            'release_step': release_step,
-            'tenant_release_step': submitted_step,
-        }),
+        route_common,
+        'request',
+        SimpleNamespace(
+            values={
+                'tenant_detail_section': selected,
+                'release_step': release_step,
+                'tenant_release_step': submitted_step,
+            }
+        ),
     )
     monkeypatch.setattr(
-        route_common, 'url_for',
-        lambda endpoint, **_kwargs: '/tenants?section=registry' if endpoint == 'tenant.tenants'
-        else '/tenants/tenant-a/manage',
+        route_common,
+        'url_for',
+        lambda endpoint, **_kwargs: (
+            '/tenants?section=registry' if endpoint == 'tenant.tenants' else '/tenants/tenant-a/manage'
+        ),
     )
     return route_common._tenant_detail_context('tenant-a')
 
@@ -54,20 +73,23 @@ def test_ready_platform_admin_defaults_to_release_open(monkeypatch):
     assert context['tenant_release_step'] == 'scope'
 
 
-
-
 def test_release_wizard_accepts_bounded_url_step(monkeypatch):
     ctx = _context(monkeypatch, selected='release', release_step='approval')
     assert ctx['tenant_detail_open_section'] == 'release'
     assert ctx['tenant_release_step'] == 'approval'
     assert list(ctx['tenant_release_step_urls']) == [
-        'scope', 'handoff', 'approval', 'finalize',
+        'scope',
+        'handoff',
+        'approval',
+        'finalize',
     ]
 
 
 def test_governance_post_keeps_selected_wizard_step(monkeypatch):
     ctx = _context(
-        monkeypatch, selected='release', submitted_step='finalize',
+        monkeypatch,
+        selected='release',
+        submitted_step='finalize',
     )
     assert ctx['tenant_detail_open_section'] == 'release'
     assert ctx['tenant_release_step'] == 'finalize'
@@ -75,14 +97,18 @@ def test_governance_post_keeps_selected_wizard_step(monkeypatch):
 
 def test_invalid_step_falls_back_to_scope_without_authorizing_release(monkeypatch):
     ctx = _context(
-        monkeypatch, selected='release', release_step='<script>',
+        monkeypatch,
+        selected='release',
+        release_step='<script>',
     )
     assert ctx['tenant_release_step'] == 'scope'
 
 
 def test_form_step_has_priority_over_old_url_for_htmx_response(monkeypatch):
     ctx = _context(
-        monkeypatch, selected='release', release_step='scope',
+        monkeypatch,
+        selected='release',
+        release_step='scope',
         submitted_step='handoff',
     )
     assert ctx['tenant_release_step'] == 'handoff'
@@ -103,12 +129,18 @@ def test_readonly_viewer_does_not_open_release(monkeypatch):
 def test_released_generation_switches_to_handback_only_if_authorized(monkeypatch):
     evidence = {'release_governance': {'release_mode': 'managed_handoff'}}
     context = _context(
-        monkeypatch, lifecycle='released', selected='release', evidence=evidence,
+        monkeypatch,
+        lifecycle='released',
+        selected='release',
+        evidence=evidence,
     )
     assert context['tenant_detail_open_section'] == 'handback'
     assert context['tenant_release_step'] == 'scope'
     context = _context(
-        monkeypatch, lifecycle='released', selected='handback', evidence=evidence,
+        monkeypatch,
+        lifecycle='released',
+        selected='handback',
+        evidence=evidence,
         perms={'tenant.view'},
     )
     assert context['tenant_detail_open_section'] == 'provider'
@@ -116,7 +148,10 @@ def test_released_generation_switches_to_handback_only_if_authorized(monkeypatch
 
 def test_capsule_attachment_reopens_only_when_valid(monkeypatch):
     ctx = _context(
-        monkeypatch, perms={'tenant.manage'}, provider='capsule', selected='attachment',
+        monkeypatch,
+        perms={'tenant.manage'},
+        provider='capsule',
+        selected='attachment',
     )
     assert ctx['tenant_detail_open_section'] == 'attachment'
     ctx = _context(monkeypatch, perms={'tenant.view'}, provider='capsule', selected='attachment')
@@ -135,7 +170,8 @@ def test_unknown_section_never_enters_template(monkeypatch):
 
 def test_missing_tenant_returns_404(monkeypatch):
     monkeypatch.setattr(
-        route_common, 'get_tenant_registry_context',
+        route_common,
+        'get_tenant_registry_context',
         lambda **_kwargs: {'tenant_rows': []},
     )
     with pytest.raises(NotFound):
@@ -147,9 +183,9 @@ def test_release_wizard_explains_platform_admin_ownership_without_bypassing_appr
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[3]
-    template = (
-        root / 'app/templates/kubernetes/tenant/partials/_tenant_management_detail.html'
-    ).read_text(encoding='utf-8')
+    template = (root / 'app/templates/kubernetes/tenant/partials/_tenant_management_detail.html').read_text(
+        encoding='utf-8'
+    )
     assert 'aria-label="Independent Platform Admin required"' in template
     assert 'handoff_plan.requested_by == current_user.id' in template
     assert 'Another authorized Platform Admin must verify provider identity' in template
@@ -159,8 +195,8 @@ def test_release_wizard_explains_platform_admin_ownership_without_bypassing_appr
     assert 'Execute Native Handoff' in template
     assert 'Dry-run and external references are not consent.' in template
     assert 'a new-generation Re-adopt is a separate governed action' in template
-    assert "row.native_release_readiness.approval_complete" in template
-    assert 'tenant_release_step_urls[\'approval\']' in template
+    assert 'row.native_release_readiness.approval_complete' in template
+    assert "tenant_release_step_urls['approval']" in template
     assert "hx-post=\"{{ url_for('tenant.accept_native_successor_handoff_route'" in template
     assert "hx-post=\"{{ url_for('tenant.execute_native_release_handoff_route'" in template
 
@@ -168,6 +204,7 @@ def test_release_wizard_explains_platform_admin_ownership_without_bypassing_appr
 def test_capsule_release_condition_cards_keep_verbatim_evidence() -> None:
     """#1204: concise titles are display-only; exact original evidence is inspectable."""
     from pathlib import Path
+
     from jinja2 import Environment
 
     root = Path(__file__).resolve().parents[3]
@@ -175,9 +212,7 @@ def test_capsule_release_condition_cards_keep_verbatim_evidence() -> None:
         encoding='utf-8'
     )
     Environment(autoescape=True).parse(page)
-    panel = page.split('aria-label="Release blockers"', 1)[1].split(
-        "{% endif %}\n                    </section>", 1
-    )[0]
+    panel = page.split('aria-label="Release blockers"', 1)[1].split('{% endif %}\n                    </section>', 1)[0]
     for pattern in (
         "blocker.startswith('Adoption performed KAORI-owned provider mutations.')",
         "' active Access Grants must be governed/handoff-reviewed before release.' in blocker",
@@ -189,7 +224,7 @@ def test_capsule_release_condition_cards_keep_verbatim_evidence() -> None:
         assert pattern in panel
     assert "condition_title = blocker.split(' has a KAORI-managed ')[0]" in panel
     assert "condition_title = 'Review recorded condition'" in panel
-    assert "condition_action = blocker" in panel
+    assert 'condition_action = blocker' in panel
     assert 'aria-label="Recorded Release conditions"' in panel
     assert '<ol class="mt-3 grid min-w-0 gap-3 sm:grid-cols-2"' in panel
     assert 'Exact recorded reason' in panel
@@ -203,6 +238,7 @@ def test_capsule_release_condition_cards_keep_verbatim_evidence() -> None:
 def test_capsule_release_review_shows_dependency_block_even_for_eligible_reviewer() -> None:
     """#1204: a valid reviewer identity does not mean an eligible approval."""
     from pathlib import Path
+
     from jinja2 import Environment
 
     root = Path(__file__).resolve().parents[3]

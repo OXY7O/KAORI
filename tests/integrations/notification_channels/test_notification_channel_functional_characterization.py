@@ -262,6 +262,7 @@ def test_notification_delivery_failure_is_persisted_as_retryable_evidence(
     monkeypatch.setattr(service, 'db', SimpleNamespace(session=session))
     monkeypatch.setattr(service, 'event_severity_scoped', lambda _event_type: True)
     monkeypatch.setattr(service, 'notification_delivery_max_attempts', lambda: 3)
+
     def provider_send(_channel: object, _message: object) -> DeliveryResult:
         assert session.commits == 1, 'Queued intent must commit before provider side effect'
         return DeliveryResult(False, 'provider unavailable')

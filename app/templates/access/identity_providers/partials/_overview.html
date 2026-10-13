@@ -20,11 +20,11 @@
         </div>
     </header>
     {% set overview_metrics = [
-        ('badge-check', 'Configured', summary.configured, 'Providers with complete adapter contracts.', 'bg-status-normal-soft text-status-normal-text'),
-        ('power', 'Enabled', summary.enabled, 'Providers eligible for authentication.', 'bg-kaori-soft text-kaori-primary'),
-        ('network', 'Directory', summary.directory, 'Configured directory authentication sources.', 'bg-status-info-soft text-status-info-text'),
-        ('log-in', 'Browser SSO', summary.sso, 'Browser sign-in provider contracts.', 'bg-status-unknown-soft text-status-unknown-text')
-    ] %}
+            ('badge-check', 'Configured', summary.configured, 'Providers with complete adapter contracts.', 'bg-status-normal-soft text-status-normal-text'),
+            ('power', 'Enabled', summary.enabled, 'Providers eligible for authentication.', 'bg-kaori-soft text-kaori-primary'),
+            ('network', 'Directory', summary.directory, 'Configured directory authentication sources.', 'bg-status-info-soft text-status-info-text'),
+            ('log-in', 'Browser SSO', summary.sso, 'Browser sign-in provider contracts.', 'bg-status-unknown-soft text-status-unknown-text')
+        ] %}
     <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4"
          aria-label="Authentication provider configuration metrics"
          data-kaori-idp-overview-metrics>
@@ -48,12 +48,7 @@
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6"
          aria-label="Identity Governance"
          data-kaori-idp-governance-boundaries>
-        {% set boundaries = [
-            ('layers-3', 'Provider / Adapter Boundary', 'Distinct Contracts', 'Providers define identity authority; adapters define authentication.'),
-            ('key-round', 'Credential Ownership', 'External Secrets', 'Secrets stay external; KAORI stores references and non-secret settings.'),
-            ('contact-round', 'Identity Projection', 'Governed', 'External identities are linked or approved-provisioned before KAORI authorization.'),
-            ('shield-check', 'Authorization Boundary', 'KAORI Roles', 'Authentication verifies identity; active KAORI roles and account state govern access.')
-        ] %}
+        {% set boundaries = [('layers-3', 'Provider / Adapter Boundary', 'Distinct Contracts', 'Providers define identity authority; adapters define authentication.'), ('key-round', 'Credential Ownership', 'External Secrets', 'Secrets stay external; KAORI stores references and non-secret settings.'), ('contact-round', 'Identity Projection', 'Governed', 'External identities are linked or approved-provisioned before KAORI authorization.'), ('shield-check', 'Authorization Boundary', 'KAORI Roles', 'Authentication verifies identity; active KAORI roles and account state govern access.')] %}
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {% for icon, title, value, description in boundaries %}
                 <article class="flex min-w-0 items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5"

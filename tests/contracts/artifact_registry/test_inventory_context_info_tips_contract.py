@@ -1,5 +1,5 @@
-from pathlib import Path
 import re
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 TABLE = ROOT / 'app/templates/artifact_registry/partials/_inventory_workspace.html'
@@ -36,8 +36,8 @@ def test_registry_title_help_keeps_provider_evidence_boundaries() -> None:
     assert 'an artifact may have multiple tags or none.' in source
     assert 'not a KAORI access decision.' in source
     assert 'does not establish current provider health.' in source
-    assert "table_ui.inventory_block_header(" in source
-    assert "resource_detail_modal.detail_button(" in source
+    assert 'table_ui.inventory_block_header(' in source
+    assert 'resource_detail_modal.detail_button(' in source
     assert "hx-swap='outerHTML'" in source
 
 

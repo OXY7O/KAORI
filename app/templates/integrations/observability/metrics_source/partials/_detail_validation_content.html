@@ -119,5 +119,4 @@
     {{ framed_workspace_tabs.badge_oob("metrics-source", "validation", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
 {% endif %}
 {% include "components/operation_feedback_oob.html" %}
-
-{{ provider_detail_posture.state_oob('metrics-source', instance.readiness_status, capability_summary.observed|default(0)) }}
+{{ provider_detail_posture.state_oob('metrics-source', instance.readiness_status, capability_summary.observed|default(0) ) }}

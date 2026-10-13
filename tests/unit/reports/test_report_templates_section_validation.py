@@ -24,10 +24,16 @@ def test_analytics_empty_sections_cannot_be_replaced_with_defaults() -> None:
 
 def test_analytics_invalid_and_duplicate_sections_are_rejected() -> None:
     spec = _type('analytics')
-    for sections in [['foreign_section'], [spec.default_sections[0], 'foreign_section'], [spec.default_sections[0]] * 2]:
+    for sections in [
+        ['foreign_section'],
+        [spec.default_sections[0], 'foreign_section'],
+        [spec.default_sections[0]] * 2,
+    ]:
         state = _state(spec.value, sections)
         assert state['sections'] == sections
-        assert 'One or more selected template sections are invalid or duplicated.' in validate_template_form_state(state)
+        assert 'One or more selected template sections are invalid or duplicated.' in validate_template_form_state(
+            state
+        )
 
 
 def test_valid_analytics_selection_is_accepted() -> None:

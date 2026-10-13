@@ -16,14 +16,16 @@ def test_partial_resolved_delivery_retries_only_failed_channel(monkeypatch) -> N
     calls = []
     commits = []
     case = SimpleNamespace(
-        domain='kubernetes', public_id='CASE-42',
+        domain='kubernetes',
+        public_id='CASE-42',
         last_resolved_notified_at=None,
     )
     monkeypatch.setattr(notifications, '_successful_firing_channels', lambda _case: {1: True, 2: True})
     monkeypatch.setattr(notifications, '_successful_resolved_channels', lambda _case: set(delivered))
     monkeypatch.setattr(notifications, '_timeline', lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        notifications, 'db',
+        notifications,
+        'db',
         SimpleNamespace(session=SimpleNamespace(commit=lambda: commits.append(True))),
     )
 
@@ -51,17 +53,21 @@ def test_enabled_policy_mismatch_must_not_fall_back_to_default_channels(monkeypa
     class PolicyQuery:
         def filter(self, *_args):
             return self
+
         def all(self):
             return [SimpleNamespace(domains_json=['kubernetes'])]
 
     monkeypatch.setattr(routing, 'matching_routing_policies', lambda _case: [])
     monkeypatch.setattr(
-        routing, 'AlertRoutingPolicy',
+        routing,
+        'AlertRoutingPolicy',
         SimpleNamespace(query=PolicyQuery(), domains_json=SimpleNamespace(is_not=lambda _: True)),
     )
     case = SimpleNamespace(
-        domain='kubernetes', source_type='recommendation',
-        source_state='firing', routing_state='enabled',
+        domain='kubernetes',
+        source_type='recommendation',
+        source_state='firing',
+        routing_state='enabled',
         severity='critical',
     )
     assert routing.firing_routes(case) == []

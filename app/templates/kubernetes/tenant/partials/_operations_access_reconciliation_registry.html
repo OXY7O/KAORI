@@ -110,15 +110,15 @@
         <table class="{{ table_ui.table_classes('min-w-[1100px] !table-fixed' if operations_access_rows else '!table-fixed') }}">
             <caption class="sr-only">Tenant Access Grant reconciliation registry.</caption>
             {% if operations_access_rows %}
-            <thead class="{{ table_ui.head_classes() }}">
-                <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Principal</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Profile / Scope</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Grant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Reconciliation</th>
-                </tr>
-            </thead>
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Principal</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[20%]">Tenant</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Profile / Scope</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Grant</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Reconciliation</th>
+                    </tr>
+                </thead>
             {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for grant in operations_access_rows %}
@@ -126,15 +126,18 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(grant.membership.subject_name, grant.membership.principal_type|replace('_', ' ') |title, 'user-round-check') }}</td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ grant.tenant.name }}">{{ grant.tenant.name }}</p>
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ grant.tenant.name }}">{{ grant.tenant.name }}</p>
                             {% if grant.tenant.slug|lower != grant.tenant.name|lower %}
                                 <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
                                    title="{{ grant.tenant.slug }}">{{ grant.tenant.slug }}</p>
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
-                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate" title="{{ grant.access_profile|replace('_', ' ') |title }} · v{{ grant.access_profile_version }}">{{ grant.access_profile|replace('_', ' ') |title }} · v{{ grant.access_profile_version }}</p>
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ grant.scope_type|title }} scope">{{ grant.scope_type|title }} scope</p>
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ grant.access_profile|replace('_', ' ') |title }} · v{{ grant.access_profile_version }}">{{ grant.access_profile|replace('_', ' ') |title }} · v{{ grant.access_profile_version }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ grant.scope_type|title }} scope">{{ grant.scope_type|title }} scope</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label(grant.status|title, 'normal' if grant.status == 'active' else 'critical') }}
@@ -149,9 +152,9 @@
                             {% set empty_state_icon = "git-compare-arrows" %}
                             {% set empty_state_title = "No Access Reconciliation Records" %}
                             {% set empty_state_description = "Adjust filters or create a governed Access Grant." %}
-                            {% set empty_state_label = '' %}
-                            {% set empty_state_min_height = 'min-h-[128px]' %}
-                            {% set empty_state_container_class = '!py-5' %}
+                            {% set empty_state_label = "" %}
+                            {% set empty_state_min_height = "min-h-[128px]" %}
+                            {% set empty_state_container_class = "!py-5" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -160,14 +163,14 @@
         </table>
     </div>
     {{ registry_ui.footer('tenant.operations',
-            registry_id,
-            loading_id,
-            operations_access_pagination,
-            query_params,
-            operations_access_pagination.allowed_per_page,
-            resource_label='Access Grants',
-            rows_aria_label='Access Reconciliation rows per page',
-            control_name='operations-access',
-            page_param='ops_access_page',
-            per_page_param='ops_access_per_page') }}
+        registry_id,
+        loading_id,
+        operations_access_pagination,
+        query_params,
+        operations_access_pagination.allowed_per_page,
+        resource_label='Access Grants',
+        rows_aria_label='Access Reconciliation rows per page',
+        control_name='operations-access',
+        page_param='ops_access_page',
+        per_page_param='ops_access_per_page') }}
 </section>

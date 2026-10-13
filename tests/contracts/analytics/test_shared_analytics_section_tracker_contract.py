@@ -2,7 +2,6 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATES = ROOT / 'app/templates'
 
@@ -25,7 +24,7 @@ def test_analytics_section_tracker_macro_is_shared_by_kubernetes_and_registry() 
         assert 'data-analytics-section-tracker-root' in page
         assert "filename='js/analytics/section_load_tracker.js'" in page
 
-    assert "window.kaoriInitializeOverviewLoadTracker = initialize" in runtime
+    assert 'window.kaoriInitializeOverviewLoadTracker = initialize' in runtime
     assert "document.body.addEventListener('htmx:beforeRequest'" in runtime
     assert "document.body.addEventListener('htmx:afterSettle'" in runtime
     for error in ('htmx:responseError', 'htmx:sendError', 'htmx:timeout'):
@@ -48,7 +47,7 @@ def test_registry_tracker_counts_actual_committed_fragment_requests_only() -> No
     assert 'data-analytics-lazy-section="true"' in section
     assert 'data-analytics-load-state="loaded"' in summary
     assert 'data-analytics-load-state="loaded"' in section
-    assert "analytics_materialization_resolve" in shell
+    assert 'analytics_materialization_resolve' in shell
     assert 'data-analytics-lazy-section="true"' not in filters
     assert 'data-analytics-refresh-request="true"' in filters
     assert 'data-overview-lazy-section="true"' in k8s

@@ -39,6 +39,4 @@ def test_lifecycle_card_explains_active_evidence_without_double_count(
     assert workspace['status_label'] == label
     assert workspace['status_tone'] == tone
     assert len(workspace['metrics']) == 3
-    assert workspace['metrics'][1] == (
-        'archive', 'Active Archives / Jobs', f'{archive_count} / {job_count}'
-    )
+    assert workspace['metrics'][1] == ('archive', 'Active Archives / Jobs', f'{archive_count} / {job_count}')

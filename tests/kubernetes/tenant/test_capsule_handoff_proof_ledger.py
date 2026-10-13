@@ -3,23 +3,25 @@
 No live SQL, Alembic migration, PostgreSQL/SQLite engine, Kubernetes API,
 CI/CD/pytest, provider UAT or Release is run under the gate HOLD.
 """
+
 from __future__ import annotations
 
+import hashlib
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
-import hashlib
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import String
 
+from app.kubernetes.tenant import capsule_handoff_proof_storage_review as store
 from app.kubernetes.tenant.capsule_handoff_collector_key_pin import (
     inspect_capsule_collector_key_pin,
 )
-from app.kubernetes.tenant import capsule_handoff_proof_storage_review as store
 from app.models.capsule_handoff_proof import (
-    CapsuleHandoffAuditBatch, CapsuleHandoffResourceConsentRecord,
+    CapsuleHandoffAuditBatch,
+    CapsuleHandoffResourceConsentRecord,
 )
 
 _KEY = b'fixture-collector-key-material-only-not-a-real-secret-32bytes'
@@ -30,19 +32,27 @@ def _case():
     accepted = captured + timedelta(minutes=1)
     recorded = datetime.now(UTC) + timedelta(seconds=1)
     report = {
-        'tenant_id': 'tenant-1', 'cluster_id': 'cluster-1', 'generation': 7,
-        'plan_sha256': 'a' * 64, 'worklist_sha256': 'b' * 64,
-        'resource_review_sha256': 'c' * 64, 'source_candidate_count': 2,
+        'tenant_id': 'tenant-1',
+        'cluster_id': 'cluster-1',
+        'generation': 7,
+        'plan_sha256': 'a' * 64,
+        'worklist_sha256': 'b' * 64,
+        'resource_review_sha256': 'c' * 64,
+        'source_candidate_count': 2,
     }
     collector = {
         'status': 'collector_mac_valid_upstream_apiserver_origin_unverified',
-        'collector_mac_verified': True, 'apiserver_audit_integrity_verified': False,
-        'tenant_id': 'tenant-1', 'plan_sha256': report['plan_sha256'],
+        'collector_mac_verified': True,
+        'apiserver_audit_integrity_verified': False,
+        'tenant_id': 'tenant-1',
+        'plan_sha256': report['plan_sha256'],
         'worklist_sha256': report['worklist_sha256'],
         'resource_review_sha256': report['resource_review_sha256'],
         'batch_id': '00000000-0000-4000-8000-000000000001',
-        'collector_id': 'audit-collector-1', 'key_id': 'operator-pin-1',
-        'claims_sha256': 'd' * 64, 'collector_receipt_sha256': 'e' * 64,
+        'collector_id': 'audit-collector-1',
+        'key_id': 'operator-pin-1',
+        'claims_sha256': 'd' * 64,
+        'collector_receipt_sha256': 'e' * 64,
     }
     consent = {
         'consent_source_authenticated': False,
@@ -51,42 +61,54 @@ def _case():
         'worklist_sha256': report['worklist_sha256'],
         'resource_review_sha256': report['resource_review_sha256'],
         'resource_consent_manifest_sha256': 'f' * 64,
-        'resource_scope_sha256': '0' * 64, 'resource_count': 2,
+        'resource_scope_sha256': '0' * 64,
+        'resource_count': 2,
     }
     batch = {
         'id': 91,
         'batch_id': collector['batch_id'],
-        'tenant_id': report['tenant_id'], 'cluster_id': report['cluster_id'],
+        'tenant_id': report['tenant_id'],
+        'cluster_id': report['cluster_id'],
         'generation': report['generation'],
         'plan_sha256': report['plan_sha256'],
         'worklist_sha256': report['worklist_sha256'],
         'resource_review_sha256': report['resource_review_sha256'],
         'claims_sha256': collector['claims_sha256'],
         'receipt_sha256': collector['collector_receipt_sha256'],
-        'collector_id': collector['collector_id'], 'key_id': collector['key_id'],
-        'captured_at': captured, 'recorded_at': recorded,
+        'collector_id': collector['collector_id'],
+        'key_id': collector['key_id'],
+        'captured_at': captured,
+        'recorded_at': recorded,
     }
     consent_row = {
         'id': 92,
-        'tenant_id': report['tenant_id'], 'batch_id': batch['batch_id'],
+        'tenant_id': report['tenant_id'],
+        'batch_id': batch['batch_id'],
         'plan_sha256': report['plan_sha256'],
         'worklist_sha256': report['worklist_sha256'],
         'resource_review_sha256': report['resource_review_sha256'],
         'consent_manifest_sha256': consent['resource_consent_manifest_sha256'],
         'resource_scope_sha256': consent['resource_scope_sha256'],
         'target_count': 2,
-        'requester_user_id': 10, 'reviewer_user_id': 11, 'successor_user_id': 12,
-        'accepted_at': accepted, 'recorded_at': recorded + timedelta(seconds=1),
+        'requester_user_id': 10,
+        'reviewer_user_id': 11,
+        'successor_user_id': 12,
+        'accepted_at': accepted,
+        'recorded_at': recorded + timedelta(seconds=1),
     }
     return report, collector, consent, batch, consent_row
 
 
 def _inspect(report, collector, consent, batches, consents, actors=(10, 11, 12)):
     return store.inspect_capsule_proof_storage(
-        resource_report=report, collector_receipt_review=collector,
+        resource_report=report,
+        collector_receipt_review=collector,
         consent_review=consent,
-        requester_user_id=actors[0], reviewer_user_id=actors[1],
-        successor_user_id=actors[2], batch_rows=batches, consent_rows=consents,
+        requester_user_id=actors[0],
+        reviewer_user_id=actors[1],
+        successor_user_id=actors[2],
+        batch_rows=batches,
+        consent_rows=consents,
     )
 
 
@@ -120,19 +142,22 @@ def test_exact_batch_and_consent_records_do_not_prove_external_trust():
     assert result['resource_specific_handoff_admitted'] is False
 
 
-@pytest.mark.parametrize('which,field,value', [
-    ('batch', 'tenant_id', 'foreign-tenant'),
-    ('batch', 'batch_id', '00000000-0000-4000-8000-000000000009'),
-    ('batch', 'plan_sha256', '1' * 64),
-    ('batch', 'resource_review_sha256', '2' * 64),
-    ('batch', 'claims_sha256', '3' * 64),
-    ('batch', 'key_id', 'unregistered-key'),
-    ('consent', 'worklist_sha256', '4' * 64),
-    ('consent', 'batch_id', '00000000-0000-4000-8000-000000000044'),
-    ('consent', 'target_count', 1),
-    ('consent', 'reviewer_user_id', 10),
-    ('consent', 'consent_manifest_sha256', '5' * 64),
-])
+@pytest.mark.parametrize(
+    'which,field,value',
+    [
+        ('batch', 'tenant_id', 'foreign-tenant'),
+        ('batch', 'batch_id', '00000000-0000-4000-8000-000000000009'),
+        ('batch', 'plan_sha256', '1' * 64),
+        ('batch', 'resource_review_sha256', '2' * 64),
+        ('batch', 'claims_sha256', '3' * 64),
+        ('batch', 'key_id', 'unregistered-key'),
+        ('consent', 'worklist_sha256', '4' * 64),
+        ('consent', 'batch_id', '00000000-0000-4000-8000-000000000044'),
+        ('consent', 'target_count', 1),
+        ('consent', 'reviewer_user_id', 10),
+        ('consent', 'consent_manifest_sha256', '5' * 64),
+    ],
+)
 def test_stale_cross_plan_replay_and_identity_mismatch_fail_closed(which, field, value):
     report, collector, consent, batch, consent_row = _case()
     target = batch if which == 'batch' else consent_row
@@ -165,7 +190,8 @@ def test_key_pin_fingerprint_and_active_rotation_window_are_not_authority():
     now = datetime.now(UTC)
     descriptor = {
         'contract_version': 'capsule-collector-key-pin/v1',
-        'cluster_id': 'cluster-1', 'collector_id': 'audit-collector-1',
+        'cluster_id': 'cluster-1',
+        'collector_id': 'audit-collector-1',
         'key_id': 'operator-pin-1',
         'key_fingerprint_sha256': hashlib.sha256(_KEY).hexdigest(),
         'issued_at': (now - timedelta(hours=1)).isoformat(),
@@ -173,8 +199,10 @@ def test_key_pin_fingerprint_and_active_rotation_window_are_not_authority():
         'state': 'active',
     }
     pin = inspect_capsule_collector_key_pin(
-        descriptor=descriptor, cluster_id='cluster-1',
-        collector_id='audit-collector-1', key_id='operator-pin-1',
+        descriptor=descriptor,
+        cluster_id='cluster-1',
+        collector_id='audit-collector-1',
+        key_id='operator-pin-1',
         backend_key_material=_KEY,
         pinned_fingerprint_sha256=descriptor['key_fingerprint_sha256'],
         now=now,
@@ -187,10 +215,13 @@ def test_key_pin_fingerprint_and_active_rotation_window_are_not_authority():
     descriptor['state'] = 'revoked'
     with pytest.raises(ValueError):
         inspect_capsule_collector_key_pin(
-            descriptor=descriptor, cluster_id='cluster-1',
-            collector_id='audit-collector-1', key_id='operator-pin-1',
+            descriptor=descriptor,
+            cluster_id='cluster-1',
+            collector_id='audit-collector-1',
+            key_id='operator-pin-1',
             backend_key_material=_KEY,
-            pinned_fingerprint_sha256=descriptor['key_fingerprint_sha256'], now=now,
+            pinned_fingerprint_sha256=descriptor['key_fingerprint_sha256'],
+            now=now,
         )
 
 
@@ -198,20 +229,26 @@ def test_key_pin_rejects_wrong_runtime_material_and_foreign_cluster():
     now = datetime.now(UTC)
     descriptor = {
         'contract_version': 'capsule-collector-key-pin/v1',
-        'cluster_id': 'cluster-1', 'collector_id': 'audit-collector-1',
+        'cluster_id': 'cluster-1',
+        'collector_id': 'audit-collector-1',
         'key_id': 'operator-pin-1',
         'key_fingerprint_sha256': hashlib.sha256(_KEY).hexdigest(),
         'issued_at': (now - timedelta(minutes=1)).isoformat(),
-        'expires_at': (now + timedelta(minutes=1)).isoformat(), 'state': 'active',
+        'expires_at': (now + timedelta(minutes=1)).isoformat(),
+        'state': 'active',
     }
     kwargs = dict(
-        descriptor=descriptor, cluster_id='cluster-1',
-        collector_id='audit-collector-1', key_id='operator-pin-1',
-        pinned_fingerprint_sha256=descriptor['key_fingerprint_sha256'], now=now,
+        descriptor=descriptor,
+        cluster_id='cluster-1',
+        collector_id='audit-collector-1',
+        key_id='operator-pin-1',
+        pinned_fingerprint_sha256=descriptor['key_fingerprint_sha256'],
+        now=now,
     )
     with pytest.raises(ValueError):
         inspect_capsule_collector_key_pin(
-            **kwargs, backend_key_material=b'other-trust-material-longer-than-32-bytes',
+            **kwargs,
+            backend_key_material=b'other-trust-material-longer-than-32-bytes',
         )
     with pytest.raises(ValueError):
         inspect_capsule_collector_key_pin(
@@ -227,7 +264,8 @@ def test_models_register_exact_composite_fk_and_sqlalchemy_string_type_first():
     assert batch_t.c.tenant_id.type.length == 36
     assert isinstance(consent_t.c.tenant_id.type, String)
     composite = [
-        constraint for constraint in consent_t.foreign_key_constraints
+        constraint
+        for constraint in consent_t.foreign_key_constraints
         if constraint.name == 'fk_capsule_resource_consent_exact_audit_batch'
     ]
     assert len(composite) == 1
@@ -285,9 +323,13 @@ def test_read_only_tenant_scan_never_filters_to_latest_plan(monkeypatch):
     monkeypatch.setattr(store, 'CapsuleHandoffAuditBatch', SimpleNamespace(query=qb, id=Col()))
     monkeypatch.setattr(store, 'CapsuleHandoffResourceConsentRecord', SimpleNamespace(query=qc, id=Col()))
     result = store.read_capsule_proof_history(
-        tenant_id='tenant-1', resource_report=report,
-        collector_receipt_review=collector, consent_review=consent,
-        requester_user_id=10, reviewer_user_id=11, successor_user_id=12,
+        tenant_id='tenant-1',
+        resource_report=report,
+        collector_receipt_review=collector,
+        consent_review=consent,
+        requester_user_id=10,
+        reviewer_user_id=11,
+        successor_user_id=12,
     )
     assert result['append_authorized'] is False
     assert ('filter', {'tenant_id': 'tenant-1'}) in qb.calls

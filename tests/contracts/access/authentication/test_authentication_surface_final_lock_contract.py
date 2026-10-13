@@ -73,19 +73,12 @@ def test_setup_bootstrap_neutral_copy_and_full_width() -> None:
     assert '<div class="space-y-5">' in setup
     assert 'lg:grid-cols-2' not in setup
     assert "label='Manual Bootstrap'" in setup
-    assert (
-        'Run once in Windows PowerShell at the repo root to create the '
-        'schema, grants, and admin.'
-    ) in setup
+    assert ('Run once in Windows PowerShell at the repo root to create the schema, grants, and admin.') in setup
     assert 'Preserve INTEGRATION_CREDENTIAL_KEY.' in setup
     assert 'Create schema, grants, and admin.' in setup
-    assert (
-        'Use the host terminal; never migrate with the runtime DATABASE_URL.'
-        in setup
-    )
+    assert 'Use the host terminal; never migrate with the runtime DATABASE_URL.' in setup
     assert 'no Violet left-edge stripe' in lock
     assert 'full-width Manual Bootstrap command' in lock
-
 
 
 def test_setup_production_is_operator_guidance_without_public_migration_commands() -> None:

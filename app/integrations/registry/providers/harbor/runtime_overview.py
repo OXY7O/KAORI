@@ -67,8 +67,7 @@ def _runtime_row(instance: HarborInstance, observation: Any | None) -> dict[str,
             'No Capability Attention' if not capability_attention else '1 Item Needs Attention'
         ),
         'message': (
-            (observation.message if observation else None)
-            or instance.validation_message or instance.last_error
+            (observation.message if observation else None) or instance.validation_message or instance.last_error
         ),
         'binding_count': len(enabled_bindings),
     }

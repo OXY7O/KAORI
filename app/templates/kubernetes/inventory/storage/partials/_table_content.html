@@ -7,17 +7,13 @@
         <caption class="sr-only">Committed Kubernetes StorageClass, PersistentVolume, and PersistentVolumeClaim inventory for the active filters.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[24%]">Storage Object</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Scope</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Provisioning</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Capacity & Access</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Binding & Lifecycle</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[24%]">Storage Object</th>
-                <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[16%]">Scope</th>
-                <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[15%]">Provisioning</th>
-                <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[15%]">Capacity & Access</th>
-                <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} w-[18%]">Binding & Lifecycle</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
+                    class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -38,12 +34,16 @@
                         {% endif %}
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ item.provisioning_primary }}">{{ item.provisioning_primary }}</p>
-                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ item.provisioning_secondary }}">{{ item.provisioning_secondary }}</p>
+                        <p class="truncate text-sm font-semibold text-content-primary"
+                           title="{{ item.provisioning_primary }}">{{ item.provisioning_primary }}</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                           title="{{ item.provisioning_secondary }}">{{ item.provisioning_secondary }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ item.capacity_primary }}">{{ item.capacity_primary }}</p>
-                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ item.capacity_secondary }}">{{ item.capacity_secondary }}</p>
+                        <p class="truncate text-sm font-semibold text-content-primary"
+                           title="{{ item.capacity_primary }}">{{ item.capacity_primary }}</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                           title="{{ item.capacity_secondary }}">{{ item.capacity_secondary }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         {% if item.type == 'StorageClass' %}
@@ -51,7 +51,8 @@
                         {% else %}
                             <div class="min-w-0 truncate" title="{{ item.lifecycle_label }}">{{ table_label.status_indicator_label(item.lifecycle_label, item.lifecycle_tone) }}</div>
                         {% endif %}
-                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ item.binding_secondary }}">{{ item.binding_secondary }}</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                           title="{{ item.binding_secondary }}">{{ item.binding_secondary }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">{{ resource_detail_modal.detail_button(item.id, url_for('inventory.storage_details', storage_id=item.id) , item.name, 'Storage') }}</td>
                 </tr>

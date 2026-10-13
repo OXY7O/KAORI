@@ -27,9 +27,7 @@ def test_overview_uses_kubernetes_administration_posture(monkeypatch, label, ton
         'administration_status_tone': tone,
         'administration_status_detail': 'Authority requires review.',
     }
-    monkeypatch.setattr(
-        presentation, 'build_kubernetes_administration_summary', lambda: domain
-    )
+    monkeypatch.setattr(presentation, 'build_kubernetes_administration_summary', lambda: domain)
     context = presentation.build_platform_operations_overview_context(
         can_jobs=False, can_data_lifecycle=False, can_kubernetes_admin=True
     )

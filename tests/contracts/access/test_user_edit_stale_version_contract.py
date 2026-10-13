@@ -42,7 +42,7 @@ def test_user_edit_uses_committed_version_before_write() -> None:
     form = (root / 'app/access/users/forms.py').read_text(encoding='utf-8')
     service = (root / 'app/access/users/service.py').read_text(encoding='utf-8')
     template = (root / 'app/templates/access/users/form.html').read_text(encoding='utf-8')
-    edit = route.split('def edit(user_id: int):', 1)[1].split("\n@bp.", 1)[0]
+    edit = route.split('def edit(user_id: int):', 1)[1].split('\n@bp.', 1)[0]
     assert 'user_version = HiddenField()' in form
     assert '{{ form.hidden_tag() }}' in template
     assert 'form.user_version.data = user_version_token(user)' in edit

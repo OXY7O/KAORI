@@ -6,9 +6,7 @@ from app.kubernetes.tenant.access_remediation_plan import classify_access_remedi
 
 
 def _grant(public_id, status='active', reconciliation='drifted', id=17):
-    return SimpleNamespace(
-        public_id=public_id, id=id, status=status, reconciliation_status=reconciliation
-    )
+    return SimpleNamespace(public_id=public_id, id=id, status=status, reconciliation_status=reconciliation)
 
 
 def test_only_kaori_owned_active_drifted_grant_qualifies_for_explicit_existing_reconcile():

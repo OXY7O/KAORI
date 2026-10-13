@@ -7,6 +7,7 @@ Existing pending/approved requests have no approved UID and are intentionally
 ineligible for reveal. They must be re-requested. No migration is executed
 until the explicit KAORI schema admission gate.
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

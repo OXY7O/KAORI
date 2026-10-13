@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from flask import Blueprint, abort, make_response, redirect, render_template, request, url_for
-from flask_login import current_user
 from flask.typing import ResponseReturnValue
+from flask_login import current_user
 
 from app.access.activity_audit.administrative_sources import build_administrative_evidence_context
 from app.access.activity_audit.service import build_activity_audit_context, get_activity_audit_detail
@@ -24,8 +24,7 @@ def _request_int(name: str, default: int) -> int:
 @permission_required('activity_audit.view')
 def index() -> ResponseReturnValue:
     is_htmx = (
-        request.headers.get('HX-Request') == 'true'
-        and request.headers.get('HX-History-Restore-Request') != 'true'
+        request.headers.get('HX-Request') == 'true' and request.headers.get('HX-History-Restore-Request') != 'true'
     )
     target = request.headers.get('HX-Target') if is_htmx else None
     can_view_jobs = current_user.has_permission('jobs.view')
@@ -44,8 +43,10 @@ def index() -> ResponseReturnValue:
         'selected_audit_tab': selected_audit_tab,
         'has_administrative_sources': has_administrative_sources,
     }
-    if is_htmx and selected_audit_tab == 'administrative' and target in (
-        'activity-audit-records', 'activity-administrative-evidence'
+    if (
+        is_htmx
+        and selected_audit_tab == 'administrative'
+        and target in ('activity-audit-records', 'activity-administrative-evidence')
     ):
         evidence = build_administrative_evidence_context(
             scope=request.args.get('admin_scope'),
@@ -67,9 +68,7 @@ def index() -> ResponseReturnValue:
                 administrative_evidence=evidence,
                 embedded=True,
             )
-        return render_template(
-            'access/activity_audit/partials/_audit_records_workspace.html', **tab_context
-        )
+        return render_template('access/activity_audit/partials/_audit_records_workspace.html', **tab_context)
 
     context = build_activity_audit_context(
         actor_key=request.args.get('actor_key'),
@@ -84,12 +83,8 @@ def index() -> ResponseReturnValue:
     context.update(tab_context)
     if is_htmx:
         if target == 'activity-audit-records':
-            return render_template(
-                'access/activity_audit/partials/_audit_records_workspace.html', **context
-            )
-        return render_template(
-            'access/activity_audit/partials/_activity_table_card.html', embedded=True, **context
-        )
+            return render_template('access/activity_audit/partials/_audit_records_workspace.html', **context)
+        return render_template('access/activity_audit/partials/_activity_table_card.html', embedded=True, **context)
 
     if selected_audit_tab == 'administrative':
         context['administrative_evidence'] = build_administrative_evidence_context(
@@ -116,9 +111,7 @@ def detail(notification_id: int) -> ResponseReturnValue:
         notification_id=notification_id,
         can_view_jobs=current_user.has_permission('jobs.view'),
         can_view_deliveries=current_user.has_permission('integrations.manage'),
-        can_view_tenants=(
-            current_user.has_permission('tenant.view') or current_user.has_permission('tenant.manage')
-        ),
+        can_view_tenants=(current_user.has_permission('tenant.view') or current_user.has_permission('tenant.manage')),
     )
     return render_template('access/activity_audit/partials/_activity_detail.html', item=item)
 

@@ -32,7 +32,6 @@ def normalize_telegram_topic_id(value: object) -> int | None:
     return topic_id if 1 <= topic_id <= _TELEGRAM_TOPIC_ID_MAX else None
 
 
-
 def send_telegram_message(
     *,
     bot_token: str,
@@ -142,9 +141,7 @@ def parse_form(form: Any, existing: NotificationChannel | None) -> tuple[str, di
     # Preserve invalid raw form input for the validator; never silently fall
     # back to sending a misconfigured topic message to the general chat.
     provider_config: dict[str, Any] = (
-        {'message_thread_id': topic_id if topic_id is not None else raw_topic_id}
-        if raw_topic_id
-        else {}
+        {'message_thread_id': topic_id if topic_id is not None else raw_topic_id} if raw_topic_id else {}
     )
     return destination, {'bot_token': token or existing_credentials.get('bot_token', '')}, provider_config, bool(token)
 

@@ -8,6 +8,7 @@ This migration is authored for independent review; DO NOT EXECUTE while
 provider and CI/CD gates remain HOLD. A migration file is NOT a storage
 attestation, key registry, trusted audit collector or consent writer.
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -50,15 +51,20 @@ def _create_batch() -> None:
         sa.Column('collector_id', sa.String(120), nullable=False),
         sa.Column('key_id', sa.String(120), nullable=False),
         sa.Column('captured_at', sa.DateTime(timezone=True), nullable=False),
-        sa.Column('recorded_at', sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column(
+            'recorded_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')
+        ),
         sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], ondelete='RESTRICT'),
         sa.UniqueConstraint('batch_id', name='uq_capsule_audit_batch_global_id'),
         sa.UniqueConstraint('tenant_id', name='uq_capsule_audit_batch_tenant_once'),
         sa.UniqueConstraint('tenant_id', 'plan_sha256', name='uq_capsule_audit_batch_plan_once'),
         sa.UniqueConstraint(
-            'batch_id', 'tenant_id', 'plan_sha256', 'worklist_sha256',
-            'resource_review_sha256', name='uq_capsule_audit_batch_full_scope',
+            'batch_id',
+            'tenant_id',
+            'plan_sha256',
+            'worklist_sha256',
+            'resource_review_sha256',
+            name='uq_capsule_audit_batch_full_scope',
         ),
         sa.CheckConstraint('generation > 0', name='ck_capsule_audit_batch_generation'),
         sa.CheckConstraint(
@@ -89,25 +95,31 @@ def _create_consent() -> None:
         sa.Column('reviewer_user_id', sa.Integer(), nullable=False),
         sa.Column('successor_user_id', sa.Integer(), nullable=False),
         sa.Column('accepted_at', sa.DateTime(timezone=True), nullable=False),
-        sa.Column('recorded_at', sa.DateTime(timezone=True), nullable=False,
-                  server_default=sa.text('CURRENT_TIMESTAMP')),
+        sa.Column(
+            'recorded_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')
+        ),
         sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['requester_user_id'], ['users.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['reviewer_user_id'], ['users.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['successor_user_id'], ['users.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(
-            ['batch_id', 'tenant_id', 'plan_sha256',
-             'worklist_sha256', 'resource_review_sha256'],
-            [f'{_BATCH}.batch_id', f'{_BATCH}.tenant_id',
-             f'{_BATCH}.plan_sha256', f'{_BATCH}.worklist_sha256',
-             f'{_BATCH}.resource_review_sha256'],
+            ['batch_id', 'tenant_id', 'plan_sha256', 'worklist_sha256', 'resource_review_sha256'],
+            [
+                f'{_BATCH}.batch_id',
+                f'{_BATCH}.tenant_id',
+                f'{_BATCH}.plan_sha256',
+                f'{_BATCH}.worklist_sha256',
+                f'{_BATCH}.resource_review_sha256',
+            ],
             ondelete='RESTRICT',
             name='fk_capsule_resource_consent_exact_audit_batch',
         ),
         sa.UniqueConstraint('tenant_id', name='uq_capsule_resource_consent_tenant_once'),
         sa.UniqueConstraint('tenant_id', 'plan_sha256', name='uq_capsule_resource_consent_plan_once'),
         sa.UniqueConstraint(
-            'tenant_id', 'consent_manifest_sha256', name='uq_capsule_resource_consent_manifest',
+            'tenant_id',
+            'consent_manifest_sha256',
+            name='uq_capsule_resource_consent_manifest',
         ),
         sa.CheckConstraint('target_count BETWEEN 1 AND 330', name='ck_capsule_resource_consent_target_count'),
         sa.CheckConstraint(
@@ -174,10 +186,7 @@ def downgrade() -> None:
         operations = ('update', 'delete', 'truncate') if dialect == 'postgresql' else ('update', 'delete')
         for operation in operations:
             name = f'tr_capsule_{prefix}_deny_{operation}'
-            op.execute(
-                f'DROP TRIGGER {name} ON {table}' if dialect == 'postgresql'
-                else f'DROP TRIGGER {name}'
-            )
+            op.execute(f'DROP TRIGGER {name} ON {table}' if dialect == 'postgresql' else f'DROP TRIGGER {name}')
     if dialect == 'postgresql':
         op.execute(f'DROP FUNCTION {_PG_DENY}()')
     op.drop_index('ix_capsule_resource_consent_tenant', table_name=_CONSENT)

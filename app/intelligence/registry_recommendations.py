@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import UTC, datetime
 from hashlib import sha256
 from json import dumps
-from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.orm import joinedload, selectinload
@@ -69,7 +69,6 @@ def _identity(
     return identity, provider_key, provider_label
 
 
-
 def _tag_only_finding_key(
     rule_key: str,
     artifact: RegistryArtifact,
@@ -99,11 +98,7 @@ def _artifact_evidence(
 ) -> dict[str, Any]:
     # Old vulnerability JSON does not constitute a valid assessed finding.
     scan_usable = bool(registry_scan_evidence_ready(artifact.scan_status))
-    summary = (
-        artifact.vulnerability_summary
-        if scan_usable and isinstance(artifact.vulnerability_summary, dict)
-        else {}
-    )
+    summary = artifact.vulnerability_summary if scan_usable and isinstance(artifact.vulnerability_summary, dict) else {}
     return {
         'asset_key': str(identity.id),
         'registry_instance_id': str(identity.id),
@@ -168,11 +163,14 @@ def _artifact_pages(
 
 
 def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    if not any(key in rules for key in (
-        'registry.security.critical_runtime_vulnerability',
-        'registry.security.scan_evidence_missing',
-        'registry.runtime.tag_only_correlation',
-    )):
+    if not any(
+        key in rules
+        for key in (
+            'registry.security.critical_runtime_vulnerability',
+            'registry.security.scan_evidence_missing',
+            'registry.runtime.tag_only_correlation',
+        )
+    ):
         return []
     identities = _active_registry_instances()
     findings: list[dict[str, Any]] = []
@@ -258,6 +256,7 @@ def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
                 )
             )
     return findings
+
 
 def _governance_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     rule = rules.get('registry.governance.public_project_without_immutability')

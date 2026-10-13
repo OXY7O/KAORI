@@ -6,6 +6,7 @@ the exact successor ownership marker from transferred Namespace and related
 resources. An immutable START audit record blocks every repeat attempt, even
 after timeouts or partial provider changes. No automatic Adoption is performed.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -15,18 +16,24 @@ from sqlalchemy import text
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.kubernetes.tenant.capsule_handoff_contract import (
-    _identity, _labels, _successor, capsule_preservation_digest,
-)
 from app.kubernetes.tenant.capsule_handoff_authority_inventory import (
     observe_capsule_global_quotas,
 )
+from app.kubernetes.tenant.capsule_handoff_contract import (
+    _identity,
+    _labels,
+    _successor,
+    capsule_preservation_digest,
+)
 from app.kubernetes.tenant.capsule_handoff_live_patch import (
-    _provider_methods, _provider_patch, _provider_read,
+    _provider_methods,
+    _provider_patch,
+    _provider_read,
 )
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest, _get
 from app.kubernetes.tenant.capsule_platform_admin_authority import (
-    verify_capsule_provider_admin_authority, verify_capsule_related_admin_authority,
+    verify_capsule_provider_admin_authority,
+    verify_capsule_related_admin_authority,
 )
 from app.kubernetes.tenant.native_platform_admin_authority import require_platform_admin_actor
 from app.kubernetes.tenant.release_handoff_approval import latest_release_handoff_plan
@@ -34,8 +41,11 @@ from app.kubernetes.tenant.release_preflight import _release_dependency_counts
 from app.models import Cluster
 from app.models.audit import AuditEvent
 from app.models.tenant import (
-    Tenant, TenantEnvironment, TenantNamespace,
-    TenantLifecycleStatus, TenantNamespaceProvisioningStatus,
+    Tenant,
+    TenantEnvironment,
+    TenantLifecycleStatus,
+    TenantNamespace,
+    TenantNamespaceProvisioningStatus,
 )
 
 _TARGET = 'kubernetes_tenant_verified_capsule_successor_handback'
@@ -55,35 +65,41 @@ def _require_postgres_capsule_handback_start_guards(session: Any) -> None:
         'tr_capsule_handback_audit_deny_delete',
         'tr_capsule_handback_audit_deny_truncate',
     }
-    rows = session.execute(text("""
+    rows = session.execute(
+        text("""
         SELECT tgname, tgenabled FROM pg_trigger
         WHERE tgrelid = 'audit_events'::regclass AND NOT tgisinternal
-    """)).all()
+    """)
+    ).all()
     triggers = {name: mode for name, mode in rows}
-    if not expected.issubset(triggers) or any(
-        triggers[name] not in ('O', 'A') for name in expected
-    ):
+    if not expected.issubset(triggers) or any(triggers[name] not in ('O', 'A') for name in expected):
         raise ValueError('Capsule handback immutable AuditEvent triggers are absent or disabled.')
-    index = session.execute(text("""
+    index = (
+        session.execute(
+            text("""
         SELECT x.indisunique, x.indisvalid, pg_get_indexdef(i.oid) AS definition,
                pg_get_expr(x.indpred, x.indrelid) AS predicate
         FROM pg_index AS x
         JOIN pg_class AS i ON i.oid = x.indexrelid
         WHERE x.indrelid = 'audit_events'::regclass
           AND i.relname = 'uq_capsule_handback_start_tenant_once'
-    """)).mappings().one_or_none()
+    """)
+        )
+        .mappings()
+        .one_or_none()
+    )
     if (
         not index
         or index['indisunique'] is not True
         or index['indisvalid'] is not True
         or 'target_id' not in index['definition']
-        or 'kubernetes_tenant_verified_capsule_successor_handback'
-           not in (index['predicate'] or '')
-        or 'tenant.release.capsule_successor_handback_started'
-           not in (index['predicate'] or '')
+        or 'kubernetes_tenant_verified_capsule_successor_handback' not in (index['predicate'] or '')
+        or 'tenant.release.capsule_successor_handback_started' not in (index['predicate'] or '')
     ):
         raise ValueError('Capsule handback single-START unique index is missing or invalid.')
-    posture = session.execute(text("""
+    posture = (
+        session.execute(
+            text("""
         SELECT current_setting('fsync') AS fsync_setting,
                current_setting('synchronous_commit') AS sync_commit,
                current_setting('session_replication_role') AS replication_role,
@@ -95,7 +111,11 @@ def _require_postgres_capsule_handback_start_guards(session: Any) -> None:
                has_table_privilege(current_user, c.oid, 'INSERT') AS may_insert,
                has_table_privilege(current_user, c.oid, 'TRUNCATE') AS may_truncate
         FROM pg_class AS c WHERE c.oid = 'audit_events'::regclass
-    """)).mappings().one()
+    """)
+        )
+        .mappings()
+        .one()
+    )
     if (
         posture['fsync_setting'] != 'on'
         or posture['sync_commit'] not in ('on', 'remote_write', 'remote_apply')
@@ -109,17 +129,15 @@ def _require_postgres_capsule_handback_start_guards(session: Any) -> None:
         raise ValueError('Capsule handback AuditEvent role, trigger or WAL guards are unverified.')
 
 
-
 def latest_capsule_successor_handback(tenant_id: str) -> dict[str, Any] | None:
-    event = (
-        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).first()
-    )
+    event = AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id).order_by(AuditEvent.id.desc()).first()
     return dict(event.metadata_json or {}) if event else None
 
 
 def _capsule_handback_scope(
-    *, release: dict[str, Any], tenant: Tenant,
+    *,
+    release: dict[str, Any],
+    tenant: Tenant,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Reject fabricated, missing or truncated provider preservation scope."""
     if (
@@ -137,7 +155,8 @@ def _capsule_handback_scope(
     owner = _successor(release.get('successor_owner'))
     rows = release.get('verified_components')
     if (
-        not isinstance(rows, list) or not 2 <= len(rows) <= 500
+        not isinstance(rows, list)
+        or not 2 <= len(rows) <= 500
         or type(release.get('verified_resource_count')) is not int
         or release['verified_resource_count'] != len(rows)
     ):
@@ -157,9 +176,12 @@ def _capsule_handback_scope(
         uid, rv = row.get('uid'), row.get('resource_version')
         if (
             kind not in _KINDS | {'CapsuleTenant', 'GlobalResourceQuota'}
-            or not isinstance(name, str) or not name
-            or not isinstance(uid, str) or not uid
-            or not isinstance(rv, str) or not rv
+            or not isinstance(name, str)
+            or not name
+            or not isinstance(uid, str)
+            or not uid
+            or not isinstance(rv, str)
+            or not rv
             or (kind == 'Namespace' and namespace not in ('', name))
             or (kind in ('CapsuleTenant', 'Namespace', 'GlobalResourceQuota') and namespace not in ('', name))
             or (kind not in ('CapsuleTenant', 'Namespace', 'GlobalResourceQuota') and not namespace)
@@ -183,21 +205,21 @@ def _capsule_handback_scope(
         elif row.get('state') != 'preserved':
             raise ValueError('Related Capsule provider resource has unknown ownership outcome.')
     if (
-        not targets or not observed_namespaces
+        not targets
+        or not observed_namespaces
         or type(release.get('released_namespace_count')) is not int
         or release['released_namespace_count'] != len(observed_namespaces)
     ):
         raise ValueError('Capsule handback scope lacks exact Released Namespace coverage.')
-    if any(
-        row['namespace'] not in observed_namespaces
-        for row in targets if row['kind'] != 'Namespace'
-    ):
+    if any(row['namespace'] not in observed_namespaces for row in targets if row['kind'] != 'Namespace'):
         raise ValueError('Related Capsule target belongs to a foreign Namespace.')
-    targets.sort(key=lambda item: (
-        item['namespace'],
-        {'ResourceQuota': 0, 'LimitRange': 1, 'RoleBinding': 2, 'Namespace': 3}[item['kind']],
-        item['name'],
-    ))
+    targets.sort(
+        key=lambda item: (
+            item['namespace'],
+            {'ResourceQuota': 0, 'LimitRange': 1, 'RoleBinding': 2, 'Namespace': 3}[item['kind']],
+            item['name'],
+        )
+    )
     return cr[0], targets
 
 
@@ -218,19 +240,20 @@ def _handback_snapshot(*, before: Any, item: dict[str, Any], owner: str) -> dict
         preserved = capsule_preservation_digest(before)
     else:
         spec = (
-            {'role_ref': _get(before, 'role_ref') or _get(before, 'roleRef'),
-             'subjects': _get(before, 'subjects')}
+            {'role_ref': _get(before, 'role_ref') or _get(before, 'roleRef'), 'subjects': _get(before, 'subjects')}
             if item['kind'] == 'RoleBinding'
             else _get(before, 'spec')
         )
         if spec is None:
             raise ValueError('Capsule related provider policy was not supplied.')
-        preserved = _digest({
-            'policy': spec,
-            'annotations': _get(meta, 'annotations') or {},
-            'owner_references': _get(meta, 'owner_references') or _get(meta, 'ownerReferences') or [],
-            'finalizers': _get(meta, 'finalizers') or [],
-        })
+        preserved = _digest(
+            {
+                'policy': spec,
+                'annotations': _get(meta, 'annotations') or {},
+                'owner_references': _get(meta, 'owner_references') or _get(meta, 'ownerReferences') or [],
+                'finalizers': _get(meta, 'finalizers') or [],
+            }
+        )
     return {'labels': labels, 'preserved': preserved}
 
 
@@ -245,7 +268,11 @@ def _handback_patch(*, before: Any, item: dict[str, Any], owner: str) -> list[di
 
 
 def _verify_handback(
-    *, before: Any, after: Any, item: dict[str, Any], owner: str,
+    *,
+    before: Any,
+    after: Any,
+    item: dict[str, Any],
+    owner: str,
     preview: bool,
 ) -> str:
     first = _handback_snapshot(before=before, item=item, owner=owner)
@@ -253,34 +280,35 @@ def _verify_handback(
     if uid != item['uid'] or not rv or _identity(after)[0] != item['name']:
         raise ValueError('Capsule handback changed provider resource identity.')
     actual = _labels(after)
-    if actual != {
-        key: val for key, val in first['labels'].items()
-        if key != 'app.kubernetes.io/managed-by'
-    }:
+    if actual != {key: val for key, val in first['labels'].items() if key != 'app.kubernetes.io/managed-by'}:
         raise ValueError('Capsule handback would alter foreign or Capsule ownership labels.')
     if item['kind'] == 'Namespace':
         preserved = capsule_preservation_digest(after)
     else:
         meta = _get(after, 'metadata')
         spec = (
-            {'role_ref': _get(after, 'role_ref') or _get(after, 'roleRef'),
-             'subjects': _get(after, 'subjects')}
+            {'role_ref': _get(after, 'role_ref') or _get(after, 'roleRef'), 'subjects': _get(after, 'subjects')}
             if item['kind'] == 'RoleBinding'
             else _get(after, 'spec')
         )
-        preserved = _digest({
-            'policy': spec,
-            'annotations': _get(meta, 'annotations') or {},
-            'owner_references': _get(meta, 'owner_references') or _get(meta, 'ownerReferences') or [],
-            'finalizers': _get(meta, 'finalizers') or [],
-        })
+        preserved = _digest(
+            {
+                'policy': spec,
+                'annotations': _get(meta, 'annotations') or {},
+                'owner_references': _get(meta, 'owner_references') or _get(meta, 'ownerReferences') or [],
+                'finalizers': _get(meta, 'finalizers') or [],
+            }
+        )
     if preserved != first['preserved'] or (not preview and rv == item['resource_version']):
         raise ValueError('Capsule handback changed provider policy or did not commit metadata.')
     return rv
 
 
 def handback_capsule_successor_governance_committed(
-    *, tenant_id: str, actor_user_id: int, release_plan_sha256: str,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    release_plan_sha256: str,
     confirmed: bool,
 ) -> dict[str, Any]:
     """One explicit, recovery-fenced successor handback; never auto-Re-Adopt."""
@@ -289,8 +317,10 @@ def handback_capsule_successor_governance_committed(
     require_platform_admin_actor(actor_user_id)
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.RELEASED.value
-        or tenant.provider_key != 'capsule' or tenant.provider_state != 'capsule'
+        tenant is None
+        or tenant.lifecycle_status != TenantLifecycleStatus.RELEASED.value
+        or tenant.provider_key != 'capsule'
+        or tenant.provider_state != 'capsule'
         or tenant.reconciliation_authority != 'capsule'
         or tenant.ownership_status != 'adopted'
     ):
@@ -304,7 +334,8 @@ def handback_capsule_successor_governance_committed(
         raise ValueError('Released Tenant still has active governance dependencies.')
     previous = latest_release_handoff_plan(tenant_id)
     if (
-        not previous or previous.get('plan_sha256') != release_plan_sha256
+        not previous
+        or previous.get('plan_sha256') != release_plan_sha256
         or previous.get('handoff_fingerprint') != release['handoff_fingerprint']
     ):
         raise ValueError('Original independently accepted Capsule handoff plan is missing.')
@@ -314,20 +345,31 @@ def handback_capsule_successor_governance_committed(
     # The released CR is *never* rewritten. Require a current X.509 identity
     # and exact get/patch SAR for each released target before any mutation.
     current_components = [
-        {**obj, 'authority': 'capsule', 'handoff': 'external_acceptance_required',
-         'capsule_spec_sha256': next(
-             (x.get('capsule_spec_sha256') for x in previous['handoff_components']
-              if x.get('kind') == 'CapsuleTenant'), None
-         )} if obj['kind'] == 'CapsuleTenant' else {
-            **obj, 'namespace': obj['name'], 'authority': 'capsule',
+        {
+            **obj,
+            'authority': 'capsule',
+            'handoff': 'external_acceptance_required',
+            'capsule_spec_sha256': next(
+                (
+                    x.get('capsule_spec_sha256')
+                    for x in previous['handoff_components']
+                    if x.get('kind') == 'CapsuleTenant'
+                ),
+                None,
+            ),
+        }
+        if obj['kind'] == 'CapsuleTenant'
+        else {
+            **obj,
+            'namespace': obj['name'],
+            'authority': 'capsule',
             'handoff': 'external_acceptance_required',
         }
-        for obj in [cr] + [
-            row for row in release['verified_components'] if row['kind'] == 'Namespace'
-        ]
+        for obj in [cr] + [row for row in release['verified_components'] if row['kind'] == 'Namespace']
     ]
     authority = verify_capsule_provider_admin_authority(
-        cluster=cluster, components=current_components,
+        cluster=cluster,
+        components=current_components,
     )
     if (
         release.get('authority_mode') != 'platform_admin_governed'
@@ -336,12 +378,16 @@ def handback_capsule_successor_governance_committed(
     ):
         raise ValueError('Released Capsule X.509 successor identity has changed.')
     provider = runtime_adapter.build_client(cluster)
-    related = [dict(row, decision='explicit_kaori_metadata_handoff_review')
-               for row in targets if row['kind'] != 'Namespace']
+    related = [
+        dict(row, decision='explicit_kaori_metadata_handoff_review') for row in targets if row['kind'] != 'Namespace'
+    ]
     verify_capsule_related_admin_authority(provider=provider, candidates=related)
     custom = provider.custom_objects_api()
     live_cr = custom.get_cluster_custom_object(
-        'capsule.clastix.io', 'v1beta2', 'tenants', cr['name'],
+        'capsule.clastix.io',
+        'v1beta2',
+        'tenants',
+        cr['name'],
         _request_timeout=5,
     )
     if _identity(live_cr) != (cr['name'], cr['uid'], cr['resource_version']):
@@ -353,20 +399,16 @@ def handback_capsule_successor_governance_committed(
     preserved = [
         {**row, 'namespace': row['name'] if row['kind'] == 'Namespace' else row.get('namespace') or ''}
         for row in release['verified_components']
-        if row['kind'] in ('Namespace', 'ResourceQuota', 'LimitRange', 'RoleBinding')
-        and row['state'] == 'preserved'
+        if row['kind'] in ('Namespace', 'ResourceQuota', 'LimitRange', 'RoleBinding') and row['state'] == 'preserved'
     ]
     expected_global = {
-        row['name']: row for row in release['verified_components']
-        if row['kind'] == 'GlobalResourceQuota'
+        row['name']: row for row in release['verified_components'] if row['kind'] == 'GlobalResourceQuota'
     }
     global_inventory = observe_capsule_global_quotas(
-        custom=custom, tenant_name=cr['name'],
+        custom=custom,
+        tenant_name=cr['name'],
     )
-    approved_cr = next(
-        item for item in previous['handoff_components']
-        if item['kind'] == 'CapsuleTenant'
-    )
+    approved_cr = next(item for item in previous['handoff_components'] if item['kind'] == 'CapsuleTenant')
     if (
         global_inventory.get('blockers')
         or global_inventory.get('scope_sha256') != approved_cr.get('capsule_shared_quota_sha256')
@@ -381,7 +423,10 @@ def handback_capsule_successor_governance_committed(
     for row in preserved:
         read, _ = _provider_methods(core=core, rbac=rbac, kind=row['kind'])
         observed = _provider_read(
-            read, kind=row['kind'], name=row['name'], namespace=row['namespace'],
+            read,
+            kind=row['kind'],
+            name=row['name'],
+            namespace=row['namespace'],
         )
         if _identity(observed) != (row['name'], row['uid'], row['resource_version']):
             raise ValueError('Foreign provider resource changed before Capsule handback.')
@@ -390,7 +435,10 @@ def handback_capsule_successor_governance_committed(
     for row in targets:
         read, _ = _provider_methods(core=core, rbac=rbac, kind=row['kind'])
         before = _provider_read(
-            read, kind=row['kind'], name=row['name'], namespace=row['namespace'],
+            read,
+            kind=row['kind'],
+            name=row['name'],
+            namespace=row['namespace'],
         )
         _handback_patch(before=before, item=row, owner=release['successor_owner'])
         source.append((row, before))
@@ -399,24 +447,31 @@ def handback_capsule_successor_governance_committed(
     _require_postgres_capsule_handback_start_guards(db.session())
     locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
-        locked is None or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
+        locked is None
+        or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
         or locked.generation != release['generation']
         or latest_capsule_successor_handback(tenant_id)
     ):
         raise ValueError('Capsule predecessor or handback attempt changed concurrently.')
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action='tenant.release.capsule_successor_handback_started',
-        summary='Capsule successor handback START; unknown outcomes require manual recovery.',
-        metadata_json={
-            'status': 'in_progress', 'tenant_id': tenant_id,
-            'release_plan_sha256': release_plan_sha256,
-            'provider_credential_id': authority['provider_credential_id'],
-            'expected_component_count': len(targets),
-            'provider_handoff_verified': False, 're_adopt_admitted': False,
-            'auto_retry_authorized': False,
-        },
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.capsule_successor_handback_started',
+            summary='Capsule successor handback START; unknown outcomes require manual recovery.',
+            metadata_json={
+                'status': 'in_progress',
+                'tenant_id': tenant_id,
+                'release_plan_sha256': release_plan_sha256,
+                'provider_credential_id': authority['provider_credential_id'],
+                'expected_component_count': len(targets),
+                'provider_handoff_verified': False,
+                're_adopt_admitted': False,
+                'auto_retry_authorized': False,
+            },
+        )
+    )
     db.session.commit()  # START before any provider mutation.
     completed: list[dict[str, Any]] = []
     errors: list[str] = []
@@ -424,38 +479,65 @@ def handback_capsule_successor_governance_committed(
         try:
             read, patch = _provider_methods(core=core, rbac=rbac, kind=row['kind'])
             patch_body = _handback_patch(
-                before=before, item=row, owner=release['successor_owner'],
+                before=before,
+                item=row,
+                owner=release['successor_owner'],
             )
             draft = _provider_patch(
-                patch, kind=row['kind'], name=row['name'], namespace=row['namespace'],
-                body=patch_body, dry_run=True,
+                patch,
+                kind=row['kind'],
+                name=row['name'],
+                namespace=row['namespace'],
+                body=patch_body,
+                dry_run=True,
             )
             _verify_handback(
-                before=before, after=draft, item=row,
-                owner=release['successor_owner'], preview=True,
+                before=before,
+                after=draft,
+                item=row,
+                owner=release['successor_owner'],
+                preview=True,
             )
             fresh = _provider_read(
-                read, kind=row['kind'], name=row['name'], namespace=row['namespace'],
+                read,
+                kind=row['kind'],
+                name=row['name'],
+                namespace=row['namespace'],
             )
             if _identity(fresh) != _identity(before) or _labels(fresh) != _labels(before):
                 raise ValueError('Capsule successor source changed between dry-run and live patch.')
             _provider_patch(
-                patch, kind=row['kind'], name=row['name'], namespace=row['namespace'],
-                body=patch_body, dry_run=False,
+                patch,
+                kind=row['kind'],
+                name=row['name'],
+                namespace=row['namespace'],
+                body=patch_body,
+                dry_run=False,
             )
             after = _provider_read(
-                read, kind=row['kind'], name=row['name'], namespace=row['namespace'],
+                read,
+                kind=row['kind'],
+                name=row['name'],
+                namespace=row['namespace'],
             )
             rv = _verify_handback(
-                before=before, after=after, item=row,
-                owner=release['successor_owner'], preview=False,
+                before=before,
+                after=after,
+                item=row,
+                owner=release['successor_owner'],
+                preview=False,
             )
-            completed.append({
-                'kind': row['kind'], 'namespace': row['namespace'],
-                'name': row['name'], 'uid': row['uid'], 'resource_version': rv,
-            })
+            completed.append(
+                {
+                    'kind': row['kind'],
+                    'namespace': row['namespace'],
+                    'name': row['name'],
+                    'uid': row['uid'],
+                    'resource_version': rv,
+                }
+            )
         except Exception as exc:
-            errors.append(f"{row['kind']}/{row['namespace']}/{row['name']}: {type(exc).__name__}")
+            errors.append(f'{row["kind"]}/{row["namespace"]}/{row["name"]}: {type(exc).__name__}')
             break  # NEVER automatic retry or continuation on uncertainty.
     # Repeat the Capsule CR preservation check *after* provider writes.
     # It is provider-owned: not even successful Namespace/related metadata
@@ -463,40 +545,49 @@ def handback_capsule_successor_governance_committed(
     if not errors:
         try:
             final_cr = custom.get_cluster_custom_object(
-                'capsule.clastix.io', 'v1beta2', 'tenants', cr['name'],
+                'capsule.clastix.io',
+                'v1beta2',
+                'tenants',
+                cr['name'],
                 _request_timeout=5,
             )
             if _identity(final_cr) != _identity(live_cr):
                 raise ValueError('Capsule CR changed during successor handback.')
         except Exception as exc:
-            errors.append(f"CapsuleTenant/{cr['name']}: {type(exc).__name__}")
+            errors.append(f'CapsuleTenant/{cr["name"]}: {type(exc).__name__}')
     if not errors:
         try:
             final_global = observe_capsule_global_quotas(
-                custom=custom, tenant_name=cr['name'],
+                custom=custom,
+                tenant_name=cr['name'],
             )
             if final_global != global_inventory:
                 raise ValueError('Capsule GlobalResourceQuota changed during handback.')
             for row in preserved:
                 read, _ = _provider_methods(core=core, rbac=rbac, kind=row['kind'])
                 observed = _provider_read(
-                    read, kind=row['kind'], name=row['name'], namespace=row['namespace'],
+                    read,
+                    kind=row['kind'],
+                    name=row['name'],
+                    namespace=row['namespace'],
                 )
                 if _identity(observed) != (row['name'], row['uid'], row['resource_version']):
                     raise ValueError('Preserved related resource changed during Capsule handback.')
         except Exception as exc:
-            errors.append(f"Capsule preserved scope: {type(exc).__name__}")
+            errors.append(f'Capsule preserved scope: {type(exc).__name__}')
     success = not errors and len(completed) == len(targets)
     receipt = {
         'status': 'verified' if success else 'partial_handback_recovery_required',
-        'tenant_id': tenant_id, 'release_plan_sha256': release_plan_sha256,
+        'tenant_id': tenant_id,
+        'release_plan_sha256': release_plan_sha256,
         'successor_owner': release['successor_owner'],
         'provider_username': authority['provider_username'],
         'provider_credential_id': authority['provider_credential_id'],
         'provider_specs_preserved': success,
         'verified_components': completed,
         'expected_component_count': len(targets),
-        'verified_count': len(completed), 'errors': errors,
+        'verified_count': len(completed),
+        'errors': errors,
         'successor_handback_verified': success,
         'adoption_automatic': False,
         're_adopt_admitted': False,
@@ -508,40 +599,50 @@ def handback_capsule_successor_governance_committed(
         locked = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
         latest = latest_capsule_successor_handback(tenant_id)
         if (
-            locked is None or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
+            locked is None
+            or locked.lifecycle_status != TenantLifecycleStatus.RELEASED.value
             or locked.generation != release['generation']
-            or not latest or latest.get('status') != 'in_progress'
+            or not latest
+            or latest.get('status') != 'in_progress'
             or latest.get('release_plan_sha256') != release_plan_sha256
         ):
             raise ValueError('Capsule handback finalization changed; recovery required.')
         rows = (
             TenantNamespace.query.join(
-                TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id,
-            ).filter(TenantEnvironment.tenant_id == tenant_id)
-            .order_by(TenantNamespace.id.asc()).with_for_update().all()
+                TenantEnvironment,
+                TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+            )
+            .filter(TenantEnvironment.tenant_id == tenant_id)
+            .order_by(TenantNamespace.id.asc())
+            .with_for_update()
+            .all()
         )
-        ns = {
-            row['name']: row for row in completed if row['kind'] == 'Namespace'
-        }
-        ns.update({
-            row['name']: {
-                'name': row['name'], 'uid': row['uid'],
-                'resource_version': row['resource_version'],
+        ns = {row['name']: row for row in completed if row['kind'] == 'Namespace'}
+        ns.update(
+            {
+                row['name']: {
+                    'name': row['name'],
+                    'uid': row['uid'],
+                    'resource_version': row['resource_version'],
+                }
+                for row in preserved
+                if row['kind'] == 'Namespace'
             }
-            for row in preserved if row['kind'] == 'Namespace'
-        })
+        )
         if len(rows) != len(ns):
             raise ValueError('Capsule released Namespace history coverage is incomplete.')
         for item in rows:
             current = ns.get(item.namespace)
             if (
                 item.provisioning_status != TenantNamespaceProvisioningStatus.RELEASED.value
-                or not current or item.provider_reference != current['uid']
+                or not current
+                or item.provider_reference != current['uid']
             ):
                 raise ValueError('Capsule Released Namespace lineage changed during handback.')
             row_evidence = dict(item.provisioning_evidence_json or {})
             row_evidence['handback_governance'] = {
-                'status': 'verified', 'release_plan_sha256': release_plan_sha256,
+                'status': 'verified',
+                'release_plan_sha256': release_plan_sha256,
                 'provider_uid': current['uid'],
                 'resource_version': current['resource_version'],
                 'successor_owner': release['successor_owner'],
@@ -549,26 +650,31 @@ def handback_capsule_successor_governance_committed(
             item.provisioning_evidence_json = row_evidence
         tenant_evidence = dict(locked.provider_evidence_json or {})
         tenant_evidence['handback_governance'] = {
-            'status': 'verified', 'release_plan_sha256': release_plan_sha256,
-            'provider_uid': cr['uid'], 'resource_version': cr['resource_version'],
-            'provider_resource_versions': {
-                row['name']: row['resource_version']
-                for row in ns.values()
-            },
+            'status': 'verified',
+            'release_plan_sha256': release_plan_sha256,
+            'provider_uid': cr['uid'],
+            'resource_version': cr['resource_version'],
+            'provider_resource_versions': {row['name']: row['resource_version'] for row in ns.values()},
             'successor_owner': release['successor_owner'],
         }
         locked.provider_evidence_json = tenant_evidence
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action=(
-            'tenant.release.capsule_successor_handback_verified'
-            if success else 'tenant.release.capsule_successor_handback_recovery_required'
-        ),
-        summary=(
-            'Capsule successor metadata handback verified; explicit fresh Discovery is required.'
-            if success else 'Capsule provider handback partial or unknown; operator recovery required.'
-        ),
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action=(
+                'tenant.release.capsule_successor_handback_verified'
+                if success
+                else 'tenant.release.capsule_successor_handback_recovery_required'
+            ),
+            summary=(
+                'Capsule successor metadata handback verified; explicit fresh Discovery is required.'
+                if success
+                else 'Capsule provider handback partial or unknown; operator recovery required.'
+            ),
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt

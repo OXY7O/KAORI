@@ -54,15 +54,17 @@ def normalize_capsule_access_spec(spec: dict[str, Any]) -> dict[str, Any]:
         role_name = str(entry.get('clusterRoleName') or '')
         if len(role_name) > 253:
             raise ValueError('External ClusterRole name is unbounded.')
-        bindings.append({
-            'source': source,
-            'cluster_role_name': role_name,
-            'subjects': [_subject(subject) for subject in subjects],
-            'scope_selector': selector,
-            'ownership': 'kaori' if managed and grant_id else 'external',
-            'kaori_grant_id': grant_id if managed and grant_id else None,
-            'governance': 'committed_grant_candidate' if managed and grant_id else 'observed_review_required',
-        })
+        bindings.append(
+            {
+                'source': source,
+                'cluster_role_name': role_name,
+                'subjects': [_subject(subject) for subject in subjects],
+                'scope_selector': selector,
+                'ownership': 'kaori' if managed and grant_id else 'external',
+                'kaori_grant_id': grant_id if managed and grant_id else None,
+                'governance': 'committed_grant_candidate' if managed and grant_id else 'observed_review_required',
+            }
+        )
 
     for binding in additional:
         capture(binding, source='additionalRoleBindings')
@@ -91,11 +93,7 @@ def normalize_capsule_access_spec(spec: dict[str, Any]) -> dict[str, Any]:
 
 
 def latest_external_capsule_access_evidence(tenant_id: str) -> dict[str, Any] | None:
-    event = (
-        AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc())
-        .first()
-    )
+    event = AuditEvent.query.filter_by(target_type=_TARGET, target_id=tenant_id).order_by(AuditEvent.id.desc()).first()
     return dict(event.metadata_json or {}) if event else None
 
 
@@ -142,13 +140,15 @@ def observe_external_capsule_access_committed(*, tenant_id: str, actor_user_id: 
         'rbac_mutation_performed': False,
         'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id,
-        target_type=_TARGET,
-        target_id=tenant.id,
-        action='tenant.external_access.observed',
-        summary='Observed Capsule-owned access without changing memberships or provider RBAC.',
-        metadata_json=evidence,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant.id,
+            action='tenant.external_access.observed',
+            summary='Observed Capsule-owned access without changing memberships or provider RBAC.',
+            metadata_json=evidence,
+        )
+    )
     db.session.commit()
     return evidence

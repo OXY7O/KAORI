@@ -153,28 +153,46 @@ def build_instance_context(
         IntegrationBinding.id.asc(),
     )
     bindings, binding_registry_pagination = paginate_query(
-        binding_query, page=binding_page, per_page=binding_per_page,
+        binding_query,
+        page=binding_page,
+        per_page=binding_per_page,
     )
     binding_total = binding_registry_pagination['total_items']
-    validated_total, gap_total = db.session.query(
-        func.sum(case((IntegrationBinding.validation_status == 'ready', 1), else_=0)),
-        func.sum(case((IntegrationBinding.validation_status.in_(('blocked', 'degraded')), 1), else_=0)),
-    ).filter(
-        IntegrationBinding.integration_instance_id == instance.integration_instance_id,
-    ).one()
-    operational_binding_total = (
-        int(db.session.query(func.count(IntegrationBinding.id)).filter(
+    validated_total, gap_total = (
+        db.session.query(
+            func.sum(case((IntegrationBinding.validation_status == 'ready', 1), else_=0)),
+            func.sum(case((IntegrationBinding.validation_status.in_(('blocked', 'degraded')), 1), else_=0)),
+        )
+        .filter(
             IntegrationBinding.integration_instance_id == instance.integration_instance_id,
-            IntegrationBinding.enabled.is_(True),
-            IntegrationBinding.validation_status == 'ready',
-        ).scalar() or 0)
-        if instance.enabled and instance.readiness_status == 'ready' else 0
+        )
+        .one()
     )
-    resolution_scope_total = int(db.session.query(func.count()).select_from(
-        db.session.query(IntegrationBinding.asset_type, IntegrationBinding.asset_key)
-        .filter(IntegrationBinding.integration_instance_id == instance.integration_instance_id)
-        .distinct().subquery()
-    ).scalar() or 0)
+    operational_binding_total = (
+        int(
+            db.session.query(func.count(IntegrationBinding.id))
+            .filter(
+                IntegrationBinding.integration_instance_id == instance.integration_instance_id,
+                IntegrationBinding.enabled.is_(True),
+                IntegrationBinding.validation_status == 'ready',
+            )
+            .scalar()
+            or 0
+        )
+        if instance.enabled and instance.readiness_status == 'ready'
+        else 0
+    )
+    resolution_scope_total = int(
+        db.session.query(func.count())
+        .select_from(
+            db.session.query(IntegrationBinding.asset_type, IntegrationBinding.asset_key)
+            .filter(IntegrationBinding.integration_instance_id == instance.integration_instance_id)
+            .distinct()
+            .subquery()
+        )
+        .scalar()
+        or 0
+    )
     consumer_asset_groups = build_consumer_asset_groups(
         lambda asset_type: get_binding_validation_profile(instance.adapter_key, asset_type)
     )

@@ -301,20 +301,26 @@ def test_topology_hover_only_relationship_labels_and_legend() -> None:
     assert "event.target.addClass('edge-hovered edge-label-visible')" in script
     assert "cy.on('mouseout', 'edge', (event) => {" in script
     assert "event.target.removeClass('edge-hovered')" in script
-    assert "updateEdgeLabelClasses()" in script
+    assert 'updateEdgeLabelClasses()' in script
     assert "selector: 'edge.edge-hovered'" in script
     assert "'line-color': brandPrimary" in script
     assert "cy.on('mouseover', 'node'" not in script
     # Retain the existing semantic label chip and explicit opt-in control.
     assert "'text-background-shape': 'roundrectangle'" in script
     assert "'text-rotation': 'none'" in script
-    assert "selector: 'edge[relationship = \"contains\"].edge-label-visible'" in script
+    assert 'selector: \'edge[relationship = "contains"].edge-label-visible\'' in script
     assert "style: { 'text-margin-y': 24 }" in script
     assert 'Always Show Relationship Labels' in workspace
     assert 'Dashed: scope · Arrows: operational' in workspace
     assert 'mt-2 whitespace-nowrap text-xs leading-5 text-content-muted' in workspace
-    assert 'title="Dashed lines show scope containment; solid arrows show directional operational relationships.' in workspace
-    assert 'aria-label="Dashed lines show scope containment; solid arrows show directional operational relationships.' in workspace
+    assert (
+        'title="Dashed lines show scope containment; solid arrows show directional operational relationships.'
+        in workspace
+    )
+    assert (
+        'aria-label="Dashed lines show scope containment; solid arrows show directional operational relationships.'
+        in workspace
+    )
     assert 'Relationship legend: dashed lines show scope containment' not in workspace
     assert 'Hover or select an edge to reveal its label' in workspace
     assert 'Relationship labels stay hidden by default' in palette
@@ -350,12 +356,12 @@ def test_topology_relationship_summary_reuses_existing_inspector() -> None:
     assert 'const renderRelationshipSummary = (view, node) =>' in script
     assert 'renderRelationshipSummary(view, node)' in script
     assert "activateTab('relationships')" in script
-    assert "edgeColor(relationship)" in script
+    assert 'edgeColor(relationship)' in script
     assert 'Relationship Summary' in pattern
     assert "selector: 'edge.focused'" in script
-    assert "edge.focused[relationship" in script
+    assert 'edge.focused[relationship' in script
     assert "const resourceCount = nodes.filter((node) => node.data('type') !== 'namespace').length" in script
-    assert "if (!resourceCount) return" in script
+    assert 'if (!resourceCount) return' in script
     assert 'Namespace boundary overlays appear only' in pattern
     assert 'visible committed edge type and direction' in pattern
 

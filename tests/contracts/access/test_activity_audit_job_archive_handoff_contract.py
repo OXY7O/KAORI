@@ -28,9 +28,16 @@ def test_archive_browse_is_permissioned_not_a_job_archive_match() -> None:
     assert "'platform_operations.data_lifecycle.index'," in source
     assert "archive_domain='job_execution'" in source
     assert "'archive_history_url': archive_history_url" in source
-    for token in ('{% if row.job_url %}', '{% elif row.archive_history_url %}', '{% elif row.job_unavailable %}',
-                  'Open Job', 'Browse Job Archives', 'Archive bundles only; job match not verified.',
-                  'Job unavailable', 'Source-owned'):
+    for token in (
+        '{% if row.job_url %}',
+        '{% elif row.archive_history_url %}',
+        '{% elif row.job_unavailable %}',
+        'Open Job',
+        'Browse Job Archives',
+        'Archive bundles only; job match not verified.',
+        'Job unavailable',
+        'Source-owned',
+    ):
         assert token in view
     assert 'View Archived Job' not in view
 

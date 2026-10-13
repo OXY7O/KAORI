@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -10,7 +9,7 @@ def read(path: str) -> str:
 
 def test_overview_hero_uses_safe_reader_fallback() -> None:
     template = read('app/templates/reports/overview/index.html')
-    assert 'hero_action_url = url_for(\'reports.generated_reports\')' in template
+    assert "hero_action_url = url_for('reports.generated_reports')" in template
     assert "current_user.has_permission('reports.generate')" in template
     assert "current_user.has_permission('reports.manage_storage')" in template
 

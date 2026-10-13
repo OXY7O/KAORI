@@ -228,6 +228,8 @@
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}
     {{ framed_workspace_tabs.badge_oob('metrics-source', 'scope', (binding_total|string) ~ ' Bindings') }}
-    <span id="metrics-source-hero-binding-count" hx-swap-oob="innerHTML" class="hidden">{{ (binding_total|string) ~ ' Bindings' }}</span>
+    <span id="metrics-source-hero-binding-count"
+          hx-swap-oob="innerHTML"
+          class="hidden">{{ (binding_total|string) ~ ' Bindings' }}</span>
 {% endif %}
 {% include "components/operation_feedback_oob.html" %}

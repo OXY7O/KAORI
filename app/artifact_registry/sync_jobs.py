@@ -5,8 +5,8 @@ from datetime import UTC
 from app.artifact_registry.eligibility import registry_inventory_eligibility
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_INVENTORY_SYNC_OPERATION
 from app.models.integration import IntegrationInstance
-from app.models.registry import RegistryCollectionState, RegistryProject
 from app.models.job import JobExecution
+from app.models.registry import RegistryCollectionState, RegistryProject
 from app.platform_operations.jobs.constants import WORKLOAD_STANDARD
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 
@@ -58,16 +58,16 @@ def enqueue_all_registry_inventory_sync(
     reconciliation: dict[str, str | int] | None = None
     if confirm_empty_instance_id is not None:
         if trigger_type != 'manual' or requested_by_user_id is None:
-            raise NoEligibleRegistryTargets('Confirmed-empty Registry reconciliation requires an authenticated manual job.')
+            raise NoEligibleRegistryTargets(
+                'Confirmed-empty Registry reconciliation requires an authenticated manual job.'
+            )
         chosen = next(
             (target for target in targets if int(target['integration_instance_id']) == confirm_empty_instance_id),
             None,
         )
         if chosen is None:
             raise NoEligibleRegistryTargets('The selected Registry provider is no longer eligible for Inventory Sync.')
-        state = RegistryCollectionState.query.filter_by(
-            integration_instance_id=confirm_empty_instance_id
-        ).first()
+        state = RegistryCollectionState.query.filter_by(integration_instance_id=confirm_empty_instance_id).first()
         count = RegistryProject.query.filter_by(integration_instance_id=confirm_empty_instance_id).count()
         if state is None or state.last_committed_at is None or count <= 0:
             raise NoEligibleRegistryTargets('Only a previously committed, nonempty Registry may be confirmed empty.')
@@ -104,7 +104,8 @@ def enqueue_all_registry_inventory_sync(
                 'integration_instance_id': str(confirm_empty_instance_id),
                 'reconciliation': 'confirmed_empty',
             }
-            if reconciliation else {'scope': 'all'}
+            if reconciliation
+            else {'scope': 'all'}
         ),
         payload={
             'total_count': len(targets),

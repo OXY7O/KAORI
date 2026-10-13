@@ -213,9 +213,8 @@ def discover_capsule(
         'access_grants_tenant': _dependent_status(
             controller_status=controller_status,
             ready=any(
-                version == 'v1beta2' and _served_version_has_schema_path(
-                    tenant_item, version, ('spec', 'additionalRoleBindings')
-                )
+                version == 'v1beta2'
+                and _served_version_has_schema_path(tenant_item, version, ('spec', 'additionalRoleBindings'))
                 for version in tenant_versions
             ),
         ),

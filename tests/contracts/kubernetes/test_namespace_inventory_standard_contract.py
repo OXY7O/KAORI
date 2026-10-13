@@ -89,14 +89,15 @@ def test_namespace_column_widths_prioritize_long_names_without_crowding_controls
     assert "table_ui.table_classes('min-w-[78rem] !table-fixed')" in table
     assert 'overflow-x-auto overscroll-x-contain' in table
     assert "table_ui.namespace_identity(namespace.namespace, 'w-full min-w-0')" in table
-    assert (
-        "table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment, 'w-full min-w-0')"
-        in table
-    )
+    assert "table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment, 'w-full min-w-0')" in table
     assert table.count('grid-cols-[6rem_minmax(0,1fr)]') == 2
     assert 'grid-cols-[5rem_minmax(0,1fr)]' in table
-    for token in ('namespace.quota_display', 'namespace.limit_range_display',
-                  'namespace.network_policy_display', 'namespace.pod_security_enforce_display'):
+    for token in (
+        'namespace.quota_display',
+        'namespace.limit_range_display',
+        'namespace.network_policy_display',
+        'namespace.pod_security_enforce_display',
+    ):
         assert token in table
     assert 'title="{{ name or \'-\' }}"' in shared
     assert 'title="{{ name }}"' in shared

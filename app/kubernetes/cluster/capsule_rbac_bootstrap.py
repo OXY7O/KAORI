@@ -38,11 +38,13 @@ def _normalized(rules: Any) -> list[tuple[tuple[str, ...], tuple[str, ...], tupl
         forbidden_fields = ('resourceNames', 'resource_names', 'nonResourceURLs', 'non_resource_urls')
         if any(value.get(field) for field in forbidden_fields):
             raise ValueError('Existing ClusterRole uses unsupported resource-name or non-resource restrictions.')
-        result.append((
-            tuple(sorted(value.get('apiGroups', value.get('api_groups')) or [])),
-            tuple(sorted(value.get('resources') or [])),
-            tuple(sorted(value.get('verbs') or [])),
-        ))
+        result.append(
+            (
+                tuple(sorted(value.get('apiGroups', value.get('api_groups')) or [])),
+                tuple(sorted(value.get('resources') or [])),
+                tuple(sorted(value.get('verbs') or [])),
+            )
+        )
     return sorted(result)
 
 
@@ -142,11 +144,7 @@ def _audit(
 
 
 def latest_capsule_role_bootstrap_evidence(cluster_id: str) -> dict[str, Any] | None:
-    event = (
-        AuditEvent.query.filter_by(target_type=_TARGET, target_id=cluster_id)
-        .order_by(AuditEvent.id.desc())
-        .first()
-    )
+    event = AuditEvent.query.filter_by(target_type=_TARGET, target_id=cluster_id).order_by(AuditEvent.id.desc()).first()
     return dict(event.metadata_json or {}) if event else None
 
 
@@ -155,10 +153,14 @@ def check_capsule_role_bootstrap(cluster_id: str, actor_user_id: int) -> dict[st
         _, rows = _read_roles(cluster_id)
     except (ApiException, ValueError) as exc:
         return _audit(
-            cluster_id, actor_user_id, 'check', 'failed',
+            cluster_id,
+            actor_user_id,
+            'check',
+            'failed',
             {
                 'error': type(exc).__name__,
-                'reason': str(exc)[:240] if isinstance(exc, ValueError)
+                'reason': str(exc)[:240]
+                if isinstance(exc, ValueError)
                 else 'Kubernetes API rejected role prerequisite inspection.',
             },
         )
@@ -186,9 +188,7 @@ def _body(profile: Any) -> V1ClusterRole:
     )
 
 
-def bootstrap_missing_capsule_roles(
-    cluster_id: str, actor_user_id: int, *, approved: bool
-) -> dict[str, Any]:
+def bootstrap_missing_capsule_roles(cluster_id: str, actor_user_id: int, *, approved: bool) -> dict[str, Any]:
     if not approved:
         raise ValueError('Explicit cluster-scoped RBAC approval is required.')
     created: list[str] = []
@@ -232,9 +232,14 @@ def bootstrap_missing_capsule_roles(
             except (ApiException, ValueError):
                 pass
         return _audit(
-            cluster_id, actor_user_id, 'bootstrap', 'failed',
+            cluster_id,
+            actor_user_id,
+            'bootstrap',
+            'failed',
             {
-                **observed, 'created': created, 'error': type(exc).__name__,
+                **observed,
+                'created': created,
+                'error': type(exc).__name__,
                 'reason': str(exc)[:240] if isinstance(exc, ValueError) else 'Kubernetes API rejected RBAC mutation.',
                 'partial': bool(created),
             },

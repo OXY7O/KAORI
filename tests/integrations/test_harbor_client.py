@@ -174,13 +174,16 @@ def test_harbor_pagination_stops_on_identical_repeated_full_page() -> None:
     assert 'repeated an identical full page' in str(exc_info.value)
 
 
-@pytest.mark.parametrize('endpoint', [
-    'http://harbor.example.test',
-    'https://user:password@harbor.example.test',
-    'https://harbor.example.test/api/v2.0',
-    'https://harbor.example.test?x=y',
-    'https://127.0.0.1',
-])
+@pytest.mark.parametrize(
+    'endpoint',
+    [
+        'http://harbor.example.test',
+        'https://user:password@harbor.example.test',
+        'https://harbor.example.test/api/v2.0',
+        'https://harbor.example.test?x=y',
+        'https://127.0.0.1',
+    ],
+)
 def test_harbor_rejects_insecure_or_unapproved_endpoints(endpoint: str) -> None:
     with pytest.raises(ValueError):
         HarborClient(endpoint=endpoint, username='robot', password='secret')

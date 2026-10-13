@@ -87,11 +87,11 @@
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {% for asset in inventory.asset_catalog %}
                         {{ inventory_asset_card.render(asset.title,
-                                            asset.count,
-                                            asset.description,
-                                            url_for(asset.endpoint),
-                                            asset.icon,
-                                            action_label=asset.action_label) }}
+                                                asset.count,
+                                                asset.description,
+                                                url_for(asset.endpoint) ,
+                        asset.icon,
+                        action_label=asset.action_label) }}
                     {% endfor %}
                 </div>
             {% endcall %}

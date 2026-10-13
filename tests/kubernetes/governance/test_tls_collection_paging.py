@@ -43,7 +43,8 @@ def test_tls_collector_scrubs_each_page_and_uses_continuation(monkeypatch):
     monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
     monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
     monkeypatch.setattr(
-        collector, 'parse_tls_secret',
+        collector,
+        'parse_tls_secret',
         lambda item, usage_map, **kwargs: {
             'namespace': item.metadata.namespace,
             'secret_name': item.metadata.name,
@@ -57,16 +58,23 @@ def test_tls_collector_scrubs_each_page_and_uses_continuation(monkeypatch):
     assert second.data is None and second.string_data is None
 
 
-@pytest.mark.parametrize('bad_page', [
-    SimpleNamespace(items=None, metadata=None),
-    SimpleNamespace(items={'unexpected': 'mapping'}, metadata=None),
-])
+@pytest.mark.parametrize(
+    'bad_page',
+    [
+        SimpleNamespace(items=None, metadata=None),
+        SimpleNamespace(items={'unexpected': 'mapping'}, metadata=None),
+    ],
+)
 def test_incomplete_secret_listing_fails_closed_and_scrubs(monkeypatch, bad_page):
     cluster = SimpleNamespace(name='Example')
     monkeypatch.setattr(collector, 'collect_ingress_tls_usage', lambda cluster: {})
-    monkeypatch.setattr(collector, 'build_kubernetes_client', lambda cluster: SimpleNamespace(
-        core_api=lambda: SimpleNamespace(list_secret_for_all_namespaces=lambda **kwargs: bad_page),
-    ))
+    monkeypatch.setattr(
+        collector,
+        'build_kubernetes_client',
+        lambda cluster: SimpleNamespace(
+            core_api=lambda: SimpleNamespace(list_secret_for_all_namespaces=lambda **kwargs: bad_page),
+        ),
+    )
     monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
     monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
     batch = collector.collect_tls_certificate_batch(cluster)
@@ -79,11 +87,15 @@ def test_secret_continuation_cycle_fails_without_partial_records(monkeypatch):
     old = secret('a')
     cluster = SimpleNamespace(name='Example')
     monkeypatch.setattr(collector, 'collect_ingress_tls_usage', lambda cluster: {})
-    monkeypatch.setattr(collector, 'build_kubernetes_client', lambda cluster: SimpleNamespace(
-        core_api=lambda: SimpleNamespace(
-            list_secret_for_all_namespaces=lambda **kwargs: page([old], 'loop-token'),
+    monkeypatch.setattr(
+        collector,
+        'build_kubernetes_client',
+        lambda cluster: SimpleNamespace(
+            core_api=lambda: SimpleNamespace(
+                list_secret_for_all_namespaces=lambda **kwargs: page([old], 'loop-token'),
+            ),
         ),
-    ))
+    )
     monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
     monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
     monkeypatch.setattr(collector, 'parse_tls_secret', lambda item, mapping, **kwargs: {'secret_name': 'a'})
@@ -94,26 +106,38 @@ def test_secret_continuation_cycle_fails_without_partial_records(monkeypatch):
 
 def test_ingress_pagination_merges_consumer_evidence_across_pages(monkeypatch):
     cluster = SimpleNamespace(name='Example')
+
     def ingress(name):
         return SimpleNamespace(
             metadata=SimpleNamespace(namespace='default', name=name),
-            spec=SimpleNamespace(tls=[
-                SimpleNamespace(secret_name='shared', hosts=[f'{name}.example.com']),
-            ]),
+            spec=SimpleNamespace(
+                tls=[
+                    SimpleNamespace(secret_name='shared', hosts=[f'{name}.example.com']),
+                ]
+            ),
         )
+
     calls = []
+
     def list_ingress(**kwargs):
         calls.append(kwargs)
-        return page([ingress('beta')] if kwargs['_continue'] else [ingress('alpha')],
-                    '' if kwargs['_continue'] else 'next')
-    monkeypatch.setattr(collector, 'build_kubernetes_client', lambda cluster: SimpleNamespace(
-        networking_api=lambda: SimpleNamespace(list_ingress_for_all_namespaces=list_ingress),
-    ))
+        return page(
+            [ingress('beta')] if kwargs['_continue'] else [ingress('alpha')], '' if kwargs['_continue'] else 'next'
+        )
+
+    monkeypatch.setattr(
+        collector,
+        'build_kubernetes_client',
+        lambda cluster: SimpleNamespace(
+            networking_api=lambda: SimpleNamespace(list_ingress_for_all_namespaces=list_ingress),
+        ),
+    )
     monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
     monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
     mapping = collector.collect_ingress_tls_usage(cluster)
     assert mapping[('default', 'shared')]['ingress_hosts'] == [
-        'alpha.example.com', 'beta.example.com',
+        'alpha.example.com',
+        'beta.example.com',
     ]
     assert [call['_continue'] for call in calls] == [None, 'next']
     assert all(call['_request_timeout'] == 10 for call in calls)
@@ -137,11 +161,15 @@ def test_ingress_missing_identity_does_not_claim_complete_mapping(monkeypatch):
         metadata=SimpleNamespace(namespace=None, name='missing-namespace'),
         spec=SimpleNamespace(tls=[SimpleNamespace(secret_name='example', hosts=['api.example.com'])]),
     )
-    monkeypatch.setattr(collector, 'build_kubernetes_client', lambda cluster: SimpleNamespace(
-        networking_api=lambda: SimpleNamespace(
-            list_ingress_for_all_namespaces=lambda **kwargs: page([invalid]),
+    monkeypatch.setattr(
+        collector,
+        'build_kubernetes_client',
+        lambda cluster: SimpleNamespace(
+            networking_api=lambda: SimpleNamespace(
+                list_ingress_for_all_namespaces=lambda **kwargs: page([invalid]),
+            ),
         ),
-    ))
+    )
     monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
     monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
     with pytest.raises(ValueError, match='without identity'):

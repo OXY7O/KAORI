@@ -23,19 +23,13 @@ def _binding(
             resource_version='14',
             labels=labels or {},
         ),
-        role_ref=SimpleNamespace(
-            kind=role_kind, name=role_name, api_group='rbac.authorization.k8s.io'
-        ),
-        subjects=[SimpleNamespace(
-            kind=subject_kind, name=subject_name, namespace=subject_namespace
-        )],
+        role_ref=SimpleNamespace(kind=role_kind, name=role_name, api_group='rbac.authorization.k8s.io'),
+        subjects=[SimpleNamespace(kind=subject_kind, name=subject_name, namespace=subject_namespace)],
     )
 
 
 def test_native_foreign_rolebinding_stays_observed_and_keeps_exact_subject():
-    result = normalize_native_role_binding(
-        _binding(), namespace='sandbox', grant_ids={'grant-1'}
-    )
+    result = normalize_native_role_binding(_binding(), namespace='sandbox', grant_ids={'grant-1'})
     assert result['namespace'] == 'sandbox'
     assert result['role_ref'] == {'kind': 'ClusterRole', 'name': 'view'}
     assert result['subjects'] == [{'kind': 'User', 'name': 'alice', 'namespace': ''}]
@@ -52,16 +46,12 @@ def test_native_labels_are_only_correlated_when_grant_belongs_to_tenant():
         'kaori.io/access-grant': 'grant-1',
     }
     obj = _binding(role_kind='Role', role_name='kaori-viewer', labels=labels)
-    claimed = normalize_native_role_binding(
-        obj, namespace='sandbox', grant_ids=set()
-    )
+    claimed = normalize_native_role_binding(obj, namespace='sandbox', grant_ids=set())
     assert claimed['ownership'] == 'kaori_marker_unverified'
     assert claimed['claimed_grant_marker'] == 'grant-1'
     assert claimed['kaori_grant_id'] is None
 
-    correlated = normalize_native_role_binding(
-        obj, namespace='sandbox', grant_ids={'grant-1'}
-    )
+    correlated = normalize_native_role_binding(obj, namespace='sandbox', grant_ids={'grant-1'})
     assert correlated['ownership'] == 'kaori_correlated'
     assert correlated['kaori_grant_id'] == 'grant-1'
     assert correlated['effective_permissions_verified'] is False
@@ -87,9 +77,7 @@ def test_native_serviceaccount_subject_requires_namespace():
 )
 def test_native_unsupported_subject_or_role_reference_is_rejected(field, value):
     with pytest.raises(ValueError):
-        normalize_native_role_binding(
-            _binding(**{field: value}), namespace='sandbox', grant_ids=set()
-        )
+        normalize_native_role_binding(_binding(**{field: value}), namespace='sandbox', grant_ids=set())
 
 
 def test_native_serviceaccount_identity_is_preserved_but_not_imported():
@@ -102,18 +90,18 @@ def test_native_serviceaccount_identity_is_preserved_but_not_imported():
         namespace='sandbox',
         grant_ids=set(),
     )
-    assert observed['subjects'] == [
-        {'kind': 'ServiceAccount', 'name': 'pipeline', 'namespace': 'jobs'}
-    ]
+    assert observed['subjects'] == [{'kind': 'ServiceAccount', 'name': 'pipeline', 'namespace': 'jobs'}]
     assert observed['ownership'] == 'external_observed'
 
-@pytest.mark.parametrize('labels', [
-    {'app.kubernetes.io/managed-by': 'kaori'},
-    {'kaori.io/access-grant': 'grant-1'},
-    {'app.kubernetes.io/managed-by': 'kaori', 'kaori.io/access-grant': 'unknown'},
-])
+
+@pytest.mark.parametrize(
+    'labels',
+    [
+        {'app.kubernetes.io/managed-by': 'kaori'},
+        {'kaori.io/access-grant': 'grant-1'},
+        {'app.kubernetes.io/managed-by': 'kaori', 'kaori.io/access-grant': 'unknown'},
+    ],
+)
 def test_partial_or_conflicting_kaori_marker_is_not_foreign_import_candidate(labels):
-    observed = normalize_native_role_binding(
-        _binding(labels=labels), namespace='sandbox', grant_ids=set()
-    )
+    observed = normalize_native_role_binding(_binding(labels=labels), namespace='sandbox', grant_ids=set())
     assert observed['ownership'] == 'kaori_marker_unverified'

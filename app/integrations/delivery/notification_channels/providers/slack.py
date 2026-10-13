@@ -76,7 +76,9 @@ def send_slack_message(
     )
     try:
         with build_opener(
-            ProxyHandler({}), HTTPSHandler(context=ssl.create_default_context()), DenyRedirects(),
+            ProxyHandler({}),
+            HTTPSHandler(context=ssl.create_default_context()),
+            DenyRedirects(),
         ).open(request, timeout=max(int(timeout_seconds), 1)) as response:
             status = int(getattr(response, 'status', 200) or 200)
             acknowledgement = response.read(64).decode('utf-8', errors='replace').strip()

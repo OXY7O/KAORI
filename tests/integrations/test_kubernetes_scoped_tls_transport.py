@@ -2,9 +2,9 @@
 
 from types import SimpleNamespace
 
+import pytest
 import urllib3.connection
 import urllib3.util.ssl_
-import pytest
 
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import (
     configure_weak_tls,
@@ -43,8 +43,9 @@ def test_independent_legacy_clients_never_restore_or_change_global_functions():
     one, two = _api(), _api()
     configure_weak_tls(one, enabled=True, verify_ssl=True)
     configure_weak_tls(two, enabled=True, verify_ssl=False)
-    assert one.rest_client.pool_manager.connection_pool_kw['ssl_context'] is not (
-        two.rest_client.pool_manager.connection_pool_kw['ssl_context']
+    assert (
+        one.rest_client.pool_manager.connection_pool_kw['ssl_context']
+        is not (two.rest_client.pool_manager.connection_pool_kw['ssl_context'])
     )
     assert urllib3.util.ssl_.create_urllib3_context is original
 

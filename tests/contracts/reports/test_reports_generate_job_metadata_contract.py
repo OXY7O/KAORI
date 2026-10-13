@@ -12,5 +12,5 @@ def test_dispatcher_commits_asset_aware_integration_ownership() -> None:
     assert 'integration_instance_id=integration_instance_id' in source
     assert 'scope_type=parameters.scope_asset_type' in source
     assert 'scope_key=parameters.scope_asset_id' in source
-    assert "queue_name=get_reports_queue_name()" in source
+    assert 'queue_name=get_reports_queue_name()' in source
     assert "resource_group = f'report:{report.id}'" in source

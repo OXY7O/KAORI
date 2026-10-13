@@ -36,7 +36,11 @@ def build_bound_observability_source_rows(*, asset_type: str, asset_key: str) ->
 
 
 def paginate_bound_observability_source_rows(
-    *, asset_type: str, asset_key: str, page: int = 1, per_page: int = 5,
+    *,
+    asset_type: str,
+    asset_key: str,
+    page: int = 1,
+    per_page: int = 5,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Bound SQL rows before resolving provider-specific source records."""
     bindings, pagination = paginate_query(

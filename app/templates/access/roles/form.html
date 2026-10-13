@@ -40,8 +40,10 @@
     {%- endmacro %}
     {% macro role_state_badge(active_label, inactive_label) -%}
         <span data-role-state-preview aria-live="polite">
-            <span data-role-state-active {% if not form.is_active.data %}hidden{% endif %}>{{ table_label.status_label(active_label, 'normal', 'circle-check') }}</span>
-            <span data-role-state-inactive {% if form.is_active.data %}hidden{% endif %}>{{ table_label.status_label(inactive_label, 'unknown', 'pause-circle') }}</span>
+            <span data-role-state-active
+                  {% if not form.is_active.data %}hidden{% endif %}>{{ table_label.status_label(active_label, 'normal', 'circle-check') }}</span>
+            <span data-role-state-inactive
+                  {% if form.is_active.data %}hidden{% endif %}>{{ table_label.status_label(inactive_label, 'unknown', 'pause-circle') }}</span>
         </span>
     {%- endmacro %}
     {% set selected_count = selected_permission_ids|length %}

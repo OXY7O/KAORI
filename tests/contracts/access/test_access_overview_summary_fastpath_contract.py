@@ -25,9 +25,7 @@ def test_role_summary_is_shared_by_full_registry_and_overview() -> None:
     assert 'summary = _build_roles_summary(' in roles
     assert 'lazyload(Role.users)' in roles
     assert 'lazyload(Role.role_permissions)' in roles
-    summary_block = roles.split('def build_roles_overview_summary(', 1)[1].split(
-        'def build_roles_index_context(', 1
-    )[0]
+    summary_block = roles.split('def build_roles_overview_summary(', 1)[1].split('def build_roles_index_context(', 1)[0]
     for unnecessary_detail in ('role_rows', 'role_version_token', 'build_pagination_window'):
         assert unnecessary_detail not in summary_block
 

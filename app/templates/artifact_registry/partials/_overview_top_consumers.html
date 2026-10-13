@@ -32,10 +32,10 @@
                                 {% if item.utilization_percent is not none %}
                                     {% set consumer_tone = 'critical' if (item.days_to_quota is not none and item.days_to_quota <= 30) or item.utilization_percent >= 90 else ('warning' if (item.days_to_quota is not none and item.days_to_quota <= 90) or item.utilization_percent >= 75 else 'normal') %}
                                     {% set bar_class = 'bg-status-critical' if consumer_tone == 'critical' else ('bg-status-warning' if consumer_tone == 'warning' else 'bg-kaori-primary') %}
-                                    {{ progress_bar.bar(0 if item.utilization_percent < 0 else (100 if item.utilization_percent > 100 else item.utilization_percent),
-                                        track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover',
-                                        fill_classes='h-full rounded-full ' ~ bar_class,
-                                        label=item.project_name ~ ' committed quota utilization') }}
+                                    {{ progress_bar.bar(0 if item.utilization_percent < 0 else (100 if item.utilization_percent > 100 else item.utilization_percent) ,
+                                    track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover',
+                                    fill_classes='h-full rounded-full ' ~ bar_class,
+                                    label=item.project_name ~ ' committed quota utilization') }}
                                 {% else %}
                                     <p class="mt-2 text-xs text-content-muted">Quota utilization N/A — no utilization bar.</p>
                                 {% endif %}
@@ -67,17 +67,17 @@
     {% if overview.consumer_insights.project_count %}
         <div class="grid gap-5 lg:grid-cols-2">
             {{ consumer_panel('Storage Usage',
-                'hard-drive',
-                overview.top_consumers,
-                'usage',
-                'Project Usage Not Collected',
-                'No numeric project usage is committed for this Registry scope.') }}
+                        'hard-drive',
+                        overview.top_consumers,
+                        'usage',
+                        'Project Usage Not Collected',
+                        'No numeric project usage is committed for this Registry scope.') }}
             {{ consumer_panel('Nearest Quota',
-                'timer',
-                overview.quota_watch,
-                'horizon',
-                'No Numerical Quota Horizon',
-                'No committed project has a numeric quota exhaustion ETA. This is not proof of unlimited capacity or zero risk.') }}
+                        'timer',
+                        overview.quota_watch,
+                        'horizon',
+                        'No Numerical Quota Horizon',
+                        'No committed project has a numeric quota exhaustion ETA. This is not proof of unlimited capacity or zero risk.') }}
         </div>
         <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

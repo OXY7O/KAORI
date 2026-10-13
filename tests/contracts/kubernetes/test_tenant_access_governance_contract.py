@@ -282,9 +282,9 @@ def test_access_grant_registry_reconciliation_uses_canonical_accessible_details_
 
     assert '{% import "components/info_tip.html" as info_tip %}' in registry
     assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
-    assert "info_tip.render(" in registry
+    assert 'info_tip.render(' in registry
     assert "'access-grant-reconciliation-' ~ grant.id" in registry
-    assert 'grant.reconciliation_message or \'Awaiting Kubernetes RBAC evidence.\'' in registry
+    assert "grant.reconciliation_message or 'Awaiting Kubernetes RBAC evidence.'" in registry
     assert "placement='left'" in registry
     assert 'max-w-[260px]' not in registry
     assert 'role="tooltip"' in info_tip
@@ -349,7 +349,7 @@ def test_access_grant_registry_shortcut_scrolls_nested_main_to_complete_form() -
     assert 'scrollHost.scrollTop' in script
     assert 'form.getBoundingClientRect().top' in script
     assert 'scrollHost.getBoundingClientRect().top' in script
-    assert 'scrollHost.scrollTo({ top: Math.max(0, destination), behavior: \'auto\' })' in script
+    assert "scrollHost.scrollTo({ top: Math.max(0, destination), behavior: 'auto' })" in script
     assert "document.addEventListener('click'" in script
     assert "target?.closest('[data-access-grant-form-shortcut]')" in script
     assert 'event.preventDefault()' in script
@@ -375,14 +375,12 @@ def test_access_grants_included_capsule_evidence_template_compiles_and_renders()
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
     grants = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
     assert "('access-grants', 'Access Grants'" in workspace
-    assert 'hx_target=\'#tenant-admin-workspace\'' in workspace
-    assert 'hx_select=\'#tenant-admin-workspace\'' in workspace
+    assert "hx_target='#tenant-admin-workspace'" in workspace
+    assert "hx_select='#tenant-admin-workspace'" in workspace
     assert '_tenant_access_grants_workspace.html' in workspace
     assert '_external_capsule_access_inventory.html' in grants
 
-    view = environment.get_template(
-        'kubernetes/tenant/partials/_external_capsule_access_inventory.html'
-    )
+    view = environment.get_template('kubernetes/tenant/partials/_external_capsule_access_inventory.html')
     baseline = {
         'can_manage': False,
         'external_capsule_tenants': [],
@@ -409,11 +407,9 @@ def test_access_grants_included_capsule_evidence_template_compiles_and_renders()
     assert 'Governed Remediation Decisions' in rendered
     assert 'Native Kubernetes · Tenant kaori-demo' in rendered
     assert 'Preview only: no Kubernetes mutation.' in rendered
-    baseline['recent_native_access_remediation'] = [
-        SimpleNamespace(metadata_json=None)
-    ]
+    baseline['recent_native_access_remediation'] = [SimpleNamespace(metadata_json=None)]
     assert 'Governed Remediation Decisions' in view.render(**baseline)
-    assert "{% set plan = event.metadata_json or {} %}" in read(
+    assert '{% set plan = event.metadata_json or {} %}' in read(
         'app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html'
     )
 
@@ -452,9 +448,9 @@ def test_access_grant_registry_actions_fit_desktop_and_use_existing_native_more_
     assert "{% if grant.status == 'active' %}" in registry
 
     for route in ('inspect', 'reconcile', 'revoke'):
-        endpoint = f"tenant.{route}_access_grant_route"
-        assert registry.count(f"action=\"{{{{ url_for('{endpoint}', grant_id=grant.id) }}}}\"") == 1
-        assert registry.count(f"hx-post=\"{{{{ url_for('{endpoint}', grant_id=grant.id) }}}}\"") == 1
+        endpoint = f'tenant.{route}_access_grant_route'
+        assert registry.count(f'action="{{{{ url_for(\'{endpoint}\', grant_id=grant.id) }}}}"') == 1
+        assert registry.count(f'hx-post="{{{{ url_for(\'{endpoint}\', grant_id=grant.id) }}}}"') == 1
     assert registry.count('name="csrf_token"') == 3
     assert registry.count('hx-target="#tenant-admin-workspace"') == 3
     assert registry.count('hx-select="#tenant-admin-workspace"') == 3

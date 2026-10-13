@@ -10,9 +10,7 @@ from werkzeug.datastructures import MultiDict
 
 from app.artifact_registry.correlation import runtime_correlation_evidence_readiness
 from app.extensions.db import db
-
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
-from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
 from app.intelligence.finding_presentation import (
     build_affected_assets,
     build_affected_items,
@@ -63,6 +61,7 @@ from app.intelligence.rule_presentation import (
     to_int,
 )
 from app.intelligence.tenant_governance_recommendations import build_tenant_governance_recommendation_findings
+from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
 
 
 def _is_active_filter_value(value: str | None) -> bool:
@@ -127,9 +126,12 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     catalog = decorate_catalog_rules([normalize_rule(rule) for rule in INTELLIGENCE_CATALOG])
     evaluation_issues: list[str] = []
     source_items = (
-        catalog if page_mode == 'catalog' else decorate_recommendation_findings(
+        catalog
+        if page_mode == 'catalog'
+        else decorate_recommendation_findings(
             get_active_recommendation_findings(
-                domain=filters['domain'] or None, evidence_issues=evaluation_issues,
+                domain=filters['domain'] or None,
+                evidence_issues=evaluation_issues,
             )
         )
     )
@@ -258,7 +260,9 @@ def _finalize_recommendation_findings(findings: list[dict[str, Any]]) -> list[di
 
 
 def _build_recommendation_findings(
-    catalog: list[dict[str, Any]], *, evidence_issues: list[str] | None = None,
+    catalog: list[dict[str, Any]],
+    *,
+    evidence_issues: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Evaluate currently available catalog rules into actionable findings.
 
@@ -393,13 +397,13 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
             TLSCertificateInventory.query.join(
                 TLSCertificateCollectionState,
                 TLSCertificateCollectionState.cluster_id == TLSCertificateInventory.cluster_id,
-            ).filter(
+            )
+            .filter(
                 TLSCertificateInventory.collected_at >= cutoff,
                 TLSCertificateCollectionState.collected_at >= cutoff,
                 TLSCertificateCollectionState.secret_collection_status == TLS_COLLECTION_COLLECTED,
-            ).filter(
-                TLSCertificateInventory.status.in_(['expired', 'critical', 'warning', 'invalid'])
             )
+            .filter(TLSCertificateInventory.status.in_(['expired', 'critical', 'warning', 'invalid']))
             .order_by(
                 TLSCertificateInventory.cluster_id.asc(),
                 TLSCertificateInventory.namespace.asc(),
@@ -670,7 +674,11 @@ def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[s
 
 
 def classify_recommendation_readiness(
-    *, total: int, recent: int, issues: list[str], has_findings: bool,
+    *,
+    total: int,
+    recent: int,
+    issues: list[str],
+    has_findings: bool,
 ) -> str:
     """Missing observations or evaluator failure never imply a healthy empty set."""
     if issues:
@@ -696,9 +704,17 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
 
         inventory = _evidence_coverage()
         domain = clean(payload['filters'].get('domain'))
-        scopes = (domain,) if domain in ('kubernetes', 'object_storage', 'registry') else (
-            'kubernetes', 'object_storage', 'registry',
-        ) if not domain else ()
+        scopes = (
+            (domain,)
+            if domain in ('kubernetes', 'object_storage', 'registry')
+            else (
+                'kubernetes',
+                'object_storage',
+                'registry',
+            )
+            if not domain
+            else ()
+        )
         total = sum(inventory[key]['total'] for key in scopes)
         recent = sum(inventory[key]['recent'] for key in scopes)
         issues = payload['evaluation_issues']
@@ -716,7 +732,10 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
             if runtime_evidence['status'] != 'ready':
                 issues.append('Registry Runtime: ' + runtime_evidence['title'])
         state = classify_recommendation_readiness(
-            total=total, recent=recent, issues=issues, has_findings=bool(findings),
+            total=total,
+            recent=recent,
+            issues=issues,
+            has_findings=bool(findings),
         )
         payload['evidence_readiness'] = {
             'status': state,

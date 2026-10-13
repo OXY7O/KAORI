@@ -41,13 +41,13 @@ from app.access.identity_providers.provisioning_proof import (
 )
 from app.access.identity_providers.repository import get_identity_provider
 from app.access.identity_providers.service import (
+    ProviderIdentityRebindError,
     assign_provider_role_choices,
     build_identity_provider_payload,
     commit_identity_projection,
     create_identity_provider,
     normalize_provider_filters,
     provider_default_role_assignment_error,
-    ProviderIdentityRebindError,
     rollback_identity_provider_transaction,
     update_identity_provider,
 )
@@ -78,10 +78,7 @@ def index():
     # Overview is always visible. The tab selects only the records workspace.
     # Legacy ?tab=overview links continue to resolve to the default registry.
     payload['active_tab'] = 'directory' if request.args.get('tab') == 'directory' else 'providers'
-    if (
-        request.headers.get('HX-Request') == 'true'
-        and request.headers.get('HX-History-Restore-Request') != 'true'
-    ):
+    if request.headers.get('HX-Request') == 'true' and request.headers.get('HX-History-Restore-Request') != 'true':
         # Workspace navigation and registry filters have distinct HTMX targets.
         # Returning the registry for a tab swap would discard its wrapper/tabs.
         if request.headers.get('HX-Target') == 'identity-provider-workspace':
@@ -99,7 +96,9 @@ def create():
     form = IdentityProviderForm()
     assign_provider_role_choices(form, actor=actor)
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data))
+        role_error = provider_default_role_assignment_error(
+            actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
+        )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, None))
@@ -144,7 +143,9 @@ def edit(provider_id: int):
     if request.method == 'GET':
         populate_form(form, provider)
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data))
+        role_error = provider_default_role_assignment_error(
+            actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
+        )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, provider))
@@ -196,7 +197,9 @@ def test_configuration(provider_id: int | None = None):
     assign_provider_role_choices(form, actor=actor)
     test_result: dict[str, str]
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data))
+        role_error = provider_default_role_assignment_error(
+            actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
+        )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, provider))
@@ -360,7 +363,9 @@ def provision_identity():
         )
     except SQLAlchemyError:
         rollback_identity_provider_transaction()
-        current_app.logger.exception('Directory identity projection transaction failed for provider id %s.', provider.id)
+        current_app.logger.exception(
+            'Directory identity projection transaction failed for provider id %s.', provider.id
+        )
         identity_provider_feedback(
             actor=actor,
             event_type='external_identity_provision_failed',

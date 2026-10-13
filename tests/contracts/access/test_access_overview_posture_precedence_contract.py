@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, cast
+from typing import cast
 
 import pytest
 
@@ -14,9 +15,7 @@ def aggregate_posture(tones: list[str]) -> tuple[str, str]:
 
     source = ast.parse((ROOT / 'app/access/overview/presentation.py').read_text(encoding='utf-8'))
     function = next(
-        node
-        for node in source.body
-        if isinstance(node, ast.FunctionDef) and node.name == '_aggregate_access_posture'
+        node for node in source.body if isinstance(node, ast.FunctionDef) and node.name == '_aggregate_access_posture'
     )
     namespace: dict[str, object] = {}
     exec(compile(ast.Module(body=[function], type_ignores=[]), '<access-overview>', 'exec'), namespace)
@@ -48,7 +47,7 @@ def test_access_overview_uses_only_permission_scoped_workspace_tones() -> None:
     presentation = (ROOT / 'app/access/overview/presentation.py').read_text(encoding='utf-8')
     assert "[workspace['status_tone'] for workspace in workspaces]" in presentation
     assert '_aggregate_access_posture(' in presentation
-    assert "unknown_workspace_count = sum(" in presentation
+    assert 'unknown_workspace_count = sum(' in presentation
 
 
 @pytest.mark.parametrize(
@@ -67,8 +66,7 @@ def test_access_overview_review_counts_are_defined_and_permission_scoped(
 ) -> None:
     source = ast.parse((ROOT / 'app/access/overview/presentation.py').read_text(encoding='utf-8'))
     builder = next(
-        node for node in source.body
-        if isinstance(node, ast.FunctionDef) and node.name == 'build_access_overview'
+        node for node in source.body if isinstance(node, ast.FunctionDef) and node.name == 'build_access_overview'
     )
     names = {
         'workspace_count',
@@ -78,16 +76,19 @@ def test_access_overview_review_counts_are_defined_and_permission_scoped(
         'attention_workspace_count',
     }
     statements = [
-        node for node in builder.body
+        node
+        for node in builder.body
         if isinstance(node, ast.Assign)
         and any(isinstance(target, ast.Name) and target.id in names for target in node.targets)
     ]
     assert len(statements) == len(names), 'Overview must define all metric counters'
-    namespace: dict[str, object] = {
-        'workspaces': [{'status_tone': tone} for tone in tones]
-    }
-    exec(compile(ast.fix_missing_locations(ast.Module(body=statements, type_ignores=[])),
-                 '<access-review-counters>', 'exec'), namespace)
+    namespace: dict[str, object] = {'workspaces': [{'status_tone': tone} for tone in tones]}
+    exec(
+        compile(
+            ast.fix_missing_locations(ast.Module(body=statements, type_ignores=[])), '<access-review-counters>', 'exec'
+        ),
+        namespace,
+    )
     assert (
         namespace['workspace_count'],
         namespace['attention_workspace_count'],

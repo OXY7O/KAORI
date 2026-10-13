@@ -4,6 +4,7 @@ A Namespace metadata preview is *not* whole-scope handoff verification. The
 Capsule CR, quota, limit, RBAC, and external consent remain authoritative;
 nothing in this service authorizes live PATCH, Release or automatic retry.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -11,29 +12,36 @@ from typing import Any
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
+from app.kubernetes.tenant.capsule_handoff_contract import _RELATED_TRANSFER_LABELS
 from app.kubernetes.tenant.capsule_handoff_dry_run import (
-    preview_capsule_handoff_scope, preview_capsule_related_handoff_with_provider,
+    preview_capsule_handoff_scope,
+    preview_capsule_related_handoff_with_provider,
 )
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
-    _get, _strings, capsule_related_scope_unchanged,
+    _get,
+    _strings,
+    capsule_related_scope_unchanged,
     classify_capsule_related_resource,
 )
-from app.kubernetes.tenant.capsule_handoff_contract import _RELATED_TRANSFER_LABELS
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.capsule_platform_admin_authority import (
-    verify_capsule_provider_admin_authority, verify_capsule_related_admin_authority,
+    verify_capsule_provider_admin_authority,
+    verify_capsule_related_admin_authority,
 )
 from app.kubernetes.tenant.capsule_successor_acceptance import (
     require_current_capsule_acceptance,
 )
 from app.kubernetes.tenant.native_platform_admin_authority import require_platform_admin_actor
 from app.kubernetes.tenant.release_handoff_approval import (
-    _capsule_g1_only_origin_obligation, _checked_recently, _plan_hash,
+    _capsule_g1_only_origin_obligation,
+    _checked_recently,
+    _plan_hash,
     latest_release_handoff_approval,
     latest_release_handoff_plan,
 )
 from app.kubernetes.tenant.release_preflight import (
-    _release_dependency_counts, review_tenant_release_preflight_committed,
+    _release_dependency_counts,
+    review_tenant_release_preflight_committed,
 )
 from app.models import Cluster
 from app.models.audit import AuditEvent
@@ -43,7 +51,10 @@ _TARGET = 'kubernetes_tenant_release_capsule_namespace_preview'
 
 
 def _preview_related_provider_scope(
-    *, provider: Any, plan: dict[str, Any], related: dict[str, Any],
+    *,
+    provider: Any,
+    plan: dict[str, Any],
+    related: dict[str, Any],
 ) -> dict[str, int]:
     """Read every related object; dry-run only exact KAORI-correlated candidates.
 
@@ -58,19 +69,18 @@ def _preview_related_provider_scope(
     ):
         raise ValueError('Capsule scope contains ambiguous origin or shared quota selectors.')
     cr = next(item for item in plan['handoff_components'] if item['kind'] == 'CapsuleTenant')
-    observations = {
-        (item['namespace'], item['kind'], item['name']): item
-        for item in related['resources']
-    }
+    observations = {(item['namespace'], item['kind'], item['name']): item for item in related['resources']}
     approved_candidates = [
-        item for item in work['items']
+        item
+        for item in work['items']
         if item['kind'] in ('ResourceQuota', 'LimitRange', 'RoleBinding')
         and item['decision'] == 'explicit_kaori_metadata_handoff_review'
     ]
     # Actor's current Kubernetes SAR, not an application checkbox or label,
     # must allow both exact-resource GET and dry-run PATCH.
     verify_capsule_related_admin_authority(
-        provider=provider, candidates=approved_candidates,
+        provider=provider,
+        candidates=approved_candidates,
     )
     core, rbac = provider.core_api(), provider.rbac_authorization_api()
     api_methods = {
@@ -89,15 +99,19 @@ def _preview_related_provider_scope(
         read, _ = api_methods[kind]
         before = read(name=item['name'], namespace=item['namespace'], _request_timeout=5)
         row, problems = classify_capsule_related_resource(
-            resource=before, kind=kind, namespace=item['namespace'],
-            tenant_id=plan['tenant_id'], capsule_name=cr['name'], capsule_uid=cr['uid'],
+            resource=before,
+            kind=kind,
+            namespace=item['namespace'],
+            tenant_id=plan['tenant_id'],
+            capsule_name=cr['name'],
+            capsule_uid=cr['uid'],
         )
         if row != observed:
             raise ValueError('Capsule related resource differs from committed source LIST.')
         if item['decision'] == 'explicit_kaori_metadata_handoff_review':
             allowed = {
-                f"Capsule {kind}/{item['namespace']}/{item['name']} "
-                "retains KAORI provider controls requiring separately admitted handoff."
+                f'Capsule {kind}/{item["namespace"]}/{item["name"]} '
+                'retains KAORI provider controls requiring separately admitted handoff.'
             }
             if set(problems) != allowed:
                 raise ValueError('Capsule resource has unexpected ownership or RBAC problems.')
@@ -105,9 +119,15 @@ def _preview_related_provider_scope(
             labels = _strings(_get(meta, 'labels'), label='labels')
             proposed_keys = sorted(key for key in labels if key in _RELATED_TRANSFER_LABELS)
             response = preview_capsule_related_handoff_with_provider(
-                core=core, rbac=rbac, record=observed, namespace=item['namespace'],
-                tenant_id=plan['tenant_id'], capsule_name=cr['name'], capsule_uid=cr['uid'],
-                successor_owner=plan['successor_owner'], approved_label_keys=proposed_keys,
+                core=core,
+                rbac=rbac,
+                record=observed,
+                namespace=item['namespace'],
+                tenant_id=plan['tenant_id'],
+                capsule_name=cr['name'],
+                capsule_uid=cr['uid'],
+                successor_owner=plan['successor_owner'],
+                approved_label_keys=proposed_keys,
             )
             if (
                 response.get('status') != 'server_dry_run_shape_observed_not_execution_admitted'
@@ -127,7 +147,11 @@ def _preview_related_provider_scope(
 
 
 def preview_capsule_release_namespace_committed(
-    *, tenant_id: str, actor_user_id: int, plan_sha256: str, confirmed: bool,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
+    confirmed: bool,
 ) -> dict[str, Any]:
     """Run real Kubernetes dryRun=All, never a live metadata transfer."""
     if not confirmed:
@@ -136,7 +160,9 @@ def preview_capsule_release_namespace_committed(
     plan = latest_release_handoff_plan(tenant_id)
     approval = latest_release_handoff_approval(tenant_id)
     if (
-        not plan or not approval or not isinstance(plan_sha256, str)
+        not plan
+        or not approval
+        or not isinstance(plan_sha256, str)
         or plan.get('plan_sha256') != plan_sha256
         or _plan_hash(plan) != plan_sha256
         or plan.get('tenant_id') != tenant_id
@@ -148,13 +174,16 @@ def preview_capsule_release_namespace_committed(
     ):
         raise ValueError('A fresh, independently reviewed Capsule plan is required.')
     accepted = require_current_capsule_acceptance(
-        tenant_id=tenant_id, plan=plan, approval=approval,
+        tenant_id=tenant_id,
+        plan=plan,
+        approval=approval,
     )
     if accepted.get('accepted_by') != actor_user_id:
         raise ValueError('Only the accepting Platform Admin may run this Capsule preview.')
     tenant = db.session.get(Tenant, tenant_id)
     if (
-        tenant is None or tenant.provider_key != 'capsule'
+        tenant is None
+        or tenant.provider_key != 'capsule'
         or tenant.provider_state != 'capsule'
         or tenant.reconciliation_authority != 'capsule'
         or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
@@ -169,7 +198,8 @@ def preview_capsule_release_namespace_committed(
     # Provider GETs and the existing canonical Release inventory, not a
     # caller-supplied mapping, establish the scope used for dry-run.
     fresh = review_tenant_release_preflight_committed(
-        tenant_id=tenant_id, actor_user_id=actor_user_id,
+        tenant_id=tenant_id,
+        actor_user_id=actor_user_id,
     )
     if (
         fresh.get('handoff_fingerprint') != plan.get('handoff_fingerprint')
@@ -190,7 +220,8 @@ def preview_capsule_release_namespace_committed(
     if cluster is None:
         raise ValueError('Approved Kubernetes cluster is unavailable.')
     authority = verify_capsule_provider_admin_authority(
-        cluster=cluster, components=plan['handoff_components'],
+        cluster=cluster,
+        components=plan['handoff_components'],
     )
     if any(
         authority.get(key) != accepted.get(key)
@@ -199,8 +230,10 @@ def preview_capsule_release_namespace_committed(
         raise ValueError('Authenticated X.509 successor identity or scope changed.')
     provider = runtime_adapter.build_client(cluster)
     observed = preview_capsule_handoff_scope(
-        custom=provider.custom_objects_api(), core=provider.core_api(),
-        components=plan['handoff_components'], tenant_id=tenant_id,
+        custom=provider.custom_objects_api(),
+        core=provider.core_api(),
+        components=plan['handoff_components'],
+        tenant_id=tenant_id,
         successor_owner=plan['successor_owner'],
     )
     # The helper is deliberately incomplete for quota/limit/RBAC. Never
@@ -218,7 +251,8 @@ def preview_capsule_release_namespace_committed(
     # Prove the source covers every namespaced quota, limit and RoleBinding.
     # These are previews only; consent/provenance for *live* PATCH is missing.
     related_counts = _preview_related_provider_scope(
-        provider=provider, plan=plan,
+        provider=provider,
+        plan=plan,
         related=fresh['capsule_related_inventory'],
     )
     # Repeat complete provider LISTs and exact object evidence after dry-run.
@@ -226,30 +260,37 @@ def preview_capsule_release_namespace_committed(
     # require both complete versioned LISTs but compare object-scoped UID/RV,
     # policy/metadata SHA, count, warnings, cluster quota and RBAC lineage.
     after = review_tenant_release_preflight_committed(
-        tenant_id=tenant_id, actor_user_id=actor_user_id,
+        tenant_id=tenant_id,
+        actor_user_id=actor_user_id,
     )
-    if (
-        any(after.get(field) != fresh.get(field) for field in (
-            'live_provider_identity', 'handoff_fingerprint',
-            'handoff_components', 'dependency_counts',
-        ))
-        or not capsule_related_scope_unchanged(
-            fresh.get('capsule_related_inventory'),
-            after.get('capsule_related_inventory'),
+    if any(
+        after.get(field) != fresh.get(field)
+        for field in (
+            'live_provider_identity',
+            'handoff_fingerprint',
+            'handoff_components',
+            'dependency_counts',
         )
+    ) or not capsule_related_scope_unchanged(
+        fresh.get('capsule_related_inventory'),
+        after.get('capsule_related_inventory'),
     ):
         raise ValueError('Capsule provider changed during complete-scope dry-run; refresh Release preflight.')
     complete_worklist = build_capsule_handoff_worklist(
-        plan=plan, related=fresh['capsule_related_inventory'],
+        plan=plan,
+        related=fresh['capsule_related_inventory'],
     )
     transfer_items = [
         {
-            'kind': item['kind'], 'namespace': item['namespace'],
-            'name': item['name'], 'uid': item['uid'],
+            'kind': item['kind'],
+            'namespace': item['namespace'],
+            'name': item['name'],
+            'uid': item['uid'],
             'resource_version': item['resource_version'],
         }
         for item in complete_worklist['items']
-        if item['decision'] in (
+        if item['decision']
+        in (
             'candidate_kaori_metadata_handoff_review',
             'explicit_kaori_metadata_handoff_review',
         )
@@ -258,15 +299,11 @@ def preview_capsule_release_namespace_committed(
     # whether the approved source classified it as observation-only. Allow
     # Namespace preservation, but NEVER claim an executable handoff when
     # there are no exact KAORI metadata transfer candidates anywhere.
-    namespace_candidates = sum(
-        item['kind'] == 'Namespace' for item in transfer_items
-    )
+    namespace_candidates = sum(item['kind'] == 'Namespace' for item in transfer_items)
     if (
         not transfer_items
         or namespace_candidates != observed['namespace_preview_count']
-        or len(transfer_items) != (
-            namespace_candidates + related_counts['related_preview_count']
-        )
+        or len(transfer_items) != (namespace_candidates + related_counts['related_preview_count'])
     ):
         raise ValueError(
             'Capsule preview requires exact KAORI metadata transfer candidates '
@@ -281,16 +318,12 @@ def preview_capsule_release_namespace_committed(
         'handoff_fingerprint': plan['handoff_fingerprint'],
         'source_worklist_sha256': complete_worklist['inventory_sha256'],
         'transfer_items': transfer_items,
-        'unverified_kaori_rolebinding_origin': any(
-            row['kind'] == 'RoleBinding' for row in transfer_items
-        ),
+        'unverified_kaori_rolebinding_origin': any(row['kind'] == 'RoleBinding' for row in transfer_items),
         'actor_user_id': actor_user_id,
         'provider_credential_id': authority['provider_credential_id'],
         'namespace_count': observed['namespace_count'],
         'namespace_preview_count': observed['namespace_preview_count'],
-        'namespace_preserved_count': (
-            observed['namespace_count'] - observed['namespace_preview_count']
-        ),
+        'namespace_preserved_count': (observed['namespace_count'] - observed['namespace_preview_count']),
         **related_counts,
         'whole_scope_source_unchanged': True,
         'checked_at': datetime.now(UTC).isoformat(),
@@ -305,11 +338,15 @@ def preview_capsule_release_namespace_committed(
         'release_authorized': False,
         'secret_material_persisted': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_TARGET, target_id=tenant_id,
-        action='tenant.release.capsule_complete_scope_server_preview_observed',
-        summary='Capsule complete-scope metadata dry-run observed; live provider handoff remains blocked.',
-        metadata_json=receipt,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.capsule_complete_scope_server_preview_observed',
+            summary='Capsule complete-scope metadata dry-run observed; live provider handoff remains blocked.',
+            metadata_json=receipt,
+        )
+    )
     db.session.commit()
     return receipt

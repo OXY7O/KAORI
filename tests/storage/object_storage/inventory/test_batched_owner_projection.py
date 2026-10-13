@@ -39,7 +39,8 @@ def test_canonical_owner_batch_resolves_one_page_in_one_query(monkeypatch) -> No
 
 def test_empty_owner_batch_does_not_read_database(monkeypatch) -> None:
     monkeypatch.setattr(
-        presentation, '_system_scope',
+        presentation,
+        '_system_scope',
         lambda: (_ for _ in ()).throw(AssertionError('unexpected database query')),
     )
     assert presentation._visible_system_owners([]) == {}

@@ -5,21 +5,25 @@ from types import SimpleNamespace
 import pytest
 
 from app.kubernetes.tenant.release_handoff_inventory import (
-    capsule_tenant_handoff_evidence,
     capsule_namespace_handoff_evidence,
+    capsule_tenant_handoff_evidence,
     handoff_fingerprint,
     native_namespace_handoff_evidence,
 )
 
 
 def _namespace(*, manager: str = 'kaori', tenant_id: str = 'tenant-a'):
-    return SimpleNamespace(metadata=SimpleNamespace(
-        name='sandbox', uid='ns-uid', resource_version='12',
-        labels={
-            'app.kubernetes.io/managed-by': manager,
-            'kaori.io/tenant-id': tenant_id,
-        },
-    ))
+    return SimpleNamespace(
+        metadata=SimpleNamespace(
+            name='sandbox',
+            uid='ns-uid',
+            resource_version='12',
+            labels={
+                'app.kubernetes.io/managed-by': manager,
+                'kaori.io/tenant-id': tenant_id,
+            },
+        )
+    )
 
 
 def _record(*, profile_id: int | None = 2, effective_hash: str = 'known'):
@@ -38,21 +42,27 @@ def _allocation(*, sources=None, effective_hash: str = 'known'):
     return {
         'control_state': 'observed',
         'effective_hash': effective_hash,
-        'source_resources': sources if sources is not None else [{
-            'kind': 'ResourceQuota',
-            'name': 'namespace-quota',
-            'uid': 'quota-uid',
-            'resource_version': '40',
-            'managed_by': 'kaori',
-            'tenant_id': 'tenant-a',
-        }],
+        'source_resources': sources
+        if sources is not None
+        else [
+            {
+                'kind': 'ResourceQuota',
+                'name': 'namespace-quota',
+                'uid': 'quota-uid',
+                'resource_version': '40',
+                'managed_by': 'kaori',
+                'tenant_id': 'tenant-a',
+            }
+        ],
     }
 
 
 def test_native_managed_quota_and_namespace_require_explicit_external_handoff():
     items, blockers = native_namespace_handoff_evidence(
-        record=_record(), namespace=_namespace(),
-        observation=_allocation(), tenant_id='tenant-a',
+        record=_record(),
+        namespace=_namespace(),
+        observation=_allocation(),
+        tenant_id='tenant-a',
     )
     assert [(item['kind'], item['name']) for item in items] == [
         ('Namespace', 'sandbox'),
@@ -66,12 +76,12 @@ def test_native_managed_quota_and_namespace_require_explicit_external_handoff():
 
 
 def test_native_observation_only_unlabelled_resources_have_no_handoff_blockers():
-    namespace = SimpleNamespace(metadata=SimpleNamespace(
-        name='sandbox', uid='uid', resource_version='8', labels={}
-    ))
+    namespace = SimpleNamespace(metadata=SimpleNamespace(name='sandbox', uid='uid', resource_version='8', labels={}))
     items, blockers = native_namespace_handoff_evidence(
-        record=_record(profile_id=None), namespace=namespace,
-        observation=_allocation(sources=[]), tenant_id='tenant-a',
+        record=_record(profile_id=None),
+        namespace=namespace,
+        observation=_allocation(sources=[]),
+        tenant_id='tenant-a',
     )
     assert len(items) == 1
     assert items[0]['handoff'] == 'observe_only'
@@ -80,23 +90,30 @@ def test_native_observation_only_unlabelled_resources_have_no_handoff_blockers()
 
 def test_native_conflicting_marker_and_allocation_hash_fail_closed():
     items, blockers = native_namespace_handoff_evidence(
-        record=_record(), namespace=_namespace(tenant_id='other-tenant'),
-        observation=_allocation(effective_hash='drifted'), tenant_id='tenant-a',
+        record=_record(),
+        namespace=_namespace(tenant_id='other-tenant'),
+        observation=_allocation(effective_hash='drifted'),
+        tenant_id='tenant-a',
     )
     assert items[0]['ownership'] == 'marker_conflict'
     assert any('ownership markers' in reason for reason in blockers)
     assert any('allocation hash changed' in reason for reason in blockers)
 
 
-@pytest.mark.parametrize('source', [
-    {'kind': 'ClusterRole', 'name': 'unknown', 'uid': 'uid', 'resource_version': '1'},
-    {'kind': 'LimitRange', 'name': 'limits', 'uid': '', 'resource_version': '1'},
-])
+@pytest.mark.parametrize(
+    'source',
+    [
+        {'kind': 'ClusterRole', 'name': 'unknown', 'uid': 'uid', 'resource_version': '1'},
+        {'kind': 'LimitRange', 'name': 'limits', 'uid': '', 'resource_version': '1'},
+    ],
+)
 def test_native_rejects_unsupported_or_unidentified_provider_components(source):
     with pytest.raises(ValueError):
         native_namespace_handoff_evidence(
-            record=_record(), namespace=_namespace(),
-            observation=_allocation(sources=[source]), tenant_id='tenant-a',
+            record=_record(),
+            namespace=_namespace(),
+            observation=_allocation(sources=[source]),
+            tenant_id='tenant-a',
         )
 
 
@@ -109,8 +126,10 @@ def test_capsule_authority_remains_observed_without_mutation():
         tenant=tenant,
         tenant_item={
             'metadata': {
-                'name': 'sandbox', 'uid': 'capsule-uid',
-                'resourceVersion': '36', 'labels': {},
+                'name': 'sandbox',
+                'uid': 'capsule-uid',
+                'resourceVersion': '36',
+                'labels': {},
             },
             'spec': {'resourceQuotas': {'scope': 'Tenant', 'items': []}},
         },
@@ -152,13 +171,19 @@ def test_fingerprint_is_order_independent_but_detects_changed_provider_versions(
 
 def test_capsule_namespace_requires_proven_tenant_claim_and_immutable_uid():
     record = SimpleNamespace(namespace='sandbox', provider_reference='ns-uid')
-    linked = SimpleNamespace(metadata=SimpleNamespace(
-        name='sandbox', uid='ns-uid', resource_version='14',
-        labels={'projectcapsule.dev/tenant': 'tenant-capsule'},
-    ))
+    linked = SimpleNamespace(
+        metadata=SimpleNamespace(
+            name='sandbox',
+            uid='ns-uid',
+            resource_version='14',
+            labels={'projectcapsule.dev/tenant': 'tenant-capsule'},
+        )
+    )
     component, blockers = capsule_namespace_handoff_evidence(
-        record=record, namespace=linked,
-        tenant_name='tenant-capsule', tenant_id='kaori-id',
+        record=record,
+        namespace=linked,
+        tenant_name='tenant-capsule',
+        tenant_id='kaori-id',
         status_namespace_names=set(),
     )
     assert blockers == []
@@ -166,25 +191,37 @@ def test_capsule_namespace_requires_proven_tenant_claim_and_immutable_uid():
     assert component['uid'] == 'ns-uid'
     assert component['resource_version'] == '14'
 
-    foreign = SimpleNamespace(metadata=SimpleNamespace(
-        name='sandbox', uid='ns-uid', resource_version='14',
-        labels={'projectcapsule.dev/tenant': 'other-capsule'},
-    ))
+    foreign = SimpleNamespace(
+        metadata=SimpleNamespace(
+            name='sandbox',
+            uid='ns-uid',
+            resource_version='14',
+            labels={'projectcapsule.dev/tenant': 'other-capsule'},
+        )
+    )
     _, blockers = capsule_namespace_handoff_evidence(
-        record=record, namespace=foreign,
-        tenant_name='tenant-capsule', tenant_id='kaori-id',
+        record=record,
+        namespace=foreign,
+        tenant_name='tenant-capsule',
+        tenant_id='kaori-id',
         status_namespace_names={'sandbox'},
     )
     assert any('no verifiable Tenant ownership' in reason for reason in blockers)
 
-    replaced = SimpleNamespace(metadata=SimpleNamespace(
-        name='sandbox', uid='new-uid', resource_version='15',
-        labels={'projectcapsule.dev/tenant': 'tenant-capsule'},
-    ))
+    replaced = SimpleNamespace(
+        metadata=SimpleNamespace(
+            name='sandbox',
+            uid='new-uid',
+            resource_version='15',
+            labels={'projectcapsule.dev/tenant': 'tenant-capsule'},
+        )
+    )
     with pytest.raises(ValueError, match='name/UID differs'):
         capsule_namespace_handoff_evidence(
-            record=record, namespace=replaced,
-            tenant_name='tenant-capsule', tenant_id='kaori-id',
+            record=record,
+            namespace=replaced,
+            tenant_name='tenant-capsule',
+            tenant_id='kaori-id',
             status_namespace_names=set(),
         )
 
@@ -192,18 +229,24 @@ def test_capsule_namespace_requires_proven_tenant_claim_and_immutable_uid():
 def test_capsule_g0_refuses_orphan_kaori_tenant_label_before_independent_approval():
     """Real kaori-demo pattern: Capsule ownership != KAORI manager authority."""
     record = SimpleNamespace(namespace='sandbox', provider_reference='ns-uid')
-    observed = SimpleNamespace(metadata=SimpleNamespace(
-        name='sandbox', uid='ns-uid', resource_version='14',
-        labels={
-            'capsule.clastix.io/tenant': 'tenant-capsule',
-            'cluster': 'kaori-local',
-            'kaori.io/tenant': 'tenant-capsule',
-            'pod-security.kubernetes.io/enforce': 'restricted',
-        },
-    ))
+    observed = SimpleNamespace(
+        metadata=SimpleNamespace(
+            name='sandbox',
+            uid='ns-uid',
+            resource_version='14',
+            labels={
+                'capsule.clastix.io/tenant': 'tenant-capsule',
+                'cluster': 'kaori-local',
+                'kaori.io/tenant': 'tenant-capsule',
+                'pod-security.kubernetes.io/enforce': 'restricted',
+            },
+        )
+    )
     component, blockers = capsule_namespace_handoff_evidence(
-        record=record, namespace=observed,
-        tenant_name='tenant-capsule', tenant_id='actual-kaori-db-id',
+        record=record,
+        namespace=observed,
+        tenant_name='tenant-capsule',
+        tenant_id='actual-kaori-db-id',
         status_namespace_names={'sandbox'},
     )
     assert component['authority'] == 'capsule'
@@ -214,17 +257,23 @@ def test_capsule_g0_refuses_orphan_kaori_tenant_label_before_independent_approva
     assert not any('no verifiable Tenant ownership' in reason for reason in blockers)
 
     # Do not downgrade the known canonical pair to "unattributed".
-    canonical = SimpleNamespace(metadata=SimpleNamespace(
-        name='sandbox', uid='ns-uid', resource_version='14',
-        labels={
-            'capsule.clastix.io/tenant': 'tenant-capsule',
-            'app.kubernetes.io/managed-by': 'kaori',
-            'kaori.io/tenant-id': 'actual-kaori-db-id',
-        },
-    ))
+    canonical = SimpleNamespace(
+        metadata=SimpleNamespace(
+            name='sandbox',
+            uid='ns-uid',
+            resource_version='14',
+            labels={
+                'capsule.clastix.io/tenant': 'tenant-capsule',
+                'app.kubernetes.io/managed-by': 'kaori',
+                'kaori.io/tenant-id': 'actual-kaori-db-id',
+            },
+        )
+    )
     controlled, controlled_blockers = capsule_namespace_handoff_evidence(
-        record=record, namespace=canonical,
-        tenant_name='tenant-capsule', tenant_id='actual-kaori-db-id',
+        record=record,
+        namespace=canonical,
+        tenant_name='tenant-capsule',
+        tenant_id='actual-kaori-db-id',
         status_namespace_names={'sandbox'},
     )
     assert controlled['ownership'] == 'kaori_marker_correlated'
@@ -233,16 +282,22 @@ def test_capsule_g0_refuses_orphan_kaori_tenant_label_before_independent_approva
 
     # A provider-owned Namespace with no KAORI-scoped keys is still
     # preserved/observed (not a valid source for a fabricated KAORI PATCH).
-    external = SimpleNamespace(metadata=SimpleNamespace(
-        name='sandbox', uid='ns-uid', resource_version='14',
-        labels={
-            'capsule.clastix.io/tenant': 'tenant-capsule',
-            'app.kubernetes.io/managed-by': 'capsule-controller',
-        },
-    ))
+    external = SimpleNamespace(
+        metadata=SimpleNamespace(
+            name='sandbox',
+            uid='ns-uid',
+            resource_version='14',
+            labels={
+                'capsule.clastix.io/tenant': 'tenant-capsule',
+                'app.kubernetes.io/managed-by': 'capsule-controller',
+            },
+        )
+    )
     preserved, preserved_blockers = capsule_namespace_handoff_evidence(
-        record=record, namespace=external,
-        tenant_name='tenant-capsule', tenant_id='actual-kaori-db-id',
+        record=record,
+        namespace=external,
+        tenant_name='tenant-capsule',
+        tenant_id='actual-kaori-db-id',
         status_namespace_names={'sandbox'},
     )
     assert preserved['ownership'] == 'external_or_unattributed'
@@ -250,16 +305,21 @@ def test_capsule_g0_refuses_orphan_kaori_tenant_label_before_independent_approva
     assert preserved_blockers == []
 
 
-
-@pytest.mark.parametrize(('declaration', 'observed_label', 'unexpected_label', 'admitted'), [
-    ('tenant-capsule', 'tenant-capsule', None, True),
-    ('different', 'tenant-capsule', None, False),
-    (None, 'tenant-capsule', None, False),
-    ('tenant-capsule', 'other', None, False),
-    ('tenant-capsule', 'tenant-capsule', 'kaori.io/unknown-control', False),
-])
+@pytest.mark.parametrize(
+    ('declaration', 'observed_label', 'unexpected_label', 'admitted'),
+    [
+        ('tenant-capsule', 'tenant-capsule', None, True),
+        ('different', 'tenant-capsule', None, False),
+        (None, 'tenant-capsule', None, False),
+        ('tenant-capsule', 'other', None, False),
+        ('tenant-capsule', 'tenant-capsule', 'kaori.io/unknown-control', False),
+    ],
+)
 def test_capsule_g0_recognizes_only_exact_spec_projected_namespace_label(
-    declaration, observed_label, unexpected_label, admitted,
+    declaration,
+    observed_label,
+    unexpected_label,
+    admitted,
 ):
     record = SimpleNamespace(namespace='sandbox', provider_reference='ns-uid')
     labels = {
@@ -270,23 +330,28 @@ def test_capsule_g0_recognizes_only_exact_spec_projected_namespace_label(
     }
     if unexpected_label:
         labels[unexpected_label] = 'untrusted'
-    resource = SimpleNamespace(metadata=SimpleNamespace(
-        name='sandbox', uid='ns-uid', resource_version='14',
-        labels=labels,
-    ))
+    resource = SimpleNamespace(
+        metadata=SimpleNamespace(
+            name='sandbox',
+            uid='ns-uid',
+            resource_version='14',
+            labels=labels,
+        )
+    )
     spec = {
         'namespaceOptions': {
-            'additionalMetadata': {'labels': (
-                {'kaori.io/tenant': declaration} if declaration is not None else {}
-            )},
+            'additionalMetadata': {'labels': ({'kaori.io/tenant': declaration} if declaration is not None else {})},
             'managedMetadataOnly': False,
             'quota': 2,
         }
     }
     component, blockers = capsule_namespace_handoff_evidence(
-        record=record, namespace=resource,
-        tenant_name='tenant-capsule', tenant_id='actual-kaori-db-id',
-        status_namespace_names={'sandbox'}, capsule_spec=spec,
+        record=record,
+        namespace=resource,
+        tenant_name='tenant-capsule',
+        tenant_id='actual-kaori-db-id',
+        status_namespace_names={'sandbox'},
+        capsule_spec=spec,
     )
     assert component['uid'] == 'ns-uid'
     assert component['resource_version'] == '14'
@@ -305,7 +370,8 @@ def test_capsule_spec_fingerprint_is_canonical_and_binds_all_provider_controls()
     from copy import deepcopy
 
     tenant = SimpleNamespace(
-        id='tenant-a', provider_evidence_json={'provider_mutation_performed': True},
+        id='tenant-a',
+        provider_evidence_json={'provider_mutation_performed': True},
     )
     spec = {
         'resourceQuotas': {'scope': 'Tenant', 'items': [{'hard': {'pods': '10'}}]},
@@ -352,21 +418,25 @@ def test_capsule_spec_fingerprint_is_canonical_and_binds_all_provider_controls()
         assert digest != baseline_digest
 
 
-@pytest.mark.parametrize('bad_spec', [
-    None,
-    [],
-    'unexpected',
-    {'owners': {}},
-    {'resourceQuotas': []},
-    {'rules': {}},
-    {'namespaceOptions': []},
-    {'bad': {1, 2}},
-    {'bad': float('nan')},
-    {'owners': 'a' * 262145},
-])
+@pytest.mark.parametrize(
+    'bad_spec',
+    [
+        None,
+        [],
+        'unexpected',
+        {'owners': {}},
+        {'resourceQuotas': []},
+        {'rules': {}},
+        {'namespaceOptions': []},
+        {'bad': {1, 2}},
+        {'bad': float('nan')},
+        {'owners': 'a' * 262145},
+    ],
+)
 def test_capsule_release_inventory_rejects_unbounded_or_unsupported_spec(bad_spec):
     tenant = SimpleNamespace(
-        id='tenant-a', provider_evidence_json={'provider_mutation_performed': False},
+        id='tenant-a',
+        provider_evidence_json={'provider_mutation_performed': False},
     )
     with pytest.raises(ValueError, match='Capsule Tenant'):
         capsule_tenant_handoff_evidence(
@@ -380,6 +450,7 @@ def test_capsule_release_inventory_rejects_unbounded_or_unsupported_spec(bad_spe
 
 def test_capsule_release_scope_digest_is_read_only_and_visible_as_technical_evidence():
     from pathlib import Path
+
     from jinja2 import Environment
 
     root = Path(__file__).resolve().parents[3]

@@ -194,8 +194,8 @@ def get_activity_center_context(
 
     tenant_approval_inbox = get_tenant_release_work_inbox(user_id=user_id)
     notification_inbox_unread_count = inbox_unread_count
-    inbox_unread_count += tenant_approval_inbox["pending_count"]
-    inbox_total_count += tenant_approval_inbox["total_count"]
+    inbox_unread_count += tenant_approval_inbox['pending_count']
+    inbox_total_count += tenant_approval_inbox['total_count']
 
     presented_jobs = [present_job_execution(job) for job in active_jobs]
     queued_jobs = [job for job in presented_jobs if job['status'] == 'queued']

@@ -13,14 +13,15 @@
         <table class="{{ table_ui.table_classes('min-w-[1450px] !table-fixed' if capsule_shared_drift_intents else '!table-fixed') }}">
             <caption class="sr-only">Capsule Tenant shared allocation drift and reconciliation actions.</caption>
             {% if capsule_shared_drift_intents %}
-            <thead class="{{ table_ui.head_classes() }}">
-                <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Authority / Source</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[35%]">Allocation Drift</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[23%]">Action</th>
-                </tr>
-            </thead>
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Tenant</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Authority / Source</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[35%]">Allocation Drift</th>
+                        <th scope="col"
+                            class="{{ table_ui.header_cell_classes(action=true) }} w-[23%]">Action</th>
+                    </tr>
+                </thead>
             {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for intent in capsule_shared_drift_intents %}
@@ -30,11 +31,13 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_ui.title_cell(intent.tenant.name, 'Tenant-level shared allocation', 'layers-3') }}
-                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate" title="Intent {{ intent.public_id }}">Intent {{ intent.public_id }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="Intent {{ intent.public_id }}">Intent {{ intent.public_id }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.special_label('Capsule GlobalResourceQuota', 'info', 'shield-check') }}
-                            <p class="mt-2 text-xs text-content-muted min-w-0 max-w-full truncate" title="{{ source.get('kind') |default('GlobalResourceQuota', true) }}/{{ source.get('name') |default(intent.resource_name, true) }}">
+                            <p class="mt-2 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ source.get('kind') |default('GlobalResourceQuota', true) }}/{{ source.get('name') |default(intent.resource_name, true) }}">
                                 {{ source.get("kind") |default('GlobalResourceQuota', true) }}/{{ source.get("name") |default(intent.resource_name, true) }}
                             </p>
                             <p class="mt-1 max-w-[360px] break-all text-xs leading-5 text-content-muted">
@@ -54,16 +57,19 @@
                                         </p>
                                     {% endfor %}
                                     {% if drift.get('differences', [])|length > 4 %}
-                                        <p class="text-xs text-content-muted min-w-0 max-w-full truncate" title="+{{ drift.get('differences', []) |length - 4 }} more changed dimensions">+{{ drift.get('differences', []) |length - 4 }} more changed dimensions</p>
+                                        <p class="text-xs text-content-muted min-w-0 max-w-full truncate"
+                                           title="+{{ drift.get('differences', []) |length - 4 }} more changed dimensions">+{{ drift.get('differences', []) |length - 4 }} more changed dimensions</p>
                                     {% endif %}
                                 </div>
                             {% elif drift.get('observed_matches_desired') %}
-                                <p class="mt-2 text-xs leading-5 text-status-success-text min-w-0 max-w-full truncate" title="Provider values now match KAORI intent; explicit reconciliation confirmation is still required.">
+                                <p class="mt-2 text-xs leading-5 text-status-success-text min-w-0 max-w-full truncate"
+                                   title="Provider values now match KAORI intent; explicit reconciliation confirmation is still required.">
                                     Provider values now match KAORI intent; explicit reconciliation confirmation is still required.
                                 </p>
                             {% endif %}
                             {% if state.get('blocked_reason') %}
-                                <p class="mt-2 text-xs leading-5 text-status-warning-text min-w-0 max-w-full truncate" title="{{ state.get('blocked_reason') }}">{{ state.get("blocked_reason") }}</p>
+                                <p class="mt-2 text-xs leading-5 text-status-warning-text min-w-0 max-w-full truncate"
+                                   title="{{ state.get('blocked_reason') }}">{{ state.get("blocked_reason") }}</p>
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
@@ -88,7 +94,8 @@
                                 </div>
                             {% else %}
                                 {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
-                                <p class="mt-2 text-right text-xs leading-5 text-content-muted min-w-0 max-w-full truncate" title="{{ state.get('blocked_reason') or 'Capsule reconciliation is unavailable.' }}">
+                                <p class="mt-2 text-right text-xs leading-5 text-content-muted min-w-0 max-w-full truncate"
+                                   title="{{ state.get('blocked_reason') or 'Capsule reconciliation is unavailable.' }}">
                                     {{ state.get("blocked_reason") or 'Capsule reconciliation is unavailable.' }}
                                 </p>
                             {% endif %}
@@ -100,9 +107,9 @@
                             {% set empty_state_icon = "circle-check" %}
                             {% set empty_state_title = "No Capsule Shared Allocation Drift" %}
                             {% set empty_state_description = "No governed Capsule GlobalResourceQuota currently differs from committed KAORI intent." %}
-                            {% set empty_state_label = '' %}
-                            {% set empty_state_min_height = 'min-h-[128px]' %}
-                            {% set empty_state_container_class = '!py-5' %}
+                            {% set empty_state_label = "" %}
+                            {% set empty_state_min_height = "min-h-[128px]" %}
+                            {% set empty_state_container_class = "!py-5" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -111,14 +118,14 @@
         </table>
     </div>
     {{ registry_ui.footer('tenant.operations',
-                'capsule-shared-allocation-drift',
-                'capsule-shared-allocation-drift-loading',
-                capsule_shared_drift_pagination,
-                {'tab': 'allocation-drift'},
-                capsule_shared_drift_pagination.allowed_per_page,
-                resource_label='Shared Allocation Drift',
-                rows_aria_label='Capsule shared drift rows per page',
-                control_name='capsule-shared-drift',
-                page_param='ops_capsule_shared_page',
-                per_page_param='ops_capsule_shared_per_page') }}
+        'capsule-shared-allocation-drift',
+        'capsule-shared-allocation-drift-loading',
+        capsule_shared_drift_pagination,
+        {'tab': 'allocation-drift'},
+        capsule_shared_drift_pagination.allowed_per_page,
+        resource_label='Shared Allocation Drift',
+        rows_aria_label='Capsule shared drift rows per page',
+        control_name='capsule-shared-drift',
+        page_param='ops_capsule_shared_page',
+        per_page_param='ops_capsule_shared_per_page') }}
 </section>

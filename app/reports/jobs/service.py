@@ -12,9 +12,7 @@ JOB_TYPE = 'report_generation'
 OPERATION = 'generate_report_artifact'
 
 
-def get_report_job_integration_dimensions(
-    scope_asset_type: str, scope_asset_id: str
-) -> tuple[str | None, int | None]:
+def get_report_job_integration_dimensions(scope_asset_type: str, scope_asset_id: str) -> tuple[str | None, int | None]:
     """Keep JobExecution dimensions aligned with canonical asset ownership."""
     integration_types = {
         'kubernetes_cluster': 'kubernetes',

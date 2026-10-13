@@ -20,8 +20,7 @@ def _labels(values: list[dict], empty_message: str) -> str:
         autoescape=True,
     )
     template = environment.from_string(
-        '{% import "components/table_label.html" as table_label %}\n'
-        + source[start:end]
+        '{% import "components/table_label.html" as table_label %}\n' + source[start:end]
     )
     return template.module.observed_allocation_labels(values, empty_message)
 
@@ -45,7 +44,7 @@ def test_namespace_allocation_labels_are_individual_wrapping_metadata_chips() ->
     assert 'aria-label="Observed allocation dimensions"' in html
     assert html.count('kaori-semantic-label') == len(values)
     for value in values:
-        assert f"{value['label']} · {value['value']}" in html
+        assert f'{value["label"]} · {value["value"]}' in html
     assert 'No observed quota' not in html
 
 
@@ -69,7 +68,7 @@ def test_native_and_capsule_namespace_rows_share_one_renderer_and_semantic_statu
 
     assert source.count('{% macro observed_allocation_labels(') == 1
     assert section.count('{{ observed_allocation_labels(') == 2
-    assert "allocation.display_values," in section
+    assert 'allocation.display_values,' in section
     assert "(namespace.get('allocation') or {}).get('display_values', [])" in section
     assert section.count("table_label.status_label('Observed', 'info')") == 2
     assert section.count("table_label.metadata_label('Adopted Baseline', wrap=true)") == 2
@@ -89,7 +88,7 @@ def test_adoption_preflight_discloses_provider_mutations_and_capsule_attach_no_w
     assert 'This is not an observation-only action.' in source
     assert 'Provider objects and RBAC remain unchanged.' in source
     assert 'Adoption commits <span class="font-semibold">Adopted / Observed</span> evidence only.' not in source
-    assert "value={{ row.provider_resource_version }}" not in source
+    assert 'value={{ row.provider_resource_version }}' not in source
     assert 'name="provider_resource_version"' in source
 
 
@@ -100,4 +99,3 @@ def test_adoption_provider_copy_retains_readback_and_external_constraints() -> N
     assert 'by provider read-back and preserves external constraints.' in adoption
     assert 'KAORI Managed Namespace allocation verified by Native Kubernetes read-back.' in allocation
     assert 'Adoption origin retained in evidence.' in allocation
-

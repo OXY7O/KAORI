@@ -8,25 +8,33 @@ import pytest
 from app.intelligence import tenant_governance_recommendations as recommendations
 
 
-@pytest.mark.parametrize('code', [
-    'revoked_grant_still_declared',
-    'active_grant_missing_capsule_declaration',
-    'active_grant_missing_native_declaration',
-    'native_grant_scope_mismatch',
-    'native_grant_role_reference_mismatch',
-])
+@pytest.mark.parametrize(
+    'code',
+    [
+        'revoked_grant_still_declared',
+        'active_grant_missing_capsule_declaration',
+        'active_grant_missing_native_declaration',
+        'native_grant_scope_mismatch',
+        'native_grant_role_reference_mismatch',
+    ],
+)
 def test_known_grant_declaration_drift_reuses_existing_intelligence_rule(code):
-    assert recommendations.access_declaration_rule_key(code) == (
-        'kubernetes.tenant.access.grant_drift'
-    )
+    assert recommendations.access_declaration_rule_key(code) == ('kubernetes.tenant.access.grant_drift')
 
 
-@pytest.mark.parametrize('code', [
-    'external_capsule_owner', 'external_access_review',
-    'external_native_rolebinding', 'unverified_kaori_grant_marker',
-    'orphaned_kaori_grant_marker', 'unresolved_native_rolebinding_ownership',
-    '', 'unknown_external_principal',
-])
+@pytest.mark.parametrize(
+    'code',
+    [
+        'external_capsule_owner',
+        'external_access_review',
+        'external_native_rolebinding',
+        'unverified_kaori_grant_marker',
+        'orphaned_kaori_grant_marker',
+        'unresolved_native_rolebinding_ownership',
+        '',
+        'unknown_external_principal',
+    ],
+)
 def test_foreign_subject_is_not_misrepresented_as_audit_verified_unmanaged_principal(code):
     assert recommendations.access_declaration_rule_key(code) is None
 
@@ -60,8 +68,13 @@ class _Column:
 
 
 def _event(
-    *, status='review_required', code='revoked_grant_still_declared',
-    age=0, event_id=14, source_age=0, cluster_id='cluster-a',
+    *,
+    status='review_required',
+    code='revoked_grant_still_declared',
+    age=0,
+    event_id=14,
+    source_age=0,
+    cluster_id='cluster-a',
 ):
     timestamp = datetime.now(UTC)
     return SimpleNamespace(
@@ -73,9 +86,7 @@ def _event(
             'status': status,
             'effective_rbac_verified': False,
             'evaluated_at': (timestamp - timedelta(seconds=age)).isoformat(),
-            'source_observed_at': (
-                timestamp - timedelta(seconds=source_age)
-            ).isoformat(),
+            'source_observed_at': (timestamp - timedelta(seconds=source_age)).isoformat(),
             'source_evidence_sha256': 'a' * 64,
             'findings': [
                 {'code': code, 'severity': 'critical', 'subject': 'grant-1'},
@@ -87,15 +98,20 @@ def _event(
 
 def _setup(monkeypatch, events):
     tenant = SimpleNamespace(
-        id='tenant-a', name='sandbox', cluster_id='cluster-a',
-        provider_key='native_kubernetes', lifecycle_status='ready',
+        id='tenant-a',
+        name='sandbox',
+        cluster_id='cluster-a',
+        provider_key='native_kubernetes',
+        lifecycle_status='ready',
     )
     monkeypatch.setattr(
-        recommendations, 'AuditEvent',
+        recommendations,
+        'AuditEvent',
         SimpleNamespace(query=_Query(events), target_type=_Column(), id=_Column()),
     )
     monkeypatch.setattr(
-        recommendations, 'Tenant',
+        recommendations,
+        'Tenant',
         SimpleNamespace(query=_Query([tenant])),
     )
 
@@ -135,11 +151,15 @@ def test_only_foreign_binding_does_not_generate_fabricated_grant_drift(monkeypat
     _setup(monkeypatch, [_event(code='external_native_rolebinding')])
     assert recommendations._access_declaration_findings(_rules()) == []
 
+
 def test_latest_mismatched_cluster_evidence_suppresses_old_findings(monkeypatch):
-    _setup(monkeypatch, [
-        _event(event_id=15, cluster_id='replaced-cluster'),
-        _event(event_id=14),
-    ])
+    _setup(
+        monkeypatch,
+        [
+            _event(event_id=15, cluster_id='replaced-cluster'),
+            _event(event_id=14),
+        ],
+    )
     assert recommendations._access_declaration_findings(_rules()) == []
 
 

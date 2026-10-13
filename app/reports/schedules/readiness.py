@@ -8,6 +8,7 @@ from app.extensions.db import db
 from app.models.job import JobPolicy
 from app.models.report import ReportSchedule
 
+
 def get_automation_posture(
     storage_context: dict[str, Any],
     worker_context: dict[str, Any],
@@ -55,9 +56,9 @@ def get_automation_posture(
             'execution_tone': 'warning',
         }
 
-    enabled_schedules = db.session.scalar(
-        select(func.count(ReportSchedule.id)).where(ReportSchedule.is_enabled.is_(True))
-    ) or 0
+    enabled_schedules = (
+        db.session.scalar(select(func.count(ReportSchedule.id)).where(ReportSchedule.is_enabled.is_(True))) or 0
+    )
     if not enabled_schedules:
         return {
             'status_label': 'Waiting For Schedule',
@@ -79,5 +80,3 @@ def get_automation_posture(
         'execution_label': 'Ready',
         'execution_tone': 'normal',
     }
-
-

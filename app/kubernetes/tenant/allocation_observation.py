@@ -25,7 +25,9 @@ _CAPSULE_TENANT_LABEL_KEYS = (
 
 
 def capsule_namespace_authority_present(
-    *, labels: Mapping[str, Any], owner_references: Any = None,
+    *,
+    labels: Mapping[str, Any],
+    owner_references: Any = None,
 ) -> bool:
     """A Namespace correlated to Capsule cannot be claimed by Native governance."""
     if any(key in labels for key in _CAPSULE_TENANT_LABEL_KEYS):
@@ -36,11 +38,10 @@ def capsule_namespace_authority_present(
         return True  # malformed provider ownership cannot be taken over safely
     return any(
         str(_value(owner, 'kind') or '') == 'Tenant'
-        and str(_value(owner, 'api_version') or _value(owner, 'apiVersion') or '').startswith(
-            f'{_CAPSULE_GROUP}/'
-        )
+        and str(_value(owner, 'api_version') or _value(owner, 'apiVersion') or '').startswith(f'{_CAPSULE_GROUP}/')
         for owner in owner_references
     )
+
 
 _QUOTA_DISPLAY_ORDER = (
     'requests.cpu',

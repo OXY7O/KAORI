@@ -27,16 +27,16 @@ def test_context_strip_is_inside_extracted_modal_header_not_separate_card() -> N
     assert 'gap-y-4 rounded-xl border border-outline-subtle bg-surface-card' not in shared
     assert 'data-kaori-summary-layout="unified"' in shared
     assert "shell.querySelector(':scope > [data-resource-detail-header]')" in host_js
-    assert "header.remove()" in host_js
-    assert "elements.header.replaceChildren(...cloneChildren(header))" in host_js
+    assert 'header.remove()' in host_js
+    assert 'elements.header.replaceChildren(...cloneChildren(header))' in host_js
     assert "'lg:col-span-2' if unified and loop.index0 == 1" in shared
 
 
 def test_audit_context_avoids_narrow_three_way_role_and_email_columns() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')
-    context = detail.split('<section data-activity-audit-context', 1)[1].split(
-        '{% if item.additional_evidence %}', 1
-    )[0]
+    context = detail.split('<section data-activity-audit-context', 1)[1].split('{% if item.additional_evidence %}', 1)[
+        0
+    ]
     assert 'grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2' in context
     assert context.count('<dl class="divide-y divide-outline-subtle">') == 2
     assert context.count('<dt class="text-xs font-medium text-content-muted">') == 5
@@ -52,6 +52,7 @@ def test_audit_context_avoids_narrow_three_way_role_and_email_columns() -> None:
     ):
         assert value in context
     assert '[overflow-wrap:anywhere]' in context
+
 
 def test_read_only_committed_evidence_and_disclosure_unchanged() -> None:
     detail = read('app/templates/access/activity_audit/partials/_activity_detail.html')

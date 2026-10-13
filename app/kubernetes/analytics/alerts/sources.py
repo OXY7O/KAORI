@@ -66,9 +66,10 @@ def _validated_alertmanager_items(result: object) -> list[dict]:
         if not isinstance(item, dict):
             raise ValueError('Alertmanager returned a malformed alert record.')
         labels = item.get('labels', {})
-        if not isinstance(labels, dict) or not str(
-            item.get('alertname') or item.get('name') or labels.get('alertname') or ''
-        ).strip():
+        if (
+            not isinstance(labels, dict)
+            or not str(item.get('alertname') or item.get('name') or labels.get('alertname') or '').strip()
+        ):
             raise ValueError('Alertmanager returned an alert without valid identity.')
     return items
 

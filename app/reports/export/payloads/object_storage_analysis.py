@@ -116,13 +116,9 @@ def get_report_object_storage_analysis_payload(report: Report) -> dict[str, Any]
     )
     # Freeze one committed analytics generation across Overview, Performance, and Alerts.
     # Reporting must never enqueue a provider/worker refresh while rendering.
-    snapshot_payload, snapshot_state = read_analytics_snapshot(
-        system_id=system_id, time_range=report.period or '30d'
-    )
+    snapshot_payload, snapshot_state = read_analytics_snapshot(system_id=system_id, time_range=report.period or '30d')
     if snapshot_payload is None:
-        return {
-            '_error': 'Object Storage analytics evidence is unavailable or expired; refresh materialization first.'
-        }
+        return {'_error': 'Object Storage analytics evidence is unavailable or expired; refresh materialization first.'}
     shared_snapshot = (snapshot_payload, snapshot_state)
     overview = get_object_storage_analytics_context('overview', args, committed_snapshot=shared_snapshot)
     performance = get_object_storage_analytics_context('performance', args, committed_snapshot=shared_snapshot)

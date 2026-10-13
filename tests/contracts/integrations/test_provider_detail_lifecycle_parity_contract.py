@@ -205,7 +205,7 @@ def test_all_provider_validation_and_runtime_htmx_responses_refresh_hero_posture
             assert f"value_id='{prefix}-{suffix}'" in detail, (provider, suffix)
         for path in (VALIDATION[provider], RUNTIME[provider]):
             partial = read(path)
-            assert "integrations/components/_provider_detail_posture.html" in partial, path
+            assert 'integrations/components/_provider_detail_posture.html' in partial, path
             assert f"provider_detail_posture.state_oob('{prefix}'," in partial, path
             assert "request.headers.get('HX-Request') == 'true'" in partial, path
             assert 'framed_workspace_tabs.badge_oob(' in partial, path

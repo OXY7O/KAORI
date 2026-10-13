@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from uuid import uuid4
 from tempfile import NamedTemporaryFile
 from threading import Lock
 from time import monotonic
 from typing import Any
+from uuid import uuid4
 
 from flask import current_app, g
 from sqlalchemy import func, select
@@ -184,17 +184,19 @@ def build_storage_integrity_presentation(result: dict[str, Any]) -> dict[str, An
         status, tone = 'No References', 'unknown'
     else:
         status, tone = 'Verified Sample', 'normal'
-    presented.update({
-        'checked': checked,
-        'available': available,
-        'missing': missing,
-        'errors': errors,
-        'status': status,
-        'tone': tone,
-        'total_reference_count': total,
-        'is_limited': limited,
-        'coverage_label': f'{checked} of {total} retained references checked',
-    })
+    presented.update(
+        {
+            'checked': checked,
+            'available': available,
+            'missing': missing,
+            'errors': errors,
+            'status': status,
+            'tone': tone,
+            'total_reference_count': total,
+            'is_limited': limited,
+            'coverage_label': f'{checked} of {total} retained references checked',
+        }
+    )
     return presented
 
 
@@ -866,9 +868,7 @@ def scan_report_storage_integrity(
 ) -> dict[str, Any]:
     max_items = max(1, min(int(max_items), 500))
     reference_filter = (Report.file_path.is_not(None), Report.file_path != '')
-    total_reference_count = int(
-        db.session.scalar(select(func.count(Report.id)).where(*reference_filter)) or 0
-    )
+    total_reference_count = int(db.session.scalar(select(func.count(Report.id)).where(*reference_filter)) or 0)
     checked_reports = (
         db.session.execute(
             select(
@@ -981,6 +981,8 @@ def scan_report_storage_integrity(
         'max_items': max_items,
         'total_reference_count': total_reference_count,
         'is_limited': checked_count < total_reference_count,
-        'is_healthy': checked_count > 0 and checked_count == total_reference_count
-        and missing_count == 0 and error_count == 0,
+        'is_healthy': checked_count > 0
+        and checked_count == total_reference_count
+        and missing_count == 0
+        and error_count == 0,
     }

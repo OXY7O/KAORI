@@ -4,6 +4,7 @@ An append-only SQL AuditEvent and a Kubernetes PATCH cannot be transactional.
 Unknown provider outcomes must remain recovery-blocked, even after a restart.
 This pure projection is NOT the operational writer, authority proof, or finalizer.
 """
+
 from __future__ import annotations
 
 import re
@@ -25,20 +26,42 @@ _STATES = {
     'readback_candidate': 'readback_observed',
     'recovery_reviewed': 'review_only',
 }
-_EVENT_KEYS = frozenset({
-    'contract_version', 'event_type', 'attempt_id', 'sequence', 'event_at',
-    'tenant_id', 'cluster_id', 'generation', 'plan_sha256',
-    'handoff_fingerprint', 'worklist_sha256', 'actor_user_id',
-    'previous_event_sha256', 'event_sha256', 'outcome',
-    'readback_sha256', 'expected_count', 'observed_count',
-    'pending_count', 'transferred_count', 'ambiguous_count',
-    'provider_handoff_verified', 'release_authorized', 'resume_authorized',
-    'auto_retry_authorized', 'secret_material_persisted',
-})
-_TRANSFER_DECISIONS = frozenset({
-    'candidate_kaori_metadata_handoff_review',
-    'explicit_kaori_metadata_handoff_review',
-})
+_EVENT_KEYS = frozenset(
+    {
+        'contract_version',
+        'event_type',
+        'attempt_id',
+        'sequence',
+        'event_at',
+        'tenant_id',
+        'cluster_id',
+        'generation',
+        'plan_sha256',
+        'handoff_fingerprint',
+        'worklist_sha256',
+        'actor_user_id',
+        'previous_event_sha256',
+        'event_sha256',
+        'outcome',
+        'readback_sha256',
+        'expected_count',
+        'observed_count',
+        'pending_count',
+        'transferred_count',
+        'ambiguous_count',
+        'provider_handoff_verified',
+        'release_authorized',
+        'resume_authorized',
+        'auto_retry_authorized',
+        'secret_material_persisted',
+    }
+)
+_TRANSFER_DECISIONS = frozenset(
+    {
+        'candidate_kaori_metadata_handoff_review',
+        'explicit_kaori_metadata_handoff_review',
+    }
+)
 
 
 def _sha(value: object) -> bool:
@@ -63,8 +86,12 @@ def _event_checksum(event: Mapping[str, Any]) -> str:
 
 
 def _validate_event(
-    *, event: Mapping[str, Any], index: int, prior: Mapping[str, Any] | None,
-    plan: Mapping[str, Any], worklist: Mapping[str, Any],
+    *,
+    event: Mapping[str, Any],
+    index: int,
+    prior: Mapping[str, Any] | None,
+    plan: Mapping[str, Any],
+    worklist: Mapping[str, Any],
     accepted_actor_user_id: int,
 ) -> None:
     if set(event) != _EVENT_KEYS:
@@ -79,7 +106,8 @@ def _validate_event(
     if (
         event['contract_version'] != _SCHEMA
         or event['event_type'] not in _STATES
-        or type(event['sequence']) is not int or event['sequence'] != index + 1
+        or type(event['sequence']) is not int
+        or event['sequence'] != index + 1
         or type(event['actor_user_id']) is not int
         or event['actor_user_id'] <= 0
         or (
@@ -94,10 +122,16 @@ def _validate_event(
         or event['handoff_fingerprint'] != plan.get('handoff_fingerprint')
         or event['worklist_sha256'] != worklist.get('inventory_sha256')
         or event['outcome'] != _STATES[event['event_type']]
-        or any(event[key] is not False for key in (
-            'provider_handoff_verified', 'release_authorized',
-            'resume_authorized', 'auto_retry_authorized', 'secret_material_persisted',
-        ))
+        or any(
+            event[key] is not False
+            for key in (
+                'provider_handoff_verified',
+                'release_authorized',
+                'resume_authorized',
+                'auto_retry_authorized',
+                'secret_material_persisted',
+            )
+        )
         or not _sha(event['event_sha256'])
         or event['event_sha256'] != _event_checksum(event)
     ):
@@ -108,9 +142,15 @@ def _validate_event(
             event['event_type'] != 'started'
             or event['previous_event_sha256'] is not None
             or event['readback_sha256'] is not None
-            or any(event[k] != 0 for k in (
-                'observed_count', 'pending_count', 'transferred_count', 'ambiguous_count',
-            ))
+            or any(
+                event[k] != 0
+                for k in (
+                    'observed_count',
+                    'pending_count',
+                    'transferred_count',
+                    'ambiguous_count',
+                )
+            )
         ):
             raise ValueError('Capsule attempt must start with immutable pre-write evidence.')
     else:
@@ -124,26 +164,26 @@ def _validate_event(
         if index == 1 and event['event_type'] not in ('partial', 'readback_candidate'):
             raise ValueError('Capsule attempt needs provider outcome review after start.')
         if index == 2 and (
-            prior['event_type'] not in ('partial', 'readback_candidate')
-            or event['event_type'] != 'recovery_reviewed'
+            prior['event_type'] not in ('partial', 'readback_candidate') or event['event_type'] != 'recovery_reviewed'
         ):
             raise ValueError('Only an explicit review may follow an uncertain provider outcome.')
         if index > 2:
             raise ValueError('Further Capsule attempts require a new separately admitted workflow.')
 
-    expected_count = sum(
-        row['decision'] in _TRANSFER_DECISIONS for row in worklist['items']
-    )
+    expected_count = sum(row['decision'] in _TRANSFER_DECISIONS for row in worklist['items'])
     if expected_count < 1:
         raise ValueError('Capsule attempt has no exact KAORI ownership transfer candidates.')
-    counts = tuple(event[k] for k in (
-        'expected_count', 'observed_count', 'pending_count',
-        'transferred_count', 'ambiguous_count',
-    ))
-    if (
-        any(type(v) is not int or v < 0 for v in counts)
-        or event['expected_count'] != expected_count
-    ):
+    counts = tuple(
+        event[k]
+        for k in (
+            'expected_count',
+            'observed_count',
+            'pending_count',
+            'transferred_count',
+            'ambiguous_count',
+        )
+    )
+    if any(type(v) is not int or v < 0 for v in counts) or event['expected_count'] != expected_count:
         raise ValueError('Capsule attempted transfer count disagrees with the approved worklist.')
     if event['event_type'] == 'started':
         if event['readback_sha256'] is not None:
@@ -156,8 +196,7 @@ def _validate_event(
             or event['pending_count'] > event['observed_count']
             or event['ambiguous_count'] > event['observed_count']
             or (
-                event['pending_count'] + event['transferred_count']
-                + event['ambiguous_count'] > event['observed_count']
+                event['pending_count'] + event['transferred_count'] + event['ambiguous_count'] > event['observed_count']
             )
         ):
             raise ValueError('Partial provider outcome is incomplete or was overstated.')
@@ -165,8 +204,7 @@ def _validate_event(
         if (
             not _sha(event['readback_sha256'])
             or event['observed_count'] != expected_count
-            or event['pending_count'] + event['transferred_count']
-               + event['ambiguous_count'] != expected_count
+            or event['pending_count'] + event['transferred_count'] + event['ambiguous_count'] != expected_count
         ):
             raise ValueError('Full Capsule read-back claim has missing/ambiguous scope.')
     else:
@@ -181,8 +219,11 @@ def _validate_event(
 
 
 def project_capsule_attempt_history(
-    *, plan: Mapping[str, Any], related: Mapping[str, Any],
-    accepted_actor_user_id: int, events: list[dict[str, Any]],
+    *,
+    plan: Mapping[str, Any],
+    related: Mapping[str, Any],
+    accepted_actor_user_id: int,
+    events: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Project a single attempt for operator recovery only, never provider retry.
 
@@ -194,7 +235,8 @@ def project_capsule_attempt_history(
         or not isinstance(related, Mapping)
         or type(accepted_actor_user_id) is not int
         or accepted_actor_user_id <= 0
-        or not isinstance(events, list) or len(events) > _MAX_HISTORY
+        or not isinstance(events, list)
+        or len(events) > _MAX_HISTORY
         or any(not isinstance(event, Mapping) for event in events)
         or not isinstance(plan.get('plan_sha256'), str)
         or _plan_hash(dict(plan)) != plan['plan_sha256']
@@ -203,8 +245,11 @@ def project_capsule_attempt_history(
     worklist = build_capsule_handoff_worklist(plan=plan, related=related)
     for index, event in enumerate(events):
         _validate_event(
-            event=event, index=index, prior=events[index - 1] if index else None,
-            plan=plan, worklist=worklist,
+            event=event,
+            index=index,
+            prior=events[index - 1] if index else None,
+            plan=plan,
+            worklist=worklist,
             accepted_actor_user_id=accepted_actor_user_id,
         )
     if not events:

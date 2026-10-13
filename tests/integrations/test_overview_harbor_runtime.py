@@ -8,16 +8,26 @@ from app.integrations.registry.providers.harbor import runtime_overview
 
 def test_harbor_runtime_row_is_committed_and_resolves_distinct_ids():
     canonical = SimpleNamespace(
-        id=72, name='Harbor A', provider_key='harbor',
-        adapter_key='harbor_api_v2', enabled=True,
-        lifecycle_status='active', bindings=[],
+        id=72,
+        name='Harbor A',
+        provider_key='harbor',
+        adapter_key='harbor_api_v2',
+        enabled=True,
+        lifecycle_status='active',
+        bindings=[],
     )
     record = SimpleNamespace(
-        id=3, integration_instance=canonical, readiness_status='ready',
-        capability_profile='harbor', compatibility_profile=None,
-        capabilities=['health'], last_status='connected',
-        last_checked_at=None, last_validated_at=None,
-        validation_message=None, last_error=None,
+        id=3,
+        integration_instance=canonical,
+        readiness_status='ready',
+        capability_profile='harbor',
+        compatibility_profile=None,
+        capabilities=['health'],
+        last_status='connected',
+        last_checked_at=None,
+        last_validated_at=None,
+        validation_message=None,
+        last_error=None,
     )
     with patch.object(runtime_overview, 'provider_kind', return_value=SimpleNamespace(key='harbor', label='Harbor')):
         row = runtime_overview._runtime_row(record, None)

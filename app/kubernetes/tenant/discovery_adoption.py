@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from kubernetes.client.rest import ApiException
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
@@ -136,8 +136,11 @@ def _prepare_adoption(source: Mapping[str, Any]) -> _AdoptionContext:
 
 
 def _require_re_adoption_handback_for_managed_release(
-    *, provider_evidence: Mapping[str, Any], release_evidence: Mapping[str, Any],
-    provider_uid: str | None = None, resource_version: str | None = None,
+    *,
+    provider_evidence: Mapping[str, Any],
+    release_evidence: Mapping[str, Any],
+    provider_uid: str | None = None,
+    resource_version: str | None = None,
     namespace: str | None = None,
 ) -> None:
     """Require exact original Handback, or verified append-only residue RV lineage.
@@ -155,14 +158,13 @@ def _require_re_adoption_handback_for_managed_release(
         return
     handback = provider_evidence.get('handback_governance') or {}
     versions = handback.get('provider_resource_versions') or {}
-    handback_rv = (
-        versions.get(namespace) if namespace else handback.get('resource_version')
-    )
+    handback_rv = versions.get(namespace) if namespace else handback.get('resource_version')
     if (
         handback.get('status') != 'verified'
         or handback.get('release_plan_sha256') != release_evidence.get('plan_sha256')
         or handback.get('successor_owner') != release_evidence.get('successor_owner')
-        or not provider_uid or handback.get('provider_uid') != provider_uid
+        or not provider_uid
+        or handback.get('provider_uid') != provider_uid
         or not resource_version
     ):
         raise ValueError(
@@ -174,9 +176,7 @@ def _require_re_adoption_handback_for_managed_release(
 
     recovery = provider_evidence.get('residual_recovery_governance') or {}
     recovery_versions = recovery.get('provider_resource_versions') or {}
-    recovered_rv = (
-        recovery_versions.get(namespace) if namespace else recovery.get('resource_version')
-    )
+    recovered_rv = recovery_versions.get(namespace) if namespace else recovery.get('resource_version')
     # The database projection is not independently sufficient. Require the
     # append-only terminal AuditEvent, its exact checksum and completed scope.
     from app.kubernetes.tenant.native_handoff_dry_run import _stable_sha256
@@ -185,10 +185,7 @@ def _require_re_adoption_handback_for_managed_release(
     )
 
     tenant_id = release_evidence.get('tenant_id')
-    receipt = (
-        latest_native_residual_cleanup_execution(tenant_id)
-        if isinstance(tenant_id, str) and tenant_id else None
-    )
+    receipt = latest_native_residual_cleanup_execution(tenant_id) if isinstance(tenant_id, str) and tenant_id else None
     if (
         not isinstance(recovery, Mapping)
         or recovery.get('status') != 'verified'
@@ -214,14 +211,15 @@ def _require_re_adoption_handback_for_managed_release(
         or receipt.get('provider_mutation_performed') is not True
         or not receipt.get('receipt_sha256')
         or receipt.get('receipt_sha256') != recovery.get('receipt_sha256')
-        or _stable_sha256({k: v for k, v in receipt.items()
-                           if k != 'receipt_sha256'}) != receipt['receipt_sha256']
+        or _stable_sha256({k: v for k, v in receipt.items() if k != 'receipt_sha256'}) != receipt['receipt_sha256']
     ):
         raise ValueError('Verified post-Handback recovery evidence and current provider RV differ.')
 
     covered = [
-        item for item in receipt.get('verified_components', [])
-        if isinstance(item, Mapping) and item.get('kind') == 'Namespace'
+        item
+        for item in receipt.get('verified_components', [])
+        if isinstance(item, Mapping)
+        and item.get('kind') == 'Namespace'
         and item.get('uid') == provider_uid
         and item.get('resource_version') == resource_version
         and (namespace is None or item.get('name') == namespace)
@@ -231,13 +229,17 @@ def _require_re_adoption_handback_for_managed_release(
 
 
 def _released_predecessor_evidence(
-    tenant: Tenant, *, provider_uid: str, resource_version: str | None = None,
+    tenant: Tenant,
+    *,
+    provider_uid: str,
+    resource_version: str | None = None,
 ) -> dict[str, Any] | None:
     """Correlate an adopted resource to exactly one prior Released generation."""
     previous = (
         Tenant.query.filter_by(cluster_id=tenant.cluster_id, slug=tenant.slug)
         .filter(Tenant.lifecycle_status == TenantLifecycleStatus.RELEASED.value)
-        .order_by(Tenant.generation.desc()).first()
+        .order_by(Tenant.generation.desc())
+        .first()
     )
     if previous is None:
         return None
@@ -257,10 +259,7 @@ def _released_predecessor_evidence(
         # Native Tenant identity is the Namespace; Capsule Tenant identity
         # is the cluster-scoped CR. A Capsule CR must use its own verified
         # handback RV, never a Namespace RV from provider_resource_versions.
-        namespace=(
-            str(tenant.provider_reference or '')
-            if tenant.provider_key == 'native_kubernetes' else None
-        ),
+        namespace=(str(tenant.provider_reference or '') if tenant.provider_key == 'native_kubernetes' else None),
     )
     return {
         'predecessor_tenant_id': previous.id,
@@ -272,14 +271,19 @@ def _released_predecessor_evidence(
 
 
 def _verify_released_namespace_lineage(
-    *, cluster_id: str, namespace: str, provider_uid: str, tenant_slug: str,
+    *,
+    cluster_id: str,
+    namespace: str,
+    provider_uid: str,
+    tenant_slug: str,
     resource_version: str | None = None,
 ) -> None:
     """Refuse ambiguous Tenant reassignment or provider name reuse across Released history."""
     previous = (
         TenantNamespace.query.filter_by(cluster_id=cluster_id, namespace=namespace)
         .filter(TenantNamespace.provisioning_status == TenantNamespaceProvisioningStatus.RELEASED.value)
-        .order_by(TenantNamespace.generation.desc()).first()
+        .order_by(TenantNamespace.generation.desc())
+        .first()
     )
     if previous is None:
         return
@@ -290,7 +294,8 @@ def _verify_released_namespace_lineage(
     _require_re_adoption_handback_for_managed_release(
         provider_evidence=previous.provisioning_evidence_json or {},
         release_evidence=(previous.provisioning_evidence_json or {}).get('release_governance') or {},
-        provider_uid=provider_uid, resource_version=resource_version,
+        provider_uid=provider_uid,
+        resource_version=resource_version,
     )
 
 
@@ -306,8 +311,10 @@ def _native_namespace_record(
     if not provider_uid or not resource_version:
         raise ValueError('Native Namespace provider UID/resourceVersion is missing.')
     _verify_released_namespace_lineage(
-        cluster_id=str(context.cluster.id), namespace=context.resource_name,
-        provider_uid=provider_uid, tenant_slug=context.tenant.slug,
+        cluster_id=str(context.cluster.id),
+        namespace=context.resource_name,
+        provider_uid=provider_uid,
+        tenant_slug=context.tenant.slug,
         resource_version=resource_version,
     )
     record = TenantNamespace()
@@ -452,7 +459,9 @@ def _adopt_native(context: _AdoptionContext) -> tuple[TenantEnvironment, TenantN
         'secret_material_persisted': False,
     }
     lineage = _released_predecessor_evidence(
-        tenant, provider_uid=provider_uid, resource_version=resource_version,
+        tenant,
+        provider_uid=provider_uid,
+        resource_version=resource_version,
     )
     if lineage is not None:
         tenant.provider_evidence_json['re_adoption_lineage'] = lineage
@@ -636,7 +645,8 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
     if not isinstance(provider_labels, Mapping):
         raise ValueError('Capsule Tenant ownership labels are malformed.')
     ownership_reason = _unclaimed_provider_ownership_reason(
-        labels=provider_labels, resource_kind='Capsule Tenant',
+        labels=provider_labels,
+        resource_kind='Capsule Tenant',
     )
     if ownership_reason:
         raise ValueError(ownership_reason)
@@ -701,7 +711,9 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
     # Match the fresh Capsule Tenant CR resourceVersion against immutable
     # Released handback evidence, not just the provider UID and name.
     lineage = _released_predecessor_evidence(
-        tenant, provider_uid=provider_uid, resource_version=resource_version,
+        tenant,
+        provider_uid=provider_uid,
+        resource_version=resource_version,
     )
     if lineage is not None:
         tenant.provider_evidence_json['re_adoption_lineage'] = lineage
@@ -718,9 +730,7 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
     return environment, records[0] if records else None
 
 
-def validate_existing_tenant_attachment_target(
-    tenant: Tenant, *, cluster_id: str, namespace: str
-) -> None:
+def validate_existing_tenant_attachment_target(tenant: Tenant, *, cluster_id: str, namespace: str) -> None:
     if not namespace or str(tenant.cluster_id) != cluster_id:
         raise ValueError('Namespace and existing Tenant must belong to the same cluster.')
     if (
@@ -785,7 +795,8 @@ def attach_discovered_native_namespace_committed(
     expected_uid = str(source.get('provider_uid') or '').strip()
     validate_namespace_attachment_uid(observed_uid=provider_uid, expected_uid=expected_uid)
     validate_adoption_provider_identity(
-        expected_uid=expected_uid, observed_uid=provider_uid,
+        expected_uid=expected_uid,
+        observed_uid=provider_uid,
         expected_resource_version=str(source.get('provider_resource_version') or '').strip(),
         observed_resource_version=str(getattr(metadata, 'resource_version', None) or '').strip(),
     )
@@ -851,13 +862,15 @@ def attach_discovered_capsule_namespace_committed(
     namespace = str(source.get('resource_name') or '').strip()
     capsule_name = str(source.get('capsule_tenant_name') or tenant.provider_reference or '').strip()
     if (
-        not namespace or namespace in {'default', 'kube-system', 'kube-public', 'kube-node-lease'}
+        not namespace
+        or namespace in {'default', 'kube-system', 'kube-public', 'kube-node-lease'}
         or str(tenant.cluster_id) != cluster_id
         or tenant.lifecycle_status != TenantLifecycleStatus.READY.value
         or tenant.provider_key != 'capsule'
         or tenant.provider_state != 'capsule'
         or tenant.reconciliation_authority != 'capsule'
-        or not capsule_name or capsule_name != str(tenant.provider_reference or '')
+        or not capsule_name
+        or capsule_name != str(tenant.provider_reference or '')
     ):
         raise ValueError('Capsule Namespace attachment does not match a healthy governed Tenant.')
 
@@ -885,28 +898,33 @@ def attach_discovered_capsule_namespace_committed(
         raise ValueError('Capsule Tenant CR identity differs from committed KAORI authority.')
 
     allocation = observe_capsule_tenant_allocation(
-        client, tenant_name=capsule_name, tenant_item=tenant_cr,
+        client,
+        tenant_name=capsule_name,
+        tenant_item=tenant_cr,
     )
     selected = select_capsule_namespace_attachment_candidate(
-        allocation, namespace=namespace, capsule_tenant_name=capsule_name,
+        allocation,
+        namespace=namespace,
+        capsule_tenant_name=capsule_name,
         expected_uid=str(source.get('provider_uid') or '').strip(),
         expected_resource_version=str(source.get('provider_resource_version') or '').strip(),
     )
     # Both immutable UID and preflight resourceVersion are mandatory for
     # attachment; empty request fields must never skip correlation checks.
-    if not str(source.get('provider_uid') or '').strip() or not str(
-        source.get('provider_resource_version') or ''
-    ).strip():
+    if (
+        not str(source.get('provider_uid') or '').strip()
+        or not str(source.get('provider_resource_version') or '').strip()
+    ):
         raise ValueError('Capsule attachment requires fresh Namespace UID/resourceVersion evidence.')
 
     # Provider listing/candidate selection is not a final authority proof.
     # Independently re-read the exact Namespace object and its Capsule CR,
     # including ownerReferences (and owner UID), before any KAORI DB commit.
-    observed_namespace = client.core_api().read_namespace(
-        namespace, _request_timeout=5
-    )
+    observed_namespace = client.core_api().read_namespace(namespace, _request_timeout=5)
     proof = validate_capsule_namespace_attachment(
-        tenant=tenant, cluster_id=cluster_id, capsule_item=tenant_cr,
+        tenant=tenant,
+        cluster_id=cluster_id,
+        capsule_item=tenant_cr,
         namespace=observed_namespace,
         expected_namespace_uid=str(source['provider_uid']).strip(),
         status_namespace_names=_capsule_status_namespace_names(tenant_cr),
@@ -922,23 +940,25 @@ def attach_discovered_capsule_namespace_committed(
     verified_metadata = verified_tenant_cr.get('metadata') or {}
     if (
         str(verified_metadata.get('uid') or '') != proof['capsule_tenant_uid']
-        or str(verified_metadata.get('resourceVersion') or '')
-        != proof['capsule_tenant_resource_version']
+        or str(verified_metadata.get('resourceVersion') or '') != proof['capsule_tenant_resource_version']
     ):
         raise ValueError('Capsule Tenant CR changed during attachment; repeat Discovery.')
     verified_namespace = client.core_api().read_namespace(namespace, _request_timeout=5)
     verified_namespace_meta = getattr(verified_namespace, 'metadata', None)
     if (
         str(getattr(verified_namespace_meta, 'uid', '') or '') != proof['namespace_uid']
-        or str(getattr(verified_namespace_meta, 'resource_version', '') or '')
-        != proof['namespace_resource_version']
+        or str(getattr(verified_namespace_meta, 'resource_version', '') or '') != proof['namespace_resource_version']
     ):
         raise ValueError('Capsule Namespace changed during attachment; repeat Discovery.')
 
     context = _AdoptionContext(
-        cluster=cluster, client=client, provider_key='capsule',
-        resource_name=namespace, environment_name=environment.environment,
-        tenant=tenant, now=datetime.now(UTC),
+        cluster=cluster,
+        client=client,
+        provider_key='capsule',
+        resource_name=namespace,
+        environment_name=environment.environment,
+        tenant=tenant,
+        now=datetime.now(UTC),
     )
     previous_evidence = dict(tenant.provider_evidence_json or {})
     try:

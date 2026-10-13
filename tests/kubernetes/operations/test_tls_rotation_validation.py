@@ -73,22 +73,26 @@ def test_kubernetes_administration_tab_normalization_source_contract() -> None:
 
 def test_blocked_coverage_does_not_admit_tls_apply() -> None:
     validation = load_validation_module()
-    assert validation.validation_trigger(
-        payload(valid=True, targets=[{'status': 'blocked'}]),
-        form_id='tls-secret-update-form',
-        require_targets=True,
-    ) is None
-    assert validation.validation_trigger(
-        payload(valid=True, targets=[{'status': 'ready'}, {'status': 'blocked'}]),
-        form_id='tls-secret-update-form',
-        require_targets=True,
-    ) is None
+    assert (
+        validation.validation_trigger(
+            payload(valid=True, targets=[{'status': 'blocked'}]),
+            form_id='tls-secret-update-form',
+            require_targets=True,
+        )
+        is None
+    )
+    assert (
+        validation.validation_trigger(
+            payload(valid=True, targets=[{'status': 'ready'}, {'status': 'blocked'}]),
+            form_id='tls-secret-update-form',
+            require_targets=True,
+        )
+        is None
+    )
 
 
 def test_bulk_tls_validity_requires_full_resolved_target_set() -> None:
     validation = load_validation_module()
     selection = payload(valid=True, targets=[{'status': 'ready'}])
     selection['target_count_requested'] = 2
-    assert validation.validation_trigger(
-        selection, form_id='tls-secret-update-form', require_targets=True
-    ) is None
+    assert validation.validation_trigger(selection, form_id='tls-secret-update-form', require_targets=True) is None

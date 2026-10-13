@@ -13,12 +13,8 @@ from app.integrations.observability.metrics_source.adapters.prometheus_http.vali
 @pytest.mark.parametrize(
     ('key', 'valid_data'),
     [
-        ('instant_query', {'resultType': 'vector', 'result': [
-            {'metric': {}, 'value': [1.0, '1']}
-        ]}),
-        ('range_query', {'resultType': 'matrix', 'result': [
-            {'metric': {}, 'values': [[1.0, '1'], [2.0, '1']]}
-        ]}),
+        ('instant_query', {'resultType': 'vector', 'result': [{'metric': {}, 'value': [1.0, '1']}]}),
+        ('range_query', {'resultType': 'matrix', 'result': [{'metric': {}, 'values': [[1.0, '1'], [2.0, '1']]}]}),
         ('series_discovery', []),
         ('label_discovery', []),
     ],
@@ -28,27 +24,36 @@ def test_valid_core_envelopes(key, valid_data) -> None:
 
 
 @pytest.mark.parametrize('key', ['instant_query', 'range_query', 'series_discovery', 'label_discovery'])
-@pytest.mark.parametrize('payload', [
-    {'status': 'success'},
-    {'status': 'success', 'data': None},
-    {'status': 'success', 'data': {'resultType': 'vector'}},
-    {'status': 'error', 'data': []},
-    [],
-    None,
-])
+@pytest.mark.parametrize(
+    'payload',
+    [
+        {'status': 'success'},
+        {'status': 'success', 'data': None},
+        {'status': 'success', 'data': {'resultType': 'vector'}},
+        {'status': 'error', 'data': []},
+        [],
+        None,
+    ],
+)
 def test_missing_or_malformed_envelope_never_proves_capability(key, payload) -> None:
     assert not _valid_core_response(key, payload)
 
 
 def test_query_probe_must_have_nonempty_vector_of_valid_samples() -> None:
-    assert not _valid_core_response('instant_query', {
-        'status': 'success', 'data': {'resultType': 'vector', 'result': []},
-    })
-    assert not _valid_core_response('range_query', {
-        'status': 'success', 'data': {'resultType': 'matrix', 'result': [
-            {'metric': {}, 'values': [['bad-timestamp', '1']]}
-        ]},
-    })
+    assert not _valid_core_response(
+        'instant_query',
+        {
+            'status': 'success',
+            'data': {'resultType': 'vector', 'result': []},
+        },
+    )
+    assert not _valid_core_response(
+        'range_query',
+        {
+            'status': 'success',
+            'data': {'resultType': 'matrix', 'result': [{'metric': {}, 'values': [['bad-timestamp', '1']]}]},
+        },
+    )
 
 
 def test_discovery_api_rejects_malformed_items_but_accepts_true_empty() -> None:

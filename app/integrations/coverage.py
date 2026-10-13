@@ -235,13 +235,18 @@ def build_provider_coverage(
     meta = provider_meta(integration_type)
     # Filter/count/page in SQL before resolving bindings or provider records.
     snapshot = paged_coverage_scopes(
-        integration_type, page=page, per_page=per_page,
-        query=query, environment=environment, status=status,
+        integration_type,
+        page=page,
+        per_page=per_page,
+        query=query,
+        environment=environment,
+        status=status,
     )
     instances = _instances(integration_type)
     instance_by_canonical = {
         instance.integration_instance_id: instance
-        for instance in instances if instance.integration_instance_id is not None
+        for instance in instances
+        if instance.integration_instance_id is not None
     }
     sharing_counts, unscoped_counts = _source_binding_counts(integration_type)
     binding_ids = [row['binding_id'] for row in snapshot['rows'] if row['binding_id'] is not None]
@@ -258,12 +263,14 @@ def build_provider_coverage(
             'search_hint': scoped['hint'],
         }
         bindings_by_asset = {(scope['scope_type'], scope['scope_key']): [binding]} if binding else {}
-        page_rows.append(_coverage_row(
-            scope,
-            bindings_by_asset=bindings_by_asset,
-            instance_by_canonical=instance_by_canonical,
-            sharing_counts=sharing_counts,
-        ))
+        page_rows.append(
+            _coverage_row(
+                scope,
+                bindings_by_asset=bindings_by_asset,
+                instance_by_canonical=instance_by_canonical,
+                sharing_counts=sharing_counts,
+            )
+        )
 
     return {
         'provider': meta,
@@ -442,12 +449,9 @@ def _instances(integration_type: str, *, canonical_ids: set[int] | None = None) 
     for implementation in registry.implementations_for_type(integration_type):
         model = implementation.record_model
         if model is not None:
-            query = (
-                model.query.join(model.integration_instance)
-                .filter(
-                    IntegrationInstance.integration_type == integration_type,
-                    IntegrationInstance.provider_key == implementation.provider_key,
-                )
+            query = model.query.join(model.integration_instance).filter(
+                IntegrationInstance.integration_type == integration_type,
+                IntegrationInstance.provider_key == implementation.provider_key,
             )
             if canonical_ids is not None:
                 query = query.filter(model.integration_instance_id.in_(canonical_ids))
@@ -455,7 +459,8 @@ def _instances(integration_type: str, *, canonical_ids: set[int] | None = None) 
             continue
         # Future provider implementations without a batch mapping retain correctness.
         identities_query = IntegrationInstance.query.filter_by(
-            integration_type=integration_type, provider_key=implementation.provider_key,
+            integration_type=integration_type,
+            provider_key=implementation.provider_key,
         )
         if canonical_ids is not None:
             identities_query = identities_query.filter(IntegrationInstance.id.in_(canonical_ids))

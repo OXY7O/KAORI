@@ -15,7 +15,7 @@ def test_recommendation_current_facts_are_source_qualified() -> None:
     assert 'TLSCertificateInventory.collected_at >= cutoff' in service
     assert 'ObjectStorageSystem.inventory_observed_at >= cutoff' in storage
     assert 'if observed < cutoff:' in storage
-    assert "IntegrationInstance.enabled.is_(True)" in storage
+    assert 'IntegrationInstance.enabled.is_(True)' in storage
     assert 'db.session.rollback()' in service
     assert 'evidence_issues.append(label)' in service
     assert '*_audit_findings(rules),' not in tenant

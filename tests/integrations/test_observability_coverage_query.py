@@ -26,28 +26,52 @@ def test_coverage_sql_pagination_preserves_counts_filter_and_lifecycle(monkeypat
         monkeypatch.setattr(
             coverage_query,
             'registered_consumer_asset_definitions',
-            lambda: (SimpleNamespace(
-                asset_type='object_storage_system', model=ObjectStorageSystem,
-                label='Object Storage', integration_type=None,
-            ),),
+            lambda: (
+                SimpleNamespace(
+                    asset_type='object_storage_system',
+                    model=ObjectStorageSystem,
+                    label='Object Storage',
+                    integration_type=None,
+                ),
+            ),
         )
-        session.add(IntegrationInstance(
-            id=1, name='Prometheus', integration_type='metrics_source',
-            provider_key='prometheus', adapter_key='prometheus_http',
-            readiness_status='ready', enabled=True, lifecycle_status='active',
-        ))
-        session.add(MetricsSource(id=1, integration_instance_id=1, query_language='promql',
-                                  endpoint='https://prometheus.example.invalid'))
+        session.add(
+            IntegrationInstance(
+                id=1,
+                name='Prometheus',
+                integration_type='metrics_source',
+                provider_key='prometheus',
+                adapter_key='prometheus_http',
+                readiness_status='ready',
+                enabled=True,
+                lifecycle_status='active',
+            )
+        )
+        session.add(
+            MetricsSource(
+                id=1, integration_instance_id=1, query_language='promql', endpoint='https://prometheus.example.invalid'
+            )
+        )
         for number in range(1, 8):
-            session.add(ObjectStorageSystem(
-                id=f'asset-{number}', name=f'Scope {number}', environment='production',
-            ))
-        session.add(IntegrationBinding(
-            integration_instance_id=1, asset_type='object_storage_system',
-            asset_key='asset-1', enabled=True, validation_status='ready',
-            binding_role='primary', priority=10,
-            selector_json=build_selector(label='service', value='minio-1'),
-        ))
+            session.add(
+                ObjectStorageSystem(
+                    id=f'asset-{number}',
+                    name=f'Scope {number}',
+                    environment='production',
+                )
+            )
+        session.add(
+            IntegrationBinding(
+                integration_instance_id=1,
+                asset_type='object_storage_system',
+                asset_key='asset-1',
+                enabled=True,
+                validation_status='ready',
+                binding_role='primary',
+                priority=10,
+                selector_json=build_selector(label='service', value='minio-1'),
+            )
+        )
         session.flush()
 
         first = coverage_query.paged_coverage_scopes('metrics_source', page=1, per_page=5)
@@ -61,12 +85,19 @@ def test_coverage_sql_pagination_preserves_counts_filter_and_lifecycle(monkeypat
         assert len(last['rows']) == 2
 
         ready = coverage_query.paged_coverage_scopes(
-            'metrics_source', page=1, per_page=5, status='ready',
+            'metrics_source',
+            page=1,
+            per_page=5,
+            status='ready',
         )
         assert ready['pagination']['total_items'] == 1
         assert ready['rows'][0]['asset_key'] == 'asset-1'
         search = coverage_query.paged_coverage_scopes(
-            'metrics_source', page=1, per_page=5, query='Scope 7', environment='Production',
+            'metrics_source',
+            page=1,
+            per_page=5,
+            query='Scope 7',
+            environment='Production',
         )
         assert search['pagination']['total_items'] == 1
         assert search['rows'][0]['asset_key'] == 'asset-7'
@@ -78,7 +109,10 @@ def test_coverage_sql_pagination_preserves_counts_filter_and_lifecycle(monkeypat
         assert changed['stats']['ready'] == 0
         assert changed['stats']['attention'] == 1
         blocked = coverage_query.paged_coverage_scopes(
-            'metrics_source', page=1, per_page=5, status='blocked',
+            'metrics_source',
+            page=1,
+            per_page=5,
+            status='blocked',
         )
         assert blocked['pagination']['total_items'] == 1
         assert blocked['rows'][0]['asset_key'] == 'asset-1'
@@ -104,24 +138,41 @@ def test_coverage_rejects_unvalidated_bindings_even_when_provider_ready(monkeypa
         monkeypatch.setattr(
             coverage_query,
             'registered_consumer_asset_definitions',
-            lambda: (SimpleNamespace(
-                asset_type='object_storage_system', model=ObjectStorageSystem,
-                label='Object Storage', integration_type=None,
-            ),),
+            lambda: (
+                SimpleNamespace(
+                    asset_type='object_storage_system',
+                    model=ObjectStorageSystem,
+                    label='Object Storage',
+                    integration_type=None,
+                ),
+            ),
         )
-        session.add(IntegrationInstance(
-            id=2, name='Alerts', integration_type='alert_source',
-            provider_key='alertmanager', adapter_key='alertmanager_api_v2',
-            readiness_status='ready', enabled=True, lifecycle_status='active',
-        ))
-        session.add(AlertmanagerInstance(id=2, integration_instance_id=2,
-                                         endpoint='https://alertmanager.example.invalid'))
+        session.add(
+            IntegrationInstance(
+                id=2,
+                name='Alerts',
+                integration_type='alert_source',
+                provider_key='alertmanager',
+                adapter_key='alertmanager_api_v2',
+                readiness_status='ready',
+                enabled=True,
+                lifecycle_status='active',
+            )
+        )
+        session.add(
+            AlertmanagerInstance(id=2, integration_instance_id=2, endpoint='https://alertmanager.example.invalid')
+        )
         session.add(ObjectStorageSystem(id='asset-9', name='Scope 9', environment='testing'))
-        session.add(IntegrationBinding(
-            integration_instance_id=2, asset_type='object_storage_system',
-            asset_key='asset-9', enabled=True, validation_status=None,
-            binding_role='primary',
-        ))
+        session.add(
+            IntegrationBinding(
+                integration_instance_id=2,
+                asset_type='object_storage_system',
+                asset_key='asset-9',
+                enabled=True,
+                validation_status=None,
+                binding_role='primary',
+            )
+        )
         session.flush()
         result = coverage_query.paged_coverage_scopes('alert_source', page=1, per_page=5)
         assert result['stats']['ready'] == 0

@@ -4,10 +4,9 @@ from typing import Any
 
 from sqlalchemy import func
 
-from app.extensions.db import db
-
 from app.common.job_execution_contract import OBJECT_STORAGE_INVENTORY_SYNC_OPERATION
 from app.common.job_execution_presentation import present_job_execution
+from app.extensions.db import db
 from app.models.job import JobExecution, JobPolicy
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
@@ -94,16 +93,19 @@ def build_object_storage_inventory_sync_context(policy: JobPolicy) -> dict[str, 
     eligible_system_count = len(eligible_targets)
     eligible_ids = [target['system_id'] for target in eligible_targets]
     counts = (
-        db.session.query(
-            ObjectStorageBucket.object_storage_system_id, func.count(ObjectStorageBucket.id)
-        ).join(
+        db.session.query(ObjectStorageBucket.object_storage_system_id, func.count(ObjectStorageBucket.id))
+        .join(
             ObjectStorageSystem,
             ObjectStorageSystem.id == ObjectStorageBucket.object_storage_system_id,
-        ).filter(
+        )
+        .filter(
             ObjectStorageBucket.object_storage_system_id.in_(eligible_ids),
             ObjectStorageSystem.inventory_observed_at.is_not(None),
-        ).group_by(ObjectStorageBucket.object_storage_system_id).all()
-        if eligible_ids else []
+        )
+        .group_by(ObjectStorageBucket.object_storage_system_id)
+        .all()
+        if eligible_ids
+        else []
     )
     count_by_system = {system_id: int(count) for system_id, count in counts}
     empty_reconciliation_targets = [

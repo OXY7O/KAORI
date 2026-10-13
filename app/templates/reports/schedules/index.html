@@ -193,7 +193,8 @@
                             {% endif %}
                         </select>
                         <span class="mt-1.5 block text-xs leading-5 text-content-muted">Options follow the selected cluster's current inventory snapshot.</span>
-                        <span class="mt-1 hidden text-xs font-semibold text-status-critical-text" data-schedule-namespace-error>Namespace options could not be loaded. Select the cluster again before saving.</span>
+                        <span class="mt-1 hidden text-xs font-semibold text-status-critical-text"
+                              data-schedule-namespace-error>Namespace options could not be loaded. Select the cluster again before saving.</span>
                     </label>
                 </div>
                 <label class="hidden sm:col-span-2" data-schedule-object-storage-scope>
@@ -591,9 +592,9 @@
                                 </span>
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                    <h3 class="text-base font-semibold leading-6 text-content-primary">Schedule Registry</h3>
-                                    {{ table_label.result_count(payload.pagination.total_items) }}
-                                </div>
+                                        <h3 class="text-base font-semibold leading-6 text-content-primary">Schedule Registry</h3>
+                                        {{ table_label.result_count(payload.pagination.total_items) }}
+                                    </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">Filter and manage recurring report definitions, scope, timing, delivery, and execution state.</p>
                                 </div>
                             </div>
@@ -925,9 +926,9 @@
                                 </span>
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                    <h3 class="text-base font-semibold leading-6 text-content-primary">Recent Schedule Runs</h3>
-                                    {{ table_label.result_count(payload.run_pagination.total_items) }}
-                                </div>
+                                        <h3 class="text-base font-semibold leading-6 text-content-primary">Recent Schedule Runs</h3>
+                                        {{ table_label.result_count(payload.run_pagination.total_items) }}
+                                    </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">Search retained Run Now and dispatcher lifecycle evidence with server-backed filtering and pagination.</p>
                                 </div>
                             </div>

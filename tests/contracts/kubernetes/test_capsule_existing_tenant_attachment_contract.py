@@ -33,7 +33,7 @@ def test_capsule_attach_reuses_discovery_and_existing_tenant_provider_authority(
     assert '_managed_namespace_map([cluster_id])' in adoption
     assert "expected_uid=str(source.get('provider_uid')" in adoption
     assert "expected_resource_version=str(source.get('provider_resource_version')" in adoption
-    assert "_capsule_namespace_records(context, environment, scoped)" in adoption
+    assert '_capsule_namespace_records(context, environment, scoped)' in adoption
     assert '_mirror_capsule_namespace_policies(tenant, records)' in adoption
     assert "'grants_expanded_automatically': False" in adoption
     assert "'Capsule Namespace Attached · Provider Mirrored'" in route
@@ -44,13 +44,13 @@ def test_capsule_attach_reuses_discovery_and_existing_tenant_provider_authority(
     assert 'attach_discovered_capsule_namespace_committed(request.form)' in route
     assert "provider_key == 'capsule'" in route
     assert "provider_key == 'native_kubernetes'" in route
-    assert "Unsupported provider authority for existing-Tenant Namespace attachment." in route
+    assert 'Unsupported provider authority for existing-Tenant Namespace attachment.' in route
     assert "attach_existing and str(request.form.get('capsule_tenant_name')" not in route
     assert "capsule_tenant_name=str(request.args.get('capsule_tenant_name')" in route
     assert '_csrf()' in route
-    assert "name=\"capsule_tenant_name\"" in modal
-    assert "name=\"provider_resource_version\"" in modal
-    assert "name=\"attach_environment_id\" required" in modal
+    assert 'name="capsule_tenant_name"' in modal
+    assert 'name="provider_resource_version"' in modal
+    assert 'name="attach_environment_id" required' in modal
     assert 'Capsule Namespace → Existing Tenant' in modal
     assert 'capsule_tenant_name=row.capsule_tenant_name or' in table
 
@@ -60,10 +60,14 @@ def test_capsule_namespace_attachment_has_no_unreviewed_provider_write() -> None
     block = source.split('def attach_discovered_capsule_namespace_committed(', 1)[1]
     block = block.split('def adopt_discovered_tenant_committed(', 1)[0]
     for forbidden in (
-        'patch_namespace(', 'patch_namespaced_resource_quota(',
-        'patch_cluster_custom_object(', 'delete_namespace(',
-        'reconcile_adopted_native_allocation(', '_take_over_capsule_allocation(',
-        'create_namespaced_role_binding(', 'reconcile_access_grant(',
+        'patch_namespace(',
+        'patch_namespaced_resource_quota(',
+        'patch_cluster_custom_object(',
+        'delete_namespace(',
+        'reconcile_adopted_native_allocation(',
+        '_take_over_capsule_allocation(',
+        'create_namespaced_role_binding(',
+        'reconcile_access_grant(',
     ):
         assert forbidden not in block
     assert '_mirror_capsule_namespace_policies' in block

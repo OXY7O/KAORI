@@ -40,7 +40,9 @@ def test_valid_silences_including_genuine_empty_list_are_preserved(payload) -> N
     assert client.get_silences() == payload
 
 
-@pytest.mark.parametrize('payload', [[None], [{'id': '', 'matchers': []}], [{'id': 'x'}], [{'id': 'x', 'matchers': None}], {}])
+@pytest.mark.parametrize(
+    'payload', [[None], [{'id': '', 'matchers': []}], [{'id': 'x'}], [{'id': 'x', 'matchers': None}], {}]
+)
 def test_malformed_silence_records_fail_closed(payload) -> None:
     client = _client()
     _response(client, payload)

@@ -9,7 +9,6 @@ from app.welcome.shortcuts import (
     resolve_welcome_target,
 )
 
-
 ROOT = Path(__file__).resolve().parents[3]
 OVERVIEW = 'platform_operations.overview.index'
 

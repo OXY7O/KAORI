@@ -3,7 +3,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.kubernetes.tenant import access_provider, capsule_access_reconciliation as capsule
+from app.kubernetes.tenant import access_provider
+from app.kubernetes.tenant import capsule_access_reconciliation as capsule
 from app.kubernetes.tenant.access import get_access_profile
 
 
@@ -92,22 +93,31 @@ def test_capsule_duplicate_identity_and_collision_fail_closed():
     grant = _grant()
     managed = capsule._binding(grant, 'kaori-tenant-viewer-v1', ['payments-dev'])
     with pytest.raises(ValueError, match='Duplicate'):
-        capsule._update_spec(
-            {'additionalRoleBindings': [managed, managed]}, grant, managed, ['payments-dev']
-        )
+        capsule._update_spec({'additionalRoleBindings': [managed, managed]}, grant, managed, ['payments-dev'])
     with pytest.raises(ValueError, match='already has another'):
         capsule._update_spec(
-            {'additionalRoleBindings': [
-                {'clusterRoleName': 'kaori-tenant-viewer-v1', 'subjects': [{'kind': 'User', 'name': 'bob'}]}
-            ]},
-            grant, managed, ['payments-dev']
+            {
+                'additionalRoleBindings': [
+                    {'clusterRoleName': 'kaori-tenant-viewer-v1', 'subjects': [{'kind': 'User', 'name': 'bob'}]}
+                ]
+            },
+            grant,
+            managed,
+            ['payments-dev'],
         )
     with pytest.raises(ValueError, match='foreign grant ownership'):
         capsule._update_spec(
-            {'additionalRoleBindings': [{**managed, 'labels': {
-                'kaori.io/access-grant': grant.public_id, 'app.kubernetes.io/managed-by': 'other'
-            }}]},
-            grant, managed, ['payments-dev']
+            {
+                'additionalRoleBindings': [
+                    {
+                        **managed,
+                        'labels': {'kaori.io/access-grant': grant.public_id, 'app.kubernetes.io/managed-by': 'other'},
+                    }
+                ]
+            },
+            grant,
+            managed,
+            ['payments-dev'],
         )
 
 
@@ -115,8 +125,13 @@ def test_profile_cluster_role_must_match_versioned_security_contract():
     grant = _grant()
     profile = get_access_profile('viewer')
     rules = [
-        SimpleNamespace(api_groups=list(rule.api_groups), resources=list(rule.resources), verbs=list(rule.verbs),
-                        resource_names=None, non_resource_urls=None)
+        SimpleNamespace(
+            api_groups=list(rule.api_groups),
+            resources=list(rule.resources),
+            verbs=list(rule.verbs),
+            resource_names=None,
+            non_resource_urls=None,
+        )
         for rule in profile.rules
     ]
     role = SimpleNamespace(rules=rules, aggregation_rule=None)
@@ -180,10 +195,16 @@ def test_capsule_apply_requires_effective_rolebinding_not_only_successful_patch(
     }
     profile = get_access_profile('viewer')
     rules = [
-        SimpleNamespace(api_groups=list(rule.api_groups), resources=list(rule.resources), verbs=list(rule.verbs),
-                        resource_names=None, non_resource_urls=None)
+        SimpleNamespace(
+            api_groups=list(rule.api_groups),
+            resources=list(rule.resources),
+            verbs=list(rule.verbs),
+            resource_names=None,
+            non_resource_urls=None,
+        )
         for rule in profile.rules
     ]
+
     class Custom:
         api_client = None
 
@@ -203,9 +224,11 @@ def test_capsule_apply_requires_effective_rolebinding_not_only_successful_patch(
         def list_namespaced_role_binding(self, *args, **kwargs):
             return SimpleNamespace(items=[])
 
-    ns = SimpleNamespace(metadata=SimpleNamespace(labels={
-        'capsule.clastix.io/tenant': 'payments', 'kubernetes.io/metadata.name': 'payments-dev'
-    }))
+    ns = SimpleNamespace(
+        metadata=SimpleNamespace(
+            labels={'capsule.clastix.io/tenant': 'payments', 'kubernetes.io/metadata.name': 'payments-dev'}
+        )
+    )
     client = SimpleNamespace(
         custom_objects_api=lambda: Custom(),
         rbac_authorization_api=lambda: RBAC(),

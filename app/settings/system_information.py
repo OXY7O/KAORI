@@ -26,9 +26,7 @@ _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
     {
         'title': 'Release Reliability & Identity Hardening',
         'icon': 'shield-check',
-        'description': (
-            'Stronger release traceability, identity boundaries, runtime safety, and regression coverage.'
-        ),
+        'description': ('Stronger release traceability, identity boundaries, runtime safety, and regression coverage.'),
     },
 )
 

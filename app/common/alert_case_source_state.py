@@ -9,6 +9,7 @@ from app.models.alert_ops import AlertCase, AlertCaseEvent
 
 SYSTEM_ROUTING_SUPPRESSION_REASONS = {'source_unavailable', 'source_deleted', 'policy_ineligible'}
 
+
 def is_active_alert_case(case: AlertCase) -> bool:
     """Canonical committed Alert Intelligence active-case classification."""
     return (
@@ -25,7 +26,6 @@ def active_alert_case_filters() -> tuple[Any, ...]:
         AlertCase.workflow_state != 'closed',
         AlertCase.source_state.in_(('firing', 'unknown')),
     )
-
 
 
 def mark_case_source_unknown(

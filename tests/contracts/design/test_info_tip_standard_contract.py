@@ -55,13 +55,21 @@ def test_info_tip_viewport_controller_prevents_ordinary_overflow_clipping() -> N
     assert 'window.innerHeight - previewRect.height - viewportMargin' in script
 
 
-
 def test_guide_variant_renders_compact_label_and_reuses_existing_popover() -> None:
     from jinja2 import Environment, FileSystemLoader
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
     macro = env.get_template('components/info_tip.html').module.render
-    guide = str(macro('example-guide', 'Inventory Guide', 'Review committed evidence.', items=['One point'], placement='right', variant='guide'))
+    guide = str(
+        macro(
+            'example-guide',
+            'Inventory Guide',
+            'Review committed evidence.',
+            items=['One point'],
+            placement='right',
+            variant='guide',
+        )
+    )
     icon = str(macro('example-icon', 'Field help', 'An inline explanation.'))
 
     assert 'data-kaori-info-tip-variant="guide"' in guide
@@ -90,7 +98,7 @@ def test_title_level_guides_share_existing_portal_controller() -> None:
     assert "variant='icon'" in source
     assert "guide_variant = variant == 'guide' and not button_text" in source
     assert 'data-kaori-info-tip-preview' in source
-    assert 'variant=\'guide\'' in doc
+    assert "variant='guide'" in doc
     assert 'field-level' in doc
     assert 'document.body.appendChild(preview)' in script
     assert "document.addEventListener('htmx:beforeSwap'" in script
@@ -101,13 +109,28 @@ def test_shared_info_tip_geometry_and_readable_popover_contract() -> None:
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
     render = env.get_template('components/info_tip.html').module.render
-    icon = str(render('info-compact', 'Tenant Registry status', 'Committed Tenant lifecycle.', items=[
-        'Ready — Tenant governance is active.',
-        'Blocked — Tenant stays valid while an action fails closed.',
-    ]))
-    guide = str(render('info-guide', 'Tenant Registry status', 'Committed Tenant lifecycle.', items=[
-        'Ready — Tenant governance is active.',
-    ], variant='guide'))
+    icon = str(
+        render(
+            'info-compact',
+            'Tenant Registry status',
+            'Committed Tenant lifecycle.',
+            items=[
+                'Ready — Tenant governance is active.',
+                'Blocked — Tenant stays valid while an action fails closed.',
+            ],
+        )
+    )
+    guide = str(
+        render(
+            'info-guide',
+            'Tenant Registry status',
+            'Committed Tenant lifecycle.',
+            items=[
+                'Ready — Tenant governance is active.',
+            ],
+            variant='guide',
+        )
+    )
 
     assert 'w-96' in icon
     assert 'w-[26rem]' in guide

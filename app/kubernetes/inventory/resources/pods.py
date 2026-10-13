@@ -247,9 +247,7 @@ def _pod_list_row(pod: PodInventory, cluster_name: str, cluster_environment: str
         'owner_display': owner_display,
         'owner_kind_label': owner_kind_label,
         'owner_name_display': owner_name_display,
-        'restart_summary': (
-            f'Restarts · {restart_count}' if runtime_evidence_reported else 'Restarts · Not Reported'
-        ),
+        'restart_summary': (f'Restarts · {restart_count}' if runtime_evidence_reported else 'Restarts · Not Reported'),
         'container_count': container_count if specification_evidence_reported else None,
         'identity_supporting': (
             f'{container_count} Container' + ('s' if container_count != 1 else '')

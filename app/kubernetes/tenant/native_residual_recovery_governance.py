@@ -3,6 +3,7 @@
 Source-only implementation. No UI/route is registered; proposing and reviewing
 a plan never mutates Kubernetes or the previous Release/Handback receipts.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -18,7 +19,8 @@ from app.kubernetes.tenant.native_residual_recovery_assessment import (
     assess_legacy_native_profile_residue_readonly,
 )
 from app.kubernetes.tenant.release_handoff_approval import (
-    _checked_recently, _valid_reference,
+    _checked_recently,
+    _valid_reference,
 )
 from app.models.audit import AuditEvent
 from app.models.tenant import Tenant, TenantLifecycleStatus
@@ -29,10 +31,7 @@ _EXECUTION_TARGET = 'kubernetes_tenant_native_residual_cleanup_execution'
 
 
 def _latest(tenant_id: str, target: str) -> dict[str, Any] | None:
-    event = (
-        AuditEvent.query.filter_by(target_type=target, target_id=tenant_id)
-        .order_by(AuditEvent.id.desc()).first()
-    )
+    event = AuditEvent.query.filter_by(target_type=target, target_id=tenant_id).order_by(AuditEvent.id.desc()).first()
     return dict(event.metadata_json or {}) if event else None
 
 
@@ -70,35 +69,40 @@ def _candidate_digest(assessment: dict[str, Any]) -> str:
         or not 0 < assessment.get('residual_component_count', 0) <= len(assessment['components'])
     ):
         raise ValueError('Exact read-only legacy recovery candidate evidence is required.')
-    return _stable_sha256({
-        'tenant_id': assessment['tenant_id'],
-        'cluster_id': assessment['cluster_id'],
-        'generation': assessment['generation'],
-        'release_plan_sha256': assessment['release_plan_sha256'],
-        'historical_handback_plan_sha256': assessment['historical_handback_plan_sha256'],
-        'successor_owner': assessment['successor_owner'],
-        'components': assessment['components'],
-    })
+    return _stable_sha256(
+        {
+            'tenant_id': assessment['tenant_id'],
+            'cluster_id': assessment['cluster_id'],
+            'generation': assessment['generation'],
+            'release_plan_sha256': assessment['release_plan_sha256'],
+            'historical_handback_plan_sha256': assessment['historical_handback_plan_sha256'],
+            'successor_owner': assessment['successor_owner'],
+            'components': assessment['components'],
+        }
+    )
 
 
 def _require_plan(tenant_id: str, plan_sha256: str) -> dict[str, Any]:
     plan = latest_native_residual_cleanup_plan(tenant_id)
     if (
-        not plan or plan.get('status') != 'pending_independent_review'
+        not plan
+        or plan.get('status') != 'pending_independent_review'
         or plan.get('tenant_id') != tenant_id
         or plan.get('plan_sha256') != plan_sha256
         or not _checked_recently(plan.get('requested_at'))
         or not isinstance(plan.get('requested_by'), int)
         or plan.get('requested_by') < 1
-        or _stable_sha256({key: value for key, value in plan.items()
-                        if key != 'plan_sha256'}) != plan_sha256
+        or _stable_sha256({key: value for key, value in plan.items() if key != 'plan_sha256'}) != plan_sha256
     ):
         raise ValueError('Current unexpired immutable residual recovery plan is required.')
     return plan
 
 
 def prepare_native_residual_cleanup_committed(
-    *, tenant_id: str, actor_user_id: int, change_reference: str,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    change_reference: str,
     confirmed: bool,
 ) -> dict[str, Any]:
     """Requester records a bounded read-only plan, never provider execution."""
@@ -110,12 +114,14 @@ def prepare_native_residual_cleanup_committed(
     if latest_native_residual_cleanup_plan(tenant_id) or latest_native_residual_cleanup_execution(tenant_id):
         raise ValueError('Existing recovery plan/history requires explicit human review, not automatic restart.')
     assessed = assess_legacy_native_profile_residue_readonly(
-        tenant_id=tenant_id, actor_user_id=actor_user_id,
+        tenant_id=tenant_id,
+        actor_user_id=actor_user_id,
     )
     digest = _candidate_digest(assessed)
     tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
-        tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.RELEASED.value
+        tenant is None
+        or tenant.lifecycle_status != TenantLifecycleStatus.RELEASED.value
         or tenant.cluster_id != assessed['cluster_id']
         or tenant.generation != assessed['generation']
         or latest_native_residual_cleanup_plan(tenant_id)
@@ -124,7 +130,8 @@ def prepare_native_residual_cleanup_committed(
         raise ValueError('Concurrent Released lineage or recovery plan changed.')
     record = {
         'status': 'pending_independent_review',
-        'tenant_id': tenant_id, 'cluster_id': assessed['cluster_id'],
+        'tenant_id': tenant_id,
+        'cluster_id': assessed['cluster_id'],
         'generation': assessed['generation'],
         'release_plan_sha256': assessed['release_plan_sha256'],
         'handback_plan_sha256': assessed['historical_handback_plan_sha256'],
@@ -140,18 +147,25 @@ def prepare_native_residual_cleanup_committed(
         're_adopt_admitted': False,
     }
     record['plan_sha256'] = _stable_sha256(record)
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_PLAN_TARGET, target_id=tenant_id,
-        action='tenant.release.native_residual_cleanup_planned',
-        summary='Read-only legacy Native cleanup plan awaiting independent approval.',
-        metadata_json=record,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_PLAN_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.native_residual_cleanup_planned',
+            summary='Read-only legacy Native cleanup plan awaiting independent approval.',
+            metadata_json=record,
+        )
+    )
     db.session.commit()
     return record
 
 
 def approve_native_residual_cleanup_committed(
-    *, tenant_id: str, actor_user_id: int, plan_sha256: str,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan_sha256: str,
     confirmed: bool,
 ) -> dict[str, Any]:
     """Independent Platform Admin approves exact unchanged provider evidence."""
@@ -165,7 +179,8 @@ def approve_native_residual_cleanup_committed(
     if latest_native_residual_cleanup_approval(tenant_id) or latest_native_residual_cleanup_execution(tenant_id):
         raise ValueError('Recovery decision/execution already exists; no approval replay.')
     assessed = assess_legacy_native_profile_residue_readonly(
-        tenant_id=tenant_id, actor_user_id=actor_user_id,
+        tenant_id=tenant_id,
+        actor_user_id=actor_user_id,
     )
     if (
         assessed.get('tenant_id') != tenant_id
@@ -176,7 +191,8 @@ def approve_native_residual_cleanup_committed(
         raise ValueError('Provider recovery evidence changed since requester plan.')
     tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if (
-        tenant is None or tenant.lifecycle_status != TenantLifecycleStatus.RELEASED.value
+        tenant is None
+        or tenant.lifecycle_status != TenantLifecycleStatus.RELEASED.value
         or tenant.generation != plan['generation']
         or latest_native_residual_cleanup_approval(tenant_id)
         or latest_native_residual_cleanup_execution(tenant_id)
@@ -185,7 +201,8 @@ def approve_native_residual_cleanup_committed(
         raise ValueError('Concurrent recovery decision or Released lineage changed.')
     decision = {
         'status': 'approved_for_exact_metadata_cleanup',
-        'tenant_id': tenant_id, 'cluster_id': plan['cluster_id'],
+        'tenant_id': tenant_id,
+        'cluster_id': plan['cluster_id'],
         'generation': plan['generation'],
         'plan_sha256': plan_sha256,
         'candidate_digest_sha256': plan['candidate_digest_sha256'],
@@ -197,11 +214,15 @@ def approve_native_residual_cleanup_committed(
         'provider_mutation_performed': False,
         'execution_performed': False,
     }
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id, target_type=_APPROVAL_TARGET, target_id=tenant_id,
-        action='tenant.release.native_residual_cleanup_independently_approved',
-        summary='Independent review approved exact residual metadata scope; not executed.',
-        metadata_json=decision,
-    ))
+    db.session.add(
+        AuditEvent(
+            actor_user_id=actor_user_id,
+            target_type=_APPROVAL_TARGET,
+            target_id=tenant_id,
+            action='tenant.release.native_residual_cleanup_independently_approved',
+            summary='Independent review approved exact residual metadata scope; not executed.',
+            metadata_json=decision,
+        )
+    )
     db.session.commit()
     return decision

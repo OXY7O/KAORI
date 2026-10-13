@@ -9,14 +9,14 @@ from app.common.alert_case_source_state import active_alert_case_filters
 from app.common.automation_execution import execution_enabled
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
-from app.intelligence.verification import verification_outcome_counts
 from app.intelligence.rule_presentation import normalize_rule
 from app.intelligence.service import get_active_recommendation_findings
+from app.intelligence.verification import verification_outcome_counts
 from app.models.alert_ops import AlertCase, AlertSilence
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationInstance
-from app.models.inventory import ClusterInventory
 from app.models.intelligence import IntelligenceDecision, IntelligenceDecisionCandidate, IntelligenceExecutionJournal
+from app.models.inventory import ClusterInventory
 from app.models.knowledge import KnowledgeRunbookRevision
 from app.models.notification_channel import NotificationDelivery
 from app.models.object_storage import ObjectStorageSystem
@@ -103,7 +103,8 @@ def _evidence_coverage() -> dict[str, Any]:
             )
             .exists()
         )
-        .scalar() or 0
+        .scalar()
+        or 0
     )
     storage_total = ObjectStorageSystem.query.count()
     storage_current = ObjectStorageSystem.query.filter(
@@ -120,11 +121,13 @@ def _evidence_coverage() -> dict[str, Any]:
         registry_scope.join(
             RegistryCollectionState,
             RegistryCollectionState.integration_instance_id == IntegrationInstance.id,
-        ).filter(
+        )
+        .filter(
             RegistryCollectionState.status == 'ready',
             RegistryCollectionState.last_committed_at >= cutoff,
             RegistryCollectionState.last_committed_at <= now,
-        ).count()
+        )
+        .count()
     )
     by_domain = {
         'kubernetes': {'total': kubernetes_total, 'recent': kubernetes_current},
@@ -199,31 +202,43 @@ def _alert_operations_summary() -> dict[str, int]:
         func.sum(case((and_(active, AlertCase.source_state == 'unknown'), 1), else_=0)),
         func.sum(case((and_(active, AlertCase.workflow_state == 'acknowledged'), 1), else_=0)),
         func.sum(
-            case((
-                and_(
-                    AlertCase.source_type == 'recommendation',
-                    AlertCase.source_state == 'resolved',
-                    AlertCase.workflow_state == 'verification_pending',
-                ), 1
-            ), else_=0)
+            case(
+                (
+                    and_(
+                        AlertCase.source_type == 'recommendation',
+                        AlertCase.source_state == 'resolved',
+                        AlertCase.workflow_state == 'verification_pending',
+                    ),
+                    1,
+                ),
+                else_=0,
+            )
         ),
         func.sum(
-            case((
-                and_(
-                    AlertCase.source_type == 'recommendation',
-                    AlertCase.workflow_state == 'closed',
-                    AlertCase.closed_at.is_not(None),
-                    AlertCase.closed_at >= now - timedelta(days=1),
-                ), 1
-            ), else_=0)
+            case(
+                (
+                    and_(
+                        AlertCase.source_type == 'recommendation',
+                        AlertCase.workflow_state == 'closed',
+                        AlertCase.closed_at.is_not(None),
+                        AlertCase.closed_at >= now - timedelta(days=1),
+                    ),
+                    1,
+                ),
+                else_=0,
+            )
         ),
         func.sum(
-            case((
-                and_(
-                    AlertCase.source_type == 'recommendation',
-                    AlertCase.postmortem_status.in_(('required', 'draft')),
-                ), 1
-            ), else_=0)
+            case(
+                (
+                    and_(
+                        AlertCase.source_type == 'recommendation',
+                        AlertCase.postmortem_status.in_(('required', 'draft')),
+                    ),
+                    1,
+                ),
+                else_=0,
+            )
         ),
     ).one()
     active_silences = AlertSilence.query.filter(
@@ -239,8 +254,14 @@ def _alert_operations_summary() -> dict[str, int]:
         NotificationDelivery.updated_at >= now - timedelta(days=1),
     ).count()
     (
-        active_count, critical, warning, source_unknown, acknowledged,
-        verification_pending, closed_24h, postmortem_required,
+        active_count,
+        critical,
+        warning,
+        source_unknown,
+        acknowledged,
+        verification_pending,
+        closed_24h,
+        postmortem_required,
     ) = (int(value or 0) for value in alert_counts)
     return {
         'active': active_count,
@@ -254,6 +275,7 @@ def _alert_operations_summary() -> dict[str, int]:
         'delivery_failures': int(delivery_failures),
         'postmortem_required': postmortem_required,
     }
+
 
 def _overview_posture(
     *,
@@ -281,9 +303,14 @@ def _overview_posture(
                 'require operational review.'
             ),
         }
-    if (summary['warning'] or alerts['warning'] or alerts['source_unknown']
-            or alerts['verification_pending'] or alerts['postmortem_required']
-            or automation['pending_governance']):
+    if (
+        summary['warning']
+        or alerts['warning']
+        or alerts['source_unknown']
+        or alerts['verification_pending']
+        or alerts['postmortem_required']
+        or automation['pending_governance']
+    ):
         return {
             'label': 'Review Required',
             'tone': 'warning',
@@ -349,15 +376,20 @@ def _kpi_cards(
             'label': 'Active Alerts',
             'value': alerts['active'],
             'supporting': (
-                f'{alerts["critical"]} critical · {alerts["warning"]} warning · '
-                f'{alerts["source_unknown"]} unknown'
+                f'{alerts["critical"]} critical · {alerts["warning"]} warning · {alerts["source_unknown"]} unknown'
             ),
             'icon': 'bell-ring',
             'tone': (
                 'critical'
                 if alerts['critical']
-                else ('warning' if alerts['warning'] or alerts['source_unknown'] or alerts['verification_pending']
-                      or alerts['postmortem_required'] else ('info' if alerts['active'] else 'normal'))
+                else (
+                    'warning'
+                    if alerts['warning']
+                    or alerts['source_unknown']
+                    or alerts['verification_pending']
+                    or alerts['postmortem_required']
+                    else ('info' if alerts['active'] else 'normal')
+                )
             ),
             'href_endpoint': 'alert_intelligence.index',
             'action_label': 'View Alert Intelligence',
@@ -456,12 +488,19 @@ def _workspace_rows(
             'description': 'Alert cases, acknowledgement, routing, silences, resolution evidence, and history.',
             'icon': 'bell-ring',
             'tone': (
-                'critical' if alerts['critical']
+                'critical'
+                if alerts['critical']
                 else (
-                    'warning' if any((
-                        alerts['warning'], alerts['source_unknown'],
-                        alerts['verification_pending'], alerts['postmortem_required'],
-                    )) else 'info'
+                    'warning'
+                    if any(
+                        (
+                            alerts['warning'],
+                            alerts['source_unknown'],
+                            alerts['verification_pending'],
+                            alerts['postmortem_required'],
+                        )
+                    )
+                    else 'info'
                 )
             ),
             'primary_value': alerts['active'],

@@ -58,7 +58,8 @@ def administration_counts() -> dict[str, int]:
     enabled = policy.policy.in_(('step_up', 'approval_required'))
     total = db.session.scalar(select(func.count()).select_from(policy).where(enabled))
     eligible = db.session.scalar(
-        select(func.count()).select_from(policy)
+        select(func.count())
+        .select_from(policy)
         .join(eligible_clusters, eligible_clusters.c.id == policy.cluster_id)
         .where(enabled)
     )

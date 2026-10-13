@@ -3,8 +3,8 @@ from __future__ import annotations
 from flask import url_for
 
 from app.models.job import JobExecution
-from app.models.notification_channel import NotificationDelivery
 from app.models.notification import Notification
+from app.models.notification_channel import NotificationDelivery
 from app.models.tenant import Tenant
 from app.models.tenant_audit import TenantAuditEvidence
 from app.platform_operations.notifications.metadata import redact_operational_metadata
@@ -36,11 +36,13 @@ def build_related_source_links(
     if can_view_jobs:
         job_id = _source_identifier(metadata.get('job_public_id'))
         if job_id and JobExecution.query.filter_by(public_id=job_id).first() is not None:
-            links.append({
-                'label': 'Job Execution',
-                'note': 'Execution state is owned by Jobs; this is not another audit record.',
-                'url': url_for('jobs.executions', execution_tab='registry', search=job_id),
-            })
+            links.append(
+                {
+                    'label': 'Job Execution',
+                    'note': 'Execution state is owned by Jobs; this is not another audit record.',
+                    'url': url_for('jobs.executions', execution_tab='registry', search=job_id),
+                }
+            )
     if can_view_tenants:
         evidence_id = _source_identifier(metadata.get('tenant_audit_evidence_id'))
         if evidence_id:
@@ -48,20 +50,24 @@ def build_related_source_links(
             if evidence is not None and evidence.tenant_id:
                 tenant = Tenant.query.filter_by(id=evidence.tenant_id).first()
                 if tenant is not None:
-                    links.append({
-                        'label': 'Tenant Governance',
-                        'note': 'Related tenant workspace; Kubernetes audit evidence remains source-owned.',
-                        'url': url_for('tenant.tenant_detail', tenant_id=evidence.tenant_id),
-                    })
+                    links.append(
+                        {
+                            'label': 'Tenant Governance',
+                            'note': 'Related tenant workspace; Kubernetes audit evidence remains source-owned.',
+                            'url': url_for('tenant.tenant_detail', tenant_id=evidence.tenant_id),
+                        }
+                    )
     if can_view_deliveries:
         # Only an explicit persisted event key can establish delivery linkage.
         # Never infer delivery from a shared domain or from an event type alone.
         delivery_key = metadata.get('delivery_event_key') or metadata.get('event_key')
         if isinstance(delivery_key, str) and 0 < len(delivery_key) <= 255:
             if NotificationDelivery.query.filter_by(event_key=delivery_key).first() is not None:
-                links.append({
-                    'label': 'Channel Delivery Activity',
-                    'note': 'Matched provider-delivery journal; channel attempts are not business-action audit.',
-                    'url': url_for('notification_channels.index', tab='delivery', delivery_event_key=delivery_key),
-                })
+                links.append(
+                    {
+                        'label': 'Channel Delivery Activity',
+                        'note': 'Matched provider-delivery journal; channel attempts are not business-action audit.',
+                        'url': url_for('notification_channels.index', tab='delivery', delivery_event_key=delivery_key),
+                    }
+                )
     return links

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from app.intelligence import recommendation_alerting
-from app.intelligence import service
+from app.intelligence import recommendation_alerting, service
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 
 

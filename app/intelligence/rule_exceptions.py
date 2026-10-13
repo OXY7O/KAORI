@@ -319,9 +319,7 @@ def build_rule_exception_view(
     expiring_count = active_query.filter(RuleException.expires_at <= current + _EXPIRING_WINDOW).count()
     asset_keys = {finding_asset_key(finding) for finding in rule_findings}
     asset_keys.discard('')
-    active_rows = (
-        active_query.filter(RuleException.asset_key.in_(asset_keys)).all() if asset_keys else []
-    )
+    active_rows = active_query.filter(RuleException.asset_key.in_(asset_keys)).all() if asset_keys else []
     active_ids = {row.id for row in active_rows}
     # Read the newest twelve historical records in SQL rather than hydrating all history.
     recent_rows = (
@@ -382,8 +380,12 @@ def build_rule_exception_view(
             for user in User.query.filter(
                 User.account_is_active.is_(True),
                 User.deleted_at.is_(None),
-            ).order_by(User.username.asc(), User.id.asc()).all()
-        ] if include_owner_options and asset_rows else [],
+            )
+            .order_by(User.username.asc(), User.id.asc())
+            .all()
+        ]
+        if include_owner_options and asset_rows
+        else [],
         'has_candidates': bool(asset_rows),
     }
 

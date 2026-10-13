@@ -27,7 +27,9 @@ def _pod(
         restart_count=restarts,
         created_at=datetime(2026, 10, 1, tzinfo=UTC),
         container_names=['app'],
-        details=details if details is not None else {
+        details=details
+        if details is not None
+        else {
             'owner_resolution': {'direct_kind': owner_kind, 'direct_name': owner_name},
             'runtime_evidence_reported': True,
             'specification_evidence_reported': True,

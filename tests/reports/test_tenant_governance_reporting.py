@@ -51,7 +51,6 @@ def test_recommendation_row_preserves_rule_and_evidence_scope() -> None:
     assert row['namespace'] == 'payments'
 
 
-
 def test_tenant_findings_reject_cross_cluster_and_cross_namespace(monkeypatch) -> None:
     from app.reports.export.payloads import tenant_governance as module
 
@@ -80,9 +79,7 @@ def test_tenant_findings_reject_cross_cluster_and_cross_namespace(monkeypatch) -
         ]
 
     monkeypatch.setattr(module, 'get_active_recommendation_findings', findings)
-    rows = module._tenant_findings(
-        'cluster-1', namespace='selected', tenant_ids={'tenant-1'}
-    )
+    rows = module._tenant_findings('cluster-1', namespace='selected', tenant_ids={'tenant-1'})
     assert observed == [('kubernetes', 'cluster-1')]
     assert len(rows) == 2
     assert {row['rule_key'] for row in rows} == {

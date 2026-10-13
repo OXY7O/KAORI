@@ -284,18 +284,23 @@ def scan_report_storage_integrity_task(
     lifecycle = JobExecutionContext(str(self.request.id), job_execution_id)
     lifecycle.start(
         message='Preparing report artifact integrity scan.',
-        total=2, percent=10, stage='Preparing Scan', target=backend_name.upper(),
+        total=2,
+        percent=10,
+        stage='Preparing Scan',
+        target=backend_name.upper(),
     )
-    if (
-        backend_name != get_configured_storage_backend_name()
-        or config_fingerprint != get_storage_config_fingerprint(backend_name)
+    if backend_name != get_configured_storage_backend_name() or config_fingerprint != get_storage_config_fingerprint(
+        backend_name
     ):
         reason = 'Storage configuration changed. Restart the scan for the active backend.'
         lifecycle.fail(reason, error_code='report_storage_integrity_configuration_changed')
         raise ReportStorageConfigurationChanged(reason)
     try:
         lifecycle.checkpoint(
-            current=1, total=2, percent=50, stage='Checking References',
+            current=1,
+            total=2,
+            percent=50,
+            stage='Checking References',
             target=backend_name.upper(),
             message='Checking up to 500 committed report artifact references.',
         )
@@ -321,7 +326,9 @@ def scan_report_storage_integrity_task(
         return {'status': 'completed', 'checked_count': result.get('checked_count')}
     except Exception:
         logger.exception('Report storage integrity worker scan failed.')
-        lifecycle.fail('Worker could not complete reference integrity scanning.', error_code='report_storage_integrity_failed')
+        lifecycle.fail(
+            'Worker could not complete reference integrity scanning.', error_code='report_storage_integrity_failed'
+        )
         if requested_by_user_id is not None:
             record_operational_activity(
                 user_id=requested_by_user_id,

@@ -6,6 +6,7 @@ every SQL write. A future separately authorized PR must explicitly replace
 both blockers and prove the installed database guards + authenticated provider
 authority. Merely importing or calling this module cannot start a transfer.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -18,17 +19,20 @@ from sqlalchemy import select, text
 from app.extensions.db import db
 from app.kubernetes.tenant.capsule_handoff_admission import assess_capsule_handoff_admission
 from app.kubernetes.tenant.capsule_handoff_attempt_state import (
-    _event_checksum, project_capsule_attempt_history,
+    _event_checksum,
+    project_capsule_attempt_history,
 )
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
-from app.kubernetes.tenant.native_platform_admin_authority import require_platform_admin_actor
-from app.kubernetes.tenant.release_handoff_approval import (
-    _plan_hash, latest_release_handoff_approval, latest_release_handoff_plan,
-)
-from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 from app.kubernetes.tenant.capsule_successor_acceptance import (
     require_current_capsule_acceptance,
 )
+from app.kubernetes.tenant.native_platform_admin_authority import require_platform_admin_actor
+from app.kubernetes.tenant.release_handoff_approval import (
+    _plan_hash,
+    latest_release_handoff_approval,
+    latest_release_handoff_plan,
+)
+from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 from app.models.audit import AuditEvent
 from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent
 from app.models.tenant import Tenant, TenantLifecycleStatus
@@ -37,28 +41,40 @@ from app.models.tenant import Tenant, TenantLifecycleStatus
 # caller parameter. Removing it requires a separately reviewed source change.
 _CAPSULE_START_WRITER_ENABLED = False
 _LEGACY_EXECUTION_TARGET = 'kubernetes_tenant_release_capsule_handoff_execution'
-_TRANSFER_DECISIONS = frozenset({
-    'candidate_kaori_metadata_handoff_review',
-    'explicit_kaori_metadata_handoff_review',
-})
+_TRANSFER_DECISIONS = frozenset(
+    {
+        'candidate_kaori_metadata_handoff_review',
+        'explicit_kaori_metadata_handoff_review',
+    }
+)
 
 
 def build_capsule_start_candidate(
-    *, tenant_id: str, actor_user_id: int, plan: Mapping[str, Any],
-    related: Mapping[str, Any], attempt_id: str, event_at: datetime,
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    plan: Mapping[str, Any],
+    related: Mapping[str, Any],
+    attempt_id: str,
+    event_at: datetime,
 ) -> dict[str, Any]:
     """Build a safe, canonical START event; NEVER authorize its persistence."""
     if (
-        not isinstance(tenant_id, str) or not tenant_id
-        or type(actor_user_id) is not int or actor_user_id <= 0
-        or not isinstance(plan, Mapping) or not isinstance(related, Mapping)
-        or plan.get('tenant_id') != tenant_id or plan.get('provider') != 'capsule'
+        not isinstance(tenant_id, str)
+        or not tenant_id
+        or type(actor_user_id) is not int
+        or actor_user_id <= 0
+        or not isinstance(plan, Mapping)
+        or not isinstance(related, Mapping)
+        or plan.get('tenant_id') != tenant_id
+        or plan.get('provider') != 'capsule'
         or not isinstance(plan.get('plan_sha256'), str)
         or _plan_hash(dict(plan)) != plan['plan_sha256']
         or handoff_fingerprint(plan.get('handoff_components')) != plan.get('handoff_fingerprint')
         or not isinstance(attempt_id, str)
         or not isinstance(event_at, datetime)
-        or event_at.tzinfo is None or event_at.utcoffset() is None
+        or event_at.tzinfo is None
+        or event_at.utcoffset() is None
     ):
         raise ValueError('Capsule START candidate requires an exact plan, actor and timestamp.')
     worklist = build_capsule_handoff_worklist(plan=plan, related=related)
@@ -67,29 +83,40 @@ def build_capsule_start_candidate(
         raise ValueError('Capsule START cannot claim an empty ownership-transfer scope.')
     event: dict[str, Any] = {
         'contract_version': 'capsule-handoff-attempt/v1',
-        'event_type': 'started', 'attempt_id': attempt_id,
-        'sequence': 1, 'event_at': event_at.isoformat(),
+        'event_type': 'started',
+        'attempt_id': attempt_id,
+        'sequence': 1,
+        'event_at': event_at.isoformat(),
         'tenant_id': tenant_id,
-        'cluster_id': plan.get('cluster_id'), 'generation': plan.get('generation'),
+        'cluster_id': plan.get('cluster_id'),
+        'generation': plan.get('generation'),
         'plan_sha256': plan['plan_sha256'],
         'handoff_fingerprint': plan.get('handoff_fingerprint'),
         'worklist_sha256': worklist['inventory_sha256'],
         'actor_user_id': actor_user_id,
-        'previous_event_sha256': None, 'event_sha256': None,
-        'outcome': 'unknown', 'readback_sha256': None,
+        'previous_event_sha256': None,
+        'event_sha256': None,
+        'outcome': 'unknown',
+        'readback_sha256': None,
         'expected_count': count,
-        'observed_count': 0, 'pending_count': 0, 'transferred_count': 0,
+        'observed_count': 0,
+        'pending_count': 0,
+        'transferred_count': 0,
         'ambiguous_count': 0,
-        'provider_handoff_verified': False, 'release_authorized': False,
-        'resume_authorized': False, 'auto_retry_authorized': False,
+        'provider_handoff_verified': False,
+        'release_authorized': False,
+        'resume_authorized': False,
+        'auto_retry_authorized': False,
         'secret_material_persisted': False,
     }
     event['event_sha256'] = _event_checksum(event)
     # Enforce all canonical UUID, plan, count, timestamp and no-secret fields,
     # not only a valid-looking checksum supplied by a caller.
     project_capsule_attempt_history(
-        plan=plan, related=related,
-        accepted_actor_user_id=actor_user_id, events=[event],
+        plan=plan,
+        related=related,
+        accepted_actor_user_id=actor_user_id,
+        events=[event],
     )
     return event
 
@@ -107,22 +134,20 @@ def _require_postgres_ledger_write_once_guards(session: Any) -> None:
         'tr_capsule_ledger_deny_delete',
         'tr_capsule_ledger_deny_truncate',
     }
-    triggers = session.execute(text("""
+    triggers = session.execute(
+        text("""
         SELECT t.tgname, t.tgenabled
         FROM pg_trigger AS t
         WHERE t.tgrelid = 'capsule_handoff_ledger_events'::regclass
           AND NOT t.tgisinternal
-    """)).all()
-    observed = {
-        name: mode for name, mode in triggers
-        if isinstance(name, str) and isinstance(mode, str)
-    }
-    if (
-        not expected.issubset(observed)
-        or any(observed[name] not in ('O', 'A') for name in expected)
-    ):
+    """)
+    ).all()
+    observed = {name: mode for name, mode in triggers if isinstance(name, str) and isinstance(mode, str)}
+    if not expected.issubset(observed) or any(observed[name] not in ('O', 'A') for name in expected):
         raise ValueError('PostgreSQL Capsule ledger write-once guards are missing or disabled.')
-    state = session.execute(text("""
+    state = (
+        session.execute(
+            text("""
         SELECT current_setting('fsync') AS fsync_setting,
                current_setting('synchronous_commit') AS sync_commit,
                current_setting('session_replication_role') AS replication_role,
@@ -136,7 +161,11 @@ def _require_postgres_ledger_write_once_guards(session: Any) -> None:
                has_table_privilege(current_user, c.oid, 'TRUNCATE') AS may_truncate
         FROM pg_class AS c
         WHERE c.oid = 'capsule_handoff_ledger_events'::regclass
-    """)).mappings().one()
+    """)
+        )
+        .mappings()
+        .one()
+    )
     if (
         state['fsync_setting'] != 'on'
         or state['sync_commit'] not in ('on', 'remote_write', 'remote_apply')
@@ -153,8 +182,12 @@ def _require_postgres_ledger_write_once_guards(session: Any) -> None:
 
 
 def commit_capsule_start_staged(
-    *, tenant_id: str, actor_user_id: int, expected_plan_sha256: str,
-    preflight: Mapping[str, Any], provider_authority: Mapping[str, Any],
+    *,
+    tenant_id: str,
+    actor_user_id: int,
+    expected_plan_sha256: str,
+    preflight: Mapping[str, Any],
+    provider_authority: Mapping[str, Any],
     explicit_operator_confirmation: bool = False,
 ) -> dict[str, Any]:
     """Unregistered transactional START implementation, statically disabled.
@@ -174,8 +207,10 @@ def commit_capsule_start_staged(
             'admission and a separate operator authorization are required.'
         )
     if (
-        not isinstance(tenant_id, str) or not tenant_id
-        or type(actor_user_id) is not int or actor_user_id <= 0
+        not isinstance(tenant_id, str)
+        or not tenant_id
+        or type(actor_user_id) is not int
+        or actor_user_id <= 0
         or not isinstance(expected_plan_sha256, str)
         or len(expected_plan_sha256) != 64
         or not isinstance(preflight, Mapping)
@@ -207,8 +242,7 @@ def commit_capsule_start_staged(
                 raise ValueError('Capsule Tenant is no longer an adopted, ready handoff candidate.')
             _require_postgres_ledger_write_once_guards(session)
             if session.execute(
-                select(CapsuleHandoffLedgerEvent.id)
-                .where(CapsuleHandoffLedgerEvent.tenant_id == tenant_id).limit(1)
+                select(CapsuleHandoffLedgerEvent.id).where(CapsuleHandoffLedgerEvent.tenant_id == tenant_id).limit(1)
             ).first():
                 raise ValueError('Capsule START cannot reuse or reset existing immutable history.')
             if session.execute(
@@ -216,7 +250,8 @@ def commit_capsule_start_staged(
                 .where(
                     AuditEvent.target_type == _LEGACY_EXECUTION_TARGET,
                     AuditEvent.target_id == tenant_id,
-                ).limit(1)
+                )
+                .limit(1)
             ).first():
                 raise ValueError('Legacy Capsule attempt evidence requires independent recovery.')
             plan = latest_release_handoff_plan(tenant_id)
@@ -230,14 +265,20 @@ def commit_capsule_start_staged(
             ):
                 raise ValueError('The approved Capsule plan changed under the Tenant lock.')
             acceptance = require_current_capsule_acceptance(
-                tenant_id=tenant_id, plan=plan, approval=approval,
+                tenant_id=tenant_id,
+                plan=plan,
+                approval=approval,
             )
             if acceptance.get('accepted_by') != actor_user_id:
                 raise ValueError('Capsule START actor differs from accepted X.509 successor.')
             assessment = assess_capsule_handoff_admission(
-                tenant_id=tenant_id, actor_user_id=actor_user_id,
-                plan=plan, approval=approval, acceptance=acceptance,
-                preflight=preflight, provider_authority=provider_authority,
+                tenant_id=tenant_id,
+                actor_user_id=actor_user_id,
+                plan=plan,
+                approval=approval,
+                acceptance=acceptance,
+                preflight=preflight,
+                provider_authority=provider_authority,
             )
             if (
                 assessment.get('provider_execution_admitted') is not True
@@ -251,20 +292,36 @@ def commit_capsule_start_staged(
                 )
             related = preflight.get('capsule_related_inventory')
             event = build_capsule_start_candidate(
-                tenant_id=tenant_id, actor_user_id=actor_user_id,
-                plan=plan, related=related,
-                attempt_id=str(uuid4()), event_at=datetime.now(UTC),
+                tenant_id=tenant_id,
+                actor_user_id=actor_user_id,
+                plan=plan,
+                related=related,
+                attempt_id=str(uuid4()),
+                event_at=datetime.now(UTC),
             )
-            session.add(CapsuleHandoffLedgerEvent(
-                **{field: event[field] for field in (
-                    'tenant_id', 'cluster_id', 'generation', 'plan_sha256',
-                    'handoff_fingerprint', 'worklist_sha256', 'attempt_id',
-                    'sequence', 'event_type', 'actor_user_id',
-                    'previous_event_sha256', 'event_sha256',
-                )},
-                event_at=datetime.fromisoformat(event['event_at']),
-                event_json=event,
-            ))
+            session.add(
+                CapsuleHandoffLedgerEvent(
+                    **{
+                        field: event[field]
+                        for field in (
+                            'tenant_id',
+                            'cluster_id',
+                            'generation',
+                            'plan_sha256',
+                            'handoff_fingerprint',
+                            'worklist_sha256',
+                            'attempt_id',
+                            'sequence',
+                            'event_type',
+                            'actor_user_id',
+                            'previous_event_sha256',
+                            'event_sha256',
+                        )
+                    },
+                    event_at=datetime.fromisoformat(event['event_at']),
+                    event_json=event,
+                )
+            )
             session.flush()  # constraints checked, but STILL no durability
         # Leaving session.begin() commits START before anything could consume
         # this receipt. Its outcome is checked by a separate read transaction.

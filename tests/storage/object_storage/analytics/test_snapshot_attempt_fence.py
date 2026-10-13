@@ -28,7 +28,9 @@ def test_latest_or_restarted_job_may_claim(previous, current) -> None:
 def test_old_worker_cannot_overwrite_newer_ready_or_pending_evidence(mutation) -> None:
     stamp = datetime(2026, 10, 12, tzinfo=UTC)
     snapshot = SimpleNamespace(
-        status='pending', last_job_execution_id=5, last_attempt_at=stamp,
+        status='pending',
+        last_job_execution_id=5,
+        last_attempt_at=stamp,
     )
     if mutation == 'new_job':
         snapshot.last_job_execution_id = 6

@@ -12,8 +12,8 @@ from app.artifact_registry.sync_jobs import (
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_INVENTORY_SYNC_OPERATION
 from app.common.job_execution_presentation import present_job_execution
 from app.models.integration import IntegrationInstance
-from app.models.registry import RegistryCollectionState, RegistryProject
 from app.models.job import JobExecution, JobPolicy
+from app.models.registry import RegistryCollectionState, RegistryProject
 from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.policies.presentation import present_interval
@@ -73,9 +73,7 @@ def build_registry_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
     eligible_count = len(eligible_targets)
     eligible_ids = [int(row['integration_instance_id']) for row in eligible_targets]
     nonempty = (
-        RegistryProject.query.with_entities(
-            RegistryProject.integration_instance_id, func.count(RegistryProject.id)
-        )
+        RegistryProject.query.with_entities(RegistryProject.integration_instance_id, func.count(RegistryProject.id))
         .join(
             RegistryCollectionState,
             RegistryCollectionState.integration_instance_id == RegistryProject.integration_instance_id,
@@ -84,13 +82,16 @@ def build_registry_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
             RegistryProject.integration_instance_id.in_(eligible_ids),
             RegistryCollectionState.last_committed_at.is_not(None),
         )
-        .group_by(RegistryProject.integration_instance_id).all()
-        if eligible_ids else []
+        .group_by(RegistryProject.integration_instance_id)
+        .all()
+        if eligible_ids
+        else []
     )
     count_by_id = {int(pid): int(count) for pid, count in nonempty}
     empty_reconciliation_targets = [
         {**target, 'previous_project_count': count_by_id[int(target['integration_instance_id'])]}
-        for target in eligible_targets if int(target['integration_instance_id']) in count_by_id
+        for target in eligible_targets
+        if int(target['integration_instance_id']) in count_by_id
     ]
     blocked_count = max(registered_count - eligible_count, 0)
     jobs = JobExecution.query.filter(

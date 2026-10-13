@@ -114,14 +114,18 @@
                             <div class="flex items-center justify-between gap-2 text-xs">
                                 <span class="font-semibold text-content-secondary">{{ item.label }}</span>
                                 <strong class="shrink-0 tabular-nums text-content-primary">
-                                    {% if headroom_percent is not none %}{{ headroom_percent|round(1) }}% free{% else %}N/A{% endif %}
+                                    {% if headroom_percent is not none %}
+                                        {{ headroom_percent|round(1) }}% free
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
                                 </strong>
                             </div>
                             {% if headroom_percent is not none %}
                                 {{ progress_bar.bar(headroom_percent,
-                                    track_classes='mt-2 h-3 overflow-hidden rounded-full bg-surface-hover',
-                                    fill_classes='h-full rounded-full ' ~ headroom_color,
-                                    label=item.label ~ ' available worker capacity') }}
+                                                                track_classes='mt-2 h-3 overflow-hidden rounded-full bg-surface-hover',
+                                                                fill_classes='h-full rounded-full ' ~ headroom_color,
+                                                                label=item.label ~ ' available worker capacity') }}
                                 <p class="mt-2 text-xs text-content-muted">{{ item.used_percent|round(1) }}% used</p>
                             {% else %}
                                 <div class="mt-2 h-3 rounded-full bg-surface-hover"

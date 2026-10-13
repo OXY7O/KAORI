@@ -7,6 +7,7 @@ Create Date: 2026-10-11
 No live migration, provider operation, or AuditEvent writer is admitted by
 merging this file. Dialects other than PostgreSQL/SQLite fail closed.
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -177,18 +178,24 @@ def upgrade() -> None:
         sa.Column('event_sha256', sa.String(64), nullable=False),
         sa.Column('event_json', sa.JSON(), nullable=False),
         sa.Column(
-            'recorded_at', sa.DateTime(timezone=True),
-            nullable=False, server_default=sa.text('CURRENT_TIMESTAMP'),
+            'recorded_at',
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text('CURRENT_TIMESTAMP'),
         ),
         sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['actor_user_id'], ['users.id'], ondelete='RESTRICT'),
         sa.UniqueConstraint('tenant_id', 'sequence', name='uq_capsule_ledger_tenant_sequence'),
         sa.UniqueConstraint(
-            'tenant_id', 'attempt_id', 'sequence',
+            'tenant_id',
+            'attempt_id',
+            'sequence',
             name='uq_capsule_ledger_attempt_sequence',
         ),
         sa.UniqueConstraint(
-            'tenant_id', 'event_sha256', name='uq_capsule_ledger_tenant_digest',
+            'tenant_id',
+            'event_sha256',
+            name='uq_capsule_ledger_tenant_digest',
         ),
         sa.CheckConstraint('generation > 0', name='ck_capsule_ledger_generation'),
         sa.CheckConstraint(
@@ -216,9 +223,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     dialect = _dialect()
     # A downgrade must never silently erase committed recovery evidence.
-    if op.get_bind().exec_driver_sql(
-        f'SELECT 1 FROM {_TABLE} LIMIT 1'
-    ).first():
+    if op.get_bind().exec_driver_sql(f'SELECT 1 FROM {_TABLE} LIMIT 1').first():
         raise RuntimeError('Cannot drop a Capsule handoff ledger containing evidence.')
     names = [
         'tr_capsule_ledger_guard_insert',
@@ -228,8 +233,7 @@ def downgrade() -> None:
     if dialect == 'postgresql':
         names.append('tr_capsule_ledger_deny_truncate')
     for name in names:
-        op.execute(f'DROP TRIGGER {name} ON {_TABLE}' if dialect == 'postgresql'
-                   else f'DROP TRIGGER {name}')
+        op.execute(f'DROP TRIGGER {name} ON {_TABLE}' if dialect == 'postgresql' else f'DROP TRIGGER {name}')
     if dialect == 'postgresql':
         op.execute(f'DROP FUNCTION {_PG_GUARD}()')
         op.execute('DROP FUNCTION kaori_capsule_handoff_ledger_deny_change()')

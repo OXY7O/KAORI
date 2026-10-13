@@ -42,9 +42,7 @@ def test_role_detail_modal_uses_one_full_width_resource_sheet() -> None:
         "'Permission Coverage', 'key-round'",
         "'Administrative Boundary', 'shield-check'",
     ]
-    assert [template.index(part) for part in order] == sorted(
-        template.index(part) for part in order
-    )
+    assert [template.index(part) for part in order] == sorted(template.index(part) for part in order)
 
 
 def test_role_detail_long_evidence_has_full_width_reading_measures() -> None:
@@ -85,7 +83,6 @@ def test_role_detail_permission_directory_keeps_every_capability_visible() -> No
     assert "detail_ui.empty_evidence('No Permissions Assigned'" in template
 
 
-
 def test_single_permission_module_renders_its_capability_below_header() -> None:
     template = read('app/templates/access/roles/partials/_role_detail.html')
     start = template.index('<li class="min-w-0 space-y-2 py-3" data-kaori-role-module>')
@@ -102,9 +99,7 @@ def test_single_permission_module_renders_its_capability_below_header() -> None:
             count=len(labels),
             permissions=[SimpleNamespace(label=label) for label in labels],
         )
-        labels_macro = SimpleNamespace(
-            metadata_label=lambda label, wrap=False: f'[{label}]'
-        )
+        labels_macro = SimpleNamespace(metadata_label=lambda label, wrap=False: f'[{label}]')
         return module_row.render(module=module, table_label=labels_macro)
 
     for label, key, capability in (
@@ -117,9 +112,7 @@ def test_single_permission_module_renders_its_capability_below_header() -> None:
         assert key in html
         assert '1 permission' in html
         assert html.count(f'[{capability}]') == 1
-        assert html.index(label) < html.index('Capabilities') < html.index(
-            f'[{capability}]'
-        )
+        assert html.index(label) < html.index('Capabilities') < html.index(f'[{capability}]')
         assert 'data-kaori-role-module-capabilities' in html
         assert 'sm:grid-cols-' not in html
 

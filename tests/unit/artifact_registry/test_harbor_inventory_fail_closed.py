@@ -36,7 +36,7 @@ def test_missing_project_and_repository_identity_fail_before_commit() -> None:
         _repository_record(None, 'team', {'id': 4})
 
 
-@pytest.mark.parametrize('items', [[{'id': 1}, None], [12], [{} , 'broken']])
+@pytest.mark.parametrize('items', [[{'id': 1}, None], [12], [{}, 'broken']])
 def test_harbor_list_rejects_malformed_members_instead_of_partial_success(items) -> None:
     with pytest.raises(HarborResponseError, match='malformed'):
         HarborClient._object_list(items, 'projects')

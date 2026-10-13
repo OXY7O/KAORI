@@ -166,10 +166,7 @@ def test_activity_hot_register_is_explicit_about_archive_lifecycle_boundary() ->
     queries = read('app/platform_operations/notifications/queries.py')
     retention_domain = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
 
-    assert (
-        'Hot records stay in PostgreSQL; older verified evidence stays in Data Lifecycle.'
-        in summary
-    )
+    assert 'Hot records stay in PostgreSQL; older verified evidence stays in Data Lifecycle.' in summary
     assert 'This register reads hot PostgreSQL records.' not in summary
     assert 'hot-record time range' in card
     assert "('all', 'All Hot Records')" in queries
@@ -255,6 +252,7 @@ def test_activity_audit_additional_producer_sources_preserve_separate_authoritie
     assert 'persist_notification(' not in auth
     assert 'persist_notification(' not in tenant
 
+
 def test_activity_detail_links_only_permissioned_committed_source_workspaces() -> None:
     routes = read('app/access/activity_audit/routes.py')
     links = read('app/access/activity_audit/source_links.py')
@@ -274,6 +272,7 @@ def test_activity_detail_links_only_permissioned_committed_source_workspaces() -
     assert 'data-activity-related-sources="committed-only"' in detail
     assert 'No duplicate event is created.' in detail
 
+
 def test_activity_source_link_to_delivery_requires_permission_and_exact_committed_event() -> None:
     routes = read('app/access/activity_audit/routes.py')
     links = read('app/access/activity_audit/source_links.py')
@@ -285,6 +284,7 @@ def test_activity_source_link_to_delivery_requires_permission_and_exact_committe
     assert 'can_view_deliveries: bool = False' in links
     assert 'Never infer delivery from a shared domain' in links
 
+
 def test_activity_audit_administrative_source_scope_is_read_only_and_permission_bound() -> None:
     routes = read('app/access/activity_audit/routes.py')
     source = read('app/access/activity_audit/administrative_sources.py')
@@ -295,7 +295,7 @@ def test_activity_audit_administrative_source_scope_is_read_only_and_permission_
     assert "current_user.has_permission('jobs.view')" in routes
     assert "current_user.has_permission('tenant.manage')" in routes
     assert 'build_administrative_evidence_context(' in routes
-    assert "if evidence is None:" in routes
+    assert 'if evidence is None:' in routes
     assert 'abort(403)' in routes
     assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
     assert "'automatic-jobs': {" in source
@@ -306,7 +306,7 @@ def test_activity_audit_administrative_source_scope_is_read_only_and_permission_
     assert 'paginate_query(query, page=page, per_page=normalized_per_page)' in source
     assert 'if selected not in available:' in source
     assert 'if can_view_jobs and event.target_type' in source
-    assert "job = JobExecution.query.filter_by(public_id=event.target_id).first()" in source
+    assert 'job = JobExecution.query.filter_by(public_id=event.target_id).first()' in source
     assert 'redact_operational_text(event.summary, limit=255)' in source
     assert 'FK only (not a snapshot)' in source
     assert 'metadata_json' not in partial
@@ -318,7 +318,7 @@ def test_activity_audit_administrative_source_scope_is_read_only_and_permission_
     assert "'activity-administrative-evidence'," in partial
     assert 'No Administrative Source Evidence' in partial
     workspace = read('app/templates/access/activity_audit/partials/_audit_records_workspace.html')
-    assert '{% if selected_audit_tab == \'administrative\' %}' in workspace
+    assert "{% if selected_audit_tab == 'administrative' %}" in workspace
     assert 'Administrative Evidence' in workspace
     assert 'Activity Register' in workspace
 
@@ -348,8 +348,8 @@ def test_activity_audit_inventory_hierarchy_and_shared_two_tab_workspace() -> No
     assert 'data-kaori-tab-variant="framed-workspace-v2-server"' in tabs
     assert workspace.count('_activity_table_card.html') == 1
     assert workspace.count('_administrative_evidence.html') == 1
-    assert "embedded|default(false)" in activity_card
-    assert "embedded|default(false)" in administrative
+    assert 'embedded|default(false)' in activity_card
+    assert 'embedded|default(false)' in administrative
     assert 'name="view" value="activity"' in activity_card
     assert "'view': 'activity'" in activity_rows
     assert 'name="view" value="activity"' in activity_rows
@@ -366,7 +366,7 @@ def test_activity_audit_inventory_hierarchy_and_shared_two_tab_workspace() -> No
     assert "table_ui.table_classes('min-w-[72rem]')" in administrative
     assert "table_label.metadata_label(row.source_label, 'database')" in administrative
     assert "page_param='admin_page'" in administrative
-    assert "registry_ui.footer(" in administrative
+    assert 'registry_ui.footer(' in administrative
     assert "per_page_param='admin_per_page'" in administrative
     assert 'metadata_json' not in administrative
     assert "'display_action': display_action" in source
@@ -376,7 +376,7 @@ def test_activity_audit_inventory_hierarchy_and_shared_two_tab_workspace() -> No
     assert "'status_tone': status_tone" in source
     assert "'actor_detail': 'Actor FK · not a snapshot'" in source
     assert "action_suffix.endswith('partially_succeeded')" in source
-    assert "has_administrative_sources = can_view_jobs or can_manage_tenants" in routes
+    assert 'has_administrative_sources = can_view_jobs or can_manage_tenants' in routes
     assert "selected_audit_tab == 'administrative' and not has_administrative_sources" in routes
     assert "target == 'activity-administrative-evidence'" in routes
     assert "target == 'activity-audit-records'" in routes
@@ -394,7 +394,7 @@ def test_activity_audit_tab_navigation_preserves_independent_permissions_and_fal
     assert "current_user.has_permission('tenant.manage')" in routes
     assert "request.headers.get('HX-History-Restore-Request') != 'true'" in routes
     assert 'if not is_htmx:' not in workspace  # server selection, no client-only tab switching
-    assert "has_administrative_sources" in workspace
+    assert 'has_administrative_sources' in workspace
     registry = read('app/templates/components/table_registry.html')
     assert 'registry_ui.filter_form(' in administrative
     assert "form_id='administrative-evidence-filter-form'" in administrative

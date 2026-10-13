@@ -1,5 +1,5 @@
-from pathlib import Path
 import re
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3] / 'app/templates/kubernetes/inventory'
 
@@ -67,9 +67,7 @@ def test_namespace_psa_remains_a_plain_column_value_with_title_guidance() -> Non
 
 def test_topology_and_tls_help_are_at_the_respective_table_titles() -> None:
     topology = (ROOT / 'topology/partials/_workspace.html').read_text(encoding='utf-8')
-    tls = (
-        ROOT.parent / 'governance/tls_certificates/partials/_table.html'
-    ).read_text(encoding='utf-8')
+    tls = (ROOT.parent / 'governance/tls_certificates/partials/_table.html').read_text(encoding='utf-8')
     for template in (topology, tls):
         assert template.count('info_tip.render(') == 1
         header = template.split('<thead', 1)[1].split('</thead>', 1)[0]

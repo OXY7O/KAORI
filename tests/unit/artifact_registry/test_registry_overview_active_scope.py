@@ -10,7 +10,8 @@ from app.artifact_registry import presentation_common
 
 @pytest.mark.parametrize('requested_id', [9, 0, -1])
 def test_unavailable_registry_overview_scope_does_not_fall_through_to_all(
-    monkeypatch, requested_id: int,
+    monkeypatch,
+    requested_id: int,
 ) -> None:
     provider = SimpleNamespace(id=1, name='Enabled Registry')
     monkeypatch.setattr(presentation_common, '_providers', lambda: [provider])
@@ -22,10 +23,9 @@ def test_unavailable_registry_overview_scope_does_not_fall_through_to_all(
 def test_registry_overview_does_not_admit_disabled_active_integrations() -> None:
     from pathlib import Path
 
-    source = (
-        Path(__file__).resolve().parents[3] /
-        'app/artifact_registry/presentation_common.py'
-    ).read_text(encoding='utf-8')
+    source = (Path(__file__).resolve().parents[3] / 'app/artifact_registry/presentation_common.py').read_text(
+        encoding='utf-8'
+    )
     providers = source.split('def _providers(', 1)[1].split('@overload', 1)[0]
     assert "IntegrationInstance.integration_type == 'registry'" in providers
     assert "IntegrationInstance.lifecycle_status == 'active'" in providers
@@ -45,11 +45,14 @@ def test_invalid_provider_id_query_is_rejected_before_any_projection(query: str)
             _overview_provider_id()
 
 
-@pytest.mark.parametrize(('query', 'selected'), [
-    ('', None),
-    ('?provider_id=', None),
-    ('?provider_id=7', 7),
-])
+@pytest.mark.parametrize(
+    ('query', 'selected'),
+    [
+        ('', None),
+        ('?provider_id=', None),
+        ('?provider_id=7', 7),
+    ],
+)
 def test_valid_provider_id_query_is_preserved(query: str, selected: int | None) -> None:
     from flask import Flask
 

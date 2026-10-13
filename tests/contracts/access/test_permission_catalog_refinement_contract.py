@@ -63,7 +63,7 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
         assert f"form_id='permission-{view}-filter-form'" in template
         assert f"'permission-{view}-loading'," in template
         assert "footer_query.pop('per_page', none)" in template
-        assert f'control_name=\'permission-{view}\'' in template
+        assert f"control_name='permission-{view}'" in template
         assert 'pagination_ui.numeric_pages(' not in template
         assert 'hx-trigger=' not in template  # shared canonical interaction owner
 
@@ -133,7 +133,10 @@ def test_permission_role_coverage_delegation_badge_aligns_with_identity_text() -
     # Role Coverage previously rendered the delegation badge as a sibling of
     # the icon-and-text title cell, so the badge started beneath the icon.
     assert 'table_ui.title_cell(\n                            permission.title,' in coverage
-    assert 'table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon)' in coverage
+    assert (
+        'table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon)'
+        in coverage
+    )
     assert '<div class="mt-1.5">{{ table_label.status_label(permission.delegation_tier.label' not in coverage
 
     # The shared title cell owns the icon geometry. Optional content must be
@@ -143,7 +146,9 @@ def test_permission_role_coverage_delegation_badge_aligns_with_identity_text() -
     assert 'table_primitives.title_cell(name, supporting_text, icon, supporting_content)' in table
     assert '{% if supporting_content %}' in primitives
     assert '{{ supporting_content }}' in primitives
-    assert primitives.index('{% if supporting_content %}') > primitives.index('{% if supporting_text %}', primitives.index('{% macro title_cell('))
+    assert primitives.index('{% if supporting_content %}') > primitives.index(
+        '{% if supporting_text %}', primitives.index('{% macro title_cell(')
+    )
     assert 'ml-[3.125rem]' not in coverage
     # Other tables continue to use the existing three-argument contract.
     assert "table_ui.title_cell(permission.title, permission.key, 'key-round')" in registry
@@ -220,9 +225,7 @@ def test_permission_delegation_authority_shares_evidence_column_alignment() -> N
     # Shared inventory_section controls section padding. A nested Violet
     # border/padding shifts Authority to the right of adjacent evidence rows.
     assert '<div class="min-w-0 max-w-3xl" data-kaori-permission-policy>' in detail
-    authority = detail.split('data-kaori-permission-policy>', 1)[1].split(
-        '{% endcall %}', 1
-    )[0]
+    authority = detail.split('data-kaori-permission-policy>', 1)[1].split('{% endcall %}', 1)[0]
     assert 'border-l-2' not in authority
     assert 'pl-3.5' not in authority
     assert '<p class="text-xs font-semibold text-content-secondary">Authority</p>' in authority
@@ -237,8 +240,14 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     detail = read('app/templates/access/permissions/partials/_permission_detail.html')
     shared = read('app/templates/components/details/_detail_content.html')
 
-    assert "('registry', 'Permission Registry', 'list-tree', url_for('access.permissions.index', view='registry'))" in workspace
-    assert "('coverage', 'Role Coverage', 'table-properties', url_for('access.permissions.index', view='coverage'))" in workspace
+    assert (
+        "('registry', 'Permission Registry', 'list-tree', url_for('access.permissions.index', view='registry'))"
+        in workspace
+    )
+    assert (
+        "('coverage', 'Role Coverage', 'table-properties', url_for('access.permissions.index', view='coverage'))"
+        in workspace
+    )
     assert 'summary.canonical_permissions' not in workspace
     assert 'roles|length' not in workspace
     assert 'framed_tabs.render_navigation(' in workspace
@@ -269,10 +278,10 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert 'detail_ui.resource_sheet()' in detail
     assert 'data-kaori-unified-resource-sheet' in shared
     assert 'data-kaori-inventory-section-layout="resource-sheet-band"' in shared
-    assert "compact_layout=false) -%}" in shared
+    assert 'compact_layout=false) -%}' in shared
     assert "'min-w-0 px-4 py-3.5 sm:px-5 xl:px-6 xl:py-4' if compact_layout" in shared
     assert "'mt-1 break-words text-xs leading-4 text-content-muted" in shared
-    assert detail.count("compact_layout=true") == 5
+    assert detail.count('compact_layout=true') == 5
     assert 'data-kaori-permission-identity-facts' in detail
     assert 'data-kaori-permission-dependency-facts' in detail
     assert 'data-kaori-permission-policy' in detail
@@ -281,7 +290,7 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert 'border-l-2 border-brand-outline pl-3.5' not in detail
     assert "table_ui.table_classes('min-w-[32rem]')" in detail
     assert "table_ui.table_classes('min-w-[38rem]')" not in detail
-    assert detail.count("detail_ui.inventory_section(") == 5
+    assert detail.count('detail_ui.inventory_section(') == 5
     assert 'detail_ui.detail_card(' not in detail
     assert 'data-kaori-permission-detail-layout="full-width-stack"' not in detail
     assert 'lg:grid-cols-2' not in detail
@@ -336,15 +345,13 @@ def test_permission_effective_usage_excludes_inactive_role_assignments() -> None
     disabled_role = SimpleNamespace(id=12, is_active=False, users=[inactive_role_only_user, active_user])
     enabled_jit_provider = SimpleNamespace(id=55)
 
-    assert _role_impact(
-        [disabled_role], enabled_jit_providers_by_role={12: [enabled_jit_provider]}
-    ) == {'active_user_count': 0, 'jit_provider_count': 1}
-    assert _role_impact(
-        [active_role, disabled_role], enabled_jit_providers_by_role={}
-    ) == {'active_user_count': 1, 'jit_provider_count': 0}
-    assert _role_impact([active_role], enabled_jit_providers_by_role={})[
-        'active_user_count'
-    ] == 1
-    assert _role_impact([], enabled_jit_providers_by_role={})[
-        'active_user_count'
-    ] == 0
+    assert _role_impact([disabled_role], enabled_jit_providers_by_role={12: [enabled_jit_provider]}) == {
+        'active_user_count': 0,
+        'jit_provider_count': 1,
+    }
+    assert _role_impact([active_role, disabled_role], enabled_jit_providers_by_role={}) == {
+        'active_user_count': 1,
+        'jit_provider_count': 0,
+    }
+    assert _role_impact([active_role], enabled_jit_providers_by_role={})['active_user_count'] == 1
+    assert _role_impact([], enabled_jit_providers_by_role={})['active_user_count'] == 0

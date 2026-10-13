@@ -4,7 +4,6 @@ from pathlib import Path
 
 from app.artifact_registry.security.presentation import _security_search_pattern
 
-
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -15,9 +14,7 @@ def test_sql_like_metacharacters_are_escaped_as_literal_search() -> None:
 
 def test_capability_reads_are_one_grouped_query_after_source_page_selection() -> None:
     source = (ROOT / 'app/artifact_registry/security/presentation.py').read_text(encoding='utf-8')
-    matrix = source.split('def _security_source_capabilities(', 1)[1].split(
-        'def _security_search_pattern(', 1
-    )[0]
+    matrix = source.split('def _security_source_capabilities(', 1)[1].split('def _security_search_pattern(', 1)[0]
     assert '.group_by(RegistryProject.integration_instance_id)' in matrix
     assert '.all()' in matrix
     assert 'func.sum(case(' in matrix
@@ -29,7 +26,7 @@ def test_capability_reads_are_one_grouped_query_after_source_page_selection() ->
         'capability_rows = _security_source_capabilities('
     )
     assert "if view == 'supply_chain' and supply_section == 'capabilities' else []" in main
-    assert "source_capabilities = capability_rows" in main
+    assert 'source_capabilities = capability_rows' in main
 
 
 def test_vulnerability_and_supply_search_escape_wildcards_and_use_stable_order() -> None:
@@ -42,9 +39,7 @@ def test_vulnerability_and_supply_search_escape_wildcards_and_use_stable_order()
 
 def test_security_fleet_artifact_totals_share_one_scoped_sql_aggregate() -> None:
     source = (ROOT / 'app/artifact_registry/security/presentation.py').read_text()
-    evidence = source.split('def _security_scope_evidence(', 1)[1].split(
-        'def _security_source_capabilities(', 1
-    )[0]
+    evidence = source.split('def _security_scope_evidence(', 1)[1].split('def _security_source_capabilities(', 1)[0]
     assert 'artifact_total, evidence_count, signature_observed, sbom_available, coverage_gaps = (' in evidence
     assert 'artifact_scope.with_entities(' in evidence
     assert 'count_if(gap_predicate)' in evidence

@@ -168,46 +168,53 @@ def fleet_stats(fleet: Any) -> dict[str, int]:
     def present(expression: Any):
         return func.coalesce(func.sum(case((expression, 1), else_=0)), 0)
 
-    result = db.session.execute(
-        select(
-            func.count().label('total'),
-            present(fleet.c.readiness == 'ready').label('ready'),
-            present(fleet.c.coverage_status == 'ready').label('fully_operational'),
-            func.coalesce(func.sum(
-                case((fleet.c.metrics_binding_id.is_not(None), 1), else_=0)
-                + case((fleet.c.alerts_binding_id.is_not(None), 1), else_=0)
-            ), 0).label('bindings'),
-            present(fleet.c.metrics_id.is_not(None)).label('metrics_source_configured'),
-            present(and_(
-                fleet.c.metrics_id.is_not(None),
-                fleet.c.metrics_readiness == 'ready',
-                fleet.c.metrics_source_enabled.is_(True),
-                fleet.c.metrics_source_lifecycle == 'active',
-            )).label('metrics_source_ready'),
-            present(fleet.c.metrics_binding_validation == 'ready').label('metrics_binding_ready'),
-            present(fleet.c.metrics_source_status == 'ready').label('metrics_source_operational'),
-            present(fleet.c.alertmanager_id.is_not(None)).label('alertmanager_configured'),
-            present(and_(
-                fleet.c.alertmanager_id.is_not(None),
-                fleet.c.alerts_readiness == 'ready',
-                fleet.c.alerts_source_enabled.is_(True),
-                fleet.c.alerts_source_lifecycle == 'active',
-            )).label('alertmanager_source_ready'),
-            present(fleet.c.alerts_binding_validation == 'ready').label('alertmanager_binding_ready'),
-            present(fleet.c.alert_source_status == 'ready').label('alertmanager_operational'),
-        ).select_from(fleet)
-    ).mappings().one()
+    result = (
+        db.session.execute(
+            select(
+                func.count().label('total'),
+                present(fleet.c.readiness == 'ready').label('ready'),
+                present(fleet.c.coverage_status == 'ready').label('fully_operational'),
+                func.coalesce(
+                    func.sum(
+                        case((fleet.c.metrics_binding_id.is_not(None), 1), else_=0)
+                        + case((fleet.c.alerts_binding_id.is_not(None), 1), else_=0)
+                    ),
+                    0,
+                ).label('bindings'),
+                present(fleet.c.metrics_id.is_not(None)).label('metrics_source_configured'),
+                present(
+                    and_(
+                        fleet.c.metrics_id.is_not(None),
+                        fleet.c.metrics_readiness == 'ready',
+                        fleet.c.metrics_source_enabled.is_(True),
+                        fleet.c.metrics_source_lifecycle == 'active',
+                    )
+                ).label('metrics_source_ready'),
+                present(fleet.c.metrics_binding_validation == 'ready').label('metrics_binding_ready'),
+                present(fleet.c.metrics_source_status == 'ready').label('metrics_source_operational'),
+                present(fleet.c.alertmanager_id.is_not(None)).label('alertmanager_configured'),
+                present(
+                    and_(
+                        fleet.c.alertmanager_id.is_not(None),
+                        fleet.c.alerts_readiness == 'ready',
+                        fleet.c.alerts_source_enabled.is_(True),
+                        fleet.c.alerts_source_lifecycle == 'active',
+                    )
+                ).label('alertmanager_source_ready'),
+                present(fleet.c.alerts_binding_validation == 'ready').label('alertmanager_binding_ready'),
+                present(fleet.c.alert_source_status == 'ready').label('alertmanager_operational'),
+            ).select_from(fleet)
+        )
+        .mappings()
+        .one()
+    )
     stats = {name: int(value or 0) for name, value in result.items()}
     stats['attention'] = stats['total'] - stats['ready']
     return stats
 
 
 def environment_options(fleet: Any) -> list[str]:
-    return sorted({
-        label for label in db.session.scalars(
-            select(fleet.c.environment).distinct()
-        ).all() if label
-    })
+    return sorted({label for label in db.session.scalars(select(fleet.c.environment).distinct()).all() if label})
 
 
 def page_connection_ids(
@@ -222,21 +229,21 @@ def page_connection_ids(
     if search:
         term = f'%{search}%'
         searchable = [
-            fleet.c.cluster_name, fleet.c.environment,
+            fleet.c.cluster_name,
+            fleet.c.environment,
             func.coalesce(fleet.c.server, 'Not discovered'),
         ]
         if coverage:
-            searchable.extend((
-                fleet.c.metrics_name,
-                fleet.c.alerts_name,
-                fleet.c.coverage_label,
-            ))
+            searchable.extend(
+                (
+                    fleet.c.metrics_name,
+                    fleet.c.alerts_name,
+                    fleet.c.coverage_label,
+                )
+            )
         else:
             searchable.extend((fleet.c.version, fleet.c.compatibility_profile))
-        statement = statement.where(or_(*(
-            func.lower(func.coalesce(field, '')).like(term)
-            for field in searchable
-        )))
+        statement = statement.where(or_(*(func.lower(func.coalesce(field, '')).like(term) for field in searchable)))
     if filters.environment:
         statement = statement.where(fleet.c.environment == filters.environment)
     if coverage:
@@ -250,10 +257,11 @@ def page_connection_ids(
     count_statement = select(func.count()).select_from(statement.order_by(None).subquery())
     count = int(db.session.scalar(count_statement) or 0)
     window = build_pagination_window(
-        total_items=count, page=filters.page, per_page=filters.per_page,
+        total_items=count,
+        page=filters.page,
+        per_page=filters.per_page,
     )
     ids = db.session.scalars(
-        statement.order_by(fleet.c.created_at, fleet.c.cluster_id)
-        .offset(window.offset).limit(window.per_page)
+        statement.order_by(fleet.c.created_at, fleet.c.cluster_id).offset(window.offset).limit(window.per_page)
     ).all()
     return list(ids), pagination_payload(window)

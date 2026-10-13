@@ -1,7 +1,8 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set can_provision = current_user.has_permission('identity_providers.provision') %}
-<section class="min-w-0" aria-label="Directory Provisioning overview"
+<section class="min-w-0"
+         aria-label="Directory Provisioning overview"
          data-kaori-idp-directory-workspace>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -23,7 +24,8 @@
     </header>
     <div class="p-4 sm:p-5">
         <div class="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-             data-kaori-idp-directory-flow aria-label="Directory provisioning evidence">
+             data-kaori-idp-directory-flow
+             aria-label="Directory provisioning evidence">
             <div class="min-w-0 rounded-lg bg-surface-subtle px-4 py-3.5"
                  data-kaori-idp-directory-providers>
                 <p class="text-xs font-semibold text-content-secondary">Directory Providers</p>
