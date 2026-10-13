@@ -186,6 +186,8 @@ def test_tls_registry_compact_copy_distinguishes_observed_zero_and_unreported() 
             presentation={
                 'status_label': 'Valid',
                 'status_tone': 'normal',
+                'validity_days_remaining': 74,
+                'validity_status': 'healthy',
                 'coverage_label': 'No Declared Hosts' if reported else 'Not Reported',
                 'coverage_tone': 'info' if reported else 'unknown',
                 'coverage_reported': reported,
