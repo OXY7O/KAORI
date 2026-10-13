@@ -63,7 +63,11 @@ def test_schedule_registry_materializes_only_the_selected_page() -> None:
     assert '_serialize_schedule_rows(schedule_records)' in service
     assert '_get_schedule_rows()' not in service
     assert '_get_schedule_counts()' in service
-    assert '.limit(200)' in service
+    # Canonical SQL-first pagination replaces the old arbitrary 200-row slice.
+    assert 'schedule_records, pagination = paginate_select(' in service
+    assert '_filter_schedule_statement(selected_filters, _get_delivery_channel_options()).order_by(' in service
+    assert "page=query_args.get('page', 1)" in service
+    assert "per_page=query_args.get('per_page', PER_PAGE_OPTIONS[0])" in service
 
 
 def test_stale_namespace_remains_explicit_and_loading_failure_blocks_submit() -> None:
