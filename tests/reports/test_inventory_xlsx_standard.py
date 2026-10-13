@@ -60,6 +60,8 @@ def _sample_value(data_type: str, key: str) -> object:
         return 'Valid'
     if key == 'usage_label':
         return 'In Use'
+    if key == 'entity_type':
+        return 'artifact'
     if key == 'coverage_label':
         return 'Fully Covered'
     if key == 'parse_state':
