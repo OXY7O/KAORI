@@ -254,7 +254,8 @@ def test_topology_cluster_icon_and_api_server_layout_are_readable() -> None:
     assert "normalizedLabel === 'api server'" in script
     assert "valueElement.classList.add('min-w-0', 'flex-1', 'truncate', 'whitespace-nowrap')" in script
     assert "valueElement.title = String(displayValue || 'Not Reported')" in script
-    assert 'max-w-[28rem]' in inspector
+    assert "topology_parts.field_row_template('topology-field-row-template')" in inspector
+    assert 'max-w-[28rem]' in _read('app/templates/components/topology_primitives.html')
     assert 'max-w-2xl' in _read('app/templates/components/visualization_workspace.html')
 
 
