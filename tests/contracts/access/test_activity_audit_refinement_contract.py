@@ -288,7 +288,6 @@ def test_activity_source_link_to_delivery_requires_permission_and_exact_committe
 def test_activity_audit_administrative_source_scope_is_read_only_and_permission_bound() -> None:
     routes = read('app/access/activity_audit/routes.py')
     source = read('app/access/activity_audit/administrative_sources.py')
-    page = read('app/templates/access/activity_audit/index.html')
     partial = read('app/templates/access/activity_audit/partials/_administrative_evidence.html')
 
     assert "@bp.get('/administrative-evidence')" in routes

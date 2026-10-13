@@ -13,8 +13,11 @@ from app.models.alertmanager import AlertmanagerInstance
 from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
-from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent
-from app.models.capsule_handoff_proof import CapsuleHandoffAuditBatch, CapsuleHandoffResourceConsentRecord
+from app.models.capsule_handoff_ledger import CapsuleHandoffLedgerEvent as CapsuleHandoffLedgerEvent
+from app.models.capsule_handoff_proof import (
+    CapsuleHandoffAuditBatch as CapsuleHandoffAuditBatch,
+    CapsuleHandoffResourceConsentRecord as CapsuleHandoffResourceConsentRecord,
+)
 from app.models.cluster import Cluster, ClusterStatus
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory, TLSCertificateUpdateEvent
 from app.models.harbor import HarborInstance

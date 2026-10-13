@@ -177,8 +177,6 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         page=args.get('silence_page', 1),
         per_page=args.get('silence_per_page', 5),
     )
-    now = datetime.now(UTC)
-
     return {
         'domain': domain,
         'domain_label': _DOMAIN_LABELS[domain],

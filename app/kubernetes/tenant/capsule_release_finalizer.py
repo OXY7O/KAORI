@@ -229,7 +229,6 @@ def _current_verified_capsule_scope(
     """Re-read all CR/Namespace/quota/limit/RBAC/global quotas, no mutation."""
     provider = runtime_adapter.build_client(cluster)
     cr = next(i for i in plan['handoff_components'] if i['kind'] == 'CapsuleTenant')
-    original_ns = {item['name']: item for item in plan['handoff_components'] if item['kind'] == 'Namespace'}
     source_items = {(item['namespace'], item['kind'], item['name']): item for item in work['items']}
     terminal_items = execution['verified_components']
     indexed = {

@@ -517,8 +517,7 @@ def inspect_capsule_complete_dry_run_shapes(
     }
     if set(preview_objects) != set(candidates):
         raise ValueError('Capsule dry-run preview is partial, repeated or includes foreign targets.')
-    cr, namespaces = validate_capsule_handoff_scope(plan['handoff_components'])
-    source_by_name = {ns['name']: ns for ns in namespaces}
+    cr, _ = validate_capsule_handoff_scope(plan['handoff_components'])
     source_related = {(row['namespace'], row['kind'], row['name']): row for row in related['resources']}
     consent_by_key = {
         (item['namespace'], item['kind'], item['name']): item for item in consent_manifest['transfer_targets']

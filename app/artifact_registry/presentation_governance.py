@@ -283,7 +283,6 @@ def _governance_posture_cards(
 ) -> list[dict[str, Any]]:
     project_total = summary['project_total']
     provider_count = summary['provider_count']
-    ready_count = summary['ready_count']
     retention_observed = summary['retention_configured'] + summary['retention_not_configured']
     immutability_observed = summary['immutability_configured'] + summary['immutability_not_configured']
     replication = capability_counts['replication']
