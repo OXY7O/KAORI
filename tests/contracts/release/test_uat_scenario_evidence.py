@@ -1,0 +1,94 @@
+from pathlib import Path
+
+from scripts.uat_scenario_evidence import evaluate, read_junit
+
+SHA = 'a' * 40
+TREE = 'b' * 40
+MANIFEST = {
+    'scenarios': [{
+        'id': 'UAT-EXAMPLE-001',
+        'nodes': [{'nodeid': 'tests/unit/test_example.py::test_case'}],
+        'required_artifacts': {},
+    }]
+}
+EXECUTION = {
+    'candidate': {'source_sha': SHA, 'tree_sha': TREE},
+    'environment': {'kind': 'local', 'provider_mode': 'simulated'},
+    'evidence': {},
+}
+
+
+def _evaluate(cases, *, manifest=MANIFEST, execution=EXECUTION, digest=None, root=None):
+    return evaluate(
+        manifest, execution, cases,
+        expected_source=SHA,
+        expected_tree=TREE,
+        expected_digest=digest,
+        evidence_root=root or Path('.'),
+    )
+
+
+def test_missing_junit_case_is_not_run() -> None:
+    report = _evaluate({})
+    assert report['scenarios'][0]['result'] == 'NOT RUN'
+    assert report['machine_readiness'] == 'INCOMPLETE'
+    assert report['human_acceptance'] == 'PENDING'
+
+
+def test_skipped_or_failed_junit_is_never_pass() -> None:
+    key = 'tests.unit.test_example::test_case'
+    assert _evaluate({key: ['SKIP']})['scenarios'][0]['result'] == 'SKIP'
+    assert _evaluate({key: ['FAIL']})['scenarios'][0]['result'] == 'FAIL'
+    assert _evaluate({key: ['PASS', 'FAIL']})['scenarios'][0]['result'] == 'FAIL'
+
+
+def test_successful_junit_only_reaches_human_review_not_acceptance() -> None:
+    report = _evaluate({'tests.unit.test_example::test_case': ['PASS']})
+    assert report['scenarios'][0]['result'] == 'PASS'
+    assert report['machine_readiness'] == 'READY_FOR_HUMAN_REVIEW'
+    assert report['human_acceptance'] == 'PENDING'
+
+
+def test_wrong_exact_source_tree_or_deployed_digest_blocks() -> None:
+    case = {'tests.unit.test_example::test_case': ['PASS']}
+    wrong = {**EXECUTION, 'candidate': {'source_sha': 'f' * 40, 'tree_sha': TREE}}
+    assert _evaluate(case, execution=wrong)['scenarios'][0]['result'] == 'BLOCKED'
+    wrong_tree = {**EXECUTION, 'candidate': {'source_sha': SHA, 'tree_sha': 'f' * 40}}
+    assert _evaluate(case, execution=wrong_tree)['scenarios'][0]['result'] == 'BLOCKED'
+    deployed = {
+        **EXECUTION,
+        'candidate': {'source_sha': SHA, 'tree_sha': TREE, 'oci_digest': 'sha256:' + 'c' * 64},
+        'environment': {'kind': 'server_uat', 'provider_mode': 'real'},
+    }
+    assert _evaluate(case, execution=deployed, digest='sha256:' + 'd' * 64)['scenarios'][0]['result'] == 'BLOCKED'
+
+
+def test_required_missing_or_empty_artifact_blocks(tmp_path: Path) -> None:
+    case = {'tests.unit.test_example::test_case': ['PASS']}
+    constrained = {'scenarios': [{**MANIFEST['scenarios'][0], 'required_artifacts': {'screenshot': 1}}]}
+    assert _evaluate(case, manifest=constrained, root=tmp_path)['scenarios'][0]['result'] == 'BLOCKED'
+    (tmp_path / 'shot.png').touch()
+    evidence = {**EXECUTION, 'evidence': {'UAT-EXAMPLE-001': [{'kind': 'screenshot', 'path': 'shot.png'}]}}
+    assert _evaluate(case, manifest=constrained, execution=evidence, root=tmp_path)['scenarios'][0]['result'] == 'BLOCKED'
+    (tmp_path / 'shot.png').write_bytes(b'captured')
+    assert _evaluate(case, manifest=constrained, execution=evidence, root=tmp_path)['scenarios'][0]['result'] == 'PASS'
+
+
+def test_real_provider_uat_is_not_inferred_from_mocked_fixtures() -> None:
+    case = {'tests.unit.test_example::test_case': ['PASS']}
+    constrained = {'scenarios': [{**MANIFEST['scenarios'][0], 'real_provider_required': True}]}
+    assert _evaluate(case, manifest=constrained)['scenarios'][0]['result'] == 'BLOCKED'
+
+
+def test_junit_reader_preserves_failing_rerun_and_parameter_ids(tmp_path: Path) -> None:
+    xml = tmp_path / 'junit.xml'
+    xml.write_text(
+        '<testsuite>'
+        '<testcase classname="tests.unit.test_example" name="test_case"/>'
+        '<testcase classname="tests.unit.test_example" name="test_case"><failure/></testcase>'
+        '<testcase classname="tests.ui.test_wizard" name="test_form[small-mobile]"><skipped/></testcase>'
+        '</testsuite>', encoding='utf-8',
+    )
+    cases = read_junit([xml])
+    assert cases['tests.unit.test_example::test_case'] == ['PASS', 'FAIL']
+    assert cases['tests.ui.test_wizard::test_form[small-mobile]'] == ['SKIP']

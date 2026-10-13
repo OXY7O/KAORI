@@ -1,0 +1,27 @@
+{
+  "candidate": {
+    "source_sha": "REPLACE_WITH_ADMITTED_40_HEX_SHA",
+    "tree_sha": "REPLACE_WITH_ADMITTED_40_HEX_TREE",
+    "oci_digest": null
+  },
+  "environment": {
+    "kind": "local",
+    "provider_mode": "simulated",
+    "name": "isolated-kaori-devcontainer"
+  },
+  "evidence": {
+    "UAT-UIX-006": [
+      {
+        "kind": "screenshot",
+        "variant": "large-desktop",
+        "path": "ui-browser/uat-uix-006-notification-filter-reset-large-desktop.png"
+      },
+      {
+        "kind": "trace",
+        "variant": "large-desktop",
+        "path": "ui-browser/uat-uix-006-notification-filter-reset-large-desktop-trace.zip"
+      }
+    ],
+    "UAT-RPT-003": []
+  }
+}

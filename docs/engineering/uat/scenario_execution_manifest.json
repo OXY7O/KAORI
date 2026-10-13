@@ -1,0 +1,77 @@
+{
+  "contract_version": 1,
+  "source": "docs/engineering/uat/features",
+  "authority_issue": 1728,
+  "description": "Manual first-wave regression evidence selection. Paths are stacked from #1738; test sources remain on #1726/#1727 until reviewed integration.",
+  "scenarios": [
+    {
+      "id": "UAT-AUT-002",
+      "required": true,
+      "nodes": [
+        {
+          "nodeid": "tests/access/authentication/test_login_characterization.py::test_invalid_credentials_return_generic_failure_without_account_disclosure"
+        }
+      ],
+      "required_artifacts": {},
+      "real_provider_required": false
+    },
+    {
+      "id": "UAT-UIX-006",
+      "required": true,
+      "nodes": [
+        {
+          "nodeid": "tests/ui/test_representative_interactions.py::test_notification_center_filters_and_rows_survive_htmx_reset",
+          "variants": [
+            "large-desktop",
+            "laptop",
+            "compact-laptop",
+            "tablet",
+            "mobile",
+            "small-mobile"
+          ]
+        }
+      ],
+      "required_artifacts": {
+        "screenshot": 6,
+        "trace": 6
+      },
+      "real_provider_required": false
+    },
+    {
+      "id": "UAT-RPT-003",
+      "required": true,
+      "nodes": [
+        {
+          "nodeid": "tests/reports/test_generate_execution_characterization.py::test_queued_report_failure_persists_failed_detail_without_pending_poll"
+        },
+        {
+          "nodeid": "tests/ui/test_representative_interactions.py::test_failed_generated_report_detail_is_truthful_and_responsive",
+          "variants": [
+            "large-desktop",
+            "laptop",
+            "compact-laptop",
+            "tablet",
+            "mobile",
+            "small-mobile"
+          ]
+        }
+      ],
+      "required_artifacts": {
+        "screenshot": 6,
+        "trace": 6
+      },
+      "real_provider_required": false
+    },
+    {
+      "id": "UAT-TEN-004",
+      "required": true,
+      "nodes": [
+        {
+          "nodeid": "tests/kubernetes/tenant/test_capacity_governance.py::test_namespace_allocation_submit_rechecks_committed_capacity_before_provider_write"
+        }
+      ],
+      "required_artifacts": {},
+      "real_provider_required": true
+    }
+  ]
+}
