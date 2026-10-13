@@ -9,7 +9,7 @@ def test_catalog_initial_active_state_matches_click_and_selection() -> None:
         encoding='utf-8'
     )
     # Jinja whitespace around filters is cosmetic; identical keys are not.
-    normalized = re.sub(r'\\s+\\|replace', '|replace', content)
+    normalized = re.sub(r'\s+\|replace', '|replace', content)
     assert "activeJob: '{{ (selected_job_key or '')|replace('.', '-')|replace('/', '-') }}'" in normalized
-    assert "@click=\"activeJob = '{{ item.key|replace('.', '-') |replace('/', '-') }}'\"" in normalized
-    assert "activeJob === '{{ item.key|replace('.', '-') |replace('/', '-') }}'" in normalized
+    assert "@click=\"activeJob = '{{ item.key|replace('.', '-')|replace('/', '-') }}'\"" in normalized
+    assert "activeJob === '{{ item.key|replace('.', '-')|replace('/', '-') }}'" in normalized
