@@ -35,7 +35,8 @@ def test_health_summary_uses_its_declared_surface_alias() -> None:
 
     assert 'as overview_surface' in source
     assert 'analysis_surface.' not in source
-    assert 'overview_surface.snapshot_header_icon_classes()' in source
+    assert 'overview_surface.snapshot_shell_classes()' in source
+    assert 'overview_surface.semantic_icon_classes(' in source
     assert 'overview_surface.metric_icon_classes()' in source
 
 
