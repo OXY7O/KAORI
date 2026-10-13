@@ -42,7 +42,7 @@ def test_database_setup_workspace_uses_release_hierarchy_and_copyable_commands()
         'data-kaori-setup-workspace="release-v4"',
         'Initialization Path',
         'Application Schema',
-        'Development Bootstrap',
+        'Run Initial Database Bootstrap',
         'Encryption Key Requirement',
         'Advanced Setup',
         'Copy Command',
