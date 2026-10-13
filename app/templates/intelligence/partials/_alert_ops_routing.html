@@ -294,15 +294,15 @@
             </table>
         </div>
         {{ table_registry.footer('alert_intelligence.index',
-                    'alert-operations-routing-registry',
-                    'alert-operations-routing-loading',
-                    payload.routing_pagination,
-                    {'tab': 'routing', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'routing_q': payload.routing_filters.q, 'routing_domain': payload.routing_filters.domain, 'routing_status': payload.routing_filters.status},
-                    payload.routing_pagination.allowed_per_page,
-                    resource_label='Policies',
-                    rows_aria_label='Routing policies per page',
-                    control_name='alert-routing-policies',
-                    page_param='routing_page',
-                    per_page_param='routing_per_page') }}
+                'alert-operations-routing-registry',
+                'alert-operations-routing-loading',
+                payload.routing_pagination,
+                {'tab': 'routing', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'routing_q': payload.routing_filters.q, 'routing_domain': payload.routing_filters.domain, 'routing_status': payload.routing_filters.status},
+                payload.routing_pagination.allowed_per_page,
+                resource_label='Policies',
+                rows_aria_label='Routing policies per page',
+                control_name='alert-routing-policies',
+                page_param='routing_page',
+                per_page_param='routing_per_page') }}
     </section>
 </div>
