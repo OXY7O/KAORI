@@ -37,7 +37,8 @@ def test_one_primary_action_has_hierarchy_and_shared_clipboard_terminal() -> Non
     assert 'Primary action · One-time setup' in source
     assert 'Run Initial Database Bootstrap' in source
     assert 'text-lg font-semibold leading-6 text-content-primary' in source
-    assert 'border-l-4 border-kaori-primary' in source
+    assert 'border-l-4 border-kaori-primary' not in source
+    assert 'rounded-xl border border-outline-default bg-surface-card shadow-sm' in source
     assert 'bg-surface-card shadow-sm' in source
     assert 'data-kaori-setup-command' in source
     assert 'terminal_command.render(bootstrap_command' in source
@@ -122,7 +123,7 @@ def test_requested_copy_is_shorter_without_changing_bootstrap_semantics() -> Non
     source = TEMPLATE.read_text(encoding='utf-8')
 
     assert 'PostgreSQL is ready. Run setup to enable sign-in and background jobs.' in source
-    assert 'Keep INTEGRATION_CREDENTIAL_KEY unchanged.' in source
+    assert 'Preserve INTEGRATION_CREDENTIAL_KEY.' in source
     assert 'Verify INTEGRATION_CREDENTIAL_KEY before bootstrap.' in source
     assert 'PostgreSQL is connected. Complete the one-time database setup' not in source
     assert 'Check INTEGRATION_CREDENTIAL_KEY; keep it unchanged.' not in source
@@ -138,12 +139,13 @@ def test_native_browser_zoom_uses_compact_layout_without_css_scaling() -> None:
     assert 'max-w-6xl' not in source
     assert 'mt-3 grid gap-x-4 gap-y-2' in source
     assert 'mt-4 overflow-hidden rounded-xl' in source
-    assert 'border-l-4 border-kaori-primary px-4 py-4 sm:px-5' in source
+    assert 'border-l-4 border-kaori-primary' not in source
+    assert 'rounded-xl border border-outline-default bg-surface-card shadow-sm' in source
     assert 'mt-3" data-kaori-setup-command' in source
     assert 'mt-5" data-kaori-setup-flow' in source
     assert 'mt-4" data-kaori-setup-advanced' in source
     assert 'mt-4 flex flex-col gap-2 border-t' in source
-    assert 'Run once from Windows PowerShell at the repository root.' in source
+    assert 'Run once in Windows PowerShell at the repo root to create the schema, grants, and admin.' in source
     assert 'text-xs leading-5 text-content-muted' in source
     assert 'max-w-4xl' in authority
     assert 'never set CSS zoom/transform scaling' in authority
