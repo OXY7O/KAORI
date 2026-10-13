@@ -6,6 +6,7 @@
     {% import "components/section_intro.html" as section_intro %}
     {% import "components/visualization_workspace.html" as visualization %}
     {% import "components/table.html" as table_ui %}
+    {% import "components/info_tip.html" as info_tip %}
 {% import "components/topology_primitives.html" as topology_parts %}
     {% import "components/table_registry.html" as registry_ui %}
     {% import "components/segmented_tabs.html" as segmented_tabs %}
@@ -356,12 +357,19 @@
                         <section id="registry-topology-view-panel-list" role="tabpanel"
                                  aria-labelledby="registry-topology-view-tab-list"
                                  hidden class="{{ visualization.canvas_classes() }} min-h-[38rem] overflow-auto">
-                            <div class="border-b border-outline-subtle px-5 py-3">
+                            <div class="flex items-center gap-1.5 border-b border-outline-subtle bg-surface-card px-5 py-3">
                                 <h3 class="text-sm font-semibold text-content-primary">Resource List</h3>
-                                <p class="mt-1 text-xs text-content-muted">Visible committed graph resources, with type, scope, relationship counts, and Details.</p>
+                                {{ info_tip.render('registry-runtime-topology-resource-list-guide',
+                                    'Topology Resource List Guide',
+                                    'How to interpret committed Artifact Registry and Kubernetes relationships.',
+                                    items=[
+                                        'Artifact Exposure: Critical or High is a Registry scan finding, not Kubernetes health.',
+                                        'Correlation Readiness: Ready means committed evidence is qualified, not that the workload is healthy.',
+                                        'Resource Relationships: Visible links are bounded to the selected committed correlation snapshot.'
+                                    ], placement='right', variant='guide') }}
                             </div>
-                            <div class="overflow-x-auto">
-                                <table class="{{ table_ui.table_classes('min-w-[55rem]') }}">
+                            <div class="min-w-[760px]">
+                                <table class="{{ table_ui.table_classes() }}">
                                     <caption class="sr-only">Resource nodes in the bounded committed artifact topology</caption>
                                     <thead class="{{ table_ui.head_classes() }}">
                                         <tr>
@@ -371,11 +379,20 @@
                                             <th class="{{ table_ui.header_cell_classes() }}">Namespace</th>
                                             <th class="{{ table_ui.header_cell_classes() }}">Evidence</th>
                                             <th class="{{ table_ui.header_cell_classes() }}">Relationships</th>
-                                            <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                                            <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                                         </tr>
                                     </thead>
                                     <tbody id="registry-topology-resource-rows" class="{{ table_ui.body_classes() }}"></tbody>
                                 </table>
+                            </div>
+                            <div id="registry-topology-list-empty" class="hidden p-6">
+                                {% set empty_state_icon = "list-tree" %}
+                                {% set empty_state_label = "No Results" %}
+                                {% set empty_state_title = "No Resources in the Current View" %}
+                                {% set empty_state_description = "Adjust visibility or committed correlation filters to display resources." %}
+                                {% set empty_state_variant = "panel" %}
+                                {% set empty_state_min_height = "min-h-[220px]" %}
+                                {% include 'components/states/_empty_state.html' %}
                             </div>
                             <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle px-5 py-3">
                                 <p id="registry-topology-list-count" class="text-xs text-content-muted"></p>
