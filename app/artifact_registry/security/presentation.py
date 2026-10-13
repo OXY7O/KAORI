@@ -141,8 +141,7 @@ def _snapshot_status(
     latest_evidence_at: datetime | None,
     inventory_committed: bool = False,
 ) -> dict[str, Any]:
-    # A fleet JobExecution completed_at is an attempt timestamp, not proof
-    # that selected Registry sources refreshed committed security evidence.
+    # A fleet job completion is an attempt, not proof of committed Registry security evidence.
     successful_at = latest_evidence_at
     successful_at = _aware_datetime(successful_at)
     latest_status = str(latest_job.status or '') if latest_job is not None else ''
@@ -605,7 +604,8 @@ def _security_supply_evidence_page(
             )
             .filter(RegistryScanSnapshot.artifact_id.in_(artifact_ids))
             .group_by(RegistryScanSnapshot.artifact_id)
-            .tuples().all()
+            .tuples()
+            .all()
         )
         if artifact_ids
         else {}
