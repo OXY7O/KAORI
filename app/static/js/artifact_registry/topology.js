@@ -690,10 +690,9 @@ if (canvas && form) {
         badgeCache.set(key, result)
         return result
     }
-    const displayLabel = (value) => {
-        const label = String(value || 'Not Reported')
-        return label.length > 30 ? `${label.slice(0, 29)}…` : label
-    }
+    // K8s topology lets Cytoscape apply a bounded external label.
+    // Keep the full underlying identity for native ellipsis, hover and inspector.
+    const displayLabel = (value) => String(value || 'Not Reported')
     const graphStyle = () => {
         const surface = token('--kaori-surface-card', 'Canvas')
         const foreground = token('--kaori-content-primary', 'CanvasText')
@@ -724,12 +723,15 @@ if (canvas && form) {
                     color: foreground,
                     'font-family': 'Inter, sans-serif',
                     'font-size': 10,
-                    'font-weight': 600,
+                    'font-weight': 400,
+                    'line-height': 1.2,
+                    'min-zoomed-font-size': 8,
                     'text-valign': 'bottom',
                     'text-halign': 'center',
                     'text-justification': 'center',
                     'text-wrap': 'ellipsis',
-                    'text-max-width': 195,
+                    'text-overflow-wrap': 'normal',
+                    'text-max-width': 220,
                     'text-margin-y': 11,
                     'text-background-color': surface,
                     'text-background-opacity': 0.94,
@@ -748,12 +750,13 @@ if (canvas && form) {
             },
             {
                 selector: 'node[type = "artifact"]',
-                style: { width: 96, height: 52, 'font-size': 11, 'font-weight': 700 },
+                style: { width: 96, height: 52, 'font-size': 11, 'font-weight': 400, 'text-max-width': 240 },
             },
             {
                 selector: 'node[type = "cluster"]',
-                style: { width: 92, height: 48, 'font-weight': 700 },
+                style: { width: 96, height: 52, 'font-size': 11, 'font-weight': 400, 'text-max-width': 240 },
             },
+            { selector: 'node[type = "namespace"]', style: { width: 88, height: 48, 'text-max-width': 230 } },
             {
                 selector: 'edge',
                 style: {
