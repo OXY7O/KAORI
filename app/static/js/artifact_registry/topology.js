@@ -716,6 +716,12 @@ if (canvas && form) {
                 randomize: false,
             }
         }
+        const hasBranches = cy.edges(':visible').reduce((counts, edge) => {
+            const id = edge.source().id()
+            counts.set(id, (counts.get(id) || 0) + 1)
+            return counts
+        }, new Map())
+        const branched = [...hasBranches.values()].some((count) => count > 1)
         return {
             name: 'breadthfirst',
             directed: true,
@@ -726,9 +732,9 @@ if (canvas && form) {
             nodeDimensionsIncludeLabels: true,
             padding: displayed <= 8 ? 72 : 64,
             spacingFactor: displayed <= 8 ? 1.18 : displayed <= 35 ? 1.48 : 1.88,
-            // Rotate hierarchy into a left-to-right reading flow. A single
-            // artifact should not consume 38rem as a vertical five-node stick.
-            transform: (_node, position) => ({ x: position.y, y: position.x }),
+            // Match Kubernetes top-down trees when branches exist. Only a
+            // single-chain evidence path is rotated to use canvas width.
+            transform: (_node, position) => branched ? position : ({ x: position.y, y: position.x }),
         }
     }
     const fitGraph = () => {
