@@ -248,7 +248,8 @@ def test_related_provider_list_and_global_quota_revisions_are_detected():
         list_snapshots=changed['list_snapshots'],
     )
     receipt = _readback(plan, related, cr, ns, baseline, current_related=changed)
-    assert 'namespaced_provider_object_or_list_changed' in receipt['blockers']
+    assert 'namespaced_list_revision_drift' in receipt['blockers']
+    assert receipt['release_authorized'] is False
     changed = deepcopy(related)
     changed['global_quota']['list_resource_version'] = 'updated'
     changed['global_quota']['scope_sha256'] = _digest(
@@ -258,7 +259,8 @@ def test_related_provider_list_and_global_quota_revisions_are_detected():
         }
     )
     receipt = _readback(plan, related, cr, ns, baseline, current_related=changed)
-    assert 'cluster_global_quota_or_list_changed' in receipt['blockers']
+    assert 'global_quota_evidence_drift' in receipt['blockers']
+    assert receipt['release_authorized'] is False
 
 
 def test_readback_rejects_forged_unrecomputed_inventory_hash():
@@ -680,7 +682,7 @@ def test_whole_scope_does_not_accept_unexplained_list_revision_or_grq_drift():
         }
     )
     receipt = _full_readback(case, current=current)
-    assert 'cluster_global_quota_or_list_changed' in receipt['blockers']
+    assert 'global_quota_evidence_drift' in receipt['blockers']
     assert receipt['release_authorized'] is False
 
 
