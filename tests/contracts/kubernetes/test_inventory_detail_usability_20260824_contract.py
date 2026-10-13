@@ -341,7 +341,10 @@ def test_inventory_operational_guidance_copy_is_compact_and_evidence_qualified()
             'No exceptional lifecycle state in the committed storage snapshot.',
         ),
         'app/kubernetes/inventory/resources/configuration.py': (
-            'No Pod references in this snapshot; other consumers or workload templates may still reference this object.',
+            (
+                'No Pod references in this snapshot; other consumers or workload templates '
+                'may still reference this object.'
+            ),
         ),
     }
     for path, descriptions in expected.items():
