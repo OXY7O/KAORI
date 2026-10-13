@@ -154,7 +154,7 @@
                     </div>
                     {% if runtime.filters.artifact_id %}
                         <input type="hidden" name="artifact_id" value="{{ runtime.filters.artifact_id }}">
-                        <p class="mt-2 text-xs text-content-muted">
+                        <p id="registry-topology-artifact-focus" class="mt-2 text-xs text-content-muted">
                             Focused on {{ runtime.artifact_filter_label }}.
                             <a class="font-semibold text-kaori-primary underline"
                                href="{{ url_for('artifact_registry.runtime_topology') }}">Clear artifact focus</a>
