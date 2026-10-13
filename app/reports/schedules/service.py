@@ -522,11 +522,11 @@ def execute_schedule(
     storage_status = get_report_storage_backend_status()
     if not bool(storage_status.get('write_available', False)):
         run.status = 'failed'
-        run.finished_at = datetime.now(UTC)
+        run.finished_at = failed_at = datetime.now(UTC)
         run.error_message = 'Artifact storage is unavailable. Scheduled report generation was not started.'
         schedule.last_status = 'failed'
         schedule.last_run_at = run.finished_at
-        _retry_unadmitted_schedule(schedule, failed_at=run.finished_at, trigger_source=trigger_source)
+        _retry_unadmitted_schedule(schedule, failed_at=failed_at, trigger_source=trigger_source)
         db.session.commit()
         return False, 'Artifact storage is unavailable. The scheduled report was not created.', None
 
@@ -540,11 +540,11 @@ def execute_schedule(
         )
     except ReportContractError as exc:
         run.status = 'failed'
-        run.finished_at = datetime.now(UTC)
+        run.finished_at = failed_at = datetime.now(UTC)
         run.error_message = str(exc)
         schedule.last_status = 'failed'
         schedule.last_run_at = run.finished_at
-        _retry_unadmitted_schedule(schedule, failed_at=run.finished_at, trigger_source=trigger_source)
+        _retry_unadmitted_schedule(schedule, failed_at=failed_at, trigger_source=trigger_source)
         db.session.commit()
         return False, str(exc), None
 
