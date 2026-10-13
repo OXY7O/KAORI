@@ -133,6 +133,16 @@ def classify_capsule_namespace_handoff(
     }
 
 
+def _required_baseline_key(row: Mapping[str, Any]) -> tuple[str, str]:
+    """Match only explicit Namespace name and immutable UID in recovery read-back."""
+    if not isinstance(row, Mapping):
+        raise ValueError('Capsule recovery Namespace evidence is malformed.')
+    name, uid = row.get('name'), row.get('uid')
+    if not isinstance(name, str) or not name or not isinstance(uid, str) or not uid:
+        raise ValueError('Capsule recovery Namespace has no complete provider identity.')
+    return name, uid
+
+
 def summarize_capsule_recovery(
     *,
     baselines: list[dict[str, Any]],
@@ -143,7 +153,7 @@ def summarize_capsule_recovery(
     """Read-only complete scope classification; NEVER grants retry or Release."""
     if not isinstance(baselines, list) or not 0 < len(baselines) <= 30:
         raise ValueError('Capsule recovery requires a bounded nonempty Namespace inventory.')
-    keys = [(row.get('name'), row.get('uid')) for row in baselines]
+    keys = [_required_baseline_key(row) for row in baselines]
     if (
         len(set(keys)) != len(keys)
         or set(live_namespaces) != set(keys)
