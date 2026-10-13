@@ -1,8 +1,9 @@
 from decimal import Decimal
 from types import SimpleNamespace
 
-import app.kubernetes.tenant.capacity_governance as capacity_governance
 import pytest
+
+import app.kubernetes.tenant.capacity_governance as capacity_governance
 from app.kubernetes.analytics.materialization.service import SnapshotResult
 from app.kubernetes.tenant.capacity import (
     CapacityVector,
