@@ -29,6 +29,19 @@ class _Query:
         return self.rows
 
 
+class _OrderedColumn:
+    def asc(self):
+        return self
+
+    def desc(self):
+        return self
+
+
+class _QueryModel(SimpleNamespace):
+    sequence = _OrderedColumn()
+    id = _OrderedColumn()
+
+
 def _worklist():
     return {
         'inventory_sha256': 'd' * 64,
@@ -83,12 +96,12 @@ def test_capsule_g4_refuses_no_start_ledger_even_if_execution_claims_success(mon
     monkeypatch.setattr(
         finalizer,
         'CapsuleHandoffLedgerEvent',
-        SimpleNamespace(query=_Query([])),
+        _QueryModel(query=_Query([])),
     )
     monkeypatch.setattr(
         finalizer,
         'AuditEvent',
-        SimpleNamespace(
+        _QueryModel(
             query=_Query(
                 [
                     SimpleNamespace(
@@ -115,7 +128,7 @@ def test_capsule_g4_refuses_partial_or_multiple_attempts_before_readback(monkeyp
     monkeypatch.setattr(
         finalizer,
         'CapsuleHandoffLedgerEvent',
-        SimpleNamespace(query=_Query([SimpleNamespace(sequence=1)])),
+        _QueryModel(query=_Query([SimpleNamespace(sequence=1)])),
     )
     with pytest.raises(ValueError, match='START and terminal'):
         finalizer._committed_full_handoff(
@@ -128,7 +141,7 @@ def test_capsule_g4_refuses_partial_or_multiple_attempts_before_readback(monkeyp
     monkeypatch.setattr(
         finalizer,
         'CapsuleHandoffLedgerEvent',
-        SimpleNamespace(query=_Query([SimpleNamespace()] * 3)),
+        _QueryModel(query=_Query([SimpleNamespace()] * 3)),
     )
     with pytest.raises(ValueError, match='START and terminal'):
         finalizer._committed_full_handoff(
@@ -185,7 +198,7 @@ def test_capsule_source_snapshot_rejects_no_g0_evidence(monkeypatch):
     monkeypatch.setattr(
         finalizer,
         'AuditEvent',
-        SimpleNamespace(query=_Query([])),
+        _QueryModel(query=_Query([])),
     )
     with pytest.raises(ValueError, match='Original Capsule source'):
         finalizer._source_snapshot(tenant_id='tenant-1', plan=_plan())
@@ -311,12 +324,12 @@ def _mock_complete_g3_source(monkeypatch, rows, receipt):
     monkeypatch.setattr(
         finalizer,
         'CapsuleHandoffLedgerEvent',
-        SimpleNamespace(query=_Query(rows)),
+        _QueryModel(query=_Query(rows)),
     )
     monkeypatch.setattr(
         finalizer,
         'AuditEvent',
-        SimpleNamespace(query=_Query([SimpleNamespace(metadata_json=receipt)])),
+        _QueryModel(query=_Query([SimpleNamespace(metadata_json=receipt)])),
     )
 
 
