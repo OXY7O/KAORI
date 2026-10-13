@@ -153,6 +153,40 @@ different provenance/relationship semantics. It consumes the same existing
 shared UI and palette contracts; a new graph abstraction is not introduced
 without demonstrated multi-domain value.
 
+### Canonical filters, loading and mini-map (2026-10-13 UAT feedback)
+
+The Runtime Topology filter UX follows Kubernetes Inventory Topology:
+
+- Six scoped fields (Registry Source, Cluster, Namespace, Match Type,
+  Security Exposure and Artifact/Workload Search) share a single row at
+  desktop `lg` width; smaller breakpoints wrap responsively.
+- Filter selects automatically fetch the committed JSON graph; search is
+  debounced (350 ms), and there is **no Apply Filters action**. The browser
+  updates the filter URL while retaining graph-only `view` and `layout`
+  state. As in Kubernetes Topology, the canvas renderer uses a bounded
+  client-side JSON fetch rather than a second HTML/HTMX fragment endpoint.
+  HTMX-based registry table pages remain unchanged.
+- **Clear Filters** uses the existing `table_registry.clear_filters_action`
+  in the Adaptive Explorer header (before Reload Snapshot), hidden when
+  no filters are active. Clearing includes the focused artifact scope and
+  does not require a page refresh.
+- The header's existing shared `loading_bar.html` must actually activate
+  during initial requests, filter changes and Reload Snapshot; follow
+  Kubernetes Topology's `htmx-request` loading class and disable Reload
+  until the latest request completes. Abort from an earlier request must
+  never hide the latest request's progress bar.
+- The inspector mini-map uses the K8s pixel-ratio-aware, tokenized Canvas2D
+  miniature of the *visible selected artifact/cluster branch*. It includes
+  edges, glyph-domain colors, selected-node emphasis and a dashed current
+  viewport rectangle; it should be refreshed after graph layout, zoom,
+  pan, position and resize, rather than preserving a stale one-dot sketch.
+  If there are fewer than two visible related nodes, the mini-map is
+  hidden rather than implying a dependency topology that is not supported.
+
+These interactions are presentation-only; committed RegistryWorkloadBinding,
+readiness, match confidence, permissions and the bounded projection remain
+unchanged. They do not introduce a provider API or bypass CI/CD HOLD.
+
 ### Visual UAT focus
 
 Verify the one-artifact single-chain example against Kubernetes Topology
