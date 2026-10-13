@@ -115,17 +115,33 @@ Explorer (including `adaptive_grid_classes`, `drawer_pane_classes`, and
   available on hover, via keyboard-accessible Resource List and Details.
   No raw color hex or oversized label-inside-node rectangles.
 - Hierarchy uses the existing Cytoscape breadth-first geometry and label
-  bounding boxes with a left-to-right transform for short Registry-to-Pod
-  chains, preventing the five-node vertical stick seen in early feedback.
-  Dependency mode uses COSE. Fit uses the visible graph bounding box including
-  external labels, bounded margins, and a cap on over-magnification.
+  bounding boxes. **Branched** relationships follow Kubernetes' top-down
+  tree while a single Registry-to-Pod chain is rotated left-to-right to
+  avoid a vertical stick. Dependency mode uses COSE. Fit uses the visible
+  graph bounding box including external labels, bounded margins, and a cap
+  on over-magnification.
 - Dashed quiet containment, solid ownership, and digest/tag-confidence-aware
   runtime edges preserve graph semantics. Relationship labels are hidden by
   default at every graph size, and appear only on edge hover, selection,
   or explicit Always Show control, per the current Kubernetes authority.
   Hiding an edge or resource type is **display-only**.
 - Node selection focuses the local neighborhood and opens the right inspector.
-  List fallback and a committed-only Reload remain available if Cytoscape
+  The inspector follows the canonical Kubernetes **identity header → Highlight
+  Path / Collapse → Details / Relationships tabs → relationship summary →
+  interactive related-resource cards**. Artifact/Cluster selections also show
+  a bounded mini-map that centers the main graph, not a provider-side query.
+  Registry-specific committed bindings, match confidence, scan posture and
+  readiness stay scoped to their authoritative sources.
+- Resource List is now a **resource-node explorer**, as in Kubernetes Topology:
+  Resource, Type, Cluster, Namespace, Evidence, Relationships and View Details,
+  five rows per page. Node scopes are resolved from already-returned bounded
+  edges, never from a new live query. The committed binding counts remain in
+  Snapshot/toolbar; list node counts must not be misreported as binding totals.
+- The Display Controls' Group by Namespace toggle draws optional boundaries
+  for the visible committed Namespace subtree, without creating new edges or
+  altering correlation results. Resource/relationship hiding, collapse, and
+  graph focus remain presentation-only and must not hide omitted data counts.
+- List fallback and a committed-only Reload remain available if Cytoscape
   fails. Export never implies full coverage when omitted bindings are nonzero.
 - Correlation readiness `inputs_changed` and other provisional states remain
   explicit warnings. The browser never materializes new data or treats missing
