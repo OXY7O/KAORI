@@ -165,8 +165,6 @@ def project_native_release_readiness(
         and no_transfer_assessment.get('assessed_by') == plan.get('requested_by')
         and _checked_recently(no_transfer_assessment.get('assessed_at'))
     )
-    # Derived readiness flags do not statically narrow optional receipts.
-    # Read missing committed values as unknown, never as a success signal.
     no_transfer_authorized_current = bool(
         no_transfer_assessment_current
         and no_transfer_decision
@@ -223,8 +221,6 @@ def project_native_release_readiness(
         and readback.get('status') == 'provider_handoff_observed_acceptance_unverified'
         and readback.get('external_successor_verified') is False
     )
-    # Approval is a prerequisite, not a synthesized successor consent.
-    # The backend remains authoritative for independent identity review.
     verified_acceptance = bool(
         same_plan
         and successor_acceptance
