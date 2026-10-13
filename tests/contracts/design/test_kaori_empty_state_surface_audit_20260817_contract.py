@@ -65,7 +65,17 @@ def test_reviewed_registry_empty_rows_do_not_keep_page_local_visual_shells() -> 
         assert 'components/states/_empty_state.html' in source, relative
 
     intelligence = read('app/templates/intelligence/partials/_recommendation_records.html')
-    assert has_jinja_assignment(intelligence, 'empty_state_label', 'No Results')
+    # Source-qualified states must not collapse unavailable evidence into a healthy zero.
+    for label in (
+        'Evidence Unavailable',
+        'No Matching Findings',
+        'Evidence Review Required',
+        'No Active Findings',
+    ):
+        assert has_jinja_assignment(intelligence, 'empty_state_label', label)
+    assert "readiness_status == 'unavailable'" in intelligence
+    assert "readiness_status in ['partial', 'not_collected']" in intelligence
+    assert 'components/states/_empty_state.html' in intelligence
     assert 'rounded-xl border border-dashed border-outline-strong bg-surface-hover px-4 py-10' not in intelligence
 
 
