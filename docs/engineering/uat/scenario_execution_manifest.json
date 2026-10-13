@@ -81,7 +81,7 @@
           "nodeid": "tests/kubernetes/tenant/test_capacity_governance.py::test_namespace_allocation_submit_rechecks_committed_capacity_before_provider_write"
         },
         {
-          "nodeid": "tests/ui/test_representative_interactions.py::test_tenant_namespace_form_rejected_submit_records_no_provider_write",
+          "nodeid": "tests/ui/test_representative_interactions.py::test_tenant_allocation_change_rejected_submit_records_no_provider_write",
           "variants": [
             "large-desktop",
             "laptop",
