@@ -96,3 +96,19 @@ inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline
     </button>
 </template>
 {%- endmacro %}
+
+{% macro relationship_summary_item_template(template_id) -%}
+<template id="{{ template_id }}">
+    <span role="listitem"
+          class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-card px-2 py-1 text-xs font-medium text-content-secondary">
+        <span data-summary-swatch class="h-1.5 w-1.5 shrink-0 rounded-full" aria-hidden="true"></span>
+        <span data-summary-label></span>
+    </span>
+</template>
+{%- endmacro %}
+
+{% macro relationship_empty_template(template_id) -%}
+<template id="{{ template_id }}">
+    <div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-6 text-center text-xs font-medium text-kaori-primary">No Visible Relationships</div>
+</template>
+{%- endmacro %}
