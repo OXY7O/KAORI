@@ -8,7 +8,7 @@ Database trigger protections are authored in the paired Alembic migration.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -69,3 +69,27 @@ class CapsuleHandoffLedgerEvent(db.Model):
         ),
         db.CheckConstraint('sequence BETWEEN 1 AND 3', name='ck_capsule_ledger_sequence'),
     )
+
+    if TYPE_CHECKING:
+        # Flask-SQLAlchemy provides the mapped keyword constructor at runtime.
+        # Static typing must not replace the immutable ledger's ORM initializer.
+        def __init__(
+            self,
+            *,
+            tenant_id: str | None = None,
+            cluster_id: str | None = None,
+            generation: int | None = None,
+            plan_sha256: str | None = None,
+            handoff_fingerprint: str | None = None,
+            worklist_sha256: str | None = None,
+            attempt_id: str | None = None,
+            sequence: int | None = None,
+            event_type: str | None = None,
+            actor_user_id: int | None = None,
+            event_at: datetime | None = None,
+            previous_event_sha256: str | None = None,
+            event_sha256: str | None = None,
+            event_json: dict[str, Any] | None = None,
+            id: int | None = None,
+            recorded_at: datetime | None = None,
+        ) -> None: ...
