@@ -478,10 +478,7 @@ def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
         description = 'The latest rebuild failed; the previous committed correlation remains readable.'
     elif inputs_changed:
         status, tone = 'Inputs Changed', 'warning'
-        description = (
-            'Committed Registry or Kubernetes inventory changed since materialization, '
-            'or the previous correlation has no input-generation proof. Rebuild required.'
-        )
+        description = 'Inputs changed or correlation lacks generation proof; rebuild.'
     elif stale:
         status, tone = 'Stale', 'warning'
         description = 'Committed runtime correlation is older than the current freshness window.'
