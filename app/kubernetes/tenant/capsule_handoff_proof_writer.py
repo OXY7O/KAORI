@@ -325,6 +325,14 @@ def _stored_matches(stored: Any, expected: Mapping[str, Any]) -> bool:
     return stored is not None and all(getattr(stored, key, None) == value for key, value in expected.items())
 
 
+def _require_related_inventory(preflight: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Reject absent or malformed proof scope before constructing a candidate."""
+    related = preflight.get('capsule_related_inventory')
+    if not isinstance(related, Mapping):
+        raise ValueError('Capsule proof requires complete related-provider scope evidence.')
+    return related
+
+
 def commit_capsule_proof_pair_staged(
     *,
     tenant_id: str,
@@ -442,9 +450,7 @@ def commit_capsule_proof_pair_staged(
             )
             if acceptance.get('accepted_by') != actor_user_id:
                 raise ValueError('Capsule proof actor must equal the accepted X.509 successor.')
-            related = preflight.get('capsule_related_inventory')
-            if not isinstance(related, Mapping):
-                raise ValueError('Capsule proof requires complete related-provider scope evidence.')
+            related = _require_related_inventory(preflight)
             pair = build_capsule_proof_pair_candidate(
                 plan=plan,
                 related=related,
