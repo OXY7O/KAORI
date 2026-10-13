@@ -70,6 +70,7 @@ def _artifact_status(
     }
     for kind, count in requirements.items():
         valid: set[str] = set()
+        used_paths: set[Path] = set()
         for entry in evidence:
             if entry.get("kind") != kind:
                 continue
@@ -80,7 +81,7 @@ def _artifact_status(
             resolved = candidate.resolve()
             if not resolved.is_relative_to(root.resolve()) or candidate.is_symlink():
                 continue
-            if not resolved.is_file() or resolved.stat().st_size == 0:
+            if not resolved.is_file() or resolved.stat().st_size == 0 or resolved in used_paths:
                 continue
             if expected_keys:
                 nodeid = entry.get("nodeid")
@@ -91,6 +92,7 @@ def _artifact_status(
                 valid.add(key)
             else:
                 valid.add(relative)
+            used_paths.add(resolved)
         if len(valid) < count or (
             expected_keys and count == len(expected_keys) and not expected_keys.issubset(valid)
         ):
