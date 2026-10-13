@@ -18,11 +18,21 @@ def test_native_managed_release_cannot_skip_explicit_confirmation():
 
 
 def test_missing_verified_handoff_cannot_commit_native_release(monkeypatch):
+    from app.kubernetes.tenant import native_platform_admin_authority as authority
     from app.kubernetes.tenant import native_handoff_executor as executor
     from app.kubernetes.tenant import native_handoff_readback as readback
     from app.kubernetes.tenant import native_successor_acceptance as consent
     from app.kubernetes.tenant import release_handoff_approval as approval
 
+    # This test isolates the missing-proof gate after a separately authorized
+    # Platform Admin actor; still require that exact guard to be invoked.
+    checked_actors = []
+
+    def require_authorized_actor(actor_user_id):
+        assert actor_user_id == 42
+        checked_actors.append(actor_user_id)
+
+    monkeypatch.setattr(authority, 'require_platform_admin_actor', require_authorized_actor)
     monkeypatch.setattr(approval, 'latest_release_handoff_plan', lambda _: None)
     monkeypatch.setattr(approval, 'latest_release_handoff_approval', lambda _: None)
     monkeypatch.setattr(consent, 'latest_native_successor_acceptance', lambda _: None)
@@ -35,6 +45,7 @@ def test_missing_verified_handoff_cannot_commit_native_release(monkeypatch):
             plan_sha256='a' * 64,
             approved=True,
         )
+    assert checked_actors == [42]
 
 
 def test_native_managed_finalizer_reuses_canonical_released_history_without_provider_writes():
