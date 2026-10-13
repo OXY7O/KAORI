@@ -4,15 +4,15 @@
 
 ## How to read and comment
 
-Read one `.feature` file per KAORI capability, click the scenario with its stable `UAT-<CAPABILITY>-NNN` ID, and review the standard **Given (preconditions) → When (action) → Then (expected result)** sequence. `And` extends the preceding step. A `Background` lists shared context, not a test execution. `@negative`/`@positive`, `@ui`/`@non_ui`, `@high`/`@medium`, `@detailed`/`@draft` and `@not_run` indicate classification, detail maturity and known execution status.
+Read one `.feature` file per KAORI capability, click the scenario with its stable `UAT-<CAPABILITY>-NNN` ID, and review the standard **Given (preconditions) → When (action) → Then (expected result)** sequence. `And` extends the preceding step. A `Background` lists shared context, not a test execution. `@negative`/`@positive`, `@ui`/`@non_ui`, `@high`/`@medium`, `@detailed`/`@draft` indicate classification and detail maturity. **Execution outcome is not encoded in Gherkin tags** because a scenario is reusable across candidates.
 
 **Feedback:** add a comment on [#1738](https://github.com/OXY7O/KAORI/issues/1738), citing the exact ID and the Given/When/Then line that should change. Mention the feature and role, expected committed state, provider/audit read-back, negative/security path or UI geometry, as applicable. Never include secrets. Gherkin text is written in English for consistency with KAORI's approved technical documentation; discuss refinements in Indonesian if you prefer.
 
 ## Execution and ownership boundaries
 
-- **91 scenarios in 18 capability files**, exactly matching the [scenario catalog](../../KAORI_UAT_SCENARIO_CATALOG.md). **14 `@detailed` scenarios** expand the existing [first-wave procedures](../../KAORI_UAT_FIRST_WAVE_CASES.md); **77 `@draft` scenarios** use catalog-level actions and expected results and need owner refinement before becoming full executable cases.
-- Existing pytest/Playwright nodes, domain fixtures, JUnit, screenshot/trace and provider/audit evidence are implementation/execution owners. See the [test mapping audit](../../KAORI_UAT_TEST_MAPPING_AUDIT.md); a Gherkin `@UAT-...` tag does not execute a test or create a pytest marker.
-- **Status of every case: NOT RUN** (as a scenario-specific UAT execution) and **human acceptance PENDING**. Older unrelated CI results are not counted as this candidate's evidence. Some source-implemented assertions in #1726/#1727 are not fully mapped or run.
+- **91 scenarios in 18 capability files**, exactly matching the [scenario catalog](../KAORI_UAT_SCENARIO_CATALOG.md). **14 `@detailed` scenarios** expand the existing [first-wave procedures](../KAORI_UAT_FIRST_WAVE_CASES.md); **77 `@draft` scenarios** use catalog-level actions and expected results and need owner refinement before becoming full executable cases.
+- Existing pytest/Playwright nodes, domain fixtures, JUnit, screenshot/trace and provider/audit evidence are implementation/execution owners. See the [test mapping audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md); a Gherkin `@UAT-...` tag does not execute a test or create a pytest marker.
+- **Execution status belongs to candidate-bound evidence, never the reusable `.feature` files.** At the initial authoring checkpoint (2026-10-13), none of the 91 scenario IDs had a specific UAT execution result and human acceptance remained PENDING. For current results consult the owning Issue/PR execution records. Unrelated historic CI PASS is not scenario acceptance.
 - Provider mutation is only allowed in a governed disposable sandbox with read-back/cleanup and explicit permission. Simulated/fake-provider test results do not prove real-provider UAT.
 - Acceptance requires exact source SHA/tree, deployed digest if relevant, actual runner/timestamp and result, meaningful assertions and evidence, findings/retest, and a separate authorized human decision. No PR, CI/CD, or new Gherkin/Cucumber runtime is introduced by these files.
 
