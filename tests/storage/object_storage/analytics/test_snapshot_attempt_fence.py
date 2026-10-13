@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import re
+
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-import re
 from types import SimpleNamespace
 
 import pytest
@@ -57,7 +58,7 @@ def test_analytics_and_forecast_workers_recheck_claim_under_row_lock() -> None:
     tasks = (root / 'app/storage/object_storage/analytics/tasks.py').read_text(encoding='utf-8')
     # Pinned Ruff may place SQLAlchemy chained calls on separate lines.
     # Keep requiring the four transactional row locks and fresh ORM reads.
-    lock_and_refresh = re.compile(r'\\.with_for_update\\(\\)\\s*\\.populate_existing\\(\\)')
+    lock_and_refresh = re.compile(r'\.with_for_update\(\)\s*\.populate_existing\(\)')
     assert len(lock_and_refresh.findall(materialization)) >= 4
     assert 'def _locked_analytics_snapshot(' in materialization
     assert 'def _locked_forecast_snapshot(' in materialization
