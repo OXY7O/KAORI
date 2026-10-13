@@ -1,6 +1,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% set overview_id = "tenant-allocation-overview" %}
 {% set overview_loading_id = "tenant-allocation-overview-loading" %}
 {% set contributions_dialog_id = "tenant-allocation-contributions-dialog" %}
@@ -88,12 +89,12 @@
                 {% endif %}
             </div>
             {% if selected.state == 'Unknown' %}
-                <p class="rounded-lg border border-status-warning-border bg-status-warning-soft px-3 py-2 text-xs leading-5 text-status-warning-text"
+                <p class="rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-3 py-2 text-xs leading-5 text-status-warning-text"
                    role="status">
                     {{ selected.reason }} Unknown capacity cannot be interpreted as free headroom or an allocation approval.
                 </p>
             {% elif selected.state == 'Overcommitted' %}
-                <p class="rounded-lg border border-status-critical-border bg-status-critical-soft px-3 py-2 text-xs leading-5 text-status-critical-text"
+                <p class="rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft px-3 py-2 text-xs leading-5 text-status-critical-text"
                    role="status">
                     {{ selected.reason }} Existing commitments remain tracked; further positive allocations are governed by admission.
                 </p>

@@ -1,4 +1,5 @@
-{# #1132: committed-state-only projection. All provider requests are explicit POST. #}
+{# issue 1132: committed-state-only projection. All provider requests are explicit POST. #}
+{% import "components/operational_callout.html" as operational_callout %}
 {% if handback_receipt and handback_receipt.status == 'verified' %}
     {% set recovery_plan = row.native_residual_cleanup_plan %}
     {% set recovery_approval = row.native_residual_cleanup_approval %}
@@ -59,7 +60,7 @@
             {% endfor %}
         </ol>
         {% if recovery_execution %}
-            <div class="rounded-lg border {{ 'border-outline-subtle bg-surface-elevated' if recovery_verified else 'border-status-warning-border bg-status-warning-soft' }} p-3 text-sm leading-6 text-content-secondary"
+            <div class="rounded-lg border {{ 'border-outline-subtle bg-surface-elevated' if recovery_verified else (operational_callout.semantic_border_classes('warning') ~ ' bg-status-warning-soft') }} p-3 text-sm leading-6 text-content-secondary"
                  role="status"
                  aria-label="Recovery execution evidence">
                 <p class="font-semibold text-content-primary">

@@ -1,4 +1,5 @@
 {% import "components/action_button.html" as action_button %}
+{% import "components/operational_callout.html" as operational_callout %}
 <dialog id="capsule-access-role-manifest-dialog"
         data-kaori-native-dialog
         aria-labelledby="capsule-access-role-manifest-title"
@@ -30,7 +31,7 @@
             </button>
         </header>
         <div class="min-h-0 flex-1 space-y-5 overflow-y-auto bg-surface-page px-5 py-5 sm:px-6">
-            <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3.5 text-status-warning-text">
+            <div class="flex items-start gap-3 rounded-xl border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-4 py-3.5 text-status-warning-text">
                 <i data-lucide="shield-alert"
                    class="mt-0.5 h-4 w-4 shrink-0"
                    aria-hidden="true"></i>
