@@ -848,7 +848,7 @@ def test_release_is_permanent_and_other_governance_sections_remain_accessible():
 
 def test_short_hero_subtitle_and_no_quick_links_regression():
     detail = read(DETAIL)
-    assert 'Manage Tenant governance, provider authority, and lifecycle with committed evidence.' in detail
+    assert 'Manage Tenant lifecycle and provider scope with committed evidence.' in detail
     assert 'Govern Tenant ownership, Namespace allocations' not in detail
     assert 'Quick Links' not in detail
     assert 'Tenant ID' in detail
