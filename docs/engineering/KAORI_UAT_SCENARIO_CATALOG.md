@@ -263,7 +263,9 @@ After a real run, record actual evidence in the owning Issue/PR comment and keep
 ## Open inventory gaps and next steps
 
 1. **Route completeness is unverified:** compare this baseline with the exact Flask route inventory and active navigation/permission manifest after review-branch admission; review parameterized detail routes, auxiliary screens, provider capability gates, and hidden/unreachable pages. No '100% route coverage' assertion yet.
-2. **Executable mapping is unverified:** inspect existing test node IDs/assertions for each scenario; identify missing UI interactions and negative paths; implement under #1726 (UI) and #1727 (non-UI). Do not count file existence or static source contracts as behavior coverage.
+2. **Executable mapping is partially inspected, never executed:** see [KAORI_UAT_TEST_MAPPING_AUDIT.md](KAORI_UAT_TEST_MAPPING_AUDIT.md) for a first-wave source assertion review (9 PARTIAL, 5 SOURCE-CONTRACT ONLY; no scenario-level UAT PASS). Inspect remaining pytest/Playwright node IDs/assertions for each scenario; identify missing UI interactions and negative paths; implement under #1726 (UI) and #1727 (non-UI). Do not count file existence or static source contracts as behavior coverage.
+
+
 3. **Conditional infrastructure:** Native real-provider tests need approved disposable Namespace; Capsule tests depend on an approved compatible cluster and must remain BLOCKED or not applicable with reviewer rationale. Real secret/reveal, destructive retention, deployment rollback and privileged mutation need separately authorized runbooks.
 4. **CI/UAT gate not changed:** #1728 will enforce mandatory coverage and evidence integrity after scope is agreed; this document adds **no new runner or workflow trigger**.
 5. **Human acceptance outstanding:** #1730 owns selected end-to-end pilot and explicit reviewer acceptance of exact staging SHA/digest. An accepted local DevContainer review is not assumed to cover all listed scenarios.
