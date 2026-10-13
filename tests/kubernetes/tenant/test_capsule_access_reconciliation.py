@@ -185,6 +185,8 @@ def test_capsule_namespace_ownership_and_tenant_scope_are_fail_closed(monkeypatc
 
 def test_capsule_apply_requires_effective_rolebinding_not_only_successful_patch(monkeypatch):
     grant = _grant()
+    # The real Tenant model always exposes committed provider identity evidence.
+    grant.tenant.provider_evidence_json = {'provider_uid': 'capsule-uid'}
     target = grant.namespace
     monkeypatch.setattr(capsule, 'target_namespaces', lambda value: [target])
     monkeypatch.setattr(capsule, '_capability', lambda *args, **kwargs: 'v1beta2')
