@@ -311,7 +311,6 @@ def _inventory_legacy_page_posture_metrics(
                 'info' if pull_evidence_count else 'unknown',
             ),
         ]
-
     if resource == 'artifacts':
         tagged_artifacts = sum(bool(row.get('tags')) for row in rows)
         untagged_artifacts = max(len(rows) - tagged_artifacts, 0)
@@ -818,7 +817,8 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
         RegistryTag.query.with_entities(RegistryTag.artifact_id, func.count(RegistryTag.id))
         .filter(RegistryTag.artifact_id.in_(artifact_ids))
         .group_by(RegistryTag.artifact_id)
-        .tuples().all()
+        .tuples()
+        .all()
     )
     tagged = (
         RegistryTag.query.with_entities(
