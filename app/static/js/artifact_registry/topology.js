@@ -194,58 +194,122 @@ if (canvas && form) {
         inspect(node, tab)
         cy.animate({ center: { eles: node }, zoom: Math.max(cy.zoom(), 1.05) }, { duration: 220 })
     }
-    const drawMiniMap = (pane, node) => {
-        const drawing = pane.querySelector('[data-minimap]')
-        if (!drawing || !cy || !node?.length || !node.visible()) return
-        const all = cy.nodes(':visible')
-        if (!all.length) return
+    let drawerMiniMapFrame = null
+    let selectedMiniMapNodeId = null
+    const drawMiniMap = () => {
+        drawerMiniMapFrame = null
+        if (!cy || activePane !== inspector || inspectorTab !== 'details' || !selectedMiniMapNodeId) return
+        const drawing = inspectorContent.querySelector('[data-minimap]')
+        const node = cy.getElementById(selectedMiniMapNodeId)
+        if (!drawing || !node?.length || !node.visible()) return
+        // K8s topology mini-map convention: show the selected rooted branch
+        // rather than a single selected badge or the entire unrelated fleet.
+        const nodes = node.union(node.successors('node')).filter(':visible')
+        const nodeIds = new Set(nodes.map((item) => item.id()))
+        const edges = cy.edges(':visible').filter((edge) =>
+            nodeIds.has(edge.source().id()) && nodeIds.has(edge.target().id())
+        )
+        const section = drawing.closest('[data-node-minimap]')
+        if (nodes.length < 2 || !edges.length) {
+            section?.classList.add('hidden')
+            return
+        }
+        section?.classList.remove('hidden')
+        const width = Math.max(180, drawing.clientWidth || 220)
+        const height = 144
+        const pixelRatio = Math.max(1, window.devicePixelRatio || 1)
+        drawing.width = Math.round(width * pixelRatio)
+        drawing.height = Math.round(height * pixelRatio)
+        drawing.style.height = `${height}px`
         const ctx = drawing.getContext('2d')
         if (!ctx) return
-        const width = drawing.width
-        const height = drawing.height
-        const bounds = all.boundingBox({ includeLabels: false, includeOverlays: false })
-        const padding = 17
-        const scale = Math.min(
-            (width - padding * 2) / Math.max(bounds.w, 1),
-            (height - padding * 2) / Math.max(bounds.h, 1)
-        )
-        const offsetX = (width - bounds.w * scale) / 2
-        const offsetY = (height - bounds.h * scale) / 2
-        const point = (n) => ({
-            x: offsetX + (n.position('x') - bounds.x1) * scale,
-            y: offsetY + (n.position('y') - bounds.y1) * scale,
-        })
+        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
         ctx.clearRect(0, 0, width, height)
-        ctx.strokeStyle = token('--kaori-topology-edge-contains', 'CanvasText')
-        ctx.globalAlpha = 0.55
-        ctx.lineWidth = 1.3
-        for (const edge of cy.edges(':visible')) {
-            const from = point(edge.source()), to = point(edge.target())
+        ctx.fillStyle = token('--kaori-surface-card', 'Canvas')
+        ctx.fillRect(0, 0, width, height)
+
+        const positions = nodes.map((item) => item.position())
+        let minX = Math.min(...positions.map((pos) => pos.x))
+        let maxX = Math.max(...positions.map((pos) => pos.x))
+        let minY = Math.min(...positions.map((pos) => pos.y))
+        let maxY = Math.max(...positions.map((pos) => pos.y))
+        if (maxX - minX < 1) { minX -= 1; maxX += 1 }
+        if (maxY - minY < 1) { minY -= 1; maxY += 1 }
+        const padding = 19
+        const scale = Math.min((width - 2 * padding) / (maxX - minX), (height - 2 * padding) / (maxY - minY))
+        const offsetX = (width - (maxX - minX) * scale) / 2
+        const offsetY = (height - (maxY - minY) * scale) / 2
+        const point = (position) => ({
+            x: offsetX + (position.x - minX) * scale,
+            y: offsetY + (position.y - minY) * scale,
+        })
+        ctx.lineWidth = 1
+        ctx.strokeStyle = token('--kaori-outline-strong', 'GrayText')
+        edges.forEach((edge) => {
+            const from = point(edge.source().position())
+            const to = point(edge.target().position())
             ctx.beginPath()
             ctx.moveTo(from.x, from.y)
             ctx.lineTo(to.x, to.y)
             ctx.stroke()
-        }
-        ctx.globalAlpha = 1
-        for (const item of all) {
-            const p = point(item)
-            const domain = visualDomains[item.data('type')] || 'compute'
-            ctx.fillStyle = token(`--kaori-topology-domain-${domain}-fill`, 'Canvas')
-            ctx.strokeStyle = token(`--kaori-topology-domain-${domain}-border`, 'CanvasText')
-            ctx.lineWidth = item.id() === node.id() ? 2.8 : 1.3
+        })
+        nodes.forEach((item) => {
+            const position = point(item.position())
+            const visual = nodeVisual(item.data('type'))
+            const selected = item.id() === node.id()
             ctx.beginPath()
-            ctx.arc(p.x, p.y, item.id() === node.id() ? 5 : 3.2, 0, Math.PI * 2)
+            ctx.arc(position.x, position.y, selected ? 5 : 3.25, 0, 2 * Math.PI)
+            ctx.fillStyle = visual.fill
             ctx.fill()
+            ctx.lineWidth = selected ? 2 : 1
+            ctx.strokeStyle = selected ? token('--kaori-brand-primary', 'CanvasText') : visual.border
             ctx.stroke()
+        })
+
+        // Same K8s viewport indicator (dashed) for orientation on zoom/pan.
+        const extent = cy.extent()
+        const topLeft = point({ x: extent.x1, y: extent.y1 })
+        const bottomRight = point({ x: extent.x2, y: extent.y2 })
+        const x1 = Math.max(1, Math.min(width - 1, Math.min(topLeft.x, bottomRight.x)))
+        const y1 = Math.max(1, Math.min(height - 1, Math.min(topLeft.y, bottomRight.y)))
+        const x2 = Math.max(x1, Math.min(width - 1, Math.max(topLeft.x, bottomRight.x)))
+        const y2 = Math.max(y1, Math.min(height - 1, Math.max(topLeft.y, bottomRight.y)))
+        ctx.lineWidth = 1.5
+        ctx.strokeStyle = token('--kaori-status-info', 'CanvasText')
+        ctx.setLineDash([4, 3])
+        ctx.strokeRect(x1, y1, Math.max(1, x2 - x1), Math.max(1, y2 - y1))
+        ctx.setLineDash([])
+
+        drawing._kaoriMiniMap = { minX, minY, scale, offsetX, offsetY, width, height, nodes }
+        if (!drawing.dataset.kaoriBound) {
+            drawing.dataset.kaoriBound = 'true'
+            drawing.addEventListener('click', (event) => {
+                const state = drawing._kaoriMiniMap
+                if (!state || !cy) return
+                const rect = drawing.getBoundingClientRect()
+                const relativeX = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * state.width
+                const relativeY = ((event.clientY - rect.top) / Math.max(rect.height, 1)) * state.height
+                const graphX = (relativeX - state.offsetX) / state.scale + state.minX
+                const graphY = (relativeY - state.offsetY) / state.scale + state.minY
+                let nearest = null
+                let distance = Number.POSITIVE_INFINITY
+                state.nodes.forEach((item) => {
+                    const position = item.position()
+                    const nextDistance = Math.hypot(position.x - graphX, position.y - graphY)
+                    if (nextDistance < distance) { nearest = item; distance = nextDistance }
+                })
+                if (nearest?.length) cy.animate({ center: { eles: nearest } }, { duration: 220 })
+            })
+            drawing.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return
+                event.preventDefault()
+                cy?.animate({ center: { eles: node } }, { duration: 220 })
+            })
         }
-        const center = () => {
-            if (view !== 'graph') setView('graph')
-            window.requestAnimationFrame(() => cy?.center(node))
-        }
-        drawing.onclick = center
-        drawing.onkeydown = (event) => {
-            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); center() }
-        }
+    }
+    const scheduleDrawerMiniMapUpdate = () => {
+        if (drawerMiniMapFrame !== null) window.cancelAnimationFrame(drawerMiniMapFrame)
+        drawerMiniMapFrame = window.requestAnimationFrame(drawMiniMap)
     }
     const renderBindingEvidence = (pane, node) => {
         const rows = associatedBindings(node.id())
@@ -385,7 +449,10 @@ if (canvas && form) {
             detailsPanel.hidden = inspectorTab !== 'details'
             relationshipsPanel.hidden = inspectorTab !== 'relationships'
             if (inspectorTab === 'relationships') renderRelationshipRows(relationshipsPanel.querySelector('[data-node-relationships]'), node)
-            else window.requestAnimationFrame(() => drawMiniMap(pane, node))
+            else {
+                selectedMiniMapNodeId = node.id()
+                scheduleDrawerMiniMapUpdate()
+            }
         }
         tabs.forEach((tab) => {
             tab.addEventListener('click', () => activate(tab.dataset.kaoriSegmentedTab))
@@ -811,7 +878,11 @@ if (canvas && form) {
             window.requestAnimationFrame(() => {
                 fitGraph()
                 scheduleNamespaceBoundaries()
-                window.setTimeout(fitGraph, 130)
+                scheduleDrawerMiniMapUpdate()
+                window.setTimeout(() => {
+                    fitGraph()
+                    scheduleDrawerMiniMapUpdate()
+                }, 130)
             })
         })
         layout.run()
@@ -882,6 +953,7 @@ if (canvas && form) {
         cy.on('mouseout', 'node', hideTip)
         cy.on('pan zoom', hideTip)
         cy.on('pan zoom resize position layoutstop', scheduleNamespaceBoundaries)
+        cy.on('pan zoom resize position layoutstop', scheduleDrawerMiniMapUpdate)
         cy.on('mouseover', 'edge', (event) => {
             event.target.addClass('edge-hovered')
             updateEdgeLabelClasses()
@@ -1078,6 +1150,7 @@ if (canvas && form) {
     })
     const initialLayout = new URL(window.location.href).searchParams.get('layout')
     layoutSelect.value = initialLayout === 'dependency' ? 'dependency' : 'hierarchy'
+    window.addEventListener('resize', scheduleDrawerMiniMapUpdate)
     setView(view)
     syncClearFiltersVisibility()
     reload()
