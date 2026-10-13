@@ -8,6 +8,10 @@ Read one `.feature` file per KAORI capability, click the scenario with its stabl
 
 **Feedback:** add a comment on [#1738](https://github.com/OXY7O/KAORI/issues/1738), citing the exact ID and the Given/When/Then line that should change. Mention the feature and role, expected committed state, provider/audit read-back, negative/security path or UI geometry, as applicable. Never include secrets. Gherkin text is written in English for consistency with KAORI's approved technical documentation; discuss refinements in Indonesian if you prefer.
 
+## Specification and automation coverage
+
+The [91-case coverage matrix](SCENARIO_COVERAGE_MATRIX.md) explicitly separates all written test cases from existing test-node mapping, the four-case #1728 pilot and outstanding runtime/human evidence. It records **HOLD** for admission while owner review and automation mapping are incomplete. The existing pytest contract at `tests/contracts/release/test_uat_written_scenario_contract.py` checks written ID, Gherkin structure, and case-field traceability; it does **not** execute business/UAT scenarios.
+
 ## Execution and ownership boundaries
 
 - **91 scenarios in 18 capability files**, exactly matching the [scenario catalog](../KAORI_UAT_SCENARIO_CATALOG.md). **All 91 `@specified` scenarios** now have individual preconditions, actions, assertions, evidence and isolation instructions in the [complete test-case register](../KAORI_UAT_ALL_CASES.md). **14 `@first_wave`** retain original procedures; **77 `@owner_review`** are expanded and still require capability-owner review and executable mapping.
