@@ -115,8 +115,11 @@ def test_permission_role_coverage_empty_role_matrix_has_matching_columns() -> No
     assert '{% for role in coverage_roles %}' in coverage
     assert coverage.count('{% else %}') >= 2
     assert '2 + (coverage_roles|length if coverage_roles else 1)' in coverage
-    assert '<th scope="col" class="sticky left-0' in coverage
-    assert '<th scope="col" class="min-w-[10rem]' in coverage
+    # Header cells intentionally wrap attributes across lines while keeping
+    # the Permission column sticky and the Module column aligned.
+    assert '<th scope="col"' in coverage
+    assert 'class="sticky left-0 z-20 min-w-[18rem] {{ table_ui.header_cell_classes() }} bg-surface-hover"' in coverage
+    assert 'class="min-w-[10rem] {{ table_ui.header_cell_classes() }}"' in coverage
     assert 'permission.key in role_permission_keys.get(role.id, [])' in coverage
     # Jinja compilation catches malformed block terminators such as a
     # misspelled `endfor` closer that source-presence checks miss entirely.
@@ -132,7 +135,10 @@ def test_permission_role_coverage_delegation_badge_aligns_with_identity_text() -
 
     # Role Coverage previously rendered the delegation badge as a sibling of
     # the icon-and-text title cell, so the badge started beneath the icon.
-    assert 'table_ui.title_cell(\n                            permission.title,' in coverage
+    assert '{% set delegation_badge = table_label.status_label(' in coverage
+    assert 'table_ui.title_cell(permission.title,' in coverage
+    assert 'delegation_badge) }}' in coverage
+    assert coverage.index('set delegation_badge') < coverage.index('table_ui.title_cell(permission.title,')
     assert (
         'table_label.status_label(permission.delegation_tier.label, permission.delegation_tier.tone, permission.delegation_tier.icon)'
         in coverage
@@ -260,7 +266,7 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert 'detail_ui.summary_strip([' in detail
     assert '], compact=true, borderless=true)' in detail
     assert 'data-resource-detail-summary' in shared
-    assert '{% macro summary_strip(metrics, columns=4, compact=false, borderless=false)' in shared
+    assert "{% macro summary_strip(metrics, columns=4, compact=false, borderless=false, layout='default', pinned=true)" in shared
     assert 'data-kaori-summary-variant="borderless"' in shared
     # The permission summary uses the borderless branch of the approved shared
     # macro. Legacy callers keep the original divided variant by default.
