@@ -314,5 +314,9 @@ def test_report_enqueue_failure_records_failed_outcome_and_never_claims_queued(
     assert activity[0]['event_type'] == 'report_generation_queue_failed'
     assert activity[0]['status'] == 'error'
     assert activity[0]['title'] == 'Report Not Queued'
-    assert activity[0]['metadata']['report_id'] == report.id
-    assert activity[0]['metadata']['feedback_delivery'] == 'toast'
+    assert activity[0]['metadata'] == {
+        'report_id': report.id,
+        'report_name': report.name,
+        'report_type': report.report_type,
+        'feedback_delivery': 'toast',
+    }
