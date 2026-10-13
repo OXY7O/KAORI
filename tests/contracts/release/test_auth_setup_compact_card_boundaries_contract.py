@@ -142,7 +142,9 @@ def test_native_browser_zoom_uses_compact_layout_without_css_scaling() -> None:
     assert 'border-l-4 border-kaori-primary' not in source
     assert 'rounded-xl border border-outline-default bg-surface-card shadow-sm' in source
     assert 'mt-3" data-kaori-setup-command' in source
-    assert 'mt-5" data-kaori-setup-flow' in source
+    assert '<section class="mt-5"' in source
+    assert 'data-kaori-setup-flow' in source
+    assert 'aria-labelledby="initialization-path-title"' in source
     assert 'mt-4" data-kaori-setup-advanced' in source
     assert 'mt-4 flex flex-col gap-2 border-t' in source
     assert 'Run once in Windows PowerShell at the repo root to create the schema, grants, and admin.' in source
