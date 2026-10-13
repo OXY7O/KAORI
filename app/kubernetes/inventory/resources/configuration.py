@@ -333,7 +333,7 @@ def _operational_context(
         return {
             'title': 'No Current Pod References',
             'description': (
-                'No Pod references in this snapshot; other consumers or future workloads may still exist.'
+                'No Pod references in this snapshot; other consumers or workload templates may still reference this object.'
             ),
             'tone': 'info',
             'icon': 'unlink',
