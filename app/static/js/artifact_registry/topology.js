@@ -24,6 +24,8 @@ if (canvas && form) {
     const detailsButton = $('registry-topology-details-button')
     const labelsToggle = $('registry-topology-labels')
     const edgeLabelsToggle = $('registry-topology-edge-labels')
+    const groupNamespaceToggle = $('registry-topology-group-namespace')
+    const namespaceBoundaries = $('registry-topology-namespace-boundaries')
     const layoutSelect = $('registry-topology-layout')
     const resourceToggles = [...document.querySelectorAll('[data-registry-topology-type]')]
     const relationshipToggles = [...document.querySelectorAll('[data-registry-topology-relationship]')]
@@ -509,6 +511,7 @@ if (canvas && form) {
                 cy.resize()
                 if (!graphHasLayout) runLayout()
                 else fitGraph()
+                scheduleNamespaceBoundaries()
             })
         }
     }
@@ -756,6 +759,7 @@ if (canvas && form) {
             edge.style('display', included ? 'element' : 'none')
         })
         if (view === 'list') renderList()
+        scheduleNamespaceBoundaries()
     }
     const runLayout = () => {
         if (!cy) return
@@ -767,10 +771,36 @@ if (canvas && form) {
             graphHasLayout = true
             window.requestAnimationFrame(() => {
                 fitGraph()
+                scheduleNamespaceBoundaries()
                 window.setTimeout(fitGraph, 130)
             })
         })
         layout.run()
+    }
+    let boundaryFrame = null
+    const updateNamespaceBoundaries = () => {
+        boundaryFrame = null
+        if (!namespaceBoundaries) return
+        namespaceBoundaries.replaceChildren()
+        if (!cy || !groupNamespaceToggle?.checked || view !== 'graph') return
+        for (const scope of cy.nodes('[type = "namespace"]:visible')) {
+            const related = scope.union(scope.successors('node:visible'))
+            if (related.length < 2) continue
+            const box = related.renderedBoundingBox({ includeLabels: true, includeOverlays: false })
+            if (!Number.isFinite(box.x1) || box.w < 1 || box.h < 1) continue
+            const marginX = 16, marginY = 22
+            const overlay = elements('div', 'absolute rounded-xl border border-dashed border-kaori-primary/25 bg-kaori-soft/10')
+            overlay.style.left = `${Math.max(0, box.x1 - marginX)}px`
+            overlay.style.top = `${Math.max(0, box.y1 - marginY)}px`
+            overlay.style.width = `${box.w + marginX * 2}px`
+            overlay.style.height = `${box.h + marginY * 2}px`
+            overlay.title = `Namespace: ${scope.data('label')}`
+            namespaceBoundaries.append(overlay)
+        }
+    }
+    const scheduleNamespaceBoundaries = () => {
+        if (boundaryFrame !== null) return
+        boundaryFrame = window.requestAnimationFrame(updateNamespaceBoundaries)
     }
     const updateEdgeLabelClasses = () => {
         if (!cy) return
@@ -812,6 +842,7 @@ if (canvas && form) {
         })
         cy.on('mouseout', 'node', hideTip)
         cy.on('pan zoom', hideTip)
+        cy.on('pan zoom resize position layoutstop', scheduleNamespaceBoundaries)
         cy.on('mouseover', 'edge', (event) => {
             event.target.addClass('edge-hovered')
             updateEdgeLabelClasses()
@@ -947,6 +978,7 @@ if (canvas && form) {
             runLayout()
         } else fitGraph()
     }
+    groupNamespaceToggle?.addEventListener('change', scheduleNamespaceBoundaries)
     labelsToggle.addEventListener('change', () => updateDisplay())
     edgeLabelsToggle.addEventListener('change', () => updateDisplay())
     layoutSelect.addEventListener('change', () => {
