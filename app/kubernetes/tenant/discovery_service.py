@@ -639,8 +639,8 @@ def get_tenant_adoption_preflight_context(
             'tenant_name': None,
             'tenant_id': None,
             'eligibility': eligibility,
-            'provider_reference': str(metadata.uid),
-            'provider_resource_version': str(metadata.resource_version),
+            'provider_reference': str(getattr(metadata, 'uid', '')),
+            'provider_resource_version': str(getattr(metadata, 'resource_version', '')),
             'allocation_preflight': allocation,
         }
     else:
