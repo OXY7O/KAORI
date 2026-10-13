@@ -178,8 +178,9 @@ jobs:
         run: |
           set -Eeuo pipefail
           export KAORI_CI_TOOLCHAIN_IMAGE="$TOOLCHAIN_IMAGE"
-          export CI_UID="$(id -u)"
-          export CI_GID="$(id -g)"
+          CI_UID="$(id -u)"
+          CI_GID="$(id -g)"
+          export CI_UID CI_GID
           export COMPOSE_PROJECT_NAME="kaori-devcheck-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-focused"
           {
             echo "KAORI_CI_TOOLCHAIN_IMAGE=$KAORI_CI_TOOLCHAIN_IMAGE"
