@@ -5,10 +5,11 @@ const canvas = $('registry-topology-canvas')
 const form = $('registry-topology-filters')
 
 if (canvas && form) {
-    const graphTab = $('registry-topology-graph-tab')
-    const listTab = $('registry-topology-list-tab')
-    const graphShell = $('registry-topology-canvas-shell')
-    const listShell = $('registry-topology-list-shell')
+    const graphTab = $('registry-topology-view-tab-graph')
+    const listTab = $('registry-topology-view-tab-list')
+    const graphShell = $('registry-topology-view-panel-graph')
+    const canvasShell = $('registry-topology-canvas-shell')
+    const listShell = $('registry-topology-view-panel-list')
     const tbody = $('registry-topology-resource-rows')
     const status = $('registry-topology-status')
     const warning = $('registry-topology-warning')
@@ -17,6 +18,16 @@ if (canvas && form) {
     const inspector = $('registry-topology-inspector')
     const inspectorContent = $('registry-topology-inspector-content')
     const backdrop = $('registry-topology-backdrop')
+    const controls = $('registry-topology-controls')
+    const controlsClose = $('registry-topology-controls-close')
+    const controlsButton = $('registry-topology-controls-button')
+    const detailsButton = $('registry-topology-details-button')
+    const labelsToggle = $('registry-topology-labels')
+    const edgeLabelsToggle = $('registry-topology-edge-labels')
+    const layoutSelect = $('registry-topology-layout')
+    const resourceToggles = [...document.querySelectorAll('[data-registry-topology-type]')]
+    const relationshipToggles = [...document.querySelectorAll('[data-registry-topology-relationship]')]
+    const scopeSummary = $('registry-topology-scope-summary')
     const close = $('registry-topology-inspector-close')
     const previous = $('registry-topology-prev')
     const next = $('registry-topology-next')
@@ -48,29 +59,50 @@ if (canvas && form) {
         el.href = href
         return el
     }
-    let inspectorReturnFocus = null
-    const closeInspector = () => {
-        const wasOpen = !inspector.classList.contains('hidden')
+    let paneReturnFocus = null
+    let activePane = null
+    const closePane = () => {
+        if (!activePane) return
+        controls.classList.add('hidden')
         inspector.classList.add('hidden')
         backdrop.classList.add('hidden')
-        if (wasOpen && inspectorReturnFocus?.isConnected) inspectorReturnFocus.focus()
+        controlsButton.setAttribute('aria-expanded', 'false')
+        detailsButton.setAttribute('aria-expanded', 'false')
+        activePane = null
+        if (paneReturnFocus?.isConnected) paneReturnFocus.focus()
     }
-    const openInspector = () => {
-        if (inspector.classList.contains('hidden')) inspectorReturnFocus = document.activeElement
-        inspector.classList.remove('hidden')
+    const openPane = (pane) => {
+        if (!activePane) paneReturnFocus = document.activeElement
+        activePane = pane
+        controls.classList.toggle('hidden', pane !== controls)
+        inspector.classList.toggle('hidden', pane !== inspector)
         backdrop.classList.remove('hidden')
-        close.focus()
+        controlsButton.setAttribute('aria-expanded', String(pane === controls))
+        detailsButton.setAttribute('aria-expanded', String(pane === inspector))
+        ;(pane === controls ? controlsClose : close).focus()
     }
-    close.addEventListener('click', closeInspector)
-    backdrop.addEventListener('click', closeInspector)
+    const closeInspector = () => { if (activePane === inspector) closePane() }
+    const openInspector = () => openPane(inspector)
+    close.addEventListener('click', closePane)
+    controlsClose.addEventListener('click', closePane)
+    backdrop.addEventListener('click', closePane)
+    controlsButton.addEventListener('click', () => {
+        if (activePane === controls) closePane()
+        else openPane(controls)
+    })
+    detailsButton.addEventListener('click', () => {
+        if (activePane === inspector) closePane()
+        else openPane(inspector)
+    })
     document.addEventListener('keydown', (event) => {
-        if (inspector.classList.contains('hidden')) return
+        if (!activePane) return
         if (event.key === 'Escape') {
             event.preventDefault()
-            closeInspector()
+            closePane()
+            return
         }
         if (event.key !== 'Tab') return
-        const focusables = [...inspector.querySelectorAll('button:not([disabled]), a[href]')]
+        const focusables = [...activePane.querySelectorAll('button:not([disabled]), a[href], select:not([disabled]), input:not([disabled]), summary')]
         if (!focusables.length) return
         const first = focusables[0]
         const last = focusables[focusables.length - 1]
@@ -95,9 +127,20 @@ if (canvas && form) {
     const inspect = (node) => {
         const data = node.data()
         inspectorContent.replaceChildren()
-        inspectorContent.append(elements('p', 'text-xs font-semibold uppercase tracking-wide text-kaori-primary', safeLabel(data.type)))
-        inspectorContent.append(elements('h4', 'break-words text-lg font-semibold text-content-primary', safeLabel(data.label)))
-        if (data.subtitle) inspectorContent.append(elements('p', 'text-sm text-content-muted', data.subtitle))
+        const heading = elements('section', 'rounded-xl border border-outline-subtle bg-surface-elevated p-4')
+        const headingRow = elements('div', 'flex items-start gap-3')
+        const badge = elements(
+            'span',
+            `flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border text-sm font-bold kaori-topology-domain-${visualDomains[data.type] || 'compute'}`,
+            glyphs[data.type] || 'RS'
+        )
+        const identity = elements('div', 'min-w-0 flex-1')
+        identity.append(elements('p', 'text-xs font-semibold uppercase tracking-wide text-kaori-primary', safeLabel(data.type)))
+        identity.append(elements('h4', 'mt-1 break-words text-base font-semibold text-content-primary', safeLabel(data.label)))
+        if (data.subtitle) identity.append(elements('p', 'mt-1 text-xs text-content-muted', data.subtitle))
+        headingRow.append(badge, identity)
+        heading.append(headingRow)
+        inspectorContent.append(heading)
         const info = elements('div', 'rounded-xl border border-outline-default bg-surface-card px-4 py-2')
         if (data.type === 'artifact') {
             appendField(info, 'Registry Source', data.source)
@@ -165,8 +208,13 @@ if (canvas && form) {
         for (const item of page) {
             const tr = elements('tr', 'border-b border-outline-subtle')
             const a = elements('td', 'px-4 py-3 text-sm font-medium text-content-primary')
-            a.append(elements('div', '', item.artifact))
-            a.append(elements('div', 'text-xs text-content-muted', item.digest.slice(0, 28)))
+            const identity = elements('div', 'flex min-w-0 items-center gap-3')
+            identity.append(elements('span', 'flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-xs font-bold kaori-topology-domain-configuration', 'AR'))
+            const description = elements('div', 'min-w-0')
+            description.append(elements('div', 'break-words', item.artifact))
+            description.append(elements('div', 'text-xs text-content-muted', item.digest.slice(0, 28)))
+            identity.append(description)
+            a.append(identity)
             const b = elements('td', 'px-4 py-3 text-xs text-content-secondary')
             b.append(elements('p', 'font-semibold text-content-primary', `${item.cluster} · ${item.namespace}`))
             b.append(elements('p', '', `${item.workload} · ${item.pod}`))
@@ -193,27 +241,299 @@ if (canvas && form) {
         next.disabled = listPage >= maxPage
     }
 
+    let graphHasLayout = false
     const setView = (value) => {
         view = value
-        const isGraph = value === 'graph'
-        graphShell.classList.toggle('hidden', !isGraph)
-        listShell.classList.toggle('hidden', isGraph)
-        graphTab.setAttribute('aria-pressed', String(isGraph))
-        listTab.setAttribute('aria-pressed', String(!isGraph))
-        $('registry-topology-fit').disabled = !isGraph || !cy
-        $('registry-topology-reset').disabled = !isGraph || !cy
-        $('registry-topology-export').disabled = !isGraph || !cy
+        const graphVisible = value === 'graph'
+        graphShell.hidden = !graphVisible
+        listShell.hidden = graphVisible
+        graphShell.classList.toggle('hidden', !graphVisible)
+        listShell.classList.toggle('hidden', graphVisible)
+        for (const [tab, active] of [[graphTab, graphVisible], [listTab, !graphVisible]]) {
+            tab.setAttribute('aria-selected', String(active))
+            tab.tabIndex = active ? 0 : -1
+            tab.classList.toggle('bg-surface-card', active)
+            tab.classList.toggle('text-kaori-primary', active)
+            tab.classList.toggle('shadow-sm', active)
+            tab.classList.toggle('text-content-muted', !active)
+        }
+        for (const id of ['registry-topology-fit', 'registry-topology-reset', 'registry-topology-export']) {
+            $(id).disabled = !graphVisible || !cy
+        }
         const url = new URL(window.location.href)
-        if (isGraph) url.searchParams.delete('view')
+        if (graphVisible) url.searchParams.delete('view')
         else url.searchParams.set('view', 'list')
         window.history.replaceState({}, '', url)
-        if (isGraph && cy) cy.resize()
+        if (graphVisible && cy) {
+            window.requestAnimationFrame(() => {
+                cy.resize()
+                if (!graphHasLayout) runLayout()
+                else fitGraph()
+            })
+        }
     }
     graphTab.addEventListener('click', () => setView('graph'))
     listTab.addEventListener('click', () => setView('list'))
+    for (const [tab, value, other] of [[graphTab, 'graph', listTab], [listTab, 'list', graphTab]]) {
+        tab.addEventListener('keydown', (event) => {
+            if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return
+            event.preventDefault()
+            setView(value === 'graph' ? 'list' : 'graph')
+            other.focus()
+        })
+    }
     previous.addEventListener('click', () => { listPage -= 1; renderList() })
     next.addEventListener('click', () => { listPage += 1; renderList() })
 
+    // Match Kubernetes Inventory Topology's small domain badge + external label
+    // instead of long centered text inside oversized rectangle nodes.
+    const visualDomains = {
+        artifact: 'configuration',
+        cluster: 'scope',
+        namespace: 'scope',
+        workload: 'compute',
+        pod: 'compute',
+    }
+    const glyphs = { artifact: 'AR', cluster: 'CL', namespace: 'NS', workload: 'WL', pod: 'PD' }
+    const badgeCache = new Map()
+    const nodeVisual = (type) => {
+        const domain = visualDomains[type] || 'compute'
+        return {
+            fill: token(`--kaori-topology-domain-${domain}-fill`, 'Canvas'),
+            border: token(`--kaori-topology-domain-${domain}-border`, 'CanvasText'),
+            text: token(`--kaori-topology-domain-${domain}-text`, 'CanvasText'),
+        }
+    }
+    const nodeTone = (data) => {
+        if (data.type !== 'artifact') return 'unknown'
+        if (Number(data.critical) > 0) return 'critical'
+        if (Number(data.high) > 0) return 'warning'
+        // A scan with zero high findings is not evidence of healthy runtime.
+        return 'unknown'
+    }
+    const badgeImage = (data) => {
+        const visual = nodeVisual(data.type)
+        const tone = nodeTone(data)
+        const statusColor = token(`--kaori-status-${tone === 'critical' ? 'critical' : tone === 'warning' ? 'warning' : 'unknown'}`, 'CanvasText')
+        const outline = token('--kaori-surface-card', 'Canvas')
+        const glyph = glyphs[data.type] || 'RS'
+        const key = [data.type, tone, visual.text, statusColor, outline].join(':')
+        if (badgeCache.has(key)) return badgeCache.get(key)
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="52" viewBox="0 0 96 52"><text x="48" y="32" text-anchor="middle" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="${visual.text}">${glyph}</text><circle cx="84" cy="10" r="5" fill="${statusColor}" stroke="${outline}" stroke-width="2"/></svg>`
+        const result = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
+        badgeCache.set(key, result)
+        return result
+    }
+    const displayLabel = (value) => {
+        const label = String(value || 'Not Reported')
+        return label.length > 30 ? `${label.slice(0, 29)}…` : label
+    }
+    const graphStyle = () => {
+        const surface = token('--kaori-surface-card', 'Canvas')
+        const foreground = token('--kaori-content-primary', 'CanvasText')
+        const contains = token('--kaori-topology-edge-contains', 'CanvasText')
+        const owns = token('--kaori-topology-edge-owns', 'CanvasText')
+        const uses = token('--kaori-topology-edge-uses', 'CanvasText')
+        const warningColor = token('--kaori-status-warning', 'CanvasText')
+        return [
+            {
+                selector: 'node',
+                style: {
+                    'background-color': (node) => nodeVisual(node.data('type')).fill,
+                    'border-color': (node) => nodeVisual(node.data('type')).border,
+                    'border-width': 2,
+                    shape: 'round-rectangle',
+                    height: 44,
+                    width: 76,
+                    padding: 0,
+                    'background-image': (node) => badgeImage(node.data()),
+                    'background-width': '100%',
+                    'background-height': '100%',
+                    'background-position-x': '50%',
+                    'background-position-y': '50%',
+                    'background-repeat': 'no-repeat',
+                    'background-fit': 'none',
+                    'background-image-containment': 'inside',
+                    label: labelsToggle.checked ? 'data(display_label)' : '',
+                    color: foreground,
+                    'font-family': 'Inter, sans-serif',
+                    'font-size': 10,
+                    'font-weight': 600,
+                    'text-valign': 'bottom',
+                    'text-halign': 'center',
+                    'text-justification': 'center',
+                    'text-wrap': 'ellipsis',
+                    'text-max-width': 195,
+                    'text-margin-y': 11,
+                    'text-background-color': surface,
+                    'text-background-opacity': 0.94,
+                    'text-background-padding': 3,
+                    'text-background-shape': 'roundrectangle',
+                    'text-border-color': token('--kaori-outline-subtle', 'GrayText'),
+                    'text-border-width': 1,
+                    'text-border-opacity': 0.8,
+                    'overlay-opacity': 0,
+                    'shadow-blur': 10,
+                    'shadow-color': foreground,
+                    'shadow-offset-x': 0,
+                    'shadow-offset-y': 3,
+                    'shadow-opacity': 0.1,
+                },
+            },
+            {
+                selector: 'node[type = "artifact"]',
+                style: { width: 96, height: 52, 'font-size': 11, 'font-weight': 700 },
+            },
+            {
+                selector: 'node[type = "cluster"]',
+                style: { width: 92, height: 48, 'font-weight': 700 },
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'curve-style': 'bezier',
+                    'line-color': (edge) => {
+                        const kind = edge.data('relationship')
+                        if (kind === 'contains') return contains
+                        if (kind === 'owns') return owns
+                        return ['medium', 'mixed'].includes(edge.data('confidence')) ? warningColor : uses
+                    },
+                    'line-opacity': 0.78,
+                    'line-style': (edge) => edge.data('relationship') === 'contains' ? 'dashed' : 'solid',
+                    'target-arrow-shape': (edge) => edge.data('relationship') === 'contains' ? 'none' : 'triangle',
+                    'target-arrow-color': (edge) => {
+                        if (edge.data('relationship') === 'owns') return owns
+                        return ['medium', 'mixed'].includes(edge.data('confidence')) ? warningColor : uses
+                    },
+                    'arrow-scale': 0.78,
+                    width: 2,
+                    label: '',
+                    'font-family': 'Inter, sans-serif',
+                    'font-size': 9,
+                    'font-weight': 600,
+                    color: foreground,
+                    'text-rotation': 'none',
+                    'text-background-color': surface,
+                    'text-background-opacity': 0.96,
+                    'text-background-padding': 3,
+                    'text-background-shape': 'roundrectangle',
+                    'text-border-color': token('--kaori-outline-subtle', 'GrayText'),
+                    'text-border-width': 1,
+                    'text-border-opacity': 0.7,
+                    'overlay-opacity': 0,
+                },
+            },
+            {
+                selector: 'edge[relationship = "contains"]',
+                style: {
+                    'curve-style': 'taxi',
+                    'taxi-direction': 'horizontal',
+                    'taxi-turn': 24,
+                    'line-style': 'dashed',
+                    'line-opacity': 0.38,
+                    'target-arrow-shape': 'none',
+                    width: 1,
+                },
+            },
+            {
+                selector: 'edge.edge-label-visible',
+                style: {
+                    label: (edge) => edge.data('relationship') === 'runtime_usage'
+                        ? 'used at runtime' : edge.data('relationship') === 'owns' ? 'owns' : 'contains',
+                },
+            },
+            {
+                selector: 'edge.edge-hovered',
+                style: {
+                    width: 3,
+                    'line-color': token('--kaori-brand-primary', 'CanvasText'),
+                    'target-arrow-color': token('--kaori-brand-primary', 'CanvasText'),
+                    'line-opacity': 1,
+                },
+            },
+            { selector: 'node:selected', style: { 'border-width': 3, 'border-color': token('--kaori-brand-primary', 'CanvasText') } },
+            { selector: '.kaori-topology-muted', style: { opacity: 0.16 } },
+        ]
+    }
+    const layoutOptions = () => {
+        const displayed = cy ? cy.nodes(':visible').length : payload.nodes.length
+        if (layoutSelect.value === 'dependency') {
+            return {
+                name: 'cose',
+                animate: 'end',
+                animationDuration: 420,
+                fit: true,
+                nodeDimensionsIncludeLabels: true,
+                padding: 80,
+                idealEdgeLength: 175,
+                nodeRepulsion: 620000,
+                gravity: 0.3,
+                componentSpacing: 145,
+                numIter: 1200,
+                randomize: false,
+            }
+        }
+        return {
+            name: 'breadthfirst',
+            directed: true,
+            circle: false,
+            grid: true,
+            roots: cy.nodes('[type = "artifact"]').filter(':visible'),
+            animate: false,
+            nodeDimensionsIncludeLabels: true,
+            padding: displayed <= 8 ? 72 : 64,
+            spacingFactor: displayed <= 8 ? 1.18 : displayed <= 35 ? 1.48 : 1.88,
+            // Rotate hierarchy into a left-to-right reading flow. A single
+            // artifact should not consume 38rem as a vertical five-node stick.
+            transform: (_node, position) => ({ x: position.y, y: position.x }),
+        }
+    }
+    const fitGraph = () => {
+        if (!cy || !cy.nodes(':visible').length || view !== 'graph') return
+        cy.resize()
+        const rect = canvas.getBoundingClientRect()
+        if (rect.width < 120 || rect.height < 120) return
+        const nodes = cy.nodes(':visible')
+        const edges = cy.edges(':visible')
+        const bbox = nodes.union(edges).boundingBox({ includeLabels: true, includeOverlays: false })
+        const padding = Math.max(48, Math.min(88, Math.round(Math.min(rect.width, rect.height) * 0.08)))
+        cy.fit(bbox, padding)
+        // Cap over-magnification of small graphs while keeping them centered.
+        if (cy.zoom() > 1.6) cy.zoom({ level: 1.6, renderedPosition: { x: rect.width / 2, y: rect.height / 2 } })
+    }
+    const applyVisibility = () => {
+        if (!cy) return
+        const enabled = Object.fromEntries(resourceToggles.map((toggle) => [toggle.dataset.registryTopologyType, toggle.checked]))
+        const relationships = Object.fromEntries(relationshipToggles.map((toggle) => [toggle.dataset.registryTopologyRelationship, toggle.checked]))
+        cy.nodes().forEach((node) => node.style('display', enabled[node.data('type')] ? 'element' : 'none'))
+        cy.edges().forEach((edge) => {
+            const included = enabled[edge.source().data('type')] &&
+                enabled[edge.target().data('type')] &&
+                relationships[edge.data('relationship')]
+            edge.style('display', included ? 'element' : 'none')
+        })
+    }
+    const runLayout = () => {
+        if (!cy) return
+        applyVisibility()
+        const visible = cy.elements(':visible')
+        if (!visible.nodes().length) return
+        const layout = visible.layout(layoutOptions())
+        layout.one('layoutstop', () => {
+            graphHasLayout = true
+            window.requestAnimationFrame(() => {
+                fitGraph()
+                window.setTimeout(fitGraph, 130)
+            })
+        })
+        layout.run()
+    }
+    const updateEdgeLabelClasses = () => {
+        if (!cy) return
+        cy.edges().forEach((edge) => {
+            edge.toggleClass('edge-label-visible', edgeLabelsToggle.checked || edge.selected() || edge.hasClass('edge-hovered'))
+        })
+    }
     const renderGraph = async () => {
         if (!renderer) {
             const module = await import(canvas.dataset.rendererUrl)
@@ -221,90 +541,61 @@ if (canvas && form) {
             if (typeof renderer !== 'function') throw new Error('Cytoscape module is unavailable')
         }
         if (cy) cy.destroy()
-        const colors = {
-            artifact: token('--kaori-topology-domain-configuration-border', 'CanvasText'),
-            cluster: token('--kaori-topology-domain-scope-border', 'CanvasText'),
-            namespace: token('--kaori-topology-domain-scope-border', 'CanvasText'),
-            workload: token('--kaori-topology-domain-compute-border', 'CanvasText'),
-            pod: token('--kaori-topology-domain-compute-border', 'CanvasText'),
-        }
-        const fills = {
-            artifact: token('--kaori-topology-domain-configuration-fill', 'Canvas'),
-            cluster: token('--kaori-topology-domain-scope-fill', 'Canvas'),
-            namespace: token('--kaori-topology-domain-scope-fill', 'Canvas'),
-            workload: token('--kaori-topology-domain-compute-fill', 'Canvas'),
-            pod: token('--kaori-topology-domain-compute-fill', 'Canvas'),
-        }
-        const textColors = {
-            artifact: token('--kaori-topology-domain-configuration-text', 'CanvasText'),
-            cluster: token('--kaori-topology-domain-scope-text', 'CanvasText'),
-            namespace: token('--kaori-topology-domain-scope-text', 'CanvasText'),
-            workload: token('--kaori-topology-domain-compute-text', 'CanvasText'),
-            pod: token('--kaori-topology-domain-compute-text', 'CanvasText'),
-        }
+        const records = payload.nodes.map((node) => ({
+            ...node,
+            data: { ...node.data, display_label: displayLabel(node.data.label) },
+        }))
         cy = renderer({
             container: canvas,
-            elements: [...payload.nodes, ...payload.edges],
-            layout: {
-                name: 'breadthfirst',
-                directed: true,
-                roots: payload.nodes.filter((n) => n.data.type === 'artifact').map((n) => n.data.id),
-                padding: 42,
-                spacingFactor: 1.35,
-            },
-            minZoom: 0.2,
-            maxZoom: 2.2,
-            wheelSensitivity: 0.18,
-            style: [
-                {
-                    selector: 'node',
-                    style: {
-                        label: (ele) => `${ele.data('label')}\n${ele.data('subtitle') || ele.data('type')}`,
-                        shape: 'round-rectangle',
-                        width: 170,
-                        height: 56,
-                        'background-color': (ele) => fills[ele.data('type')] || 'Canvas',
-                        'border-color': (ele) => colors[ele.data('type')] || 'CanvasText',
-                        'border-width': 1.5,
-                        color: (ele) => textColors[ele.data('type')] || 'CanvasText',
-                        'font-size': 10,
-                        'font-weight': 600,
-                        'text-wrap': 'ellipsis',
-                        'text-max-width': 155,
-                        'text-valign': 'center',
-                        'text-halign': 'center',
-                        'overlay-opacity': 0,
-                    },
-                },
-                {
-                    selector: 'edge',
-                    style: {
-                        width: 1.8,
-                        'curve-style': 'taxi',
-                        'taxi-direction': 'downward',
-                        'line-color': (ele) =>
-                            ele.data('relationship') === 'runtime_usage' &&
-                            ['medium', 'mixed'].includes(ele.data('confidence'))
-                                ? token('--kaori-status-warning', 'CanvasText')
-                                : token('--kaori-topology-edge-contains', 'CanvasText'),
-                        'target-arrow-shape': 'none',
-                        'line-style': (ele) =>
-                            ele.data('relationship') === 'contains' ? 'dashed' : 'solid',
-                        'overlay-opacity': 0,
-                    },
-                },
-                {
-                    selector: ':selected',
-                    style: {
-                        'border-width': 3,
-                        'border-color': token('--kaori-topology-domain-configuration-border', 'CanvasText'),
-                    },
-                },
-            ],
+            elements: [...records, ...payload.edges],
+            layout: { name: 'preset' },
+            minZoom: 0.12,
+            maxZoom: 2.6,
+            pixelRatio: 'auto',
+            selectionType: 'single',
+            style: graphStyle(),
         })
-        cy.on('tap', 'node', (event) => inspect(event.target))
+        const tip = $('registry-topology-node-tooltip')
+        const hideTip = () => tip?.classList.add('hidden')
+        cy.on('mouseover', 'node', (event) => {
+            if (!tip) return
+            const node = event.target
+            tip.textContent = `${node.data('type')} · ${node.data('label')}`
+            tip.classList.remove('hidden')
+            const at = node.renderedPosition()
+            tip.style.left = `${Math.max(12, Math.min(canvas.clientWidth - Math.min(tip.offsetWidth, 300) - 12, at.x + 15))}px`
+            tip.style.top = `${Math.max(8, Math.min(canvas.clientHeight - 52, at.y - 36))}px`
+        })
+        cy.on('mouseout', 'node', hideTip)
+        cy.on('pan zoom', hideTip)
+        cy.on('mouseover', 'edge', (event) => {
+            event.target.addClass('edge-hovered')
+            updateEdgeLabelClasses()
+        })
+        cy.on('mouseout', 'edge', (event) => {
+            event.target.removeClass('edge-hovered')
+            updateEdgeLabelClasses()
+        })
+        cy.on('tap', 'node', (event) => {
+            hideTip()
+            const node = event.target
+            cy.elements().removeClass('kaori-topology-muted')
+            const neighborhood = node.closedNeighborhood().union(node)
+            cy.elements().difference(neighborhood).addClass('kaori-topology-muted')
+            inspect(node)
+        })
+        cy.on('tap', (event) => {
+            if (event.target === cy) {
+                cy.elements().removeClass('kaori-topology-muted')
+                hideTip()
+                cy.elements().unselect()
+                updateEdgeLabelClasses()
+            }
+        })
         cy.on('tap', 'edge', (event) => {
             const edge = event.target
+            edge.select()
+            updateEdgeLabelClasses()
             inspectorContent.replaceChildren()
             inspectorContent.append(elements('h4', 'text-lg font-semibold text-content-primary', 'Relationship Evidence'))
             const details = elements('div', 'rounded-lg border border-outline-default p-4')
@@ -313,20 +604,22 @@ if (canvas && form) {
             appendField(details, 'From', edge.source().data('label'))
             appendField(details, 'To', edge.target().data('label'))
             inspectorContent.append(details)
-            inspectorContent.append(elements('p', 'text-xs text-content-muted', 'Context edges are structural. A mixed runtime edge includes both digest and tag evidence. Inspect exact binding rows for certainty.'))
+            inspectorContent.append(elements('p', 'text-xs text-content-muted', 'Containment and ownership are presentation context from committed Registry-to-Pod bindings. Digest matches are stronger than tag-only evidence.'))
             openInspector()
         })
-        cy.fit(undefined, 36)
+        updateEdgeLabelClasses()
+        graphHasLayout = false
         setView(view)
     }
 
     const reload = async () => {
         if (controller) controller.abort()
         controller = new AbortController()
+        status.classList.remove('hidden')
         status.textContent = 'Loading committed dependency evidence…'
         warning.classList.add('hidden')
         errorPanel.classList.add('hidden')
-        closeInspector()
+        closePane()
         const params = new URLSearchParams(new FormData(form))
         const dataUrl = new URL(canvas.dataset.url, window.location.origin)
         dataUrl.search = params.toString()
@@ -338,11 +631,17 @@ if (canvas && form) {
             })
             if (!response.ok) throw new Error(`Graph request failed (HTTP ${response.status})`)
             payload = await response.json()
+            for (const typeToggle of resourceToggles) {
+                const count = payload.nodes.filter((node) => node.data.type === typeToggle.dataset.registryTopologyType).length
+                const countNode = document.querySelector(`[data-registry-topology-type-count="${typeToggle.dataset.registryTopologyType}"]`)
+                if (countNode) countNode.textContent = String(count)
+            }
             listPage = 1
             renderList()
             const summary = payload.summary
             const evidence = payload.evidence
-            status.textContent = `${summary.artifacts_visible} artifacts · ${summary.workloads_visible} workloads · ${summary.pods_visible} pods · ${summary.displayed_bindings}/${summary.total_bindings} bindings. Evidence: ${evidence.title}.`
+            scopeSummary.textContent = `${summary.artifacts_visible} artifacts · ${summary.workloads_visible} workloads · ${summary.pods_visible} pods · ${summary.displayed_bindings}/${summary.total_bindings} bindings · ${evidence.title}`
+            status.classList.add('hidden')
             if (evidence.status !== 'ready' || summary.truncated) {
                 warning.classList.remove('hidden')
                 const qualification = evidence.status === 'ready' ? '' : `${evidence.description} `
@@ -364,7 +663,8 @@ if (canvas && form) {
             console.error('Dependency topology data load failed:', requestError)
             errorPanel.textContent = 'Unable to load committed dependency evidence. Try Reload Snapshot or return to Runtime Bindings.'
             errorPanel.classList.remove('hidden')
-            status.textContent = 'Topology unavailable — no evidence conclusion can be drawn.'
+            status.classList.add('hidden')
+            scopeSummary.textContent = 'Topology unavailable — no evidence conclusion can be drawn.'
         }
     }
 
@@ -381,22 +681,66 @@ if (canvas && form) {
         select.addEventListener('change', () => form.requestSubmit())
     })
     $('registry-topology-reload').addEventListener('click', reload)
-    $('registry-topology-fit').addEventListener('click', () => cy?.fit(undefined, 36))
-    $('registry-topology-reset').addEventListener('click', () => cy?.layout({
-        name: 'breadthfirst',
-        directed: true,
-        roots: payload.nodes.filter((n) => n.data.type === 'artifact').map((n) => n.data.id),
-        padding: 42,
-        spacingFactor: 1.35,
-    }).run())
+    $('registry-topology-fit').addEventListener('click', fitGraph)
+    $('registry-topology-reset').addEventListener('click', () => {
+        if (!cy) return
+        cy.elements().removeClass('kaori-topology-muted')
+        graphHasLayout = false
+        runLayout()
+    })
+    const updateDisplay = (relayout = false) => {
+        if (!cy) return
+        cy.style().fromJson(graphStyle()).update()
+        updateEdgeLabelClasses()
+        cy.elements().removeClass('kaori-topology-muted')
+        if (relayout) {
+            graphHasLayout = false
+            runLayout()
+        } else fitGraph()
+    }
+    labelsToggle.addEventListener('change', () => updateDisplay())
+    edgeLabelsToggle.addEventListener('change', () => updateDisplay())
+    layoutSelect.addEventListener('change', () => {
+        const url = new URL(window.location.href)
+        if (layoutSelect.value === 'dependency') url.searchParams.set('layout', 'dependency')
+        else url.searchParams.delete('layout')
+        window.history.replaceState({}, '', url)
+        updateDisplay(true)
+    })
+    relationshipToggles.forEach((toggle) => toggle.addEventListener('change', () => updateDisplay(true)))
+    resourceToggles.forEach((toggle) => toggle.addEventListener('change', () => {
+        if (!cy) return
+        applyVisibility()
+        empty.classList.toggle('hidden', cy.nodes(':visible').length > 0)
+        empty.classList.toggle('flex', cy.nodes(':visible').length === 0)
+        updateDisplay(true)
+    }))
     $('registry-topology-export').addEventListener('click', () => {
         if (!cy) return
-        const output = cy.png({ full: true, scale: 2, bg: window.getComputedStyle(document.body).backgroundColor })
-        const a = document.createElement('a')
-        a.href = output
-        a.download = 'kaori-artifact-dependency-topology.png'
-        a.click()
+        const output = cy.png({
+            full: true,
+            scale: 2,
+            bg: token('--kaori-surface-card', 'Canvas'),
+        })
+        const anchor = document.createElement('a')
+        anchor.href = output
+        anchor.download = 'kaori-artifact-dependency-topology.png'
+        anchor.click()
     })
+    $('registry-topology-export-json').addEventListener('click', () => {
+        const bytes = JSON.stringify({
+            ...payload,
+            export_scope: 'bounded committed graph slice; omitted records are not negative evidence',
+        }, null, 2)
+        const objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/json' }))
+        const anchor = document.createElement('a')
+        anchor.href = objectUrl
+        anchor.download = 'kaori-artifact-dependency-topology.json'
+        anchor.click()
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    })
+    const initialLayout = new URL(window.location.href).searchParams.get('layout')
+    layoutSelect.value = initialLayout === 'dependency' ? 'dependency' : 'hierarchy'
     setView(view)
     reload()
 }

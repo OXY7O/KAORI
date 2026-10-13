@@ -6,6 +6,8 @@
     {% import "components/section_intro.html" as section_intro %}
     {% import "components/visualization_workspace.html" as visualization %}
     {% import "components/table.html" as table_ui %}
+    {% import "components/segmented_tabs.html" as segmented_tabs %}
+    {% import "components/table_label.html" as table_label %}
     <div class="space-y-5">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -144,7 +146,7 @@
                         </p>
                     {% endif %}
                     <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
-                        <p class="text-xs text-content-muted">Changing a filter reloads the committed graph slice.</p>
+                        <p id="registry-topology-scope-summary" class="text-xs font-medium text-kaori-primary">Changing a filter reloads the committed graph slice.</p>
                         <div class="flex gap-2">
                             <a href="{{ url_for('artifact_registry.runtime_topology') }}"
                                class="{{ table_ui.action_classes() }}">Clear Filters</a>
@@ -152,95 +154,230 @@
                         </div>
                     </div>
                 </form>
-                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-5 py-3">
-                    <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Topology view">
-                        <button id="registry-topology-graph-tab"
-                                type="button"
-                                aria-pressed="true"
-                                class="{{ table_ui.action_classes() }}">Graph</button>
-                        <button id="registry-topology-list-tab"
-                                type="button"
-                                aria-pressed="false"
-                                class="{{ table_ui.action_classes() }}">Resource List</button>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <button id="registry-topology-fit" type="button" class="{{ table_ui.action_classes() }}">Fit</button>
-                        <button id="registry-topology-reset" type="button" class="{{ table_ui.action_classes() }}">Reset</button>
-                        <button id="registry-topology-export" type="button" class="{{ table_ui.action_classes() }}">Export PNG</button>
-                    </div>
-                </div>
+                <div id="registry-topology-warning"
+                     role="alert"
+                     class="hidden border-b {{ table_label.tone_border_classes('warning') }} bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text"></div>
+                <div id="registry-topology-error"
+                     role="alert"
+                     class="hidden border-b {{ table_label.tone_border_classes('critical') }} bg-status-critical-soft px-5 py-3 text-xs text-status-critical-text"></div>
                 <div id="registry-topology-status"
                      role="status"
                      aria-live="polite"
-                     class="border-b border-outline-subtle bg-surface-elevated px-5 py-2 text-sm text-content-secondary">
-                    Loading committed dependency evidence…
+                     class="border-b {{ table_label.tone_border_classes('pending') }} bg-status-pending-soft px-5 py-3 text-xs text-status-pending-text">
+                    Preparing committed artifact and Kubernetes relationships…
                 </div>
-                <div id="registry-topology-warning"
-                     role="alert"
-                     class="hidden border-b border-outline-subtle px-5 py-3 text-sm text-status-warning-text"></div>
-                <div id="registry-topology-error"
-                     role="alert"
-                     class="hidden border-b border-outline-subtle px-5 py-3 text-sm text-status-critical-text"></div>
-                <div id="registry-topology-canvas-shell" class="relative min-h-[36rem]">
-                    <div id="registry-topology-canvas"
-                         role="img"
-                         aria-label="Artifact to Kubernetes committed dependency graph. Use Resource List for accessible navigation."
-                         data-url="{{ url_for('artifact_registry.runtime_topology_data') }}"
-                         data-renderer-url="{{ url_for('static', filename='vendor/cytoscape/cytoscape.esm.min.js') }}"
-                         class="{{ visualization.canvas_classes() }} h-[36rem] w-full"></div>
-                    <div id="registry-topology-empty"
-                         class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8 text-center text-sm text-content-muted">
-                        No committed relationships in this selected graph scope. Check evidence readiness before interpreting absence.
-                    </div>
-                </div>
-                <div id="registry-topology-list-shell" class="hidden">
-                    <div class="overflow-x-auto">
-                        <table class="{{ table_ui.table_classes('min-w-[55rem]') }}">
-                            <caption class="sr-only">Visible committed artifact to runtime binding slice</caption>
-                            <thead class="{{ table_ui.head_classes() }}">
-                                <tr>
-                                    <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
-                                    <th class="{{ table_ui.header_cell_classes() }}">Runtime Scope</th>
-                                    <th class="{{ table_ui.header_cell_classes() }}">Match</th>
-                                    <th class="{{ table_ui.header_cell_classes() }}">Security</th>
-                                    <th class="{{ table_ui.header_cell_classes(true) }}">Inspect</th>
-                                </tr>
-                            </thead>
-                            <tbody id="registry-topology-resource-rows" class="{{ table_ui.body_classes() }}"></tbody>
-                        </table>
-                    </div>
-                    <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle px-5 py-3">
-                        <p id="registry-topology-list-count" class="text-xs text-content-muted"></p>
-                        <div class="flex gap-2">
-                            <button type="button" id="registry-topology-prev" class="{{ table_ui.action_classes() }}">Previous</button>
-                            <button type="button" id="registry-topology-next" class="{{ table_ui.action_classes() }}">Next</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex flex-wrap gap-x-5 gap-y-2 border-t border-outline-subtle bg-surface-elevated px-5 py-3 text-xs text-content-muted">
-                    <span>◆ Artifact</span><span>◇ Cluster / Namespace</span>
-                    <span>□ Workload / Pod</span>
-                    <span>Solid usage: digest match</span><span>Warning line: tag/mixed match</span>
-                    <span>Dashed: namespace containment</span>
-                    <span>Unknown/stale evidence is not a verified negative</span>
-                </div>
-                <div id="registry-topology-backdrop" class="fixed inset-0 z-40 hidden bg-black/40"></div>
-                <aside id="registry-topology-inspector"
-                       role="dialog"
-                       aria-modal="true"
-                       aria-labelledby="registry-topology-inspector-title"
-                       class="{{ visualization.drawer_pane_classes('right') }}">
-                    <div class="flex items-center justify-between border-b border-outline-subtle px-5 py-4">
-                        <h3 id="registry-topology-inspector-title" class="font-semibold text-content-primary">
-                            Topology Inspector
-                        </h3>
-                        <button id="registry-topology-inspector-close"
-                                type="button"
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
+                    <div class="flex flex-wrap items-center gap-2">
+                        {{ segmented_tabs.render([
+                            ('graph', 'Graph', 'share-2'),
+                            ('list', 'Resource List', 'list-tree')
+                        ], prefix='registry-topology-view', active_key='graph', aria_label='Dependency Topology View') }}
+                        <button id="registry-topology-controls-button" type="button"
                                 class="{{ table_ui.action_classes() }}"
-                                aria-label="Close topology inspector">Close</button>
+                                aria-expanded="false" aria-controls="registry-topology-controls">
+                            <i data-lucide="sliders-horizontal" class="h-4 w-4" aria-hidden="true"></i>Controls
+                        </button>
+                        <button id="registry-topology-details-button" type="button"
+                                class="{{ table_ui.action_classes() }}"
+                                aria-expanded="false" aria-controls="registry-topology-inspector">
+                            <i data-lucide="panel-right-open" class="h-4 w-4" aria-hidden="true"></i>Details
+                        </button>
                     </div>
-                    <div id="registry-topology-inspector-content" class="space-y-4 px-5 py-5"></div>
-                </aside>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="registry-topology-fit" type="button" class="{{ table_ui.action_classes() }}">
+                            <i data-lucide="maximize-2" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Fit
+                        </button>
+                        <button id="registry-topology-reset" type="button" class="{{ table_ui.action_classes() }}">
+                            <i data-lucide="rotate-ccw" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Reset
+                        </button>
+                        <details class="relative">
+                            <summary class="{{ table_ui.action_classes() }} cursor-pointer list-none">
+                                <i data-lucide="download" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>Export
+                                <i data-lucide="chevron-down" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            </summary>
+                            <div class="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-outline-default bg-surface-card p-1.5 shadow-xl">
+                                <button id="registry-topology-export" type="button"
+                                        class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-content-secondary hover:bg-kaori-soft hover:text-kaori-primary">
+                                    <i data-lucide="image-down" class="h-4 w-4" aria-hidden="true"></i>Export PNG
+                                </button>
+                                <button id="registry-topology-export-json" type="button"
+                                        class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-content-secondary hover:bg-kaori-soft hover:text-kaori-primary">
+                                    <i data-lucide="braces" class="h-4 w-4" aria-hidden="true"></i>Export JSON
+                                </button>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+                <div id="registry-topology-backdrop"
+                     class="fixed inset-0 z-40 hidden bg-surface-overlay/70 backdrop-blur-sm"
+                     aria-hidden="true"></div>
+                <div class="{{ visualization.adaptive_grid_classes() }}">
+                    <aside id="registry-topology-controls"
+                           aria-label="Topology Display Controls"
+                           role="dialog"
+                           aria-modal="true"
+                           class="{{ visualization.drawer_pane_classes('left') }}">
+                        <div class="flex items-start justify-between gap-4 border-b border-outline-subtle px-4 py-4">
+                            <div>
+                                <h3 class="text-base font-semibold text-content-primary">Display Controls</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Adjust how the committed relationships are drawn.</p>
+                            </div>
+                            <button id="registry-topology-controls-close" type="button"
+                                    class="{{ table_ui.action_classes() }}" aria-label="Close Display Controls">
+                                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="space-y-5 p-4">
+                            <div class="space-y-2.5">
+                                <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-subtle px-3 py-2 text-xs font-medium text-content-secondary">
+                                    Resource Labels
+                                    <input id="registry-topology-labels" type="checkbox" checked
+                                           class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
+                                </label>
+                                <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-subtle px-3 py-2 text-xs font-medium text-content-secondary">
+                                    Always Show Relationship Labels
+                                    <input id="registry-topology-edge-labels" type="checkbox"
+                                           class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
+                                </label>
+                                <div class="rounded-lg border border-outline-subtle px-3 py-2.5">
+                                    <label for="registry-topology-layout" class="block text-xs font-semibold text-content-secondary">Layout Mode</label>
+                                    <select id="registry-topology-layout"
+                                            class="mt-2 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs text-content-primary">
+                                        <option value="hierarchy">Hierarchy View</option>
+                                        <option value="dependency">Dependency View</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <details open class="rounded-xl border border-outline-subtle p-3">
+                                <summary class="cursor-pointer text-sm font-semibold text-content-primary">Resource Visibility</summary>
+                                <div class="mt-3 grid gap-1.5">
+                                    {% for value, label, icon, domain in [
+                                        ('artifact', 'Artifact', 'package', 'configuration'),
+                                        ('cluster', 'Cluster', 'server-cog', 'scope'),
+                                        ('namespace', 'Namespace', 'layers-3', 'scope'),
+                                        ('workload', 'Workload', 'boxes', 'compute'),
+                                        ('pod', 'Pod', 'circle-dot', 'compute')
+                                    ] %}
+                                        <label class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-xs text-content-secondary hover:bg-surface-hover">
+                                            <span class="inline-flex items-center gap-2">
+                                                <span class="flex h-6 w-6 items-center justify-center rounded-md border kaori-topology-domain-{{ domain }}">
+                                                    <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                                </span>{{ label }}
+                                            </span>
+                                            <span class="inline-flex items-center gap-2">
+                                                <span data-registry-topology-type-count="{{ value }}"
+                                                      class="text-xs font-semibold text-content-muted">0</span>
+                                                <input type="checkbox" checked data-registry-topology-type="{{ value }}"
+                                                       class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
+                                            </span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </details>
+                            <details open class="rounded-xl border border-outline-subtle p-3">
+                                <summary class="cursor-pointer text-sm font-semibold text-content-primary">Relationship Legend</summary>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">Dashed links show context; solid links show committed runtime or ownership relationships.</p>
+                                <div class="mt-3 space-y-2 text-xs text-content-secondary">
+                                    {% for kind, title, cls in [
+                                        ('contains', 'Contains (scope context)', 'contains'),
+                                        ('owns', 'Owns (Pod hierarchy)', 'owns'),
+                                        ('runtime_usage', 'Runtime usage (digest / tag evidence)', 'uses')
+                                    ] %}
+                                        <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-hover">
+                                            <span class="inline-flex items-center gap-2">
+                                                <span class="h-0.5 w-7 shrink-0 kaori-topology-edge-{{ cls }}" aria-hidden="true"></span>
+                                                {{ title }}
+                                            </span>
+                                            <input type="checkbox" checked data-registry-topology-relationship="{{ kind }}"
+                                                   class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
+                                        </label>
+                                    {% endfor %}
+                                    <p class="pt-2 text-xs text-status-warning-text">
+                                        Tag-only and mixed confidence are qualified in the Details inspector.
+                                    </p>
+                                </div>
+                            </details>
+                        </div>
+                    </aside>
+                    <main class="min-w-0">
+                        <section id="registry-topology-view-panel-graph" role="tabpanel"
+                                 aria-labelledby="registry-topology-view-tab-graph">
+                            <div id="registry-topology-canvas-shell"
+                                 class="{{ visualization.canvas_classes() }} min-h-[38rem]">
+                                <div id="registry-topology-canvas"
+                                     role="img"
+                                     aria-label="Artifact Registry to Kubernetes committed dependency graph. Use Resource List for keyboard-accessible evidence."
+                                     data-url="{{ url_for('artifact_registry.runtime_topology_data') }}"
+                                     data-renderer-url="{{ url_for('static', filename='vendor/cytoscape/cytoscape.esm.min.js') }}"
+                                     class="absolute inset-0 h-full w-full"></div>
+                                <div id="registry-topology-node-tooltip"
+                                     role="tooltip"
+                                     class="pointer-events-none absolute z-30 hidden max-w-[20rem] rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-medium text-content-primary shadow-xl"></div>
+                                <div id="registry-topology-empty"
+                                     class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
+                                    <div class="pointer-events-auto w-full max-w-md">
+                                        {% set empty_state_icon = 'waypoints' %}
+                                        {% set empty_state_label = 'No Results' %}
+                                        {% set empty_state_title = 'No Committed Artifact Relationships Found' %}
+                                        {% set empty_state_description = 'Adjust the scope or refresh canonical correlation evidence. Missing or stale evidence never proves zero impact.' %}
+                                        {% set empty_state_variant = 'panel' %}
+                                        {% include 'components/states/_empty_state.html' %}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <section id="registry-topology-view-panel-list" role="tabpanel"
+                                 aria-labelledby="registry-topology-view-tab-list"
+                                 hidden class="{{ visualization.canvas_classes() }} min-h-[38rem] overflow-auto">
+                            <div class="border-b border-outline-subtle px-5 py-3">
+                                <h3 class="text-sm font-semibold text-content-primary">Resource List</h3>
+                                <p class="mt-1 text-xs text-content-muted">Same committed bounded slice as Graph. Choose Inspect for full names and evidence.</p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="{{ table_ui.table_classes('min-w-[55rem]') }}">
+                                    <caption class="sr-only">Visible committed artifact-to-runtime bindings</caption>
+                                    <thead class="{{ table_ui.head_classes() }}">
+                                        <tr>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Runtime Scope</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Match</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Security</th>
+                                            <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="registry-topology-resource-rows" class="{{ table_ui.body_classes() }}"></tbody>
+                                </table>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle px-5 py-3">
+                                <p id="registry-topology-list-count" class="text-xs text-content-muted"></p>
+                                <div class="flex gap-2">
+                                    <button type="button" id="registry-topology-prev" class="{{ table_ui.action_classes() }}">Previous</button>
+                                    <button type="button" id="registry-topology-next" class="{{ table_ui.action_classes() }}">Next</button>
+                                </div>
+                            </div>
+                        </section>
+                    </main>
+                    <aside id="registry-topology-inspector"
+                           role="dialog" aria-modal="true" aria-labelledby="registry-topology-inspector-title"
+                           class="{{ visualization.drawer_pane_classes('right') }}">
+                        <div class="flex items-start justify-between gap-4 border-b border-outline-subtle px-4 py-4">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <i data-lucide="panel-right" class="h-4 w-4"></i>
+                                </span>
+                                <div>
+                                    <h3 id="registry-topology-inspector-title" class="text-base font-semibold text-content-primary">Topology Details</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Inspect a selected resource or relationship.</p>
+                                </div>
+                            </div>
+                            <button id="registry-topology-inspector-close" type="button"
+                                    class="{{ table_ui.action_classes() }}" aria-label="Close Topology Details">
+                                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div id="registry-topology-inspector-content" class="space-y-4 px-4 py-5"></div>
+                    </aside>
+                </div>
             {% endcall %}
         </section>
     </div>
