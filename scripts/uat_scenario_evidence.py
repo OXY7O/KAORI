@@ -63,7 +63,11 @@ def _artifact_status(
 ) -> list[str]:
     missing: list[str] = []
     requirements = scenario.get("required_artifacts") or {}
-    variants = {v for node in scenario["nodes"] for v in node.get("variants", [])}
+    expected_keys = {
+        f"{node['nodeid']}::{variant}"
+        for node in scenario["nodes"]
+        for variant in node.get("variants", [])
+    }
     for kind, count in requirements.items():
         valid: set[str] = set()
         for entry in evidence:
@@ -78,12 +82,18 @@ def _artifact_status(
                 continue
             if not resolved.is_file() or resolved.stat().st_size == 0:
                 continue
-            variant = str(entry.get("variant") or "")
-            if variants and variant not in variants:
-                continue
-            valid.add(variant if variants else relative)
-        required = set(variants) if variants and count == len(variants) else set()
-        if len(valid) < count or (required and not required.issubset(valid)):
+            if expected_keys:
+                nodeid = entry.get("nodeid")
+                variant = entry.get("variant")
+                key = f"{nodeid}::{variant}"
+                if key not in expected_keys:
+                    continue
+                valid.add(key)
+            else:
+                valid.add(relative)
+        if len(valid) < count or (
+            expected_keys and count == len(expected_keys) and not expected_keys.issubset(valid)
+        ):
             missing.append(f"{kind}: {len(valid)}/{count} verified files")
     return missing
 
