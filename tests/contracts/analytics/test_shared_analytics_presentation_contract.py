@@ -125,7 +125,11 @@ def test_shared_selector_and_readiness_geometry_render_identically_across_domain
     assert 'name="provider_id"' in registry
     assert 'Harbor Primary' in registry
     assert 'Registry Source Status' in registry
-    assert 'title="Filters the generation age' in registry
+    # Registry Time Range is a measured history query, not a filter on the
+    # generation age of one instant snapshot.
+    assert 'title="Select a measured Metrics Source history interval;' in registry
+    assert 'unavailable source retention or range capability is reported explicitly.' in registry
+    assert 'Filters the generation age' not in registry
 
 
 def test_shared_selector_supports_legacy_bookmarks_without_duplicating_normal_options() -> None:

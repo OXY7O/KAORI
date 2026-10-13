@@ -86,8 +86,10 @@ def test_incident_readiness_redesign_uses_committed_control_evidence() -> None:
     assert 'aria-label="Incident decision and handoff readiness"' in content
     assert 'caption class="sr-only"' in content
     assert 'min-w-[34rem] table-fixed' in content
-    assert "fill_classes='h-full rounded-full bg-kaori-primary'" in content
-    assert 'progress_bar.semantic_bar' not in content
+    # Current incident readiness renders control scores with semantic tones,
+    # not a misleading single brand-colored progress indicator.
+    assert 'progress_bar.semantic_bar(score if has_checks else 0, tone=tone' in content
+    assert "label=title ~ ' score'" in content
     assert '35% weight' not in content
     assert 'Last 24 hours' not in content
     assert 'Last updated' not in content

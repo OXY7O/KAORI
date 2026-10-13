@@ -47,10 +47,10 @@ def test_object_storage_bucket_record_filters_refresh_with_htmx_without_apply_bu
 def test_top_consumer_wording_uses_compact_guidance_and_expanded_definitions() -> None:
     section = read('app/templates/kubernetes/analytics/top_consumers/partials/_top_consumers_section.html')
 
-    assert (
-        'Compare consumption, scope contribution, denominator context, and priority without comparing unlike '
-        'resource units.' in section
-    )
+    # Approved compact guidance keeps each resource's own denominator and
+    # prevents comparing unlike units; the longer definition remains below.
+    assert 'Compare ranked resource consumers, inspect committed records' in section
+    assert 'Each resource keeps its own unit and denominator.' in section
     assert (
         'Consumption ranks the largest users; Contribution shows each consumer’s share of the selected scope; '
         'Pressure compares observed usage with available capacity.' in section
