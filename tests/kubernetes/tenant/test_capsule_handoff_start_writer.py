@@ -129,7 +129,7 @@ def test_start_candidate_has_exact_canonical_scope_and_no_credentials_or_provide
         lambda p, r: p.update(provider='native_kubernetes'),
         lambda p, r: p['handoff_components'][1].update(uid='rotated'),
         lambda p, r: r.update(resource_sha256='bad'),
-        lambda p, r: r['list_snapshots'][0].update(list_resource_version='new-rv'),
+        lambda p, r: r['list_snapshots'][0].update(count=1),
         lambda p, r: r['global_quota'].update(scope_sha256='f' * 64),
     ],
 )
@@ -138,6 +138,17 @@ def test_changed_plan_or_inventory_cannot_produce_a_valid_start(change):
     change(plan, related)
     with pytest.raises((TypeError, ValueError, KeyError)):
         _candidate(plan, related)
+
+
+def test_collection_list_rv_churn_preserves_only_unadmitted_start_evidence():
+    plan, related = _scope()
+    before = _candidate(plan, related)
+    related['list_snapshots'][0]['list_resource_version'] = 'new-rv'
+    after = _candidate(plan, related)
+    assert after['worklist_sha256'] == before['worklist_sha256']
+    assert after['provider_handoff_verified'] is False
+    assert after['release_authorized'] is False
+    assert after['auto_retry_authorized'] is False
 
 
 @pytest.mark.parametrize(
