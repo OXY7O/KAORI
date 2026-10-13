@@ -29,6 +29,13 @@ from app.kubernetes.tenant.capsule_handoff_resource_consent import (
 )
 
 
+def _required_identity_reference(value: str | None) -> str:
+    """Absent trust roots cannot authenticate an external consent attestation."""
+    if not isinstance(value, str) or not value:
+        raise ValueError('Explicit Capsule consent identity issuer and key identifiers are required.')
+    return value
+
+
 def review_capsule_origin_consent_docket(
     *,
     plan: Mapping[str, Any],
@@ -85,8 +92,8 @@ def review_capsule_origin_consent_docket(
             acceptance=acceptance,
             manifest=consent_manifest,
             attestations=identity_attestations,
-            expected_issuer_id=expected_identity_issuer_id,
-            expected_key_id=expected_identity_key_id,
+            expected_issuer_id=_required_identity_reference(expected_identity_issuer_id),
+            expected_key_id=_required_identity_reference(expected_identity_key_id),
         )
         if identity['consent_manifest_sha256'] != consent['resource_consent_manifest_sha256']:
             raise ValueError('Capsule human attestation changed the consent manifest scope.')
