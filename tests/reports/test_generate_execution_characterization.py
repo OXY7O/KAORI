@@ -203,3 +203,57 @@ def test_scope_readiness_honors_scope_contract_without_stale_inventory_counts() 
         {'cluster_id': '', 'object_storage_system_id': 'storage-1'},
         {'scope_asset_type': 'object_storage_system', 'requires_cluster': False},
     )
+
+
+def test_report_storage_unavailable_does_not_persist_request(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """UAT-RPT-003: reject unavailable artifact storage before any report write."""
+    persistence_app = Flask('reports-storage-unavailable-test')
+    persistence_app.config.update(
+        TESTING=True,
+        SQLALCHEMY_DATABASE_URI=f'sqlite:///{tmp_path / "reports-storage-block.db"}',
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+    db.init_app(persistence_app)
+
+    form_state = {
+        'name': 'Rejected While Artifact Storage Is Unavailable',
+        'report_type': 'execution_characterization',
+        'cluster_id': '',
+        'namespace': '',
+        'object_storage_system_id': '',
+        'period': '30d',
+        'output_format': 'csv',
+        'sections': ['inventory_assets'],
+    }
+    monkeypatch.setattr(generate_service, 'get_form_state_from_form', lambda _form: form_state)
+    monkeypatch.setattr(generate_service, 'validate_form_state', lambda _state: [])
+    checked: list[str] = []
+
+    def unavailable_storage() -> dict[str, bool]:
+        checked.append('storage')
+        return {'write_available': False}
+
+    def unexpected_report_spec(_report_type: str) -> None:
+        raise AssertionError('Invalid storage readiness must stop before report creation')
+
+    monkeypatch.setattr(generate_service, 'get_report_storage_backend_status', unavailable_storage)
+    monkeypatch.setattr(generate_service, 'get_report_type_spec', unexpected_report_spec)
+
+    with persistence_app.app_context():
+        Report.__table__.create(db.engine)
+        try:
+            success, errors, report = generate_service.create_report_request(MultiDict(), user_id=None)
+
+            assert success is False
+            assert report is None
+            assert checked == ['storage']
+            assert len(errors) == 1
+            assert 'Artifact storage is unavailable' in errors[0]
+            assert db.session.query(Report).count() == 0
+            assert not db.session.new
+        finally:
+            db.session.remove()
+            Report.__table__.drop(db.engine)
