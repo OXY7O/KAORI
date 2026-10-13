@@ -1,5 +1,6 @@
 """JIT projection never admits administrator-level defaults at configuration time."""
 
+import re
 from types import SimpleNamespace
 
 from app.access.identity_providers import service
@@ -44,10 +45,9 @@ def test_create_edit_and_connection_test_apply_jit_save_boundary() -> None:
     routes = (Path(__file__).resolve().parents[3] / 'app/access/identity_providers/routes.py').read_text(
         encoding='utf-8'
     )
-    assert (
-        routes.count(
-            'provider_default_role_assignment_error(actor, form.default_role_id.data, '
-            'jit_enabled=bool(form.jit_enabled.data))'
-        )
-        == 3
+    guard = (
+        r'provider_default_role_assignment_error\(\s*'
+        r'actor,\s*form\.default_role_id\.data,\s*'
+        r'jit_enabled=bool\(form\.jit_enabled\.data\)\s*\)'
     )
+    assert len(re.findall(guard, routes)) == 3
