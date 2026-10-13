@@ -318,16 +318,37 @@ if (canvas && form) {
         const rows = associatedBindings(node.id())
         if (!rows.length) return
         pane.classList.remove('hidden')
-        const title = elements('h5', 'text-xs font-semibold text-content-primary', `Visible Runtime Evidence (${rows.length})`)
-        pane.append(title)
+        fill(pane, '[data-runtime-evidence-count]', `${rows.length} ${rows.length === 1 ? 'binding' : 'bindings'}`)
+        const list = pane.querySelector('[data-runtime-evidence-rows]')
         for (const item of rows.slice(0, 10)) {
-            const box = elements('div', 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2')
-            box.append(elements('p', 'break-words text-xs font-semibold text-content-primary', `${item.cluster} / ${item.namespace}`))
-            box.append(elements('p', 'mt-1 break-words text-xs text-content-secondary', `${item.workload} · ${item.pod}`))
-            box.append(elements('p', 'mt-1 text-xs text-content-muted', `${item.match} · ${item.security}`))
-            pane.append(box)
+            const card = $('registry-topology-runtime-evidence-row-template')?.content.firstElementChild?.cloneNode(true)
+            if (!card || !list) continue
+            fill(card, '[data-runtime-workload]', item.workload)
+            fill(card, '[data-runtime-pod]', item.pod)
+            fill(card, '[data-runtime-cluster]', item.cluster)
+            fill(card, '[data-runtime-namespace]', item.namespace)
+            const match = String(item.match_type || item.match || '').toLowerCase()
+            const matchTone = match.includes('tag') || match.includes('mixed') ? 'warning'
+                : match.includes('digest') ? 'info' : 'unknown'
+            const matchText = item.confidence
+                ? `${safeLabel(item.match)} · ${safeLabel(item.confidence)} confidence`
+                : safeLabel(item.match)
+            fill(card, '[data-runtime-match-text]', matchText)
+            applyStatusSurface(card.querySelector('[data-runtime-match]'),
+                card.querySelector('[data-runtime-match-dot]'), matchTone)
+            const securityTone = Number(item.critical) > 0 ? 'critical'
+                : Number(item.high) > 0 ? 'warning' : 'unknown'
+            fill(card, '[data-runtime-security-text]', item.security)
+            applyStatusSurface(card.querySelector('[data-runtime-security]'),
+                card.querySelector('[data-runtime-security-dot]'), securityTone)
+            list.append(card)
         }
-        if (rows.length > 10) pane.append(elements('p', 'text-xs text-content-muted', `${rows.length - 10} additional visible bindings; refine scope or use Runtime Usage.`))
+        if (rows.length > 10) {
+            const more = pane.querySelector('[data-runtime-evidence-more]')
+            more?.classList.remove('hidden')
+            fill(pane, '[data-runtime-evidence-more]',
+                `${rows.length - 10} more visible bindings; refine filters or open Runtime Usage.`)
+        }
     }
     const renderRelationshipRows = (target, node) => {
         target.replaceChildren()
