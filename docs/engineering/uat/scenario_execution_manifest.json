@@ -94,7 +94,10 @@
       ],
       "required_artifacts": {
         "screenshot": 6,
-        "trace": 6
+        "trace": 6,
+        "provider_readback": 1,
+        "committed_state": 1,
+        "activity_audit": 1
       },
       "real_provider_required": true
     }
