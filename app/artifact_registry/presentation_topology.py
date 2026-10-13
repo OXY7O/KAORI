@@ -264,7 +264,7 @@ def build_dependency_topology(
     for edge_id, confidences in confidence_by_edge.items():
         edges[edge_id]['data']['confidence'] = next(iter(confidences)) if len(confidences) == 1 else 'mixed'
 
-    readiness = runtime_correlation_evidence_readiness(db.session)
+    readiness = runtime_correlation_evidence_readiness(db.session())
     return {
         'nodes': list(nodes.values()),
         'edges': list(edges.values()),

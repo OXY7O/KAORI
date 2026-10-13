@@ -538,7 +538,7 @@ def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[st
             ),
             'governance_status': governance_state.status if governance_state else 'not_collected',
             'runtime_observed_at': latest_binding.isoformat() if latest_binding else None,
-            'correlation_input_signature': runtime_input_signature(db.session),
+            'correlation_input_signature': runtime_input_signature(db.session()),
             'security_latest_scan_at': latest_scan.isoformat() if latest_scan else None,
             'security_assessed_count': counts['scanned_artifacts'],
         },
@@ -684,7 +684,7 @@ def materialize_registry_analytics(
     )
     if governance_generation != domain['evidence']['governance_committed_at']:
         raise RuntimeError('Registry Governance changed during Analytics materialization.')
-    if runtime_input_signature(db.session) != domain['evidence']['correlation_input_signature']:
+    if runtime_input_signature(db.session()) != domain['evidence']['correlation_input_signature']:
         raise RuntimeError('Registry or Kubernetes correlation inputs changed during Analytics materialization.')
 
     snapshot = RegistryAnalyticsSnapshot()

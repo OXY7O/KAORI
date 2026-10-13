@@ -121,8 +121,9 @@ def sync_registry_governance(
         if project is None:
             continue
         previous = previous_by_project_id.pop(project.id, None)
-        governance = previous if previous is not None else RegistryProjectGovernance(project_id=project.id)
+        governance = previous if previous is not None else RegistryProjectGovernance()
         if previous is None:
+            governance.project_id = project.id
             db.session.add(governance)
 
         # Preserve earlier successfully observed dimensions individually. Their
