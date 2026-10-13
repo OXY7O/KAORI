@@ -332,7 +332,8 @@ if (canvas && form) {
         target.replaceChildren()
         const edges = node.connectedEdges(':visible')
         if (!edges.length) {
-            target.append(elements('p', 'rounded-xl border border-dashed border-outline-strong bg-kaori-soft p-6 text-center text-xs font-medium text-kaori-primary', 'No Visible Relationships'))
+            const emptyCard = $('registry-topology-relationships-empty-template')?.content.firstElementChild?.cloneNode(true)
+            if (emptyCard) target.append(emptyCard)
             return
         }
         edges.forEach((edge) => {
@@ -397,8 +398,12 @@ if (canvas && form) {
             const summary = pane.querySelector('[data-relationship-summary-items]')
             for (const [key, count] of counts) {
                 const [relationship, direction] = key.split(':')
-                const chip = elements('span', 'inline-flex min-h-7 items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-card px-2 py-1 text-xs font-medium text-content-secondary', `${relationshipLabels[relationship] || relationship} · ${direction === 'out' ? 'Outbound' : 'Inbound'} · ${count}`)
-                chip.setAttribute('role', 'listitem')
+                const chip = $('registry-topology-relationship-summary-item-template')?.content.firstElementChild?.cloneNode(true)
+                if (!chip) continue
+                fill(chip, '[data-summary-label]', `${relationshipLabels[relationship] || relationship} · ${direction === 'out' ? 'Outbound' : 'Inbound'} · ${count}`)
+                const color = relationship === 'contains' ? '--kaori-topology-edge-contains'
+                    : relationship === 'owns' ? '--kaori-topology-edge-owns' : '--kaori-topology-edge-uses'
+                chip.querySelector('[data-summary-swatch]').style.backgroundColor = token(color, 'CanvasText')
                 summary.append(chip)
             }
         }
