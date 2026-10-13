@@ -98,22 +98,8 @@
         <p class="text-xs leading-5 text-content-muted">Context relationships are structural. Tag-only identity has lower confidence than an immutable digest match.</p>
     </div>
 </template>
-<template id="registry-topology-inspector-relationship-row-template">
-    <button type="button" data-related-node
-            class="flex w-full items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3 text-left transition hover:border-outline-focus hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-            <i data-lucide="git-branch" class="h-4 w-4"></i>
-        </span>
-        <span class="min-w-0 flex-1">
-            <span class="flex flex-wrap items-center gap-2">
-                <span data-edge-direction class="text-xs font-medium text-content-muted"></span>
-                <span data-edge-relationship class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark"></span>
-            </span>
-            <span data-peer-label class="mt-1 block break-words text-xs font-medium text-content-primary"></span>
-            <span data-peer-type class="mt-1 block text-xs text-content-muted"></span>
-        </span>
-        <i data-lucide="chevron-right" class="mt-2 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-    </button>
-</template>
+{{ topology_parts.relationship_row_template('registry-topology-inspector-relationship-row-template') }}
 
 {{ topology_parts.resource_row_template('registry-topology-resource-list-row-template') }}
+
+{{ topology_parts.field_row_template('registry-topology-field-row-template') }}
