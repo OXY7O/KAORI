@@ -92,11 +92,11 @@ def test_structured_metadata_json_is_pretty_printed_without_changing_data() -> N
     )
     formatted = pretty_structured_json(value)
     assert formatted is not None
-    assert formatted.startswith('{\\n  "apiVersion":')
-    assert '\\n    "name": "minio"' in formatted
+    assert formatted.startswith('{\n  "apiVersion":')
+    assert '\n    "name": "minio"' in formatted
     assert json.loads(formatted) == json.loads(value)
     assert "café" in formatted
-    assert pretty_structured_json('[{"name":"pod"}]') == '[\\n  {\\n    "name": "pod"\\n  }\\n]'
+    assert pretty_structured_json('[{"name":"pod"}]') == '[\n  {\n    "name": "pod"\n  }\n]'
 
     for plain_value in (None, 12, False, '', 'Plain annotation', '42', 'true', '"text"', '{broken', '[broken'):
         assert pretty_structured_json(plain_value) is None
