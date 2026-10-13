@@ -19,6 +19,7 @@ from app.kubernetes.tenant.capsule_handoff_contract import (
 from app.kubernetes.tenant.capsule_handoff_recovery import classify_capsule_namespace_handoff
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
     _digest,
+    capsule_related_scope_sha256,
     classify_capsule_related_resource,
 )
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
@@ -91,11 +92,10 @@ def _fingerprints(
         raise ValueError('Capsule read-back listed resource counts are inconsistent.')
     if len(quota['resources']) > 100:
         raise ValueError('Capsule cluster quota read-back exceeds admitted list bound.')
-    related_sha = _digest({'resources': rows, 'lists': lists})
+    related_sha = capsule_related_scope_sha256(resources=rows, list_snapshots=lists)
     quota_sha = _digest(
         {
             'api_version': quota['served_version'],
-            'list_resource_version': quota['list_resource_version'],
             'resources': quota['resources'],
         }
     )
