@@ -329,7 +329,13 @@ def test_previous_partial_observation_cannot_be_hidden_by_latest_zero(monkeypatc
 
 
 def test_any_same_plan_executor_attempt_blocks_restart_even_after_zero(monkeypatch):
-    with pytest.raises(ValueError, match='execution exists'):
+    from app.kubernetes.tenant import native_no_transfer_recovery as recovery
+
+    # A zero-transfer read-back cannot bypass independent restart authorization.
+    # Mock only the AuditEvent read-model: absent approvals remain fail-closed.
+    monkeypatch.setattr(recovery, 'latest_no_transfer_assessment', lambda _: None)
+    monkeypatch.setattr(recovery, 'latest_no_transfer_decision', lambda _: None)
+    with pytest.raises(ValueError, match='Independent no-transfer recovery authorization is absent or expired'):
         prepare(
             monkeypatch,
             readback='zero',
