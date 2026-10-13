@@ -334,6 +334,8 @@
 
 **Isolation / cleanup:** Never manually dispatch deploy/release workflow for a negative test on real staging host.
 
+Source assertion audit: [KAORI_UAT_TEST_MAPPING_AUDIT.md](KAORI_UAT_TEST_MAPPING_AUDIT.md). Its PARTIAL/SOURCE-CONTRACT classifications reflect inspected tests only; the execution table remains NOT RUN until candidate-bound results exist.
+
 ## First-wave mapping checklist (NOT RUN)
 
 Do not confuse a file path with implemented acceptance assertions. For each case, an owning engineer must identify one or more verified test node IDs, record what **each** assertion proves (UI, domain/DB, provider/audit, negative failure), and list remaining gaps. An existing source contract alone does not prove a user journey. The table below is a mapping worklist rather than execution results.
