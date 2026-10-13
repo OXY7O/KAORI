@@ -230,3 +230,15 @@ The following additions address the next gaps in #1727 **without a running provi
 These extend earlier unit/route checks without rewriting `UAT-TEN-004` or `UAT-RPT-003` to PASS. A denied preflight may itself record a capacity decision; that is **not** an applied Namespace quota mutation. For real provider UAT, independently verify no provider-side writes and no false-success Activity event. For Reports, distinguish queue admission failure from later running-worker failure (which may have a JobExecution).
 
 Reviewer feedback entry point remains [#1738](https://github.com/OXY7O/KAORI/issues/1738); submit the scenario ID and expected UI/committed/provider/audit outcome. The existing GitHub Project taxonomy and human acceptance contract remain authoritative.
+
+
+## Work-branch implementation checkpoint — browser Reports failure and isolated provider read-back
+
+Both enhancements reuse owning suites. They are **source-implemented assertions** and remain **NOT RUN** under the maintainer CI/CD hold.
+
+| Scenario | Work branch / test node | New verification at source level | Coverage boundary |
+| --- | --- | --- | --- |
+| `UAT-RPT-003` | #1726 / `tests/ui/test_representative_interactions.py::test_failed_generated_report_detail_is_truthful_and_responsive` | A real authenticated Playwright browser opens the actual `reports.generated_report_detail` route, rendering KAORI's existing Jinja detail template against a controlled failed-report payload. It checks failed Generation Note and error message, absent download/regenerate actions, absent false JobExecution, no automatic active polling, responsive action/viewport geometry, and captures light/dark screenshots across the six canonical viewport fixtures. | The application **presentation is real** but the report detail payload is simulated by a fixture. It does **not** prove live report database/worker failure, a full Generate wizard interaction, provider artifact read-back or human design acceptance. |
+| `UAT-TEN-004` adjacent safety | #1727 / `tests/kubernetes/tenant/test_allocation_cutover.py::test_live_hash_change_blocks_cutover_before_provider_mutation` (extended) | Existing adopted-Native allocation cutover rejection now checks that no Namespace patch or quota/LimitRange creation occurred, and explicitly reobserves the unchanged fake-provider allocation identity after the rejection. | This is an **isolated fake Kubernetes API** and a *stale provider hash* boundary, complementary to the overbudget submit-preflight test. It is **not** proof of real ResourceQuota provider no-write after capacity rejection; authorized sandbox UAT remains required. |
+
+**Evidence rule:** screenshot/trace creation when a test eventually executes is not proof that an artifact currently exists. The scenario still requires runtime JUnit, actual screenshot/trace, named candidate source SHA/tree, and independent human acceptance. If backend/visual source changes, map actual executed scenario results to the new candidate without inheriting old PASS.
