@@ -288,7 +288,10 @@ def test_node_missing_section_badges_use_committed_fields_not_health_inference()
 def test_namespace_control_copy_and_reported_quota_presentation_are_concise() -> None:
     detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
 
-    assert 'Unset controls remain neutral pending policy review; PSA defaults are not inferred, and ServiceAccount presence is separate evidence.' in detail
+    assert (
+        'Unset controls remain neutral pending policy review; PSA defaults are not inferred, '
+        'and ServiceAccount presence is separate evidence.'
+    ) in detail
     assert 'Controls that are not explicitly set at namespace level remain neutral evidence' not in detail
     assert 'data-kaori-reported-quota' in detail
     assert 'Configured hard limits' in detail
@@ -300,7 +303,10 @@ def test_namespace_control_copy_and_reported_quota_presentation_are_concise() ->
 def test_inventory_operational_guidance_copy_is_compact_and_evidence_qualified() -> None:
     expected = {
         'app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html': (
-            'Unset controls remain neutral pending policy review; PSA defaults are not inferred, and ServiceAccount presence is separate evidence.',
+            (
+                'Unset controls remain neutral pending policy review; PSA defaults are not inferred, '
+                'and ServiceAccount presence is separate evidence.'
+            ),
         ),
         'app/templates/kubernetes/inventory/services/partials/_service_detail_content.html': (
             'Committed backend addresses.',
@@ -308,7 +314,10 @@ def test_inventory_operational_guidance_copy_is_compact_and_evidence_qualified()
             'Committed Service and backends; live traffic and public exposure unverified.',
         ),
         'app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html': (
-            'Resolved Secret confirms presence only; certificate contents, expiry, keys, and hostnames are unverified.',
+            (
+                'Resolved Secret confirms presence only; certificate contents, expiry, keys, '
+                'and hostnames are unverified.'
+            ),
             'Service references use committed inventory; resource backends remain declarations, not live endpoints.',
             'Committed Ingress evidence; exposure, DNS, traffic, reachability, and certificate validity unverified.',
         ),
