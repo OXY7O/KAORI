@@ -282,7 +282,7 @@ def inspect_capsule_role_binding_lineage(
     ns_set = {item.get('name') for item in namespaces if isinstance(item, Mapping)}
     if len(ns_set) != len(namespaces) or not all(isinstance(ns, str) and ns for ns in ns_set):
         raise ValueError('Capsule RBAC lineage Namespace identity is incomplete.')
-    intents, blockers = _intent_bindings(capsule_spec, {str(ns) for ns in ns_set}, tenant_id=tenant_id)
+    intents, blockers = _intent_bindings(capsule_spec, set(map(str, ns_set)), tenant_id=tenant_id)
     resources = related.get('resources')
     if not isinstance(resources, list) or len(resources) > 300:
         raise ValueError('Capsule related RBAC inventory is incomplete.')
