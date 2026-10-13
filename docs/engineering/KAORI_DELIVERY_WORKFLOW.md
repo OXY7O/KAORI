@@ -422,6 +422,19 @@ targeted-green Draft candidate
 
 CI is machine verification; Local UAT is human acceptance and must never be fabricated.
 
+### Scenario-based UAT and human acceptance evidence
+
+The reusable specification, positive/negative classification, execution-status meanings, and record fields are owned by `docs/TESTING.md`. At UAT, identify the required scenarios for the exact selected staging candidate by capability/risk and resolve their pytest/Playwright/JUnit or controlled provider/human mappings. Machine results are evidence for reviewer assessment, not automatic acceptance.
+
+- Execute applicable real browser click/input/submit/state and non-UI positive/negative scenarios with the **existing** test runners. Preserve baseline/visual QA authority from #222/#543; do not re-baseline a regression silently.
+- Tie each execution to the source SHA/tree and UAT environment; artifact-backed server UAT also requires the exact deployed OCI digest. A branch name or mutable image tag alone is insufficient.
+- Review actual result versus expected, relevant screenshots/traces, logs, Activity/DB and provider read-back, linked defect Issues, safe fixture cleanup and outstanding scenario gaps. Simulated provider success must not be represented as live provider acceptance.
+- Mandatory scenario NOT RUN, BLOCKED, runner SKIP, absent/stale evidence, wrong candidate or unresolved release-blocking defect prevents **claiming UAT acceptance PASS**. Explicitly documented reviewer-approved N/A remains possible when the scenario does not apply.
+- Record the named **human** acceptance decision (accepted / not accepted / pending), timestamp, exact candidate, reviewed coverage, exceptions, residual risk and evidence links in the existing Issue/PR UAT history. No CI result, AI assessment, or automated job may impersonate reviewer sign-off.
+- An implementation change after acceptance requires candidate identity/impact reevaluation and affected retesting, while retaining previous attempts/failures as auditable history. Human approval is required again when the acceptance boundary changes.
+
+This is a documentation/evidence contract extending the existing delivery flow; #1728 owns any future machine-enforced mandatory-coverage evaluator. Do not retroactively change or bypass an already frozen, independently governed staging-admission candidate.
+
 ## Artifact-Backed VPS and Release Boundary
 
 The artifact-backed path applies when a governed increment is being prepared for VPS UAT and production release under #47–#51. It extends the normal staging authority; it does not replace Developer Check, staging validation/evidence reuse, or Local UAT semantics for ordinary increments.
