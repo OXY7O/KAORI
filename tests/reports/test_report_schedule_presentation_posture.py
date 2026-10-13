@@ -4,7 +4,7 @@ from pathlib import Path
 
 from app.reports.schedules.presentation import present_delivery_result
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_terminal_skipped_delivery_is_not_reported_as_pending() -> None:
