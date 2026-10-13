@@ -257,3 +257,62 @@ def test_report_storage_unavailable_does_not_persist_request(
         finally:
             db.session.remove()
             Report.__table__.drop(db.engine)
+
+
+def test_report_enqueue_failure_records_failed_outcome_and_never_claims_queued(
+    app,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """UAT-RPT-003: real authenticated HTTP POST maps failed dispatch to failure evidence."""
+    user = ReportsGenerateUser({'reports.generate'})
+    client = _client_for_user(app, monkeypatch, user)
+    report = SimpleNamespace(
+        id=42,
+        name='Controlled queue failure',
+        report_type='inventory_overview',
+    )
+    creation_calls: list[int] = []
+    marked_failed: list[tuple[int, str]] = []
+    activity: list[dict[str, object]] = []
+
+    def admitted_request(_form, user_id):
+        creation_calls.append(user_id)
+        return True, [], report
+
+    def rejected_dispatch(_report, *, requested_by_user_id, trigger_type):
+        assert requested_by_user_id == user.id
+        assert trigger_type == 'manual'
+        raise generate_routes.ReportJobEnqueueError('isolated worker unavailable')
+
+    monkeypatch.setattr(generate_routes, 'create_report_request', admitted_request)
+    monkeypatch.setattr(generate_routes, 'enqueue_report_generation', rejected_dispatch)
+    monkeypatch.setattr(
+        generate_routes,
+        'mark_report_queue_failure',
+        lambda report_id, *, message: marked_failed.append((report_id, message)),
+    )
+    monkeypatch.setattr(
+        generate_routes,
+        'record_operational_activity',
+        lambda **kwargs: activity.append(kwargs),
+    )
+    monkeypatch.setattr(
+        generate_routes,
+        'build_report_reference',
+        lambda _report: 'KAORI-TEST-QUEUE-FAILURE',
+    )
+
+    response = client.post('/reports/generate', data={'name': report.name}, follow_redirects=False)
+
+    assert response.status_code == 302
+    assert f'/reports/generated/{report.id}' in response.headers['Location']
+    assert creation_calls == [user.id]
+    assert len(marked_failed) == 1
+    assert marked_failed[0][0] == report.id
+    assert 'could not queue' in marked_failed[0][1].lower()
+    assert len(activity) == 1
+    assert activity[0]['event_type'] == 'report_generation_queue_failed'
+    assert activity[0]['status'] == 'error'
+    assert activity[0]['title'] == 'Report Not Queued'
+    assert activity[0]['metadata']['report_id'] == report.id
+    assert activity[0]['metadata']['feedback_delivery'] == 'toast'
