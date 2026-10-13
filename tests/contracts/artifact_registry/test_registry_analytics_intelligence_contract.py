@@ -367,7 +367,12 @@ def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
     controls = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
 
-    assert routes.count("provider_id=request.args.get('provider_id', type=int)") >= 3
+    # A single fail-closed parser now owns explicit Registry provider scope.
+    assert "value = request.args.get('provider_id')" in routes
+    assert 'if not value.isascii() or not value.isdecimal() or len(value) > 18:' in routes
+    assert 'if int(value) <= 0:' in routes
+    assert routes.count('provider_id=_analytics_provider_id()') >= 3
+    assert 'provider_id = _analytics_provider_id()' in routes
     assert routes.count("snapshot_window=request.args.get('snapshot_window', '24h', type=str)") >= 3
     assert 'analytics = build_analytics_shell(' in routes
     assert "'alert_search': request.args.get('alert_q', '', type=str)" in routes
@@ -375,7 +380,11 @@ def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts()
     assert 'snapshot_window=window, **alert_params' in routes
     assert 'should_request_registry_analytics_materialization(' in routes
     assert 'build_registry_analytics_readiness(provider_id=provider_id, snapshot_window=window)' in routes
-    assert "'provider_id', 'snapshot_window', 'alert_q'" in routes
+    # Legacy analytics redirects must retain all independently selected filters.
+    redirect_args = routes.split('alert_args: dict[str, Any] = {', 1)[1]
+    redirect_args = redirect_args.split('return redirect(', 1)[0]
+    for query_key in ('provider_id', 'snapshot_window', 'alert_q'):
+        assert f"'{query_key}'," in redirect_args
     assert 'selected_provider_id = _registry_analytics_scope(provider_id, identities)' in presentation
     assert 'bundle = _collect_analytics_rows(identities, snapshot_window=selected_window)' in presentation
     assert 'analytics_snapshot_matches_window(snapshot, snapshot_window)' in presentation
@@ -387,11 +396,37 @@ def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts()
     assert 'snapshot_window=analytics.snapshot_window' in shell
     assert "snapshot_window: str = '24h'" in presentation
     assert "request.args.get('snapshot_window', '24h', type=str)" in routes
-    assert 'name="provider_id" value="{{ analytics.selected_provider_id or \'\' }}"' in section
-    assert 'name="snapshot_window" value="{{ analytics.snapshot_window }}"' in section
+    # djLint may split hidden field attributes over multiple lines.
+    section_fields = ' '.join(section.split())
+    assert (
+        'name="provider_id" value="{{ analytics.selected_provider_id or \'\' }}"'
+        in section_fields
+    )
+    assert 'name="snapshot_window" value="{{ analytics.snapshot_window }}"' in section_fields
     assert "'snapshot_window': analytics.snapshot_window" in section
     assert 'artifact-registry-analytics-collect-live-state' not in controls
     assert "header_content=worker_status if readiness.is_active else ''" in controls
+
+
+def test_registry_analytics_explicit_provider_scope_parser_fails_closed() -> None:
+    import pytest
+    from flask import Flask
+    from werkzeug.exceptions import NotFound
+
+    from app.artifact_registry.routes import _analytics_provider_id
+
+    flask_app = Flask(__name__)
+    with flask_app.test_request_context('/analytics'):
+        assert _analytics_provider_id() is None
+
+    for malformed in ('0', '-1', 'abc', '1a', '1.2', '1234567890123456789', '６'):
+        with flask_app.test_request_context('/analytics', query_string={'provider_id': malformed}):
+            with pytest.raises(NotFound):
+                _analytics_provider_id()
+
+    for value, expected in (('1', 1), ('42', 42), ('0002', 2)):
+        with flask_app.test_request_context('/analytics', query_string={'provider_id': value}):
+            assert _analytics_provider_id() == expected
 
 
 def test_registry_analytics_materialization_is_bounded_and_worker_owned() -> None:
@@ -402,7 +437,15 @@ def test_registry_analytics_materialization_is_bounded_and_worker_owned() -> Non
 
     assert "@artifact_registry_bp.get('/analytics/materialization/resolve')" in routes
     assert "@permission_required('artifact_registry.view')" in routes
-    assert 'should_request_registry_analytics_materialization(build_registry_analytics_readiness())' in routes
+    # Materialization is guarded by source + measured-window readiness.
+    materialization_guard = routes.split(
+        'if should_request_registry_analytics_materialization(', 1
+    )[1]
+    materialization_guard = materialization_guard.split('):', 1)[0]
+    assert (
+        'build_registry_analytics_readiness(provider_id=provider_id, snapshot_window=window)'
+        in materialization_guard
+    )
     assert 'dispatch_registered_job(' in routes
     assert "trigger_type='on_demand'" in routes
     assert "job_key='artifact_registry.analytics.materialize'" in routes
