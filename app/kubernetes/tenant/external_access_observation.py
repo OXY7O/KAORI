@@ -27,8 +27,41 @@ def _subject(value: Any) -> dict[str, str]:
     return {'kind': kind, 'name': name, 'namespace': namespace}
 
 
+def _validate_supplied_access_shapes(spec: dict[str, Any]) -> None:
+    """Reject malformed present fields before optional-key defaults are applied."""
+
+    def require_list(mapping: dict[str, Any], key: str) -> None:
+        if key in mapping and not isinstance(mapping[key], list):
+            raise ValueError(f'Capsule access {key} must be a list.')
+
+    def require_mapping(mapping: dict[str, Any], key: str) -> None:
+        if key in mapping and not isinstance(mapping[key], dict):
+            raise ValueError(f'Capsule access {key} must be a mapping.')
+
+    for key in ('owners', 'additionalRoleBindings', 'rules'):
+        require_list(spec, key)
+
+    def validate_binding(binding: Any) -> None:
+        if isinstance(binding, dict):
+            require_list(binding, 'subjects')
+            require_mapping(binding, 'labels')
+
+    for binding in spec.get('additionalRoleBindings') or []:
+        validate_binding(binding)
+    for rule in spec.get('rules') or []:
+        if not isinstance(rule, dict):
+            continue  # The existing normalizer rejects malformed rules.
+        require_mapping(rule, 'permissions')
+        require_mapping(rule, 'namespaceSelector')
+        permissions = rule.get('permissions') or {}
+        require_list(permissions, 'bindings')
+        for binding in permissions.get('bindings') or []:
+            validate_binding(binding)
+
+
 def normalize_capsule_access_spec(spec: dict[str, Any]) -> dict[str, Any]:
     """Summarize provider-owned RBAC without creating KAORI Membership/Grants."""
+    _validate_supplied_access_shapes(spec)
     owners = spec.get('owners') or []
     additional = spec.get('additionalRoleBindings') or []
     rules = spec.get('rules') or []
