@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -25,3 +25,21 @@ class AuditEvent(db.Model):
     created_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
     )
+
+    if TYPE_CHECKING:
+        # SQLAlchemy supplies this constructor at runtime. The declaration is
+        # for static verification only and must not shadow its runtime mapper.
+        def __init__(
+            self,
+            *,
+            target_type: str,
+            action: str,
+            summary: str,
+            actor_user_id: int | None = None,
+            target_id: str | None = None,
+            metadata_json: dict[str, Any] | None = None,
+            ip_address: str | None = None,
+            user_agent: str | None = None,
+            created_at: datetime | None = None,
+            id: int | None = None,
+        ) -> None: ...
