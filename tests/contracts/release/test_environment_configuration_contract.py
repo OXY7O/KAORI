@@ -90,7 +90,6 @@ def test_split_environment_contract_verifier_passes() -> None:
     assert 'PASS — KAORI Environment Contract' in result.stdout
 
 
-
 def test_devcontainer_tailwind_watcher_starts_only_after_frontend_bootstrap() -> None:
     import json
 
@@ -105,7 +104,6 @@ def test_devcontainer_tailwind_watcher_starts_only_after_frontend_bootstrap() ->
     # A folderOpen watcher races npm ci when the named node_modules volume is fresh.
     assert 'runOn' not in watcher['runOptions']
     assert 'does **not** run automatically on folder open' in read('docs/RUNNING.md')
-
 
 
 def test_environment_contract_verifier_is_a_release_gate() -> None:
