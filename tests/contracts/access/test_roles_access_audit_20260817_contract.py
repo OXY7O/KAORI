@@ -42,7 +42,12 @@ def test_role_mutation_uses_reserved_defaults_and_delegation_ceiling() -> None:
         assert required in service
     assert 'def role_is_mutation_protected' in policy
     assert 'role_is_mutation_protected(role)' in routes
-    assert 'ensure_role_within_delegation_boundary(actor=actor, role=role)' in routes
+    # Clone authority and edit/delete management authority are distinct by design.
+    assert 'ensure_role_within_delegation_boundary(actor=actor, role=source_role)' in routes
+    assert routes.count('ensure_role_within_management_boundary(actor=actor, role=role)') >= 2
+    assert 'def ensure_role_within_management_boundary' in service
+    assert 'role_is_manageable_by_actor(actor, role)' in service
+    assert 'def role_is_manageable_by_actor' in policy
     assert 'ensure_permission_selection_within_delegation_boundary(' in service
     assert 'impact_acknowledged = BooleanField' in form
     assert 'Confirm the user and Identity Provider impact before deactivating this referenced role.' in service
@@ -136,7 +141,11 @@ def test_role_delegation_boundary_applies_to_user_and_identity_provider_assignme
     assert 'assign_user_form_choices(form, actor=actor)' in user_routes
     assert 'def provider_default_role_assignment_error' in provider_service
     assert 'assignable_roles_for_actor(actor)' in provider_service
-    assert 'provider_default_role_assignment_error(actor, form.default_role_id.data)' in provider_routes
+    # Every provider configuration write/validation enforces JIT's no-admin rule.
+    assert provider_routes.count('provider_default_role_assignment_error(') >= 3
+    assert provider_routes.count('jit_enabled=bool(form.jit_enabled.data)') >= 3
+    assert 'if jit_enabled and role_is_access_admin_level(role):' in provider_service
+    assert 'JIT requires an active non-admin default role.' in provider_service
     assert 'assign_projection_role_choices(form, actor=actor)' in provider_routes
     assert 'role_is_delegable_by_actor(actor, role)' in provisioning
     assert 'actor=actor' in provider_routes
