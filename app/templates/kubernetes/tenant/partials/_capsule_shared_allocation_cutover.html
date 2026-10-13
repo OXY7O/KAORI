@@ -1,6 +1,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table_label.html" as table_label %}
 <section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="capsule-shared-cutover-heading">
@@ -146,7 +147,7 @@
             {% set other_authorities = capsule_shared_cutover_state.values()
                         |rejectattr('applicable')|list %}
             {% if blocked_grq %}
-                <section class="rounded-lg border border-status-warning-border bg-status-warning-soft px-4 py-3 text-status-warning-text"
+                <section class="rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-4 py-3 text-status-warning-text"
                          aria-label="GlobalResourceQuota governance blockers">
                     <h3 class="text-xs font-semibold">GlobalResourceQuota · Control Unavailable</h3>
                     <ul class="mt-2 space-y-2">
