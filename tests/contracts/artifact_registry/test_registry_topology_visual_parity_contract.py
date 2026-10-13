@@ -83,7 +83,7 @@ def test_registry_renderer_adopts_kubernetes_graph_semantics() -> None:
     assert "width: 76" in renderer
     assert "height: 44" in renderer
     assert "badgeImage(node.data())" in renderer
-    assert "transform: (_node, position) => ({ x: position.y, y: position.x })" in renderer
+    assert "transform: (_node, position) => branched ? position : ({ x: position.y, y: position.x })" in renderer
     assert "'line-style': (edge) => edge.data('relationship') === 'contains'" in renderer
     assert "selector: 'edge[relationship = \"contains\"]'" in renderer
     assert "'curve-style': 'taxi'" in renderer
@@ -118,3 +118,50 @@ def test_visual_refactor_does_not_move_registry_evidence_authority() -> None:
     assert 'RegistryWorkloadBinding' in projection
     assert '.limit(_MAX_VISIBLE_BINDINGS)' in projection
     assert 'runtime_correlation_evidence_readiness' in projection
+
+
+def test_registry_inspector_matches_k8s_details_and_relationships_design() -> None:
+    registry = REGISTRY.read_text(encoding='utf-8')
+    partial_path = ROOT / 'app/templates/artifact_registry/partials/_topology_inspector_templates.html'
+    inspector = partial_path.read_text(encoding='utf-8')
+    renderer = RUNTIME_JS.read_text(encoding='utf-8')
+    Environment().parse(inspector)
+    assert "artifact_registry/partials/_topology_inspector_templates.html" in registry
+    assert "segmented_tabs.render(" in inspector
+    assert "('details', 'Details', 'list-tree')" in inspector
+    assert "('relationships', 'Relationships', 'git-branch')" in inspector
+    for control in (
+        'data-highlight-path',
+        'data-collapse-path',
+        'data-relationship-summary',
+        'data-open-relationships',
+        'data-node-relationships',
+        'data-minimap',
+        'data-related-node',
+    ):
+        assert control in inspector
+    for behavior in (
+        "const renderRelationshipRows =",
+        "const drawMiniMap =",
+        "const selectNodeById =",
+        "const inspect =",
+        "const graphParents =",
+        "const resourceScope =",
+        "const renderList =",
+        "collapseNodeIds",
+    ):
+        if behavior == "collapseNodeIds":
+            assert "collapsedNodeIds" in renderer
+        else:
+            assert behavior in renderer
+    assert "node.connectedEdges(':visible')" in renderer
+    assert "pane.querySelector('[data-relationship-summary]')" in renderer
+    assert "node.predecessors('node')" in renderer
+    assert "window.requestAnimationFrame(() => drawMiniMap(pane, node))" in renderer
+    assert "const scope = resourceScope(item, parents, byId)" in renderer
+    assert "payload.nodes.filter(" in renderer
+    assert "resourceToggles" in renderer
+    assert "relationshipToggles" in renderer
+    assert "groupNamespaceToggle" in renderer
+    assert "updateNamespaceBoundaries" in renderer
+    assert "evidence.status !== 'ready'" in renderer

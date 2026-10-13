@@ -82,7 +82,7 @@
                       action="{{ url_for('artifact_registry.runtime_topology') }}"
                       method="get"
                       class="border-b border-outline-subtle bg-surface-elevated px-5 py-4">
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
                         <label class="min-w-0">
                             <span class="{{ table_ui.filter_label_classes() }}">Registry Source</span>
                             <select name="source_id" class="{{ table_ui.filter_select_classes() }}">
@@ -239,6 +239,11 @@
                                     <input id="registry-topology-edge-labels" type="checkbox"
                                            class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
                                 </label>
+                                <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-subtle px-3 py-2 text-xs font-medium text-content-secondary">
+                                    Group by Namespace
+                                    <input id="registry-topology-group-namespace" type="checkbox"
+                                           class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
+                                </label>
                                 <div class="rounded-lg border border-outline-subtle px-3 py-2.5">
                                     <label for="registry-topology-layout" class="block text-xs font-semibold text-content-secondary">Layout Mode</label>
                                     <select id="registry-topology-layout"
@@ -304,12 +309,14 @@
                                  aria-labelledby="registry-topology-view-tab-graph">
                             <div id="registry-topology-canvas-shell"
                                  class="{{ visualization.canvas_classes() }} min-h-[38rem]">
+                                <div id="registry-topology-namespace-boundaries"
+                                     class="pointer-events-none absolute inset-0 z-0" aria-hidden="true"></div>
                                 <div id="registry-topology-canvas"
                                      role="img"
                                      aria-label="Artifact Registry to Kubernetes committed dependency graph. Use Resource List for keyboard-accessible evidence."
                                      data-url="{{ url_for('artifact_registry.runtime_topology_data') }}"
                                      data-renderer-url="{{ url_for('static', filename='vendor/cytoscape/cytoscape.esm.min.js') }}"
-                                     class="absolute inset-0 h-full w-full"></div>
+                                     class="absolute inset-0 z-10 h-full w-full"></div>
                                 <div id="registry-topology-node-tooltip"
                                      role="tooltip"
                                      class="pointer-events-none absolute z-30 hidden max-w-[20rem] rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-medium text-content-primary shadow-xl"></div>
@@ -331,17 +338,19 @@
                                  hidden class="{{ visualization.canvas_classes() }} min-h-[38rem] overflow-auto">
                             <div class="border-b border-outline-subtle px-5 py-3">
                                 <h3 class="text-sm font-semibold text-content-primary">Resource List</h3>
-                                <p class="mt-1 text-xs text-content-muted">Same committed bounded slice as Graph. Choose Inspect for full names and evidence.</p>
+                                <p class="mt-1 text-xs text-content-muted">Visible committed graph resources, with type, scope, relationship counts, and Details.</p>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="{{ table_ui.table_classes('min-w-[55rem]') }}">
-                                    <caption class="sr-only">Visible committed artifact-to-runtime bindings</caption>
+                                    <caption class="sr-only">Resource nodes in the bounded committed artifact topology</caption>
                                     <thead class="{{ table_ui.head_classes() }}">
                                         <tr>
-                                            <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
-                                            <th class="{{ table_ui.header_cell_classes() }}">Runtime Scope</th>
-                                            <th class="{{ table_ui.header_cell_classes() }}">Match</th>
-                                            <th class="{{ table_ui.header_cell_classes() }}">Security</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Resource</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Type</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Evidence</th>
+                                            <th class="{{ table_ui.header_cell_classes() }}">Relationships</th>
                                             <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
                                         </tr>
                                     </thead>
@@ -378,6 +387,7 @@
                         <div id="registry-topology-inspector-content" class="space-y-4 px-4 py-5"></div>
                     </aside>
                 </div>
+                {% include 'artifact_registry/partials/_topology_inspector_templates.html' %}
             {% endcall %}
         </section>
     </div>
