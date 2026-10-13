@@ -154,6 +154,25 @@ def test_observed_provider_readback_is_not_successor_consent():
     assert status['release_admitted'] is False
 
 
+def test_missing_independent_receipts_never_satisfy_native_release_authority():
+    snapshot = evidence(approved=False)
+    snapshot['successor_acceptance'] = {
+        'status': 'platform_admin_handoff_accepted',
+        'plan_sha256': 'a' * 64,
+    }
+    snapshot['no_transfer_decision'] = {'status': 'authorized_for_requester_restart'}
+    result = project_native_release_readiness(
+        **snapshot,
+        readback_history=(),
+        execution_history=(),
+    )
+    assert result['approval_complete'] is False
+    assert result['verified_successor_acceptance'] is False
+    assert result['no_transfer_authorized_current'] is False
+    assert result['execute_admitted'] is False
+    assert result['release_admitted'] is False
+
+
 def test_unreviewed_or_unapproved_plan_shows_pending_not_fake_success():
     snapshot = evidence(reviewed=False, approved=False, dry_run=False)
     result = project_native_release_readiness(**snapshot)
