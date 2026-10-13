@@ -248,8 +248,8 @@ def sync_all_object_storage_task(
                     progress_callback=report_bucket_progress,
                     empty_reconciliation=scoped_confirmation,
                 )
-                if result.get('empty_reconciliation_evidence'):
-                    empty_reconciliation_evidence.append(result['empty_reconciliation_evidence'])
+                if reconciled_evidence := result.get('empty_reconciliation_evidence'):
+                    empty_reconciliation_evidence.append(reconciled_evidence)
                 synced_count += 1
                 bucket_count += int(result.get('total') or 0)
             except Exception as exc:
