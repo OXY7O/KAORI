@@ -505,7 +505,7 @@ def _render_registry_analytics_page(section: str) -> ResponseReturnValue:
 def analytics() -> ResponseReturnValue:
     legacy_tab = request.args.get('tab', '', type=str)
     if legacy_tab in _REGISTRY_ANALYTICS_DETAIL_ROUTES:
-        alert_args = {
+        alert_args: dict[str, Any] = {
             key: value
             for key in (
                 'provider_id',
