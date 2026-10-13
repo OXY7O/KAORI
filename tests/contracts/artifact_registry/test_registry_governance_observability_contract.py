@@ -1,4 +1,6 @@
+from io import StringIO
 from pathlib import Path
+from tokenize import COMMENT, generate_tokens
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -42,7 +44,14 @@ def test_artifact_registry_has_no_direct_prometheus_transport() -> None:
         content = path.read_text()
         assert 'requests.get(' not in content
         assert '/api/v1/query' not in content
-        assert 'prometheus' not in content.lower() or path.name == 'observability.py'
+        # Provider names in comments are not executable transport dependencies.
+        # Keep checking executable tokens, imports and string literals.
+        executable = ' '.join(
+            token.string
+            for token in generate_tokens(StringIO(content).readline)
+            if token.type != COMMENT
+        )
+        assert 'prometheus' not in executable.lower() or path.name == 'observability.py'
 
 
 def test_governance_workspace_keeps_independent_readiness_planes_out_of_posture() -> None:
