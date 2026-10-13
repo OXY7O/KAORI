@@ -34,7 +34,8 @@ def test_shared_controls_and_metrics_source_contract_are_compatible() -> None:
     assert 'Latest Data Snapshot' in workspace
     assert 'Source Evidence Incomplete' in workspace
     assert 'Latest Refresh Error' in workspace
-    assert 'loading_bar.render(indicator_id' in workspace
+    assert 'shared_readiness.frame(' in workspace
+    assert 'loading_bar.render(indicator_id' in shared_source
 
 
 def test_analytics_tabs_use_one_shared_runtime_and_native_fallback() -> None:

@@ -187,7 +187,7 @@ def test_no_live_provider_or_database_mutation_in_normal_read_model():
     root = Path(__file__).resolve().parents[3]
     source = (root / 'app/kubernetes/tenant/native_release_readiness.py').read_text()
     context = (root / 'app/kubernetes/tenant/registry_context.py').read_text()
-    template = (root / 'app/templates/kubernetes/tenant/partials/_tenant_registry.html').read_text()
+    detail_template = (root / 'app/templates/kubernetes/tenant/partials/_tenant_management_detail.html').read_text()
     for forbidden in (
         'runtime_adapter.build_client',
         'patch_namespace(',
@@ -197,8 +197,10 @@ def test_no_live_provider_or_database_mutation_in_normal_read_model():
     ):
         assert forbidden not in source
     assert 'project_native_release_readiness(' in context
-    assert 'Native Release &amp; Re-adopt Readiness' in template
-    assert 'and not row.release_preflight.blockers' in template
+    # The accepted detail Release wizard owns readiness, not the compact registry.
+    assert 'Native Release Readiness' in detail_template
+    assert 'aria-label="Native Release checkpoints"' in detail_template
+    assert 'and not row.release_preflight.blockers' in detail_template
 
 
 def test_stale_handoff_plan_cannot_appear_as_completed_approval():
