@@ -388,44 +388,95 @@ if (canvas && form) {
         openInspector()
     }
 
+    const graphParents = () => {
+        const parents = new Map()
+        for (const edge of payload.edges) parents.set(edge.data.target, edge.data.source)
+        return parents
+    }
+    const resourceScope = (item, parents, byId) => {
+        let cursor = item.data.id
+        let cluster = item.data.type === 'cluster' ? item.data.label : null
+        let namespace = item.data.type === 'namespace' ? item.data.label : null
+        let counter = 0
+        while (parents.has(cursor) && counter++ < 7) {
+            const ancestor = byId.get(parents.get(cursor))
+            if (!ancestor) break
+            if (ancestor.data.type === 'cluster') cluster = ancestor.data.label
+            if (ancestor.data.type === 'namespace') namespace = ancestor.data.label
+            cursor = ancestor.data.id
+        }
+        return {
+            cluster: cluster || (item.data.type === 'artifact' ? 'Cross Cluster' : 'Not Reported'),
+            namespace: namespace || 'Cluster Scoped',
+        }
+    }
+    const inspectResource = (item) => {
+        const node = selectedNode(item.data.id)
+        if (node?.length) {
+            selectNodeById(item.data.id)
+            return
+        }
+        const details = elements('dl', 'divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-card px-3')
+        addFields(details, [['Resource', item.data.label], ['Type', typeLabels[item.data.type] || item.data.type],
+            ['Evidence', payload.evidence?.title || 'Unknown'], ['Snapshot Scope', 'Committed / Bounded']])
+        inspectorContent.replaceChildren(details)
+        openInspector()
+    }
     const renderList = () => {
         tbody.replaceChildren()
-        const total = payload.bindings.length
+        // Render graph resources (not binding-only rows), matching K8s Inventory.
+        const nodes = payload.nodes.filter((node) =>
+            resourceToggles.find((toggle) => toggle.dataset.registryTopologyType === node.data.type)?.checked !== false &&
+            (!cy || cy.$id(node.data.id).visible())
+        )
+        const byId = new Map(payload.nodes.map((node) => [node.data.id, node]))
+        const parents = graphParents()
+        const total = nodes.length
         const maxPage = Math.max(Math.ceil(total / pageSize), 1)
         listPage = Math.min(Math.max(listPage, 1), maxPage)
-        const page = payload.bindings.slice((listPage - 1) * pageSize, listPage * pageSize)
+        const page = nodes.slice((listPage - 1) * pageSize, listPage * pageSize)
         for (const item of page) {
+            const data = item.data
+            const scope = resourceScope(item, parents, byId)
+            const kind = typeLabels[data.type] || data.type
             const tr = elements('tr', 'border-b border-outline-subtle')
-            const a = elements('td', 'px-4 py-3 text-sm font-medium text-content-primary')
+            const nameCell = elements('td', 'px-4 py-3 text-sm font-medium text-content-primary')
             const identity = elements('div', 'flex min-w-0 items-center gap-3')
-            identity.append(elements('span', 'flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-xs font-bold kaori-topology-domain-configuration', 'AR'))
-            const description = elements('div', 'min-w-0')
-            description.append(elements('div', 'break-words', item.artifact))
-            description.append(elements('div', 'text-xs text-content-muted', item.digest.slice(0, 28)))
-            identity.append(description)
-            a.append(identity)
-            const b = elements('td', 'px-4 py-3 text-xs text-content-secondary')
-            b.append(elements('p', 'font-semibold text-content-primary', `${item.cluster} · ${item.namespace}`))
-            b.append(elements('p', '', `${item.workload} · ${item.pod}`))
-            const c = elements('td', 'px-4 py-3 text-xs text-content-primary', item.match)
-            const d = elements('td', 'px-4 py-3 text-xs text-content-primary', item.security)
-            const e = elements('td', 'px-4 py-3 text-right')
-            const button = elements('button', 'rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold text-kaori-primary', 'Inspect')
+            const badge = elements('span',
+                `flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-xs font-bold kaori-topology-domain-${visualDomains[data.type] || 'compute'}`,
+                glyphs[data.type] || 'RS'
+            )
+            const labels = elements('div', 'min-w-0')
+            labels.append(elements('p', 'break-words text-xs font-semibold text-content-primary', data.label))
+            labels.append(elements('p', 'text-xs text-content-muted', data.subtitle || kind))
+            identity.append(badge, labels)
+            nameCell.append(identity)
+            const typeCell = elements('td', 'px-4 py-3 text-xs text-content-secondary', kind)
+            const clusterCell = elements('td', 'px-4 py-3 text-xs text-content-secondary', scope.cluster)
+            const namespaceCell = elements('td', 'px-4 py-3 text-xs text-content-secondary', scope.namespace)
+            const evidenceCell = elements('td', 'px-4 py-3 text-xs text-content-secondary')
+            evidenceCell.append(elements('span', 'inline-flex min-h-6 items-center rounded-md bg-status-unknown-soft px-2 text-xs font-medium text-status-unknown-text',
+                data.type === 'artifact' ? (data.security || 'Scan Unknown') : (payload.evidence?.title || 'Committed Evidence')))
+            const count = payload.edges.filter((edge) => edge.data.source === data.id || edge.data.target === data.id).length
+            const relationshipCell = elements('td', 'px-4 py-3 text-xs font-semibold text-content-primary', count)
+            const detailsCell = elements('td', 'px-4 py-3 text-right')
+            const button = elements('button', 'rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold text-kaori-primary hover:bg-kaori-soft', 'View Details')
             button.type = 'button'
-            button.addEventListener('click', () => inspectBinding(item))
-            e.append(button)
-            tr.append(a, b, c, d, e)
+            button.addEventListener('click', () => inspectResource(item))
+            detailsCell.append(button)
+            tr.append(nameCell, typeCell, clusterCell, namespaceCell, evidenceCell, relationshipCell, detailsCell)
             tbody.append(tr)
         }
         if (!page.length) {
-            const tr = elements('tr')
-            const td = elements('td', 'px-4 py-8 text-center text-sm text-content-muted', 'No visible bindings. Check filters and evidence readiness.')
-            td.colSpan = 5
-            tr.append(td)
-            tbody.append(tr)
+            const row = elements('tr')
+            const cell = elements('td', 'px-4 py-8 text-center text-sm text-content-muted',
+                'No visible resources. Review filters and committed correlation readiness.')
+            cell.colSpan = 7
+            row.append(cell)
+            tbody.append(row)
         }
         $('registry-topology-list-count').textContent =
-            `Showing ${page.length ? (listPage - 1) * pageSize + 1 : 0}–${(listPage - 1) * pageSize + page.length} of ${total} visible bindings (${payload.summary.total_bindings ?? 0} in scope).`
+            `Showing ${page.length ? (listPage - 1) * pageSize + 1 : 0}–${(listPage - 1) * pageSize + page.length} of ${total} visible resources (from ${payload.summary.displayed_bindings ?? 0} displayed bindings; ${payload.summary.omitted_bindings ?? 0} omitted).`
         previous.disabled = listPage <= 1
         next.disabled = listPage >= maxPage
     }
