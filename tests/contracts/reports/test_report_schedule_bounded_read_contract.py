@@ -28,6 +28,16 @@ def test_schedule_registry_filter_compiles_to_database_predicates() -> None:
     assert 'report_schedules.report_type' in sql
 
 
+def test_invalid_schedule_filters_stay_sql_false_without_python_side_materialization() -> None:
+    for invalid in (
+        {'status': 'unsupported'},
+        {'asset': 'invalid-asset-key'},
+        {'delivery': 'unexpected-channel'},
+    ):
+        statement = filter_schedule_statement(_filters(**invalid))
+        assert 'false' in str(statement).lower()
+
+
 def test_asset_and_channel_filters_do_not_materialize_python_registry() -> None:
     stmt = filter_schedule_statement(_filters(asset='registry_integration:19', delivery='123'))
     sql = str(stmt)
