@@ -80,11 +80,11 @@ def _registry_runtime_source_posture(
     if base_rule_key(rule_key) not in _REGISTRY_RUNTIME_RULES:
         return True, ''
     if readiness_cache is None:
-        status = runtime_correlation_evidence_readiness(db.session)['status']
+        status = runtime_correlation_evidence_readiness(db.session())['status']
     else:
         status = readiness_cache.get('status')
         if status is None:
-            status = runtime_correlation_evidence_readiness(db.session)['status']
+            status = runtime_correlation_evidence_readiness(db.session())['status']
             readiness_cache['status'] = status
     return (True, '') if status == 'ready' else (False, 'source_unavailable')
 
