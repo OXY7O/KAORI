@@ -216,3 +216,17 @@ The branch links remain:
 - [Scenario catalog / review #1738](https://github.com/OXY7O/KAORI/issues/1738)
 
 **No CI/CD workflow, pytest or Playwright run is implied by these commits.** Release gates remain on hold by maintainer request.
+
+
+## Work-branch implementation checkpoint — mutation submit and durable report failure
+
+The following additions address the next gaps in #1727 **without a running provider, browser, or CI**. They are **SOURCE IMPLEMENTED / NOT RUN**, not accepted UAT evidence:
+
+| Scenario | Source test | Specific invariant asserted | Remaining scope |
+| --- | --- | --- | --- |
+| `UAT-TEN-004` | `tests/kubernetes/tenant/test_capacity_governance.py::test_namespace_allocation_submit_rechecks_committed_capacity_before_provider_write` | Calls actual `change_native_namespace_allocation_committed` using an isolated Tenant/Namespace/profile and a fresh committed-capacity fixture. Previously accepted preview becomes insufficient after other commitments; the real `enforce_existing_namespace_allocation_preflight` logic rejects submit. The test verifies no provider reconciliation calls, no changed profile/quota on the original Namespace record, and bounded negative decision/rollback semantics. | The decision persistence and provider adapter are stubbed; prove real transaction/audit evidence and Kubernetes ResourceQuota no-write by disposable provider read-back in governed #1730 UAT. |
+| `UAT-RPT-003` | `tests/reports/test_generate_execution_characterization.py::test_queued_report_failure_persists_failed_detail_without_pending_poll` | Persists a disposable Report row, invokes the real `mark_report_queue_failure` repository function, reloads it from a fresh SQLite DB session, and calls the real `get_report_detail_payload` controller with isolated serializer/lookup dependencies. Asserts durable `failed` status, error evidence, absent artifact, absent JobExecution identity, and disabled pending polling. | The detail serializer/artifact readiness are stubbed. No real worker or actual browser error/detail screenshot is proven. For a queue failure before dispatch, **no JobExecution** is an acceptable truthful state; do not fabricate one. |
+
+These extend earlier unit/route checks without rewriting `UAT-TEN-004` or `UAT-RPT-003` to PASS. A denied preflight may itself record a capacity decision; that is **not** an applied Namespace quota mutation. For real provider UAT, independently verify no provider-side writes and no false-success Activity event. For Reports, distinguish queue admission failure from later running-worker failure (which may have a JobExecution).
+
+Reviewer feedback entry point remains [#1738](https://github.com/OXY7O/KAORI/issues/1738); submit the scenario ID and expected UI/committed/provider/audit outcome. The existing GitHub Project taxonomy and human acceptance contract remain authoritative.
