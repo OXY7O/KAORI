@@ -12,7 +12,7 @@ from unittest.mock import patch
 import pytest
 
 from app.kubernetes.tenant.capsule_handoff_attempt_state import _event_checksum
-from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
+from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest, capsule_related_scope_sha256
 from app.kubernetes.tenant.capsule_handoff_start_writer import (
     _CAPSULE_START_WRITER_ENABLED,
     _require_postgres_ledger_write_once_guards,
@@ -28,7 +28,7 @@ def _scope():
         {'namespace': 'demo-dev', 'kind': kind, 'list_resource_version': 'rv-list-1', 'count': 0}
         for kind in ('LimitRange', 'ResourceQuota', 'RoleBinding')
     ]
-    related_sha = _digest({'resources': [], 'lists': lists})
+    related_sha = capsule_related_scope_sha256(resources=[], list_snapshots=lists)
     shared = {
         'served_version': 'v1beta2',
         'list_resource_version': 'grq-list-rv',
@@ -38,7 +38,6 @@ def _scope():
     shared['scope_sha256'] = _digest(
         {
             'api_version': 'v1beta2',
-            'list_resource_version': 'grq-list-rv',
             'resources': [],
         }
     )

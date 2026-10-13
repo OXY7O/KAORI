@@ -27,6 +27,7 @@ from app.kubernetes.tenant.capsule_handoff_readback_evidence import (
 from app.kubernetes.tenant.capsule_handoff_recovery import capture_capsule_namespace_baseline
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
     _digest,
+    capsule_related_scope_sha256,
     classify_capsule_related_resource,
 )
 from app.kubernetes.tenant.capsule_handoff_resource_admission import (
@@ -69,7 +70,7 @@ def _inputs():
         {'namespace': 'demo-dev', 'kind': kind, 'list_resource_version': 'list-rv', 'count': 0}
         for kind in ('LimitRange', 'ResourceQuota', 'RoleBinding')
     ]
-    related_sha = _digest({'resources': [], 'lists': lists})
+    related_sha = capsule_related_scope_sha256(resources=[], list_snapshots=lists)
     global_quota = {
         'status': 'observed_not_handoff_authorized',
         'served_version': 'v1beta2',
@@ -81,7 +82,6 @@ def _inputs():
     global_quota['scope_sha256'] = _digest(
         {
             'api_version': 'v1beta2',
-            'list_resource_version': 'global-rv',
             'resources': [],
         }
     )
@@ -243,11 +243,9 @@ def test_related_provider_list_and_global_quota_revisions_are_detected():
     plan, related, cr, ns, baseline = _inputs()
     changed = deepcopy(related)
     changed['list_snapshots'][0]['list_resource_version'] = 'new-rv'
-    changed['resource_sha256'] = _digest(
-        {
-            'resources': changed['resources'],
-            'lists': changed['list_snapshots'],
-        }
+    changed['resource_sha256'] = capsule_related_scope_sha256(
+        resources=changed['resources'],
+        list_snapshots=changed['list_snapshots'],
     )
     receipt = _readback(plan, related, cr, ns, baseline, current_related=changed)
     assert 'namespaced_provider_object_or_list_changed' in receipt['blockers']
@@ -256,7 +254,6 @@ def test_related_provider_list_and_global_quota_revisions_are_detected():
     changed['global_quota']['scope_sha256'] = _digest(
         {
             'api_version': 'v1beta2',
-            'list_resource_version': 'updated',
             'resources': [],
         }
     )
@@ -545,11 +542,9 @@ def _full_related_case(kind='ResourceQuota', *, include_foreign=False):
     for entry in related['list_snapshots']:
         if entry['kind'] == kind:
             entry['count'] = len(source_rows)
-    related['resource_sha256'] = _digest(
-        {
-            'resources': related['resources'],
-            'lists': related['list_snapshots'],
-        }
+    related['resource_sha256'] = capsule_related_scope_sha256(
+        resources=related['resources'],
+        list_snapshots=related['list_snapshots'],
     )
     plan['handoff_components'][0]['capsule_related_resources_sha256'] = related['resource_sha256']
     plan['handoff_components'][0]['capsule_related_resources_count'] = str(len(source_rows))
@@ -569,11 +564,9 @@ def _full_related_case(kind='ResourceQuota', *, include_foreign=False):
     for entry in current['list_snapshots']:
         if entry['kind'] == kind:
             entry['list_resource_version'] = 'list-after-handoff'
-    current['resource_sha256'] = _digest(
-        {
-            'resources': current['resources'],
-            'lists': current['list_snapshots'],
-        }
+    current['resource_sha256'] = capsule_related_scope_sha256(
+        resources=current['resources'],
+        list_snapshots=current['list_snapshots'],
     )
     key = ('demo-dev', kind, 'controlled')
     evidence = {
@@ -647,11 +640,9 @@ def test_whole_scope_foreign_control_or_policy_change_remains_a_blocker(change):
     else:
         other = next(row for row in after['resources'] if row['name'] == 'external-control')
         other['origin'] = 'ambiguous_kaori'
-    after['resource_sha256'] = _digest(
-        {
-            'resources': after['resources'],
-            'lists': after['list_snapshots'],
-        }
+    after['resource_sha256'] = capsule_related_scope_sha256(
+        resources=after['resources'],
+        list_snapshots=after['list_snapshots'],
     )
     result = _full_readback(case, current=after)
     assert result['ambiguous_count'] or 'related_foreign_or_unadmitted_control_drift' in result['blockers']
@@ -674,11 +665,9 @@ def test_whole_scope_does_not_accept_unexplained_list_revision_or_grq_drift():
     for row in current['list_snapshots']:
         if row['kind'] == 'ResourceQuota':
             row['list_resource_version'] = 'foreign-list-change'
-    current['resource_sha256'] = _digest(
-        {
-            'resources': current['resources'],
-            'lists': current['list_snapshots'],
-        }
+    current['resource_sha256'] = capsule_related_scope_sha256(
+        resources=current['resources'],
+        list_snapshots=current['list_snapshots'],
     )
     receipt = _full_readback(case, current=current)
     assert 'namespaced_list_revision_drift' in receipt['blockers']
@@ -687,7 +676,6 @@ def test_whole_scope_does_not_accept_unexplained_list_revision_or_grq_drift():
     current['global_quota']['scope_sha256'] = _digest(
         {
             'api_version': 'v1beta2',
-            'list_resource_version': 'changed',
             'resources': [],
         }
     )
@@ -702,11 +690,9 @@ def test_whole_scope_premature_transfer_without_list_revision_is_blocked():
     for row in current['list_snapshots']:
         if row['kind'] == 'RoleBinding':
             row['list_resource_version'] = 'list-rv'
-    current['resource_sha256'] = _digest(
-        {
-            'resources': current['resources'],
-            'lists': current['list_snapshots'],
-        }
+    current['resource_sha256'] = capsule_related_scope_sha256(
+        resources=current['resources'],
+        list_snapshots=current['list_snapshots'],
     )
     receipt = _full_readback(case, current=current)
     assert 'related_transfer_list_revision_not_observed' in receipt['blockers']
@@ -719,11 +705,9 @@ def test_whole_scope_rejects_extra_list_fields_even_with_valid_transfer_and_reha
     for row in current['list_snapshots']:
         if row['kind'] == 'ResourceQuota':
             row['unreviewed_watch_token'] = 'caller-injected'
-    current['resource_sha256'] = _digest(
-        {
-            'resources': current['resources'],
-            'lists': current['list_snapshots'],
-        }
+    current['resource_sha256'] = capsule_related_scope_sha256(
+        resources=current['resources'],
+        list_snapshots=current['list_snapshots'],
     )
     result = _full_readback(case, current=current)
     assert 'related_list_schema_scope_or_count_changed' in result['blockers']
@@ -1185,7 +1169,6 @@ def test_g2_manifest_explicitly_covers_capsule_cr_and_every_global_quota_source(
     quota['scope_sha256'] = _digest(
         {
             'api_version': quota['served_version'],
-            'list_resource_version': quota['list_resource_version'],
             'resources': shared,
         }
     )
@@ -1236,7 +1219,6 @@ def test_g2_rejects_unresolved_shared_quota_selector_instead_of_omitting_it():
     quota['scope_sha256'] = _digest(
         {
             'api_version': quota['served_version'],
-            'list_resource_version': quota['list_resource_version'],
             'resources': quota['resources'],
         }
     )

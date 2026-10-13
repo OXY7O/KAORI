@@ -10,7 +10,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.kubernetes.tenant.capsule_handoff_admission import assess_capsule_handoff_admission
-from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
+from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest, capsule_related_scope_sha256
 from app.kubernetes.tenant.capsule_platform_admin_authority import _capsule_admin_scope
 from app.kubernetes.tenant.release_handoff_approval import _plan_hash
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
@@ -30,11 +30,10 @@ def _fixture():
         for ns in names
         for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
     ]
-    related_sha = _digest({'resources': resources, 'lists': lists})
+    related_sha = capsule_related_scope_sha256(resources=resources, list_snapshots=lists)
     global_sha = _digest(
         {
             'api_version': 'v1beta2',
-            'list_resource_version': 'cluster-list-rv',
             'resources': [],
         }
     )
