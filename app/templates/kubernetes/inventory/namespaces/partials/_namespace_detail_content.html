@@ -44,7 +44,7 @@
                     ], columns=2) }}
                     <div class="mt-3">
                         {{ operational_callout.render('Control Interpretation',
-                                                'Unset namespace controls remain neutral until evaluated against an explicit governance policy. KAORI does not infer cluster-level Pod Security Admission defaults from missing labels. Default ServiceAccount presence is reported separately as access-baseline evidence.',
+                                                'Unset controls remain neutral pending policy review; PSA defaults are not inferred, and ServiceAccount presence is separate evidence.',
                                                 'shield-check',
                                                 'info') }}
                     </div>

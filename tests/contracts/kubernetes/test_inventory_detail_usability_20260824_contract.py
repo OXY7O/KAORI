@@ -288,15 +288,69 @@ def test_node_missing_section_badges_use_committed_fields_not_health_inference()
 def test_namespace_control_copy_and_reported_quota_presentation_are_concise() -> None:
     detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
 
-    assert 'Unset namespace controls remain neutral until evaluated against an explicit governance policy.' in detail
-    assert 'KAORI does not infer cluster-level Pod Security Admission defaults from missing labels.' in detail
-    assert 'Default ServiceAccount presence is reported separately as access-baseline evidence.' in detail
+    assert 'Unset controls remain neutral pending policy review; PSA defaults are not inferred, and ServiceAccount presence is separate evidence.' in detail
     assert 'Controls that are not explicitly set at namespace level remain neutral evidence' not in detail
     assert 'data-kaori-reported-quota' in detail
     assert 'Configured hard limits' in detail
     assert '>Resource</span>' in detail
     assert '>Hard Limit</span>' in detail
     assert 'divide-y divide-outline-subtle' in detail
+
+
+def test_inventory_operational_guidance_copy_is_compact_and_evidence_qualified() -> None:
+    expected = {
+        'app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html': (
+            'Unset controls remain neutral pending policy review; PSA defaults are not inferred, and ServiceAccount presence is separate evidence.',
+        ),
+        'app/templates/kubernetes/inventory/services/partials/_service_detail_content.html': (
+            'Committed backend addresses.',
+            'Selector-matched Pods in snapshot.',
+            'Committed Service and backends; live traffic and public exposure unverified.',
+        ),
+        'app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html': (
+            'Resolved Secret confirms presence only; certificate contents, expiry, keys, and hostnames are unverified.',
+            'Service references use committed inventory; resource backends remain declarations, not live endpoints.',
+            'Committed Ingress evidence; exposure, DNS, traffic, reachability, and certificate validity unverified.',
+        ),
+        'app/templates/kubernetes/inventory/storage/partials/_storage_detail_content.html': (
+            'Committed storage bindings; live usage, pressure, growth, durability, and I/O health unverified.',
+        ),
+        'app/templates/kubernetes/inventory/configuration/partials/_configuration_detail_content.html': (
+            'No Pod references in snapshot; other consumers may exist.',
+            'Committed key metadata and Pod references; no live API query or exposed values.',
+        ),
+        'app/kubernetes/inventory/resources/pod_semantics.py': (
+            'Container restarts recorded in the snapshot; check runtime before treating them as active.',
+        ),
+        'app/kubernetes/inventory/resources/service_semantics.py': (
+            'Backend registration committed; traffic and reachability remain unverified.',
+        ),
+        'app/kubernetes/inventory/resources/ingresses.py': (
+            'No TLS Secret declared; neutral until governance policy review.',
+        ),
+        'app/kubernetes/inventory/resources/storage.py': (
+            'No exceptional lifecycle state in the committed storage snapshot.',
+        ),
+        'app/kubernetes/inventory/resources/configuration.py': (
+            'No Pod references in this snapshot; other consumers or future workloads may still exist.',
+        ),
+    }
+    for path, descriptions in expected.items():
+        source = read(path)
+        for description in descriptions:
+            assert description in source, (path, description)
+            assert len(description) <= 133, (path, description)
+
+    service = read('app/kubernetes/inventory/resources/service_semantics.py')
+    ingress = read('app/kubernetes/inventory/resources/ingresses.py')
+    storage = read('app/kubernetes/inventory/resources/storage.py')
+    configuration = read('app/kubernetes/inventory/resources/configuration.py')
+    pod = read('app/kubernetes/inventory/resources/pod_semantics.py')
+    assert "'Service Snapshot Ready for Review'" in service
+    assert "'TLS Reference Not Configured'" in ingress
+    assert "'Storage Snapshot Ready for Review'" in storage
+    assert "'No Current Pod References'" in configuration
+    assert "'Review Restart Activity'" in pod
 
 
 def test_inventory_search_copy_is_compact_for_dense_filter_rows() -> None:

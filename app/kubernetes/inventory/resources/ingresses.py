@@ -444,7 +444,7 @@ def _operational_context(
     if not tls_enabled:
         return {
             'title': 'TLS Reference Not Configured',
-            'description': 'No TLS Secret reference is declared. This remains neutral inventory evidence until an explicit governance policy evaluates it.',
+            'description': 'No TLS Secret declared; neutral until governance policy review.',
             'icon': 'shield-off',
             'tone': 'info',
         }

@@ -132,14 +132,14 @@
                         <div class="p-4">{{ detail.empty_evidence('Endpoint Registration Not Applicable', 'ExternalName Services delegate resolution to DNS and do not use Service endpoint registration.', 'external-link') }}</div>
                     </section>
                 {% elif service.endpoints_reported %}
-                    {{ related_collection.inventory_render('Endpoint Addresses', 'Registered backend addresses from EndpointSlice or Endpoints evidence.', service.endpoint_resources, service.ready_endpoint_count + service.not_ready_endpoint_count, 'waypoints', 'No Endpoint Addresses', 'No registered backend address is represented in the committed snapshot.', service.endpoints_truncated, embedded=true) }}
+                    {{ related_collection.inventory_render('Endpoint Addresses', 'Committed backend addresses.', service.endpoint_resources, service.ready_endpoint_count + service.not_ready_endpoint_count, 'waypoints', 'No Endpoint Addresses', 'No registered backend address is represented in the committed snapshot.', service.endpoints_truncated, embedded=true) }}
                 {% else %}
                     <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="p-4">{{ detail.empty_evidence('Endpoint Evidence Not Reported', 'EndpointSlice and Endpoints evidence was unavailable during the committed inventory collection.', 'database-zap') }}</div>
                     </section>
                 {% endif %}
                 {% if service.pod_relationship_applicable %}
-                    {{ related_collection.inventory_render('Selected Pods', 'Pods matching the Service selector in the current committed snapshot.', service.pods, service.pod_count, 'package-check', 'No Selected Pods', 'No committed Pod label set matches the Service selector.', service.pods_truncated, url_for('inventory.pods', cluster_id=service.cluster_id, namespace=service.namespace) , 'Open Pod Inventory', embedded=true) }}
+                    {{ related_collection.inventory_render('Selected Pods', 'Selector-matched Pods in snapshot.', service.pods, service.pod_count, 'package-check', 'No Selected Pods', 'No committed Pod label set matches the Service selector.', service.pods_truncated, url_for('inventory.pods', cluster_id=service.cluster_id, namespace=service.namespace) , 'Open Pod Inventory', embedded=true) }}
                 {% else %}
                     <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="p-4">{{ detail.empty_evidence('Pod Selection Not Applicable', 'This Service does not declare a Pod selector. Backend registration is external or manually managed.', 'package-x') }}</div>
@@ -154,7 +154,7 @@
             <section class="space-y-3">
                 <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>
                 <div class="grid gap-3 lg:grid-cols-2">
-                    {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports Service configuration and registered backend evidence. It does not prove application reachability, traffic health, or public exposure.', 'database', 'info') }}
+                    {{ operational_callout.render('Committed Snapshot Boundary', 'Committed Service and backends; live traffic and public exposure unverified.', 'database', 'info') }}
                     {{ operational_callout.render(service.operational_context.title, service.operational_context.description, service.operational_context.icon, service.operational_context.tone, 'semantic') }}
                 </div>
             </section>

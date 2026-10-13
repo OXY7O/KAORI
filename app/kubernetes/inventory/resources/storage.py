@@ -540,7 +540,7 @@ def _operational_context(item: StorageInventory, lifecycle_label: str, states: d
         }
     return {
         'title': 'Storage Snapshot Ready for Review',
-        'description': 'No exceptional lifecycle state is represented in the latest committed storage snapshot, indicating the collected storage objects are within expected lifecycle conditions.',
+        'description': 'No exceptional lifecycle state in the committed storage snapshot.',
         'tone': 'normal',
         'icon': 'circle-check',
     }

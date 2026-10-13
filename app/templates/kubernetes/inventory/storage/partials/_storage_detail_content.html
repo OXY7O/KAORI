@@ -135,7 +135,7 @@
                 {{ metadata_collection.render('Storage Annotations', item.annotations, 'notebook-tabs', 'No Storage Annotations', 'No annotations are represented in the committed snapshot.', 'Annotations may be managed by provisioners or storage controllers.', compact=true, embedded=true) }}
             </div>
             <section class="grid gap-3 xl:grid-cols-2">
-                {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports committed storage configuration and binding evidence. It does not report live filesystem usage, pressure, growth, performance, durability, or application I/O health.', 'database', 'info') }}
+                {{ operational_callout.render('Committed Snapshot Boundary', 'Committed storage bindings; live usage, pressure, growth, durability, and I/O health unverified.', 'database', 'info') }}
                 {{ operational_callout.render(item.operational_context.title, item.operational_context.description, item.operational_context.icon, item.operational_context.tone, 'semantic') }}
             </section>
         </div>

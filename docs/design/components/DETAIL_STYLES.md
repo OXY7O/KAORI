@@ -73,6 +73,10 @@ At the standard V10 desktop 1:3 evidence-band layout, the left rail displays a s
 
 The shared `technical_metadata_collection.html` uses `Committed metadata entries.` for Labels/Annotations and `Key names only; no values.` for indexed key evidence; absence of persisted sensitive values remains an explicit protected-data boundary in the owning Configuration detail. Existing `related_resource_collection.inventory_render` accepts similarly short, resource-specific evidence captions. Do not infer a collection/health posture from a mere reference count.
 
+### Compact operational guidance and evidence notes
+
+Operational Context peer callouts, short inventory hints, and relationship descriptions use one concise, complete evidence-qualified sentence when practical at desktop width. Preserve policy-neutral states, historical versus live runtime status, missing versus empty evidence, sensitive-value boundaries, and the distinction between committed references and actual health/reachability/certificate verification. Shorten source-owned display wording rather than hiding evidence or adding presentation-only status logic. Allow wrapping on narrow viewports; do not force `whitespace-nowrap`, truncate, reduce the approved font size, or alter common callout/related-resource component geometry.
+
 Section badges stay source-grounded. Node's Identity & Snapshot, Capacity, and Runtime & Platform now use existing committed Node age, reported CPU capacity, and Kubelet version as metadata labels; Network and Scheduling keep their existing semantic status badges. Other Kubernetes Inventory sections preserve current sourced badge semantics and data values. No new provider reads or alternate shared component variants are permitted.
 
 ### Content order

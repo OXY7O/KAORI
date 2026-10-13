@@ -105,7 +105,7 @@
                                         {'label': 'Missing Secrets', 'value': ingress.missing_tls_secret_count},
                                         {'label': 'Collection State', 'value': ingress.secret_collection_state}
                                         ], columns=2) }}
-                    {{ detail.inventory_note('A resolved Secret reference confirms only that a Secret exists in the same committed namespace snapshot. It does not validate certificate contents, expiry, key matching, or hostname coverage.', 'info') }}
+                    {{ detail.inventory_note('Resolved Secret confirms presence only; certificate contents, expiry, keys, and hostnames are unverified.', 'info') }}
                 {% endcall %}
                 {% call detail.inventory_section('Routing Evidence', 'git-branch', ingress.backend_count ~ ' Routes', badge_size='detail', stretch=false, density='compact', description='Host and backend routes.') %}
                     {{ detail.inventory_fact_grid([
@@ -116,7 +116,7 @@
                                         {'label': 'Unreported References', 'value': ingress.unresolved_backend_count},
                                         {'label': 'Service Collection', 'value': ingress.service_collection_state}
                                         ], columns=2) }}
-                    {{ detail.inventory_note('Service references are resolved only against the current committed Service Inventory for the selected scope. Resource backends remain declaration-only evidence here and are intentionally not resolved to live backend objects or runtime endpoints.', 'info') }}
+                    {{ detail.inventory_note('Service references use committed inventory; resource backends remain declarations, not live endpoints.', 'info') }}
                 {% endcall %}
             </div>
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
@@ -178,7 +178,7 @@
             <section class="space-y-3">
                 <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>
                 <div class="grid gap-3 lg:grid-cols-2">
-                    {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports declared Ingress configuration and controller publication evidence. It does not validate public exposure, live traffic, DNS resolution, reachability, certificate validity, or certificate expiry.', 'database', 'info') }}
+                    {{ operational_callout.render('Committed Snapshot Boundary', 'Committed Ingress evidence; exposure, DNS, traffic, reachability, and certificate validity unverified.', 'database', 'info') }}
                     {{ operational_callout.render(ingress.operational_context.title, ingress.operational_context.description, ingress.operational_context.icon, ingress.operational_context.tone, 'semantic') }}
                 </div>
             </section>
