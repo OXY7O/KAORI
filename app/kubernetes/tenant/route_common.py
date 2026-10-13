@@ -223,10 +223,11 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
         for step in steps
     }
 
+    return_query: dict[str, Any] = {f'registry_{key}': value for key, value in state.items() if value}
     context['return_to_registry_url'] = url_for(
         'tenant.tenants',
         section='registry',
-        **registry_query,
+        **return_query,
     )
     return context
 
