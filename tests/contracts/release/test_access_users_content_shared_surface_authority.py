@@ -45,7 +45,7 @@ def test_user_directory_uses_shared_surface_shell_authority() -> None:
     assert "'user-directory'" in filters
     assert "'users-refresh-indicator'" in filters
     assert "form_id='users-filter-form'" in filters
-    assert 'aria_label=\'User Directory filters\'' in filters
+    assert "aria_label='User Directory filters'" in filters
 
     # Canonical HTMX semantics are owned by a shared registry macro, not by
     # obsolete page-local attribute copies. The swap targets the registry.
