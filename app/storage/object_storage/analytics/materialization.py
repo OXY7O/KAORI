@@ -180,10 +180,11 @@ def _verify_snapshot_claim(
     snapshot: ObjectStorageAnalyticsSnapshot | ObjectStorageForecastSnapshot,
     *,
     job_execution_id: int | None,
-    claimed_at: datetime,
+    claimed_at: datetime | None,
 ) -> None:
     if (
-        snapshot.status != 'pending'
+        claimed_at is None
+        or snapshot.status != 'pending'
         or snapshot.last_job_execution_id != job_execution_id
         or _aware(snapshot.last_attempt_at) != _aware(claimed_at)
     ):
