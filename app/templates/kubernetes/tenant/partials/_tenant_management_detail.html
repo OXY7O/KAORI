@@ -1424,7 +1424,7 @@
                                                             {{ live_handoff.verified_count|default(0) }} /
                                                             {{ live_handoff.expected_component_count|default(0) }} provider objects.
                                                             {% if live_handoff.status != 'provider_handoff_verified' %}
-                                                                Do not retry automatically or finalize Release.
+                                                                <span>Do not retry automatically or finalize Release.</span>
                                                             {% endif %}
                                                         </p>
                                                     {% endif %}
@@ -1710,8 +1710,9 @@
                                                         <div class="min-w-0 flex-1">
                                                             <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                                                                 <p class="min-w-0 text-xs font-semibold leading-5 text-content-primary">{{ checkpoint.label }}</p>
+                                                                {% set checkpoint_tone = 'success' if checkpoint.complete else ('warning' if 'Expired' in checkpoint.display_status else 'info') %}
                                                                 {{ table_label.status_label(checkpoint.display_status,
-                                                                                                                                'success' if checkpoint.complete else ('warning' if 'Expired' in checkpoint.display_status else 'info')
+                                                                                                                                checkpoint_tone
                                                                 ) }}
                                                             </div>
                                                             <p class="mt-0.5 break-words text-xs leading-5 text-content-secondary">{{ checkpoint.detail }}</p>
