@@ -1086,6 +1086,14 @@ if (canvas && form) {
         form.querySelectorAll('select').forEach((select) => { select.selectedIndex = 0 })
         form.querySelector('input[name="q"]').value = ''
         form.querySelector('input[name="artifact_id"]')?.remove()
+        $('registry-topology-artifact-focus')?.classList.add('hidden')
+        commitFilterChange()
+    })
+    document.querySelector('#registry-topology-artifact-focus a')?.addEventListener('click', (event) => {
+        event.preventDefault()
+        window.clearTimeout(searchTimer)
+        form.querySelector('input[name="artifact_id"]')?.remove()
+        $('registry-topology-artifact-focus')?.classList.add('hidden')
         commitFilterChange()
     })
     $('registry-topology-reload').addEventListener('click', reload)
