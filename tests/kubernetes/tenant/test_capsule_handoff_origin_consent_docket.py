@@ -18,7 +18,7 @@ from app.kubernetes.tenant.capsule_handoff_collector_receipt import (
 from app.kubernetes.tenant.capsule_handoff_origin_consent_docket import (
     review_capsule_origin_consent_docket,
 )
-from app.kubernetes.tenant.capsule_handoff_related_inventory import _canonical, _digest
+from app.kubernetes.tenant.capsule_handoff_related_inventory import _canonical, _digest, capsule_related_scope_sha256
 from app.kubernetes.tenant.capsule_handoff_resource_admission import (
     assess_capsule_resource_handoff_scope,
 )
@@ -54,7 +54,7 @@ def _fixture():
         }
         for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
     ]
-    related_sha = _digest({'resources': rows, 'lists': lists})
+    related_sha = capsule_related_scope_sha256(resources=rows, list_snapshots=lists)
     grq = {
         'status': 'observed_not_handoff_authorized',
         'served_version': 'v1beta2',
@@ -66,7 +66,6 @@ def _fixture():
     grq['scope_sha256'] = _digest(
         {
             'api_version': 'v1beta2',
-            'list_resource_version': 'grq-rv',
             'resources': [],
         }
     )
