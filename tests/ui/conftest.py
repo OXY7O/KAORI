@@ -173,6 +173,27 @@ def kaori_base_url() -> str:
     return base_url.rstrip('/')
 
 
+def _notification_center_fixture_context(**request_filters: object) -> dict[str, object]:
+    """Mirror filter/Rows selection in isolated browser responses, never live data."""
+    defaults = EMPTY_NOTIFICATION_CENTER
+    return {
+        **defaults,
+        'notification_filters': {
+            **defaults['notification_filters'],
+            **{
+                key: str(request_filters[key])
+                for key in ('search', 'category', 'status', 'read_state')
+                if key in request_filters
+            },
+        },
+        'notification_pagination': {
+            **defaults['notification_pagination'],
+            'page': int(request_filters.get('page', 1)),
+            'per_page': int(request_filters.get('per_page', 5)),
+        },
+    }
+
+
 @pytest.fixture
 def configured_page(page: Page, kaori_viewport: tuple[str, tuple[int, int]]) -> Page:
     _, (width, height) = kaori_viewport
@@ -262,7 +283,7 @@ def kaori_authenticated_base_url() -> Iterator[str]:
         ),
         patch(
             'app.platform_operations.notifications.routes.get_notification_center_page_context',
-            return_value=EMPTY_NOTIFICATION_CENTER,
+            side_effect=_notification_center_fixture_context,
         ),
         patch(
             'app.kubernetes.inventory.routes.get_inventory_overview',
