@@ -776,7 +776,9 @@ def _registry_analytics_descriptions() -> dict[str, str]:
     for node in ast.walk(tree):
         if not isinstance(node, ast.Assign):
             continue
-        if not any(isinstance(target, ast.Name) and target.id == '_REGISTRY_ANALYTICS_PAGE_DETAILS' for target in node.targets):
+        if not any(
+            isinstance(target, ast.Name) and target.id == '_REGISTRY_ANALYTICS_PAGE_DETAILS' for target in node.targets
+        ):
             continue
         if not isinstance(node.value, ast.Dict):
             raise AssertionError('Registry Analytics page details must remain a static dictionary')
