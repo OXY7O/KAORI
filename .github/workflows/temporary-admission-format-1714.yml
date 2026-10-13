@@ -1,0 +1,60 @@
+# Temporary, issue-scoped formatter. Removed before PR review; NOT an admission gate.
+name: Temporary Admission Formatter (1714)
+
+on:
+  push:
+    branches:
+      - kaori/issue-1714-admission-formatter
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kaori-issue-1714-format
+  cancel-in-progress: false
+
+jobs:
+  format:
+    name: Apply canonical formatting to issue branch
+    if: github.repository == 'OXY7O/KAORI'
+    runs-on: [self-hosted, linux, x64, kaori-ci]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout pinned remediation head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply existing Ruff and djLint formatters
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_REF" == "refs/heads/kaori/issue-1714-admission-formatter" ]]
+          key="$(cat .github/ci/Dockerfile .github/ci/requirements-security.txt requirements/base.txt requirements/dev.txt | sha256sum | cut -c1-20)"
+          image="kaori-ci-toolchain:$key"
+          docker image inspect "$image" >/dev/null 2>&1 || docker build --file .github/ci/Dockerfile --tag "$image" .
+          run_toolchain() {
+            docker run --rm --user "$(id -u):$(id -g)" --env HOME=/tmp \
+              --volume "$PWD:/workspace" --workdir /workspace "$image" "$@"
+          }
+          # Ruff safe autofixes may exit nonzero for genuinely unresolved code findings.
+          # Record that exit and continue ONLY in this temporary formatter (not CI admission).
+          set +e
+          run_toolchain python -m ruff check --fix app migrations tests scripts
+          ruff_fix_rc=$?
+          set -e
+          printf 'Ruff safe autofix exit (NOT admission): %s\n' "$ruff_fix_rc"
+          run_toolchain python -m ruff format app migrations tests scripts
+          run_toolchain python -m djlint app/templates --reformat
+          git add -u app migrations tests scripts
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            printf 'No formatter changes to commit.\n'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'style(admission): apply canonical Ruff and djLint safe formatting #1714'
+          git push origin HEAD:refs/heads/kaori/issue-1714-admission-formatter
+          printf 'Formatter commit pushed; exact-head Developer Check must still PASS.\n'
