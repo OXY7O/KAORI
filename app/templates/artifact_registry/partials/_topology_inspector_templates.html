@@ -2,6 +2,7 @@
    This template mirrors the shared compact segmented tabs, identity header,
    relationship cards, and minimap shell. No provider-side read is performed. #}
 {% import "components/segmented_tabs.html" as segmented_tabs %}
+{% import "components/topology_primitives.html" as topology_parts %}
 <template id="registry-topology-inspector-empty-template">
     <div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-8 text-center">
         <i data-lucide="mouse-pointer-click" class="mx-auto h-7 w-7 text-kaori-primary" aria-hidden="true"></i>
@@ -21,11 +22,15 @@
                     <p data-node-kind class="mt-1 text-xs text-content-muted"></p>
                     <div class="mt-2 flex flex-wrap gap-2">
                         <span data-node-type class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark"></span>
-                        <span data-node-evidence class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md bg-status-unknown-soft px-2 py-0.5 text-xs font-semibold leading-5 text-status-unknown-text"></span>
+                        <span data-node-status
+                              class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold leading-5">
+                            <span data-node-status-dot class="h-1.5 w-1.5 rounded-full" aria-hidden="true"></span>
+                            <span data-node-evidence></span>
+                        </span>
                     </div>
                 </div>
             </div>
-            <p data-node-description class="mt-3 text-xs leading-5 text-content-secondary"></p>
+            <p data-node-description class="mt-3 hidden text-xs leading-5 text-content-secondary"></p>
         </section>
         <div class="grid grid-cols-2 gap-2">
             <button type="button" data-highlight-path
@@ -110,3 +115,5 @@
         <i data-lucide="chevron-right" class="mt-2 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
     </button>
 </template>
+
+{{ topology_parts.resource_row_template('registry-topology-resource-list-row-template') }}
