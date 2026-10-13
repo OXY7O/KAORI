@@ -47,9 +47,7 @@ def test_artifact_registry_has_no_direct_prometheus_transport() -> None:
         # Provider names in comments are not executable transport dependencies.
         # Keep checking executable tokens, imports and string literals.
         executable = ' '.join(
-            token.string
-            for token in generate_tokens(StringIO(content).readline)
-            if token.type != COMMENT
+            token.string for token in generate_tokens(StringIO(content).readline) if token.type != COMMENT
         )
         assert 'prometheus' not in executable.lower() or path.name == 'observability.py'
 
