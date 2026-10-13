@@ -391,11 +391,11 @@ def test_capsule_acceptance_requires_explicit_confirmation_and_fresh_independent
             plan_sha256=plan['plan_sha256'],
             confirmed=False,
         )
+    expired_plan = dict(plan, requested_at=(datetime.now(UTC) - timedelta(hours=1)).isoformat())
     for actor, bad_plan, bad_approval, denial in [
         (42, plan, approval, 'different from the original plan requester'),
         (44, dict(plan, provider='native_kubernetes'), approval, 'exact Capsule Release plan'),
-        (44, dict(plan, requested_at=(datetime.now(UTC) - timedelta(hours=1)).isoformat()), approval,
-         'exact Capsule Release plan'),
+        (44, expired_plan, approval, 'exact Capsule Release plan'),
         (44, plan, dict(approval, approved_by=42), 'exact Capsule Release plan'),
         (44, plan, dict(approval, status='pending'), 'exact Capsule Release plan'),
     ]:
