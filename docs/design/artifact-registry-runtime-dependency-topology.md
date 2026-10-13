@@ -209,6 +209,30 @@ The K8s Topology renderer and contracts must remain unchanged.
   or release without explicit human acceptance. Review integration target:
   `kaori/review/staging-uat`.
 
+## Resource List scrolling and runtime evidence inspector (2026-10-13 feedback)
+
+- **Resource List** follows Kubernetes Inventory Topology's single, scrolling
+  list surface: render every *visible node within the already bounded committed
+  graph slice*, without client pagination, Previous/Next buttons, or a list
+  footer. The list scrolls inside a fixed-height canvas; Registry continues to
+  preserve backend `_MAX_VISIBLE_BINDINGS` and omitted binding indicators
+  outside the list. This is not an unbounded DB query.
+- The Controls relationship legend helper text is compact and one-line:
+  `Dashed: scope · Solid: runtime/ownership.` and
+  `Tag/mixed matches: see Details for confidence.` Relationship toggles
+  remain available and unchanged.
+- **Visible Runtime Evidence** is a Registry-owned inspector presentation card,
+  rather than concatenated text. Each committed binding has workload/Pod
+  identity, cluster/namespace fields, match type and confidence badge, and
+  scan-exposure badge. Reuse KAORI semantic status surfaces and domain tokens;
+  never interpret unknown scan findings as healthy Kubernetes runtime.
+  Evidence remains capped at ten cards in the inspector, with an explicit
+  additional-binding notice and existing Runtime Usage handoff.
+- This adjustment touches only the Registry presentation/controller; the K8s
+  topology renderer and its shared resource row/toolbar primitives are
+  unchanged. DevContainer light/dark, overflow and inspector layout UAT remains
+  required before acceptance.
+
 ## Canonical presentation reuse — K8s reference
 
 The Runtime Topology now consumes **the same shared Jinja primitives** as

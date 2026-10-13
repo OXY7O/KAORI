@@ -33,16 +33,12 @@ if (canvas && form) {
     const loading = $('registry-topology-loading')
     const clearFiltersButton = $('registry-topology-clear-filters')
     const close = $('registry-topology-inspector-close')
-    const previous = $('registry-topology-prev')
-    const next = $('registry-topology-next')
     let cy = null
     let renderer = null
     let payload = { nodes: [], edges: [], bindings: [], summary: {}, evidence: {} }
     let view = new URL(window.location.href).searchParams.get('view') === 'list' ? 'list' : 'graph'
-    let listPage = 1
     let controller = null
     let searchTimer = null
-    const pageSize = 5
     const filterKeys = ['source_id', 'cluster_id', 'namespace', 'match_type', 'exposure', 'artifact_id', 'q']
     const hasActiveFilters = () => filterKeys.some((key) =>
         Boolean(new FormData(form).get(key)?.toString().trim())
@@ -322,16 +318,37 @@ if (canvas && form) {
         const rows = associatedBindings(node.id())
         if (!rows.length) return
         pane.classList.remove('hidden')
-        const title = elements('h5', 'text-xs font-semibold text-content-primary', `Visible Runtime Evidence (${rows.length})`)
-        pane.append(title)
+        fill(pane, '[data-runtime-evidence-count]', `${rows.length} ${rows.length === 1 ? 'binding' : 'bindings'}`)
+        const list = pane.querySelector('[data-runtime-evidence-rows]')
         for (const item of rows.slice(0, 10)) {
-            const box = elements('div', 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2')
-            box.append(elements('p', 'break-words text-xs font-semibold text-content-primary', `${item.cluster} / ${item.namespace}`))
-            box.append(elements('p', 'mt-1 break-words text-xs text-content-secondary', `${item.workload} · ${item.pod}`))
-            box.append(elements('p', 'mt-1 text-xs text-content-muted', `${item.match} · ${item.security}`))
-            pane.append(box)
+            const card = $('registry-topology-runtime-evidence-row-template')?.content.firstElementChild?.cloneNode(true)
+            if (!card || !list) continue
+            fill(card, '[data-runtime-workload]', item.workload)
+            fill(card, '[data-runtime-pod]', item.pod)
+            fill(card, '[data-runtime-cluster]', item.cluster)
+            fill(card, '[data-runtime-namespace]', item.namespace)
+            const match = String(item.match_type || item.match || '').toLowerCase()
+            const matchTone = match.includes('tag') || match.includes('mixed') ? 'warning'
+                : match.includes('digest') ? 'info' : 'unknown'
+            const matchText = item.confidence
+                ? `${safeLabel(item.match)} · ${safeLabel(item.confidence)} confidence`
+                : safeLabel(item.match)
+            fill(card, '[data-runtime-match-text]', matchText)
+            applyStatusSurface(card.querySelector('[data-runtime-match]'),
+                card.querySelector('[data-runtime-match-dot]'), matchTone)
+            const securityTone = Number(item.critical) > 0 ? 'critical'
+                : Number(item.high) > 0 ? 'warning' : 'unknown'
+            fill(card, '[data-runtime-security-text]', item.security)
+            applyStatusSurface(card.querySelector('[data-runtime-security]'),
+                card.querySelector('[data-runtime-security-dot]'), securityTone)
+            list.append(card)
         }
-        if (rows.length > 10) pane.append(elements('p', 'text-xs text-content-muted', `${rows.length - 10} additional visible bindings; refine scope or use Runtime Usage.`))
+        if (rows.length > 10) {
+            const more = pane.querySelector('[data-runtime-evidence-more]')
+            more?.classList.remove('hidden')
+            fill(pane, '[data-runtime-evidence-more]',
+                `${rows.length - 10} more visible bindings; refine filters or open Runtime Usage.`)
+        }
     }
     const renderRelationshipRows = (target, node) => {
         target.replaceChildren()
@@ -585,10 +602,7 @@ if (canvas && form) {
         const byId = new Map(payload.nodes.map((node) => [node.data.id, node]))
         const parents = graphParents()
         const total = nodes.length
-        const maxPage = Math.max(Math.ceil(total / pageSize), 1)
-        listPage = Math.min(Math.max(listPage, 1), maxPage)
-        const page = nodes.slice((listPage - 1) * pageSize, listPage * pageSize)
-        for (const item of page) {
+        for (const item of nodes) {
             const data = item.data
             const scope = resourceScope(item, parents, byId)
             const status = evidenceStatus(data)
@@ -613,10 +627,6 @@ if (canvas && form) {
         }
         const emptyState = $('registry-topology-list-empty')
         emptyState?.classList.toggle('hidden', Boolean(total))
-        $('registry-topology-list-count').textContent =
-            `Showing ${page.length ? (listPage - 1) * pageSize + 1 : 0}–${(listPage - 1) * pageSize + page.length} of ${total} visible resources (from ${payload.summary.displayed_bindings ?? 0} displayed bindings; ${payload.summary.omitted_bindings ?? 0} omitted).`
-        previous.disabled = listPage <= 1
-        next.disabled = listPage >= maxPage
         window.lucide?.createIcons()
     }
 
@@ -662,8 +672,6 @@ if (canvas && form) {
             other.focus()
         })
     }
-    previous.addEventListener('click', () => { listPage -= 1; renderList() })
-    next.addEventListener('click', () => { listPage += 1; renderList() })
 
     // Match Kubernetes Inventory Topology's small domain badge + external label
     // instead of long centered text inside oversized rectangle nodes.
@@ -1070,7 +1078,6 @@ if (canvas && form) {
                 const countNode = document.querySelector(`[data-registry-topology-type-count="${typeToggle.dataset.registryTopologyType}"]`)
                 if (countNode) countNode.textContent = String(count)
             }
-            listPage = 1
             renderList()
             const summary = payload.summary
             const evidence = payload.evidence
