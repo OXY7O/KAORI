@@ -1,5 +1,6 @@
 """Integrations Overview SQL-first read-model regression contracts."""
 
+import re
 from pathlib import Path
 
 from app.common.pagination import build_pagination_window
@@ -30,7 +31,7 @@ def test_runtime_filters_and_pagination_are_sql_first():
     builder = workspace.split('def build_integrations_overview(', 1)[1]
     assert builder.index('selected = (') < builder.index('specs, pagination = runtime_page(')
     assert builder.index('specs, pagination = runtime_page(') < builder.index('_visible_runtime_rows(specs)')
-    assert '.offset(window.offset).limit(window.per_page)' in sql
+    assert re.search(r'\.offset\(window\.offset\)\s*\.limit\(window\.per_page\)', sql)
     assert 'lookup.observed_at.desc()' in sql
     assert 'lookup.instance_id == cast(candidates.c.provider_record_id, String)' in sql
     assert 'select(IntegrationRuntimeObservation).where(' in workspace
