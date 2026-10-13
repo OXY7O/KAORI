@@ -92,6 +92,18 @@ def _provider_patch(
     return patch(**args)
 
 
+def _require_related_record(record: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    if not isinstance(record, Mapping):
+        raise ValueError('Capsule related PATCH requires the exact consented inventory row.')
+    return record
+
+
+def _require_consent_keys(keys: list[str] | None) -> list[str]:
+    if not isinstance(keys, list):
+        raise ValueError('Capsule related PATCH requires the exact consented inventory row.')
+    return keys
+
+
 def _require_source_still_unchanged(
     *,
     kind: str,
@@ -225,7 +237,7 @@ def execute_capsule_single_metadata_patch_staged(
         )
     else:
         operations = build_capsule_related_metadata_handoff_patch(
-            record=related_record,
+            record=_require_related_record(related_record),
             before=before,
             kind=kind,
             namespace=namespace,
@@ -233,7 +245,7 @@ def execute_capsule_single_metadata_patch_staged(
             capsule_name=capsule_name,
             capsule_uid=capsule_uid,
             successor_owner=successor_owner,
-            approved_label_keys=consented_label_keys,
+            approved_label_keys=_require_consent_keys(consented_label_keys),
         )
         preview = _provider_patch(
             patch,
@@ -244,7 +256,7 @@ def execute_capsule_single_metadata_patch_staged(
             dry_run=True,
         )
         verify_capsule_related_metadata_preview(
-            record=related_record,
+            record=_require_related_record(related_record),
             before=before,
             preview=preview,
             kind=kind,
@@ -253,7 +265,7 @@ def execute_capsule_single_metadata_patch_staged(
             capsule_name=capsule_name,
             capsule_uid=capsule_uid,
             successor_owner=successor_owner,
-            approved_label_keys=consented_label_keys,
+            approved_label_keys=_require_consent_keys(consented_label_keys),
         )
 
     # First compare-and-swap is from the approved source identity, second
@@ -263,7 +275,7 @@ def execute_capsule_single_metadata_patch_staged(
         kind=kind,
         before=before,
         current=unchanged,
-        record=related_record if kind != 'Namespace' else component,
+        record=_require_related_record(related_record) if kind != 'Namespace' else component,
         tenant_id=tenant_id,
         capsule_name=capsule_name,
         capsule_uid=capsule_uid,
@@ -289,7 +301,7 @@ def execute_capsule_single_metadata_patch_staged(
         )
     else:
         result = classify_capsule_related_metadata_readback(
-            record=related_record,
+            record=_require_related_record(related_record),
             before=before,
             current=after,
             kind=kind,
@@ -298,7 +310,7 @@ def execute_capsule_single_metadata_patch_staged(
             capsule_name=capsule_name,
             capsule_uid=capsule_uid,
             successor_owner=successor_owner,
-            approved_label_keys=consented_label_keys,
+            approved_label_keys=_require_consent_keys(consented_label_keys),
         )
     if result.get('state') != 'provider_markers_transferred':
         raise ValueError('Capsule post-PATCH read-back is incomplete: operator recovery required.')
