@@ -121,7 +121,7 @@ def scan_storage_integrity() -> ResponseReturnValue:
             action_url=url_for('reports.storage', workspace='integrity'),
             action_label='View scan',
             action_icon='scan-search',
-            metadata={'job_execution_id': outcome.job.id},
+            metadata={'job_execution_id': outcome.job.id if outcome.job is not None else None},
             queue_feedback=True,
         )
     except ReportStorageVerificationEnqueueError:
