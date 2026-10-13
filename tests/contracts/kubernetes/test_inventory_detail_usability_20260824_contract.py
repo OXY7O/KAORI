@@ -39,37 +39,82 @@ def test_inventory_resource_sheet_bands_align_with_four_column_summary_header() 
         assert 'p-4 sm:p-5 lg:p-6' in source, resource
 
 
-def test_inventory_copy_controls_are_shared_while_node_identifiers_are_read_only() -> None:
-    shared = read('app/templates/components/details/_detail_content.html')
-    node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
-    namespace = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
-    workload = read('app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html')
-    pod = read('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html')
-    service = read('app/templates/kubernetes/inventory/services/partials/_service_detail_content.html')
-    ingress = read('app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html')
-    storage = read('app/templates/kubernetes/inventory/storage/partials/_storage_detail_content.html')
-    pod_detail = read('app/kubernetes/inventory/resources/pod_detail.py')
+def test_kubernetes_inventory_modal_values_keep_identifiers_without_copy_controls() -> None:
+    sources = {
+        'overview': 'app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html',
+        'nodes': 'app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html',
+        'namespaces': 'app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html',
+        'workloads': 'app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html',
+        'pods': 'app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html',
+        'services': 'app/templates/kubernetes/inventory/services/partials/_service_detail_content.html',
+        'ingresses': 'app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html',
+        'storage': 'app/templates/kubernetes/inventory/storage/partials/_storage_detail_content.html',
+        'configuration': 'app/templates/kubernetes/inventory/configuration/partials/_configuration_detail_content.html',
+    }
+    for resource, path in sources.items():
+        template = read(path)
+        assert 'data-kaori-inventory-detail="v10"' in template, resource
+        assert 'copyable=true' not in template, resource
+        assert 'data-kaori-copy-button' not in template, resource
+        assert 'data-kaori-copy-root' not in template, resource
 
-    assert 'macro inventory_copy_button(label)' in shared
-    assert 'data-kaori-copy-button' in shared
-    assert 'data-kaori-copy-source' in shared
-    assert 'data-lucide="copy"' in shared
-    assert 'data-kaori-copy-icon' in shared
-    assert "inventory_technical_row('UID', namespace.uid)" in namespace
-    assert "inventory_technical_row('UID', namespace.uid, copyable=true)" not in namespace
-    assert "inventory_technical_row('UID', workload.uid, copyable=true)" in workload
-    assert "inventory_technical_row('Kubernetes UID', pod.uid, copyable=true)" in pod
-    assert "inventory_technical_row('Kubernetes UID', service.uid, copyable=true)" in service
-    assert "inventory_technical_row('Kubernetes UID', ingress.uid, copyable=true)" in ingress
-    assert "inventory_technical_row('Kubernetes UID', item.uid, copyable=true)" in storage
-    assert "macro inspector_technical_row(label, value='-', nowrap=false, class_name='', copyable=false)" in shared
+    for path, expected in (
+        ('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html',
+         "inventory_technical_row('UID', namespace.uid)"),
+        ('app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html',
+         "inventory_technical_row('UID', workload.uid)"),
+        ('app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html',
+         "inventory_technical_row('Kubernetes UID', pod.uid)"),
+        ('app/templates/kubernetes/inventory/services/partials/_service_detail_content.html',
+         "inventory_technical_row('Kubernetes UID', service.uid)"),
+        ('app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html',
+         "inventory_technical_row('Kubernetes UID', ingress.uid)"),
+        ('app/templates/kubernetes/inventory/storage/partials/_storage_detail_content.html',
+         "inventory_technical_row('Kubernetes UID', item.uid)"),
+    ):
+        assert expected in read(path)
+
+    node = read(sources['nodes'])
     assert "inspector_technical_row('System UUID', node.system_uuid" in node
-    assert 'copyable=true' not in node
-    assert "inspector_technical_row('Internal IP', node.internal_ip or 'Not Reported', nowrap=true)" in node
-    assert "inspector_technical_row('External IP', node.external_ip or 'Not Reported', nowrap=true)" in node
-    assert "'label': 'Pod IP', 'value': pod.pod_ip or unknown, 'copyable': True" in pod_detail
-    assert "'label': 'Host IP', 'value': details.get('host_ip') or unknown, 'copyable': True" in pod_detail
-    assert "{'label': 'Cluster IP', 'value': service.cluster_ip, 'copyable': true}" in service
+    assert "inspector_technical_row('Internal IP', node.internal_ip" in node
+    assert "inspector_technical_row('External IP', node.external_ip" in node
+    pod_projection = read('app/kubernetes/inventory/resources/pod_detail.py')
+    assert "'label': 'Pod IP', 'value': pod.pod_ip or unknown" in pod_projection
+    assert "'label': 'Host IP', 'value': details.get('host_ip') or unknown" in pod_projection
+    assert "'copyable': True" not in pod_projection
+    assert "{'label': 'Cluster IP', 'value': service.cluster_ip}" in read(sources['services'])
+
+
+def test_shared_inventory_renderers_ignore_legacy_copyable_inputs() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    source = read('app/templates/components/details/_detail_content.html')
+    for macro in ('inventory_technical_row', 'inspector_technical_row', 'inventory_fact_grid'):
+        body = source.split('{% macro ' + macro + '(', 1)[1].split('{%- endmacro %}', 1)[0]
+        assert 'data-kaori-copy-' not in body, macro
+        assert 'inventory_copy_button(' not in body, macro
+        assert 'can_copy' not in body, macro
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
+    module = env.get_template('components/details/_detail_content.html').module
+    uid = '7f1769e7-f7a7-42e1-82f0-2898557100e3'
+    ip = '10.21.18.8'
+    markup = (
+        str(module.inventory_technical_row('UID', uid, copyable=True)),
+        str(module.inspector_technical_row('System UUID', uid, copyable=True)),
+        str(module.inventory_fact_grid([{'label': 'Pod IP', 'value': ip, 'copyable': True}], columns=2)),
+    )
+    for rendered, expected_value in zip(markup, (uid, uid, ip), strict=True):
+        assert expected_value in rendered
+        assert 'data-kaori-copy-' not in rendered
+        assert 'data-lucide="copy"' not in rendered
+        assert 'aria-label="Copy ' not in rendered
+        assert '<button' not in rendered
+
+    # The existing clipboard helper remains available outside Inventory renderers.
+    assert 'macro inventory_copy_button(label)' in source
+    assert 'data-kaori-copy-button' in source
+
 
 
 def test_cluster_and_node_detail_section_descriptions_are_concise() -> None:

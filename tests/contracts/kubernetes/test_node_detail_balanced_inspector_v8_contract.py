@@ -37,7 +37,7 @@ def test_node_v10_long_evidence_gets_full_width_when_it_needs_it() -> None:
         "detail.inspector_technical_row('Node Name', node.node_name, nowrap=true, class_name='lg:col-span-2')" in node
     )
     assert (
-        "detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2', copyable=true)"
+        "detail.inspector_technical_row('System UUID', node.system_uuid, nowrap=true, class_name='lg:col-span-2')"
         in node
     )
     assert (
@@ -66,7 +66,7 @@ def test_node_v10_uses_one_body_typeface_without_nested_scroll() -> None:
     assert 'embedded=true' in node
 
 
-def test_node_v10_header_keeps_context_quiet_while_detail_values_may_be_copyable() -> None:
+def test_node_v10_header_and_technical_values_are_read_only() -> None:
     node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
     header = node.split('detail.inspector_summary_strip(', 1)[0]
 
@@ -78,6 +78,8 @@ def test_node_v10_header_keeps_context_quiet_while_detail_values_may_be_copyable
     assert 'status_dot_classes' in header
     assert 'clipboard' not in header
     assert 'copyable=true' not in header.lower()
+    assert 'copyable=true' not in node
+    assert 'data-kaori-copy-button' not in node
     assert "inspector_technical_row('System UUID', node.system_uuid" in node
     assert "inspector_technical_row('Internal IP', node.internal_ip" in node
 

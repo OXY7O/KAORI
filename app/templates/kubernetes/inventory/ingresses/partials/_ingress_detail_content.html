@@ -36,7 +36,7 @@
                     {{ detail.inventory_metadata_row('Ingress Class', ingress.class) }}
                     {{ detail.inventory_row('Class Evidence', ingress.class_supporting) }}
                     {{ detail.inventory_row('Age', ingress.age) }}
-                    {{ detail.inventory_technical_row('Kubernetes UID', ingress.uid, copyable=true) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', ingress.uid) }}
                     {{ detail.inventory_row('Generation', ingress.generation) }}
                     {{ detail.inventory_row('Created', ingress.created_at|user_datetime if ingress.created_at else 'Not Reported') }}
                     {{ detail.inventory_row('Collected', ingress.collected_at|user_datetime if ingress.collected_at else 'Not Reported') }}
