@@ -261,11 +261,13 @@ def test_schedule_create_modal_uses_cluster_bound_namespace_dropdown() -> None:
     assert 'data-schedule-namespace' in template
     assert '<input type="text"\n                               name="namespace"' not in template
     assert 'All Namespaces' in template
-    assert "'namespace_options_by_cluster': _get_namespace_options_by_cluster()" in service
+    # Only the selected cluster may trigger Namespace inventory reads.
+    assert "'namespace_options_by_cluster': _get_namespace_options_by_cluster(selected_cluster_id)" in service
     assert 'get_namespace_options_by_cluster as _get_namespace_options_by_cluster' in service
-    assert 'def get_namespace_options_by_cluster()' in support
-    assert 'return get_report_namespace_options_by_cluster()' in support
-    assert 'def get_report_namespace_options_by_cluster()' in scope
+    assert 'def get_namespace_options_by_cluster(cluster_id: str | None = None)' in support
+    assert 'return get_report_namespace_options_by_cluster(cluster_id) if cluster_id else {}' in support
+    assert 'def get_report_namespace_options_by_cluster(cluster_id: str | None = None)' in scope
+    assert 'query.filter(NamespaceInventory.cluster_id == cluster_id)' in scope
     assert 'NamespaceInventory.namespace' in scope
     assert 'filter_current_generation(' in scope
     assert 'scheduleNamespacesByCluster' in script
