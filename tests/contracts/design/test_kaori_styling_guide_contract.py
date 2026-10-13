@@ -320,7 +320,7 @@ def test_pod_runtime_components_and_pattern_are_documented() -> None:
     assert 'components/CONTAINER_RUNTIME_COLLECTION.md' in design_readme
     assert 'patterns/KUBERNETES_POD_INVENTORY.md' in design_readme
     assert 'terminated exit code `0` is Completed' in runtime_contract
-    assert 'Pod | Scope | Runtime State | Placement | Ownership & Activity | Details' in pod_pattern
+    assert 'Pod | Scope | Runtime State | Placement | Owner & Restarts | Details' in pod_pattern
     assert 'table_label.status_indicator_label(container.runtime_state_label' in runtime_component
     assert '{% if resource.status %}' in related_component
 
