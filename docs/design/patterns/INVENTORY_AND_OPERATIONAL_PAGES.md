@@ -30,6 +30,8 @@ This document defines reusable structures. It does not define domain-specific fi
 5. Runtime, validation, history, and audit evidence in separate sections or tabs.
 6. HTMX updates target the affected content region and preserve hero stability.
 
+For the **Kubernetes Operations Overview**, the Hero supporting line and each of the three Execution & Evidence Model step descriptions are compact, single-line desktop guidance. Keep their responsibilities distinguishable: select/verify the live target in its capability workspace, enforce operation-specific permission/preflight checks, and retain auditable feedback from provider-authoritative execution. Use concise copy (roughly 50 characters) with normal responsive wrapping; never force `whitespace-nowrap`, truncation, smaller typography, or page-local width overrides to achieve the desktop result.
+
 ## Selector pattern
 
 - Labels use sentence case.
