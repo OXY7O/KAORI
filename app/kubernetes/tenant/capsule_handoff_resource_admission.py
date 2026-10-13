@@ -62,7 +62,7 @@ def _related_identity(item: Mapping[str, Any]) -> tuple[str, str, str]:
 def assess_capsule_resource_handoff_scope(
     *,
     plan: Mapping[str, Any],
-    related: Mapping[str, Any],
+    related: object,
     controller_audit_claims: list[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Index every Capsule/Namespace/quota/limit/RBAC identity, grant no rights.
