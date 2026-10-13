@@ -147,3 +147,31 @@ def test_outside_evidence_root_is_not_accepted(tmp_path: Path) -> None:
     }
     result = _evaluate(case, manifest=constrained, execution=provided, root=tmp_path)
     assert result['scenarios'][0]['result'] == 'BLOCKED'
+
+
+def test_two_ui_nodes_require_distinct_viewport_artifacts(tmp_path: Path) -> None:
+    nodes = [
+        {'nodeid': f'tests/ui/test_example.py::test_{name}', 'variants': ['mobile']}
+        for name in ('a', 'b')
+    ]
+    manifest = {'scenarios': [{
+        'id': 'UAT-UIX-EXAMPLE',
+        'nodes': nodes,
+        'required_artifacts': {'screenshot': 2},
+    }]}
+    cases = {
+        'tests.ui.test_example::test_a[mobile]': ['PASS'],
+        'tests.ui.test_example::test_b[mobile]': ['PASS'],
+    }
+    (tmp_path / 'screenshot.png').write_bytes(b'image')
+    first = {
+        'kind': 'screenshot',
+        'nodeid': nodes[0]['nodeid'],
+        'variant': 'mobile',
+        'path': 'screenshot.png',
+    }
+    request = {**EXECUTION, 'evidence': {'UAT-UIX-EXAMPLE': [first, first]}}
+    assert _evaluate(cases, manifest=manifest, execution=request, root=tmp_path)['scenarios'][0]['result'] == 'BLOCKED'
+    second = {**first, 'nodeid': nodes[1]['nodeid']}
+    request = {**EXECUTION, 'evidence': {'UAT-UIX-EXAMPLE': [first, second]}}
+    assert _evaluate(cases, manifest=manifest, execution=request, root=tmp_path)['scenarios'][0]['result'] == 'PASS'
