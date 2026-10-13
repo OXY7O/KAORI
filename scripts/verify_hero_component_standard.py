@@ -1017,7 +1017,7 @@ def _verify_registry_blocked_hero_actions() -> None:
             2,
         ),
         'artifact_registry/partials/_runtime_workspace.html': ('runtime.setup.is_blocked', 1),
-        'artifact_registry/governance.html': ('governance.setup.is_blocked', 1),
+        'artifact_registry/partials/_governance_workspace.html': ('governance.setup.is_blocked', 1),
         'artifact_registry/analytics.html': ('analytics.setup.is_blocked', 1),
     }
     for relative, (predicate, expected_count) in registry_contexts.items():
