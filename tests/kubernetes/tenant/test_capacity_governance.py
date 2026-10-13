@@ -170,6 +170,37 @@ def test_positive_change_fails_closed_without_current_capacity_evidence() -> Non
     assert 'capacity evidence' in decision.reason.lower()
 
 
+def test_preflight_must_be_rechecked_after_capacity_headroom_changes() -> None:
+    """UAT-TEN-004: a previously admissible allocation can become unsafe."""
+    proposed = CapacityVector(cpu=Decimal('3'), memory_bytes=Decimal('30'))
+    budget = CapacityVector(cpu=Decimal('10'), memory_bytes=Decimal('100'))
+    original_preflight = evaluate_allocation_preflight(
+        budget=budget,
+        committed_before=CapacityVector(cpu=Decimal('5'), memory_bytes=Decimal('50')),
+        current_allocation=CapacityVector(cpu=Decimal('0'), memory_bytes=Decimal('0')),
+        proposed_allocation=proposed,
+        capacity_evidence_available=True,
+    )
+    assert original_preflight.allowed is True
+    assert original_preflight.projected_committed.cpu == Decimal('8')
+
+    # Another governed commitment arrives before this request is admitted.
+    submit_preflight = evaluate_allocation_preflight(
+        budget=budget,
+        committed_before=CapacityVector(cpu=Decimal('8'), memory_bytes=Decimal('80')),
+        current_allocation=CapacityVector(cpu=Decimal('0'), memory_bytes=Decimal('0')),
+        proposed_allocation=proposed,
+        capacity_evidence_available=True,
+    )
+    assert submit_preflight.allowed is False
+    assert submit_preflight.decision == 'block'
+    assert submit_preflight.state == 'Overcommitted'
+    assert submit_preflight.projected_committed.cpu == Decimal('11')
+    assert submit_preflight.projected_committed.memory_bytes == Decimal('110')
+    assert submit_preflight.shortfall.cpu == Decimal('1')
+    assert submit_preflight.shortfall.memory_bytes == Decimal('10')
+
+
 def test_unbounded_positive_request_dimension_is_blocked() -> None:
     decision = evaluate_allocation_preflight(
         budget=CapacityVector(cpu=Decimal('10'), memory_bytes=Decimal('100')),
