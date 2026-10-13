@@ -4,6 +4,19 @@
 
 **Observed source snapshot:** `kaori/review/staging-uat@0415d1832adcdb7bd30bd3f2d32e4940c90335af`, 2026-10-13 (source inspection only). **Work branch base:** `kaori/staging@79bbb7466c60b9781358c3e26faf476ab0c54bf1`. The reviewed candidate may include features not yet integrated into staging; revalidate all scenario implementation availability and exact code/test paths on the eventual admitted staging SHA. **Do not modify** #1710's frozen admission candidate.
 
+## Reviewer guide — where to inspect and comment
+
+All scenarios are visible in this document on the **work branch**, before any PR or CI/CD action. Use your browser's Find (Ctrl/Cmd+F) with a stable ID such as `UAT-TEN-004` to inspect the scenario row and the owning capability. This inventory is not yet complete for every dynamic route/state and all entries are **NOT RUN** against an accepted UAT candidate.
+
+1. **Browse all capability scenarios:** this [catalog](KAORI_UAT_SCENARIO_CATALOG.md) lists positive/negative cases, intended UI/non-UI checks and expected outcomes.
+2. **Read detailed steps and evidence:** [first-wave UAT procedures](KAORI_UAT_FIRST_WAVE_CASES.md) expand the 14 initial higher-risk scenarios into preconditions, actions, assertions, and isolation/cleanup.
+3. **Compare existing tests and uncovered gaps:** [source-level mapping audit](KAORI_UAT_TEST_MAPPING_AUDIT.md) differentiates partial test assertions, source-only contracts and unproven end-to-end paths.
+4. **Submit feedback in [issue #1738](https://github.com/OXY7O/KAORI/issues/1738)** rather than editing the normative testing standard. Include Scenario ID (or request a new ID), the affected capability/screen, scenario type, exact steps (especially buttons/inputs/roles), expected behavior, and impact. Attach a sanitized screenshot or link if relevant; never post credentials or sensitive provider data.
+
+**Example feedback:** `UAT-UIX-002 — Negative / Reports Generate dialog — at 360×800, invalid input must show an accessible field error while Save and Cancel remain reachable without horizontal scrolling. Add post-validation screenshot and keyboard focus assertions.`
+
+Existing test assertions are source-reviewed, not necessarily executed. New work branches under #1726 (UI) and #1727 (non-UI) implement gaps independently; a committed test still stays **NOT RUN** until the runner produces exact-candidate evidence and an authorized human reviews it.
+
 ## Method and execution truth
 
 This catalog supplements the approved standards and is scoped to **currently discovered** capabilities (not a guarantee that every endpoint/action has been inventoried). Canonical product direction is `docs/product/README.md`. Navigation uses `app/common/navigation.py`; capability ownership uses domain READMEs and paths. Browser coverage must reuse #222/#543 Playwright and `tests/ui/visual_audit.py`, whose current deterministic visual surface set is limited to Welcome, Settings General and Notification Center. Many parameterized/provider-dependent or dynamically composed UI states are **not yet proven by that deterministic set**.
