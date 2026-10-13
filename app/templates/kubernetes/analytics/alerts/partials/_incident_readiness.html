@@ -93,7 +93,7 @@
                                         <dd class="mt-0.5 text-xs text-content-muted">
                                             {{ description }}
                                         </dd>
-                                        {{ progress_bar.bar(score if has_checks else 0, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=title ~ ' score') }}
+                                        {{ progress_bar.semantic_bar(score if has_checks else 0, tone=tone, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=title ~ ' score') }}
                                     </div>
                                     {{ table_label.status_label(score ~ '/100' if has_checks else 'N/A', tone, size='compact') }}
                                 </div>
