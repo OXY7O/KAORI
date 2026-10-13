@@ -5,7 +5,7 @@ from typing import Any
 from urllib.parse import urlencode
 
 from flask import url_for
-from sqlalchemy import select
+from sqlalchemy import cast, func, or_, select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
