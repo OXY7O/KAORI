@@ -9,6 +9,8 @@ from werkzeug.datastructures import MultiDict
 
 import app.reports.generate.routes as generate_routes
 import app.reports.generate.service as generate_service
+import app.reports.generated.service as generated_service
+import app.reports.repository as report_repository
 from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
 from app.extensions import db, login_manager
@@ -320,3 +322,70 @@ def test_report_enqueue_failure_records_failed_outcome_and_never_claims_queued(
         'report_type': report.report_type,
         'feedback_delivery': 'toast',
     }
+
+
+def test_queued_report_failure_persists_failed_detail_without_pending_poll(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """UAT-RPT-003: durable failed Report is not rendered as queued/ready evidence."""
+    persistence_app = Flask('reports-queue-failure-detail-test')
+    persistence_app.config.update(
+        TESTING=True,
+        SQLALCHEMY_DATABASE_URI=f'sqlite:///{tmp_path / "reports-queue-failed-detail.db"}',
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+    db.init_app(persistence_app)
+
+    with persistence_app.app_context():
+        Report.__table__.create(db.engine)
+        try:
+            report = Report()
+            report.name = 'Isolated failed generation'
+            report.report_type = 'execution_characterization'
+            report.output_format = 'csv'
+            report.status = 'requested'
+            report.sections = ['inventory_assets']
+            db.session.add(report)
+            db.session.commit()
+            report_id = report.id
+            assert report_id is not None
+
+            error_text = 'KAORI could not queue this report; inspect worker readiness.'
+            report_repository.mark_report_queue_failure(report_id, message=error_text)
+            db.session.remove()
+
+            persisted = db.session.get(Report, report_id)
+            assert persisted is not None
+            assert persisted.status == 'failed'
+            assert persisted.error_message == error_text
+            assert persisted.job_execution_id is None
+            assert persisted.file_path is None
+            assert persisted.file_size_bytes is None
+
+            monkeypatch.setattr(generated_service, '_get_cluster_map', lambda _reports: {})
+            monkeypatch.setattr(generated_service, '_get_user_map', lambda _reports: {})
+
+            def serialize_failed_detail(row, _clusters, _users):
+                return {
+                    'status': row.status,
+                    'error_message': row.error_message,
+                    'artifact_access': {'available': False},
+                }
+
+            monkeypatch.setattr(generated_service, '_serialize_report_detail', serialize_failed_detail)
+            monkeypatch.setattr(
+                generated_service,
+                'get_report_artifact_access_notice',
+                lambda _row, _access: 'Artifact unavailable after a queue failure.',
+            )
+
+            payload = generated_service.get_report_detail_payload(report_id)
+            assert payload['report']['status'] == 'failed'
+            assert payload['report']['error_message'] == error_text
+            assert payload['job_execution'] is None
+            assert payload['poll_interval_seconds'] is None
+            assert 'unavailable' in payload['artifact_access_notice'].lower()
+        finally:
+            db.session.remove()
+            Report.__table__.drop(db.engine)
