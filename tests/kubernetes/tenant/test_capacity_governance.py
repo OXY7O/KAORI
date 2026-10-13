@@ -2,6 +2,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 import app.kubernetes.tenant.capacity_governance as capacity_governance
+import pytest
 from app.kubernetes.analytics.materialization.service import SnapshotResult
 from app.kubernetes.tenant.capacity import (
     CapacityVector,
@@ -199,6 +200,134 @@ def test_preflight_must_be_rechecked_after_capacity_headroom_changes() -> None:
     assert submit_preflight.projected_committed.memory_bytes == Decimal('110')
     assert submit_preflight.shortfall.cpu == Decimal('1')
     assert submit_preflight.shortfall.memory_bytes == Decimal('10')
+
+
+def test_namespace_allocation_submit_rechecks_committed_capacity_before_provider_write(monkeypatch) -> None:
+    """UAT-TEN-004: submitted mutation must use current committed capacity, not preview state."""
+    import app.kubernetes.tenant.service as tenant_service
+    from app.kubernetes.tenant.capacity_governance import TenantCapacityBlockedError
+
+    tenant = SimpleNamespace(
+        id='tenant-u1',
+        cluster_id='cluster-u1',
+        provider_key='native_kubernetes',
+        lifecycle_status='ready',
+    )
+    environment = SimpleNamespace(id=19, tenant=tenant)
+    record = SimpleNamespace(
+        id=21,
+        environment=environment,
+        namespace='qa-disposable-namespace',
+        ownership_status='managed',
+        allocation_quota_json={'requests.cpu': '0', 'requests.memory': '0', 'pods': '0'},
+        resource_profile_id=1,
+        resource_profile_version=1,
+    )
+    profile = SimpleNamespace(
+        id=42,
+        enabled=True,
+        version=2,
+        public_id='profile-qa-v2',
+    )
+    writes: list[str] = []
+
+    class _Session:
+        def get(self, model, identifier):
+            return record if model.__name__ == 'TenantNamespace' and identifier == 21 else (
+                profile if model.__name__ == 'TenantResourceProfile' and identifier == 42 else None
+            )
+
+        def commit(self):
+            writes.append('capacity-decision-commit')
+
+        def rollback(self):
+            writes.append('mutation-rollback')
+
+    session = _Session()
+    monkeypatch.setattr(tenant_service, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(capacity_governance, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(tenant_service, 'allocation_control_state', lambda _record: 'kaori_managed')
+    monkeypatch.setattr(tenant_service, '_validate_resource_profile_base_controls', lambda *_args: None)
+    monkeypatch.setattr(tenant_service, '_validate_resource_profile_attachment_controls', lambda *_args: {})
+    monkeypatch.setattr(
+        tenant_service,
+        '_namespace_allocation_values',
+        lambda _profile: (
+            {'requests.cpu': '3', 'requests.memory': '30', 'pods': '2'},
+            {},
+            {},
+            False,
+        ),
+    )
+    monkeypatch.setattr(
+        capacity_governance,
+        'TenantCapacityPolicy',
+        SimpleNamespace(query=SimpleNamespace(filter_by=lambda **_kwargs: SimpleNamespace(first=lambda: object()))),
+    )
+    monkeypatch.setattr(
+        capacity_governance,
+        '_committed_tenant_allocation',
+        lambda _cluster_id: (
+            CapacityVector(cpu=Decimal('8'), memory_bytes=Decimal('80'), pods=Decimal('10')),
+            2,
+            [],
+        ),
+    )
+    monkeypatch.setattr(
+        capacity_governance,
+        '_read_capacity_snapshot',
+        lambda _cluster_id: SnapshotResult(context={}, snapshot=None, state='fresh', stale=False),
+    )
+    monkeypatch.setattr(
+        capacity_governance,
+        '_capacity_vector',
+        lambda _snapshot: (CapacityVector(cpu=Decimal('10'), memory_bytes=Decimal('100'), pods=Decimal('20')), ''),
+    )
+    monkeypatch.setattr(
+        capacity_governance,
+        '_budget',
+        lambda _policy, _capacity: SimpleNamespace(
+            available=CapacityVector(cpu=Decimal('10'), memory_bytes=Decimal('100'), pods=Decimal('20'))
+        ),
+    )
+    decisions: list[str] = []
+
+    def observe_rejected_preflight(**kwargs):
+        pure = kwargs['pure']
+        decisions.append(pure.decision)
+        assert pure.allowed is False
+        assert pure.shortfall.cpu == Decimal('1')
+        assert pure.shortfall.memory_bytes == Decimal('10')
+        return SimpleNamespace(id=71)
+
+    monkeypatch.setattr(capacity_governance, '_persist_decision', observe_rejected_preflight)
+    monkeypatch.setattr(tenant_service, 'reconcile_native_namespace', lambda _record: writes.append('provider-write'))
+    monkeypatch.setattr(
+        tenant_service,
+        'reconcile_adopted_native_allocation',
+        lambda *_args, **_kwargs: writes.append('adopted-provider-write'),
+    )
+
+    # Earlier preview was valid; a different Tenant consumed headroom before submit.
+    preview = evaluate_allocation_preflight(
+        budget=CapacityVector(cpu=Decimal('10'), memory_bytes=Decimal('100'), pods=Decimal('20')),
+        committed_before=CapacityVector(cpu=Decimal('5'), memory_bytes=Decimal('50'), pods=Decimal('7')),
+        current_allocation=CapacityVector(cpu=Decimal('0'), memory_bytes=Decimal('0'), pods=Decimal('0')),
+        proposed_allocation=CapacityVector(cpu=Decimal('3'), memory_bytes=Decimal('30'), pods=Decimal('2')),
+        capacity_evidence_available=True,
+    )
+    assert preview.allowed is True
+
+    with pytest.raises(TenantCapacityBlockedError, match='exceeds'):
+        tenant_service.change_native_namespace_allocation_committed(
+            {'tenant_namespace_id': '21', 'resource_profile_id': '42'}
+        )
+
+    assert decisions == ['block']
+    assert writes == ['capacity-decision-commit', 'mutation-rollback']
+    assert record.resource_profile_id == 1
+    assert record.resource_profile_version == 1
+    assert record.allocation_quota_json == {'requests.cpu': '0', 'requests.memory': '0', 'pods': '0'}
 
 
 def test_unbounded_positive_request_dimension_is_blocked() -> None:
