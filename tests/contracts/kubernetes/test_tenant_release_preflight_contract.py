@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -24,7 +25,8 @@ def test_release_preflight_is_non_destructive_and_separate_from_decommission():
     assert "'release_execution_available': False" in source
     assert "'provider_resource_deleted': False" in source
     assert "'provider_rbac_modified': False" in source
-    assert 'db.session.add(AuditEvent(' in source
+    assert re.search(r'db\.session\.add\(\s*AuditEvent\(', source)
+    assert "action='tenant.release.preflight_observed'" in source
     assert 'delete_namespace(' not in source
     assert 'delete_cluster_custom_object(' not in source
     assert 'revoke_access_grant_committed(' not in source
