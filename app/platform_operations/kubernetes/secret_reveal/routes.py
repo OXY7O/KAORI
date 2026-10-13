@@ -126,7 +126,6 @@ def _record_settings_activity(
             'secret_value_recorded': False,
             'kubeconfig_recorded': False,
         },
-        **({} if durable_with_operation else {'queue_feedback': False}),
     )
 
 
