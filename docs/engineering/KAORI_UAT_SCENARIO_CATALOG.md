@@ -4,6 +4,10 @@
 
 **Observed source snapshot:** `kaori/review/staging-uat@0415d1832adcdb7bd30bd3f2d32e4940c90335af`, 2026-10-13 (source inspection only). **Work branch base:** `kaori/staging@79bbb7466c60b9781358c3e26faf476ab0c54bf1`. The reviewed candidate may include features not yet integrated into staging; revalidate all scenario implementation availability and exact code/test paths on the eventual admitted staging SHA. **Do not modify** #1710's frozen admission candidate.
 
+## Read the scenarios as Gherkin code
+
+**[Open the Gherkin Feature Index](uat/README.md)** to browse **18 `.feature` files containing all 91 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 77 are explicitly tagged `@draft`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
+
 ## Reviewer guide — where to inspect and comment
 
 All scenarios are visible in this document on the **work branch**, before any PR or CI/CD action. Use your browser's Find (Ctrl/Cmd+F) with a stable ID such as `UAT-TEN-004` to inspect the scenario row and the owning capability. This inventory is not yet complete for every dynamic route/state and all entries are **NOT RUN** against an accepted UAT candidate.
