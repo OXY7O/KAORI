@@ -170,7 +170,7 @@ def project_native_release_readiness(
         and no_transfer_decision
         and no_transfer_decision.get('status') == 'authorized_for_requester_restart'
         and no_transfer_decision.get('plan_sha256') == plan_sha
-        and no_transfer_decision.get('handoff_fingerprint') == plan.get('handoff_fingerprint')
+        and no_transfer_decision.get('handoff_fingerprint') == _field(plan, 'handoff_fingerprint')
         and no_transfer_decision.get('assessment_sha256') == _field(no_transfer_assessment, 'assessment_sha256')
         and no_transfer_decision.get('history_digest') == _field(no_transfer_assessment, 'history_digest')
         and no_transfer_decision.get('provider_proof_sha256') == _field(no_transfer_assessment, 'provider_proof_sha256')

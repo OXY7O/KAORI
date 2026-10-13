@@ -90,8 +90,8 @@ def _require_plan(tenant_id: str, plan_sha256: str) -> dict[str, Any]:
         or plan.get('tenant_id') != tenant_id
         or plan.get('plan_sha256') != plan_sha256
         or not _checked_recently(plan.get('requested_at'))
-        or not isinstance(plan.get('requested_by'), int)
-        or plan.get('requested_by') < 1
+        or not isinstance((requested_by := plan.get('requested_by')), int)
+        or requested_by < 1
         or _stable_sha256({key: value for key, value in plan.items() if key != 'plan_sha256'}) != plan_sha256
     ):
         raise ValueError('Current unexpired immutable residual recovery plan is required.')

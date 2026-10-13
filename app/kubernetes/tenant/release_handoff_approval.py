@@ -301,7 +301,7 @@ def _require_no_active_handoff_plan(*, tenant_id: str, actor_user_id: int) -> No
         plan,
         latest_release_handoff_approval(tenant_id),
     )
-    if state == 'expired' and str(plan.get('requested_by')) != str(actor_user_id):
+    if state == 'expired' and plan is not None and str(plan.get('requested_by')) != str(actor_user_id):
         raise ValueError(
             'Only the original requester may renew an expired handoff plan. '
             'A change of requester requires an explicitly governed reassignment.'

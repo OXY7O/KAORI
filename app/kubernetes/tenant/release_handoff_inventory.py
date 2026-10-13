@@ -172,7 +172,7 @@ def capsule_tenant_handoff_evidence(
     """Observe and fingerprint Capsule authority; never infer Release authorization."""
     metadata = tenant_item.get('metadata') or {}
     spec = tenant_item.get('spec')
-    if not isinstance(metadata, Mapping):
+    if not isinstance(metadata, Mapping) or not isinstance(spec, Mapping):
         raise ValueError('Capsule Tenant handoff schema is incomplete.')
     spec_sha256 = _capsule_spec_sha256(spec)
     component = _component(

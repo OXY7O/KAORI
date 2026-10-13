@@ -95,7 +95,7 @@ def _collection_freshness(
         record_time = _as_utc(record_times.get(cluster_id))
         secret_ok = state is not None and state.secret_collection_status == TLS_COLLECTION_COLLECTED
         ingress_ok = state is not None and state.ingress_mapping_status == TLS_COLLECTION_COLLECTED
-        state_time = _as_utc(state.collected_at) if secret_ok else None
+        state_time = _as_utc(state.collected_at) if secret_ok and state is not None else None
         source_time = max((t for t in (record_time, state_time) if t is not None), default=None)
         if source_time is None:
             # Only use job evidence when there is no certificate row or currently

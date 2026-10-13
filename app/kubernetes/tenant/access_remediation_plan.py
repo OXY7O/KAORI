@@ -47,7 +47,7 @@ def classify_access_remediation(
                 'code': code,
                 'subject': subject,
                 'decision': 'explicit_grant_reconcile' if eligible else 'manual_review',
-                'grant_id': grant.id if eligible else None,
+                'grant_id': grant.id if eligible and grant is not None else None,
                 'reason': (
                     'KAORI owns the active grant; use existing Inspect/Reconcile after operator approval.'
                     if eligible
