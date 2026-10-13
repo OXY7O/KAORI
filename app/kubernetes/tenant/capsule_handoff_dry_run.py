@@ -20,7 +20,7 @@ from app.kubernetes.tenant.capsule_handoff_contract import (
     verify_capsule_related_metadata_preview,
 )
 from app.kubernetes.tenant.capsule_handoff_related_inventory import (
-    _digest, classify_capsule_related_resource,
+    _digest, _get, classify_capsule_related_resource,
 )
 from app.kubernetes.tenant.capsule_handoff_resource_admission import (
     assess_capsule_resource_handoff_scope,
