@@ -82,8 +82,10 @@ def materialize_registry_analytics_task(
             completed += 1
             snapshot_ids.append(snapshot.id)
             payload = snapshot.payload_json if isinstance(snapshot.payload_json, dict) else {}
-            metrics = payload.get('metrics') if isinstance(payload.get('metrics'), dict) else {}
-            historical = payload.get('history') if isinstance(payload.get('history'), dict) else {}
+            raw_metrics = payload.get('metrics')
+            raw_history = payload.get('history')
+            metrics = raw_metrics if isinstance(raw_metrics, dict) else {}
+            historical = raw_history if isinstance(raw_history, dict) else {}
             partial_sources += int(
                 metrics.get('status') != 'ready' or bool(historical) and historical.get('status') != 'ready'
             )

@@ -132,7 +132,7 @@ def _registry_analytics_inputs_changed(snapshot: RegistryAnalyticsSnapshot | Non
     committed = governance.last_committed_at.isoformat() if governance and governance.last_committed_at else None
     if committed != evidence.get('governance_committed_at'):
         return True
-    if runtime_input_signature(db.session) != evidence.get('correlation_input_signature'):
+    if runtime_input_signature(db.session()) != evidence.get('correlation_input_signature'):
         return True
 
     artifacts = (
@@ -177,7 +177,7 @@ def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict
         and expires_at is not None
         and expires_at >= generated_at
     )
-    stale = bool(valid and datetime.now(UTC) > expires_at)
+    stale = bool(valid and expires_at is not None and datetime.now(UTC) > expires_at)
     inputs_changed = _registry_analytics_inputs_changed(snapshot) if valid else True
     sections = snapshot.payload_json if isinstance(snapshot.payload_json, dict) else {}
     metrics = sections.get('metrics')
