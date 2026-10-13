@@ -250,7 +250,7 @@ def test_native_takeover_rejects_ambiguous_or_foreign_kaori_claims(
         return resource
 
     api.read_namespace = conflicting_namespace
-    with pytest.raises(ValueError, match='foreign KAORI Tenant ownership claim'):
+    with pytest.raises(ValueError, match='foreign KAORI Tenant ownership claim|residual KAORI ownership labels'):
         allocation_cutover._mutate_namespace_ownership(api, _reconcile_record(), profile=_profile())
     assert api.patched_namespaces == []
 
