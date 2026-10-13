@@ -306,7 +306,7 @@ def test_live_hash_change_blocks_cutover_before_provider_mutation(monkeypatch):
         'storage_policy': {},
         'source_resources': [],
     }
-    api = _install_reconcile_fakes(monkeypatch, [changed_before])
+    api = _install_reconcile_fakes(monkeypatch, [changed_before, changed_before])
 
     with pytest.raises(ValueError, match='Live provider allocation changed'):
         reconcile_adopted_native_allocation(
@@ -322,6 +322,10 @@ def test_live_hash_change_blocks_cutover_before_provider_mutation(monkeypatch):
 
     assert api.created_quotas == []
     assert api.created_limit_ranges == []
+    assert api.patched_namespaces == []
+    # UAT-TEN-004 adjacent provider-safety control: observe after rejection.
+    # This is isolated fake-provider read-back, not live Kubernetes UAT.
+    assert allocation_cutover.observe_native_namespace_allocation(api, record.namespace) == changed_before
     assert allocation_control_state(record) == 'adopted_observed'
     assert record.desired_hash is None
 
