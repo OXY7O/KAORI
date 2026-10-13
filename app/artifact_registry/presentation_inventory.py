@@ -814,12 +814,12 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
         .all()
     )
     artifact_ids = [int(item.id) for item in artifact_items]
-    tag_counts = {
-        int(k): int(v) for k, v in RegistryTag.query.with_entities(RegistryTag.artifact_id, func.count(RegistryTag.id))
+    tag_counts = dict(
+        RegistryTag.query.with_entities(RegistryTag.artifact_id, func.count(RegistryTag.id))
         .filter(RegistryTag.artifact_id.in_(artifact_ids))
         .group_by(RegistryTag.artifact_id)
-        .all()
-    }
+        .tuples().all()
+    )
     tagged = (
         RegistryTag.query.with_entities(
             RegistryTag.id.label('tag_id'),
