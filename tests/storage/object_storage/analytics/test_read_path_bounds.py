@@ -17,7 +17,12 @@ def test_every_analytics_page_and_record_fragment_reads_committed_snapshot() -> 
     root = Path(__file__).resolve().parents[4]
     source = (root / 'app/storage/object_storage/analytics/service.py').read_text(encoding='utf-8')
     assert 'context, system, time_range = _base_context(page_key, query_args)' in source
-    assert '_attach_committed_analytics_snapshot(context, system=system, time_range=time_range)' in source
+    # Requests must consume the committed snapshot, including the report-pinned
+    # snapshot option; Ruff formatting and the keyword extension are not a semantic change.
+    context_builder = source.split('def get_object_storage_analytics_context(', 1)[1]
+    assert 'payload = _attach_committed_analytics_snapshot(' in context_builder
+    assert 'context, system=system, time_range=time_range, committed_snapshot=committed_snapshot' in context_builder
+    assert 'read_analytics_snapshot(system_id=system.id, time_range=time_range)' in source
     for method in (
         'get_object_storage_alert_table_context',
         'get_object_storage_bucket_table_context',
