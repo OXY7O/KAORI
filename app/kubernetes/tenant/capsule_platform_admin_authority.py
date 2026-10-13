@@ -24,7 +24,7 @@ from app.kubernetes.tenant.native_platform_admin_authority import _field
 _CAPSULE_SHA256 = re.compile(r'[0-9a-f]{64}\Z')
 
 
-def _capsule_admin_scope(components: list[dict[str, Any]]) -> list[dict[str, str]]:
+def _capsule_admin_scope(components: object) -> list[dict[str, str]]:
     """Validate the entire approved provider scope without inferring authority."""
     if not isinstance(components, list) or not 1 < len(components) <= 31:
         raise ValueError('A bounded Capsule Tenant and Namespace scope is required.')
