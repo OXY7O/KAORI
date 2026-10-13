@@ -32,9 +32,9 @@ class AuditEvent(db.Model):
         def __init__(
             self,
             *,
-            target_type: str,
-            action: str,
-            summary: str,
+            target_type: str | None = None,
+            action: str | None = None,
+            summary: str | None = None,
             actor_user_id: int | None = None,
             target_id: str | None = None,
             metadata_json: dict[str, Any] | None = None,
