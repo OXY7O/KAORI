@@ -169,6 +169,26 @@ jobs:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           persist-credentials: false
 
+      - name: Prepare Isolated Focused Test Runtime
+        id: focused-runtime
+        if: ${{ needs.route.outputs.test_paths != '' || needs.route.outputs.contracts == 'true' }}
+        shell: bash
+        env:
+          TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          export KAORI_CI_TOOLCHAIN_IMAGE="$TOOLCHAIN_IMAGE"
+          export CI_UID="$(id -u)"
+          export CI_GID="$(id -g)"
+          export COMPOSE_PROJECT_NAME="kaori-devcheck-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-focused"
+          {
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=$KAORI_CI_TOOLCHAIN_IMAGE"
+            echo "CI_UID=$CI_UID"
+            echo "CI_GID=$CI_GID"
+            echo "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME"
+          } >> "$GITHUB_ENV"
+          docker compose --file .github/ci/compose.yml up --detach --wait postgres redis
+
       - name: Run Frontend & Focused Validation
         shell: bash
         env:
@@ -216,11 +236,21 @@ jobs:
             printf '⏳ Focused Tests — %s\n' "$paths"
             # TEST_PATHS is assembled only from the static whitelist above.
             # shellcheck disable=SC2086
-            run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $paths"
+            # Reuse the Full Admission test service: exact-run isolated PostgreSQL/Redis.
+            test_started="$(date +%s)"
+            docker compose --file .github/ci/compose.yml run --rm --no-deps ci \
+              bash -lc "pytest -q --tb=short $paths"
+            test_elapsed=$(( $(date +%s) - test_started ))
+            printf '✅ Focused Tests · ⏱ %dm %02ds\n' $((test_elapsed / 60)) $((test_elapsed % 60))
           fi
 
           elapsed=$(( $(date +%s) - started ))
           printf '✅ Frontend & Focused Validation PASS · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+
+      - name: Stop Isolated Focused Test Runtime
+        if: ${{ always() && steps.focused-runtime.outcome != 'skipped' }}
+        shell: bash
+        run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
 
       - name: Upload Browser Diagnostics
         if: ${{ failure() }}
