@@ -59,7 +59,8 @@ def _test_outcomes(nodeid: str, variants: list[str], cases: dict[str, list[str]]
 
 
 def _artifact_status(
-    scenario: dict[str, Any], evidence: list[dict[str, Any]], root: Path
+    scenario: dict[str, Any], evidence: list[dict[str, Any]], root: Path,
+    *, candidate: dict[str, Any], run: dict[str, Any],
 ) -> list[str]:
     missing: list[str] = []
     requirements = scenario.get("required_artifacts") or {}
@@ -83,6 +84,18 @@ def _artifact_status(
                 continue
             if not resolved.is_file() or resolved.stat().st_size == 0 or resolved in used_paths:
                 continue
+            if kind in {"provider_readback", "committed_state", "activity_audit"}:
+                try:
+                    document = json.loads(resolved.read_text(encoding="utf-8"))
+                except (OSError, ValueError, UnicodeError):
+                    continue
+                if not isinstance(document, dict) or document.get("verified") is not True:
+                    continue
+                if (
+                    document.get("source_sha") != candidate.get("source_sha")
+                    or document.get("run_id") != run.get("run_id")
+                ):
+                    continue
             if expected_keys and kind in {"screenshot", "trace"}:
                 nodeid = entry.get("nodeid")
                 variant = entry.get("variant")
@@ -158,7 +171,9 @@ def evaluate(
             for status in _test_outcomes(node["nodeid"], node.get("variants", []), cases)
         ]
         evidence = all_evidence.get(scenario_id, [])
-        evidence_errors = _artifact_status(scenario, evidence, evidence_root)
+        evidence_errors = _artifact_status(
+            scenario, evidence, evidence_root, candidate=candidate, run=run,
+        )
         if problems:
             result = "BLOCKED"
         elif "FAIL" in outcomes:
