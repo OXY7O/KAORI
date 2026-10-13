@@ -50,7 +50,7 @@ def test_generated_token_and_kubeconfig_use_existing_shared_ui_ownership() -> No
     assert 'page_hero.context_metric(' in template
     assert 'data-kaori-hero-profile="transactional-admin"' in template
     assert 'data-kaori-hero-state="normal"' in template
-    assert 'Copy the generated credential before leaving this one-time view.' in template
+    assert 'Review and securely save this one-time credential before leaving.' in template
     assert "('shield-alert', 'One-time result')" in template
     assert "requested_label ~ ' requested'" in template
     assert template.index('page_hero.shell_classes()') < template.index('Credential Context')
