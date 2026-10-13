@@ -134,7 +134,9 @@ def test_managed_re_adopt_requires_verified_exact_uid_and_resource_version():
         provider_uid='namespace-uid',
         resource_version='47',
     )
-    with pytest.raises(ValueError, match='verified successor handback'):
+    # An RV mismatch must refuse re-adoption without a fully verified,
+    # immutable post-Handback recovery receipt; the original handback alone is insufficient.
+    with pytest.raises(ValueError, match='Verified post-Handback recovery evidence and current provider RV differ'):
         _require_re_adoption_handback_for_managed_release(
             provider_evidence=evidence,
             release_evidence=release,
@@ -175,7 +177,9 @@ def test_released_tenant_handback_uses_namespace_version_ledger():
         resource_version='47',
         namespace='dev',
     )
-    with pytest.raises(ValueError, match='verified successor handback'):
+    # A Namespace absent from the release's version ledger cannot inherit
+    # handback authority from a different Namespace, even at the same RV.
+    with pytest.raises(ValueError, match='Verified post-Handback recovery evidence and current provider RV differ'):
         _require_re_adoption_handback_for_managed_release(
             provider_evidence=evidence,
             release_evidence=release,
