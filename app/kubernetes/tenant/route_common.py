@@ -149,16 +149,8 @@ _REGISTRY_DETAIL_KEYS = (
 )
 
 
-def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
-    """One exact committed Tenant for the detail page or HTMX refresh.
-
-    Preserve only explicitly named Registry query fields, never an arbitrary
-    return URL. The detail is not bound to a paginated/filtered Registry row.
-    """
-    context = get_tenant_registry_context(tenant_id=tenant_id, per_page=1)
-    rows = context['tenant_rows']
-    if not rows:
-        abort(404)
+def _tenant_registry_detail_state() -> dict[str, str]:
+    """Preserve only explicitly allowlisted, bounded Registry return filters."""
     state: dict[str, str] = {
         key: str(request.values.get(f'registry_{key}') or '').strip()[:256] for key in _REGISTRY_DETAIL_KEYS
     }
@@ -169,6 +161,20 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
             number = fallback
         state[key] = str(number if number > 0 else fallback)
     state['per_page'] = str(int(state['per_page']) if int(state['per_page']) in {5, 10, 25, 50} else 5)
+    return state
+
+
+def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
+    """One exact committed Tenant for the detail page or HTMX refresh.
+
+    Preserve only explicitly named Registry query fields, never an arbitrary
+    return URL. The detail is not bound to a paginated/filtered Registry row.
+    """
+    context = get_tenant_registry_context(tenant_id=tenant_id, per_page=1)
+    rows = context['tenant_rows']
+    if not rows:
+        abort(404)
+    state = _tenant_registry_detail_state()
     context['row'] = rows[0]
     context['tenant_namespace_profile_mapping'] = get_tenant_namespace_profile_mapping_context(tenant_id)
     context['registry_state'] = state
