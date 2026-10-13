@@ -54,11 +54,22 @@
             "mobile",
             "small-mobile"
           ]
+        },
+        {
+          "nodeid": "tests/ui/test_representative_interactions.py::test_reports_generate_wizard_negative_submission_is_scoped_and_reviewable",
+          "variants": [
+            "large-desktop",
+            "laptop",
+            "compact-laptop",
+            "tablet",
+            "mobile",
+            "small-mobile"
+          ]
         }
       ],
       "required_artifacts": {
-        "screenshot": 6,
-        "trace": 6
+        "screenshot": 12,
+        "trace": 12
       },
       "real_provider_required": false
     },
@@ -68,9 +79,23 @@
       "nodes": [
         {
           "nodeid": "tests/kubernetes/tenant/test_capacity_governance.py::test_namespace_allocation_submit_rechecks_committed_capacity_before_provider_write"
+        },
+        {
+          "nodeid": "tests/ui/test_representative_interactions.py::test_tenant_namespace_form_rejected_submit_records_no_provider_write",
+          "variants": [
+            "large-desktop",
+            "laptop",
+            "compact-laptop",
+            "tablet",
+            "mobile",
+            "small-mobile"
+          ]
         }
       ],
-      "required_artifacts": {},
+      "required_artifacts": {
+        "screenshot": 6,
+        "trace": 6
+      },
       "real_provider_required": true
     }
   ]
