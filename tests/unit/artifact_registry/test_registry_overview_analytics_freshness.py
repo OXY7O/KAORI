@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.artifact_registry.presentation_analytics import _analytics_insights
 from app.artifact_registry.presentation_common import _analytics_snapshot_view
 from app.artifact_registry.presentation_overview import _fleet_freshness
 
@@ -84,3 +85,25 @@ def test_fleet_analytics_never_calls_expired_evidence_ready(
     analytics = next(card for card in cards if card['label'] == 'Analytics Snapshot')
     assert analytics['status'] == label
     assert analytics['tone'] == ('normal' if label == 'Ready' else 'unknown' if label == 'Required' else 'warning')
+
+
+def test_registry_insights_do_not_format_missing_growth_evidence_as_numeric() -> None:
+    aggregate = {
+        'critical_runtime_artifacts': 0,
+        'stale_candidates': 0,
+        'runtime_scan_gaps': 0,
+    }
+    unknown = _analytics_insights(
+        aggregate,
+        growth_rows=[],
+        growth={'artifacts_per_day': None, 'size_per_day': None},
+    )
+    assert unknown[0]['title'] == 'No derived review signal'
+
+    observed = _analytics_insights(
+        aggregate,
+        growth_rows=[],
+        growth={'artifacts_per_day': 2.5, 'size_per_day': 1024},
+    )
+    assert observed[0]['title'] == 'Registry growth is materialized'
+    assert '+2.5 artifacts/day' in observed[0]['detail']
