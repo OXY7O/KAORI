@@ -84,11 +84,11 @@ def test_cluster_and_node_detail_section_descriptions_are_concise() -> None:
     ):
         assert f"description='{description}'" in cluster
     for description in (
-        'Node identity, cluster, age, and committed snapshot.',
-        'Internal/external IP, hostname, and network scope.',
-        'CPU, memory, and ephemeral storage capacity.',
-        'OS, kernel, container runtime, and Kubernetes versions.',
-        'Readiness, scheduling, pressure, and taints.',
+        'Node identity and snapshot.',
+        'IPs, hostnames, network.',
+        'CPU, memory, disk capacity.',
+        'OS, kernel, runtime versions.',
+        'Readiness, pressure, taints.',
     ):
         assert description in node
 
@@ -123,10 +123,10 @@ def test_namespace_detail_context_is_compact_and_uid_has_no_clipboard_control() 
 
     detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
     descriptions = (
-        'Identity, cluster, lifecycle, and snapshot.',
-        'Pod Security Admission and access metadata.',
-        'Committed workloads, networking, and configuration.',
-        'ResourceQuota and LimitRange controls.',
+        'Identity, lifecycle, snapshot.',
+        'Pod security and access.',
+        'Workloads, network, config.',
+        'Quota and limit controls.',
     )
     for description in descriptions:
         assert f"description='{description}'" in detail
@@ -140,6 +140,104 @@ def test_namespace_detail_context_is_compact_and_uid_has_no_clipboard_control() 
     assert '7f1769e7-f7a7-42e1-82f0-2898557100e3' in rendered
     for element in ('data-kaori-copy-root', 'data-kaori-copy-source', 'data-kaori-copy-button', 'data-lucide="copy"'):
         assert element not in rendered
+
+
+def test_all_kubernetes_inventory_detail_rails_use_bounded_copy() -> None:
+    expected = {
+        'nodes': (
+            'Node identity and snapshot.',
+            'IPs, hostnames, network.',
+            'CPU, memory, disk capacity.',
+            'OS, kernel, runtime versions.',
+            'Readiness, pressure, taints.',
+        ),
+        'namespaces': (
+            'Identity, lifecycle, snapshot.',
+            'Pod security and access.',
+            'Workloads, network, config.',
+            'Quota and limit controls.',
+        ),
+        'workloads': (
+            'Ownership, type, snapshot.',
+            'Replicas and rollout state.',
+            'Containers and Pod settings.',
+            'Rollout, exposure, placement.',
+            'Pods owned by this workload.',
+        ),
+        'pods': (
+            'Pod identity and snapshot.',
+            'Phase, readiness, restarts.',
+            'Node, IPs, scheduling.',
+            'QoS, containers, security.',
+            'ConfigMap/Secret names only.',
+            'Referenced PersistentVolumeClaims.',
+        ),
+        'services': (
+            'Service type and snapshot.',
+            'IPs, ports, external access.',
+            'Endpoints and Pod selectors.',
+            'Traffic and IP policies.',
+        ),
+        'ingresses': (
+            'Ingress identity and class.',
+            'Hosts, addresses, publication.',
+            'Declared TLS Secret bindings.',
+            'Host and backend routes.',
+            'Committed Service references.',
+            'Committed TLS Secret links.',
+        ),
+        'storage': (
+            'Storage identity and scope.',
+            'Capacity, access, modes.',
+            'Binding and lifecycle state.',
+            'Provisioner and settings.',
+            'Committed claim references.',
+            'Pods mounting related claims.',
+        ),
+        'configuration': (
+            'Object identity and snapshot.',
+            'Sensitive values not stored.',
+            'Current Pod references.',
+            'Pods referencing this object.',
+        ),
+    }
+    for family, captions in expected.items():
+        path = {
+            'nodes': 'app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html',
+            'namespaces': 'app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html',
+            'workloads': 'app/templates/kubernetes/inventory/workloads/partials/_workload_detail_content.html',
+            'pods': 'app/templates/kubernetes/inventory/pods/partials/_pod_detail_content.html',
+            'services': 'app/templates/kubernetes/inventory/services/partials/_service_detail_content.html',
+            'ingresses': 'app/templates/kubernetes/inventory/ingresses/partials/_ingress_detail_content.html',
+            'storage': 'app/templates/kubernetes/inventory/storage/partials/_storage_detail_content.html',
+            'configuration': 'app/templates/kubernetes/inventory/configuration/partials/_configuration_detail_content.html',
+        }[family]
+        source = read(path)
+        assert 'data-kaori-inventory-detail="v10"' in source, family
+        for caption in captions:
+            assert len(caption) <= 36, (family, caption)
+            assert caption in source, (family, caption)
+
+    metadata = read('app/templates/components/technical_metadata_collection.html')
+    assert "'Committed metadata entries.'" in metadata
+    assert "'Key names only; no values.'" in metadata
+    assert 'data-kaori-inventory-section-description' in metadata
+
+
+def test_node_missing_section_badges_use_committed_fields_not_health_inference() -> None:
+    node = read('app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html')
+    shared = read('app/templates/components/details/_detail_content.html')
+    for call in (
+        "detail.inspector_section('Identity & Snapshot', 'badge-info', 'Node identity and snapshot.', '', node.age)",
+        "detail.inspector_section('Node Capacity', 'gauge', 'CPU, memory, disk capacity.', '', node.cpu_display)",
+        "detail.inspector_section('Runtime & Platform', 'terminal-square', 'OS, kernel, runtime versions.', '', node.kubelet_version)",
+    ):
+        assert call in node
+    assert "macro inspector_section(title, icon, description=None, class_name='', badge=None," in shared
+    assert "badge_type='metadata'" in shared
+    assert "table_label.special_label(badge, 'maintenance', 'tags', 'detail')" in shared
+    assert "node.network_availability, 'status', network_tone" in node
+    assert "condition_posture, 'status', condition_tone" in node
 
 
 def test_namespace_control_copy_and_reported_quota_presentation_are_concise() -> None:

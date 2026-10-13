@@ -65,6 +65,14 @@ Supporting copy      text-xs / regular / muted
 
 Technical identifiers use the same `text-sm / medium` body value scale through `technical_value.render(..., size='body')`. Inventory field labels and factual values intentionally share the same 14px body scale; hierarchy comes from tone and weight, not arbitrary font-size jumps. Supporting copy alone steps down to `text-xs`. Do not create smaller monospace or arbitrary-size value typography inside Inventory details. Metadata pair collections follow the same regular-secondary-label / medium-primary-value hierarchy.
 
+### Compact Inventory detail-rail captions
+
+At the standard V10 desktop 1:3 evidence-band layout, the left rail displays a short section title, one factual supporting line when space permits, and an optional committed-data/status badge. Captions describe the evidence category instead of repeating every field or restating the committed-snapshot boundary. Aim for concise, recognizable domain terms (such as `Node identity and snapshot.`, `Endpoints and Pod selectors.`, and `Binding and lifecycle state.`). Preserve natural wrapping at mobile/narrow widths; never force a one-line constraint with `whitespace-nowrap`, arbitrary font shrinking, truncation, or component-local sizing.
+
+The shared `technical_metadata_collection.html` uses `Committed metadata entries.` for Labels/Annotations and `Key names only; no values.` for indexed key evidence; absence of persisted sensitive values remains an explicit protected-data boundary in the owning Configuration detail. Existing `related_resource_collection.inventory_render` accepts similarly short, resource-specific evidence captions. Do not infer a collection/health posture from a mere reference count.
+
+Section badges stay source-grounded. Node's Identity & Snapshot, Capacity, and Runtime & Platform now use existing committed Node age, reported CPU capacity, and Kubelet version as metadata labels; Network and Scheduling keep their existing semantic status badges. Other Kubernetes Inventory sections preserve current sourced badge semantics and data values. No new provider reads or alternate shared component variants are permitted.
+
 ### Content order
 
 ```text

@@ -30,7 +30,7 @@
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             <div data-kaori-unified-resource-sheet
                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Ingress Identity', 'badge-info', ingress.age, badge_size='detail', stretch=false, density='compact', description='Ingress identity, namespace ownership, class, lifecycle age, and collection context.') %}
+                {% call detail.inventory_section('Ingress Identity', 'badge-info', ingress.age, badge_size='detail', stretch=false, density='compact', description='Ingress identity and class.') %}
                     {{ detail.inventory_row('Cluster', ingress.cluster_name) }}
                     {{ detail.inventory_row('Namespace', ingress.namespace) }}
                     {{ detail.inventory_metadata_row('Ingress Class', ingress.class) }}
@@ -44,7 +44,7 @@
                         <div class="mt-3">{{ metadata_collection.render('Finalizers', ingress.finalizer_entries, 'lock-keyhole', 'No Finalizers', 'No finalizer is represented in the committed snapshot.', 'Finalizers remain factual lifecycle metadata.', compact=true) }}</div>
                     {% endif %}
                 {% endcall %}
-                {% call detail.inventory_section('Publication Evidence', 'globe-2', ingress.publication_label, badge_size='detail', stretch=false, density='compact', description='Hostname, address, publication state, and external reachability evidence from the snapshot.') %}
+                {% call detail.inventory_section('Publication Evidence', 'globe-2', ingress.publication_label, badge_size='detail', stretch=false, density='compact', description='Hosts, addresses, publication.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Host Scope', 'value': ingress.host_label},
                                         {'label': 'Explicit Hosts', 'value': ingress.host_count},
@@ -98,7 +98,7 @@
             </div>
             <div data-kaori-unified-resource-sheet
                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('TLS Reference Evidence', 'shield', ingress.tls_secret_count ~ ' Secrets', badge_size='detail', stretch=false, density='compact', description='Referenced TLS Secrets and certificate binding evidence declared by this Ingress.') %}
+                {% call detail.inventory_section('TLS Reference Evidence', 'shield', ingress.tls_secret_count ~ ' Secrets', badge_size='detail', stretch=false, density='compact', description='Declared TLS Secret bindings.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'TLS Declared', 'value': 'Yes' if ingress.tls else 'No'},
                                         {'label': 'Secret References', 'value': ingress.tls_secret_count},
@@ -107,7 +107,7 @@
                                         ], columns=2) }}
                     {{ detail.inventory_note('A resolved Secret reference confirms only that a Secret exists in the same committed namespace snapshot. It does not validate certificate contents, expiry, key matching, or hostname coverage.', 'info') }}
                 {% endcall %}
-                {% call detail.inventory_section('Routing Evidence', 'git-branch', ingress.backend_count ~ ' Routes', badge_size='detail', stretch=false, density='compact', description='Host, path, backend Service, and port mappings used to route incoming traffic.') %}
+                {% call detail.inventory_section('Routing Evidence', 'git-branch', ingress.backend_count ~ ' Routes', badge_size='detail', stretch=false, density='compact', description='Host and backend routes.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Backend Routes', 'value': ingress.backend_count},
                                         {'label': 'Service Backends', 'value': ingress.service_count},
@@ -167,8 +167,8 @@
             </section>
             <div data-kaori-unified-resource-sheet
                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {{ related_collection.inventory_render('Backend Services', 'Service references resolved against current committed Service evidence.', ingress.backend_resources, ingress.backend_resources|length, 'network', 'No Service Backends', 'No Service backend reference is represented in this Ingress snapshot.', false, url_for('inventory.services', cluster_id=ingress.cluster_id, namespace=ingress.namespace) , 'Open Service Inventory', embedded=true) }}
-                {{ related_collection.inventory_render('TLS Secret References', 'Secret references resolved against current committed Secret evidence.', ingress.tls_resources, ingress.tls_resources|length, 'key-round', 'No TLS Reference', 'No TLS Secret reference is declared in this Ingress snapshot.', false, url_for('inventory.configuration', cluster_id=ingress.cluster_id, namespace=ingress.namespace, type='Secret') , 'Open Secret Inventory', embedded=true) }}
+                {{ related_collection.inventory_render('Backend Services', 'Committed Service references.', ingress.backend_resources, ingress.backend_resources|length, 'network', 'No Service Backends', 'No Service backend reference is represented in this Ingress snapshot.', false, url_for('inventory.services', cluster_id=ingress.cluster_id, namespace=ingress.namespace) , 'Open Service Inventory', embedded=true) }}
+                {{ related_collection.inventory_render('TLS Secret References', 'Committed TLS Secret links.', ingress.tls_resources, ingress.tls_resources|length, 'key-round', 'No TLS Reference', 'No TLS Secret reference is declared in this Ingress snapshot.', false, url_for('inventory.configuration', cluster_id=ingress.cluster_id, namespace=ingress.namespace, type='Secret') , 'Open Secret Inventory', embedded=true) }}
             </div>
             <div data-kaori-unified-resource-sheet
                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
