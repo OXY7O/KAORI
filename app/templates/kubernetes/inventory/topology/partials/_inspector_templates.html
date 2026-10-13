@@ -108,16 +108,8 @@
 </template>
 {{ topology_parts.field_row_template('topology-field-row-template') }}
 {{ topology_parts.relationship_row_template('topology-relationship-row-template') }}
-<template id="topology-relationship-summary-item-template">
-    <span role="listitem"
-          class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-card px-2 py-1 text-xs font-medium text-content-secondary">
-        <span data-summary-swatch class="h-1.5 w-1.5 shrink-0 rounded-full" aria-hidden="true"></span>
-        <span data-summary-label></span>
-    </span>
-</template>
-<template id="topology-relationships-empty-template">
-    <div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-6 text-center text-xs font-medium text-kaori-primary">No Visible Relationships</div>
-</template>
+{{ topology_parts.relationship_summary_item_template('topology-relationship-summary-item-template') }}
+{{ topology_parts.relationship_empty_template('topology-relationships-empty-template') }}
 <template id="topology-edge-inspector-template">
     <div class="space-y-4">
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
