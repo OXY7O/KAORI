@@ -170,4 +170,4 @@ def runtime_page(fleet: Any | None, *, page: int, per_page: int) -> tuple[list[A
         .mappings()
         .all()
     )
-    return rows, pagination_payload(window)
+    return list(rows), pagination_payload(window)
