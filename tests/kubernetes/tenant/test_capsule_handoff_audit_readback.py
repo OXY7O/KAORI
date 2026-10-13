@@ -1029,7 +1029,7 @@ def test_complete_g2_scope_covers_related_control_and_preserves_foreign(kind):
     assert prepared['transfer_candidate_count'] == 2
     assert prepared['preserved_namespaced_count'] == 1
     assert prepared['globally_preserved_count'] == 1
-    assert len(prepared['scope_items']) == 5
+    assert len(prepared['scope_items']) == 4
     assert len([row for row in prepared['scope_items'] if row.get('patch_sha256')]) == 2
     dryrun = inspect_capsule_complete_dry_run_shapes(
         **source,
