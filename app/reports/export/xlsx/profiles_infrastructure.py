@@ -40,12 +40,12 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
             top_n=8,
         ),
         columns=(
-            column('entity_type', 'Record Type', 'Project, repository, or real artifact identity.', width=18),
             column('registry', 'Artifact Registry', 'Committed Registry integration display name.', width=28),
             column('environment', 'Environment', 'Registry integration environment.', width=16),
             column('project', 'Project', 'Committed Registry project or namespace.', width=28),
             column('repository', 'Repository', 'Committed Registry repository identity.', width=38),
             column('digest', 'Digest', 'Immutable OCI artifact digest.', width=54),
+            column('entity_type', 'Record Type', 'Project, repository, or real artifact identity.', width=18),
             column('tags', 'Tags', 'Committed mutable tag aliases associated with the digest.', width=34),
             column('artifact_type', 'Artifact Type', 'Provider-neutral artifact type when supplied.', width=22),
             column('media_type', 'Media Type', 'OCI media type when supplied.', width=38),
