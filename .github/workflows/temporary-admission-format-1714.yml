@@ -55,6 +55,16 @@ jobs:
           # Admission's existing check is authoritative; a djLint reformat pass
           # can be non-idempotent on three pre-existing complex templates.
           # Commit formatting for review; do not claim that check has passed.
+          # djLint sometimes emits trailing blanks in these four Jinja source lines.
+          # Trim whitespace only in the exact identified templates.
+          for path in \
+            app/templates/access/permissions/partials/_coverage.html \
+            app/templates/access/roles/partials/_registry.html \
+            app/templates/access/users/partials/_directory.html \
+            app/templates/kubernetes/tenant/partials/_tenant_management_detail.html
+          do
+            sed -i 's/[[:blank:]]*$//' "$path"
+          done
           git add -u app migrations tests scripts
           git diff --cached --check
           if git diff --cached --quiet; then
