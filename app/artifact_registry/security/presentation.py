@@ -598,15 +598,15 @@ def _security_supply_evidence_page(
     )
     artifact_ids = [int(artifact.id) for artifact in page_items]
     latest_security_at: dict[int, datetime | None] = (
-        {
-            int(key): at for key, at in RegistryScanSnapshot.query.with_entities(
+        dict(
+            RegistryScanSnapshot.query.with_entities(
                 RegistryScanSnapshot.artifact_id,
                 func.max(RegistryScanSnapshot.observed_at),
             )
             .filter(RegistryScanSnapshot.artifact_id.in_(artifact_ids))
             .group_by(RegistryScanSnapshot.artifact_id)
-            .all()
-        }
+            .tuples().all()
+        )
         if artifact_ids
         else {}
     )
