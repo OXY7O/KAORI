@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, false, func, literal, or_, select
 
 from app.extensions.db import db
 from app.models.report import ReportSchedule
@@ -119,7 +119,7 @@ def filter_schedule_statement(
     elif status == 'paused':
         statement = statement.where(ReportSchedule.is_enabled.is_(False))
     elif status:
-        statement = statement.where(False)
+        statement = statement.where(false())
 
     for key, column in (
         ('cadence', ReportSchedule.cadence),
@@ -132,7 +132,7 @@ def filter_schedule_statement(
     if asset:
         asset_type, separator, asset_id = asset.partition(':')
         if not separator or not asset_id:
-            statement = statement.where(False)
+            statement = statement.where(false())
         else:
             statement = statement.where(
                 or_(
@@ -143,7 +143,7 @@ def filter_schedule_statement(
                     and_(
                         ReportSchedule.scope_asset_type.is_(None),
                         ReportSchedule.cluster_id == asset_id,
-                        asset_type == KUBERNETES_CLUSTER_ASSET_TYPE,
+                        literal(asset_type == KUBERNETES_CLUSTER_ASSET_TYPE),
                     ),
                 )
             )
@@ -160,7 +160,7 @@ def filter_schedule_statement(
         if delivery.isdigit() and int(delivery) > 0:
             statement = statement.where(_delivery_id_predicate(int(delivery)))
         else:
-            statement = statement.where(False)
+            statement = statement.where(false())
 
     if selected_filters['search']:
         statement = statement.where(_schedule_search_predicate(selected_filters['search'], channel_options or []))
