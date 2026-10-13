@@ -272,7 +272,7 @@ def build_inventory_overview() -> dict[str, Any]:
     return _inventory_base_context()
 
 
-def _inventory_resource_posture_metrics(
+def _inventory_legacy_page_posture_metrics(
     resource: str,
     rows: list[dict[str, Any]],
 ) -> list[tuple[str, str, Any, str, str]]:
@@ -814,12 +814,13 @@ def build_inventory_repository_detail(repository_id: int) -> dict[str, Any] | No
         .all()
     )
     artifact_ids = [int(item.id) for item in artifact_items]
-    tag_counts = dict(
-        RegistryTag.query.with_entities(RegistryTag.artifact_id, func.count(RegistryTag.id))
+    tag_counts = {
+        int(artifact_id): int(count)
+        for artifact_id, count in RegistryTag.query.with_entities(RegistryTag.artifact_id, func.count(RegistryTag.id))
         .filter(RegistryTag.artifact_id.in_(artifact_ids))
         .group_by(RegistryTag.artifact_id)
         .all()
-    )
+    }
     tagged = (
         RegistryTag.query.with_entities(
             RegistryTag.id.label('tag_id'),
