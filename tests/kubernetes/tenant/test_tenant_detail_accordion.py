@@ -41,6 +41,7 @@ def _context(
         'get_tenant_registry_context',
         lambda **_kwargs: {'tenant_rows': [row]},
     )
+    monkeypatch.setattr(route_common, 'get_tenant_namespace_profile_mapping_context', lambda _tenant_id: {})
     monkeypatch.setattr(
         route_common,
         'current_user',
