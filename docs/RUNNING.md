@@ -109,7 +109,7 @@ active DevContainer Compose. Never destroy stored data to fix role grants;
 request a reviewed migration/back-up workstream.
 ### 4. Build or watch frontend assets
 
-For active UI development, VS Code runs the `KAORI: Watch Tailwind CSS` background task automatically on folder open after the Dev Container lifecycle completes. Trust the workspace and choose **Allow Automatic Tasks** when prompted. If auto tasks are disabled, use **Terminal → Run Task → KAORI: Watch Tailwind CSS**, or run manually:
+For active UI development, **wait until the Dev Container has finished its post-create/post-start frontend bootstrap**, then start **Terminal → Run Task → KAORI: Watch Tailwind CSS**. This task deliberately does **not** run automatically on folder open: a fresh `kaori_node_modules` volume may still be installing Tailwind dependencies when the editor opens. Alternatively, run manually:
 
 ```bash
 npm run watch-css

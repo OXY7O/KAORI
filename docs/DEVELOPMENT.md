@@ -99,7 +99,7 @@ continues using separate controlled secrets and DBA migration authority.
 See [Environment Configuration](deployment/ENVIRONMENT_CONFIGURATION.md)
 and [first-run runbook](operations/devcontainer-postgres-first-run.md).
 
-A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend verification before the watcher can work. The `postCreate` lifecycle no longer forces an unconditional global npm upgrade, and `postStart` avoids rebuilding unchanged assets. If lifecycle startup fails, resolve that failure before treating the watcher as ready.
+A fresh or reset `kaori_node_modules` volume must complete `npm ci` and frontend verification before the watcher can work. **Start `KAORI: Watch Tailwind CSS` manually after Dev Container startup reports ready; it never auto-starts on folder open.** The `postCreate` lifecycle no longer forces an unconditional global npm upgrade, and `postStart` avoids rebuilding unchanged assets. If lifecycle startup fails, resolve that failure before treating the watcher as ready.
 
 The application is available at `http://localhost:5000`.
 
