@@ -174,4 +174,8 @@ def test_two_ui_nodes_require_distinct_viewport_artifacts(tmp_path: Path) -> Non
     assert _evaluate(cases, manifest=manifest, execution=request, root=tmp_path)['scenarios'][0]['result'] == 'BLOCKED'
     second = {**first, 'nodeid': nodes[1]['nodeid']}
     request = {**EXECUTION, 'evidence': {'UAT-UIX-EXAMPLE': [first, second]}}
+    assert _evaluate(cases, manifest=manifest, execution=request, root=tmp_path)['scenarios'][0]['result'] == 'BLOCKED'
+    (tmp_path / 'second.png').write_bytes(b'other visual evidence')
+    second = {**second, 'path': 'second.png'}
+    request = {**EXECUTION, 'evidence': {'UAT-UIX-EXAMPLE': [first, second]}}
     assert _evaluate(cases, manifest=manifest, execution=request, root=tmp_path)['scenarios'][0]['result'] == 'PASS'
