@@ -555,6 +555,10 @@ const startTopologyWorkspace = () => {
             },
             { selector: 'edge.edge-label-visible', style: { label: 'data(label)' } },
             {
+                selector: 'edge[relationship = "contains"].edge-label-visible',
+                style: { 'text-margin-y': 24 },
+            },
+            {
                 selector: 'edge.edge-hovered',
                 style: {
                     'line-color': brandPrimary,

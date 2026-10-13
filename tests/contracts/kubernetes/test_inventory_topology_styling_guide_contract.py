@@ -307,6 +307,8 @@ def test_topology_hover_only_relationship_labels_and_legend() -> None:
     # Retain the existing semantic label chip and explicit opt-in control.
     assert "'text-background-shape': 'roundrectangle'" in script
     assert "'text-rotation': 'none'" in script
+    assert "selector: 'edge[relationship = \"contains\"].edge-label-visible'" in script
+    assert "style: { 'text-margin-y': 24 }" in script
     assert 'Always Show Relationship Labels' in workspace
     assert 'Relationship legend: dashed lines show scope containment' in workspace
     assert 'Relationship labels appear on edge hover or selection' in workspace
