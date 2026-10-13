@@ -903,7 +903,7 @@ def _verified_native_profile_predecessors(
         return []
     ancestors: list[Tenant] = []
     seen = {tenant.id}
-    current = tenant
+    current: Tenant = tenant
     for _ in range(limit):
         evidence = current.provider_evidence_json or {}
         if not isinstance(evidence, Mapping):
@@ -920,7 +920,7 @@ def _verified_native_profile_predecessors(
         ):
             break
         prior = db.session.get(Tenant, predecessor_id)
-        if not _matches_verified_native_profile_predecessor(
+        if prior is None or not _matches_verified_native_profile_predecessor(
             tenant,
             current,
             prior,

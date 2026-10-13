@@ -110,6 +110,7 @@ def observe_capsule_global_quotas(*, custom: Any, tenant_name: str) -> dict[str,
         name, uid, rv = meta.get('name'), meta.get('uid'), meta.get('resourceVersion')
         if not all(isinstance(value, str) and value for value in (name, uid, rv)) or name in seen:
             raise ValueError('Capsule global quota identity is missing or duplicated.')
+        name, uid, rv = str(name), str(uid), str(rv)
         seen.add(name)
         labels = _strings(meta.get('labels'), label='global quota labels')
         annotations = _strings(meta.get('annotations'), label='global quota annotations')
@@ -281,7 +282,7 @@ def inspect_capsule_role_binding_lineage(
     ns_set = {item.get('name') for item in namespaces if isinstance(item, Mapping)}
     if len(ns_set) != len(namespaces) or not all(isinstance(ns, str) and ns for ns in ns_set):
         raise ValueError('Capsule RBAC lineage Namespace identity is incomplete.')
-    intents, blockers = _intent_bindings(capsule_spec, ns_set, tenant_id=tenant_id)
+    intents, blockers = _intent_bindings(capsule_spec, {str(ns) for ns in ns_set}, tenant_id=tenant_id)
     resources = related.get('resources')
     if not isinstance(resources, list) or len(resources) > 300:
         raise ValueError('Capsule related RBAC inventory is incomplete.')

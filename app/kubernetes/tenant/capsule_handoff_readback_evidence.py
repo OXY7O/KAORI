@@ -86,6 +86,8 @@ def _fingerprints(
             or (ns, kind, name) in seen_resources
         ):
             raise ValueError('Capsule read-back related resource identity is not unique and scoped.')
+        # The provider identity was validated above; keep dictionary keys statically scoped.
+        ns, kind, name = str(ns), str(kind), str(name)
         seen_resources.add((ns, kind, name))
         observed_counts[(ns, kind)] = observed_counts.get((ns, kind), 0) + 1
     if any(observed_counts.get(key, 0) != count for key, count in counts.items()):
