@@ -659,6 +659,11 @@ def test_representative_htmx_modal_or_drawer_interaction(
         expect(footer).to_be_visible()
         assert_locator_within_document_width(page, tabs, label='Notification Deck tabs')
         assert_locator_within_document_width(page, footer, label='Notification Deck footer')
+        page.screenshot(
+            path=str(EVIDENCE_ROOT / f'authenticated-htmx-overlay-open-{viewport_name}.png'),
+            full_page=True,
+            animations='disabled',
+        )
         page.keyboard.press('Escape')
         expect(dialog).to_be_hidden()
         expect(modal_trigger).to_be_focused()
@@ -732,6 +737,11 @@ def test_notification_center_filters_and_rows_survive_htmx_reset(
         assert filtered_response.value.ok
         expect(page.locator('#notification-center-status')).to_have_value('error')
         expect(page.locator('[data-kaori-clear-filters]')).to_be_visible()
+        page.screenshot(
+            path=str(EVIDENCE_ROOT / f'uat-uix-006-filtered-{viewport_name}.png'),
+            full_page=True,
+            animations='disabled',
+        )
 
         with page.expect_response(
             lambda response: (
