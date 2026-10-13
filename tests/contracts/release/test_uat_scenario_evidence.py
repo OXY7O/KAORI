@@ -202,7 +202,14 @@ def test_real_provider_requires_readback_even_with_all_junit_pass(tmp_path: Path
     request['evidence'] = {'UAT-EXAMPLE-001': [{
         'kind': 'provider_readback', 'path': 'provider-readback.json',
     }]}
-    # Presence permits machine dossier completeness, not independent provider validation.
+    report = _evaluate(cases, manifest=scoped, execution=request, digest=digest, root=tmp_path)
+    assert report['scenarios'][0]['result'] == 'BLOCKED'
+
+    (tmp_path / 'provider-readback.json').write_text(
+        '{"verified":true,"source_sha":"' + SHA + '","run_id":"isolated-test-run"}',
+        encoding='utf-8',
+    )
+    # Structured evidence is still subject to independent human/provider review.
     report = _evaluate(cases, manifest=scoped, execution=request, digest=digest, root=tmp_path)
     assert report['scenarios'][0]['result'] == 'PASS'
     assert report['human_acceptance'] == 'PENDING'
