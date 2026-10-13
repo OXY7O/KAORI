@@ -33,16 +33,12 @@ if (canvas && form) {
     const loading = $('registry-topology-loading')
     const clearFiltersButton = $('registry-topology-clear-filters')
     const close = $('registry-topology-inspector-close')
-    const previous = $('registry-topology-prev')
-    const next = $('registry-topology-next')
     let cy = null
     let renderer = null
     let payload = { nodes: [], edges: [], bindings: [], summary: {}, evidence: {} }
     let view = new URL(window.location.href).searchParams.get('view') === 'list' ? 'list' : 'graph'
-    let listPage = 1
     let controller = null
     let searchTimer = null
-    const pageSize = 5
     const filterKeys = ['source_id', 'cluster_id', 'namespace', 'match_type', 'exposure', 'artifact_id', 'q']
     const hasActiveFilters = () => filterKeys.some((key) =>
         Boolean(new FormData(form).get(key)?.toString().trim())
@@ -585,10 +581,7 @@ if (canvas && form) {
         const byId = new Map(payload.nodes.map((node) => [node.data.id, node]))
         const parents = graphParents()
         const total = nodes.length
-        const maxPage = Math.max(Math.ceil(total / pageSize), 1)
-        listPage = Math.min(Math.max(listPage, 1), maxPage)
-        const page = nodes.slice((listPage - 1) * pageSize, listPage * pageSize)
-        for (const item of page) {
+        for (const item of nodes) {
             const data = item.data
             const scope = resourceScope(item, parents, byId)
             const status = evidenceStatus(data)
@@ -613,10 +606,6 @@ if (canvas && form) {
         }
         const emptyState = $('registry-topology-list-empty')
         emptyState?.classList.toggle('hidden', Boolean(total))
-        $('registry-topology-list-count').textContent =
-            `Showing ${page.length ? (listPage - 1) * pageSize + 1 : 0}–${(listPage - 1) * pageSize + page.length} of ${total} visible resources (from ${payload.summary.displayed_bindings ?? 0} displayed bindings; ${payload.summary.omitted_bindings ?? 0} omitted).`
-        previous.disabled = listPage <= 1
-        next.disabled = listPage >= maxPage
         window.lucide?.createIcons()
     }
 
@@ -662,8 +651,6 @@ if (canvas && form) {
             other.focus()
         })
     }
-    previous.addEventListener('click', () => { listPage -= 1; renderList() })
-    next.addEventListener('click', () => { listPage += 1; renderList() })
 
     // Match Kubernetes Inventory Topology's small domain badge + external label
     // instead of long centered text inside oversized rectangle nodes.
@@ -1070,7 +1057,6 @@ if (canvas && form) {
                 const countNode = document.querySelector(`[data-registry-topology-type-count="${typeToggle.dataset.registryTopologyType}"]`)
                 if (countNode) countNode.textContent = String(count)
             }
-            listPage = 1
             renderList()
             const summary = payload.summary
             const evidence = payload.evidence
