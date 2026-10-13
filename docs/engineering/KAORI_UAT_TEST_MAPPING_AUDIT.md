@@ -198,3 +198,21 @@ The initial mapping above inspected the **review candidate** before these bounde
 | `UAT-UIX-006` / #1726 | `kaori/task-1726-interactive-ui-acceptance`, `tests/ui/conftest.py` + `tests/ui/test_representative_interactions.py` | Fixture preserves submitted request filters/Rows; browser selects status, Rows=10 and clicks Clear Filters through real HTMX, asserting reset and retained Rows | Isolated empty-state fixture is not proof of nonempty/paginated production data or runtime provider UAT |
 
 **Execution status:** all entries above **SOURCE IMPLEMENTED / NOT RUN**. Actual pytest/Playwright and GitHub Actions remain deferred at maintainer request; exact test results cannot be inferred from committed source. Update this audit and execution records only after a targeted test is run on a named candidate. Full-scale route and scenario coverage remains to be inventoried.
+
+
+## Work-branch implementation checkpoint — Tenant/Reports failure paths and UI search
+
+The following source additions extend the work-branch implementation notes above. Their assertions have been inspected after commit, **not executed**. Their scenario status remains **NOT RUN**, and they do not replace end-to-end UAT.
+
+| Scenario | Issue / candidate test | Source-implemented proof | Still outstanding |
+| --- | --- | --- | --- |
+| `UAT-TEN-004` | #1727 — `tests/kubernetes/tenant/test_capacity_governance.py::test_preflight_must_be_rechecked_after_capacity_headroom_changes` | The same proposed allocation is allowed against the original committed headroom but rejected against new committed commitments; asserts projected resource shortfalls and block decision | Must prove the owning *mutation submit* re-evaluates fresh committed evidence and prevents database/ResourceQuota writes after stale preview; actual Kubernetes read-back requires sandbox |
+| `UAT-RPT-003` | #1727 — `tests/reports/test_generate_execution_characterization.py::test_report_enqueue_failure_records_failed_outcome_and_never_claims_queued` | Authenticated HTTP POST with isolated dispatch failure asserts failed-report marking, error Activity event/metadata and redirect to failed report detail rather than a false queued event | Actual worker/storage post-queue failure, persisted JobExecution/Report state, Report detail UI and browser trace; mocks are service/route proofs, not real worker UAT |
+| `UAT-UIX-006` | #1726 — `tests/ui/test_representative_interactions.py::test_representative_filter_pagination_and_form_controls` (extended) | Playwright types a search term, checks it survives HTMX replacement, clicks Clear Filters and checks reset; captures filtered-state screenshot under canonical viewports | Nonempty notification data, pagination across several pages and real application/data integration |
+
+The branch links remain:
+- [UI implementation #1726](https://github.com/OXY7O/KAORI/tree/kaori/task-1726-interactive-ui-acceptance)
+- [Non-UI implementation #1727](https://github.com/OXY7O/KAORI/tree/kaori/task-1727-negative-session-regression)
+- [Scenario catalog / review #1738](https://github.com/OXY7O/KAORI/issues/1738)
+
+**No CI/CD workflow, pytest or Playwright run is implied by these commits.** Release gates remain on hold by maintainer request.
