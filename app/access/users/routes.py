@@ -210,6 +210,8 @@ def edit(user_id: int):
 
             db.session.rollback()
             user = get_user(user_id)
+            if user is None:
+                return reject('User unavailable', 'The requested user record was not found.', status='error')
             form.user_version.errors = [
                 *form.user_version.errors,
                 'This user changed after the page was opened. Reload the latest user state before saving.',
