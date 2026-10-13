@@ -1712,8 +1712,7 @@
                                                                 <p class="min-w-0 text-xs font-semibold leading-5 text-content-primary">{{ checkpoint.label }}</p>
                                                                 {% set checkpoint_tone = 'success' if checkpoint.complete else ('warning' if 'Expired' in checkpoint.display_status else 'info') %}
                                                                 {{ table_label.status_label(checkpoint.display_status,
-                                                                                                                                checkpoint_tone
-                                                                ) }}
+                                                                                                                                checkpoint_tone) }}
                                                             </div>
                                                             <p class="mt-0.5 break-words text-xs leading-5 text-content-secondary">{{ checkpoint.detail }}</p>
                                                         </div>
