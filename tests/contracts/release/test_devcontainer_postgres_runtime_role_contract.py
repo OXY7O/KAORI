@@ -256,6 +256,12 @@ def test_devcontainer_app_environment_template_documents_real_three_file_ownersh
     assert 'secrets/devcontainer/postgres-migrate.env' in env_guide
     assert 'postgres-bootstrap.env' in operations
     assert 'postgres-migrate.env' in operations
+    assert '## Windows PowerShell: WSL/OneDrive secret permission-denied recovery' in operations
+    assert '[System.IO.File]::OpenRead(' in operations
+    assert 'config --quiet' in operations
+    assert 'run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only' in operations
+    assert 'PASS: trusted, non-superuser migration identity admitted' in operations
+    assert 'Never use `flask db upgrade` with the regular' in operations
     assert "drop_value(source, 'POSTGRES_PASSWORD')" in host
     assert "drop_value(source, 'KAORI_DEV_RUNTIME_DATABASE_URL')" in host
     assert "values.get('APP_ENV', 'development') != 'development'" in host

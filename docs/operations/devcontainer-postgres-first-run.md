@@ -57,6 +57,101 @@
    logs; successful migrations alone do not establish ready workers.
 
 
+## Windows PowerShell: WSL/OneDrive secret permission-denied recovery (local UAT 2026-10-13)
+
+**Scenario:** An existing, non-empty local `kaori-dev` database has correct
+PostgreSQL ownership, but an operator's WSL terminal cannot read
+`secrets/devcontainer/postgres-bootstrap.env` or
+`secrets/devcontainer/postgres-migrate.env` and Docker Compose fails before
+starting `db-bootstrap` with `open ... permission denied`.
+
+Observed on a Windows OneDrive checkout mounted under `/mnt/c`: the WSL
+user reported both ignored secrets as `root:root`, mode `0600`, and
+`NOT READABLE`. Running `chown 1000:1000` and `chmod 600` from WSL
+`root` did **not** change the subsequent ownership/readability report.
+This is host-filesystem access evidence, not proof of a particular Windows ACL,
+OneDrive, or DrvFs configuration. Do not weaken secret permissions, run Compose
+as root, alter WSL mount options speculatively, regenerate credentials, or
+delete PostgreSQL volumes.
+
+**Known-working recovery: use native Windows PowerShell in the original
+checkout**, not WSL, and preserve the existing secrets and database:
+
+1. Open **Windows PowerShell** at the KAORI repository root. Confirm both
+   existing secret files can be read without printing their contents:
+
+   ```powershell
+   foreach ($name in @(
+       "secrets/devcontainer/postgres-bootstrap.env",
+       "secrets/devcontainer/postgres-migrate.env"
+   )) {
+       try {
+           $file = [System.IO.File]::OpenRead((Resolve-Path -LiteralPath $name -ErrorAction Stop).ProviderPath)
+           $file.Dispose()
+           Write-Host "PASS: $name"
+       }
+       catch {
+           throw "STOP: secret file is not readable from Windows host: $name"
+       }
+   }
+   ```
+
+2. Validate the native Windows Docker Compose host can read the scoped
+   `env_file` references. A silent successful exit is **PASS**; the command
+   does not migrate or modify database schema:
+
+   ```powershell
+   docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml config --quiet
+   ```
+
+3. For an **explicitly operator-authorized local schema upgrade only**, first
+   confirm the target is the expected `kaori-dev` database and the pending
+   revision is approved for local UAT. Run the existing guarded migration
+   service from the **same Windows PowerShell session**:
+
+   ```powershell
+   docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only
+   ```
+
+   This reuses the protected `kaori_migrator` credential for Alembic, refreshes
+   restricted `kaori_runtime` grants, seeds RBAC without recreating the first
+   admin, and validates the immutable Capsule ledger runtime guard. Docker
+   Compose may recreate the local database **container** as it did during
+   the recorded run; recreating a container is not deleting the PostgreSQL
+   data volume. Never use `flask db upgrade` with the regular
+   `kaori_runtime` connection, `flask db stamp`, `down --volumes`,
+   unscoped `GRANT ALL`, or wholesale `ALTER TABLE ... OWNER`.
+
+4. Verify the Alembic revision through a **read-only** query after the
+   operator-authorized upgrade, and retain the sanitized migration output:
+
+   ```powershell
+   docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml exec -T db psql -U postgres -d kaori -X -v ON_ERROR_STOP=1 -c "SELECT version_num FROM public.alembic_version;"
+   ```
+
+   Match the revision to the **approved branch head**; do not assume the
+   October 2026 example revision remains the latest. If any preflight, grant
+   refresh, RBAC step, or immutable ledger guard fails, stop and investigate
+   the specific gate rather than bypassing it.
+
+**Operator-provided UAT evidence (2026-10-13, local Windows PowerShell):**
+Both `[System.IO.File]::OpenRead` checks reported `PASS`; native
+`docker compose ... config --quiet` exited successfully; the explicit
+`db-bootstrap ... --upgrade-only` run reported
+`PASS: trusted, non-superuser migration identity admitted`,
+`20261012_capsule_handback_guard -> 20261013_limit_exposure`,
+`PASS: Alembic schema upgraded by kaori_migrator`, a completed grants
+transaction (`COMMIT`), `RBAC seeded: 5 roles, 64 permissions`, and
+`PASS: migrations, RBAC/admin and immutable Capsule runtime guard complete`.
+This documents the **observed operator result**; a separate post-upgrade
+read-only Alembic-head query, browser Visual QA and wider staging/admission
+gates were not evidenced by that transcript.
+
+**Boundary:** This recovery is for trusted local Windows/OneDrive
+DevContainer hosts only. It does not authorize CI/CD, staging/production
+DDL, DBA credential sharing, provider mutations or schema-gate bypass.
+The migration itself remains subject to explicit local UAT authorization.
+
 ## One-time recovery after upgrading from Docker secret volumes (#1499 → #1500)
 
 If **Reopen in Container** aborts with:
