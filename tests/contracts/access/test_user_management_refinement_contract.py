@@ -94,7 +94,12 @@ def test_user_directory_uses_shared_kaori_loading_filters_labels_and_expand_deta
     assert 'Last Authentication' in table
     assert 'Emergency Access' in table
     assert 'Administrative Actions' in detail
-    assert 'No Administrative Action' in detail
+    # The approved fallback is shown only when none of the five governed
+    # administrative actions is authorized for the viewed account.
+    assert 'No Additional Actions' in detail
+    assert "not actions.get('can_reset_password') and not actions.get('can_restore')" in detail
+    assert "and not actions.get('can_activate') and not actions.get('can_deactivate')" in detail
+    assert "and not actions.get('can_delete') %}" in detail
 
 
 def test_user_directory_pagination_uses_current_kaori_rows_and_previous_next_contract() -> None:

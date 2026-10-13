@@ -281,7 +281,11 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert "('Active Usage', 'In Use' if permission.active_user_count else 'No Effective Users', '')" in detail
     assert "('JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured', '')" in detail
     assert "('Requires', 'Present' if effective_requires else 'None', '')" in detail
-    assert "('Control Module', permission.module_label" not in detail
+    # The compact metrics strip omits the Control Module, but the full
+    # Permission Identity sheet must retain that authoritative detail.
+    summary = detail.split('detail_ui.summary_strip([', 1)[1].split('], compact=true, borderless=true)', 1)[0]
+    assert "('Control Module', permission.module_label" not in summary
+    assert "detail_ui.stacked_detail_row('Control Module', permission.module_label)" in detail
 
     assert 'data-kaori-permission-detail-layout="unified-resource-sheet"' in detail
     assert 'detail_ui.resource_sheet()' in detail
