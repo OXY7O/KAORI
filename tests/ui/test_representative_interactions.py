@@ -701,3 +701,63 @@ def test_representative_filter_pagination_and_form_controls(
             search_control.press_sequentially('browser')
         expect(page.locator('#notification-center-search')).to_be_visible()
         expect(page.get_by_role('navigation', name='Notification Center pagination')).to_be_visible()
+
+
+def test_notification_center_filters_and_rows_survive_htmx_reset(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """UAT-UIX-006: actual select/click requests preserve Rows and reset filters."""
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+
+    with _browser_evidence(page, 'uat-uix-006-notification-filter-reset', viewport_name):
+        _login(page, kaori_authenticated_base_url)
+        _open_notification_center(page, kaori_authenticated_base_url)
+
+        status = page.locator('#notification-center-status')
+        rows = page.locator('#notification-center-per-page')
+        expect(status).to_have_value('all')
+        expect(rows).to_have_value('5')
+
+        with page.expect_response(
+            lambda response: (
+                '/notifications/' in response.url
+                and 'status=error' in response.url
+                and response.request.headers.get('hx-request') == 'true'
+            )
+        ) as filtered_response:
+            status.select_option('error')
+        assert filtered_response.value.ok
+        expect(page.locator('#notification-center-status')).to_have_value('error')
+        expect(page.locator('[data-kaori-clear-filters]')).to_be_visible()
+
+        with page.expect_response(
+            lambda response: (
+                '/notifications/' in response.url
+                and 'per_page=10' in response.url
+                and 'status=error' in response.url
+                and response.request.headers.get('hx-request') == 'true'
+            )
+        ) as rows_response:
+            page.locator('#notification-center-per-page').select_option('10')
+        assert rows_response.value.ok
+        expect(page.locator('#notification-center-per-page')).to_have_value('10')
+        expect(page.locator('#notification-center-status')).to_have_value('error')
+
+        with page.expect_response(
+            lambda response: (
+                '/notifications/' in response.url
+                and 'per_page=10' in response.url
+                and 'status=error' not in response.url
+                and response.request.headers.get('hx-request') == 'true'
+            )
+        ) as clear_response:
+            page.locator('[data-kaori-clear-filters]').click()
+        assert clear_response.value.ok
+        expect(page.locator('#notification-center-status')).to_have_value('all')
+        expect(page.locator('#notification-center-per-page')).to_have_value('10')
+        expect(page.locator('[data-kaori-clear-filters]')).to_have_count(0)
+        assert_document_fits_viewport(page)
+        expect(page.get_by_text('No Matching Notifications')).to_be_visible()
