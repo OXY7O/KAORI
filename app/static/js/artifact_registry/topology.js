@@ -175,11 +175,13 @@ if (canvas && form) {
         return target
     }
     const addFields = (parent, fields) => {
+        if (!parent) return
         parent.replaceChildren()
         for (const [name, value] of fields) {
-            const item = elements('div', 'flex items-start justify-between gap-3 py-2.5')
-            item.append(elements('dt', 'min-w-0 text-xs font-normal text-content-muted', name))
-            item.append(elements('dd', 'max-w-[65%] break-words text-right text-xs font-medium text-content-primary', safeLabel(value)))
+            const item = $('registry-topology-field-row-template')?.content.firstElementChild?.cloneNode(true)
+            if (!item) continue
+            fill(item, '[data-field-label]', name)
+            fill(item, '[data-field-value]', value)
             parent.append(item)
         }
     }
@@ -338,10 +340,11 @@ if (canvas && form) {
             const peer = outbound ? edge.target() : edge.source()
             const row = cloneInspectorTemplate('relationship-row')
             if (!row) return
-            fill(row, '[data-edge-direction]', outbound ? 'Outbound' : 'Inbound')
-            fill(row, '[data-edge-relationship]', relationshipLabels[edge.data('relationship')] || edge.data('relationship'))
-            fill(row, '[data-peer-label]', peer.data('label'))
-            fill(row, '[data-peer-type]', typeLabels[peer.data('type')] || peer.data('type'))
+            row.querySelector('[data-relationship-icon]')?.setAttribute('data-lucide', 'git-branch')
+            fill(row, '[data-relationship-direction]', outbound ? 'Outbound' : 'Inbound')
+            fill(row, '[data-relationship-label]', relationshipLabels[edge.data('relationship')] || edge.data('relationship'))
+            fill(row, '[data-relationship-peer]', peer.data('label'))
+            fill(row, '[data-relationship-peer-type]', typeLabels[peer.data('type')] || peer.data('type'))
             row.addEventListener('click', () => selectNodeById(peer.id(), 'relationships'))
             target.append(row)
         })
