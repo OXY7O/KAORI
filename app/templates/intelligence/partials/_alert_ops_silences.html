@@ -137,15 +137,15 @@
             </table>
         </div>
         {{ table_registry.footer('alert_intelligence.index',
-                    'alert-operations-silence-registry',
-                    'alert-operations-silence-loading',
-                    payload.silence_pagination,
-                    {'tab': 'silences', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'silence_q': payload.silence_filters.q, 'silence_severity': payload.silence_filters.severity},
-                    payload.silence_pagination.allowed_per_page,
-                    resource_label='Silences',
-                    rows_aria_label='Active silences per page',
-                    control_name='alert-delivery-silences',
-                    page_param='silence_page',
-                    per_page_param='silence_per_page') }}
+                'alert-operations-silence-registry',
+                'alert-operations-silence-loading',
+                payload.silence_pagination,
+                {'tab': 'silences', 'domain': payload.domain, 'asset': payload.selected_asset_key, 'silence_q': payload.silence_filters.q, 'silence_severity': payload.silence_filters.severity},
+                payload.silence_pagination.allowed_per_page,
+                resource_label='Silences',
+                rows_aria_label='Active silences per page',
+                control_name='alert-delivery-silences',
+                page_param='silence_page',
+                per_page_param='silence_per_page') }}
     </section>
 </div>
