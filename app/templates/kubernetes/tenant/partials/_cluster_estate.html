@@ -101,83 +101,81 @@
             </tbody>
         </table>
     </div>
-    {% if pagination.total_items > 0 %}
-        <footer class="{{ pagination_ui.footer_classes() }}">
-            <div class="{{ pagination_ui.summary_group_classes() }}">
-                <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} Clusters</p>
-                <div class="{{ pagination_ui.rows_group_classes() }}">
-                    <input id="tenant-cluster-page-reset"
-                           type="hidden"
-                           name="cluster_page"
-                           value="1" />
-                    <label for="tenant-cluster-per-page"
-                           class="text-xs font-semibold text-content-secondary">Rows</label>
-                    <select id="tenant-cluster-per-page"
-                            name="cluster_per_page"
-                            class="{{ pagination_ui.page_size_classes() }}"
-                            hx-get="{{ url_for('tenant.cluster_estate') }}"
-                            hx-target="#tenant-cluster-estate-section"
-                            hx-swap="outerHTML"
-                            hx-include="#tenant-cluster-page-reset"
-                            hx-trigger="change"
-                            hx-disabled-elt="this"
-                            hx-indicator="#tenant-cluster-estate-loading">
-                        {% for size in pagination.allowed_per_page %}
-                            <option value="{{ size }}"
-                                    {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+    <footer class="{{ pagination_ui.footer_classes() }}">
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} Clusters</p>
+            <div class="{{ pagination_ui.rows_group_classes() }}">
+                <input id="tenant-cluster-page-reset"
+                       type="hidden"
+                       name="cluster_page"
+                       value="1" />
+                <label for="tenant-cluster-per-page"
+                       class="text-xs font-semibold text-content-secondary">Rows</label>
+                <select id="tenant-cluster-per-page"
+                        name="cluster_per_page"
+                        class="{{ pagination_ui.page_size_classes() }}"
+                        hx-get="{{ url_for('tenant.cluster_estate') }}"
+                        hx-target="#tenant-cluster-estate-section"
+                        hx-swap="outerHTML"
+                        hx-include="#tenant-cluster-page-reset"
+                        hx-trigger="change"
+                        hx-disabled-elt="this"
+                        hx-indicator="#tenant-cluster-estate-loading">
+                    {% for size in pagination.allowed_per_page %}
+                        <option value="{{ size }}"
+                                {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="{{ pagination_ui.navigation_group_classes() }}">
-                {% set prev_hx_url = url_for('tenant.cluster_estate', cluster_page=pagination.prev_page, cluster_per_page=pagination.per_page) %}
-                {% set next_hx_url = url_for('tenant.cluster_estate', cluster_page=pagination.next_page, cluster_per_page=pagination.per_page) %}
-                {% set prev_href = url_for('tenant.index', cluster_page=pagination.prev_page, cluster_per_page=pagination.per_page) %}
-                {% set next_href = url_for('tenant.index', cluster_page=pagination.next_page, cluster_per_page=pagination.per_page) %}
-                {% if pagination.has_prev %}
-                    <a href="{{ prev_href }}"
-                       hx-get="{{ prev_hx_url }}"
-                       hx-target="#tenant-cluster-estate-section"
-                       hx-swap="outerHTML"
-                       hx-indicator="#tenant-cluster-estate-loading"
-                       class="{{ pagination_ui.navigation_classes() }}">
-                        <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-                        Previous
-                    </a>
-                {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
-                          aria-disabled="true">
-                        <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-                        Previous
-                    </span>
-                {% endif %}
-                {{ pagination_ui.numeric_pages(pagination.page,
-                                pagination.total_pages,
-                                'cluster_page',
-                                hx_target='#tenant-cluster-estate-section',
-                                hx_indicator='#tenant-cluster-estate-loading',
-                                endpoint='tenant.cluster_estate',
-                                query_params={'cluster_per_page': pagination.per_page},
-                                hx_swap='outerHTML',
-                                href_endpoint='tenant.index') }}
-                {% if pagination.has_next %}
-                    <a href="{{ next_href }}"
-                       hx-get="{{ next_hx_url }}"
-                       hx-target="#tenant-cluster-estate-section"
-                       hx-swap="outerHTML"
-                       hx-indicator="#tenant-cluster-estate-loading"
-                       class="{{ pagination_ui.navigation_classes() }}">
-                        Next
-                        <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-                    </a>
-                {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
-                          aria-disabled="true">
-                        Next
-                        <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-                    </span>
-                {% endif %}
-            </div>
-        </footer>
-    {% endif %}
+        </div>
+        <div class="{{ pagination_ui.navigation_group_classes() }}">
+            {% set prev_hx_url = url_for('tenant.cluster_estate', cluster_page=pagination.prev_page, cluster_per_page=pagination.per_page) %}
+            {% set next_hx_url = url_for('tenant.cluster_estate', cluster_page=pagination.next_page, cluster_per_page=pagination.per_page) %}
+            {% set prev_href = url_for('tenant.index', cluster_page=pagination.prev_page, cluster_per_page=pagination.per_page) %}
+            {% set next_href = url_for('tenant.index', cluster_page=pagination.next_page, cluster_per_page=pagination.per_page) %}
+            {% if pagination.has_prev %}
+                <a href="{{ prev_href }}"
+                   hx-get="{{ prev_hx_url }}"
+                   hx-target="#tenant-cluster-estate-section"
+                   hx-swap="outerHTML"
+                   hx-indicator="#tenant-cluster-estate-loading"
+                   class="{{ pagination_ui.navigation_classes() }}">
+                    <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                    Previous
+                </a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                      aria-disabled="true">
+                    <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                    Previous
+                </span>
+            {% endif %}
+            {{ pagination_ui.numeric_pages(pagination.page,
+                            pagination.total_pages,
+                            'cluster_page',
+                            hx_target='#tenant-cluster-estate-section',
+                            hx_indicator='#tenant-cluster-estate-loading',
+                            endpoint='tenant.cluster_estate',
+                            query_params={'cluster_per_page': pagination.per_page},
+                            hx_swap='outerHTML',
+                            href_endpoint='tenant.index') }}
+            {% if pagination.has_next %}
+                <a href="{{ next_href }}"
+                   hx-get="{{ next_hx_url }}"
+                   hx-target="#tenant-cluster-estate-section"
+                   hx-swap="outerHTML"
+                   hx-indicator="#tenant-cluster-estate-loading"
+                   class="{{ pagination_ui.navigation_classes() }}">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                </a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                      aria-disabled="true">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                </span>
+            {% endif %}
+        </div>
+    </footer>
 {% endcall %}
