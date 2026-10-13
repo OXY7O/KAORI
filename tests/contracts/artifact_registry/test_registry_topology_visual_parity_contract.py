@@ -223,7 +223,7 @@ def test_resource_list_scrolls_without_pagination_and_matches_k8s() -> None:
     renderer = RUNTIME_JS.read_text(encoding='utf-8')
     k8s = K8S.read_text(encoding='utf-8')
     assert 'id="registry-topology-view-panel-list"' in template
-    assert 'h-[38rem] overflow-auto overscroll-contain bg-surface-card' in template
+    assert 'kaori-visualization-canvas h-[38rem] min-w-0 overflow-auto overscroll-contain bg-surface-card' in template
     assert 'topology-view-panel-list' in k8s
     assert 'overflow-auto bg-surface-card' in k8s
     assert 'registry-topology-resource-rows' in template
