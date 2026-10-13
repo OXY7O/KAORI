@@ -16,7 +16,7 @@ from app.kubernetes.tenant.capsule_handoff_attempt_state import _event_checksum
 from app.kubernetes.tenant.capsule_handoff_persisted_recovery import (
     review_capsule_persisted_recovery_case,
 )
-from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
+from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest, capsule_related_scope_sha256
 from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
 from app.kubernetes.tenant.release_handoff_approval import _plan_hash
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
@@ -36,7 +36,7 @@ def _fixtures():
         {'namespace': 'demo-dev', 'kind': kind, 'list_resource_version': 'list-rv', 'count': 0}
         for kind in ('LimitRange', 'ResourceQuota', 'RoleBinding')
     ]
-    related_sha = _digest({'resources': [], 'lists': lists})
+    related_sha = capsule_related_scope_sha256(resources=[], list_snapshots=lists)
     global_quota = {
         'status': 'observed_not_handoff_authorized',
         'served_version': 'v1beta2',
@@ -48,7 +48,6 @@ def _fixtures():
     global_quota['scope_sha256'] = _digest(
         {
             'api_version': 'v1beta2',
-            'list_resource_version': 'grq-rv',
             'resources': [],
         }
     )
