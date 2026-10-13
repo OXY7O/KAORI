@@ -137,7 +137,9 @@ def test_registry_inspector_matches_k8s_details_and_relationships_design() -> No
         'data-open-relationships',
         'data-node-relationships',
         'data-minimap',
-        'data-related-node',
+        'data-node-status',
+        'registry-topology-resource-list-row-template',
+        'registry-topology-inspector-relationship-row-template',
     ):
         assert control in inspector
     for behavior in (
