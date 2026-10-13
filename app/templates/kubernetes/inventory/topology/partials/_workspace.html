@@ -277,7 +277,9 @@
                 <details open
                          class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-3">
                     <summary class="cursor-pointer text-sm font-semibold text-content-primary">Relationship Visibility</summary>
-                    <p class="mt-2 text-xs leading-5 text-content-muted">Relationship legend: dashed lines show scope containment; solid arrows show directional operational relationships (Owns: Workload → Pod; Scheduled on: Pod → Node). Relationship labels appear on edge hover or selection; use Always Show Relationship Labels to display them continuously.</p>
+                    <p class="mt-2 whitespace-nowrap text-xs leading-5 text-content-muted"
+                       title="Dashed lines show scope containment; solid arrows show directional operational relationships. Hover or select an edge to reveal its label, or enable Always Show Relationship Labels."
+                       aria-label="Dashed lines show scope containment; solid arrows show directional operational relationships. Hover or select an edge to reveal its label, or enable Always Show Relationship Labels.">Dashed: scope · Arrows: operational</p>
                     <div class="mt-3 grid gap-2 text-xs text-content-secondary">
                         {% for value, label, edge_class in [
                             ('contains', 'Contains', 'contains'),

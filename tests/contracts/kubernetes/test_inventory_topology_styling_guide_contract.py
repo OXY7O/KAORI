@@ -310,8 +310,12 @@ def test_topology_hover_only_relationship_labels_and_legend() -> None:
     assert "selector: 'edge[relationship = \"contains\"].edge-label-visible'" in script
     assert "style: { 'text-margin-y': 24 }" in script
     assert 'Always Show Relationship Labels' in workspace
-    assert 'Relationship legend: dashed lines show scope containment' in workspace
-    assert 'Relationship labels appear on edge hover or selection' in workspace
+    assert 'Dashed: scope · Arrows: operational' in workspace
+    assert 'mt-2 whitespace-nowrap text-xs leading-5 text-content-muted' in workspace
+    assert 'title="Dashed lines show scope containment; solid arrows show directional operational relationships.' in workspace
+    assert 'aria-label="Dashed lines show scope containment; solid arrows show directional operational relationships.' in workspace
+    assert 'Relationship legend: dashed lines show scope containment' not in workspace
+    assert 'Hover or select an edge to reveal its label' in workspace
     assert 'Relationship labels stay hidden by default' in palette
 
 
