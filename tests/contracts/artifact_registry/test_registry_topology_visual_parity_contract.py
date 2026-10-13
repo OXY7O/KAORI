@@ -83,7 +83,10 @@ def test_registry_renderer_adopts_kubernetes_graph_semantics() -> None:
     assert 'width: 76' in renderer
     assert 'height: 44' in renderer
     assert 'badgeImage(node.data())' in renderer
-    assert 'transform: (_node, position) => branched ? position : ({ x: position.y, y: position.x })' in renderer
+    assert re.search(
+        r'transform:\s*\(_node,\s*position\)\s*=>\s*\(?branched\s*\?\s*position\s*:\s*\(?\{\s*x:\s*position\.y,\s*y:\s*position\.x\s*\}\)?\)?',
+        renderer,
+    )
     assert "'line-style': (edge) => edge.data('relationship') === 'contains'" in renderer
     assert 'selector: \'edge[relationship = "contains"]\'' in renderer
     assert "'curve-style': 'taxi'" in renderer
@@ -238,7 +241,10 @@ def test_resource_list_scrolls_without_pagination_and_matches_k8s() -> None:
     assert 'pageSize' not in renderer
     assert 'const nodes = sortedVisibleResources()' in renderer
     assert 'for (const item of nodes)' in renderer
-    assert 'payload.summary.omitted_bindings' in renderer
+    assert 'summary.truncated' in renderer
+    assert 'summary.omitted_bindings' in renderer
+    assert 'Graph is bounded to ${summary.max_visible_bindings} bindings;' in renderer
+    assert 'warning.textContent = qualification + bounded' in renderer
     assert 'Dashed: scope · Solid: runtime/ownership.' in template
     assert 'Tag/mixed matches: see Details for confidence.' in template
     assert template.count('whitespace-nowrap text-xs text-') >= 2
@@ -271,7 +277,13 @@ def test_runtime_inspector_evidence_cards_preserve_committed_match_and_security(
     assert 'item.confidence' in renderer
     assert "Number(item.critical) > 0 ? 'critical'" in renderer
     assert "Number(item.high) > 0 ? 'warning'" in renderer
-    assert "applyStatusSurface(card.querySelector('[data-runtime-match]')" in renderer
-    assert "applyStatusSurface(card.querySelector('[data-runtime-security]')" in renderer
+    assert re.search(
+        r"applyStatusSurface\(\s*card\.querySelector\('\[data-runtime-match\]'\),\s*card\.querySelector\('\[data-runtime-match-dot\]'\),\s*matchTone\s*\)",
+        renderer,
+    )
+    assert re.search(
+        r"applyStatusSurface\(\s*card\.querySelector\('\[data-runtime-security\]'\),\s*card\.querySelector\('\[data-runtime-security-dot\]'\),\s*securityTone\s*\)",
+        renderer,
+    )
     assert "'registry-topology-runtime-evidence-row-template'" in renderer
     assert 'rows.length - 10' in renderer
