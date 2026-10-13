@@ -213,10 +213,10 @@ if (canvas && form) {
             if (view !== 'graph') setView('graph')
             window.requestAnimationFrame(() => cy?.center(node))
         }
-        drawing.addEventListener('click', center)
-        drawing.addEventListener('keydown', (event) => {
+        drawing.onclick = center
+        drawing.onkeydown = (event) => {
             if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); center() }
-        })
+        }
     }
     const renderBindingEvidence = (pane, node) => {
         const rows = associatedBindings(node.id())
@@ -745,13 +745,17 @@ if (canvas && form) {
         if (!cy) return
         const enabled = Object.fromEntries(resourceToggles.map((toggle) => [toggle.dataset.registryTopologyType, toggle.checked]))
         const relationships = Object.fromEntries(relationshipToggles.map((toggle) => [toggle.dataset.registryTopologyRelationship, toggle.checked]))
-        cy.nodes().forEach((node) => node.style('display', enabled[node.data('type')] ? 'element' : 'none'))
+        cy.nodes().forEach((node) => {
+            const ancestorsCollapsed = node.predecessors('node').some((item) => collapsedNodeIds.has(item.id()))
+            node.style('display', enabled[node.data('type')] && !ancestorsCollapsed ? 'element' : 'none')
+        })
         cy.edges().forEach((edge) => {
-            const included = enabled[edge.source().data('type')] &&
-                enabled[edge.target().data('type')] &&
+            const included = edge.source().visible() &&
+                edge.target().visible() &&
                 relationships[edge.data('relationship')]
             edge.style('display', included ? 'element' : 'none')
         })
+        if (view === 'list') renderList()
     }
     const runLayout = () => {
         if (!cy) return
@@ -836,16 +840,18 @@ if (canvas && form) {
             const edge = event.target
             edge.select()
             updateEdgeLabelClasses()
-            inspectorContent.replaceChildren()
-            inspectorContent.append(elements('h4', 'text-lg font-semibold text-content-primary', 'Relationship Evidence'))
-            const details = elements('div', 'rounded-lg border border-outline-default p-4')
-            appendField(details, 'Relationship', edge.data('relationship'))
-            appendField(details, 'Match Confidence', edge.data('confidence'))
-            appendField(details, 'From', edge.source().data('label'))
-            appendField(details, 'To', edge.target().data('label'))
-            inspectorContent.append(details)
-            inspectorContent.append(elements('p', 'text-xs text-content-muted', 'Containment and ownership are presentation context from committed Registry-to-Pod bindings. Digest matches are stronger than tag-only evidence.'))
+            const pane = cloneInspectorTemplate('edge')
+            if (!pane) return
+            addFields(pane.querySelector('[data-edge-fields]'), [
+                ['Relationship', relationshipLabels[edge.data('relationship')] || edge.data('relationship')],
+                ['From', edge.source().data('label')],
+                ['To', edge.target().data('label')],
+                ['Match Confidence', edge.data('confidence') || 'Structural context'],
+                ['Evidence Readiness', payload.evidence?.title || 'Unknown'],
+            ])
+            inspectorContent.replaceChildren(pane)
             openInspector()
+            window.lucide?.createIcons()
         })
         updateEdgeLabelClasses()
         graphHasLayout = false
@@ -871,6 +877,9 @@ if (canvas && form) {
             })
             if (!response.ok) throw new Error(`Graph request failed (HTTP ${response.status})`)
             payload = await response.json()
+            highlightedNodeId = null
+            collapsedNodeIds.clear()
+            if (cy) { cy.destroy(); cy = null }
             for (const typeToggle of resourceToggles) {
                 const count = payload.nodes.filter((node) => node.data.type === typeToggle.dataset.registryTopologyType).length
                 const countNode = document.querySelector(`[data-registry-topology-type-count="${typeToggle.dataset.registryTopologyType}"]`)
