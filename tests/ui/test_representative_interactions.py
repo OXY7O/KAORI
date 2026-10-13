@@ -975,12 +975,12 @@ def test_reports_generate_wizard_negative_submission_is_scoped_and_reviewable(
         assert_document_fits_viewport(page)
 
 
-def test_tenant_namespace_form_rejected_submit_records_no_provider_write(
+def test_tenant_allocation_change_rejected_submit_records_no_provider_write(
     configured_page: Page,
     kaori_viewport: tuple[str, tuple[int, int]],
     kaori_authenticated_base_url: str,
 ) -> None:
-    """UAT-TEN-004 partial: use real Tenant form markup and actual rejected HTTP POST."""
+    """UAT-TEN-004: click the real allocation form and reject before provider mutation."""
     from types import SimpleNamespace
 
     import app.kubernetes.tenant.routes as tenant_routes
@@ -991,31 +991,32 @@ def test_tenant_namespace_form_rejected_submit_records_no_provider_write(
     audit: list[dict[str, object]] = []
     render_original = tenant_routes.render_template
 
-    def render_isolated_tenant_form(template_name, **context):
+    def render_isolated_allocation_form(template_name, **context):
         if template_name == 'kubernetes/tenant/namespace_provisioning.html':
             return render_original(
-                'kubernetes/tenant/partials/_namespace_form.html',
-                environment_options=[
+                'kubernetes/tenant/partials/_allocation_change.html',
+                namespace_allocation_options=[
                     SimpleNamespace(
-                        id=14,
-                        tenant=SimpleNamespace(name='QA Disposable Tenant'),
-                        environment='dev',
+                        id=14, namespace='qa-disposable-namespace',
+                        environment=SimpleNamespace(
+                            tenant=SimpleNamespace(name='QA Disposable Tenant'),
+                            environment='dev',
+                        ),
                     )
                 ],
                 profiles=[
                     SimpleNamespace(
                         id=18, name='QA Bounded Profile',
-                        enabled=True, profile_class='custom', version=1,
+                        enabled=True, profile_class='custom', version=2,
                     )
                 ],
                 can_manage=True,
-                native_available=True,
             )
         return render_original(template_name, **context)
 
-    def reject_before_provider_write(form):
+    def reject_capacity_change(form):
         submitted.append(form.to_dict())
-        raise ValueError('Capacity preflight rejected the isolated Namespace request.')
+        raise ValueError('Capacity preflight rejected the isolated allocation change.')
 
     with (
         patch('app.kubernetes.tenant.routes._tenant_workspace_context', return_value={}),
@@ -1023,40 +1024,37 @@ def test_tenant_namespace_form_rejected_submit_records_no_provider_write(
         patch('app.kubernetes.tenant.routes.get_capsule_shared_allocation_context', return_value={}),
         patch('app.kubernetes.tenant.routes.get_capsule_tenant_quota_context', return_value={}),
         patch('app.kubernetes.tenant.routes.get_namespace_registry_context', return_value={}),
-        patch('app.kubernetes.tenant.routes.render_template', side_effect=render_isolated_tenant_form),
+        patch('app.kubernetes.tenant.routes.render_template', side_effect=render_isolated_allocation_form),
         patch('app.kubernetes.tenant.routes._csrf', return_value=None),
         patch(
-            'app.kubernetes.tenant.routes.provision_native_namespace_committed',
-            side_effect=reject_before_provider_write,
+            'app.kubernetes.tenant.routes.change_native_namespace_allocation_committed',
+            side_effect=reject_capacity_change,
         ),
         patch(
             'app.kubernetes.tenant.routes._record',
             side_effect=lambda **item: audit.append(item),
         ),
-        _browser_evidence(page, 'uat-ten-004-namespace-form-rejection', viewport_name),
+        _browser_evidence(page, 'uat-ten-004-allocation-change-rejection', viewport_name),
     ):
         _login(page, kaori_authenticated_base_url)
         response = page.goto(
-            f'{kaori_authenticated_base_url}/kubernetes/tenant/namespace-provisioning',
+            f'{kaori_authenticated_base_url}/kubernetes/tenant/namespace-provisioning?view=allocation',
             wait_until='networkidle',
         )
         assert response is not None and response.ok
-        form = page.locator('[data-tenant-namespace-allocation-form]')
+        form = page.locator('[data-tenant-allocation-change-form]')
         expect(form).to_be_visible()
-        form.locator('[name="tenant_environment_id"]').select_option('14')
+        form.locator('[name="tenant_namespace_id"]').select_option('14')
         form.locator('[name="resource_profile_id"]').select_option('18')
-        form.locator('[name="namespace"]').fill('qa-disposable-namespace')
-        expect(form.get_by_role('button', name='Create & Verify')).to_be_enabled()
-        form.get_by_role('button', name='Create & Verify').click()
+        expect(form.get_by_role('button', name='Preflight & Apply')).to_be_enabled()
+        form.get_by_role('button', name='Preflight & Apply').click()
         page.wait_for_load_state('networkidle')
 
-        # The real route rejects via the service boundary; provider calls are
-        # impossible in this isolated fixture and no successful audit is emitted.
         assert len(submitted) == 1
-        assert submitted[0]['tenant_environment_id'] == '14'
+        assert submitted[0]['tenant_namespace_id'] == '14'
         assert submitted[0]['resource_profile_id'] == '18'
-        assert submitted[0]['namespace'] == 'qa-disposable-namespace'
         assert len(audit) == 1
-        assert audit[0]['event_type'] == 'kubernetes_tenant_namespace_provision_failed'
+        assert audit[0]['event_type'] == 'kubernetes_tenant_namespace_allocation_change_failed'
         assert audit[0]['status'] == 'error'
-        expect(page.locator('[data-tenant-namespace-allocation-form]')).to_be_visible()
+        assert not any(item['status'] == 'success' for item in audit)
+        expect(page.locator('[data-tenant-allocation-change-form]')).to_be_visible()
