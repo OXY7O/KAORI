@@ -223,4 +223,4 @@ def test_pod_inventory_refresh_preserves_runtime_binding_foreign_keys() -> None:
     assert 'pod_inventory.collected_at = collected_at' in pod_sync
     assert 'for stale_pod in existing_pods.values():' in pod_sync
     assert 'db.session.delete(stale_pod)' in pod_sync
-    assert '.delete(' not in pod_sync
+    assert '.delete(synchronize_session=' not in pod_sync
