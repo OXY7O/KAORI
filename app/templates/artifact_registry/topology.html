@@ -244,7 +244,7 @@
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Adjust how the committed relationships are drawn.</p>
                             </div>
                             <button id="registry-topology-controls-close" type="button"
-                                    class="{{ table_ui.action_classes() }}" aria-label="Close Display Controls">
+                                    class="{{ topology_parts.drawer_close_classes() }}" aria-label="Close Display Controls">
                                 <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                             </button>
                         </div>
@@ -417,11 +417,11 @@
                                 </div>
                             </div>
                             <button id="registry-topology-inspector-close" type="button"
-                                    class="{{ table_ui.action_classes() }}" aria-label="Close Topology Details">
+                                    class="{{ topology_parts.drawer_close_classes() }}" aria-label="Close Topology Details">
                                 <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                             </button>
                         </div>
-                        <div id="registry-topology-inspector-content" class="space-y-4 px-4 py-5"></div>
+                        <div id="registry-topology-inspector-content" class="p-4"></div>
                     </aside>
                 </div>
                 {% include 'artifact_registry/partials/_topology_inspector_templates.html' %}
