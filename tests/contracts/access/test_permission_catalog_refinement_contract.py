@@ -266,7 +266,10 @@ def test_permission_catalog_detail_uses_count_free_shared_modal_hierarchy() -> N
     assert 'detail_ui.summary_strip([' in detail
     assert '], compact=true, borderless=true)' in detail
     assert 'data-resource-detail-summary' in shared
-    assert "{% macro summary_strip(metrics, columns=4, compact=false, borderless=false, layout='default', pinned=true)" in shared
+    assert (
+        "{% macro summary_strip(metrics, columns=4, compact=false, borderless=false, layout='default', pinned=true)"
+        in shared
+    )
     assert 'data-kaori-summary-variant="borderless"' in shared
     # The permission summary uses the borderless branch of the approved shared
     # macro. Legacy callers keep the original divided variant by default.
