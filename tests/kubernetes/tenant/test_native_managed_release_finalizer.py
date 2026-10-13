@@ -18,9 +18,9 @@ def test_native_managed_release_cannot_skip_explicit_confirmation():
 
 
 def test_missing_verified_handoff_cannot_commit_native_release(monkeypatch):
-    from app.kubernetes.tenant import native_platform_admin_authority as authority
     from app.kubernetes.tenant import native_handoff_executor as executor
     from app.kubernetes.tenant import native_handoff_readback as readback
+    from app.kubernetes.tenant import native_platform_admin_authority as authority
     from app.kubernetes.tenant import native_successor_acceptance as consent
     from app.kubernetes.tenant import release_handoff_approval as approval
 
