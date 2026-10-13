@@ -38,7 +38,11 @@ def test_storage_title_help_preserves_missing_evidence_interpretation() -> None:
 def test_shared_info_tip_remains_keyboard_and_touch_accessible() -> None:
     shared = (ROOT / 'app/templates/components/info_tip.html').read_text(encoding='utf-8')
     js = (ROOT / 'app/static/js/info_tips.js').read_text(encoding='utf-8')
-    assert 'aria-label="More information about {{ title }}"' in shared
+    assert "aria-label=\"{{ 'Open guide: ' if guide_variant else 'More information about ' }}{{ title }}\"" in shared
+    assert "variant='icon'" in shared
+    assert "variant == 'guide' and not button_text" in shared
+    assert 'aria-controls="{{ id }}-tooltip"' in shared
+    assert 'aria-describedby="{{ id }}-tooltip"' in shared
     assert 'aria-expanded="false"' in shared
     assert 'role="tooltip"' in shared
     assert "'focusin'" in js and "'pointerover'" in js and "'click'" in js
