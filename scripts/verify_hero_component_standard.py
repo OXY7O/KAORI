@@ -171,6 +171,11 @@ KUBERNETES_ANALYTICS_HEROES = (
 )
 OBJECT_STORAGE_ANALYTICS_HERO = TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
 OBJECT_STORAGE_ANALYTICS_PAGES = ROOT / 'app' / 'storage' / 'object_storage' / 'analytics' / 'pages.py'
+REGISTRY_ANALYTICS_HERO = TEMPLATES / 'artifact_registry' / 'analytics.html'
+REGISTRY_ANALYTICS_PAGES = ROOT / 'app' / 'artifact_registry' / 'presentation_analytics.py'
+REGISTRY_ANALYTICS_PAGE_KEYS = {
+    'overview', 'growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'
+}
 OBJECT_STORAGE_ANALYTICS_PAGE_KEYS = {'overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'}
 SETTINGS_GENERAL_HERO = TEMPLATES / 'settings' / 'general' / 'partials' / '_hero.html'
 SETTINGS_ACCOUNT_HERO = TEMPLATES / 'settings' / 'account' / 'partials' / '_hero.html'
@@ -490,6 +495,8 @@ def _has_registered_dynamic_expression_resolver(path: Path, body: str) -> bool:
         and normalized == '{{ payload.page_subtitle }}'
         or path == OBJECT_STORAGE_ANALYTICS_HERO
         and normalized == '{{ page.description }}'
+        or path == REGISTRY_ANALYTICS_HERO
+        and normalized == '{{ analytics.page_description }}'
     )
 
 
@@ -764,6 +771,31 @@ def _object_storage_analytics_descriptions() -> dict[str, str]:
     return descriptions
 
 
+def _registry_analytics_descriptions() -> dict[str, str]:
+    """Audit every committed Registry Analytics Hero description from its source catalog."""
+    tree = ast.parse(_read(REGISTRY_ANALYTICS_PAGES), filename=str(REGISTRY_ANALYTICS_PAGES))
+    descriptions: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(isinstance(target, ast.Name) and target.id == '_REGISTRY_ANALYTICS_PAGE_DETAILS' for target in node.targets):
+            continue
+        if not isinstance(node.value, ast.Dict):
+            raise AssertionError('Registry Analytics page details must remain a static dictionary')
+        for key_node, detail in zip(node.value.keys, node.value.values, strict=True):
+            if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+                raise AssertionError('Registry Analytics page keys must remain static strings')
+            key = key_node.value
+            if key not in REGISTRY_ANALYTICS_PAGE_KEYS or key in descriptions:
+                raise AssertionError(f'Registry Analytics unexpected or duplicate page key: {key}')
+            if not isinstance(detail, ast.Tuple) or len(detail.elts) != 3:
+                raise AssertionError(f'Registry Analytics {key}: static title, description, icon required')
+            descriptions[key] = _static_string(detail.elts[1], owner=f'Registry Analytics {key}')
+    if set(descriptions) != REGISTRY_ANALYTICS_PAGE_KEYS:
+        raise AssertionError('Registry Analytics description catalog must cover all eight pages')
+    return {f'Registry Analytics {key}': value for key, value in descriptions.items()}
+
+
 def _materialization_route_descriptions() -> dict[str, str]:
     descriptions: dict[str, str] = {}
     for path in sorted(KUBERNETES_ANALYTICS_ROUTES.rglob('routes.py')):
@@ -842,6 +874,7 @@ def _verify_description_budgets(primitive_shells: list[Path], profile_templates:
     descriptions.update(_reports_unavailable_descriptions())
     descriptions.update(_reports_page_subtitle_descriptions())
     descriptions.update(_object_storage_analytics_descriptions())
+    descriptions.update(_registry_analytics_descriptions())
     descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
     failures: list[str] = []
