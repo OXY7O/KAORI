@@ -6,6 +6,7 @@
     {% import "components/section_intro.html" as section_intro %}
     {% import "components/visualization_workspace.html" as visualization %}
     {% import "components/table.html" as table_ui %}
+    {% import "components/table_registry.html" as registry_ui %}
     {% import "components/segmented_tabs.html" as segmented_tabs %}
     {% import "components/table_label.html" as table_label %}
     <div class="space-y-5">
@@ -67,6 +68,19 @@
             {{ section_intro.render('Artifact Dependency Mapping',
                 'Inspect one bounded committed relationship graph at a time; explore the same slice in Resource List.',
                 'registry-topology-section-title') }}
+            {% set registry_topology_filters_active =
+                runtime.filters.source_id or runtime.filters.cluster_id or
+                runtime.filters.namespace or runtime.filters.match_type or
+                runtime.filters.exposure or runtime.filters.artifact_id or
+                runtime.filters.search %}
+            {% set registry_topology_header_actions = registry_ui.clear_filters_action(
+                url_for('artifact_registry.runtime_topology'),
+                table_ui.action_classes(),
+                marker='registry-topology-filters',
+                swap='',
+                id='registry-topology-clear-filters',
+                hidden=not registry_topology_filters_active
+            ) %}
             {% call visualization.render(
                 'registry-topology-workspace',
                 'Artifact-to-Runtime Explorer',
@@ -76,13 +90,14 @@
                 action_label='Reload Snapshot',
                 action_icon='refresh-cw',
                 loading_id='registry-topology-loading',
+                header_actions=registry_topology_header_actions,
                 action_classes=table_ui.action_classes()
             ) %}
                 <form id="registry-topology-filters"
                       action="{{ url_for('artifact_registry.runtime_topology') }}"
                       method="get"
                       class="border-b border-outline-subtle bg-surface-elevated px-5 py-4">
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
                         <label class="min-w-0">
                             <span class="{{ table_ui.filter_label_classes() }}">Registry Source</span>
                             <select name="source_id" class="{{ table_ui.filter_select_classes() }}">
@@ -145,14 +160,11 @@
                                href="{{ url_for('artifact_registry.runtime_topology') }}">Clear artifact focus</a>
                         </p>
                     {% endif %}
-                    <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
-                        <p id="registry-topology-scope-summary" class="text-xs font-medium text-kaori-primary">Changing a filter reloads the committed graph slice.</p>
-                        <div class="flex gap-2">
-                            <a href="{{ url_for('artifact_registry.runtime_topology') }}"
-                               class="{{ table_ui.action_classes() }}">Clear Filters</a>
-                            <button type="submit" class="{{ table_ui.action_classes() }}">Apply Filters</button>
-                        </div>
-                    </div>
+                    <p id="registry-topology-scope-summary"
+                       class="mt-3 text-xs font-medium text-kaori-primary"
+                       role="status" aria-live="polite">
+                        Filters update the committed graph automatically.
+                    </p>
                 </form>
                 <div id="registry-topology-warning"
                      role="alert"
