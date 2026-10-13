@@ -30,6 +30,8 @@ if (canvas && form) {
     const resourceToggles = [...document.querySelectorAll('[data-registry-topology-type]')]
     const relationshipToggles = [...document.querySelectorAll('[data-registry-topology-relationship]')]
     const scopeSummary = $('registry-topology-scope-summary')
+    const loading = $('registry-topology-loading')
+    const clearFiltersButton = $('registry-topology-clear-filters')
     const close = $('registry-topology-inspector-close')
     const previous = $('registry-topology-prev')
     const next = $('registry-topology-next')
@@ -39,7 +41,32 @@ if (canvas && form) {
     let view = new URL(window.location.href).searchParams.get('view') === 'list' ? 'list' : 'graph'
     let listPage = 1
     let controller = null
+    let searchTimer = null
     const pageSize = 5
+    const filterKeys = ['source_id', 'cluster_id', 'namespace', 'match_type', 'exposure', 'artifact_id', 'q']
+    const hasActiveFilters = () => filterKeys.some((key) =>
+        Boolean(new FormData(form).get(key)?.toString().trim())
+    )
+    const syncClearFiltersVisibility = () => {
+        if (clearFiltersButton) clearFiltersButton.hidden = !hasActiveFilters()
+    }
+    const updateFilterUrl = () => {
+        const url = new URL(window.location.href)
+        const params = new URLSearchParams(new FormData(form))
+        for (const key of filterKeys) {
+            const value = params.get(key)?.trim()
+            if (value) url.searchParams.set(key, value)
+            else url.searchParams.delete(key)
+        }
+        window.history.replaceState({}, '', url)
+        syncClearFiltersVisibility()
+    }
+    const setLoading = (state) => {
+        loading?.classList.toggle('htmx-request', state)
+        loading?.setAttribute('aria-busy', String(state))
+        $('registry-topology-reload').disabled = state
+        canvasShell.setAttribute('aria-busy', String(state))
+    }
 
     const token = (name, fallback) =>
         window.getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
@@ -903,7 +930,9 @@ if (canvas && form) {
 
     const reload = async () => {
         if (controller) controller.abort()
-        controller = new AbortController()
+        const requestController = new AbortController()
+        controller = requestController
+        setLoading(true)
         status.classList.remove('hidden')
         status.textContent = 'Loading committed dependency evidence…'
         warning.classList.add('hidden')
@@ -915,7 +944,7 @@ if (canvas && form) {
         try {
             const response = await fetch(dataUrl, {
                 headers: { Accept: 'application/json' },
-                signal: controller.signal,
+                signal: requestController.signal,
                 credentials: 'same-origin',
             })
             if (!response.ok) throw new Error(`Graph request failed (HTTP ${response.status})`)
@@ -957,20 +986,35 @@ if (canvas && form) {
             errorPanel.classList.remove('hidden')
             status.classList.add('hidden')
             scopeSummary.textContent = 'Topology unavailable — no evidence conclusion can be drawn.'
+        } finally {
+            // Abort from an older request cannot dismiss a newer request's bar.
+            if (controller === requestController) setLoading(false)
         }
     }
 
+    const commitFilterChange = () => {
+        updateFilterUrl()
+        reload()
+    }
     form.addEventListener('submit', (event) => {
         event.preventDefault()
-        const params = new URLSearchParams(new FormData(form))
-        const url = new URL(window.location.href)
-        url.search = params.toString()
-        if (view === 'list') url.searchParams.set('view', 'list')
-        window.history.replaceState({}, '', url)
-        reload()
+        window.clearTimeout(searchTimer)
+        commitFilterChange()
     })
-    form.querySelectorAll('select').forEach((select) => {
-        select.addEventListener('change', () => form.requestSubmit())
+    form.querySelectorAll('select').forEach((select) =>
+        select.addEventListener('change', commitFilterChange)
+    )
+    form.querySelector('input[name="q"]')?.addEventListener('input', () => {
+        window.clearTimeout(searchTimer)
+        searchTimer = window.setTimeout(commitFilterChange, 350)
+    })
+    clearFiltersButton?.addEventListener('click', (event) => {
+        event.preventDefault()
+        window.clearTimeout(searchTimer)
+        form.querySelectorAll('select').forEach((select) => { select.selectedIndex = 0 })
+        form.querySelector('input[name="q"]').value = ''
+        form.querySelector('input[name="artifact_id"]')?.remove()
+        commitFilterChange()
     })
     $('registry-topology-reload').addEventListener('click', reload)
     $('registry-topology-fit').addEventListener('click', fitGraph)
@@ -1035,5 +1079,6 @@ if (canvas && form) {
     const initialLayout = new URL(window.location.href).searchParams.get('layout')
     layoutSelect.value = initialLayout === 'dependency' ? 'dependency' : 'hierarchy'
     setView(view)
+    syncClearFiltersVisibility()
     reload()
 }
