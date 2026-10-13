@@ -124,78 +124,267 @@ if (canvas && form) {
         return payload.bindings.filter((item) => related.has(item.node_id))
     }
 
-    const inspect = (node) => {
-        const data = node.data()
-        inspectorContent.replaceChildren()
-        const heading = elements('section', 'rounded-xl border border-outline-subtle bg-surface-elevated p-4')
-        const headingRow = elements('div', 'flex items-start gap-3')
-        const badge = elements(
-            'span',
-            `flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border text-sm font-bold kaori-topology-domain-${visualDomains[data.type] || 'compute'}`,
-            glyphs[data.type] || 'RS'
-        )
-        const identity = elements('div', 'min-w-0 flex-1')
-        identity.append(elements('p', 'text-xs font-semibold uppercase tracking-wide text-kaori-primary', safeLabel(data.type)))
-        identity.append(elements('h4', 'mt-1 break-words text-base font-semibold text-content-primary', safeLabel(data.label)))
-        if (data.subtitle) identity.append(elements('p', 'mt-1 text-xs text-content-muted', data.subtitle))
-        headingRow.append(badge, identity)
-        heading.append(headingRow)
-        inspectorContent.append(heading)
-        const info = elements('div', 'rounded-xl border border-outline-default bg-surface-card px-4 py-2')
-        if (data.type === 'artifact') {
-            appendField(info, 'Registry Source', data.source)
-            appendField(info, 'Artifact Digest', data.digest)
-            appendField(info, 'Scan', data.scan_status)
-            appendField(info, 'Critical / High', `${data.critical} / ${data.high}`)
-        } else if (data.type === 'cluster') {
-            appendField(info, 'Kubernetes Cluster ID', data.cluster_id)
-        } else {
-            appendField(info, 'Resource Type', data.type)
-        }
-        inspectorContent.append(info)
-
-        const bindings = associatedBindings(data.id)
-        inspectorContent.append(elements('h5', 'text-sm font-semibold text-content-primary', `Visible Runtime Evidence (${bindings.length})`))
-        if (bindings.length) {
-            for (const item of bindings.slice(0, 12)) {
-                const box = elements('div', 'space-y-1 rounded-lg border border-outline-subtle bg-surface-elevated p-3')
-                box.append(elements('p', 'text-xs font-semibold text-content-primary', `${item.cluster} / ${item.namespace}`))
-                box.append(elements('p', 'text-xs text-content-secondary', `${item.workload} · ${item.pod}`))
-                box.append(elements('p', 'text-xs text-content-muted', `${item.match} · ${item.security} · ${item.containers.length} container(s)`))
-                inspectorContent.append(box)
-            }
-            if (bindings.length > 12) {
-                inspectorContent.append(elements('p', 'text-xs text-content-muted', `${bindings.length - 12} more displayed bindings; see Resource List.`))
-            }
-        } else {
-            inspectorContent.append(elements('p', 'text-sm text-content-muted', 'No runtime bindings in the displayed slice.'))
-        }
-        inspectorContent.append(elements('p', 'text-xs text-content-muted', 'Evidence is limited to the selected committed graph slice; inspect snapshot readiness and omitted counts.'))
-        if (data.type === 'artifact' && data.url) inspectorContent.append(link('Open Runtime Bindings', data.url))
-        openInspector()
+    // The inspector follows Kubernetes Topology's canonical Details / Relationships
+    // pattern, while preserving Registry-owned identity and confidence evidence.
+    let inspectorTab = 'details'
+    let highlightedNodeId = null
+    const collapsedNodeIds = new Set()
+    const typeLabels = {
+        artifact: 'Registry Artifact', cluster: 'Cluster', namespace: 'Namespace',
+        workload: 'Workload', pod: 'Pod',
     }
-
+    const typeIcons = {
+        artifact: 'package', cluster: 'server', namespace: 'layers-3',
+        workload: 'boxes', pod: 'circle-dot',
+    }
+    const relationshipLabels = { runtime_usage: 'Runtime Usage', owns: 'Owns', contains: 'Contains' }
+    const cloneInspectorTemplate = (name) =>
+        $(`registry-topology-inspector-${name}-template`)?.content?.firstElementChild?.cloneNode(true) || null
+    const fill = (root, selector, value) => {
+        const target = root?.querySelector(selector)
+        if (target) target.textContent = safeLabel(value)
+        return target
+    }
+    const addFields = (parent, fields) => {
+        parent.replaceChildren()
+        for (const [name, value] of fields) {
+            const item = elements('div', 'flex items-start justify-between gap-3 py-2.5')
+            item.append(elements('dt', 'min-w-0 text-xs font-normal text-content-muted', name))
+            item.append(elements('dd', 'max-w-[65%] break-words text-right text-xs font-medium text-content-primary', safeLabel(value)))
+            parent.append(item)
+        }
+    }
+    const selectedNode = (id) => cy?.getElementById(id)
+    const selectNodeById = (id, tab = 'details') => {
+        const node = selectedNode(id)
+        if (!node?.length || !node.visible()) return
+        cy.elements().removeClass('kaori-topology-muted')
+        const neighborhood = node.closedNeighborhood(':visible')
+        cy.elements(':visible').difference(neighborhood).addClass('kaori-topology-muted')
+        node.select()
+        inspect(node, tab)
+        cy.animate({ center: { eles: node }, zoom: Math.max(cy.zoom(), 1.05) }, { duration: 220 })
+    }
+    const drawMiniMap = (pane, node) => {
+        const drawing = pane.querySelector('[data-minimap]')
+        if (!drawing || !cy || !node?.length || !node.visible()) return
+        const all = cy.nodes(':visible')
+        if (!all.length) return
+        const ctx = drawing.getContext('2d')
+        if (!ctx) return
+        const width = drawing.width
+        const height = drawing.height
+        const bounds = all.boundingBox({ includeLabels: false, includeOverlays: false })
+        const padding = 17
+        const scale = Math.min(
+            (width - padding * 2) / Math.max(bounds.w, 1),
+            (height - padding * 2) / Math.max(bounds.h, 1)
+        )
+        const offsetX = (width - bounds.w * scale) / 2
+        const offsetY = (height - bounds.h * scale) / 2
+        const point = (n) => ({
+            x: offsetX + (n.position('x') - bounds.x1) * scale,
+            y: offsetY + (n.position('y') - bounds.y1) * scale,
+        })
+        ctx.clearRect(0, 0, width, height)
+        ctx.strokeStyle = token('--kaori-topology-edge-contains', 'CanvasText')
+        ctx.globalAlpha = 0.55
+        ctx.lineWidth = 1.3
+        for (const edge of cy.edges(':visible')) {
+            const from = point(edge.source()), to = point(edge.target())
+            ctx.beginPath()
+            ctx.moveTo(from.x, from.y)
+            ctx.lineTo(to.x, to.y)
+            ctx.stroke()
+        }
+        ctx.globalAlpha = 1
+        for (const item of all) {
+            const p = point(item)
+            const domain = visualDomains[item.data('type')] || 'compute'
+            ctx.fillStyle = token(`--kaori-topology-domain-${domain}-fill`, 'Canvas')
+            ctx.strokeStyle = token(`--kaori-topology-domain-${domain}-border`, 'CanvasText')
+            ctx.lineWidth = item.id() === node.id() ? 2.8 : 1.3
+            ctx.beginPath()
+            ctx.arc(p.x, p.y, item.id() === node.id() ? 5 : 3.2, 0, Math.PI * 2)
+            ctx.fill()
+            ctx.stroke()
+        }
+        const center = () => {
+            if (view !== 'graph') setView('graph')
+            window.requestAnimationFrame(() => cy?.center(node))
+        }
+        drawing.addEventListener('click', center)
+        drawing.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); center() }
+        })
+    }
+    const renderBindingEvidence = (pane, node) => {
+        const rows = associatedBindings(node.id())
+        if (!rows.length) return
+        pane.classList.remove('hidden')
+        const title = elements('h5', 'text-xs font-semibold text-content-primary', `Visible Runtime Evidence (${rows.length})`)
+        pane.append(title)
+        for (const item of rows.slice(0, 10)) {
+            const box = elements('div', 'rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2')
+            box.append(elements('p', 'break-words text-xs font-semibold text-content-primary', `${item.cluster} / ${item.namespace}`))
+            box.append(elements('p', 'mt-1 break-words text-xs text-content-secondary', `${item.workload} · ${item.pod}`))
+            box.append(elements('p', 'mt-1 text-xs text-content-muted', `${item.match} · ${item.security}`))
+            pane.append(box)
+        }
+        if (rows.length > 10) pane.append(elements('p', 'text-xs text-content-muted', `${rows.length - 10} additional visible bindings; refine scope or use Runtime Usage.`))
+    }
+    const renderRelationshipRows = (target, node) => {
+        target.replaceChildren()
+        const edges = node.connectedEdges(':visible')
+        if (!edges.length) {
+            target.append(elements('p', 'rounded-xl border border-dashed border-outline-strong bg-kaori-soft p-6 text-center text-xs font-medium text-kaori-primary', 'No Visible Relationships'))
+            return
+        }
+        edges.forEach((edge) => {
+            const outbound = edge.source().id() === node.id()
+            const peer = outbound ? edge.target() : edge.source()
+            const row = cloneInspectorTemplate('relationship-row')
+            if (!row) return
+            fill(row, '[data-edge-direction]', outbound ? 'Outbound' : 'Inbound')
+            fill(row, '[data-edge-relationship]', relationshipLabels[edge.data('relationship')] || edge.data('relationship'))
+            fill(row, '[data-peer-label]', peer.data('label'))
+            fill(row, '[data-peer-type]', typeLabels[peer.data('type')] || peer.data('type'))
+            row.addEventListener('click', () => selectNodeById(peer.id(), 'relationships'))
+            target.append(row)
+        })
+        window.lucide?.createIcons()
+    }
+    const inspect = (node, initialTab = inspectorTab) => {
+        const data = node.data()
+        const pane = cloneInspectorTemplate('node')
+        if (!pane) return
+        const badge = pane.querySelector('[data-node-icon-shell]')
+        badge?.classList.add(`kaori-topology-domain-${visualDomains[data.type] || 'compute'}`)
+        pane.querySelector('[data-node-icon]')?.setAttribute('data-lucide', typeIcons[data.type] || 'box')
+        fill(pane, '[data-node-label]', data.label)
+        fill(pane, '[data-node-kind]', data.subtitle || typeLabels[data.type] || data.type)
+        fill(pane, '[data-node-type]', typeLabels[data.type] || data.type)
+        const evidence = payload.evidence || {}
+        fill(pane, '[data-node-evidence]', data.type === 'artifact' ? (data.security || 'Scan Evidence Unknown') : (evidence.title || 'Committed Scope'))
+        fill(pane, '[data-node-description]', data.type === 'artifact'
+            ? 'Authoritative Registry artifact identity and reported scan posture.'
+            : 'Resource context derived from committed Registry-to-Kubernetes runtime bindings.')
+        const fields = []
+        if (data.type === 'artifact') {
+            fields.push(['Registry Source', data.source], ['Digest', data.digest],
+                ['Scan Status', data.scan_status], ['Critical / High', `${data.critical ?? 0} / ${data.high ?? 0}`])
+        } else if (data.type === 'cluster') {
+            fields.push(['Kubernetes Cluster', data.label], ['Cluster Identity', data.cluster_id])
+        } else {
+            fields.push(['Resource', data.label], ['Type', typeLabels[data.type] || data.type])
+        }
+        fields.push(['Correlation Readiness', evidence.title || evidence.status || 'Unknown'])
+        addFields(pane.querySelector('[data-node-fields]'), fields)
+        const edges = node.connectedEdges(':visible')
+        if (edges.length) {
+            pane.querySelector('[data-relationship-summary]')?.classList.remove('hidden')
+            const counts = new Map()
+            edges.forEach((edge) => {
+                const outbound = edge.source().id() === node.id()
+                const key = `${edge.data('relationship')}:${outbound ? 'out' : 'in'}`
+                counts.set(key, (counts.get(key) || 0) + 1)
+            })
+            const summary = pane.querySelector('[data-relationship-summary-items]')
+            for (const [key, count] of counts) {
+                const [relationship, direction] = key.split(':')
+                const chip = elements('span', 'inline-flex min-h-7 items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-card px-2 py-1 text-xs font-medium text-content-secondary', `${relationshipLabels[relationship] || relationship} · ${direction === 'out' ? 'Outbound' : 'Inbound'} · ${count}`)
+                chip.setAttribute('role', 'listitem')
+                summary.append(chip)
+            }
+        }
+        const descendants = node.successors('node').filter(':visible')
+        const collapsed = collapsedNodeIds.has(node.id())
+        const collapseButton = pane.querySelector('[data-collapse-path]')
+        collapseButton.disabled = !descendants.length && !collapsed
+        fill(pane, '[data-collapse-label]', descendants.length ? (collapsed ? `Expand ${descendants.length}` : `Collapse ${descendants.length}`) : collapsed ? 'Expand Children' : 'No Loaded Children')
+        collapseButton.addEventListener('click', () => {
+            if (collapsed) collapsedNodeIds.delete(node.id())
+            else collapsedNodeIds.add(node.id())
+            applyVisibility()
+            runLayout()
+            inspect(node, inspectorTab)
+        })
+        fill(pane, '[data-highlight-label]', highlightedNodeId === node.id() ? 'Clear Path' : 'Highlight Path')
+        pane.querySelector('[data-highlight-path]').addEventListener('click', () => {
+            if (highlightedNodeId === node.id()) {
+                highlightedNodeId = null
+                cy.elements().removeClass('kaori-topology-muted')
+            } else {
+                highlightedNodeId = node.id()
+                const related = node.union(node.predecessors()).union(node.closedNeighborhood(':visible'))
+                cy.elements(':visible').addClass('kaori-topology-muted')
+                related.removeClass('kaori-topology-muted')
+            }
+            inspect(node, inspectorTab)
+        })
+        const action = pane.querySelector('[data-node-action]')
+        if (data.url) {
+            action.href = data.url
+            action.classList.remove('hidden')
+            action.classList.add('inline-flex')
+        }
+        const runtime = pane.querySelector('[data-node-runtime-bindings]')
+        renderBindingEvidence(runtime, node)
+        if (data.type === 'artifact' || data.type === 'cluster') {
+            pane.querySelector('[data-node-minimap]')?.classList.remove('hidden')
+        }
+        const tabs = [...pane.querySelectorAll('[data-kaori-segmented-tab]')]
+        const detailsPanel = pane.querySelector('#registry-topology-inspector-panel-details')
+        const relationshipsPanel = pane.querySelector('#registry-topology-inspector-panel-relationships')
+        const activate = (chosen) => {
+            inspectorTab = chosen === 'relationships' ? 'relationships' : 'details'
+            tabs.forEach((tab) => {
+                const active = tab.dataset.kaoriSegmentedTab === inspectorTab
+                tab.setAttribute('aria-selected', String(active))
+                tab.tabIndex = active ? 0 : -1
+                tab.classList.toggle('bg-surface-card', active)
+                tab.classList.toggle('text-kaori-primary', active)
+                tab.classList.toggle('shadow-sm', active)
+                tab.classList.toggle('text-content-muted', !active)
+            })
+            detailsPanel.hidden = inspectorTab !== 'details'
+            relationshipsPanel.hidden = inspectorTab !== 'relationships'
+            if (inspectorTab === 'relationships') renderRelationshipRows(relationshipsPanel.querySelector('[data-node-relationships]'), node)
+            else window.requestAnimationFrame(() => drawMiniMap(pane, node))
+        }
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => activate(tab.dataset.kaoriSegmentedTab))
+            tab.addEventListener('keydown', (event) => {
+                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+                event.preventDefault()
+                const next = tab.dataset.kaoriSegmentedTab === 'details' ? 'relationships' : 'details'
+                activate(next)
+                tabs.find((t) => t.dataset.kaoriSegmentedTab === next)?.focus()
+            })
+        })
+        pane.querySelector('[data-open-relationships]')?.addEventListener('click', () => activate('relationships'))
+        inspectorContent.replaceChildren(pane)
+        openInspector()
+        activate(initialTab)
+        window.lucide?.createIcons()
+    }
     const inspectBinding = (item) => {
-        const match = `${item.match} · ${item.confidence} confidence`
+        const node = selectedNode(item.node_id)
+        if (node?.length) {
+            selectNodeById(node.id())
+            return
+        }
+        // Data can still be inspected when the graph renderer fails.
         inspectorContent.replaceChildren()
-        inspectorContent.append(elements('h4', 'break-words text-lg font-semibold text-content-primary', item.artifact))
-        const info = elements('div', 'rounded-xl border border-outline-default bg-surface-card px-4 py-2')
-        appendField(info, 'Registry Source', item.source)
-        appendField(info, 'Artifact Digest', item.digest)
-        appendField(info, 'Cluster', item.cluster)
-        appendField(info, 'Namespace', item.namespace)
-        appendField(info, 'Workload', item.workload)
-        appendField(info, 'Pod', item.pod)
-        appendField(info, 'Containers', item.containers.map((c) => `${c.name} (${c.kind})`).join(', '))
-        appendField(info, 'Image Reference', item.image_reference)
-        appendField(info, 'Match', match)
-        appendField(info, 'Artifact Security', item.security)
-        appendField(info, 'Correlated At', item.observed_at)
-        appendField(info, 'Registry Observed At', item.registry_observed_at)
-        appendField(info, 'Kubernetes Observed At', item.pod_collected_at)
-        inspectorContent.append(info)
-        inspectorContent.append(elements('p', 'text-xs text-content-muted', 'Digest matching is immutable identity evidence. Tag-only matches are provisional, not verified image equivalence.'))
-        inspectorContent.append(link('Open Runtime Bindings', item.url))
+        const box = elements('dl', 'divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-card px-3')
+        addFields(box, [
+            ['Artifact', item.artifact], ['Registry Source', item.source],
+            ['Cluster', item.cluster], ['Namespace', item.namespace],
+            ['Workload', item.workload], ['Pod', item.pod],
+            ['Match', item.match], ['Confidence', item.confidence],
+            ['Security', item.security], ['Observed At', item.observed_at],
+        ])
+        inspectorContent.append(box, link('Open Runtime Usage', item.url))
         openInspector()
     }
 
