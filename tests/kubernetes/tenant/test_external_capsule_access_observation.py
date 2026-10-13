@@ -68,6 +68,13 @@ def test_kaori_grant_marker_requires_both_manager_and_grant_id() -> None:
     'spec',
     [
         {'owners': {'kind': 'User', 'name': 'bad'}},
+        {'owners': {}},
+        {'rules': {}},
+        {'additionalRoleBindings': {}},
+        {'additionalRoleBindings': [{'subjects': {}}]},
+        {'additionalRoleBindings': [{'labels': []}]},
+        {'rules': [{'permissions': {'bindings': None}}]},
+        {'rules': [{'namespaceSelector': []}]},
         {'rules': [{'permissions': {'bindings': {}}}]},
         {'additionalRoleBindings': [{'subjects': 'not-list'}]},
         {'rules': [{'namespaceSelector': 'invalid', 'permissions': {'bindings': [{}]}}]},
