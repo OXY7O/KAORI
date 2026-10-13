@@ -352,9 +352,7 @@ def verify() -> None:
         or watcher[0].get('runOptions', {}).get('instanceLimit') != 1
         or watcher[0].get('isBackground') is not True
     ):
-        raise AssertionError(
-            'Dev Container Tailwind watcher must be manually started after frontend bootstrap'
-        )
+        raise AssertionError('Dev Container Tailwind watcher must be manually started after frontend bootstrap')
 
     for document in (
         'docs/RUNNING.md',
