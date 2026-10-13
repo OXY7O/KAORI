@@ -9,6 +9,7 @@ import json
 import re
 import sys
 import xml.etree.ElementTree as ET
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -98,8 +99,19 @@ def evaluate(
     evidence_root: Path,
 ) -> dict[str, Any]:
     candidate = execution.get("candidate") or {}
+    run = execution.get("run") or {}
     env = execution.get("environment") or {}
     problems: list[str] = []
+    for field in ("run_id", "runner"):
+        if not isinstance(run.get(field), str) or not run[field].strip():
+            problems.append(f"execution {field} missing")
+    started_at = run.get("started_at")
+    try:
+        parsed = datetime.fromisoformat(str(started_at).replace("Z", "+00:00"))
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            problems.append("execution started_at must include timezone")
+    except ValueError:
+        problems.append("execution started_at is not ISO-8601")
     for label, actual, expected in (
         ("source_sha", candidate.get("source_sha"), expected_source),
         ("tree_sha", candidate.get("tree_sha"), expected_tree),
@@ -163,7 +175,8 @@ def evaluate(
     ready = not problems and bool(collected) and all(x["result"] == "PASS" for x in collected)
     return {
         "contract_version": 1,
-        "candidate": candidate,
+        "run": {key: run.get(key) for key in ("run_id", "runner", "started_at")},
+        "candidate": {key: candidate.get(key) for key in ("source_sha", "tree_sha", "oci_digest")},
         "environment": env,
         "identity_problems": problems,
         "coverage": {
