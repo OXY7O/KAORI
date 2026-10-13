@@ -52,6 +52,7 @@ def test_slack_posts_sanitized_content_and_does_not_follow_redirects(
 ) -> None:
     opener = Mock()
     reply = MagicMock()
+    reply.__enter__.return_value = reply
     reply.status = 200
     reply.read.return_value = b'ok'
     opener.open.return_value = reply
