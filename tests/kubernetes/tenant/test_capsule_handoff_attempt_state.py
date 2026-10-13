@@ -302,7 +302,13 @@ def test_recovery_must_have_a_different_actor_and_no_second_started_event():
 def test_source_sha_drift_and_unapproved_worklist_do_not_validate_old_receipts():
     plan, related = _scope()
     started = _event(plan, related)
+    # Kubernetes LIST RV churn without object/content change is intentionally excluded
+    # from the SHA-bound source scope; it never authorizes provider execution.
     related['list_snapshots'][0]['list_resource_version'] = 'changed'
+    assert _projection(plan, related, [started])['event_count'] == 1
+    plan, related = _scope()
+    started = _event(plan, related)
+    related['list_snapshots'][0]['count'] = 1
     with pytest.raises(ValueError):
         _projection(plan, related, [started])
     plan, related = _scope()
