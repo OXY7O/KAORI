@@ -182,7 +182,7 @@
                             · {{ plan.manual_review_count }} human review
                         </summary>
                         <div class="mt-2 space-y-2 border-t border-outline-subtle pt-2">
-                            {% for item in plan['items'] %}
+                            {% for item in plan.get('items') or [] %}
                                 <div class="rounded-lg border border-outline-subtle bg-surface-card p-3 text-xs">
                                     <p class="font-semibold text-content-primary">{{ item.code|replace('_', ' ') |title }}</p>
                                     <p class="mt-1 break-all text-content-secondary">{{ item.subject }} · {{ item.reason }}</p>
