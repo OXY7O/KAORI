@@ -47,7 +47,14 @@ def _sha(value: Any) -> bool:
 def _related_identity(item: Mapping[str, Any]) -> tuple[str, str, str]:
     """Never treat missing related-provider coordinates as a valid scope key."""
     ns, kind, name = item.get('namespace'), item.get('kind'), item.get('name')
-    if not isinstance(ns, str) or not ns or not isinstance(kind, str) or not kind or not isinstance(name, str) or not name:
+    if (
+        not isinstance(ns, str)
+        or not ns
+        or not isinstance(kind, str)
+        or not kind
+        or not isinstance(name, str)
+        or not name
+    ):
         raise ValueError('Capsule per-resource origin scope is missing exact provider identity.')
     return ns, kind, name
 
