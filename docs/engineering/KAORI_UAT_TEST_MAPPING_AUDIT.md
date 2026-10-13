@@ -185,3 +185,16 @@
 ## Summary and limitations
 
 At this source-inspection checkpoint, **9** cases have inspected partial behavioral/related component coverage; **5** have only source-contract or adjacent component evidence for the specific full scenario. **0/14** are confirmed automated end-to-end UAT PASS and **0/14** have recorded human acceptance in this audit. These are audit classifications, not a claim that no other existing test anywhere in the repository could provide more coverage.
+
+## Work-branch implementations added after this source audit (NOT RUN)
+
+The initial mapping above inspected the **review candidate** before these bounded changes. The following independent issue branches now contain additional source assertions; neither changes the historical audit category or provides an execution/UAT verdict:
+
+| Scenario and issue | Work branch / source evidence | What was added | What is still not proven |
+| --- | --- | --- | --- |
+| `UAT-AUT-002` / #1727 | `kaori/task-1727-negative-session-regression`, `tests/access/authentication/test_login_characterization.py` | Flask-client invalid credentials cause no admitted session and the same client is redirected when requesting a protected page | No wrong-password **real browser** negative flow; no actual execution result |
+| `UAT-RPT-003` / #1727 | `kaori/task-1727-negative-session-regression`, `tests/reports/test_generate_execution_characterization.py` | Isolated SQLite storage-unavailable preflight returns failure, produces no Report row, and refuses to evaluate a downstream report specification | Queue/worker dispatch-failure, storage outage after queuing and user-visible Generated Reports error/retry remain unproven |
+| `UAT-UIX-002` / #1726 | `kaori/task-1726-interactive-ui-acceptance`, `tests/ui/test_accessibility_disclosures.py` and `tests/ui/test_representative_interactions.py` | Real UI validation error fields/text and post-HTMX clicked Notification Deck geometry/focus checked at canonical viewports | Real **mutation form** dialog with invalid data, error, saved/unchanged state and modal geometry in one flow remains outstanding |
+| `UAT-UIX-006` / #1726 | `kaori/task-1726-interactive-ui-acceptance`, `tests/ui/conftest.py` + `tests/ui/test_representative_interactions.py` | Fixture preserves submitted request filters/Rows; browser selects status, Rows=10 and clicks Clear Filters through real HTMX, asserting reset and retained Rows | Isolated empty-state fixture is not proof of nonempty/paginated production data or runtime provider UAT |
+
+**Execution status:** all entries above **SOURCE IMPLEMENTED / NOT RUN**. Actual pytest/Playwright and GitHub Actions remain deferred at maintainer request; exact test results cannot be inferred from committed source. Update this audit and execution records only after a targeted test is run on a named candidate. Full-scale route and scenario coverage remains to be inventoried.
