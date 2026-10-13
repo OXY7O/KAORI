@@ -11,6 +11,7 @@ from tests.ui.visual_audit import (
     DETERMINISTIC_VISUAL_SURFACES,
     VisualAuditFinding,
     assert_document_fits_viewport,
+    assert_locator_within_viewport,
     assert_hero_description_contract,
     assert_locator_within_document_width,
     assert_primary_actions_visible,
@@ -647,6 +648,20 @@ def test_representative_htmx_modal_or_drawer_interaction(
         dialog = page.get_by_role('dialog', name='Notification deck')
         expect(dialog).to_be_visible()
         expect(page.locator('#notification-deck')).to_be_visible()
+
+        # Exercise and measure the *rendered* overlay after an HTMX refresh and
+        # real user click, not only its static template or initial screenshot.
+        assert_document_fits_viewport(page)
+        assert_locator_within_viewport(page, dialog, label='Notification Deck dialog')
+        tabs = dialog.locator('[data-notification-deck-tabs]')
+        footer = dialog.locator('[data-notification-deck-footer]')
+        expect(tabs).to_be_visible()
+        expect(footer).to_be_visible()
+        assert_locator_within_document_width(page, tabs, label='Notification Deck tabs')
+        assert_locator_within_document_width(page, footer, label='Notification Deck footer')
+        page.keyboard.press('Escape')
+        expect(dialog).to_be_hidden()
+        expect(modal_trigger).to_be_focused()
 
 
 def test_representative_filter_pagination_and_form_controls(
