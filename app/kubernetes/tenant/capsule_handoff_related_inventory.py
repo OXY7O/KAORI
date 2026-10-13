@@ -94,6 +94,7 @@ def capsule_related_scope_sha256(
     """
     scopes: list[dict[str, str | int]] = []
     for row in list_snapshots:
+        count = row.get('count') if isinstance(row, Mapping) else None
         if (
             not isinstance(row, Mapping)
             or not isinstance(row.get('list_resource_version'), str)
@@ -101,15 +102,15 @@ def capsule_related_scope_sha256(
             or not isinstance(row.get('namespace'), str)
             or not row['namespace']
             or row.get('kind') not in _KINDS
-            or type(row.get('count')) is not int
-            or not 0 <= row['count'] <= _MAX_PER_NS
+            or type(count) is not int
+            or not 0 <= count <= _MAX_PER_NS
         ):
             raise ValueError('Capsule scope digest requires complete versioned LIST coverage.')
         scopes.append(
             {
                 'namespace': row['namespace'],
                 'kind': row['kind'],
-                'count': row['count'],
+                'count': count,
             }
         )
     if not isinstance(resources, list) or len(resources) > _MAX_TOTAL or len(scopes) > _MAX_NS * len(_KINDS):
