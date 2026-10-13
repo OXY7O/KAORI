@@ -269,6 +269,8 @@ def get_report_storage_integrity_scan_presentation(backend_name: str) -> dict[st
         'is_active': bool(latest and latest.is_active),
         'status': latest.status if latest is not None else 'not_scanned',
         'job_public_id': latest.public_id if latest is not None else None,
-        'last_result': dict(completed.result_summary_json) if completed is not None else None,
+        'last_result': dict(completed.result_summary_json)
+        if completed is not None and isinstance(completed.result_summary_json, dict)
+        else None,
         'result_is_current': latest is not None and latest is completed,
     }
