@@ -408,6 +408,27 @@ def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts()
     assert "header_content=worker_status if readiness.is_active else ''" in controls
 
 
+def test_registry_analytics_explicit_provider_scope_parser_fails_closed() -> None:
+    import pytest
+    from flask import Flask
+    from werkzeug.exceptions import NotFound
+
+    from app.artifact_registry.routes import _analytics_provider_id
+
+    flask_app = Flask(__name__)
+    with flask_app.test_request_context('/analytics'):
+        assert _analytics_provider_id() is None
+
+    for malformed in ('0', '-1', 'abc', '1a', '1.2', '1234567890123456789', '６'):
+        with flask_app.test_request_context('/analytics', query_string={'provider_id': malformed}):
+            with pytest.raises(NotFound):
+                _analytics_provider_id()
+
+    for value, expected in (('1', 1), ('42', 42), ('0002', 2)):
+        with flask_app.test_request_context('/analytics', query_string={'provider_id': value}):
+            assert _analytics_provider_id() == expected
+
+
 def test_registry_analytics_materialization_is_bounded_and_worker_owned() -> None:
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     adapter = (ROOT / 'app/artifact_registry/analytics_job_adapter.py').read_text()
