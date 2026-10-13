@@ -46,6 +46,29 @@ def test_both_delete_pages_use_shared_governed_confirmation() -> None:
 
 def test_kubernetes_operations_copy_keeps_provider_authority_and_live_target_guidance() -> None:
     overview = read('app/templates/kubernetes/operations/overview.html')
-    assert 'Run governed Kubernetes workflows by capability; Kubernetes remains the execution authority.' in overview
-    assert 'Open the relevant capability workspace to identify and verify the live Kubernetes target before proceeding.' in overview
+    assert 'Governed Kubernetes workflows; Kubernetes executes.' in overview
+    assert 'Select and verify a live target in its workspace.' in overview
 
+
+
+def test_operations_overview_supporting_copy_is_compact_and_responsive() -> None:
+    overview = read('app/templates/kubernetes/operations/overview.html')
+    descriptions = (
+        'Governed Kubernetes workflows; Kubernetes executes.',
+        'Select and verify a live target in its workspace.',
+        'Enforce permissions and operation-specific checks.',
+        'Provider executes; KAORI retains audit evidence.',
+    )
+    for description in descriptions:
+        assert description in overview
+        assert len(description) <= 55
+
+    for heading in ('Select a Live Target', 'Validate Before Mutation', 'Commit Auditable Outcome'):
+        assert heading in overview
+    assert 'md:grid-cols-3' in overview
+    assert 'text-xs leading-5 text-content-secondary' in overview
+    assert 'page_hero.description_classes()' in overview
+    assert 'whitespace-nowrap' not in overview
+    assert 'truncate' not in overview
+    assert "current_user.has_permission('kubernetes_configmaps.view')" in overview
+    assert "current_user.has_permission('kubernetes_secrets.view')" in overview
