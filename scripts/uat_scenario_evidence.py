@@ -83,7 +83,7 @@ def _artifact_status(
                 continue
             if not resolved.is_file() or resolved.stat().st_size == 0 or resolved in used_paths:
                 continue
-            if expected_keys:
+            if expected_keys and kind in {"screenshot", "trace"}:
                 nodeid = entry.get("nodeid")
                 variant = entry.get("variant")
                 key = f"{nodeid}::{variant}"
@@ -94,7 +94,8 @@ def _artifact_status(
                 valid.add(relative)
             used_paths.add(resolved)
         if len(valid) < count or (
-            expected_keys and count == len(expected_keys) and not expected_keys.issubset(valid)
+            expected_keys and kind in {"screenshot", "trace"} and count == len(expected_keys)
+            and not expected_keys.issubset(valid)
         ):
             missing.append(f"{kind}: {len(valid)}/{count} verified files")
     return missing
