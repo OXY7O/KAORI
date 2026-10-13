@@ -46,9 +46,10 @@ def test_auth_setup_workspace_uses_console_first_laptop_composition() -> None:
     assert 'data-kaori-auth-setup-heading-authority="readiness-workspace"' in source
     assert 'class="text-lg font-semibold leading-6 text-content-primary"' in source
 
-    assert 'max-w-5xl' in source
-    assert 'lg:grid-cols-3' in source
-    assert 'lg:col-span-2' in source
+    assert 'max-w-4xl' in source
+    assert 'data-kaori-setup-design="command-first"' in source
+    assert 'lg:grid-cols-3' not in source
+    assert 'lg:col-span-2' not in source
     assert 'data-kaori-setup-unified-surface' not in source
     assert 'data-kaori-setup-control-grid' not in source
     assert 'lg:grid-cols-12' not in source
@@ -64,14 +65,14 @@ def test_auth_setup_workspace_uses_console_first_laptop_composition() -> None:
     assert 'components/operational_section_card.html' not in source
 
     assert "table_label.status_indicator_label('Reachable', 'normal')" in source
-    assert "table_label.status_indicator_label('Missing', 'warning')" in source
-    assert "table_label.status_indicator_label('Blocked', 'critical')" in source
+    assert "table_label.status_indicator_label('Not Installed', 'warning')" in source
+    assert "table_label.status_indicator_label('Unavailable', 'critical')" in source
     assert "section_link_button.render(url_for('auth.login') , 'Retry Setup Check', icon='refresh-cw')" in source
     assert 'compact=true' in source
     assert 'operational_flow_steps.render(initialization_flow_rows' in source
     assert 'view_more_content.render(' in source
 
-    assert source.index('Development Bootstrap') < source.index('Initialization Path')
+    assert source.index('data-kaori-setup-console') < source.index('Initialization Path')
     assert source.index('Initialization Path') < source.index('Advanced Setup')
     assert 'Readiness Summary' not in source
     assert 'Manual Initialization Commands' in source
