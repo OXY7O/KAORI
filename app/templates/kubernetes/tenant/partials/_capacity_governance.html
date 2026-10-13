@@ -459,18 +459,16 @@
                 </tbody>
             </table>
         </div>
-        {% if capacity_pagination.total_items > 0 %}
-            {{ registry_ui.footer('tenant.resource_profiles',
-                        capacity_registry_id,
-                        capacity_loading_id,
-                        capacity_pagination,
-                        capacity_query_params,
-                        capacity_pagination.allowed_per_page,
-                        resource_label='Clusters',
-                        rows_aria_label='Allocation Budget rows per page',
-                        control_name='capacity-budget',
-                        page_param='capacity_page',
-                        per_page_param='capacity_per_page') }}
-        {% endif %}
+        {{ registry_ui.footer('tenant.resource_profiles',
+                    capacity_registry_id,
+                    capacity_loading_id,
+                    capacity_pagination,
+                    capacity_query_params,
+                    capacity_pagination.allowed_per_page,
+                    resource_label='Clusters',
+                    rows_aria_label='Allocation Budget rows per page',
+                    control_name='capacity-budget',
+                    page_param='capacity_page',
+                    per_page_param='capacity_per_page') }}
     </section>
 </section>
