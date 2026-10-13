@@ -348,10 +348,13 @@ def verify() -> None:
     if (
         len(watcher) != 1
         or watcher[0].get('command') != 'npm run watch-css'
-        or watcher[0].get('runOptions', {}).get('runOn') != 'folderOpen'
+        or 'runOn' in watcher[0].get('runOptions', {})
         or watcher[0].get('runOptions', {}).get('instanceLimit') != 1
+        or watcher[0].get('isBackground') is not True
     ):
-        raise AssertionError('Dev Container requires one auto-starting Tailwind watcher VS Code task')
+        raise AssertionError(
+            'Dev Container Tailwind watcher must be manually started after frontend bootstrap'
+        )
 
     for document in (
         'docs/RUNNING.md',
