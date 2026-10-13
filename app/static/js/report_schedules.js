@@ -52,9 +52,10 @@
                 const previousNamespace = namespaceSelect.value || ''
                 namespaceError?.classList.add('hidden')
                 const loaded = Object.prototype.hasOwnProperty.call(scheduleNamespacesByCluster, selectedCluster)
-                const options = loaded && Array.isArray(scheduleNamespacesByCluster[selectedCluster])
-                    ? scheduleNamespacesByCluster[selectedCluster]
-                    : []
+                const options =
+                    loaded && Array.isArray(scheduleNamespacesByCluster[selectedCluster])
+                        ? scheduleNamespacesByCluster[selectedCluster]
+                        : []
 
                 namespaceSelect.replaceChildren()
                 const allOption = document.createElement('option')
@@ -70,8 +71,11 @@
                 })
 
                 const staleOriginal = Boolean(
-                    loaded && initialNamespace && selectedCluster === initialCluster &&
-                    previousNamespace === initialNamespace && !options.includes(initialNamespace)
+                    loaded &&
+                    initialNamespace &&
+                    selectedCluster === initialCluster &&
+                    previousNamespace === initialNamespace &&
+                    !options.includes(initialNamespace)
                 )
                 if (staleOriginal) {
                     const unavailable = document.createElement('option')

@@ -164,11 +164,10 @@
             if (!showNamespace) clearSelect(namespace)
         }
 
-        const providerSupported = !providerKey || (
-            providerKey === reconciliationAuthority && (
-                providerKey === 'native_kubernetes' || (providerKey === 'capsule' && providerState === 'capsule')
-            )
-        )
+        const providerSupported =
+            !providerKey ||
+            (providerKey === reconciliationAuthority &&
+                (providerKey === 'native_kubernetes' || (providerKey === 'capsule' && providerState === 'capsule')))
         const namespaceReady = scopeValue !== 'namespace' || namespaceCount > 0
         const environmentReady = scopeValue !== 'environment' || environmentCount > 0
         if (providerWarning instanceof HTMLElement) providerWarning.hidden = providerSupported

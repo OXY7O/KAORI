@@ -44,17 +44,34 @@
         if (progress) progress.style.width = Math.max(4, Math.round((complete / total) * 100)) + '%'
         if (complete !== total) {
             setText(view, '[data-analytics-load-title]', root.dataset.analyticsLoadTitle || 'Loading Analytics Section')
-            setText(view, '[data-analytics-load-description]', root.dataset.analyticsLoadDescription || 'Reading the requested committed analytics snapshot.')
+            setText(
+                view,
+                '[data-analytics-load-description]',
+                root.dataset.analyticsLoadDescription || 'Reading the requested committed analytics snapshot.'
+            )
             show(view, 'loading')
             return
         }
         const mode = failed ? 'completed-with-errors' : 'complete'
-        setText(view, '[data-analytics-load-title]', failed ? 'Analytics Section Loaded With Exceptions' : 'Analytics Section Ready')
-        setText(view, '[data-analytics-load-description]', failed ? failed + ' requested section(s) could not be refreshed.' : 'The requested committed snapshot section is available.')
+        setText(
+            view,
+            '[data-analytics-load-title]',
+            failed ? 'Analytics Section Loaded With Exceptions' : 'Analytics Section Ready'
+        )
+        setText(
+            view,
+            '[data-analytics-load-description]',
+            failed
+                ? failed + ' requested section(s) could not be refreshed.'
+                : 'The requested committed snapshot section is available.'
+        )
         show(view, mode)
-        window.setTimeout(() => {
-            if (view.isConnected && view.dataset.overviewLoadState === mode) hide(view)
-        }, failed ? 2600 : 1000)
+        window.setTimeout(
+            () => {
+                if (view.isConnected && view.dataset.overviewLoadState === mode) hide(view)
+            },
+            failed ? 2600 : 1000
+        )
     }
     function requestElement(event) {
         return event.detail?.elt || event.detail?.target || event.target
@@ -86,7 +103,9 @@
             update(root)
             return
         }
-        const refresh = requestElement(event)?.closest?.('[data-analytics-refresh-request="true"], [data-overview-refresh-request="true"]')
+        const refresh = requestElement(event)?.closest?.(
+            '[data-analytics-refresh-request="true"], [data-overview-refresh-request="true"]'
+        )
         const refreshRoot = refresh?.closest(ROOT)
         if (!refreshRoot) return
         const view = tracker(refreshRoot)
@@ -94,8 +113,16 @@
         setText(view, '[data-analytics-load-counter]', 'Applying Filter')
         const progress = view?.querySelector('[data-analytics-load-progress]')
         if (progress) progress.style.width = '4%'
-        setText(view, '[data-analytics-load-title]', refreshRoot.dataset.analyticsRefreshTitle || 'Refreshing Analytics Overview')
-        setText(view, '[data-analytics-load-description]', refreshRoot.dataset.analyticsRefreshDescription || 'Applying the selected analytics scope and time range.')
+        setText(
+            view,
+            '[data-analytics-load-title]',
+            refreshRoot.dataset.analyticsRefreshTitle || 'Refreshing Analytics Overview'
+        )
+        setText(
+            view,
+            '[data-analytics-load-description]',
+            refreshRoot.dataset.analyticsRefreshDescription || 'Applying the selected analytics scope and time range.'
+        )
     })
     document.body.addEventListener('htmx:afterSettle', (event) => {
         const section = currentSection(trackedSection(event))
