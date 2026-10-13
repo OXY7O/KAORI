@@ -85,6 +85,13 @@ def _event_checksum(event: Mapping[str, Any]) -> str:
     return _digest({key: value for key, value in event.items() if key != 'event_sha256'})
 
 
+def _require_prior_event(prior: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    """Do not compare a recovery claim with absent immutable predecessor evidence."""
+    if prior is None:
+        raise ValueError('Capsule recovery review requires prior immutable provider evidence.')
+    return prior
+
+
 def _validate_event(
     *,
     event: Mapping[str, Any],
@@ -208,10 +215,7 @@ def _validate_event(
         ):
             raise ValueError('Full Capsule read-back claim has missing/ambiguous scope.')
     else:
-        # Recovery reviews must compare against a previously committed event.
-        # A missing predecessor never confers read-back or retry authority.
-        if prior is None:
-            raise ValueError('Capsule recovery review requires prior immutable provider evidence.')
+        prior = _require_prior_event(prior)
         if (
             event['readback_sha256'] != prior['readback_sha256']
             or event['observed_count'] != prior['observed_count']
