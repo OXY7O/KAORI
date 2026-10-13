@@ -28,9 +28,12 @@ def test_mixed_and_no_delivery_states() -> None:
 
 def test_schedule_posture_depends_on_persisted_dispatcher_policy_and_enabled_definitions() -> None:
     source = (ROOT / 'app/reports/schedules/service.py').read_text(encoding='utf-8')
-    assert "JobPolicy.job_key == 'reports.schedule.dispatch'" in source
-    assert 'Dispatcher Disabled' in source
-    assert 'Waiting For Schedule' in source
+    readiness = (ROOT / 'app/reports/schedules/readiness.py').read_text(encoding='utf-8')
+    assert 'get_automation_posture(storage_context, worker_context)' in source
+    assert "JobPolicy.job_key == 'reports.schedule.dispatch'" in readiness
+    assert 'ReportSchedule.is_enabled.is_(True)' in readiness
+    assert 'Dispatcher Disabled' in readiness
+    assert 'Waiting For Schedule' in readiness
     assert 'schedule.next_run_at = None' in source
 
 
