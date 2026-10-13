@@ -67,7 +67,7 @@ Capsule ledger/audit schema, non-admin connections, elevated or
 owner-member target roles, and unexpected effective ledger privileges.
 It grants normal existing-table DML and sequence usage without CREATE,
 and overrides Capsule ledger grants to **SELECT and INSERT only**.
-It does **not** grant future table privileges by default: rerun the
+It does **not** grant future table privileges by default: **no blanket ALTER DEFAULT PRIVILEGES** is permitted for this runtime role. Rerun the
 role-grant step after an approved migration adds tables or sequences,
 **before** worker restart. That prevents default broad UPDATE/DELETE
 on newly created immutable evidence tables.
