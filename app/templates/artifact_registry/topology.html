@@ -302,7 +302,7 @@
                             </details>
                             <details open class="rounded-xl border border-outline-subtle p-3">
                                 <summary class="cursor-pointer text-sm font-semibold text-content-primary">Relationship Legend</summary>
-                                <p class="mt-2 text-xs leading-5 text-content-muted">Dashed links show context; solid links show committed runtime or ownership relationships.</p>
+                                <p class="mt-2 whitespace-nowrap text-xs text-content-muted">Dashed: scope · Solid: runtime/ownership.</p>
                                 <div class="mt-3 space-y-2 text-xs text-content-secondary">
                                     {% for kind, title, cls in [
                                         ('contains', 'Contains (scope context)', 'contains'),
@@ -318,9 +318,7 @@
                                                    class="h-4 w-4 rounded border-outline-strong accent-kaori-primary">
                                         </label>
                                     {% endfor %}
-                                    <p class="pt-2 text-xs text-status-warning-text">
-                                        Tag-only and mixed confidence are qualified in the Details inspector.
-                                    </p>
+                                    <p class="pt-2 whitespace-nowrap text-xs text-status-warning-text">Tag/mixed matches: see Details for confidence.</p>
                                 </div>
                             </details>
                         </div>
@@ -356,7 +354,7 @@
                         </section>
                         <section id="registry-topology-view-panel-list" role="tabpanel"
                                  aria-labelledby="registry-topology-view-tab-list"
-                                 hidden class="{{ visualization.canvas_classes() }} min-h-[38rem] overflow-auto">
+                                 hidden class="{{ visualization.canvas_classes() }} h-[38rem] overflow-auto overscroll-contain bg-surface-card">
                             <div class="flex items-center gap-1.5 border-b border-outline-subtle bg-surface-card px-5 py-3">
                                 <h3 class="text-sm font-semibold text-content-primary">Resource List</h3>
                                 {{ info_tip.render('registry-runtime-topology-resource-list-guide',
@@ -394,13 +392,7 @@
                                 {% set empty_state_min_height = "min-h-[220px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </div>
-                            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle px-5 py-3">
-                                <p id="registry-topology-list-count" class="text-xs text-content-muted"></p>
-                                <div class="flex gap-2">
-                                    <button type="button" id="registry-topology-prev" class="{{ table_ui.action_classes() }}">Previous</button>
-                                    <button type="button" id="registry-topology-next" class="{{ table_ui.action_classes() }}">Next</button>
-                                </div>
-                            </div>
+
                         </section>
                     </main>
                     <aside id="registry-topology-inspector"
