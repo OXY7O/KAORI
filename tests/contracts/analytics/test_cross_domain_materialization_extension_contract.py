@@ -53,7 +53,7 @@ def test_source_and_worker_ownership_stay_with_existing_kaori_contracts() -> Non
     assert 'MetricsConsumer.for_asset(' in registry_collector
     # Accepted historical Registry collector writes a measured time range;
     # only the guarded legacy instant path remains 'current'.
-    assert "snapshot.time_range = time_range" in registry_collector
+    assert 'snapshot.time_range = time_range' in registry_collector
     assert "if time_range == 'current':" in registry_collector
     assert 'time_range not in REGISTRY_HISTORY_WINDOWS' in registry_collector
     assert 'collect_registry_metric_history(identity, time_range' in registry_collector
