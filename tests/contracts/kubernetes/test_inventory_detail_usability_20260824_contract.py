@@ -202,11 +202,6 @@ def test_all_kubernetes_inventory_detail_rails_use_bounded_copy() -> None:
         ),
     }
     for family, captions in expected.items():
-        path = (
-            f'app/templates/kubernetes/inventory/{family}/partials/'
-            f'_{family[:-1] if family.endswith("s") and family not in ("ingresses", "services", "namespaces") else family}_detail_content.html'
-        )
-        # Explicit path mapping below retains the repository's canonical resource names.
         path = {
             'nodes': 'app/templates/kubernetes/inventory/nodes/partials/_node_detail_content.html',
             'namespaces': 'app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html',
