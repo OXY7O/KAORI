@@ -21,7 +21,10 @@ def test_overview_load_tracker_uses_shared_snapshot_shell_authority() -> None:
     assert 'section_tracker.render("analytics-overview-load-tracker")' in source
     assert '{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}' in shared_tracker
     assert 'id="{{ tracker_id }}"' in shared_tracker
-    assert 'class="hidden {{ analysis_surface.snapshot_shell_classes() }} px-4 py-3 shadow-sm sm:px-5"' not in shared_tracker
+    assert (
+        'class="hidden {{ analysis_surface.snapshot_shell_classes() }} px-4 py-3 shadow-sm sm:px-5"'
+        not in shared_tracker
+    )
     assert 'class="hidden {{ analysis_surface.snapshot_shell_classes() }} px-4 py-3 sm:px-5"' in shared_tracker
     assert COPIED_SHELL not in source
     assert COPIED_SHELL not in shared_tracker
