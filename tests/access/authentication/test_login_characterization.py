@@ -70,13 +70,26 @@ def test_invalid_credentials_return_generic_failure_without_account_disclosure(
 
     with app.test_request_context():
         login_url = url_for('auth.login')
-    response = app.test_client().post(login_url, data={'username': 'admin', 'password': 'wrong-password'})
+        protected_url = url_for('welcome.index')
+    client = app.test_client()
+    response = client.post(login_url, data={'username': 'admin', 'password': 'wrong-password'})
 
     assert response.status_code == 200
     assert audit_events == [('admin', 'invalid_credentials')]
     assert feedback
     assert all('provider' not in message.lower() for message in feedback)
     assert all('role' not in message.lower() for message in feedback)
+
+    # UAT-AUT-002: failure feedback is not enough; prove that rejected
+    # credentials never establish an authorized session or protected access.
+    with client.session_transaction() as session:
+        assert '_user_id' not in session
+        assert '_remember' not in session
+
+    protected = client.get(protected_url, follow_redirects=False)
+    assert protected.status_code == 302
+    assert '/auth/login' in protected.headers['Location']
+    assert audit_events == [('admin', 'invalid_credentials')]
 
 
 def test_unsafe_next_target_is_not_reflected_into_login_form(app) -> None:
