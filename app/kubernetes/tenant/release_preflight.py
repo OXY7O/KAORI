@@ -220,7 +220,14 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                     str(tenant.provider_reference or ''),
                     _request_timeout=5,
                 )
-                metadata = obj.get('metadata') or {}
+                if not isinstance(obj, dict):
+                    raise ValueError('Capsule Tenant response must be a JSON object.')
+                metadata = obj.get('metadata')
+                if not isinstance(metadata, dict):
+                    raise ValueError('Capsule Tenant metadata must be an object.')
+                spec = obj.get('spec')
+                if not isinstance(spec, dict):
+                    raise ValueError('Capsule Tenant spec must be an object.')
                 uid = str(metadata.get('uid') or '')
                 reference = str((tenant.provider_evidence_json or {}).get('provider_uid') or '')
                 if not uid or not metadata.get('resourceVersion') or (reference and uid != reference):
@@ -249,7 +256,7 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                                 tenant_name=str(tenant.provider_reference),
                                 tenant_id=tenant.id,
                                 status_namespace_names=status_names,
-                                capsule_spec=obj.get('spec'),
+                                capsule_spec=spec,
                             )
                             handoff_components.append({**component, 'namespace': record.namespace})
                             blockers.extend(issues)
@@ -315,7 +322,7 @@ def review_tenant_release_preflight_committed(*, tenant_id: str, actor_user_id: 
                             )
                             inventory_stage = 'capsule_rolebinding_lineage'
                             rbac_lineage = inspect_capsule_role_binding_lineage(
-                                capsule_spec=obj.get('spec'),
+                                capsule_spec=spec,
                                 related=capsule_related_inventory,
                                 namespaces=capsule_ns,
                                 tenant_id=tenant.id,
