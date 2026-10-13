@@ -7,7 +7,7 @@
     {% else %}
         {% set entry_count_label = entry_count ~ ' Entries' %}
     {% endif %}
-    {% set metadata_description = 'Indexed key names from the committed snapshot; value content remains protected.' if mode == 'keys' else 'Factual metadata captured with the committed inventory snapshot.' %}
+    {% set metadata_description = 'Key names only; no values.' if mode == 'keys' else 'Committed metadata entries.' %}
     {% if embedded %}
         <section class="min-w-0 border-b border-outline-subtle"
                  data-kaori-inventory-metadata-collection
