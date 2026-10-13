@@ -279,6 +279,12 @@ if (canvas && form) {
             fields.push(['Kubernetes Cluster', data.label], ['Cluster Identity', data.cluster_id])
         } else {
             fields.push(['Resource', data.label], ['Type', typeLabels[data.type] || data.type])
+            const row = associatedBindings(node.id())[0]
+            if (row) {
+                fields.push(['Cluster', row.cluster], ['Namespace', row.namespace],
+                    ['Workload', row.workload], ['Pod', row.pod],
+                    ['Match Type', row.match], ['Confidence', row.confidence])
+            }
         }
         fields.push(['Correlation Readiness', evidence.title || evidence.status || 'Unknown'])
         addFields(pane.querySelector('[data-node-fields]'), fields)
