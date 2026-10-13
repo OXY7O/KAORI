@@ -92,3 +92,44 @@ def test_junit_reader_preserves_failing_rerun_and_parameter_ids(tmp_path: Path) 
     cases = read_junit([xml])
     assert cases['tests.unit.test_example::test_case'] == ['PASS', 'FAIL']
     assert cases['tests.ui.test_wizard::test_form[small-mobile]'] == ['SKIP']
+
+
+def test_partial_viewport_coverage_and_skipped_variant_do_not_pass() -> None:
+    variants = ['large-desktop', 'small-mobile']
+    scoped = {
+        'scenarios': [{
+            'id': 'UAT-UIX-EXAMPLE',
+            'nodes': [{
+                'nodeid': 'tests/ui/test_example.py::test_viewport',
+                'variants': variants,
+            }],
+            'required_artifacts': {},
+        }]
+    }
+    only_one = {
+        'tests.ui.test_example::test_viewport[large-desktop]': ['PASS'],
+    }
+    result = _evaluate(only_one, manifest=scoped)
+    assert result['scenarios'][0]['result'] == 'NOT RUN'
+    assert result['scenarios'][0]['passed_test_cases'] == 1
+
+    skipped = {
+        **only_one,
+        'tests.ui.test_example::test_viewport[small-mobile]': ['SKIP'],
+    }
+    assert _evaluate(skipped, manifest=scoped)['scenarios'][0]['result'] == 'SKIP'
+
+
+def test_outside_evidence_root_is_not_accepted(tmp_path: Path) -> None:
+    case = {'tests.unit.test_example::test_case': ['PASS']}
+    constrained = {'scenarios': [{**MANIFEST['scenarios'][0], 'required_artifacts': {'trace': 1}}]}
+    outside = tmp_path.parent / 'not-in-uat-evidence.trace'
+    outside.write_bytes(b'is not permitted')
+    provided = {
+        **EXECUTION,
+        'evidence': {'UAT-EXAMPLE-001': [{
+            'kind': 'trace', 'path': f'../{outside.name}',
+        }]},
+    }
+    result = _evaluate(case, manifest=constrained, execution=provided, root=tmp_path)
+    assert result['scenarios'][0]['result'] == 'BLOCKED'
