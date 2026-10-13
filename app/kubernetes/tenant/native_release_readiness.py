@@ -8,7 +8,7 @@ KAORI approval, a text reference, a provider label, or dry-run/read-back.
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from app.kubernetes.tenant.native_handoff_recovery import readback_proves_handoff_not_started
@@ -25,8 +25,8 @@ def project_native_release_readiness(
     readback: Mapping[str, Any] | None,
     successor_acceptance: Mapping[str, Any] | None = None,
     handoff_execution: Mapping[str, Any] | None = None,
-    readback_history: list[Mapping[str, Any]] | None = None,
-    execution_history: list[Mapping[str, Any]] | None = None,
+    readback_history: Sequence[Mapping[str, Any]] | None = None,
+    execution_history: Sequence[Mapping[str, Any]] | None = None,
     no_transfer_assessment: Mapping[str, Any] | None = None,
     no_transfer_decision: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -56,7 +56,7 @@ def project_native_release_readiness(
         and type(approval.get('approved_by')) is int
         and approval.get('status') == 'acknowledged_pending_provider_handoff'
     )
-    same_plan = bool(active_plan and approval_recorded and _checked_recently(approval.get('approved_at')))
+    same_plan = bool(active_plan and approval_recorded and approval and _checked_recently(approval.get('approved_at')))
     approval_expired = bool(approval_recorded and not same_plan)
     review_expired = bool(
         preflight
@@ -160,6 +160,8 @@ def project_native_release_readiness(
     )
     no_transfer_authorized_current = bool(
         no_transfer_assessment_current
+        and plan
+        and no_transfer_assessment
         and no_transfer_decision
         and no_transfer_decision.get('status') == 'authorized_for_requester_restart'
         and no_transfer_decision.get('plan_sha256') == plan_sha
@@ -216,6 +218,8 @@ def project_native_release_readiness(
     )
     verified_acceptance = bool(
         same_plan
+        and plan
+        and approval
         and successor_acceptance
         and successor_acceptance.get('plan_sha256') == plan_sha
         and successor_acceptance.get('handoff_fingerprint') == plan.get('handoff_fingerprint')
