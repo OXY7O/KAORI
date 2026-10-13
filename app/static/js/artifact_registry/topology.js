@@ -169,17 +169,24 @@ if (canvas && form) {
     const relationshipLabels = { runtime_usage: 'Runtime Usage', owns: 'Owns', contains: 'Contains' }
     const cloneInspectorTemplate = (name) =>
         $(`registry-topology-inspector-${name}-template`)?.content?.firstElementChild?.cloneNode(true) || null
+    const renderEmptyInspector = () => {
+        const emptyPane = cloneInspectorTemplate('empty')
+        if (emptyPane) inspectorContent.replaceChildren(emptyPane)
+        window.lucide?.createIcons()
+    }
     const fill = (root, selector, value) => {
         const target = root?.querySelector(selector)
         if (target) target.textContent = safeLabel(value)
         return target
     }
     const addFields = (parent, fields) => {
+        if (!parent) return
         parent.replaceChildren()
         for (const [name, value] of fields) {
-            const item = elements('div', 'flex items-start justify-between gap-3 py-2.5')
-            item.append(elements('dt', 'min-w-0 text-xs font-normal text-content-muted', name))
-            item.append(elements('dd', 'max-w-[65%] break-words text-right text-xs font-medium text-content-primary', safeLabel(value)))
+            const item = $('registry-topology-field-row-template')?.content.firstElementChild?.cloneNode(true)
+            if (!item) continue
+            fill(item, '[data-field-label]', name)
+            fill(item, '[data-field-value]', value)
             parent.append(item)
         }
     }
@@ -330,7 +337,8 @@ if (canvas && form) {
         target.replaceChildren()
         const edges = node.connectedEdges(':visible')
         if (!edges.length) {
-            target.append(elements('p', 'rounded-xl border border-dashed border-outline-strong bg-kaori-soft p-6 text-center text-xs font-medium text-kaori-primary', 'No Visible Relationships'))
+            const emptyCard = $('registry-topology-relationships-empty-template')?.content.firstElementChild?.cloneNode(true)
+            if (emptyCard) target.append(emptyCard)
             return
         }
         edges.forEach((edge) => {
@@ -338,10 +346,11 @@ if (canvas && form) {
             const peer = outbound ? edge.target() : edge.source()
             const row = cloneInspectorTemplate('relationship-row')
             if (!row) return
-            fill(row, '[data-edge-direction]', outbound ? 'Outbound' : 'Inbound')
-            fill(row, '[data-edge-relationship]', relationshipLabels[edge.data('relationship')] || edge.data('relationship'))
-            fill(row, '[data-peer-label]', peer.data('label'))
-            fill(row, '[data-peer-type]', typeLabels[peer.data('type')] || peer.data('type'))
+            row.querySelector('[data-relationship-icon]')?.setAttribute('data-lucide', 'git-branch')
+            fill(row, '[data-relationship-direction]', outbound ? 'Outbound' : 'Inbound')
+            fill(row, '[data-relationship-label]', relationshipLabels[edge.data('relationship')] || edge.data('relationship'))
+            fill(row, '[data-relationship-peer]', peer.data('label'))
+            fill(row, '[data-relationship-peer-type]', typeLabels[peer.data('type')] || peer.data('type'))
             row.addEventListener('click', () => selectNodeById(peer.id(), 'relationships'))
             target.append(row)
         })
@@ -358,10 +367,13 @@ if (canvas && form) {
         fill(pane, '[data-node-kind]', data.subtitle || typeLabels[data.type] || data.type)
         fill(pane, '[data-node-type]', typeLabels[data.type] || data.type)
         const evidence = payload.evidence || {}
-        fill(pane, '[data-node-evidence]', data.type === 'artifact' ? (data.security || 'Scan Evidence Unknown') : (evidence.title || 'Committed Scope'))
+        const posture = evidenceStatus(data)
+        fill(pane, '[data-node-evidence]', posture.label)
+        applyStatusSurface(pane.querySelector('[data-node-status]'), pane.querySelector('[data-node-status-dot]'), posture.tone)
         fill(pane, '[data-node-description]', data.type === 'artifact'
             ? 'Authoritative Registry artifact identity and reported scan posture.'
             : 'Resource context derived from committed Registry-to-Kubernetes runtime bindings.')
+        pane.querySelector('[data-node-description]')?.classList.remove('hidden')
         const fields = []
         if (data.type === 'artifact') {
             fields.push(['Registry Source', data.source], ['Digest', data.digest],
@@ -391,8 +403,12 @@ if (canvas && form) {
             const summary = pane.querySelector('[data-relationship-summary-items]')
             for (const [key, count] of counts) {
                 const [relationship, direction] = key.split(':')
-                const chip = elements('span', 'inline-flex min-h-7 items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-card px-2 py-1 text-xs font-medium text-content-secondary', `${relationshipLabels[relationship] || relationship} · ${direction === 'out' ? 'Outbound' : 'Inbound'} · ${count}`)
-                chip.setAttribute('role', 'listitem')
+                const chip = $('registry-topology-relationship-summary-item-template')?.content.firstElementChild?.cloneNode(true)
+                if (!chip) continue
+                fill(chip, '[data-summary-label]', `${relationshipLabels[relationship] || relationship} · ${direction === 'out' ? 'Outbound' : 'Inbound'} · ${count}`)
+                const color = relationship === 'contains' ? '--kaori-topology-edge-contains'
+                    : relationship === 'owns' ? '--kaori-topology-edge-owns' : '--kaori-topology-edge-uses'
+                chip.querySelector('[data-summary-swatch]').style.backgroundColor = token(color, 'CanvasText')
                 summary.append(chip)
             }
         }
@@ -524,13 +540,48 @@ if (canvas && form) {
         inspectorContent.replaceChildren(details)
         openInspector()
     }
+    const statusSurfaceClasses = {
+        healthy: ['bg-status-normal-soft', 'text-status-normal-text', 'bg-status-normal'],
+        warning: ['bg-status-warning-soft', 'text-status-warning-text', 'bg-status-warning'],
+        critical: ['bg-status-critical-soft', 'text-status-critical-text', 'bg-status-critical'],
+        info: ['bg-status-info-soft', 'text-status-info-text', 'bg-status-info'],
+        unknown: ['bg-status-unknown-soft', 'text-status-unknown-text', 'bg-status-unknown'],
+    }
+    const applyStatusSurface = (label, dot, tone) => {
+        const normalized = Object.hasOwn(statusSurfaceClasses, tone) ? tone : 'unknown'
+        const all = Object.values(statusSurfaceClasses).flat()
+        label?.classList.remove(...all)
+        dot?.classList.remove(...all)
+        const [background, foreground, indicator] = statusSurfaceClasses[normalized]
+        label?.classList.add(background, foreground)
+        dot?.classList.add(indicator)
+    }
+    // Scan severity belongs to the Registry artifact. Correlation readiness
+    // describes evidence freshness, not Kubernetes health or remediation.
+    const evidenceStatus = (data) => {
+        if (data.type === 'artifact') {
+            const critical = Number(data.critical || 0)
+            const high = Number(data.high || 0)
+            if (critical > 0) return { label: 'Critical Exposure', tone: 'critical' }
+            if (high > 0) return { label: 'High Exposure', tone: 'warning' }
+            return { label: data.security || 'Scan Unknown', tone: 'unknown' }
+        }
+        const readiness = payload.evidence || {}
+        return {
+            label: readiness.title || 'Evidence Unknown',
+            tone: readiness.status === 'ready' ? 'info' :
+                ['stale', 'inputs_changed', 'refresh_failed'].includes(readiness.status) ? 'warning' : 'unknown',
+        }
+    }
+    const sortedVisibleResources = () => payload.nodes
+        .filter((record) => resourceToggles.find((control) =>
+            control.dataset.registryTopologyType === record.data.type
+        )?.checked !== false && (!cy || cy.getElementById(record.data.id).visible()))
+        .sort((a, b) => (typeLabels[a.data.type] || a.data.type).localeCompare(typeLabels[b.data.type] || b.data.type) ||
+            String(a.data.label || '').localeCompare(String(b.data.label || '')))
     const renderList = () => {
         tbody.replaceChildren()
-        // Render graph resources (not binding-only rows), matching K8s Inventory.
-        const nodes = payload.nodes.filter((node) =>
-            resourceToggles.find((toggle) => toggle.dataset.registryTopologyType === node.data.type)?.checked !== false &&
-            (!cy || cy.$id(node.data.id).visible())
-        )
+        const nodes = sortedVisibleResources()
         const byId = new Map(payload.nodes.map((node) => [node.data.id, node]))
         const parents = graphParents()
         const total = nodes.length
@@ -540,47 +591,33 @@ if (canvas && form) {
         for (const item of page) {
             const data = item.data
             const scope = resourceScope(item, parents, byId)
-            const kind = typeLabels[data.type] || data.type
-            const tr = elements('tr', 'border-b border-outline-subtle')
-            const nameCell = elements('td', 'px-4 py-3 text-sm font-medium text-content-primary')
-            const identity = elements('div', 'flex min-w-0 items-center gap-3')
-            const badge = elements('span',
-                `flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-xs font-bold kaori-topology-domain-${visualDomains[data.type] || 'compute'}`,
-                glyphs[data.type] || 'RS'
-            )
-            const labels = elements('div', 'min-w-0')
-            labels.append(elements('p', 'break-words text-xs font-semibold text-content-primary', data.label))
-            labels.append(elements('p', 'text-xs text-content-muted', data.subtitle || kind))
-            identity.append(badge, labels)
-            nameCell.append(identity)
-            const typeCell = elements('td', 'px-4 py-3 text-xs text-content-secondary', kind)
-            const clusterCell = elements('td', 'px-4 py-3 text-xs text-content-secondary', scope.cluster)
-            const namespaceCell = elements('td', 'px-4 py-3 text-xs text-content-secondary', scope.namespace)
-            const evidenceCell = elements('td', 'px-4 py-3 text-xs text-content-secondary')
-            evidenceCell.append(elements('span', 'inline-flex min-h-6 items-center rounded-md bg-status-unknown-soft px-2 text-xs font-medium text-status-unknown-text',
-                data.type === 'artifact' ? (data.security || 'Scan Unknown') : (payload.evidence?.title || 'Committed Evidence')))
-            const count = payload.edges.filter((edge) => edge.data.source === data.id || edge.data.target === data.id).length
-            const relationshipCell = elements('td', 'px-4 py-3 text-xs font-semibold text-content-primary', count)
-            const detailsCell = elements('td', 'px-4 py-3 text-right')
-            const button = elements('button', 'rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold text-kaori-primary hover:bg-kaori-soft', 'View Details')
-            button.type = 'button'
-            button.addEventListener('click', () => inspectResource(item))
-            detailsCell.append(button)
-            tr.append(nameCell, typeCell, clusterCell, namespaceCell, evidenceCell, relationshipCell, detailsCell)
-            tbody.append(tr)
-        }
-        if (!page.length) {
-            const row = elements('tr')
-            const cell = elements('td', 'px-4 py-8 text-center text-sm text-content-muted',
-                'No visible resources. Review filters and committed correlation readiness.')
-            cell.colSpan = 7
-            row.append(cell)
+            const status = evidenceStatus(data)
+            const row = $('registry-topology-resource-list-row-template')?.content.firstElementChild?.cloneNode(true)
+            if (!row) continue
+            const icon = row.querySelector('[data-list-icon]')
+            icon?.setAttribute('data-lucide', typeIcons[data.type] || 'box')
+            row.querySelector('[data-list-icon-shell]')?.classList.add(`kaori-topology-domain-${visualDomains[data.type] || 'compute'}`)
+            fill(row, '[data-list-name]', data.label)
+            fill(row, '[data-list-kind]', data.subtitle || typeLabels[data.type] || data.type)
+            fill(row, '[data-list-type]', typeLabels[data.type] || data.type)
+            fill(row, '[data-list-cluster]', scope.cluster)
+            fill(row, '[data-list-namespace]', scope.namespace)
+            fill(row, '[data-list-status-text]', status.label)
+            applyStatusSurface(row.querySelector('[data-list-status]'), row.querySelector('[data-list-status-dot]'), status.tone)
+            const count = cy
+                ? cy.getElementById(data.id).connectedEdges(':visible').length
+                : payload.edges.filter((edge) => edge.data.source === data.id || edge.data.target === data.id).length
+            fill(row, '[data-list-relationships]', count)
+            row.querySelector('[data-list-details]')?.addEventListener('click', () => inspectResource(item))
             tbody.append(row)
         }
+        const emptyState = $('registry-topology-list-empty')
+        emptyState?.classList.toggle('hidden', Boolean(total))
         $('registry-topology-list-count').textContent =
             `Showing ${page.length ? (listPage - 1) * pageSize + 1 : 0}–${(listPage - 1) * pageSize + page.length} of ${total} visible resources (from ${payload.summary.displayed_bindings ?? 0} displayed bindings; ${payload.summary.omitted_bindings ?? 0} omitted).`
         previous.disabled = listPage <= 1
         next.disabled = listPage >= maxPage
+        window.lucide?.createIcons()
     }
 
     let graphHasLayout = false
@@ -667,10 +704,9 @@ if (canvas && form) {
         badgeCache.set(key, result)
         return result
     }
-    const displayLabel = (value) => {
-        const label = String(value || 'Not Reported')
-        return label.length > 30 ? `${label.slice(0, 29)}…` : label
-    }
+    // K8s topology lets Cytoscape apply a bounded external label.
+    // Keep the full underlying identity for native ellipsis, hover and inspector.
+    const displayLabel = (value) => String(value || 'Not Reported')
     const graphStyle = () => {
         const surface = token('--kaori-surface-card', 'Canvas')
         const foreground = token('--kaori-content-primary', 'CanvasText')
@@ -701,12 +737,15 @@ if (canvas && form) {
                     color: foreground,
                     'font-family': 'Inter, sans-serif',
                     'font-size': 10,
-                    'font-weight': 600,
+                    'font-weight': 400,
+                    'line-height': 1.2,
+                    'min-zoomed-font-size': 8,
                     'text-valign': 'bottom',
                     'text-halign': 'center',
                     'text-justification': 'center',
                     'text-wrap': 'ellipsis',
-                    'text-max-width': 195,
+                    'text-overflow-wrap': 'normal',
+                    'text-max-width': 220,
                     'text-margin-y': 11,
                     'text-background-color': surface,
                     'text-background-opacity': 0.94,
@@ -725,12 +764,13 @@ if (canvas && form) {
             },
             {
                 selector: 'node[type = "artifact"]',
-                style: { width: 96, height: 52, 'font-size': 11, 'font-weight': 700 },
+                style: { width: 96, height: 52, 'font-size': 11, 'font-weight': 400, 'text-max-width': 240 },
             },
             {
                 selector: 'node[type = "cluster"]',
-                style: { width: 92, height: 48, 'font-weight': 700 },
+                style: { width: 96, height: 52, 'font-size': 11, 'font-weight': 400, 'text-max-width': 240 },
             },
+            { selector: 'node[type = "namespace"]', style: { width: 88, height: 48, 'text-max-width': 230 } },
             {
                 selector: 'edge',
                 style: {
@@ -1010,6 +1050,7 @@ if (canvas && form) {
         warning.classList.add('hidden')
         errorPanel.classList.add('hidden')
         closePane()
+        renderEmptyInspector()
         const params = new URLSearchParams(new FormData(form))
         const dataUrl = new URL(canvas.dataset.url, window.location.origin)
         dataUrl.search = params.toString()
@@ -1160,6 +1201,7 @@ if (canvas && form) {
     layoutSelect.value = initialLayout === 'dependency' ? 'dependency' : 'hierarchy'
     window.addEventListener('resize', scheduleDrawerMiniMapUpdate)
     setView(view)
+    renderEmptyInspector()
     syncClearFiltersVisibility()
     reload()
 }

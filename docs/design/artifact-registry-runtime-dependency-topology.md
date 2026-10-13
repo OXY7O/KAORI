@@ -208,3 +208,26 @@ The K8s Topology renderer and contracts must remain unchanged.
 - Do not proceed to Developer Check, Full Admission, staging/main promotion
   or release without explicit human acceptance. Review integration target:
   `kaori/review/staging-uat`.
+
+## Canonical presentation reuse — K8s reference
+
+The Runtime Topology now consumes **the same shared Jinja primitives** as
+Kubernetes Inventory Topology from
+`app/templates/components/topology_primitives.html`: toolbar action styles,
+Resource List row, field rows, directional relationship cards, relationship
+summary chips and relationship empty state. These primitives are deliberately
+generic and rely on domain-prefixed template IDs and data attributes.
+
+The Registry JavaScript supplies only domain-specific evidence: full artifact
+identity, Registry source, digest/tag confidence, scan severity, and committed
+correlation readiness. The Resource List and Details status slots use the same
+KAORI semantic badge geometry and iconography as Kubernetes, but must not
+display healthy runtime status merely because a correlation snapshot is ready.
+
+The canonical Graph external label uses Kubernetes typography without a
+30-character JavaScript cutoff; Cytoscape manages width and ellipsis. All
+related changes to the shared component must be tested against **both**
+Kubernetes and Registry topology contracts before review. New topology
+features should reuse these components rather than introducing another
+workspace/list/inspector design family.
+

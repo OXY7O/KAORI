@@ -137,7 +137,9 @@ def test_registry_inspector_matches_k8s_details_and_relationships_design() -> No
         'data-open-relationships',
         'data-node-relationships',
         'data-minimap',
-        'data-related-node',
+        'data-node-status',
+        'registry-topology-resource-list-row-template',
+        'registry-topology-inspector-relationship-row-template',
     ):
         assert control in inspector
     for behavior in (
@@ -157,7 +159,7 @@ def test_registry_inspector_matches_k8s_details_and_relationships_design() -> No
     assert "node.connectedEdges(':visible')" in renderer
     assert "pane.querySelector('[data-relationship-summary]')" in renderer
     assert "node.predecessors('node')" in renderer
-    assert "window.requestAnimationFrame(() => drawMiniMap(pane, node))" in renderer
+    assert 'scheduleDrawerMiniMapUpdate()' in renderer
     assert "const scope = resourceScope(item, parents, byId)" in renderer
     assert "payload.nodes.filter(" in renderer
     assert "resourceToggles" in renderer

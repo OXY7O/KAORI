@@ -135,3 +135,40 @@ remains complete. The graph still applies its ordinary bounded visible-node
 budget afterward, but no selector may be discarded before determining which
 Pods are relevant. Benchmark and verify this fallback before any later SQL
 selector pushdown optimization.
+
+## Reusable topology presentation primitives
+
+**Authority:** Kubernetes Inventory Topology remains the canonical visual and
+interaction reference. New topology domains MUST consume existing KAORI
+primitives rather than copying independent markup.
+
+- `app/templates/components/visualization_workspace.html` — the shared
+  canvas-first workspace, bounded loading bar, and overlay drawer geometry
+- `app/templates/components/segmented_tabs.html` — Compact Segmented Tabs for
+  Graph/Resource List and Details/Relationships
+- `app/templates/components/topology_primitives.html` — shared toolbar action
+  and export classes, **Resource List row**, **inspector field row**,
+  **relationship card**, **relationship summary chip**, and
+  **empty relationships** templates
+
+Kubernetes Inventory and Artifact Registry Runtime both import these
+primitives. Their IDs remain domain-prefixed but geometry, typography, icons,
+interactive affordances, and semantic badge slots must remain identical.
+
+For Cytoscape external labels, the Kubernetes topology style is the source
+of truth: font-weight **400**, min zoomed font **8**, external label max width
+**220px** (240px for Cluster), 11px vertical margin, 0.94-opacity surface
+background, tokenized border and ellipsis rendered by Cytoscape. Do not
+truncate the identity artificially at a fixed character count or raise node
+label weight in a consuming domain.
+
+The status badge is a **presentation slot**, not a shared health conclusion.
+Kubernetes binds committed resource operational status; Registry binds
+artifact scan exposure for Artifact nodes and correlation readiness for
+other nodes. A ready correlation is evidence readiness, not "Healthy".
+Any omitted graph records and uncertain evidence remain explicit.
+
+The topology-specific graph/data builders, event handlers and relationship
+semantics remain domain-owned; do not extend the shared primitives with
+provider-specific correlation logic.
+
