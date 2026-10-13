@@ -15,6 +15,13 @@ from app.kubernetes.tenant.native_handoff_recovery import readback_proves_handof
 from app.kubernetes.tenant.release_handoff_approval import _checked_recently
 
 
+def _field(receipt: Mapping[str, Any] | None, key: str) -> Any:
+    """Read an optional committed receipt without treating absence as authority."""
+    if receipt is None:
+        return None
+    return receipt.get(key)
+
+
 def project_native_release_readiness(
     *,
     preflight: Mapping[str, Any] | None,
@@ -56,7 +63,7 @@ def project_native_release_readiness(
         and type(approval.get('approved_by')) is int
         and approval.get('status') == 'acknowledged_pending_provider_handoff'
     )
-    same_plan = bool(active_plan and approval_recorded and approval and _checked_recently(approval.get('approved_at')))
+    same_plan = bool(active_plan and approval_recorded and _checked_recently(_field(approval, 'approved_at')))
     approval_expired = bool(approval_recorded and not same_plan)
     review_expired = bool(
         preflight
@@ -158,21 +165,21 @@ def project_native_release_readiness(
         and no_transfer_assessment.get('assessed_by') == plan.get('requested_by')
         and _checked_recently(no_transfer_assessment.get('assessed_at'))
     )
+    # Derived readiness flags do not statically narrow optional receipts.
+    # Read missing committed values as unknown, never as a success signal.
     no_transfer_authorized_current = bool(
         no_transfer_assessment_current
-        and plan
-        and no_transfer_assessment
         and no_transfer_decision
         and no_transfer_decision.get('status') == 'authorized_for_requester_restart'
         and no_transfer_decision.get('plan_sha256') == plan_sha
         and no_transfer_decision.get('handoff_fingerprint') == plan.get('handoff_fingerprint')
-        and no_transfer_decision.get('assessment_sha256') == no_transfer_assessment.get('assessment_sha256')
-        and no_transfer_decision.get('history_digest') == no_transfer_assessment.get('history_digest')
-        and no_transfer_decision.get('provider_proof_sha256') == no_transfer_assessment.get('provider_proof_sha256')
+        and no_transfer_decision.get('assessment_sha256') == _field(no_transfer_assessment, 'assessment_sha256')
+        and no_transfer_decision.get('history_digest') == _field(no_transfer_assessment, 'history_digest')
+        and no_transfer_decision.get('provider_proof_sha256') == _field(no_transfer_assessment, 'provider_proof_sha256')
         and no_transfer_decision.get('authorized_by')
         not in {
-            plan.get('requested_by'),
-            no_transfer_assessment.get('assessed_by'),
+            _field(plan, 'requested_by'),
+            _field(no_transfer_assessment, 'assessed_by'),
         }
         and _checked_recently(no_transfer_decision.get('authorized_at'))
     )
@@ -216,16 +223,16 @@ def project_native_release_readiness(
         and readback.get('status') == 'provider_handoff_observed_acceptance_unverified'
         and readback.get('external_successor_verified') is False
     )
+    # Approval is a prerequisite, not a synthesized successor consent.
+    # The backend remains authoritative for independent identity review.
     verified_acceptance = bool(
         same_plan
-        and plan
-        and approval
         and successor_acceptance
         and successor_acceptance.get('plan_sha256') == plan_sha
-        and successor_acceptance.get('handoff_fingerprint') == plan.get('handoff_fingerprint')
-        and successor_acceptance.get('provider_identity') == plan.get('provider_identity')
-        and successor_acceptance.get('successor_owner') == plan.get('successor_owner')
-        and successor_acceptance.get('reviewed_by') == approval.get('approved_by')
+        and successor_acceptance.get('handoff_fingerprint') == _field(plan, 'handoff_fingerprint')
+        and successor_acceptance.get('provider_identity') == _field(plan, 'provider_identity')
+        and successor_acceptance.get('successor_owner') == _field(plan, 'successor_owner')
+        and successor_acceptance.get('reviewed_by') == _field(approval, 'approved_by')
         and successor_acceptance.get('status') == 'platform_admin_handoff_accepted'
         and successor_acceptance.get('authority_mode') == 'platform_admin_governed'
         and successor_acceptance.get('verified_provider_identity') is True
