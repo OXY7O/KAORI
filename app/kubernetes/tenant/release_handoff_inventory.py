@@ -296,8 +296,10 @@ def capsule_namespace_handoff_evidence(
     return component, blockers
 
 
-def handoff_fingerprint(components: list[dict[str, str]]) -> str:
-    """Stable equality proof for the latest committed provider identity snapshot."""
+def handoff_fingerprint(components: object) -> str:
+    """Stable equality proof for a valid, bounded provider identity snapshot."""
+    if not isinstance(components, list) or any(not isinstance(item, dict) for item in components):
+        raise ValueError('Capsule handoff fingerprint requires a complete component list.')
     canonical = sorted(
         components,
         key=lambda item: (

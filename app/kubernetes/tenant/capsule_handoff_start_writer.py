@@ -54,7 +54,7 @@ def build_capsule_start_candidate(
     tenant_id: str,
     actor_user_id: int,
     plan: Mapping[str, Any],
-    related: Mapping[str, Any],
+    related: object,
     attempt_id: str,
     event_at: datetime,
 ) -> dict[str, Any]:

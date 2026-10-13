@@ -30,7 +30,7 @@ def _scope_key(item: Mapping[str, Any]) -> tuple[str, str]:
 def build_capsule_handoff_worklist(
     *,
     plan: Mapping[str, Any],
-    related: Mapping[str, Any],
+    related: object,
 ) -> dict[str, Any]:
     """Classify source work, including foreign resources, before provider auth."""
     if not isinstance(plan, Mapping) or not isinstance(related, Mapping):
