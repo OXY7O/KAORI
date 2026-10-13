@@ -51,7 +51,12 @@ def test_source_and_worker_ownership_stay_with_existing_kaori_contracts() -> Non
     assert 'enqueue_canonical_job(' in storage
     assert 'enqueue_canonical_job(' in registry
     assert 'MetricsConsumer.for_asset(' in registry_collector
-    assert "snapshot.time_range = 'current'" in registry_collector
+    # The accepted Registry collector now persists a measured range as a
+    # separate snapshot; only the legacy instant path uses 'current'.
+    assert "snapshot.time_range = time_range" in registry_collector
+    assert "if time_range == 'current':" in registry_collector
+    assert 'time_range not in REGISTRY_HISTORY_WINDOWS' in registry_collector
+    assert 'collect_registry_metric_history(identity, time_range' in registry_collector
     assert 'consumer.query_range(' not in registry_collector
 
 
@@ -65,7 +70,10 @@ def test_new_analytics_domain_extension_does_not_require_another_framework() -> 
 
     assert 'Extension checklist for a fourth domain' in guide
     assert 'No analytics domain may create another scheduler' in guide
-    assert 'snapshot_window' in guide
+    # Canonical scope uses time_range snapshots, not the removed
+    # snapshot_window pseudo-parameter or fabricated historical queries.
+    assert 'separate `time_range` snapshots' in guide
+    assert 'an unavailable range is never synthesized' in guide
     assert 'JobExecution' in jobs
     assert 'data-analytics-section-load-tracker' in shared
     assert 'macro job_progress' in progress
