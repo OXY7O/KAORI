@@ -535,7 +535,7 @@ def decide_reveal_request(
         raise ValueError('Only pending reveal requests can be approved or denied.')
     if record.requester_user_id == approver_user_id:
         raise ValueError('Requestors cannot approve or deny their own Secret reveal requests.')
-    if _as_aware(record.expires_at) is None or _as_aware(record.expires_at) <= _now():
+    if (expires_at := _as_aware(record.expires_at)) is None or expires_at <= _now():
         raise ValueError('This Secret reveal request has expired.')
 
     if approve:
