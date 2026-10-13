@@ -48,6 +48,16 @@ def _sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     return namespace['main'], scope
 
 
+def test_local_env_update_preserves_order_deduplicates_and_is_idempotent() -> None:
+    settings = runpy.run_path(str(PREPARE), run_name='kaori_env_order_contract')
+    set_value = settings['set_value']
+    current = '# operator context\nPOSTGRES_DB=old\nAPP_ENV=development\nPOSTGRES_DB=duplicate\n'
+    expected = '# operator context\nPOSTGRES_DB=kaori\nAPP_ENV=development\n'
+    assert set_value(current, 'POSTGRES_DB', 'kaori') == expected
+    assert set_value(expected, 'POSTGRES_DB', 'kaori') == expected
+    assert set_value(expected, 'POSTGRES_USER', 'postgres') == expected + 'POSTGRES_USER=postgres\n'
+
+
 def test_fresh_volume_generates_repo_ignored_credentials_and_runtime_url(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -49,8 +49,17 @@ def env_values(source: str) -> dict[str, str]:
 
 
 def set_value(source: str, key: str, value: str) -> str:
-    lines = [line for line in source.splitlines() if not line.startswith(f'{key}=')]
-    lines.append(f'{key}={value}')
+    lines = []
+    updated = False
+    for line in source.splitlines():
+        if line.startswith(f'{key}='):
+            if not updated:
+                lines.append(f'{key}={value}')
+                updated = True
+        else:
+            lines.append(line)
+    if not updated:
+        lines.append(f'{key}={value}')
     return '\n'.join(lines) + '\n'
 
 
