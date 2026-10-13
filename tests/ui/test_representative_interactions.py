@@ -704,8 +704,28 @@ def test_representative_filter_pagination_and_form_controls(
             )
         ):
             search_control.press_sequentially('browser')
-        expect(page.locator('#notification-center-search')).to_be_visible()
+        expect(page.locator('#notification-center-search')).to_have_value('browser')
         expect(page.get_by_role('navigation', name='Notification Center pagination')).to_be_visible()
+        clear = page.locator('[data-kaori-clear-filters]')
+        expect(clear).to_be_visible()
+        page.screenshot(
+            path=str(EVIDENCE_ROOT / f'authenticated-filter-search-{viewport_name}.png'),
+            full_page=True,
+            animations='disabled',
+        )
+
+        with page.expect_response(
+            lambda response: (
+                '/notifications/' in response.url
+                and 'search=browser' not in response.url
+                and response.request.headers.get('hx-request') == 'true'
+            )
+        ) as cleared_response:
+            clear.click()
+        assert cleared_response.value.ok
+        expect(page.locator('#notification-center-search')).to_have_value('')
+        expect(page.locator('[data-kaori-clear-filters]')).to_have_count(0)
+        assert_document_fits_viewport(page)
 
 
 def test_notification_center_filters_and_rows_survive_htmx_reset(
