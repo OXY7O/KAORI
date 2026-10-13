@@ -4,6 +4,10 @@
 
 **Observed source snapshot:** `kaori/review/staging-uat@0415d1832adcdb7bd30bd3f2d32e4940c90335af`, 2026-10-13 (source inspection only). **Work branch base:** `kaori/staging@79bbb7466c60b9781358c3e26faf476ab0c54bf1`. The reviewed candidate may include features not yet integrated into staging; revalidate all scenario implementation availability and exact code/test paths on the eventual admitted staging SHA. **Do not modify** #1710's frozen admission candidate.
 
+## Complete 91 written acceptance test cases
+
+[Review all 91 detailed acceptance cases](KAORI_UAT_ALL_CASES.md): per-case preconditions, steps, expected results, evidence and cleanup. The 14 first-wave cases retain their original procedures; 77 were expanded and require domain-owner verification before executable mapping. This is **specification completeness, not runtime PASS or gate readiness**.
+
 ## Read the scenarios as Gherkin code
 
 **[Open the Gherkin Feature Index](uat/README.md)** to browse **18 `.feature` files containing all 91 Scenario IDs**. Each feature contains `Given / When / Then` expectations; the 14 first-wave cases have expanded steps and the other 77 are explicitly tagged `@draft`. Comment on #1738 with the stable `UAT-...` identifier and the particular step or missing positive/negative path. These files are human-readable specifications, **not an additional test runner or UAT PASS evidence**.
