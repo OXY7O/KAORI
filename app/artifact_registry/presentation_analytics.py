@@ -552,8 +552,8 @@ def _analytics_insights(
                 'icon': 'trending-up',
                 'title': 'Registry growth is materialized',
                 'detail': (
-                    f'{growth["artifacts_per_day"]:+.1f} artifacts/day and '
-                    f'{_fmt_bytes(round(growth["size_per_day"]))}/day across current providers.'
+                    f'{float(growth["artifacts_per_day"] or 0):+.1f} artifacts/day and '
+                    f'{_fmt_bytes(round(float(growth["size_per_day"] or 0)))}/day across current providers.'
                 ),
                 'tone': 'info',
             },
