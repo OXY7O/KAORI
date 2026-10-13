@@ -76,7 +76,7 @@ def _annotations(resource: Any) -> dict[str, str]:
     return dict(value)
 
 
-def _successor(value: str) -> str:
+def _successor(value: object) -> str:
     if (
         not isinstance(value, str)
         or not _OWNER_LABEL.fullmatch(value)

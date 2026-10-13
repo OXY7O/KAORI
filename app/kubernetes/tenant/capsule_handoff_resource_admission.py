@@ -44,6 +44,14 @@ def _sha(value: Any) -> bool:
     return isinstance(value, str) and bool(_SHA.fullmatch(value))
 
 
+def _related_identity(item: Mapping[str, Any]) -> tuple[str, str, str]:
+    """Never treat missing related-provider coordinates as a valid scope key."""
+    ns, kind, name = item.get('namespace'), item.get('kind'), item.get('name')
+    if not isinstance(ns, str) or not ns or not isinstance(kind, str) or not kind or not isinstance(name, str) or not name:
+        raise ValueError('Capsule per-resource origin scope is missing exact provider identity.')
+    return ns, kind, name
+
+
 def assess_capsule_resource_handoff_scope(
     *,
     plan: Mapping[str, Any],
@@ -104,7 +112,7 @@ def assess_capsule_resource_handoff_scope(
     for obj in observed:
         if not isinstance(obj, Mapping):
             raise ValueError('Capsule per-resource evidence contains malformed related objects.')
-        key = (obj.get('namespace'), obj.get('kind'), obj.get('name'))
+        key = _related_identity(obj)
         if key in related_map or key[1] not in _RELATED or key[0] not in ns_map:
             raise ValueError('Capsule per-resource origin scope is duplicate or foreign.')
         related_map[key] = obj
