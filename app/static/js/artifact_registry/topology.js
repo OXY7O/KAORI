@@ -358,10 +358,13 @@ if (canvas && form) {
         fill(pane, '[data-node-kind]', data.subtitle || typeLabels[data.type] || data.type)
         fill(pane, '[data-node-type]', typeLabels[data.type] || data.type)
         const evidence = payload.evidence || {}
-        fill(pane, '[data-node-evidence]', data.type === 'artifact' ? (data.security || 'Scan Evidence Unknown') : (evidence.title || 'Committed Scope'))
+        const posture = evidenceStatus(data)
+        fill(pane, '[data-node-evidence]', posture.label)
+        applyStatusSurface(pane.querySelector('[data-node-status]'), pane.querySelector('[data-node-status-dot]'), posture.tone)
         fill(pane, '[data-node-description]', data.type === 'artifact'
             ? 'Authoritative Registry artifact identity and reported scan posture.'
             : 'Resource context derived from committed Registry-to-Kubernetes runtime bindings.')
+        pane.querySelector('[data-node-description]')?.classList.remove('hidden')
         const fields = []
         if (data.type === 'artifact') {
             fields.push(['Registry Source', data.source], ['Digest', data.digest],
@@ -524,13 +527,48 @@ if (canvas && form) {
         inspectorContent.replaceChildren(details)
         openInspector()
     }
+    const statusSurfaceClasses = {
+        healthy: ['bg-status-normal-soft', 'text-status-normal-text', 'bg-status-normal'],
+        warning: ['bg-status-warning-soft', 'text-status-warning-text', 'bg-status-warning'],
+        critical: ['bg-status-critical-soft', 'text-status-critical-text', 'bg-status-critical'],
+        info: ['bg-status-info-soft', 'text-status-info-text', 'bg-status-info'],
+        unknown: ['bg-status-unknown-soft', 'text-status-unknown-text', 'bg-status-unknown'],
+    }
+    const applyStatusSurface = (label, dot, tone) => {
+        const normalized = Object.hasOwn(statusSurfaceClasses, tone) ? tone : 'unknown'
+        const all = Object.values(statusSurfaceClasses).flat()
+        label?.classList.remove(...all)
+        dot?.classList.remove(...all)
+        const [background, foreground, indicator] = statusSurfaceClasses[normalized]
+        label?.classList.add(background, foreground)
+        dot?.classList.add(indicator)
+    }
+    // Scan severity belongs to the Registry artifact. Correlation readiness
+    // describes evidence freshness, not Kubernetes health or remediation.
+    const evidenceStatus = (data) => {
+        if (data.type === 'artifact') {
+            const critical = Number(data.critical || 0)
+            const high = Number(data.high || 0)
+            if (critical > 0) return { label: 'Critical Exposure', tone: 'critical' }
+            if (high > 0) return { label: 'High Exposure', tone: 'warning' }
+            return { label: data.security || 'Scan Unknown', tone: 'unknown' }
+        }
+        const readiness = payload.evidence || {}
+        return {
+            label: readiness.title || 'Evidence Unknown',
+            tone: readiness.status === 'ready' ? 'info' :
+                ['stale', 'inputs_changed', 'refresh_failed'].includes(readiness.status) ? 'warning' : 'unknown',
+        }
+    }
+    const sortedVisibleResources = () => payload.nodes
+        .filter((record) => resourceToggles.find((control) =>
+            control.dataset.registryTopologyType === record.data.type
+        )?.checked !== false && (!cy || cy.getElementById(record.data.id).visible()))
+        .sort((a, b) => (typeLabels[a.data.type] || a.data.type).localeCompare(typeLabels[b.data.type] || b.data.type) ||
+            String(a.data.label || '').localeCompare(String(b.data.label || '')))
     const renderList = () => {
         tbody.replaceChildren()
-        // Render graph resources (not binding-only rows), matching K8s Inventory.
-        const nodes = payload.nodes.filter((node) =>
-            resourceToggles.find((toggle) => toggle.dataset.registryTopologyType === node.data.type)?.checked !== false &&
-            (!cy || cy.$id(node.data.id).visible())
-        )
+        const nodes = sortedVisibleResources()
         const byId = new Map(payload.nodes.map((node) => [node.data.id, node]))
         const parents = graphParents()
         const total = nodes.length
@@ -540,47 +578,32 @@ if (canvas && form) {
         for (const item of page) {
             const data = item.data
             const scope = resourceScope(item, parents, byId)
-            const kind = typeLabels[data.type] || data.type
-            const tr = elements('tr', 'border-b border-outline-subtle')
-            const nameCell = elements('td', 'px-4 py-3 text-sm font-medium text-content-primary')
-            const identity = elements('div', 'flex min-w-0 items-center gap-3')
-            const badge = elements('span',
-                `flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-xs font-bold kaori-topology-domain-${visualDomains[data.type] || 'compute'}`,
-                glyphs[data.type] || 'RS'
-            )
-            const labels = elements('div', 'min-w-0')
-            labels.append(elements('p', 'break-words text-xs font-semibold text-content-primary', data.label))
-            labels.append(elements('p', 'text-xs text-content-muted', data.subtitle || kind))
-            identity.append(badge, labels)
-            nameCell.append(identity)
-            const typeCell = elements('td', 'px-4 py-3 text-xs text-content-secondary', kind)
-            const clusterCell = elements('td', 'px-4 py-3 text-xs text-content-secondary', scope.cluster)
-            const namespaceCell = elements('td', 'px-4 py-3 text-xs text-content-secondary', scope.namespace)
-            const evidenceCell = elements('td', 'px-4 py-3 text-xs text-content-secondary')
-            evidenceCell.append(elements('span', 'inline-flex min-h-6 items-center rounded-md bg-status-unknown-soft px-2 text-xs font-medium text-status-unknown-text',
-                data.type === 'artifact' ? (data.security || 'Scan Unknown') : (payload.evidence?.title || 'Committed Evidence')))
-            const count = payload.edges.filter((edge) => edge.data.source === data.id || edge.data.target === data.id).length
-            const relationshipCell = elements('td', 'px-4 py-3 text-xs font-semibold text-content-primary', count)
-            const detailsCell = elements('td', 'px-4 py-3 text-right')
-            const button = elements('button', 'rounded-lg border border-outline-default px-3 py-2 text-xs font-semibold text-kaori-primary hover:bg-kaori-soft', 'View Details')
-            button.type = 'button'
-            button.addEventListener('click', () => inspectResource(item))
-            detailsCell.append(button)
-            tr.append(nameCell, typeCell, clusterCell, namespaceCell, evidenceCell, relationshipCell, detailsCell)
-            tbody.append(tr)
-        }
-        if (!page.length) {
-            const row = elements('tr')
-            const cell = elements('td', 'px-4 py-8 text-center text-sm text-content-muted',
-                'No visible resources. Review filters and committed correlation readiness.')
-            cell.colSpan = 7
-            row.append(cell)
+            const status = evidenceStatus(data)
+            const row = $('registry-topology-resource-list-row-template')?.content.firstElementChild?.cloneNode(true)
+            if (!row) continue
+            const icon = row.querySelector('[data-list-icon]')
+            icon?.setAttribute('data-lucide', typeIcons[data.type] || 'box')
+            row.querySelector('[data-list-icon-shell]')?.classList.add(`kaori-topology-domain-${visualDomains[data.type] || 'compute'}`)
+            fill(row, '[data-list-name]', data.label)
+            fill(row, '[data-list-kind]', data.subtitle || typeLabels[data.type] || data.type)
+            fill(row, '[data-list-type]', typeLabels[data.type] || data.type)
+            fill(row, '[data-list-cluster]', scope.cluster)
+            fill(row, '[data-list-namespace]', scope.namespace)
+            fill(row, '[data-list-status-text]', status.label)
+            applyStatusSurface(row.querySelector('[data-list-status]'), row.querySelector('[data-list-status-dot]'), status.tone)
+            const count = payload.edges.filter((edge) =>
+                edge.data.source === data.id || edge.data.target === data.id).length
+            fill(row, '[data-list-relationships]', count)
+            row.querySelector('[data-list-details]')?.addEventListener('click', () => inspectResource(item))
             tbody.append(row)
         }
+        const emptyState = $('registry-topology-list-empty')
+        emptyState?.classList.toggle('hidden', Boolean(total))
         $('registry-topology-list-count').textContent =
             `Showing ${page.length ? (listPage - 1) * pageSize + 1 : 0}–${(listPage - 1) * pageSize + page.length} of ${total} visible resources (from ${payload.summary.displayed_bindings ?? 0} displayed bindings; ${payload.summary.omitted_bindings ?? 0} omitted).`
         previous.disabled = listPage <= 1
         next.disabled = listPage >= maxPage
+        window.lucide?.createIcons()
     }
 
     let graphHasLayout = false
