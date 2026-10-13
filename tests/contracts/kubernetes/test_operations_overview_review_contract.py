@@ -46,14 +46,14 @@ def test_both_delete_pages_use_shared_governed_confirmation() -> None:
 
 def test_kubernetes_operations_copy_keeps_provider_authority_and_live_target_guidance() -> None:
     overview = read('app/templates/kubernetes/operations/overview.html')
-    assert 'Governed Kubernetes workflows; Kubernetes executes.' in overview
+    assert 'Manage audited tasks; Kubernetes executes each change.' in overview
     assert 'Select and verify a live target in its workspace.' in overview
 
 
 def test_operations_overview_supporting_copy_is_compact_and_responsive() -> None:
     overview = read('app/templates/kubernetes/operations/overview.html')
     descriptions = (
-        'Governed Kubernetes workflows; Kubernetes executes.',
+        'Manage audited tasks; Kubernetes executes each change.',
         'Select and verify a live target in its workspace.',
         'Enforce permissions and operation-specific checks.',
         'Provider executes; KAORI retains audit evidence.',
