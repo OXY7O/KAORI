@@ -199,6 +199,8 @@ def review_native_external_role_profile_committed(
     ):
         raise ValueError('Choose a Ready Native Tenant with matching provider authority.')
     evidence = latest_external_native_access_evidence(tenant_id)
+    if evidence is None:
+        raise ValueError('Committed external Native RoleBinding evidence is unavailable.')
     selected, scope = _require_committed_binding(
         evidence,
         tenant=tenant,

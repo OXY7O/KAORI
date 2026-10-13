@@ -464,7 +464,7 @@ def _adopt_native(context: _AdoptionContext) -> tuple[TenantEnvironment, TenantN
         resource_version=resource_version,
     )
     if lineage is not None:
-        tenant.provider_evidence_json['re_adoption_lineage'] = lineage
+        tenant.provider_evidence_json = {**(tenant.provider_evidence_json or {}), 're_adoption_lineage': lineage}
     db.session.add(tenant)
 
     environment = TenantEnvironment()
@@ -716,7 +716,7 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
         resource_version=resource_version,
     )
     if lineage is not None:
-        tenant.provider_evidence_json['re_adoption_lineage'] = lineage
+        tenant.provider_evidence_json = {**(tenant.provider_evidence_json or {}), 're_adoption_lineage': lineage}
     db.session.add(tenant)
     environment = TenantEnvironment()
     environment.tenant = tenant

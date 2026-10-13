@@ -345,7 +345,7 @@ def assess_native_no_transfer_recovery_committed(
     if (
         tenant is None
         or tenant.generation != plan['generation']
-        or latest_release_handoff_plan(tenant_id).get('plan_sha256') != plan_sha256
+        or (latest_release_handoff_plan(tenant_id) or {}).get('plan_sha256') != plan_sha256
         or _source_history(tenant_id, plan)['digest'] != history['digest']
     ):
         raise ValueError('Concurrent provider history or Tenant state changed during assessment.')
@@ -429,12 +429,12 @@ def authorize_native_no_transfer_recovery_committed(
     tenant = Tenant.query.filter_by(id=tenant_id).with_for_update().one_or_none()
     if tenant is None or tenant.generation != plan['generation']:
         raise ValueError('Tenant changed during recovery authorization.')
-    if latest_no_transfer_assessment(tenant_id).get('assessment_sha256') != assessment_sha256:
+    if (latest_no_transfer_assessment(tenant_id) or {}).get('assessment_sha256') != assessment_sha256:
         raise ValueError('A newer recovery assessment replaced the reviewed evidence.')
     if _source_history(tenant_id, plan)['digest'] != assessed['history_digest']:
         raise ValueError('Provider history changed during independent recovery decision.')
     if latest_no_transfer_decision(tenant_id) and (
-        latest_no_transfer_decision(tenant_id).get('assessment_sha256') == assessment_sha256
+        (latest_no_transfer_decision(tenant_id) or {}).get('assessment_sha256') == assessment_sha256
     ):
         raise ValueError('A concurrent reviewer already decided this recovery assessment.')
     receipt = {

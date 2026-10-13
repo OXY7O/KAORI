@@ -210,7 +210,7 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
     )
     context['tenant_release_step'] = requested_step if requested_step in steps else 'scope'
     context['tenant_release_step_index'] = steps.index(context['tenant_release_step']) + 1
-    registry_query = {f'registry_{key}': value for key, value in state.items() if value}
+    registry_query: dict[str, Any] = {f'registry_{key}': value for key, value in state.items() if value}
     context['tenant_release_step_urls'] = {
         step: url_for(
             'tenant.tenant_detail',
@@ -226,7 +226,7 @@ def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
     context['return_to_registry_url'] = url_for(
         'tenant.tenants',
         section='registry',
-        **{f'registry_{key}': value for key, value in state.items() if value},
+        **registry_query,
     )
     return context
 
