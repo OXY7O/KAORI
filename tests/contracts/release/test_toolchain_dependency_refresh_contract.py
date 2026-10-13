@@ -30,10 +30,13 @@ def test_node_and_npm_toolchain_is_exact_and_aligned() -> None:
     assert 'npmVersion' not in node_feature
     assert 'ghcr.io/devcontainers/features/node:1' in devcontainer_lock['features']
     assert 'ghcr.io/devcontainers/features/node:2' not in devcontainer_lock['features']
-    assert f'sudo npm install --global npm@{NPM_VERSION}' in post_create
-    assert post_create.index(f'sudo npm install --global npm@{NPM_VERSION}') < post_create.index(
-        'bash .devcontainer/ensure-frontend.sh --install-always'
-    )
+    # The Node feature owns npm installation; do not race or replace it with
+    # an unconditional root-owned global upgrade during postCreate.
+    assert 'sudo npm install --global' not in post_create
+    assert 'bash .devcontainer/ensure-frontend.sh' in post_create
+    frontend_bootstrap = read('.devcontainer/ensure-frontend.sh')
+    assert 'npm ci --no-audit --no-fund' in frontend_bootstrap
+    assert 'npm run prepare-frontend' in frontend_bootstrap
     assert package['packageManager'] == f'npm@{NPM_VERSION}'
     assert f'npm@{NPM_VERSION}' in dockerfile
     assert f'npm@{NPM_VERSION}' in ci_dockerfile
