@@ -443,6 +443,8 @@ def commit_capsule_proof_pair_staged(
             if acceptance.get('accepted_by') != actor_user_id:
                 raise ValueError('Capsule proof actor must equal the accepted X.509 successor.')
             related = preflight.get('capsule_related_inventory')
+            if not isinstance(related, Mapping):
+                raise ValueError('Capsule proof requires complete related-provider scope evidence.')
             pair = build_capsule_proof_pair_candidate(
                 plan=plan,
                 related=related,
