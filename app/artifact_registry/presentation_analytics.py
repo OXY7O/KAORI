@@ -28,7 +28,7 @@ _REGISTRY_ANALYTICS_PAGE_DETAILS = {
     'usage': ('Usage Analytics', 'Review pull activity, runtime artifacts, and demand concentration.', 'activity'),
     'risk': (
         'Risk Analytics',
-        'Correlate security findings with Kubernetes runtime exposure.',
+        'Review security findings against Kubernetes runtime exposure.',
         'shield-alert',
     ),
     'governance': ('Governance Analytics', 'Analyze retention, immutability, and replication coverage gaps.', 'scale'),
