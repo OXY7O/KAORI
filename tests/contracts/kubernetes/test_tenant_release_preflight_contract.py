@@ -36,6 +36,7 @@ def test_release_preflight_is_non_destructive_and_separate_from_decommission():
     assert '_csrf()' in route
     assert 'review_tenant_release_route' in ui
     assert 'Review Release' in ui
-    assert 'No current dependency blockers, but Release execution is not yet admitted.' in ui
+    assert 'No dependency blockers recorded' in ui
+    assert 'Provider handoff and independent verification are still required.' in ui
     assert 'release_evidence' in context
     assert 'latest_ids.c.id' in context
