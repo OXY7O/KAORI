@@ -886,3 +886,177 @@ def test_failed_generated_report_detail_is_truthful_and_responsive(
         expect(page.locator('[data-generated-detail-primary-action="download"]')).to_have_count(0)
         assert page.locator('[data-generated-report-detail]').get_attribute('hx-trigger') is None
         assert_document_fits_viewport(page)
+
+
+def test_reports_generate_wizard_negative_submission_is_scoped_and_reviewable(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """UAT-RPT-001/003: real wizard clicks, scope selection and bounded rejection."""
+    import app.reports.generate.service as report_service
+
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+    submitted: list[dict[str, str]] = []
+
+    def reject_request(form, _user_id):
+        submitted.append(form.to_dict())
+        return False, ['Isolated QA contract rejects queue admission; no report was saved.'], None
+
+    with (
+        patch(
+            'app.reports.generate.service._get_storage_generation_context',
+            return_value={
+                'backend': 'isolated', 'label': 'Disposable test storage',
+                'status': 'Ready', 'tone': 'blue', 'description': 'Test fixture only.',
+                'ready': True, 'state': 'ready', 'source': 'test', 'checked_at': None,
+            },
+        ),
+        patch(
+            'app.reports.generate.service.get_queue_readiness',
+            return_value={'show_warning': False},
+        ),
+        patch(
+            'app.reports.generate.service._get_cluster_options',
+            return_value=[{'value': 'qa-cluster', 'label': 'QA Disposable Cluster'}],
+        ),
+        patch('app.reports.generate.service._get_object_storage_system_options', return_value=[]),
+        patch('app.reports.generate.service.get_active_registry_options', return_value=[]),
+        patch(
+            'app.reports.generate.service._get_namespace_options_by_cluster',
+            return_value={'qa-cluster': ['qa-namespace']},
+        ),
+        patch('app.reports.generate.routes.create_report_request', side_effect=reject_request),
+        patch('app.reports.generate.routes.queue_transient_feedback', return_value=None),
+        _browser_evidence(page, 'uat-rpt-001-003-wizard-rejection', viewport_name),
+    ):
+        _login(page, kaori_authenticated_base_url)
+        response = page.goto(f'{kaori_authenticated_base_url}/reports/generate', wait_until='networkidle')
+        assert response is not None and response.ok
+
+        form = page.locator('#generate-report-form')
+        expect(form).to_be_visible()
+        page.locator('#report-type-select').select_option('analytics_overview')
+        page.locator('#report-name-input').fill('QA Controlled Analytics')
+        page.locator('#wizard-next-button').click()
+        expect(page.locator('[data-wizard-panel="2"]')).to_be_visible()
+
+        # A required cluster must not be silently substituted by the browser.
+        page.locator('#wizard-next-button').click()
+        expect(page.locator('[data-wizard-panel="2"]')).to_be_visible()
+        expect(page.locator('#wizard-scope-validation')).to_be_visible()
+        page.locator('#cluster-select').select_option('qa-cluster')
+        page.locator('#namespace-select').select_option('qa-namespace')
+
+        for step in ('3', '4', '5'):
+            page.locator('#wizard-next-button').click()
+            expect(page.locator(f'[data-wizard-panel="{step}"]')).to_be_visible()
+            assert_document_fits_viewport(page)
+
+        page.locator('#output-format-select').select_option('csv')
+        expect(page.locator('#generate-report-button')).to_be_enabled()
+        expect(page.locator('#preview-report-name')).to_contain_text('QA Controlled Analytics')
+        page.screenshot(
+            path=str(EVIDENCE_ROOT / f'uat-rpt-001-003-wizard-review-{viewport_name}.png'),
+            full_page=True,
+            animations='disabled',
+        )
+        page.locator('#generate-report-button').click()
+        expect(page.get_by_label('Unable to create report request')).to_be_visible()
+        expect(page.get_by_text('Isolated QA contract rejects queue admission; no report was saved.')).to_be_visible()
+
+        assert len(submitted) == 1
+        assert submitted[0]['report_type'] == 'analytics_overview'
+        assert submitted[0]['cluster_id'] == 'qa-cluster'
+        assert submitted[0]['namespace'] == 'qa-namespace'
+        assert submitted[0]['name'] == 'QA Controlled Analytics'
+        assert submitted[0]['output_format'] == 'csv'
+        assert_document_fits_viewport(page)
+
+
+def test_tenant_namespace_form_rejected_submit_records_no_provider_write(
+    configured_page: Page,
+    kaori_viewport: tuple[str, tuple[int, int]],
+    kaori_authenticated_base_url: str,
+) -> None:
+    """UAT-TEN-004 partial: use real Tenant form markup and actual rejected HTTP POST."""
+    from types import SimpleNamespace
+
+    import app.kubernetes.tenant.routes as tenant_routes
+
+    page = configured_page
+    viewport_name, _ = kaori_viewport
+    submitted: list[dict[str, str]] = []
+    audit: list[dict[str, object]] = []
+    render_original = tenant_routes.render_template
+
+    def render_isolated_tenant_form(template_name, **context):
+        if template_name == 'kubernetes/tenant/namespace_provisioning.html':
+            return render_original(
+                'kubernetes/tenant/partials/_namespace_form.html',
+                environment_options=[
+                    SimpleNamespace(
+                        id=14,
+                        tenant=SimpleNamespace(name='QA Disposable Tenant'),
+                        environment='dev',
+                    )
+                ],
+                profiles=[
+                    SimpleNamespace(
+                        id=18, name='QA Bounded Profile',
+                        enabled=True, profile_class='custom', version=1,
+                    )
+                ],
+                can_manage=True,
+                native_available=True,
+            )
+        return render_original(template_name, **context)
+
+    def reject_before_provider_write(form):
+        submitted.append(form.to_dict())
+        raise ValueError('Capacity preflight rejected the isolated Namespace request.')
+
+    with (
+        patch('app.kubernetes.tenant.routes._tenant_workspace_context', return_value={}),
+        patch('app.kubernetes.tenant.routes.get_namespace_provisioning_support_context', return_value={}),
+        patch('app.kubernetes.tenant.routes.get_capsule_shared_allocation_context', return_value={}),
+        patch('app.kubernetes.tenant.routes.get_capsule_tenant_quota_context', return_value={}),
+        patch('app.kubernetes.tenant.routes.get_namespace_registry_context', return_value={}),
+        patch('app.kubernetes.tenant.routes.render_template', side_effect=render_isolated_tenant_form),
+        patch('app.kubernetes.tenant.routes._csrf', return_value=None),
+        patch(
+            'app.kubernetes.tenant.routes.provision_native_namespace_committed',
+            side_effect=reject_before_provider_write,
+        ),
+        patch(
+            'app.kubernetes.tenant.routes._record',
+            side_effect=lambda **item: audit.append(item),
+        ),
+        _browser_evidence(page, 'uat-ten-004-namespace-form-rejection', viewport_name),
+    ):
+        _login(page, kaori_authenticated_base_url)
+        response = page.goto(
+            f'{kaori_authenticated_base_url}/kubernetes/tenant/namespace-provisioning',
+            wait_until='networkidle',
+        )
+        assert response is not None and response.ok
+        form = page.locator('[data-tenant-namespace-allocation-form]')
+        expect(form).to_be_visible()
+        form.locator('[name="tenant_environment_id"]').select_option('14')
+        form.locator('[name="resource_profile_id"]').select_option('18')
+        form.locator('[name="namespace"]').fill('qa-disposable-namespace')
+        expect(form.get_by_role('button', name='Create & Verify')).to_be_enabled()
+        form.get_by_role('button', name='Create & Verify').click()
+        page.wait_for_load_state('networkidle')
+
+        # The real route rejects via the service boundary; provider calls are
+        # impossible in this isolated fixture and no successful audit is emitted.
+        assert len(submitted) == 1
+        assert submitted[0]['tenant_environment_id'] == '14'
+        assert submitted[0]['resource_profile_id'] == '18'
+        assert submitted[0]['namespace'] == 'qa-disposable-namespace'
+        assert len(audit) == 1
+        assert audit[0]['event_type'] == 'kubernetes_tenant_namespace_provision_failed'
+        assert audit[0]['status'] == 'error'
+        expect(page.locator('[data-tenant-namespace-allocation-form]')).to_be_visible()
