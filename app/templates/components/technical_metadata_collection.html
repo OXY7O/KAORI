@@ -1,5 +1,14 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
+{% macro _metadata_value(value, nowrap=false) -%}
+    {% set pretty_json = value|pretty_structured_json %}
+    {% if pretty_json is not none %}
+        <pre data-kaori-inventory-json-value
+             class="min-w-0 whitespace-pre-wrap break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ pretty_json }}</pre>
+    {% else %}
+        <span class="min-w-0 {{ 'whitespace-nowrap' if nowrap else 'whitespace-pre-wrap break-words [overflow-wrap:anywhere]' }} text-sm font-medium leading-5 text-content-primary">{{ value if value not in [None, ''] else '-' }}</span>
+    {% endif %}
+{%- endmacro %}
 {% macro render(title, entries, icon='tags', empty_title='No Metadata Collected', empty_description='Metadata will appear when it is present in the committed inventory snapshot.', context=None, compact=false, mode='pairs', compact_pairs=false, total_count=none, truncated=false, nowrap_values=false, wide_pairs=false, embedded=false) -%}
     {% set entry_count = total_count if total_count is not none else (entries|length if entries else 0) %}
     {% if entry_count == 1 %}
@@ -63,7 +72,7 @@
                                 {% for key, value in pairs %}
                                     <article class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(26rem,0.42fr)_minmax(0,1fr)] sm:items-baseline sm:gap-6">
                                         <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ key }}</span>
-                                        <span class="min-w-0 whitespace-pre-wrap break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
+                                        {{ _metadata_value(value) }}
                                     </article>
                                 {% endfor %}
                             </div>
@@ -129,12 +138,12 @@
                                 {% if wide_pairs %}
                                     <article class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(11rem,0.42fr)_minmax(0,1fr)] sm:items-start sm:gap-5">
                                         <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ key }}</span>
-                                        <span class="min-w-0 {{ 'whitespace-nowrap' if nowrap_values else 'whitespace-pre-wrap break-words [overflow-wrap:anywhere]' }} text-sm font-medium leading-5 text-content-primary">{{ value if value not in [None, ''] else '-' }}</span>
+                                        {{ _metadata_value(value, nowrap_values) }}
                                     </article>
                                 {% else %}
                                     <article class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(9.5rem,0.42fr)_minmax(0,1fr)] sm:items-start sm:gap-5">
                                         <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ key }}</span>
-                                        <span class="min-w-0 {{ 'whitespace-nowrap' if nowrap_values else 'whitespace-pre-wrap break-words [overflow-wrap:anywhere]' }} text-sm font-medium leading-5 text-content-primary">{{ value if value not in [None, ''] else '-' }}</span>
+                                        {{ _metadata_value(value, nowrap_values) }}
                                     </article>
                                 {% endif %}
                             {% endfor %}
