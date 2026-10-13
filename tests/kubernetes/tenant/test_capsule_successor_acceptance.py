@@ -391,16 +391,17 @@ def test_capsule_acceptance_requires_explicit_confirmation_and_fresh_independent
             plan_sha256=plan['plan_sha256'],
             confirmed=False,
         )
-    for actor, bad_plan, bad_approval in [
-        (42, plan, approval),
-        (44, dict(plan, provider='native_kubernetes'), approval),
-        (44, dict(plan, requested_at=(datetime.now(UTC) - timedelta(hours=1)).isoformat()), approval),
-        (44, plan, dict(approval, approved_by=42)),
-        (44, plan, dict(approval, status='pending')),
+    expired_plan = dict(plan, requested_at=(datetime.now(UTC) - timedelta(hours=1)).isoformat())
+    for actor, bad_plan, bad_approval, denial in [
+        (42, plan, approval, 'different from the original plan requester'),
+        (44, dict(plan, provider='native_kubernetes'), approval, 'exact Capsule Release plan'),
+        (44, expired_plan, approval, 'exact Capsule Release plan'),
+        (44, plan, dict(approval, approved_by=42), 'exact Capsule Release plan'),
+        (44, plan, dict(approval, status='pending'), 'exact Capsule Release plan'),
     ]:
         monkeypatch.setattr(acceptance, 'latest_release_handoff_plan', lambda _, v=bad_plan: v)
         monkeypatch.setattr(acceptance, 'latest_release_handoff_approval', lambda _, v=bad_approval: v)
-        with pytest.raises(ValueError, match='Capsule Release plan'):
+        with pytest.raises(ValueError, match=denial):
             acceptance.accept_capsule_successor_handoff_committed(
                 tenant_id='tenant-1',
                 actor_user_id=actor,
