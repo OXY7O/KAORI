@@ -13,6 +13,7 @@ MANIFEST = {
 }
 EXECUTION = {
     'candidate': {'source_sha': SHA, 'tree_sha': TREE},
+    'run': {'run_id': 'isolated-test-run', 'runner': 'pytest', 'started_at': '2026-10-13T09:00:00+07:00'},
     'environment': {'kind': 'local', 'provider_mode': 'simulated'},
     'evidence': {},
 }
@@ -26,6 +27,19 @@ def _evaluate(cases, *, manifest=MANIFEST, execution=EXECUTION, digest=None, roo
         expected_digest=digest,
         evidence_root=root or Path('.'),
     )
+
+
+def test_missing_runner_identity_blocks_machine_readiness() -> None:
+    invalid = {**EXECUTION, 'run': {}}
+    report = _evaluate({'tests.unit.test_example::test_case': ['PASS']}, execution=invalid)
+    assert report['scenarios'][0]['result'] == 'BLOCKED'
+    assert report['machine_readiness'] == 'INCOMPLETE'
+
+
+def test_naive_execution_timestamp_is_not_accepted() -> None:
+    invalid = {**EXECUTION, 'run': {**EXECUTION['run'], 'started_at': '2026-10-13T09:00:00'}}
+    report = _evaluate({'tests.unit.test_example::test_case': ['PASS']}, execution=invalid)
+    assert report['scenarios'][0]['result'] == 'BLOCKED'
 
 
 def test_missing_junit_case_is_not_run() -> None:
