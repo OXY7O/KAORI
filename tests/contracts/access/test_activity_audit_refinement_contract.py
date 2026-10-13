@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -166,7 +167,7 @@ def test_activity_hot_register_is_explicit_about_archive_lifecycle_boundary() ->
     queries = read('app/platform_operations/notifications/queries.py')
     retention_domain = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
 
-    assert 'Hot records stay in PostgreSQL; older verified evidence stays in Data Lifecycle.' in summary
+    assert 'Recent records in PostgreSQL; archived evidence in Data Lifecycle.' in summary
     assert 'This register reads hot PostgreSQL records.' not in summary
     assert 'hot-record time range' in card
     assert "('all', 'All Hot Records')" in queries
@@ -213,7 +214,7 @@ def test_activity_audit_cross_domain_store_boundaries_and_existing_tenant_bridge
     assert 'event = AuditEvent()' in terminal_jobs
     assert 'record_operational_activity(' in manual_jobs
     assert 'AuditEvent()' in tenant_sync
-    assert 'db.session.add(AuditEvent(' in handoff
+    assert re.search(r'db\.session\.add\(\s*AuditEvent\(', handoff)
 
     assert 'delivery = NotificationDelivery()' in outbound
     assert 'delivery.event_key = event.event_key' in outbound
