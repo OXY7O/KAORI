@@ -151,14 +151,14 @@
                 </span>
             {% endif %}
             {{ pagination_ui.numeric_pages(pagination.page,
-                            pagination.total_pages,
-                            'cluster_page',
-                            hx_target='#tenant-cluster-estate-section',
-                            hx_indicator='#tenant-cluster-estate-loading',
-                            endpoint='tenant.cluster_estate',
-                            query_params={'cluster_per_page': pagination.per_page},
-                            hx_swap='outerHTML',
-                            href_endpoint='tenant.index') }}
+                        pagination.total_pages,
+                        'cluster_page',
+                        hx_target='#tenant-cluster-estate-section',
+                        hx_indicator='#tenant-cluster-estate-loading',
+                        endpoint='tenant.cluster_estate',
+                        query_params={'cluster_per_page': pagination.per_page},
+                        hx_swap='outerHTML',
+                        href_endpoint='tenant.index') }}
             {% if pagination.has_next %}
                 <a href="{{ next_href }}"
                    hx-get="{{ next_hx_url }}"
