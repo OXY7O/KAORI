@@ -16,7 +16,12 @@ def test_ui_browser_changes_prepare_frontend_assets_before_tests() -> None:
 
     dependencies = workflow.index("run_toolchain 'Frontend Dependencies'")
     assets = workflow.index("run_toolchain 'Frontend Test Assets'")
-    focused = workflow.index("run_toolchain 'Focused Tests'")
+    # Focused pytest now uses the canonical isolated PostgreSQL/Redis Compose
+    # test service; browser assets still must be built before that step.
+    focused = workflow.index('docker compose --file .github/ci/compose.yml run --rm --no-deps ci')
+    assert 'docker compose --file .github/ci/compose.yml up --detach --wait postgres redis' in workflow
+    assert 'docker compose --file .github/ci/compose.yml down --volumes --remove-orphans' in workflow
+    assert 'COMPOSE_PROJECT_NAME=' in workflow
 
     assert dependencies < assets < focused, (
         'Developer Check must prepare frontend assets before running routed browser tests.'
