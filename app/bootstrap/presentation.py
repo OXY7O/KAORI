@@ -7,8 +7,8 @@ from flask import Flask, request
 from flask_login import current_user
 from flask_wtf.csrf import generate_csrf
 
-from app.common.presentation import pretty_structured_json
 from app.common.navigation import build_navigation_breadcrumb
+from app.common.presentation import pretty_structured_json
 from app.common.timezone import (
     format_user_date,
     format_user_datetime,
