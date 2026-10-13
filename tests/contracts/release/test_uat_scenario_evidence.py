@@ -180,3 +180,29 @@ def test_two_ui_nodes_require_distinct_viewport_artifacts(tmp_path: Path) -> Non
     second = {**second, 'path': 'second.png'}
     request = {**EXECUTION, 'evidence': {'UAT-UIX-EXAMPLE': [first, second]}}
     assert _evaluate(cases, manifest=manifest, execution=request, root=tmp_path)['scenarios'][0]['result'] == 'PASS'
+
+
+def test_real_provider_requires_readback_even_with_all_junit_pass(tmp_path: Path) -> None:
+    scoped = {'scenarios': [{
+        **MANIFEST['scenarios'][0],
+        'real_provider_required': True,
+        'required_artifacts': {'provider_readback': 1},
+    }]}
+    digest = 'sha256:' + 'c' * 64
+    request = {
+        **EXECUTION,
+        'candidate': {**EXECUTION['candidate'], 'oci_digest': digest},
+        'environment': {'kind': 'server_uat', 'provider_mode': 'real'},
+    }
+    cases = {'tests.unit.test_example::test_case': ['PASS']}
+    report = _evaluate(cases, manifest=scoped, execution=request, digest=digest, root=tmp_path)
+    assert report['scenarios'][0]['result'] == 'BLOCKED'
+
+    (tmp_path / 'provider-readback.json').write_text('{"verified":false}', encoding='utf-8')
+    request['evidence'] = {'UAT-EXAMPLE-001': [{
+        'kind': 'provider_readback', 'path': 'provider-readback.json',
+    }]}
+    # Presence permits machine dossier completeness, not independent provider validation.
+    report = _evaluate(cases, manifest=scoped, execution=request, digest=digest, root=tmp_path)
+    assert report['scenarios'][0]['result'] == 'PASS'
+    assert report['human_acceptance'] == 'PENDING'
