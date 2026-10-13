@@ -8,6 +8,7 @@ from pathlib import Path
 from playwright.sync_api import Locator, Page, expect
 
 from app.extensions import limiter
+from tests.ui.visual_audit import assert_document_fits_viewport, assert_locator_within_document_width
 
 EVIDENCE_ROOT = Path('tmp/ci-artifacts/test-output/ui-browser')
 TEST_USERNAME = 'browser-admin'
@@ -205,7 +206,7 @@ def test_login_validation_errors_are_programmatically_associated(
     kaori_viewport: tuple[str, tuple[int, int]],
     kaori_authenticated_base_url: str,
 ) -> None:
-    """Invalid login fields expose error state and reference their visible messages."""
+    """Invalid login fields remain accessible and within viewport after failed submit."""
     page = configured_page
     viewport_name, _ = kaori_viewport
 
@@ -241,6 +242,17 @@ def test_login_validation_errors_are_programmatically_associated(
         expect(password_error).to_be_visible()
         expect(username_error).to_have_attribute('role', 'alert')
         expect(password_error).to_have_attribute('role', 'alert')
+
+        # The negative form interaction must not hide its field or error text
+        # behind a clipped responsive container after the server re-renders.
+        assert_document_fits_viewport(page)
+        for label, control in (
+            ('Username input', username),
+            ('Password input', password),
+            ('Username validation error', username_error),
+            ('Password validation error', password_error),
+        ):
+            assert_locator_within_document_width(page, control, label=label)
 
 
 def test_global_search_dynamic_feedback_is_programmatically_announced(
