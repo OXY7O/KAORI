@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
@@ -40,8 +39,6 @@ def test_tls_collector_scrubs_each_page_and_uses_continuation(monkeypatch):
     )
     monkeypatch.setattr(collector, 'collect_ingress_tls_usage', lambda cluster: {})
     monkeypatch.setattr(collector, 'build_kubernetes_client', lambda cluster: client)
-    monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
-    monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
     monkeypatch.setattr(
         collector,
         'parse_tls_secret',
@@ -75,8 +72,6 @@ def test_incomplete_secret_listing_fails_closed_and_scrubs(monkeypatch, bad_page
             core_api=lambda: SimpleNamespace(list_secret_for_all_namespaces=lambda **kwargs: bad_page),
         ),
     )
-    monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
-    monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
     batch = collector.collect_tls_certificate_batch(cluster)
     assert batch.error is not None
     assert batch.records == []
@@ -96,8 +91,6 @@ def test_secret_continuation_cycle_fails_without_partial_records(monkeypatch):
             ),
         ),
     )
-    monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
-    monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
     monkeypatch.setattr(collector, 'parse_tls_secret', lambda item, mapping, **kwargs: {'secret_name': 'a'})
     batch = collector.collect_tls_certificate_batch(cluster)
     assert batch.error is not None and not batch.records
@@ -132,8 +125,6 @@ def test_ingress_pagination_merges_consumer_evidence_across_pages(monkeypatch):
             networking_api=lambda: SimpleNamespace(list_ingress_for_all_namespaces=list_ingress),
         ),
     )
-    monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
-    monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
     mapping = collector.collect_ingress_tls_usage(cluster)
     assert mapping[('default', 'shared')]['ingress_hosts'] == [
         'alpha.example.com',
@@ -170,7 +161,5 @@ def test_ingress_missing_identity_does_not_claim_complete_mapping(monkeypatch):
             ),
         ),
     )
-    monkeypatch.setattr(collector, 'tls_policy_for_cluster', lambda cluster: (None, False))
-    monkeypatch.setattr(collector, 'weak_tls_context', lambda **kwargs: nullcontext())
     with pytest.raises(ValueError, match='without identity'):
         collector.collect_ingress_tls_usage(cluster)
