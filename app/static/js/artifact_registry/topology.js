@@ -169,6 +169,11 @@ if (canvas && form) {
     const relationshipLabels = { runtime_usage: 'Runtime Usage', owns: 'Owns', contains: 'Contains' }
     const cloneInspectorTemplate = (name) =>
         $(`registry-topology-inspector-${name}-template`)?.content?.firstElementChild?.cloneNode(true) || null
+    const renderEmptyInspector = () => {
+        const emptyPane = cloneInspectorTemplate('empty')
+        if (emptyPane) inspectorContent.replaceChildren(emptyPane)
+        window.lucide?.createIcons()
+    }
     const fill = (root, selector, value) => {
         const target = root?.querySelector(selector)
         if (target) target.textContent = safeLabel(value)
@@ -599,8 +604,9 @@ if (canvas && form) {
             fill(row, '[data-list-namespace]', scope.namespace)
             fill(row, '[data-list-status-text]', status.label)
             applyStatusSurface(row.querySelector('[data-list-status]'), row.querySelector('[data-list-status-dot]'), status.tone)
-            const count = payload.edges.filter((edge) =>
-                edge.data.source === data.id || edge.data.target === data.id).length
+            const count = cy
+                ? cy.getElementById(data.id).connectedEdges(':visible').length
+                : payload.edges.filter((edge) => edge.data.source === data.id || edge.data.target === data.id).length
             fill(row, '[data-list-relationships]', count)
             row.querySelector('[data-list-details]')?.addEventListener('click', () => inspectResource(item))
             tbody.append(row)
@@ -1044,6 +1050,7 @@ if (canvas && form) {
         warning.classList.add('hidden')
         errorPanel.classList.add('hidden')
         closePane()
+        renderEmptyInspector()
         const params = new URLSearchParams(new FormData(form))
         const dataUrl = new URL(canvas.dataset.url, window.location.origin)
         dataUrl.search = params.toString()
@@ -1194,6 +1201,7 @@ if (canvas && form) {
     layoutSelect.value = initialLayout === 'dependency' ? 'dependency' : 'hierarchy'
     window.addEventListener('resize', scheduleDrawerMiniMapUpdate)
     setView(view)
+    renderEmptyInspector()
     syncClearFiltersVisibility()
     reload()
 }
