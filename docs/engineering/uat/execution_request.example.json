@@ -23,5 +23,10 @@
       }
     ],
     "UAT-RPT-003": []
+  },
+  "run": {
+    "run_id": "REPLACE_WITH_ISOLATED_RUN_ID",
+    "runner": "REPLACE_WITH_PYTEST_OR_HUMAN_TESTER",
+    "started_at": "REPLACE_WITH_OFFSET_AWARE_ISO8601"
   }
 }
