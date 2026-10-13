@@ -57,7 +57,7 @@ def test_specialized_filtered_tables_follow_the_same_clear_contract() -> None:
         'platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html',
         'reports/report_templates/index.html',
         'reports/schedules/index.html',
-        'access/users/partials/_content.html',
+        'access/users/partials/_directory.html',
         'storage/object_storage/analytics/partials/_bucket_forecast_table.html',
     )
     for relative in specialized:
