@@ -561,7 +561,7 @@ def _metrics_source_rows(payload: dict[str, Any], *, source_label: str) -> list[
         raise ValueError('Metrics Source did not return a successful Prometheus alert query envelope.')
     data = payload.get('data')
     result = data.get('result') if isinstance(data, dict) else None
-    if not isinstance(result, list) or data.get('resultType', 'vector') != 'vector':
+    if not isinstance(data, dict) or not isinstance(result, list) or data.get('resultType', 'vector') != 'vector':
         raise ValueError('Metrics Source alert response is missing a complete instant-vector data.result array.')
     rows: list[dict[str, Any]] = []
     for item in result:
