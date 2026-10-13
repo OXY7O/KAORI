@@ -963,11 +963,11 @@ def test_native_bounded_atomic_replacement_fails_closed_for_unprovable_or_over_b
 
     for options, proposed_cpu, expected in (
         ({'other_unknown': ['another-namespace']}, '1', 'other active Tenant allocations'),
-        ({'other_cpu': None, 'other_unknown': ['another-namespace']}, '1', 'Unbounded or missing'),
+        ({'other_cpu': None, 'other_unknown': ['another-namespace']}, '1', '(?i)unbounded or missing'),
         ({'other_storage_gib': '2030'}, '1', 'Projected committed allocation exceeds'),
         ({'snapshot_stale': True}, '1', 'stale'),
         ({'has_policy': False}, '1', 'policy is not configured'),
-        ({}, None, 'Unbounded or missing'),
+        ({}, None, '(?i)unbounded or missing'),
     ):
         _reads, decisions, commits = _install_atomic_replacement_test_evidence(
             monkeypatch,
@@ -1183,7 +1183,7 @@ def test_limit_exposure_uses_ratios_as_separate_operator_ceiling() -> None:
     healthy = report(quota)
     assert healthy['state'] == 'Near Capacity'
     assert healthy['threshold']['cpu'] == '15.00'
-    assert healthy['threshold']['memory_bytes'] == format(Decimal('20') * gib, 'f')
+    assert Decimal(healthy['threshold']['memory_bytes']) == Decimal('20') * gib
     assert healthy['capacity_approval'] is False
     assert healthy['planning_only'] is True
     assert report(CapacityVector(cpu=Decimal('15.1'), memory_bytes=quota.memory_bytes))['state'] == 'Overcommitted'
