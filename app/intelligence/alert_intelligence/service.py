@@ -429,8 +429,8 @@ _SILENCE_UNLOADED = object()
 
 
 def _serialize_case(case: AlertCase, *, silence: AlertSilence | None | object = _SILENCE_UNLOADED) -> dict[str, Any]:
-    if silence is _SILENCE_UNLOADED:
-        silence = active_delivery_silence(case)
+    silence = active_delivery_silence(case) if silence is _SILENCE_UNLOADED else silence
+    silence = silence if isinstance(silence, AlertSilence) else None
     duration_end = case.closed_at or case.source_resolved_at or datetime.now(UTC)
     duration_seconds = max(int((_as_utc(duration_end) - _as_utc(case.first_seen_at)).total_seconds()), 0)
     owner = case.owner
