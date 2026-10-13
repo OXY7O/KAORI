@@ -25,7 +25,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('workflow', 'Kubernetes Operations', 'layout-dashboard') %}
                         <h1 class="{{ page_hero.title_classes() }}">Operations Overview</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Run governed Kubernetes workflows by capability; Kubernetes remains the execution authority.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Governed Kubernetes workflows; Kubernetes executes.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('layers-3', available_capabilities ~ ' Available Capabilities') }}
                             {{ page_hero.meta_label('shield-check', 'Permission-Gated Operations') }}
@@ -87,9 +87,9 @@
         ) %}
             <div class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-3">
                 {% for icon, heading, supporting in [
-                    ('target', 'Select a Live Target', 'Open the relevant capability workspace to identify and verify the live Kubernetes target before proceeding.'),
-                    ('scan-search', 'Validate Before Mutation', 'Permission checks, dry-run or resource-bound receipts are enforced by the selected operation.'),
-                    ('scroll-text', 'Commit Auditable Outcome', 'Provider execution remains authoritative; KAORI retains operation feedback and evidence.')
+                    ('target', 'Select a Live Target', 'Select and verify a live target in its workspace.'),
+                    ('scan-search', 'Validate Before Mutation', 'Enforce permissions and operation-specific checks.'),
+                    ('scroll-text', 'Commit Auditable Outcome', 'Provider executes; KAORI retains audit evidence.')
                 ] %}
                     <div class="min-w-0 bg-surface-card p-4">
                         <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
