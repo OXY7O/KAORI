@@ -114,15 +114,18 @@ def observe_external_capsule_access_committed(*, tenant_id: str, actor_user_id: 
     item = client.custom_objects_api().get_cluster_custom_object(
         _GROUP, 'v1beta2', _PLURAL, str(tenant.provider_reference), _request_timeout=5
     )
-    if not isinstance(item, dict) or not isinstance(item.get('spec'), dict):
+    if not isinstance(item, dict):
         raise ValueError('Capsule Tenant access payload is invalid.')
-    metadata = item.get('metadata') or {}
+    spec = item.get('spec')
+    metadata = item.get('metadata')
+    if not isinstance(spec, dict) or not isinstance(metadata, dict):
+        raise ValueError('Capsule Tenant spec or metadata is invalid.')
     source_uid = str(metadata.get('uid') or '')
     resource_version = str(metadata.get('resourceVersion') or '')
     expected_uid = str((tenant.provider_evidence_json or {}).get('provider_uid') or '')
     if not source_uid or not resource_version or (expected_uid and source_uid != expected_uid):
         raise ValueError('Capsule Tenant provider identity changed; re-adoption review is required.')
-    result = normalize_capsule_access_spec(item['spec'])
+    result = normalize_capsule_access_spec(spec)
     evidence = {
         'status': result['status'],
         'tenant_id': tenant.id,

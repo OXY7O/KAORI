@@ -364,14 +364,17 @@ def review_capsule_external_role_profile_committed(
             str(tenant.provider_reference),
             _request_timeout=5,
         )
-        if not isinstance(item, dict) or not isinstance(item.get('spec'), dict):
-            raise ValueError('Capsule Tenant spec could not be verified.')
-        meta = item.get('metadata') or {}
+        if not isinstance(item, dict):
+            raise ValueError('Capsule Tenant response could not be verified.')
+        spec = item.get('spec')
+        meta = item.get('metadata')
+        if not isinstance(spec, dict) or not isinstance(meta, dict):
+            raise ValueError('Capsule Tenant spec/metadata could not be verified.')
         if (
             meta.get('uid') != expected_uid
             or meta.get('resourceVersion') != evidence.get('resource_version')
             or meta.get('name') != tenant.provider_reference
-            or normalize_capsule_access_spec(item['spec'])['bindings'] != evidence.get('bindings')
+            or normalize_capsule_access_spec(spec)['bindings'] != evidence.get('bindings')
         ):
             raise ValueError('Capsule provider RBAC changed since observed inventory.')
         return item
