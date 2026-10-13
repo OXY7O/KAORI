@@ -83,7 +83,8 @@ def test_required_missing_or_empty_artifact_blocks(tmp_path: Path) -> None:
     assert _evaluate(case, manifest=constrained, root=tmp_path)['scenarios'][0]['result'] == 'BLOCKED'
     (tmp_path / 'shot.png').touch()
     evidence = {**EXECUTION, 'evidence': {'UAT-EXAMPLE-001': [{'kind': 'screenshot', 'path': 'shot.png'}]}}
-    assert _evaluate(case, manifest=constrained, execution=evidence, root=tmp_path)['scenarios'][0]['result'] == 'BLOCKED'
+    incomplete = _evaluate(case, manifest=constrained, execution=evidence, root=tmp_path)
+    assert incomplete['scenarios'][0]['result'] == 'BLOCKED'
     (tmp_path / 'shot.png').write_bytes(b'captured')
     assert _evaluate(case, manifest=constrained, execution=evidence, root=tmp_path)['scenarios'][0]['result'] == 'PASS'
 
