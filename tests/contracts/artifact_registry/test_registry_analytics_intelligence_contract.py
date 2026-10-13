@@ -323,7 +323,12 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
     assert 'Registry Source Status' in registry
     assert 'Latest Analytics Data Snapshot' in registry
     assert 'Analytics Controls & Data Readiness' in registry
-    assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry
+    # The conditional belongs to Jinja source, not the rendered HTML output.
+    registry_source = (
+        ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html'
+    ).read_text()
+    assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry_source
+    assert 'Analytics Overview' in registry
     assert 'Collect Analytics Data' not in registry
     assert 'Configure Collection' not in registry
 
@@ -520,7 +525,10 @@ def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> 
     assert "scope_type='registry_instance'" in analytics
     assert 'list_alerts_for_scope(' in analytics
     assert 'ACTIVE_ALERTS_EXPRESSION' in analytics
-    assert "'alerts': state.alerts" in analytics
+    # The alert source and fallback rows are committed into the snapshot payload.
+    assert 'alerts = _alert_evidence(identity)' in analytics
+    assert "'alerts': alerts" in analytics
+    assert 'snapshot.payload_json = payload' in analytics
 
     assert 'list_alerts_for_scope' not in presentation
     assert 'list_alerts_for_scope' not in routes
