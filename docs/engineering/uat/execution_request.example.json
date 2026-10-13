@@ -14,12 +14,14 @@
       {
         "kind": "screenshot",
         "variant": "large-desktop",
-        "path": "ui-browser/uat-uix-006-notification-filter-reset-large-desktop.png"
+        "path": "ui-browser/uat-uix-006-notification-filter-reset-large-desktop.png",
+        "nodeid": "tests/ui/test_representative_interactions.py::test_notification_center_filters_and_rows_survive_htmx_reset"
       },
       {
         "kind": "trace",
         "variant": "large-desktop",
-        "path": "ui-browser/uat-uix-006-notification-filter-reset-large-desktop-trace.zip"
+        "path": "ui-browser/uat-uix-006-notification-filter-reset-large-desktop-trace.zip",
+        "nodeid": "tests/ui/test_representative_interactions.py::test_notification_center_filters_and_rows_survive_htmx_reset"
       }
     ],
     "UAT-RPT-003": []
