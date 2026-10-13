@@ -97,7 +97,8 @@ def test_handoff_preparation_cannot_replace_a_current_approval_request() -> None
     assert "row.release_handoff_preparation_state == 'available'" in modal
     assert 'handoff_plan.requested_by == current_user.id' in modal
     assert 'Only the original requester may renew' in service
-    assert 'The current handoff plan is locked.' in modal
+    assert 'Locked to preserve the reviewed plan and its resource scope.' in modal
+    assert 'Replacing an acknowledged plan requires an explicitly governed restart.' in modal
     assert 'Acknowledge as Independent Reviewer' in modal
     assert (
         "row.release_handoff_preparation_state == 'pending' and handoff_plan.requested_by != current_user.id" in modal
