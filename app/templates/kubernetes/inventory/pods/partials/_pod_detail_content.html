@@ -143,7 +143,7 @@
                 {% endif %}
                 <div class="border-t border-outline-subtle" aria-label="Pod Configuration and Storage References">
                     {{ related_collection.inventory_render('Configuration References',
-                                        'Referenced ConfigMaps and Secrets; no Secret values.',
+                                        'ConfigMap/Secret names only.',
                                         pod.configuration_references,
                                         pod.configuration_references|length,
                                         'file-key-2',
