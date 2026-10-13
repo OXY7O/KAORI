@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% set snapshot = capsule_rbac_bootstrap %}
 {% set roles = snapshot.roles if snapshot and snapshot.roles else [] %}
 {% set is_ready = snapshot and snapshot.status == 'ready' and roles|length == 4 and not snapshot.missing and not snapshot.conflict %}
@@ -132,7 +133,7 @@
                                 </div>
                             </div>
                             {% if role.reason %}
-                                <p class="mt-3 rounded-lg border border-status-critical-border bg-surface-elevated px-3 py-2 text-xs leading-5 text-status-critical-text">
+                                <p class="mt-3 rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-surface-elevated px-3 py-2 text-xs leading-5 text-status-critical-text">
                                     {{ role.reason }}
                                 </p>
                             {% endif %}
@@ -184,7 +185,7 @@
             </div>
         {% endif %}
         {% if is_ready %}
-            <div class="flex flex-col gap-3 rounded-xl border border-status-normal-border bg-surface-elevated px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between"
+            <div class="flex flex-col gap-3 rounded-xl border {{ operational_callout.semantic_border_classes('normal') }} bg-surface-elevated px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between"
                  role="status">
                 <div class="flex min-w-0 items-start gap-3">
                     <i data-lucide="check-circle-2"
@@ -205,7 +206,7 @@
                 </a>
             </div>
         {% elif snapshot and snapshot.status == 'failed' %}
-            <div class="flex items-start gap-3 rounded-xl border border-status-critical-border bg-surface-elevated px-4 py-3.5"
+            <div class="flex items-start gap-3 rounded-xl border {{ operational_callout.semantic_border_classes('critical') }} bg-surface-elevated px-4 py-3.5"
                  role="alert">
                 <i data-lucide="shield-alert"
                    class="mt-0.5 h-5 w-5 shrink-0 text-status-critical"
@@ -220,7 +221,7 @@
                 </div>
             </div>
         {% elif snapshot and (snapshot.status == 'conflict' or snapshot.conflict) %}
-            <div class="flex items-start gap-3 rounded-xl border border-status-critical-border bg-surface-elevated px-4 py-3.5"
+            <div class="flex items-start gap-3 rounded-xl border {{ operational_callout.semantic_border_classes('critical') }} bg-surface-elevated px-4 py-3.5"
                  role="alert">
                 <i data-lucide="shield-x"
                    class="mt-0.5 h-5 w-5 shrink-0 text-status-critical"
@@ -234,7 +235,7 @@
                 </div>
             </div>
         {% elif can_bootstrap %}
-            <div class="flex items-start gap-3 rounded-xl border border-status-warning-border bg-surface-elevated px-4 py-3.5">
+            <div class="flex items-start gap-3 rounded-xl border {{ operational_callout.semantic_border_classes('warning') }} bg-surface-elevated px-4 py-3.5">
                 <i data-lucide="shield-plus"
                    class="mt-0.5 h-5 w-5 shrink-0 text-status-warning"
                    aria-hidden="true"></i>
