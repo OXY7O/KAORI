@@ -23,17 +23,16 @@ from app.common.pagination import (
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.job import JobExecution
-from app.models.object_storage import ObjectStorageSystem
 from app.models.report import Report
 from app.models.user import User
 from app.reports.catalog import REPORT_TYPE_SPECS
 from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.generate.service import REPORT_TYPE_OPTIONS
+from app.reports.generated.scope_options import get_scope_options as _get_scope_options
 from app.reports.scope import (
     ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
-    get_active_registry_options,
     resolve_report_scope,
 )
 from app.reports.storage.service import (
@@ -1442,64 +1441,6 @@ def _get_file_state(
         'tone': 'amber',
         'icon': 'clock-3',
     }
-
-
-def _get_scope_options() -> list[dict[str, str]]:
-    clusters = (
-        db.session.execute(
-            select(
-                Cluster,
-            ).order_by(
-                Cluster.name.asc(),
-            )
-        )
-        .scalars()
-        .all()
-    )
-    object_storage_systems = (
-        db.session.execute(
-            select(
-                ObjectStorageSystem,
-            ).order_by(
-                ObjectStorageSystem.name.asc(),
-            )
-        )
-        .scalars()
-        .all()
-    )
-
-    options = [
-        {
-            'value': '',
-            'label': 'All Infrastructure Assets',
-        },
-    ]
-
-    for cluster in clusters:
-        options.append(
-            {
-                'value': f'{KUBERNETES_CLUSTER_ASSET_TYPE}:{cluster.id}',
-                'label': f'Kubernetes · {cluster.name}',
-            }
-        )
-
-    for system in object_storage_systems:
-        options.append(
-            {
-                'value': f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{system.id}',
-                'label': f'Object Storage · {system.name}',
-            }
-        )
-
-    for instance in get_active_registry_options():
-        options.append(
-            {
-                'value': f'{ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}:{instance["value"]}',
-                'label': f'Artifact Registry · {instance["label"]}',
-            }
-        )
-
-    return options
 
 
 def _get_cluster_map(
