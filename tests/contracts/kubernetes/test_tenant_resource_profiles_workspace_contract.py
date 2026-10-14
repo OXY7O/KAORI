@@ -1679,7 +1679,7 @@ def test_allocation_full_width_technical_workspace_and_readable_comparison() -> 
     assert '{% call technical_category_tabs.tablist() %}' in template
     assert 'role="tablist"' in shared_tabs
     assert 'aria-orientation="vertical"' in shared_tabs
-    assert 'data-{{ data_namespace }}-tabs' in shared_tabs
+    assert 'data-kaori-technical-category-tabs' in shared_tabs
     assert 'aria-controls="allocation-detail-panel-{{ key }}"' in template
     assert 'role="tabpanel"' in template
     assert 'lg:border-l lg:border-outline-subtle lg:pl-6' in template
