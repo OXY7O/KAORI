@@ -986,7 +986,9 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
 def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknowns() -> None:
     governance = capacity_governance_source()
 
-    assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in governance
+    assert 'TenantNamespace.provisioning_status.notin_(' in governance
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in governance
+    assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in governance
     assert 'def _committed_evidence_reason(' in governance
     assert 'unbounded_namespaces: list[str] | None = None' in governance
     assert 'Unbounded or missing governed' in governance
