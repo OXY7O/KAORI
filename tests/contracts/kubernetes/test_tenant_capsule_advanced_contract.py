@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -111,7 +112,7 @@ def test_capsule_quota_cutover_comparisons_preserve_distinct_provider_authoritie
         assert 'data-tenant-quota-metric-key="{{ key }}"' in template
         for dimension in ('requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory', 'pods', 'requests.storage'):
             assert f"'{dimension}'" in template
-        assert 'data-tenant-quota-change-summary aria-live="polite"' in template
+        assert re.search(r'data-tenant-quota-change-summary\s+aria-live="polite"', template)
         assert 'name="csrf_token"' in template
         assert 'border border-outline-subtle bg-surface-card shadow-sm' in template
 
@@ -133,7 +134,7 @@ def test_capsule_quota_cutover_comparisons_preserve_distinct_provider_authoritie
     # provider scope and external LimitRange observations.
     assert "url_for('tenant.cutover_capsule_tenant_quota_route')" in tenant
     assert "url_for('tenant.change_capsule_tenant_quota_route')" in tenant
-    assert tenant.count('data-tenant-quota-change-summary aria-live="polite"') == 2
+    assert len(re.findall(r'data-tenant-quota-change-summary\s+aria-live="polite"', tenant)) == 2
     assert tenant.count('data-tenant-quota-metric-side=') == 2
     assert 'data-tenant-quota-current-scope' in tenant
     assert 'data-tenant-quota-managed-summary' in tenant
