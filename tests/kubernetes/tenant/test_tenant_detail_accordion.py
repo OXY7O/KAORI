@@ -147,14 +147,15 @@ def test_released_generation_switches_to_handback_only_if_authorized(monkeypatch
     assert context['tenant_detail_open_section'] == 'provider'
 
 
-def test_capsule_attachment_reopens_only_when_valid(monkeypatch):
+def test_retired_capsule_attachment_deep_link_returns_to_provider_authority(monkeypatch):
     ctx = _context(
         monkeypatch,
         perms={'tenant.manage'},
         provider='capsule',
         selected='attachment',
     )
-    assert ctx['tenant_detail_open_section'] == 'attachment'
+    # #1125 relocated attachment to Discovery; the retired deep link fails closed.
+    assert ctx['tenant_detail_open_section'] == 'provider'
     ctx = _context(monkeypatch, perms={'tenant.view'}, provider='capsule', selected='attachment')
     assert ctx['tenant_detail_open_section'] == 'provider'
 
@@ -224,7 +225,7 @@ def test_capsule_release_condition_cards_keep_verbatim_evidence() -> None:
     ):
         assert pattern in panel
     assert "condition_title = blocker.split(' has a KAORI-managed ')[0]" in panel
-    assert "condition_title = 'Review recorded condition'" in panel
+    assert 'condition_title = "Review recorded condition"' in panel
     assert 'condition_action = blocker' in panel
     assert 'aria-label="Recorded Release conditions"' in panel
     assert '<ol class="mt-3 grid min-w-0 gap-3 sm:grid-cols-2"' in panel
