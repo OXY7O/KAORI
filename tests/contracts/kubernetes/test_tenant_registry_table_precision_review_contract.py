@@ -9,7 +9,7 @@ TENANT = ROOT / 'app/templates/kubernetes/tenant/partials'
 # Each width profile reflects the existing table's content and action density.
 REGISTRIES = {
     '_cluster_estate': (900, (29, 11, 13, 16, 17, 14)),
-    '_resource_profile_registry': (1150, (43, 16, 17, 12, 12)),
+    '_resource_profile_registry': (1150, (29, 21, 26, 15, 9)),
     '_tenant_registry': (1040, (20, 19, 12, 9, 15, 13, 12)),
     '_namespace_registry': (1100, (19, 19, 30, 16, 16)),
     '_group_registry': (1250, (18, 15, 17, 12, 12, 26)),
@@ -110,7 +110,12 @@ def test_existing_canonical_fixed_tables_are_not_unnecessarily_modified() -> Non
     credential = _template('_credential_registry')
     decisions = _template('_capacity_decisions')
     assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in credential
-    assert "table_ui.table_classes('table-fixed')" in decisions
+    # Capacity decisions have an approved wider bounded record shape, with an
+    # explicit action column and shared horizontal overflow on compact screens.
+    assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in decisions
+    assert 'overflow-x-auto' in decisions
+    assert 'header_cell_classes(action=true)' in decisions
+    assert 'cell_classes(action=true)' in decisions
 
 
 def test_tooltip_expressions_are_not_html_entity_encoded_inside_jinja() -> None:

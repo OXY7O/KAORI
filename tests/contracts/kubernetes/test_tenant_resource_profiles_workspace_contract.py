@@ -986,7 +986,9 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
 def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknowns() -> None:
     governance = capacity_governance_source()
 
-    assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in governance
+    assert 'TenantNamespace.provisioning_status.notin_(' in governance
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in governance
+    assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in governance
     assert 'def _committed_evidence_reason(' in governance
     assert 'unbounded_namespaces: list[str] | None = None' in governance
     assert 'Unbounded or missing governed' in governance
@@ -1344,9 +1346,12 @@ def test_tenant_operations_empty_registries_keep_canonical_pagination_without_ho
         assert f"if {rows} else '!table-fixed'" in template
         assert f'{{% if {rows} %}}' in template
         assert template.index(f'{{% if {rows} %}}') < template.index('<thead')
-        assert "{% set empty_state_label = '' %}" in template
-        assert "{% set empty_state_min_height = 'min-h-[128px]' %}" in template
-        assert "{% set empty_state_container_class = '!py-5' %}" in template
+        # Quote style is formatter-owned; the empty state configuration,
+        # zero-result geometry and canonical pagination must stay unchanged.
+        normalized_empty_state = template.replace('"', "'")
+        assert "{% set empty_state_label = '' %}" in normalized_empty_state
+        assert "{% set empty_state_min_height = 'min-h-[128px]' %}" in normalized_empty_state
+        assert "{% set empty_state_container_class = '!py-5' %}" in normalized_empty_state
         assert 'components/states/_empty_state.html' in template
         assert "registry_ui.footer('tenant.operations'" in template
         assert 'table_ui.table_classes(' in template

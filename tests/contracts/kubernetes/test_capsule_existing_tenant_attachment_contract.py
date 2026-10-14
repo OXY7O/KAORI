@@ -54,7 +54,7 @@ def test_capsule_attach_reuses_discovery_and_existing_tenant_provider_authority(
     assert '_csrf()' in route
     assert 'name="capsule_tenant_name"' in modal
     assert 'name="provider_resource_version"' in modal
-    assert 'name="attach_environment_id" required' in modal
+    assert re.search(r'name="attach_environment_id"\s+required', modal)
     assert 'Capsule Namespace → Existing Tenant' in modal
     assert 'capsule_tenant_name=row.capsule_tenant_name or' in table
 
