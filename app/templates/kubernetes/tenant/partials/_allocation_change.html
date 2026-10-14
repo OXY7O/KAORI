@@ -103,9 +103,7 @@
                                 <p class="text-sm font-semibold {{ 'text-kaori-primary' if side == 'proposed' else 'text-content-secondary' }}">{{ title }}</p>
                                 <p class="mt-0.5 text-xs text-content-muted">{{ subtitle }}</p>
                                 <p class="mt-2 break-words text-base font-semibold text-content-primary"
-                                   data-tenant-allocation-
-                                   {{ side }}
-                                   -profile>—
+                                   data-tenant-allocation-profile="{{ side }}">—
                                 </p>
                             </div>
                             <span class="mt-0.5 h-2 w-2 shrink-0 rounded-full {{ 'bg-kaori-primary' if side == 'proposed' else 'bg-status-normal' }}"
