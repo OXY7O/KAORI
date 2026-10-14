@@ -27,8 +27,13 @@ def test_resource_cards_replace_nested_tabs_without_new_tab_controller() -> None
     rows = read('app/kubernetes/analytics/top_consumers/rows.py')
     controller = read('app/static/js/analytics/controls.js')
 
+    shared_lens = read('app/templates/components/resource_lens_tabs.html')
     assert 'data-kaori-ranking-resource-lens' in section
-    assert 'role="tablist"' in section
+    assert '{% call resource_lens_tabs.tablist() %}' in section
+    assert 'role="tablist"' not in section
+    assert 'role="tablist"' in shared_lens
+    assert 'aria-label="{{ aria_label }}"' in shared_lens
+    assert 'data-kaori-tab-variant="resource-lens"' in shared_lens
     assert 'data-analytics-tab-button="{{ resource_key }}"' in section
     assert 'data-kaori-tab-active-classes=' in section
     assert 'data-kaori-tab-inactive-classes=' in section
