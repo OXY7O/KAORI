@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -18,7 +19,7 @@ def test_remediation_plan_reuses_existing_governed_grant_inspect_reconcile_witho
     assert "'explicit_grant_reconcile'" in service
     assert "'auto_mutation_performed': False" in service
     assert "'auto_execute': False" in service
-    assert 'db.session.add(AuditEvent(' in service
+    assert re.search(r'db\.session\.add\(\s*AuditEvent\(', service)
     assert 'runtime_adapter.build_client' not in service
     assert 'reconcile_provider_access_grant(' not in service
     assert 'patch_cluster_custom_object(' not in service
