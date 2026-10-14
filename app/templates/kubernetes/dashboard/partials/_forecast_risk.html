@@ -39,7 +39,7 @@
                     Highest Projection
                 </div>
                 <div class="mt-2 flex items-end justify-between gap-3">
-                    <p class="truncate text-sm font-semibold text-content-primary">{{ dashboard.forecast_snapshot.highest_projected_label }}</p>
+                    <p class="min-w-0 break-words text-sm font-semibold text-content-primary">{{ dashboard.forecast_snapshot.highest_projected_label }}</p>
                     <p class="shrink-0 text-xl font-semibold text-content-primary">
                         {% if dashboard.forecast_snapshot.highest_projected_percent is not none %}
                             {{ dashboard.forecast_snapshot.highest_projected_percent|round(0) |int }}%
