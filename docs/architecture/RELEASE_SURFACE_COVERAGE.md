@@ -4,7 +4,7 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **73 navigation links** across the authenticated application shell and **30 registered blueprints**. A new menu link, workspace capability, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **74 navigation links** across the authenticated application shell and **30 registered blueprints**. A new menu link, workspace capability, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
 ## Navigation and Surface Matrix
 
@@ -15,7 +15,7 @@ The current baseline contains **73 navigation links** across the authenticated a
 | Kubernetes Inventory | LOCKED | Kubernetes → Inventory | `verify_inventory_final_lock.py` |
 | Object Storage Inventory | LOCKED | Storage → Object Storage | `verify_object_storage_inventory_final_lock.py` |
 | Artifact Registry | BASELINE LOCKED | Infrastructure → Artifact Registry | Artifact Registry contracts |
-| Kubernetes Operations | LOCKED | Kubernetes → Operations | `verify_kubernetes_operations_final_lock.py` |
+| Kubernetes Operations | LOCKED | Kubernetes → Operations → Overview, ConfigMaps, Secrets | `verify_kubernetes_operations_final_lock.py` |
 | Kubernetes Governance | LOCKED | Kubernetes → Governance | `verify_governance_final_lock.py` |
 | Tenant | BASELINE LOCKED | Kubernetes → Tenant | baseline + integrated Tenant UAT contracts |
 | Analytics | LOCKED | Insights & Reporting → Kubernetes Analytics + Object Storage Analytics | `verify_analytics_final_lock.py` + `verify_object_storage_analytics.py` |
