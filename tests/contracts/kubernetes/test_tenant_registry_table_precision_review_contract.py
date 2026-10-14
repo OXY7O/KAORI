@@ -110,7 +110,12 @@ def test_existing_canonical_fixed_tables_are_not_unnecessarily_modified() -> Non
     credential = _template('_credential_registry')
     decisions = _template('_capacity_decisions')
     assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in credential
-    assert "table_ui.table_classes('table-fixed')" in decisions
+    # Capacity decisions have an approved wider bounded record shape, with an
+    # explicit action column and shared horizontal overflow on compact screens.
+    assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in decisions
+    assert 'overflow-x-auto' in decisions
+    assert 'header_cell_classes(action=true)' in decisions
+    assert 'cell_classes(action=true)' in decisions
 
 
 def test_tooltip_expressions_are_not_html_entity_encoded_inside_jinja() -> None:
