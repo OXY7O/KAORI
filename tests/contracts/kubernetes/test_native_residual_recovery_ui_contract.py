@@ -5,6 +5,7 @@ These contracts are authored while CI/CD and runtime provider mutation HOLD.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from jinja2 import Environment
@@ -15,6 +16,10 @@ PARTIAL = ROOT / 'app/templates/kubernetes/tenant/partials/_native_residual_reco
 ROUTES = ROOT / 'app/kubernetes/tenant/routes.py'
 REGISTRY = ROOT / 'app/kubernetes/tenant/registry_context.py'
 DISCOVERY = ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_discovery.html'
+
+PLAN_SHA_HIDDEN_INPUT = re.compile(
+    r'<input\s+type="hidden"\s+name="plan_sha256"\s+value="\{\{ recovery_plan\.plan_sha256 \}\}"'
+)
 
 
 def source(path):
@@ -56,7 +61,7 @@ def test_recovery_forms_use_existing_htmx_csrf_loading_and_independent_actor_gua
     assert partial.count('hx-disabled-elt="find button[type=\'submit\']"') == 4
     assert partial.count('name="tenant_detail_section" value="handback"') == 4
     assert partial.count('name="tenant_detail_id"') == 4
-    assert 'name="plan_sha256" value="{{ recovery_plan.plan_sha256 }}"' in partial
+    assert PLAN_SHA_HIDDEN_INPUT.search(partial)
     assert 'recovery_plan.requested_by != current_user.id' in partial
     assert 'recovery_approval.approved_by == current_user.id' in partial
     assert 'row.native_residual_plan_current' in partial
@@ -146,7 +151,7 @@ def test_recovery_redesign_preserves_distinct_sensitive_workflow_forms():
     assert partial.count('name="confirm_native_residual_prepare"') == 1
     assert partial.count('name="confirm_native_residual_approval"') == 1
     assert partial.count('name="confirm_native_residual_execute"') == 1
-    assert partial.count('name="plan_sha256" value="{{ recovery_plan.plan_sha256 }}"') == 2
+    assert len(PLAN_SHA_HIDDEN_INPUT.findall(partial)) == 2
     assert 'recovery_approval.approved_by == current_user.id' in partial
     assert 'recovery_plan.requested_by != current_user.id' in partial
     assert 'row.native_residual_plan_current' in partial
