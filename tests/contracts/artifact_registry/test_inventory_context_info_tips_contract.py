@@ -10,7 +10,8 @@ def test_registry_guides_attach_to_resource_table_title_not_headers() -> None:
     assert '{% import "components/info_tip.html" as info_tip %}' in source
     assert source.count('<thead') == 3
     assert source.count('info_tip.render(') == 3
-    assert 'title_extra=registry_title_tip ~ result_badge' in source
+    assert 'title_extra=registry_title_tip,' in source
+    assert 'result_count=inventory.total' in source
     assert '{% set registry_title_tip %}' in source
 
     expected = {
@@ -38,7 +39,10 @@ def test_registry_title_help_keeps_provider_evidence_boundaries() -> None:
     assert 'does not establish current provider health.' in source
     assert 'table_ui.inventory_block_header(' in source
     assert 'resource_detail_modal.detail_button(' in source
-    assert "hx-swap='outerHTML'" in source
+    assert 'registry.clear_filters_action(' in source
+    assert "hx_get=url_for(inventory.resource_endpoint, page=1, per_page=inventory.pagination.per_page)" in source
+    assert "target='#artifact-registry-inventory-table'" in source
+    assert "swap='outerHTML'" in source
 
 
 def test_inventory_guide_reuses_accessible_info_tip_and_htmx_hooks() -> None:
