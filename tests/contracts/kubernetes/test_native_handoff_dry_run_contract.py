@@ -27,7 +27,10 @@ def test_native_handoff_dry_run_uses_approved_existing_evidence_and_only_server_
     assert "'dry_run': 'All'" in service
     assert "_CONTENT_TYPE = 'application/json-patch+json'" in service
     assert 'if _spec(before) != _spec(preview)' in service
-    assert 'if _resource_metadata(live) != before_identity' in service
+    assert '_resource_metadata(live) != before_identity' in service
+    assert '_spec(live) != _spec(before)' in service
+    assert "(_read(_metadata(live), 'annotations') or {}) != before_annotations" in service
+    assert '_immutable_metadata(live) != _immutable_metadata(before)' in service
     assert "'provider_mutation_performed': False" in service
     assert "'provider_handoff_verified': False" in service
     assert "'release_authorized': False" in service
