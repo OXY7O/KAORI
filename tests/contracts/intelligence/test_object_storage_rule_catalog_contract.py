@@ -44,6 +44,7 @@ def test_rule_catalog_uses_generic_evidence_boundary_and_provider_coverage():
     service = read('app/intelligence/service.py')
     presentation = read('app/intelligence/rule_presentation.py')
     page = read('app/templates/intelligence/rule_catalog.html')
+    summary = read('app/templates/intelligence/partials/_catalog_summary.html')
     filters = read('app/templates/intelligence/partials/_filters.html')
     records = read('app/templates/intelligence/partials/_catalog_records.html')
     details = read('app/templates/intelligence/partials/_catalog_detail_content.html')
@@ -62,9 +63,13 @@ def test_rule_catalog_uses_generic_evidence_boundary_and_provider_coverage():
     assert 'item.provider_label' in records
     assert "intelligence_ui.field('Provider Coverage', item.provider_label)" in details
 
-    assert 'payload.summary.domains' in page
+    assert "include 'intelligence/partials/_catalog_summary.html'" in page
+    assert 'payload.result_context.matching_items' in summary
+    assert 'payload.result_context.available_items' in summary
+    assert 'payload.result_context.reserved_items' in summary
+    assert 'payload.result_context.imported_items' in summary
+    assert 'Canonical definitions remain catalog-owned.' in summary
     assert 'payload.summary.minio' not in page
-    assert 'Canonical Definitions' in page
     assert '3 Asset Domains' not in page
 
 
