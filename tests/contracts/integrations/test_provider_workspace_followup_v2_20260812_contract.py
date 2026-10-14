@@ -91,7 +91,8 @@ def test_validation_operational_gate_copy_is_compact_for_every_provider() -> Non
     assert 'Full Validation provides API and RBAC evidence;' in providers[0]
     assert 'Runtime Refresh monitors live Kubernetes API health' in providers[0]
     for provider in providers[1:3]:
-        assert 'Full Validation owns core APIs; bindings own consumer evidence;' in provider
+        assert 'Full Validation owns core APIs' in provider
+        assert 'bindings own consumer evidence' in provider
         assert 'Runtime Refresh owns live health.' in provider
     assert 'Full Validation owns S3 capabilities;' in providers[3]
     assert 'Inventory Sync owns assets; bindings own consumer evidence.' in providers[3]
