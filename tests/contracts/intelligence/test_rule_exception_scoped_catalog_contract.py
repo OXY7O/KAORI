@@ -86,8 +86,8 @@ def test_namespace_request_and_memory_limit_rules_have_concrete_inventory_findin
     collector = read('app/kubernetes/inventory/collectors/workloads.py')
     catalog = rules()
 
-    assert '_build_namespace_quota_findings(rules)' in service
-    assert '_build_workload_resource_governance_findings(rules)' in service
+    assert "collect('Kubernetes Namespace', _build_namespace_quota_findings)" in service
+    assert "collect('Kubernetes Workload Governance', _build_workload_resource_governance_findings)" in service
     assert "('kubernetes.workload.missing_cpu_requests', 'requests', 'cpu', 'CPU request')" in service
     assert "('kubernetes.workload.missing_memory_requests', 'requests', 'memory', 'memory request')" in service
     assert "('kubernetes.workload.missing_memory_limits', 'limits', 'memory', 'memory limit')" in service
