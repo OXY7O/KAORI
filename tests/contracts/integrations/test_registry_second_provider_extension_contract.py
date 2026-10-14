@@ -161,6 +161,8 @@ def test_artifact_registry_consumers_use_canonical_digest_not_harbor_identifiers
     collectors = (root / 'app/artifact_registry/collectors.py').read_text(encoding='utf-8')
     assert 'existing = {artifact.digest: artifact for artifact in repository.artifacts}' in commit
     assert 'get_registry_collector(identity.provider_key)' in commit
-    assert 'artifact.digest == candidate.digest' in correlation
+    assert 'if image.digest == artifact.digest:' in correlation
+    assert "image.digest == candidate.digest else None" in correlation
+    assert "return 'digest', 'strong'" in correlation
     assert 'from app.integrations.registry.collectors import' in collectors
     assert "if provider_key == 'harbor'" not in commit
