@@ -273,13 +273,13 @@ def test_runtime_inspector_evidence_cards_preserve_committed_match_and_security(
     assert "Number(item.critical) > 0 ? 'critical'" in renderer
     assert "Number(item.high) > 0 ? 'warning'" in renderer
     assert re.search(
-        r"applyStatusSurface\(\s*"
+        r'applyStatusSurface\(\s*'
         r"card\.querySelector\('\[data-runtime-match\]'\),\s*"
         r"card\.querySelector\('\[data-runtime-match-dot\]'\),\s*matchTone",
         renderer,
     )
     assert re.search(
-        r"applyStatusSurface\(\s*"
+        r'applyStatusSurface\(\s*'
         r"card\.querySelector\('\[data-runtime-security\]'\),\s*"
         r"card\.querySelector\('\[data-runtime-security-dot\]'\),\s*securityTone",
         renderer,
