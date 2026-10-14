@@ -11,16 +11,15 @@ REGISTRIES = {
     '_cluster_estate': (900, (29, 11, 13, 16, 17, 14)),
     '_resource_profile_registry': (1150, (29, 21, 26, 15, 9)),
     '_tenant_registry': (1040, (20, 19, 12, 9, 15, 13, 12)),
-    '_namespace_registry': (1100, (19, 19, 30, 16, 16)),
+    '_namespace_registry': (1080, (25, 18, 32, 15, 10)),
     '_group_registry': (1250, (18, 15, 17, 12, 12, 26)),
     '_membership_registry': (1100, (23, 20, 14, 13, 15, 15)),
-    '_access_grant_registry': (1300, (18, 14, 13, 14, 15, 26)),
     '_namespace_access_registry': (1400, (16, 17, 13, 17, 12, 12, 13)),
     '_operations_drift_registry': (1420, (17, 16, 19, 28, 20)),
-    '_operations_provider_registry': (1100, (22, 23, 17, 23, 15)),
+    '_operations_provider_registry': (980, (23, 28, 31, 18)),
     '_operations_namespace_registry': (1100, (23, 20, 27, 15, 15)),
     '_operations_access_reconciliation_registry': (1100, (22, 20, 25, 12, 21)),
-    '_capacity_governance': (980, (30, 38, 14, 18)),
+    '_capacity_governance': (980, (28, 39, 17, 16)),
     '_capsule_shared_allocation_drift': (1450, (19, 23, 35, 23)),
     '_capsule_tenant_quota_drift': (1450, (19, 23, 35, 23)),
 }
@@ -51,6 +50,21 @@ def test_tenant_registry_tables_use_bounded_existing_table_primitives() -> None:
         assert 'table_ui.cell_classes(' in template, name
         assert 'truncate' in template, name
         assert 'title=' in template, name
+
+
+def test_access_grant_registry_uses_the_approved_responsive_fixed_table() -> None:
+    # This registry intentionally fits the desktop viewport and keeps a compact
+    # 1040px minimum on narrow screens, unlike the overflow-first registries.
+    template = _template('_access_grant_registry')
+    widths = (19, 14, 13, 17, 17, 20)
+    assert "table_ui.table_classes('min-w-[1040px] table-fixed xl:min-w-0')" in template
+    assert _header_widths(template) == widths
+    assert sum(widths) == 100
+    assert 'overflow-x-auto' in template
+    assert 'table_ui.cell_classes(' in template
+    assert 'header_cell_classes(action=true)' in template
+    assert 'cell_classes(action=true)' in template
+    assert 'title=' in template
 
 
 def test_tenant_discovery_desktop_fit_with_bounded_narrow_table_overflow() -> None:

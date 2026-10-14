@@ -195,7 +195,9 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Effective RBAC remains provider-verified.' not in workspace
     assert 'KAORI verifies the Tenant, namespace scope, and access boundary before commit.' in workspace
     assert 'Namespace scope needs one target.' in workspace
-    assert 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3' in workspace
+    assert 'grant_footer_classes' in workspace
+    assert 'grid min-h-[4.5rem] grid-cols-1 items-center gap-3' in workspace
+    assert 'sm:grid-cols-[minmax(0,1fr)_auto]' in workspace
     assert 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.' in workspace
     assert (
         'Use the least-privilege profile and narrowest scope that meets the principal’s operational need.' in workspace
@@ -766,7 +768,7 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'Allocation Change' in allocation
     assert 'Change Target' in allocation
     assert 'Managed Contract Comparison' in allocation
-    assert 'Capacity Commitments' in allocation
+    assert 'Capacity admission evaluates CPU, memory, Pod, and logical storage commitments.' in allocation
     assert 'Per-PVC Policy' in allocation
     assert 'Governance Gates' in allocation
     assert 'Capacity Admission' in allocation
@@ -792,7 +794,9 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'table_ui.inventory_block_header' in decisions
     assert 'registry_ui.filter_form' in decisions
     assert 'registry_ui.footer' in decisions
-    assert "table_ui.table_classes('table-fixed')" in decisions
+    assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in decisions
+    assert 'overflow-x-auto' in decisions
+    assert 'header_cell_classes(action=true)' in decisions
     assert 'overflow-x-auto' not in decisions
     assert 'min-w-[1180px]' not in decisions
     assert '>Target</th>' in decisions
@@ -1037,10 +1041,11 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
     assert 'tenant_adoption_attachment_only' in preflight
     assert 'Attach Namespace to an <strong class="text-content-primary">existing KAORI Tenant</strong>' in preflight
     assert 'remains execution authority' in preflight
-    assert 'imports current provider values as the initial contract' in preflight
-    assert 'Controls with admitted write authority use equivalent write/read-back' in preflight
-    assert 'controller-owned constraints are mirrored without false drift' in preflight
-    assert 'Adopt managed authority; keep provider constraints mirrored.' in preflight
+    assert 'Current effective values become the initial committed KAORI contract.' in preflight
+    assert 'Managed cutover performs admitted provider writes and verifies equivalent read-back.' in preflight
+    assert 'Capsule-generated values stay provider-mirrored and sync into KAORI without false drift.' in preflight
+    assert 'Adopt with governed provider cutover and equivalent allocation values.' in preflight
+    assert 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' in preflight
     assert 'Adopt as Observed' not in preflight
     assert 'Observed · Read Only' not in preflight
     assert 'No provider mutation.' not in preflight
@@ -1284,7 +1289,13 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
     assert 'data-provider-key="{{ membership.tenant.provider_key }}"' in workspace
     assert 'data-access-provider-warning' in workspace
     assert 'data-access-submit' in workspace
-    assert 'Capsule Access Grant reconciliation is not admitted yet.' in workspace
+    # Capsule grants are admitted only for explicit matching Capsule provider
+    # authority. Browser filtering is guidance; service revalidates on commit.
+    assert 'Capsule RBAC Prerequisites' in workspace
+    assert "providerKey === 'capsule' && providerState === 'capsule'" in scope_js
+    assert 'providerKey === reconciliationAuthority' in scope_js
+    assert "tenant.provider_key != tenant.reconciliation_authority" in service
+    assert "'capsule'," in service
     assert (
         "data-principal-types=\"{{ 'service_account' if profile.key.value == 'deployer' else 'user,group' }}\""
         in workspace
@@ -1610,7 +1621,9 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'current.profile_id' in script
     assert "profileSelect.value = 'adopted_baseline'" in script
     assert "profileSelect?.value === 'adopted_baseline'" in script
-    assert 'valueSet?.storage_policy?.[field]' in script
+    assert "pvc_min_storage: ['storage_policy', 'min']" in script
+    assert "pvc_max_storage: ['storage_policy', 'max']" in script
+    assert "const value = valueSet ? readPath(valueSet, fieldMap[name]) || '' : ''" in script
 
     assert "@tenant_bp.post('/namespace-allocation/cutover')" in routes
     assert 'cutover_adopted_namespace_allocation_committed' in routes
@@ -1841,7 +1854,9 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
 
     assert 'data-tenant-adoption-load' in discovery_ui
     assert 'Provider Constraints' in adoption_preflight_ui
-    assert 'Adopted Baseline · Observed' in adoption_preflight_ui
+    assert "table_label.status_label('Observed', 'info')" in adoption_preflight_ui
+    assert "table_label.special_label('Managed on Adopt', 'normal', 'shield-check')" in adoption_preflight_ui
+    assert "table_label.special_label('Provider Mirrored', 'info', 'refresh-cw')" in adoption_preflight_ui
     assert 'PVC Storage Constraint' in adoption_preflight_ui
     assert "constraint.constraint_type == 'pvc_storage_limit_range'" in adoption_preflight_ui
     assert (
