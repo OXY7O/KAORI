@@ -53,9 +53,7 @@ def test_runtime_sidebar_is_capability_first_with_three_level_three_views() -> N
             ast.literal_eval(call.args[4]),
         )
         for call in runtime_view_nodes.elts
-        if isinstance(call, ast.Call)
-        and isinstance(call.func, ast.Name)
-        and call.func.id == 'CapabilityViewDefinition'
+        if isinstance(call, ast.Call) and isinstance(call.func, ast.Name) and call.func.id == 'CapabilityViewDefinition'
     ]
     assert actual_views == [
         ('overview', 'Overview', 'artifact_registry.runtime_overview', ('artifact_registry.view',)),

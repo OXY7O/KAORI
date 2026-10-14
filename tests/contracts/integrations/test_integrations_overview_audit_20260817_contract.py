@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -32,7 +33,7 @@ def test_runtime_overview_reuses_scoped_latest_observations_and_hydrates_only_a_
     assert 'IntegrationRuntimeObservation.id.in_(observation_ids)' in workspace
     assert 'select(model).where(model.id.in_(ids)).options(*options)' in workspace
     assert 'runtime_filter(' in workspace
-    assert '.offset(window.offset).limit(window.per_page)' in query
+    assert re.search(r'\.offset\(window\.offset\)\s*\.limit\(window\.per_page\)', query)
     assert 'lookup.observed_at.desc()' in query
     assert 'db.session.execute(' in query
 

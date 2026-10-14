@@ -1,5 +1,6 @@
 """Shared Observability fleet/detail reads remain SQL bounded and source-owned."""
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -19,7 +20,7 @@ def test_coverage_sql_before_projection_and_batch_provider_loader() -> None:
     assert 'for scope in _managed_asset_scopes()' not in body
     assert '_provider_binding_indexes(integration_type)' not in body
     assert 'build_pagination_window(' in query
-    assert '.offset(window.offset).limit(window.per_page)' in query
+    assert re.search(r'\.offset\(window\.offset\)\s*\.limit\(window\.per_page\)', query)
     assert 'func.sum(case(' in query
 
     loader = coverage.split('def _instances(', 1)[1].split('def _coverage_status(', 1)[0]
