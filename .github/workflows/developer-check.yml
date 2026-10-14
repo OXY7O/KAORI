@@ -17,7 +17,9 @@ permissions:
   statuses: write
 
 concurrency:
-  group: kaori-developer-check-${{ github.event.pull_request.number }}
+  # Queue generation 2 (#2058): retire the wedged PR concurrency key without relaxing gates.
+  # Keep one active run per PR and cancel superseded validation runs on new exact-head SHAs.
+  group: kaori-developer-check-v2-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 env:
