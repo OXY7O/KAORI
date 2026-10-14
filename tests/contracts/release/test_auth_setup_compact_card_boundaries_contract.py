@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE = ROOT / 'app/templates/access/authentication/setup_required.html'
 FLOW = ROOT / 'app/templates/components/operational_flow_steps.html'
+SHELL = ROOT / 'app/templates/components/operational_section_card.html'
 AUTH_LOCK = ROOT / 'docs/design/KAORI_AUTHENTICATION_SURFACE_LOCK_V1.md'
 VERIFIER = ROOT / 'scripts/verify_authentication_surface_final_lock.py'
 
@@ -33,13 +34,15 @@ def test_rejected_nested_card_frame_and_equal_width_sidebar_are_absent() -> None
 
 def test_one_primary_action_has_hierarchy_and_shared_clipboard_terminal() -> None:
     source = TEMPLATE.read_text(encoding='utf-8')
+    shell = SHELL.read_text(encoding='utf-8')
 
     assert 'Primary action · One-time setup' in source
     assert 'Run Initial Database Bootstrap' in source
     assert 'text-lg font-semibold leading-6 text-content-primary' in source
     assert 'border-l-4 border-kaori-primary' not in source
-    assert 'rounded-xl border border-outline-default bg-surface-card shadow-sm' in source
-    assert 'bg-surface-card shadow-sm' in source
+    assert "operational_section_card.shell_classes('mt-4')" in source
+    assert "macro shell_classes(extra_classes='')" in shell
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' in shell
     assert 'data-kaori-setup-command' in source
     assert 'terminal_command.render(bootstrap_command' in source
     assert "copy_label='Copy Command'" in source
@@ -103,6 +106,7 @@ def test_authentication_design_authority_and_existing_verifier_are_updated() -> 
 
 def test_normal_zoom_has_one_light_canvas_without_rejected_heavy_frame() -> None:
     source = TEMPLATE.read_text(encoding='utf-8')
+    shell = SHELL.read_text(encoding='utf-8')
     doc = AUTH_LOCK.read_text(encoding='utf-8')
 
     # One quiet surface for content readability at default 100% zoom.
@@ -115,7 +119,8 @@ def test_normal_zoom_has_one_light_canvas_without_rejected_heavy_frame() -> None
     assert 'data-kaori-setup-identity-card' not in source
     assert 'data-kaori-setup-outer-frame' not in source
     assert 'lg:col-span-2' not in source
-    assert 'bg-surface-card shadow-sm' in source  # The action remains Violet-accented but compact.
+    assert "operational_section_card.shell_classes('mt-4')" in source
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' in shell
     assert 'neutral white content surface' in doc
 
 
@@ -133,14 +138,16 @@ def test_requested_copy_is_shorter_without_changing_bootstrap_semantics() -> Non
 
 def test_native_browser_zoom_uses_compact_layout_without_css_scaling() -> None:
     source = TEMPLATE.read_text(encoding='utf-8')
+    shell = SHELL.read_text(encoding='utf-8')
     authority = AUTH_LOCK.read_text(encoding='utf-8')
 
     assert 'max-w-4xl' in source
     assert 'max-w-6xl' not in source
     assert 'mt-3 grid gap-x-4 gap-y-2' in source
-    assert 'mt-4 overflow-hidden rounded-xl' in source
+    assert "operational_section_card.shell_classes('mt-4')" in source
+    assert "operational_section_card.shell_classes('mt-4 p-4 sm:p-5')" in source
     assert 'border-l-4 border-kaori-primary' not in source
-    assert 'rounded-xl border border-outline-default bg-surface-card shadow-sm' in source
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' in shell
     assert 'mt-3" data-kaori-setup-command' in source
     assert '<section class="mt-5"' in source
     assert 'data-kaori-setup-flow' in source
