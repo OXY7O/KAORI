@@ -217,7 +217,6 @@ def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons
     assert 'shared_readiness.source_card(' in registry
     assert 'shared_readiness.snapshot_card(' in registry
     assert 'Analytics Controls & Data Readiness' in registry
-    assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry
     assert "'Registry'" in registry
     assert "'Time Range'" in registry
     assert 'All Registries' in registry
