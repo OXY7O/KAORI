@@ -16,7 +16,7 @@ def test_capsule_registry_and_discovery_share_one_attachment_service():
     assert 'attach_discovered_capsule_namespace_committed(source)' in routes
     assert "'provider_resource_version': str(" in routes
     assert "@permission_required('tenant.manage')" in routes
-    assert "attach_discovered_capsule_namespace_committed(request.form)" in routes
+    assert 'attach_discovered_capsule_namespace_committed(request.form)' in routes
     assert "url_for('tenant.tenant_adoption_preflight_route'" in discovery
     assert 'data-tenant-adoption-load' in discovery
     assert 'Review Attachment' in discovery
