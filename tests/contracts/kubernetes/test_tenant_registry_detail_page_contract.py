@@ -130,8 +130,8 @@ def test_tenant_overview_record_sheet_preserves_committed_identity_and_audit():
     assert "tenant.lifecycle_status == 'ready'" in overview
     assert 'table_label.status_label(' in overview
     assert '{{ tenant.generation }}' in overview
-    assert "tenant.created_at.strftime('%Y-%m-%d %H:%M')" in overview
-    assert "tenant.updated_at.strftime('%Y-%m-%d %H:%M')" in overview
+    assert 'tenant.created_at.strftime("%Y-%m-%d %H:%M")' in overview
+    assert 'tenant.updated_at.strftime("%Y-%m-%d %H:%M")' in overview
     assert "else 'Not recorded'" in overview
 
     # Full long text, readable optional history, no invented action/empty band.
