@@ -23,7 +23,9 @@ def test_remediation_plan_reuses_existing_governed_grant_inspect_reconcile_witho
     assert 'runtime_adapter.build_client' not in service
     assert 'reconcile_provider_access_grant(' not in service
     assert 'patch_cluster_custom_object(' not in service
-    assert 'age < 0 or age > 900' in service
+    assert 'analyzed_age < 0 or analyzed_age > 900' in service
+    assert 'observed_age < 0 or observed_age > 3600' in service
+    assert 'source_utc > evaluated_utc' in service
     assert 'grant changed after drift analysis' in service.lower()
 
     assert "@tenant_bp.post('/external-access/plan-remediation')" in routes
