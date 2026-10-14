@@ -294,10 +294,11 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert "'Worker Data'" in object_service
     assert "'Worker Data Required'" not in object_service
     assert "'Worker Data Needed'" not in object_service
-    assert (
-        'Capacity uses the committed Object Storage Analytics snapshot; no live provider query is issued.'
-        in object_capacity
+    assert 'Data Scope:</span> committed usage, free space, and usable capacity from Object Storage Analytics.' in (
+        object_capacity
     )
+    assert 'read_analytics_snapshot(' in object_service
+    assert 'MetricsConsumer(' not in object_service
     assert 'Emerging capacity or availability risk.' in object_alert_guidance
     assert 'Low-risk operational signal. Validate relevance, recurrence, and scope.' in object_alert_guidance
     assert 'components/reporting_dashboard_workspace.html' in object_summary
@@ -780,7 +781,7 @@ def test_dashboard_health_registries_preserve_zero_result_pagination_and_compact
         source = read(path)
         assert "<div class=\"{{ 'overflow-x-auto' if pagination.total_items > 0 else '' }}\">" in source
         assert f"table_ui.table_classes('min-w-[{width}px]' if pagination.total_items > 0 else '')" in source
-        assert '{% if pagination.total_items > 0 %}\n            <thead' in source
+        assert re.search(r'{% if pagination\.total_items > 0 %}\s*<thead', source)
         assert '</thead>\n            {% endif %}' in source
         assert 'empty_state_label = "No Data"' in source
         assert f'empty_state_title = "{empty_title}"' in source
