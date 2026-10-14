@@ -707,7 +707,8 @@ def test_resource_profile_registry_shows_compact_identity_and_full_detail_in_man
     assert 'aria-label="Manage Resource Profile {{ profile.name }}"' in registry
 
     # Shared table geometry, HTMX, default pagination and actual Manage action stay intact.
-    assert "title_cell(name, supporting_text='', icon='')" in table
+    assert "title_cell(name, supporting_text='', icon='', supporting_content=None)" in table
+    assert 'table_primitives.title_cell(name, supporting_text, icon, supporting_content)' in table
     assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
     assert 'registry_ui.footer' in registry
     assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
