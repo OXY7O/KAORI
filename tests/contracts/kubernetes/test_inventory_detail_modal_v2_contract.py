@@ -140,7 +140,7 @@ def test_inventory_informational_notes_use_icon_note_treatment() -> None:
         in ingress
     )
     assert (
-        "detail.inventory_note('Service references are resolved only against the current committed Service Inventory for the selected scope. Resource backends remain declaration-only evidence here and are intentionally not resolved to live backend objects or runtime endpoints.', 'info')"
+        "detail.inventory_note('Service references use committed inventory; resource backends remain declarations, not live endpoints.', 'info')"
         in ingress
     )
     assert (
