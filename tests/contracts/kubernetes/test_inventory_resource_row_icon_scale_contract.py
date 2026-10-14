@@ -69,7 +69,9 @@ def test_pod_resource_cell_uses_namespaced_scope_and_runtime_posture() -> None:
     assert "table_ui.title_cell(pod.name, pod.identity_supporting, 'package')" in content
     assert 'table_label.status_indicator_label(pod.operational_state_label, pod.operational_state_tone)' in content
     assert '{{ pod.state_evidence }}' in content
-    assert '{{ pod.owner_display }}' in content
-    assert '{{ pod.activity_secondary }}' in content
+    assert "pod.owner_kind_label == 'Owner Not Reported'" in content
+    assert 'table_label.status_label(pod.owner_kind_label' in content
+    assert 'table_label.metadata_label(pod.owner_kind_label)' in content
+    assert '{{ pod.restart_summary }}' in content
     assert 'phase_tone' not in content
     assert 'restart_tone' not in content
