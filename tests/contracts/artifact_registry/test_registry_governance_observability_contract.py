@@ -150,7 +150,7 @@ def test_governance_sync_matches_security_htmx_workspace_contract() -> None:
     # Preserve the hidden Rows value even when djLint wraps HTML attributes.
     assert re.search(
         r'<input[^>]*name="per_page"[^>]*'
-        r'value="\\{\\{ governance\\.pagination\\.per_page \\}\\}"',
+        r'value="\{\{ governance\.pagination\.per_page \}\}"',
         governance,
     )
     assert 'governance.sync_state.is_active %}disabled' in governance
@@ -213,8 +213,8 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
     # Tabs must reset to page 1 while preserving Rows; Jinja whitespace is cosmetic.
     for tab in ('policies', 'replication'):
         assert re.search(
-            r"url_for\\('artifact_registry\\.governance',\\s*"
-            rf"tab='{tab}',\\s*page=1,\\s*per_page=governance\\.pagination\\.per_page\\s*\\)",
+            r"url_for\('artifact_registry\.governance',\s*"
+            rf"tab='{tab}',\s*page=1,\s*per_page=governance\.pagination\.per_page\s*\)",
             evidence,
         )
     assert 'governance.project_count)' not in evidence
