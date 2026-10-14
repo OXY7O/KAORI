@@ -1,5 +1,6 @@
 """Effective cluster scope must be consistent across HTMX and full render."""
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -15,7 +16,10 @@ def test_freshness_consumes_normalized_route_scope() -> None:
     assert 'get_inventory_freshness_context(cluster_id=effective_cluster_id)' in routes
     assert '_inventory_cluster_scope(raw_cluster_id)' in routes
     assert "g.inventory_effective_cluster_id = context['filters']['cluster_id']" in routes
-    assert 'selected[0].name if cluster_id and selected_count == 1' in source('app/kubernetes/inventory/overview.py')
+    assert re.search(
+        r'selected\[0\]\.name\s+if cluster_id and selected_count == 1',
+        source('app/kubernetes/inventory/overview.py'),
+    )
 
 
 def test_unchanged_protected_htmx_route_order() -> None:
