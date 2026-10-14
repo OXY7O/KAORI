@@ -318,7 +318,9 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
         'finalize_verified_native_release_route',
     ):
         assert action in approval
-    assert approval.count('<form ') == 10
+    # Conditional Native/Capsule plans and independent successor/recovery paths
+    # contribute 19 separate Stage 3 forms; all 23 page forms still enforce CSRF.
+    assert approval.count('<form ') == 19
     assert detail.count('<form ') == 23
     assert detail.count('name="csrf_token"') == 23
 
@@ -422,9 +424,12 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'Governed recovery review is required; automatic restart is prohibited.' in step
     assert "tenant_release_step_urls['scope']" in step
     assert "tenant_release_step_urls['approval']" in step
-    assert 'External reference' not in step  # Not acceptance evidence.
+    assert 'External reference recorded; not successor consent.' in step
+    assert 'Dry-run and external references are not consent.' in step
     assert 'Kubernetes stays authoritative' in step
-    assert step.count('<form ') == 1
+    # Step 4 exposes distinct assessment, restart and authorization
+    # recovery POSTs. None is inferred as automatically authorized.
+    assert step.count('<form ') == 5
     assert detail.count('<form ') == 23
     assert detail.count('name="csrf_token"') == 23
 
@@ -520,7 +525,7 @@ def test_native_no_transfer_recovery_keeps_three_independent_governed_actions():
     assert 'def authorize_native_no_transfer_recovery_route(' in routes
     assert "confirmed=request.form.get('confirm_no_transfer_assessment') == 'assess'" in routes
     assert "confirmed=request.form.get('confirm_no_transfer_authorization') == 'authorize'" in routes
-    assert '"no_transfer_authorized_current": no_transfer_authorized_current' in readiness
+    assert "'no_transfer_authorized_current': no_transfer_authorized_current" in readiness
     assert 'def _verify_original_provider_state(' in service
     assert 'summarize_native_handoff_recovery(' in service
     assert "proof.get('status') != 'provider_handoff_not_started'" in service
@@ -564,7 +569,7 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
 
     assert "_checked_recently((successor_claim or {}).get('recorded_at'))" in readiness
     assert 'external_readback_prerequisites_current' in readiness
-    assert '"external_reference_current": external_reference_current' in readiness
+    assert "'external_reference_current': external_reference_current" in readiness
     assert 'and (dry_run or {}).get("release_authorized") is False' in readiness
     # Render-gating does not delete or silently replace original protected POST.
     assert detail.count('<form method="post"') == 23
@@ -591,7 +596,7 @@ def test_exact_governance_forms_return_to_same_page_and_global_toast():
     assert "context['tenant_detail_open_section'] = active_section" in common
     assert "detail_id = str(request.form.get('tenant_detail_id')" in common
     assert "'kubernetes/tenant/partials/_tenant_management_detail.html'" in common
-    assert "'tenant.tenant_detail', tenant_id=detail_id" in common
+    assert re.search(r"'tenant\.tenant_detail',\s+tenant_id=detail_id", common)
     assert 'toast_oob=True' in common
     assert 'beforeend:#operational-toast-stack' in toast
     assert 'data-kaori-native-dialog' not in detail

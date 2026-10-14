@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -19,7 +20,13 @@ def test_existing_release_preflight_reuses_provider_handoff_normalizer_and_commi
     assert "'handoff_components': handoff_components" in service
     assert "'handoff_fingerprint': handoff_fingerprint(handoff_components)" in service
     assert "'handoff_required_count': sum(" in service
-    assert "previous.get('handoff_fingerprint') != latest.get('handoff_fingerprint')" in service
+    # A fresh, complete component list and exact fingerprint match are both
+    # mandatory. Ruff only wraps the second lookup across source lines.
+    assert "not previous.get('handoff_components')" in service
+    assert re.search(
+        r"previous\.get\('handoff_fingerprint'\)\s*!=\s*latest\.get\(\s*'handoff_fingerprint'\s*\)",
+        service,
+    )
     assert 'capsule_namespace_handoff_evidence(' in service
     assert '_capsule_status_namespace_names(obj)' in service
     assert "'provider_resource_deleted': False" in service
