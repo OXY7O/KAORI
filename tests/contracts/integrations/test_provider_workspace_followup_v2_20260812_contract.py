@@ -96,7 +96,8 @@ def test_validation_operational_gate_copy_is_compact_for_every_provider() -> Non
         assert 'Runtime Refresh owns live health.' in provider
     assert 'Full Validation owns S3 capabilities;' in providers[3]
     assert 'Inventory Sync owns assets; bindings own consumer evidence.' in providers[3]
-    assert 'Revalidate after Kubernetes upgrades, served-API changes, or RBAC policy changes.' in combined
+    assert 'Revalidate the connection after Kubernetes version upgrades' in providers[0]
+    assert 'served-API changes, or updates to cluster RBAC policies.' in providers[0]
     assert 'Core Metrics Source APIs are usable.' in combined
     assert 'Core Alertmanager APIs are usable.' in combined
     assert 'Required MinIO S3 contracts are usable.' in combined
