@@ -40,7 +40,7 @@ def test_registry_title_help_keeps_provider_evidence_boundaries() -> None:
     assert 'table_ui.inventory_block_header(' in source
     assert 'resource_detail_modal.detail_button(' in source
     assert 'registry.clear_filters_action(' in source
-    assert "hx_get=url_for(inventory.resource_endpoint, page=1, per_page=inventory.pagination.per_page)" in source
+    assert 'hx_get=url_for(inventory.resource_endpoint, page=1, per_page=inventory.pagination.per_page)' in source
     assert "target='#artifact-registry-inventory-table'" in source
     assert "swap='outerHTML'" in source
 
