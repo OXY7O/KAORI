@@ -186,6 +186,22 @@ def test_generated_service_removed_unrendered_legacy_presentation_debt() -> None
         assert f'def {function_name}(' not in service
 
     assert 'app/reports/generated/service.py::get_report_detail_recommended_actions' not in baseline
+
+    # Pure display formatting is no longer coupled to the oversized SQL/service
+    # module; the legacy import surface remains stable through re-exported names.
+    formatters = read('app/reports/generated/presentation_formatters.py')
+    assert 'from app.reports.generated.presentation_formatters import (' in service
+    for helper in (
+        '_format_report_domain',
+        '_format_source_badge',
+        '_format_source_kind',
+        '_format_period',
+        '_format_datetime',
+        '_safe_int',
+    ):
+        assert f'def {helper}(' in formatters
+        assert f'def {helper}(' not in service
+
     debt = json.loads(baseline)['module_line_limits']['app/reports/generated/service.py']
     assert 800 < debt <= 1688
 
