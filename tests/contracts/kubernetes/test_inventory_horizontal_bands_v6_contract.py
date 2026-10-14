@@ -94,9 +94,7 @@ def test_unified_inventory_sections_explain_their_evidence_scope() -> None:
     for resource, filename in DETAILS.items():
         if resource == 'nodes':
             node = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
-            assert (
-                "detail.inspector_section('Identity & Snapshot', 'badge-info', 'Node identity and snapshot.'" in node
-            )
+            assert "detail.inspector_section('Identity & Snapshot', 'badge-info', 'Node identity and snapshot.'" in node
             continue
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
         assert descriptions[resource] in detail, resource
