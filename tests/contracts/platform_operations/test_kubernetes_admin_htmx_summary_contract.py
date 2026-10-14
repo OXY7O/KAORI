@@ -22,7 +22,10 @@ def test_administration_mutations_refresh_hero_overview_and_posture():
         'kubernetes-admin-overview-metric-3',
         'kubernetes-admin-overview-metric-4',
     ):
-        assert 'id="' + fragment + '"' in page
+        if fragment.startswith('kubernetes-admin-overview-metric-'):
+            assert 'id="kubernetes-admin-overview-metric-{{ loop.index }}"' in page
+        else:
+            assert 'id="' + fragment + '"' in page
         assert 'id="' + fragment + '"' in partial
     assert partial.count('hx-swap-oob="innerHTML"') == 9
 
