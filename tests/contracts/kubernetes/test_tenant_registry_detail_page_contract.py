@@ -227,7 +227,7 @@ def test_release_handoff_inventory_is_structured_with_full_on_demand_identifiers
     assert '<li class="min-w-0">' in handoff
     assert 'cursor-pointer list-none' in handoff
     assert 'min-h-9' not in handoff
-    assert "item.ownership|replace('_', ' ')|title" in handoff
+    assert "item.ownership|replace('_', ' ') |title" in handoff
     assert "item.managed_by if item.managed_by else 'Not recorded'" in handoff
 
     # Long provider identities are preserved unchanged in accessible native details.
