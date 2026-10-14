@@ -81,7 +81,15 @@ def test_tenant_zero_cluster_state_is_terminal_but_registered_committed_state_re
 
     assert 'block tenant_content' in registered_branch
     assert '_collection_snapshot_context.html' in registered_branch
-    assert '_live_connection_loader.html' in registered_branch
+    # Registered Tenant pages show committed evidence without a live provider
+    # probe on ordinary page load. The dedicated check remains explicitly gated.
+    assert '_live_connection_loader.html' not in registered_branch
+    connectivity = _read('app/templates/kubernetes/tenant/partials/_live_connection_loader.html')
+    routes = _read('app/kubernetes/tenant/routes.py')
+    assert "hx-get=\"{{ url_for('tenant.live_provider_connectivity') }}\"" in connectivity
+    assert 'Check Live Connectivity' in connectivity
+    assert 'Page load makes no provider request' in connectivity
+    assert "@tenant_bp.get('/live-provider-connectivity')" in routes
     assert 'native_available' not in registered_branch
 
 
