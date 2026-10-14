@@ -1289,7 +1289,13 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
     assert 'data-provider-key="{{ membership.tenant.provider_key }}"' in workspace
     assert 'data-access-provider-warning' in workspace
     assert 'data-access-submit' in workspace
-    assert 'Capsule Access Grant reconciliation is not admitted yet.' in workspace
+    # Capsule grants are admitted only for explicit matching Capsule provider
+    # authority. Browser filtering is guidance; service revalidates on commit.
+    assert 'Capsule RBAC Prerequisites' in workspace
+    assert "providerKey === 'capsule' && providerState === 'capsule'" in scope_js
+    assert 'providerKey === reconciliationAuthority' in scope_js
+    assert "tenant.provider_key != tenant.reconciliation_authority" in service
+    assert "'capsule'," in service
     assert (
         "data-principal-types=\"{{ 'service_account' if profile.key.value == 'deployer' else 'user,group' }}\""
         in workspace
