@@ -31,10 +31,7 @@ def test_system_detail_has_operational_guidance_and_authority_boundary() -> None
     table_card = read('app/templates/storage/object_storage/inventory/systems/partials/_table_card.html')
 
     assert 'Authority Boundary' in detail
-    assert (
-        'Committed Object Storage inventory source, freshness window, collection time, and asset coverage.'
-        in detail
-    )
+    assert 'Committed Object Storage inventory source, freshness window, collection time, and asset coverage.' in detail
     assert 'Inventory values come from the latest committed Object Storage Inventory Sync snapshot.' in detail
     assert 'system.guidance.title' in detail
     assert 'system.guidance.description' in detail
