@@ -4,6 +4,7 @@ Reuses canonical page_hero context panel and the approved visual reference;
 all existing governance services, CSRF forms and provider authority are unchanged.
 """
 
+import re
 from pathlib import Path
 
 from jinja2 import Environment
@@ -267,7 +268,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'requester and independent reviewer must be different' in approval
 
     # An acknowledged plan is locked without inventing approval or provider transfer.
-    assert 'role="status" aria-label="Active handoff plan"' in approval
+    assert re.search(r'role="status"\s+aria-label="Active handoff plan"', approval)
     assert "row.release_handoff_preparation_state == 'acknowledged'" in approval
     assert "row.release_handoff_preparation_state == 'expired'" in approval
     assert 'governed restart' in approval
@@ -366,7 +367,7 @@ def test_step_three_freshness_matches_native_readiness_and_hides_stale_acceptanc
     assert 'row.native_release_readiness.review_expired' in step
     assert "table_label.status_label('Approval Expired', 'warning')" in step
     assert "table_label.status_label('Review Expired', 'warning')" in step
-    assert 'role="status" aria-label="Expired Native handoff evidence"' in step
+    assert re.search(r'role="status"\s+aria-label="Expired Native handoff evidence"', step)
     assert "tenant_release_step_urls['finalize']" in step
     assert 'View recovery steps' in step
     # Backend already checks both freshness conditions; UI must not offer the
@@ -393,7 +394,7 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert '{{ checkpoint.label }}' in step
     assert 'checkpoint.display_status' in step
     assert 'Next required action' in step
-    assert 'role="status" aria-label="Expired handoff recovery"' in step
+    assert re.search(r'role="status"\s+aria-label="Expired handoff recovery"', step)
     assert 'native_cycle.approval_expired' in step
     assert 'native_cycle.review_expired' in step
     assert 'native_cycle.restart_blocked_by_readback' in step
