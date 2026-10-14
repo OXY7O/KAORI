@@ -84,7 +84,7 @@ def test_storage_detail_uses_adaptive_stacks_and_factual_configuration() -> None
     assert 'related_collection.inventory_render(' in detail
     assert 'metadata_collection.render(' in detail
     assert 'Committed Snapshot Boundary' in detail
-    assert 'live filesystem usage, pressure, growth, performance, durability' in detail
+    assert 'Committed storage bindings; live usage, pressure, growth, durability, and I/O health unverified.' in detail
     for state in ('Configured', 'Terminating', 'Not Reported', 'Not Allowed', 'Not Applicable'):
         assert state in semantics
     assert "states['persistent_volume_claims'] != COLLECTED" in service
