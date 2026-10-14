@@ -103,7 +103,7 @@ def test_capacity_decisions_registry_is_compact_and_exposes_read_only_evidence()
     assert 'title="{{ decision.namespace }}"' in template
     assert 'title="{{ profile_name }}"' in template
     assert 'decision.resource_profile_version or row.profile.version' in template
-    assert "decision.operation|replace('_', ' ')|title" in template
+    assert "decision.operation|replace('_', ' ') |title" in template
 
     # Reuse native KAORI dialogs with stable decision-ID identities and explicit
     # text-left reset from the shared Action cell's inherited text-right.
@@ -122,7 +122,7 @@ def test_capacity_decisions_registry_is_compact_and_exposes_read_only_evidence()
     for key in ('reason', 'allocation_scope', 'capacity_source', 'snapshot_id', 'snapshot_state'):
         assert key in template
     assert 'decision.evidence_json or {}' in template
-    assert "evidence.get('reason') or 'No committed explanation recorded.'" in template
+    assert 'evidence.get("reason") or \'No committed explanation recorded.\'' in template
     assert 'whitespace-pre-line break-words text-sm' in template
     assert 'row.created_at_label' in template
     assert 'row.data_cutoff_label' in template
@@ -215,7 +215,7 @@ def test_capacity_decision_modal_uses_single_evidence_surface_and_quiet_traceabi
     # the pinned contract, cutoff and correlation in source-owned evidence.
     assert 'decision.decision|title, decision_tone' in dialog
     assert 'decision.capacity_state, state_tone' in dialog
-    assert "evidence.get('reason') or 'No committed explanation recorded.'" in dialog
+    assert 'evidence.get("reason") or \'No committed explanation recorded.\'' in dialog
     assert 'whitespace-pre-line break-words text-sm' in dialog
     assert 'decision.resource_profile_version or row.profile.version' in dialog
     assert "evidence.get('allocation_scope')" in dialog
@@ -284,7 +284,7 @@ def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dia
     assert 'Control: {{ control_label }}' in template
     assert 'title="Control: {{ control_label }}"' in template
     assert (
-        "table_label.status_label(item.ownership_status|replace('_', ' ')|title, 'normal' if item.ownership_status == 'managed' else 'info')"
+        "table_label.status_label(item.ownership_status|replace('_', ' ') |title, 'normal' if item.ownership_status == 'managed' else 'info')"
         in template
     )
     assert 'Gen {{ item.generation }}' in template
@@ -1245,7 +1245,7 @@ def test_resource_profile_copy_is_compact_and_version_intent_remains_clear() -> 
     adoption = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
 
     assert (
-        'Preset sizing stays fixed. Control changes create a new version; Namespace snapshots stay pinned until rollout.'
+        'Update reusable intent; Namespace snapshots stay pinned.'
         in dialogs
     )
     assert 'sizing stays canonical.' in dialogs
