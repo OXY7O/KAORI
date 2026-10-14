@@ -304,9 +304,12 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
     assert vulns.count("table_ui.title_cell(row.repository, 'Project: ' ~ row.project, 'package-search')") == 1
     assert vulns.count("table_ui.title_cell(row.source_name, '', 'blocks')") == 1
     assert 'title="{{ row.package }}"' in vulns
-    assert "macro title_cell(name, supporting_text='', icon='')" in read(
+    assert "macro title_cell(name, supporting_text='', icon='', supporting_content=None)" in read(
         'app/templates/components/table_primitives.html'
     )
+    shared_table = read('app/templates/components/table.html')
+    assert "macro title_cell(name, supporting_text='', icon='', supporting_content=None)" in shared_table
+    assert 'table_primitives.title_cell(name, supporting_text, icon, supporting_content)' in shared_table
     assert "vulnerability_dialog_id = 'artifact-registry-vulnerability-detail-' ~ row.id" in vulns
     assert 'data-kaori-dialog-open' in vulns
     assert 'data-dialog-target="{{ vulnerability_dialog_id }}"' in vulns
