@@ -324,9 +324,7 @@ def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shell
     assert 'Latest Analytics Data Snapshot' in registry
     assert 'Analytics Controls & Data Readiness' in registry
     # The conditional belongs to Jinja source, not the rendered HTML output.
-    registry_source = (
-        ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html'
-    ).read_text()
+    registry_source = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
     assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry_source
     assert 'Analytics Overview' in registry
     assert 'Collect Analytics Data' not in registry
