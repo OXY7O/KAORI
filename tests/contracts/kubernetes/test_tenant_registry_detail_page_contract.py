@@ -427,7 +427,9 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'External reference recorded; not successor consent.' in step
     assert 'Dry-run and external references are not consent.' in step
     assert 'Kubernetes stays authoritative' in step
-    assert step.count('<form ') == 1
+    # Step 4 exposes distinct assessment, restart and authorization
+    # recovery POSTs. None is inferred as automatically authorized.
+    assert step.count('<form ') == 5
     assert detail.count('<form ') == 23
     assert detail.count('name="csrf_token"') == 23
 
