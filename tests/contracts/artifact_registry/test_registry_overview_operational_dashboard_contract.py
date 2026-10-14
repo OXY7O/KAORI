@@ -57,7 +57,11 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     )
     operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
 
-    assert "request.args.get('provider_id', type=int)" in routes
+    # Explicit malformed provider selection must not silently expand to all providers.
+    assert "raw = request.args.get('provider_id')" in routes
+    assert 'def _overview_provider_id() -> int | None:' in routes
+    assert 'provider_id=_overview_provider_id()' in routes
+    assert 'abort(404)' in routes
     assert "request.args.get('tab', 'overview', type=str)" in routes
     assert "request.args.get('provider_health_page', 1)" in routes
     assert 'normalize_dashboard_page_size' in routes
@@ -377,7 +381,9 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
 
     assert 'row.security_not_applicable' in health
     assert 'No Artifacts' in health
-    assert 'No Registry Providers Available' in health
+    # An empty scoped provider-health table does not imply an unregistered fleet.
+    assert 'No Registry Provider Health Data' in health
+    assert 'components/states/_empty_state.html' in health
 
     assert 'components/operational_signal_overview.html' in signal
     assert 'overview.posture.label' in signal
@@ -652,7 +658,10 @@ def test_registry_provider_health_limits_per_provider_source_reads_to_visible_pa
     assert "required_technical_capabilities=('instant_query',)" in batch
     common = read('app/artifact_registry/presentation_common.py')
     latest = common.split('def _latest_registry_analytics(', 1)[1]
-    assert 'func.row_number().over(' in latest
+    assert 'func.row_number()' in latest
+    assert '.over(' in latest
+    assert 'partition_by=RegistryAnalyticsSnapshot.integration_instance_id' in latest
+    assert 'ranked.c.ordinal == 1' in latest
     assert 'RegistryAnalyticsSnapshot.integration_instance_id.in_(provider_ids)' in latest
     assert 'for provider in scoped_providers:' not in latest
     assert 'snapshot.integration_instance_id' in latest
