@@ -86,7 +86,7 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
     storage_presentation = read('app/storage/object_storage/inventory/presentation.py')
 
-    assert 'bucket_count\': ObjectStorageBucket.query.filter_by(' in minio_presentation
+    assert "'bucket_count': ObjectStorageBucket.query.filter_by(" in minio_presentation
     assert 'object_storage_system_id=instance.object_storage_system_id' in minio_presentation
     assert ').count(),' in minio_presentation
     assert 'instance.object_storage_system.inventory_observed_at' in minio_presentation
