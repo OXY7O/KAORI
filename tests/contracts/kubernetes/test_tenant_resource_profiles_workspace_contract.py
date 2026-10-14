@@ -1285,8 +1285,11 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     assert 'allocation_cluster_id' in overview
     assert 'hx-target="#{{ overview_id }}"' in overview
     assert 'hx-select="#{{ overview_id }}"' in overview
-    assert 'registry_ui.footer' in overview
-    assert 'allocation_tenant_pagination.allowed_per_page' in overview
+    assert 'aria-label="Tenant Contributions evidence footer"' in overview
+    assert 'Read-only committed allocation evidence' in overview
+    assert 'Scroll to view all' in overview
+    assert 'registry_ui.footer' not in overview
+    assert 'allocation_tenant_pagination' not in overview
     assert 'row.namespaces' in overview
     assert 'selected.snapshot_state' in overview
     assert 'selected.state' in overview
@@ -1295,13 +1298,15 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     assert "url_for('analytics.capacity')" in overview
     assert "current_user.has_permission('analytics.view')" in overview
     assert 'not actual workload utilization or physical reservations' in overview
-    assert 'Storage is an explicitly governed logical ceiling' in overview
+    assert 'Operator-governed requests.storage ceiling; not backend physical free space.' in overview
 
     assert 'build_tenant_allocation_bars(selected)' in routes
     assert "build_tenant_contribution_rows(str(selected['cluster'].id))" in routes
-    assert "'allocation_page'" in routes
-    assert "'allocation_per_page'" in routes
-    assert "per_page=request.args.get('allocation_per_page', 5" in routes
+    assert "context['allocation_tenant_total'] = len(tenant_rows)" in routes
+    assert 'filter_tenant_contribution_rows(tenant_rows, allocation_search)' in routes
+    assert "context['allocation_tenant_matches'] = len(tenant_rows)" in routes
+    assert "'allocation_page'" not in routes
+    assert "'allocation_per_page'" not in routes
     assert "if active_view == 'capacity' and selected is not None:" in routes
     assert 'get_resource_profile_workspace_context()' in routes
     assert 'build_capacity_governance_summaries' in capacity
