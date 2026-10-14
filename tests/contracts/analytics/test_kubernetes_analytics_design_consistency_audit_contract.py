@@ -70,10 +70,19 @@ def test_analytics_tabs_use_one_shared_runtime_and_native_fallback() -> None:
 def test_analytics_templates_do_not_use_nonstandard_layout_patterns() -> None:
     content = all_analytics_templates()
 
+    # Only the committed Incident Readiness evidence table needs bounded horizontal
+    # scrolling for narrow viewports. It is not an analytics page-layout shell.
+    incident_table = ANALYTICS_TEMPLATES / 'alerts/partials/_incident_readiness.html'
+    incident_source = incident_table.read_text(encoding='utf-8')
+    assert '<div class="overflow-x-auto">' in incident_source
+    assert 'min-w-[34rem] table-fixed' in incident_source
+    for template in ANALYTICS_TEMPLATES.rglob('*.html'):
+        if template != incident_table:
+            assert 'overflow-x-auto' not in template.read_text(encoding='utf-8'), template
+
     for forbidden in (
         '<details',
         '<summary',
-        'overflow-x-auto',
         'style=',
         'bg-red-',
         'text-red-',
