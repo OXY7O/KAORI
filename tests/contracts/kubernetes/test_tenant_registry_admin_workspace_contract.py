@@ -193,7 +193,7 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Membership fixes the Tenant boundary.' not in workspace
     assert 'Targets are filtered automatically.' not in workspace
     assert 'Effective RBAC remains provider-verified.' not in workspace
-    assert 'KAORI validates Tenant and scope before commit.' in workspace
+    assert 'KAORI verifies the Tenant, namespace scope, and access boundary before commit.' in workspace
     assert 'Namespace scope needs one target.' in workspace
     assert 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3' in workspace
     assert 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.' in workspace
@@ -436,7 +436,7 @@ def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
     assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
     assert 'Provider Authority' in workspace
     assert 'Secret Boundary' in workspace
-    assert 'KAORI validates Tenant and scope before commit.' in workspace
+    assert 'KAORI verifies the Tenant, namespace scope, and access boundary before commit.' in workspace
 
 
 def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None:
@@ -520,7 +520,7 @@ def test_tenant_access_grant_links_namespace_creation_and_keeps_guidance_neutral
 def test_access_grant_and_boundaries_have_one_aligned_responsive_footer_contract() -> None:
     workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
 
-    assert "grant_footer_classes = 'grid min-h-[4.5rem]" in workspace
+    assert 'grant_footer_classes = "grid min-h-[4.5rem]' in workspace
     assert 'sm:grid-cols-[minmax(0,1fr)_auto]' in workspace
     assert workspace.count('<footer class="{{ grant_footer_classes }}">') == 2
     assert 'Effective access requires successful provider reconciliation.' in workspace
@@ -1391,7 +1391,7 @@ def test_tenant_discovery_statuses_use_shared_header_guidance() -> None:
     assert 'tenant-discovery-status-tip' in discovery
     assert 'Discovery is live and read-only' in discovery
     assert 'Live Status — current provider observation.' in discovery
-    assert 'Discovered — candidate for explicit governed Adoption.' in discovery
+    assert 'Discovered — candidate for governed Tenant Adoption or existing-Tenant Namespace Attachment.' in discovery
     assert 'Provider Missing — KAORI ownership exists but the provider object is absent.' in discovery
     assert 'status_detail_dialog' not in discovery
     assert 'data-status-detail-trigger' not in discovery
