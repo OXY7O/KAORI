@@ -239,7 +239,7 @@ def test_capacity_decision_modal_uses_single_evidence_surface_and_quiet_traceabi
     )
     assert 'row.created_at_label' in dialog
     assert 'row.data_cutoff_label' in dialog
-    assert "capacity_source.get('snapshot_state')" in dialog
+    assert 'capacity_source.get("snapshot_state")' in dialog
     assert 'decision.correlation_id' in dialog
     assert "capacity_source.get('snapshot_id')" in dialog
 
