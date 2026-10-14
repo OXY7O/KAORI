@@ -1,4 +1,5 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/resource_lens_tabs.html" as resource_lens_tabs %}
 {% import "kubernetes/analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% import "kubernetes/analytics/components/_ranked_evidence_panel.html" as ranked_evidence %}
 {% import "components/recommendation_pager.html" as recommendation_pager %}
@@ -52,9 +53,7 @@
                          data-analytics-update-query="false"
                          data-default-tab="cpu"
                          data-kaori-ranking-resource-lens>
-                        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-                             role="tablist"
-                             aria-label="Select resource consumption ranking">
+                        {% call resource_lens_tabs.tablist() %}
                             {% for resource_key, resource_label, resource_icon in ranking_resources %}
                                 {% set candidate_panel = namespace(value=none) %}
                                 {% for candidate in rankings %}
@@ -99,7 +98,7 @@
                                     </span>
                                 </button>
                             {% endfor %}
-                        </div>
+                        {% endcall %}
                         <section class="mt-4 min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                                  aria-label="Selected resource consumer ranking">
                             {% for resource_key, resource_label, resource_icon in ranking_resources %}
