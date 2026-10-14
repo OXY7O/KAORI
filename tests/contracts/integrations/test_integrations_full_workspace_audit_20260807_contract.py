@@ -196,7 +196,8 @@ def test_kubernetes_detail_copy_balance_follows_review_contract() -> None:
 
     assert 'Separates API, resource, and RBAC gaps; write access stays separately governed.' in connection
     assert 'Committed inventory, relationships, runtime evidence, reports, and audit stay traceable.' in connection
-    assert 'Revalidate after Kubernetes upgrades, served-API changes, or RBAC policy changes.' in capability_workspace
+    assert 'Revalidate the connection after Kubernetes version upgrades' in capability_workspace
+    assert 'served-API changes, or updates to cluster RBAC policies.' in capability_workspace
     assert 'Required verbs are evaluated across all namespaces for this cluster-wide contract.' in capability_registry
     assert (
         'Required verbs are evaluated only in the approved namespace for this optional contract.'
