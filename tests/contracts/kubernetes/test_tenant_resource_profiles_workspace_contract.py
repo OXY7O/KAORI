@@ -230,7 +230,13 @@ def test_capacity_decision_modal_uses_single_evidence_surface_and_quiet_traceabi
     assert 'sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]' not in contract
     assert contract.index('Resource Profile</dt>') < contract.index('Operation</dt>')
     assert contract.index('Resource Profile</dt>') < contract.index('Allocation Scope</dt>')
-    # Keep the full-width, wrapped profile binding without depending on\n    # djLint's placement of the variable on the next source line.\n    assert re.search(\n        r'<dd\\s+class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary">\\s*'\n        r'\\{\\{\\s*profile_name\\s*\\}\\}\\s*</dd>',\n        contract,\n    )
+    # Keep the full-width, wrapped profile binding without depending on
+    # djLint's placement of the variable on the next source line.
+    assert re.search(
+        r'<dd\s+class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary">\s*'
+        r'\{\{\s*profile_name\s*\}\}\s*</dd>',
+        contract,
+    )
     assert 'row.created_at_label' in dialog
     assert 'row.data_cutoff_label' in dialog
     assert "capacity_source.get('snapshot_state')" in dialog
