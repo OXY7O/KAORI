@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest
+from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest, capsule_related_scope_sha256
 from app.kubernetes.tenant.release_handoff_approval import (
     _can_confirm_plan,
     _complete_provider_snapshot,
@@ -240,10 +240,6 @@ def test_capsule_g1_plan_fingerprint_stays_identical_when_only_list_rvs_advance(
     """Two complete provider LISTs may have new collection revisions, not new objects."""
     from copy import deepcopy
 
-    from app.kubernetes.tenant.capsule_handoff_related_inventory import (
-        capsule_related_scope_sha256,
-    )
-
     snapshot = _capsule_g1_snapshot()
     related = snapshot['capsule_related_inventory']
     related['list_snapshots'] = [
@@ -357,11 +353,9 @@ def _capsule_g1_related_kaori_control_snapshot() -> dict:
         }
         for kind in ('ResourceQuota', 'LimitRange', 'RoleBinding')
     ]
-    related['resource_sha256'] = _digest(
-        {
-            'resources': related['resources'],
-            'lists': related['list_snapshots'],
-        }
+    related['resource_sha256'] = capsule_related_scope_sha256(
+        resources=related['resources'],
+        list_snapshots=related['list_snapshots'],
     )
     related['blockers'] = [warning]
     related['global_quota'].update(
@@ -375,7 +369,6 @@ def _capsule_g1_related_kaori_control_snapshot() -> dict:
     related['global_quota']['scope_sha256'] = _digest(
         {
             'api_version': 'v1beta2',
-            'list_resource_version': 'quota-list',
             'resources': [],
         }
     )
