@@ -4,15 +4,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3] / 'app/templates/kubernetes/inventory'
 
 TABLE_TERMS = {
-    'overview': ('Last Snapshot', 'Inventory Signals'),
-    'nodes': ('Readiness', 'Capacity'),
-    'namespaces': ('Resource Controls', 'Security Context', 'Pod Security Admission (PSA)'),
+    'overview': ('Committed Snapshot', 'Inventory Signals'),
+    'nodes': ('Node Readiness', 'Node Capacity'),
+    'namespaces': ('Resource Controls', 'Namespace Security Context', 'Pod Security Admission (PSA)'),
     'workloads': ('Managed Pods', 'Update Strategy'),
-    'pods': ('Runtime State', 'Ownership & Activity'),
-    'services': ('Access Model', 'Backend Registration'),
-    'ingresses': ('TLS References', 'Routing'),
-    'storage': ('Provisioning', 'Binding & Lifecycle'),
-    'configuration': ('Key Index & Mutation', 'Current Pod References'),
+    'pods': ('Pod Runtime State', 'Pod Owner and Restarts'),
+    'services': ('Service Access Model', 'Service Backends'),
+    'ingresses': ('TLS References', 'Ingress Routing'),
+    'storage': ('Storage Provisioning', 'Storage Binding and Lifecycle'),
+    'configuration': ('Configuration Keys and Mutation', 'Current Pod References'),
 }
 
 
