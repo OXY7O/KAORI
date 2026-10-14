@@ -43,7 +43,9 @@ def test_every_primary_intelligence_page_uses_reference_posture_directly_below_h
     )
     assert 'intelligence_ui.posture_panel(' in recommendation_summary
 
-    assert rule_catalog.index('page_hero.shell_classes()') < rule_catalog.index('catalog-summary-section')
+    catalog_hero = read('app/templates/intelligence/partials/_catalog_hero_posture.html')
+    assert 'page_hero.shell_classes()' in catalog_hero
+    assert rule_catalog.index('_catalog_hero_posture.html') < rule_catalog.index('catalog-summary-section')
     assert 'intelligence_ui.posture_panel(' in rule_summary
 
     assert alert_page.index('page_hero.shell_classes()') < alert_page.index('_alert_intelligence_summary.html')
@@ -55,15 +57,18 @@ def test_every_primary_intelligence_page_uses_reference_posture_directly_below_h
 
 def test_reference_posture_keeps_four_divided_metrics_and_contextual_footer_actions() -> None:
     surfaces = (
-        read('app/templates/intelligence/overview.html'),
-        read('app/templates/intelligence/partials/_recommendation_workspace_info.html'),
-        read('app/templates/intelligence/partials/_catalog_summary.html'),
-        read('app/templates/intelligence/partials/_alert_intelligence_summary.html'),
-        read('app/templates/intelligence/automation_control.html'),
+        (read('app/templates/intelligence/overview.html'), 4),
+        (read('app/templates/intelligence/partials/_recommendation_workspace_info.html'), 5),
+        (read('app/templates/intelligence/partials/_catalog_summary.html'), 4),
+        (read('app/templates/intelligence/partials/_alert_intelligence_summary.html'), 4),
+        (read('app/templates/intelligence/automation_control.html'), 4),
     )
 
-    for source in surfaces:
+    for source, metric_columns in surfaces:
         assert 'intelligence_ui.posture_panel(' in source
         assert 'intelligence_ui.posture_metric(' in source
-        assert 'grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4' in source
+        assert (
+            'grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 '
+            f'xl:grid-cols-{metric_columns}'
+        ) in source
         assert 'actions=[' in source
