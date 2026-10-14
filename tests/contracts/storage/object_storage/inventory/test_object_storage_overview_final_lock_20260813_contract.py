@@ -25,7 +25,10 @@ def test_overview_final_lock_uses_fleet_posture_and_committed_snapshot_boundary(
     assert "'bucket_posture': bucket_posture" in presentation
     assert 'fleet_readings = _overview_fleet_readings(bucket_posture)' in presentation
     assert "'fleet_readings': fleet_readings" in presentation
-    assert "'provider_distribution': _overview_provider_distribution(rows)" in presentation
+    assert 'owner_query = _system_scope().order_by(None)' in presentation
+    assert 'provider_label = _sql_provider_label()' in presentation
+    assert '.group_by(provider_label)' in presentation
+    assert "'provider_distribution': provider_distribution" in presentation
 
 
 def test_overview_fleet_posture_covers_quota_protection_exposure_and_usage() -> None:
