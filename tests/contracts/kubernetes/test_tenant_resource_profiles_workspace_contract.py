@@ -1486,8 +1486,8 @@ def test_allocation_comparison_uses_calm_dual_panels_without_metric_card_stacks(
     assert "('current', 'Current Contract', 'Active · Frozen evidence')" in template
     assert "('proposed', 'Proposed Contract', 'Pending · Profile intent')" in template
     assert 'data-tenant-allocation-profile="{{ side }}"' in template
-    assert """form.querySelector('[data-tenant-allocation-profile="current"]')""" in script
-    assert """form.querySelector('[data-tenant-allocation-profile="proposed"]')""" in script
+    assert '[data-tenant-allocation-profile="current"]' in script
+    assert '[data-tenant-allocation-profile="proposed"]' in script
     assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
     assert 'data-tenant-allocation-metric-source="{{ source }}"' in template
     assert 'data-tenant-allocation-metric-key="{{ key }}"' in template
@@ -1604,7 +1604,7 @@ def test_allocation_technical_details_are_one_accessible_switch_not_expandables(
     assert 'max-w-5xl' not in template
     assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in template
     assert 'lg:border-l lg:border-outline-subtle lg:pl-6' in template
-    assert 'aria-orientation="vertical"' in template
+    assert 'aria-orientation="vertical"' in shared_tabs
     assert 'border-kaori-primary bg-kaori-soft text-kaori-primary' in template
     assert 'table-fixed text-left text-sm' in template
     assert 'Current · Frozen' in template
