@@ -1244,10 +1244,7 @@ def test_resource_profile_copy_is_compact_and_version_intent_remains_clear() -> 
     dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
     adoption = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
 
-    assert (
-        'Update reusable intent; Namespace snapshots stay pinned.'
-        in dialogs
-    )
+    assert 'Update reusable intent; Namespace snapshots stay pinned.' in dialogs
     assert 'sizing stays canonical.' in dialogs
     assert (
         'Control changes create v{{ (profile.version or 1) + 1 }}; Namespace snapshots stay pinned until rollout.'
