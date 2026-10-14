@@ -108,7 +108,9 @@ def test_registry_renderer_adopts_kubernetes_graph_semantics() -> None:
     palette = PALETTE.read_text(encoding='utf-8')
     assert 'External Label Node' in palette
     assert 'raw hex' in palette.lower()
-    assert 'kaori-topology-domain-configuration' in REGISTRY.read_text(encoding='utf-8')
+    registry_template = REGISTRY.read_text(encoding='utf-8')
+    assert "('artifact', 'Artifact', 'package', 'configuration')" in registry_template
+    assert 'kaori-topology-domain-{{ domain }}' in registry_template
 
 
 def test_visual_refactor_does_not_move_registry_evidence_authority() -> None:
