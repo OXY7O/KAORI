@@ -136,7 +136,7 @@ def test_inventory_informational_notes_use_icon_note_treatment() -> None:
         in services
     )
     assert (
-        "detail.inventory_note('A resolved Secret reference confirms only that a Secret exists in the same committed namespace snapshot. It does not validate certificate contents, expiry, key matching, or hostname coverage.', 'info')"
+        "detail.inventory_note('Resolved Secret confirms committed presence, not certificate content, expiry, key match or host coverage.', 'info')"
         in ingress
     )
     assert (
