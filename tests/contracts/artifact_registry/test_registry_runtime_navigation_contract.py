@@ -29,23 +29,39 @@ def test_runtime_sidebar_is_capability_first_with_three_level_three_views() -> N
                 'artifact_registry.runtime_overview'"""
         in catalog
     )
-    views = catalog.rsplit("    'artifact_registry_runtime': (", 1)[1].split("    'artifact_registry_analytics': (", 1)[
-        0
-    ]
-    assert views.count('CapabilityViewDefinition(') == 3
-    labels = (
-        ('overview', 'Overview', 'artifact_registry.runtime_overview'),
-        ('usage', 'Runtime Usage', 'artifact_registry.runtime'),
-        ('topology', 'Topology', 'artifact_registry.runtime_topology'),
+    # Validate the actual catalog definition, not Ruff-dependent multiline layout.
+    catalog_ast = ast.parse(catalog)
+    capability_views = next(
+        stmt.value
+        for stmt in catalog_ast.body
+        if isinstance(stmt, ast.AnnAssign)
+        and isinstance(stmt.target, ast.Name)
+        and stmt.target.id == '_CAPABILITY_VIEWS'
     )
-    positions = []
-    for key, label, endpoint in labels:
-        marker = f"'{key}', '{label}',"
-        assert marker in views
-        assert f"'{endpoint}'" in views
-        positions.append(views.index(marker))
-    assert positions == sorted(positions)
-    assert views.count("('artifact_registry.view',)") == 3
+    assert isinstance(capability_views, ast.Dict)
+    runtime_view_nodes = next(
+        value
+        for key, value in zip(capability_views.keys, capability_views.values, strict=True)
+        if isinstance(key, ast.Constant) and key.value == 'artifact_registry_runtime'
+    )
+    assert isinstance(runtime_view_nodes, ast.Tuple)
+    actual_views = [
+        (
+            ast.literal_eval(call.args[0]),
+            ast.literal_eval(call.args[1]),
+            ast.literal_eval(call.args[3]),
+            ast.literal_eval(call.args[4]),
+        )
+        for call in runtime_view_nodes.elts
+        if isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Name)
+        and call.func.id == 'CapabilityViewDefinition'
+    ]
+    assert actual_views == [
+        ('overview', 'Overview', 'artifact_registry.runtime_overview', ('artifact_registry.view',)),
+        ('usage', 'Runtime Usage', 'artifact_registry.runtime', ('artifact_registry.view',)),
+        ('topology', 'Topology', 'artifact_registry.runtime_topology', ('artifact_registry.view',)),
+    ]
 
     assert "if endpoint.startswith('artifact_registry.runtime'):" in navigation
     assert "return 'artifact_registry_runtime'" in navigation
