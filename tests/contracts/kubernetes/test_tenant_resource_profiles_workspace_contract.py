@@ -1346,9 +1346,12 @@ def test_tenant_operations_empty_registries_keep_canonical_pagination_without_ho
         assert f"if {rows} else '!table-fixed'" in template
         assert f'{{% if {rows} %}}' in template
         assert template.index(f'{{% if {rows} %}}') < template.index('<thead')
-        assert "{% set empty_state_label = '' %}" in template
-        assert "{% set empty_state_min_height = 'min-h-[128px]' %}" in template
-        assert "{% set empty_state_container_class = '!py-5' %}" in template
+        # Quote style is formatter-owned; the empty state configuration,
+        # zero-result geometry and canonical pagination must stay unchanged.
+        normalized_empty_state = template.replace('"', "'")
+        assert "{% set empty_state_label = '' %}" in normalized_empty_state
+        assert "{% set empty_state_min_height = 'min-h-[128px]' %}" in normalized_empty_state
+        assert "{% set empty_state_container_class = '!py-5' %}" in normalized_empty_state
         assert 'components/states/_empty_state.html' in template
         assert "registry_ui.footer('tenant.operations'" in template
         assert 'table_ui.table_classes(' in template
