@@ -1,6 +1,7 @@
 {% extends "layouts/auth.html" %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_flow_steps.html" as operational_flow_steps %}
+{% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/terminal_command.html" as terminal_command %}
@@ -99,7 +100,7 @@
                 </div>
             </dl>
             {% if readiness.setup_required and devcontainer_setup %}
-                <section class="mt-4 overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+                <section class="{{ operational_section_card.shell_classes('mt-4') }}"
                          data-kaori-setup-console
                          data-kaori-setup-primary-action
                          aria-labelledby="development-bootstrap-title">
@@ -197,7 +198,7 @@
                 </div>
             {% elif readiness.setup_required %}
                 {# Public production readiness must never expose DDL/bootstrap commands or schema details. #}
-                <section class="mt-4 overflow-hidden rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:p-5"
+                <section class="{{ operational_section_card.shell_classes('mt-4 p-4 sm:p-5') }}"
                          data-kaori-setup-console
                          data-kaori-setup-primary-action
                          data-kaori-setup-production-guidance
@@ -216,7 +217,7 @@
                     </p>
                 </section>
             {% elif devcontainer_setup %}
-                <section class="mt-4 overflow-hidden rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:p-5"
+                <section class="{{ operational_section_card.shell_classes('mt-4 p-4 sm:p-5') }}"
                          data-kaori-setup-console
                          data-kaori-setup-primary-action
                          aria-labelledby="development-checks-title">
@@ -236,7 +237,7 @@
                                         variant="semantic") }}
                 </div>
             {% else %}
-                <section class="mt-4 overflow-hidden rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:p-5"
+                <section class="{{ operational_section_card.shell_classes('mt-4 p-4 sm:p-5') }}"
                          data-kaori-setup-console
                          data-kaori-setup-primary-action
                          data-kaori-setup-production-guidance
