@@ -176,7 +176,7 @@ def test_release_evidence_is_readable_full_width_without_nested_scroll():
         'Scope readiness',
         'Provider handoff scope',
         'Independent approval and handoff',
-        '04 · Verify and finalize',
+        "('finalize', 'Verify & Finalize', 'Read-back & Release')",
         'aria-label="Release blockers"',
         'aria-label="Provider handoff inventory"',
         'aria-label="Release wizard active step"',
@@ -454,7 +454,8 @@ def test_recoverable_executor_has_priority_in_both_release_steps():
     assert 'Review Handoff Evidence' in finalize
     assert 'recovery_attempt.errors[:3]' in finalize
     assert "tenant_release_step_urls['approval']" in finalize
-    assert '"Recovery Required" if label == "KAORI provider handoff"' in projection
+    assert "'Recovery Required'" in projection
+    assert "if label == 'KAORI provider handoff' and provider_handoff_recovery_required" in projection
     assert '"provider_handoff_recovery_required": provider_handoff_recovery_required' in projection
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23
@@ -690,10 +691,10 @@ def test_detail_get_reads_one_exact_committed_tenant_without_provider_request():
 
 def test_independent_work_inbox_deep_link_targets_release_section():
     inbox = read('app/kubernetes/tenant/approval_inbox.py')
-    assert '"tenant.tenant_detail"' in inbox
-    assert '_anchor="tenant-release-governance"' in inbox
-    assert 'tenant_detail_section="release"' in inbox
-    assert 'release_step="approval"' in inbox
+    assert "'tenant.tenant_detail'" in inbox
+    assert "_anchor='tenant-release-governance'" in inbox
+    assert "tenant_detail_section='release'" in inbox
+    assert "release_step='approval'" in inbox
     assert 'view="release"' not in inbox
 
 
