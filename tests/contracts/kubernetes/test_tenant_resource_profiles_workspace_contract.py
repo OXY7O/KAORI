@@ -178,7 +178,7 @@ def test_capacity_decision_compact_names_preserve_canonical_identity_and_distinc
     assert 'title="{{ decision.namespace }}"' in source
     assert 'title="{{ profile_name }}"' in source
     assert '{{ decision.namespace }}</h2>' in source
-    assert '{{ profile_name }}</dd>' in source
+    assert re.search(r'{{\s*profile_name\s*}}\s*</dd>', source)
     assert 'decision.resource_profile_version or row.profile.version' in source
     assert 'data-kaori-native-dialog' in source
     assert "registry_ui.footer('tenant.namespace_provisioning'" in source
