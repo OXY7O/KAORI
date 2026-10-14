@@ -91,8 +91,8 @@ def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries(
     assert 'How KAORI registers a reusable Registry connection.' in form
     assert 'How changes restore Registry provider readiness.' in form
     assert (
-        'Register Harbor once; committed Registry inventory, Metrics Source bindings, webhook readiness, '
-        'and provider validation remain independent.'
+        'Full Coverage combines four independent dimensions: provider API, committed Inventory, '
+        'Metrics Source, and Webhook. Core readiness is separate.'
     ) in index
 
 
@@ -331,7 +331,7 @@ def test_harbor_frontpage_matches_canonical_provider_workspace_hierarchy() -> No
     assert 'No Consumer Binding Surface Yet' not in index
     assert 'committed Registry inventory' in index
     assert 'Metrics Source bindings' in index
-    assert 'webhook readiness' in index
+    assert 'Webhook. Core readiness is separate.' in index
 
 
 def test_harbor_coverage_keeps_independent_registry_readiness_planes() -> None:
