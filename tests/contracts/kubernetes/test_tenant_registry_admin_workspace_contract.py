@@ -1294,7 +1294,7 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
     assert 'Capsule RBAC Prerequisites' in workspace
     assert "providerKey === 'capsule' && providerState === 'capsule'" in scope_js
     assert 'providerKey === reconciliationAuthority' in scope_js
-    assert "tenant.provider_key != tenant.reconciliation_authority" in service
+    assert 'tenant.provider_key != tenant.reconciliation_authority' in service
     assert "'capsule'," in service
     assert (
         "data-principal-types=\"{{ 'service_account' if profile.key.value == 'deployer' else 'user,group' }}\""

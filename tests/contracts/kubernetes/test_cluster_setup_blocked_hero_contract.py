@@ -86,7 +86,7 @@ def test_tenant_zero_cluster_state_is_terminal_but_registered_committed_state_re
     assert '_live_connection_loader.html' not in registered_branch
     connectivity = _read('app/templates/kubernetes/tenant/partials/_live_connection_loader.html')
     routes = _read('app/kubernetes/tenant/routes.py')
-    assert "hx-get=\"{{ url_for('tenant.live_provider_connectivity') }}\"" in connectivity
+    assert 'hx-get="{{ url_for(\'tenant.live_provider_connectivity\') }}"' in connectivity
     assert 'Check Live Connectivity' in connectivity
     assert 'Page load makes no provider request' in connectivity
     assert "@tenant_bp.get('/live-provider-connectivity')" in routes
