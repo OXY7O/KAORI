@@ -258,8 +258,8 @@
         const namespaceSelect = form.querySelector('[data-tenant-allocation-change-namespace]')
         const profileSelect = form.querySelector('[data-tenant-allocation-change-profile]')
 
-        const currentProfile = form.querySelector('[data-tenant-allocation-current-profile]')
-        const proposedProfile = form.querySelector('[data-tenant-allocation-proposed-profile]')
+        const currentProfile = form.querySelector('[data-tenant-allocation-profile="current"]')
+        const proposedProfile = form.querySelector('[data-tenant-allocation-profile="proposed"]')
         const detailTabs = Array.from(form.querySelectorAll('[data-tenant-allocation-detail-tab]'))
         const detailPanels = Array.from(form.querySelectorAll('[data-tenant-allocation-detail-panel]'))
 
