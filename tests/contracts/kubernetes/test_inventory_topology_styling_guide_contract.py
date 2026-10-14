@@ -254,7 +254,7 @@ def test_topology_cluster_icon_and_api_server_layout_are_readable() -> None:
     assert "normalizedLabel === 'api server'" in script
     assert "valueElement.classList.add('min-w-0', 'flex-1', 'truncate', 'whitespace-nowrap')" in script
     assert "valueElement.title = String(displayValue || 'Not Reported')" in script
-    assert "topology_parts.field_row_template('topology-field-row-template')" in inspector
+    assert 'topology_parts.field_row_template("topology-field-row-template")' in inspector
     assert 'max-w-[28rem]' in _read('app/templates/components/topology_primitives.html')
     assert 'max-w-2xl' in _read('app/templates/components/visualization_workspace.html')
 
@@ -388,7 +388,9 @@ def test_topology_regular_external_labels_and_semantic_operational_arrows() -> N
     assert "'target-arrow-shape': 'triangle'" in script
     assert "relationship='owns'" in edge_builder
     assert "relationship='scheduled_on'" in edge_builder
-    assert 'Owns: Workload → Pod; Scheduled on: Pod → Node' in workspace
+    assert "('owns', 'Owns', 'owns')" in workspace
+    assert "('scheduled_on', 'Scheduled on', 'scheduled')" in workspace
+    assert 'Dashed: scope · Arrows: operational' in workspace
     assert '## Readable Label and Operational Edge Hierarchy' in palette
 
     # Intentional interaction emphasis and previously approved hover behavior stay intact.
