@@ -46,7 +46,8 @@ def test_kubernetes_minio_harbor_keep_same_dashboard_frame_order() -> None:
         assert template.count('provider_front.hero(') == 1, provider
         assert template.count('provider_front.overview(') == 1, provider
         assert 'overview_metrics = [' in template, provider
-        for label in ('Registered Connections', 'Validated Connections', 'Needs Attention', 'Coverage Gaps'):
+        readiness = 'Active Ready Connections' if provider == 'harbor' else 'Validated Connections'
+        for label in ('Registered Connections', readiness, 'Needs Attention', 'Coverage Gaps'):
             assert f'"label": "{label}"' in template, provider
 
 
@@ -97,7 +98,9 @@ def test_kubernetes_frontpage_uses_same_coverage_and_registry_contract() -> None
     assert "target == 'kubernetes-integration-coverage'" in routes
     assert "request.args.get('coverage_q', '')" in routes
     kubernetes_builder = frontpage_service.split('def build_kubernetes_page', 1)[1]
-    assert "'coverage_rows': coverage_page_rows" in kubernetes_builder
+    assert 'coverage_ids, coverage_pagination = page_connection_ids(' in kubernetes_builder
+    assert 'hydrated = _hydrate_connection_rows(' in kubernetes_builder
+    assert "'coverage_rows': coverage_rows" in kubernetes_builder
     assert "'coverage_pagination': coverage_pagination" in kubernetes_builder
 
 
