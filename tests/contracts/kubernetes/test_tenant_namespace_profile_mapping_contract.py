@@ -33,7 +33,13 @@ def test_tenant_detail_exposes_one_canonical_mapping_not_an_allocation_editor():
     assert 'No Namespace Allocations' in partial
     assert 'components/states/_empty_state.html' in partial
     assert '<form' not in partial and 'hx-post' not in partial
-    assert detail.count('<form ') == 17
+    # The reviewed Release workflow now exposes additional independent, governed
+    # recovery and successor-verification forms. The mapping itself remains read-only.
+    assert detail.count('<form ') == 23
+    assert "url_for('tenant.assess_native_no_transfer_recovery_route'" in detail
+    assert "url_for('tenant.authorize_native_no_transfer_recovery_route'" in detail
+    assert "url_for('tenant.verify_native_successor_handback_route'" in detail
+    assert "url_for('tenant.verify_capsule_successor_handback_route'" in detail
 
 
 def test_mapping_preserves_five_row_limit_and_exact_tenant_boundary():
