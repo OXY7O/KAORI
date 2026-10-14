@@ -341,11 +341,14 @@ def test_harbor_coverage_keeps_independent_registry_readiness_planes() -> None:
     for label in ('Harbor API', 'Inventory', 'Metrics Source', 'Webhook', 'Coverage'):
         assert label in coverage or label in read('app/templates/integrations/components/_provider_registry.html')
     assert '_provider_status(instance)' in presentation
+    assert 'inventory_status = _inventory_status(collection)' in presentation
+    assert "eligibility=registry_inventory_eligibility(row['identity'])" in presentation
     assert 'inventory_eligibility = registry_inventory_eligibility(identity)' in presentation
-    assert '_inventory_status(collection, eligibility=inventory_eligibility)' in presentation
+    assert '_inventory_status(collection_state, eligibility=inventory_eligibility)' in presentation
     assert '_metrics_status(metrics)' in presentation
     assert '_webhook_status(webhook)' in presentation
-    assert "coverage_label = 'Complete' if complete else 'Partial'" in presentation
+    assert "'Full Coverage'" in presentation
+    assert "'Partial Coverage'" in presentation
 
 
 def test_harbor_coverage_does_not_force_desktop_horizontal_scroll() -> None:
