@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -17,7 +18,7 @@ def test_external_capsule_access_drift_uses_committed_evidence_not_live_reconcil
     assert 'TenantAccessGrant.query.filter_by(tenant_id=tenant_id).all()' in service
     assert "'auto_remediation_performed': False" in service
     assert "'effective_rbac_verified': False" in service
-    assert 'db.session.add(AuditEvent(' in service
+    assert re.search(r'db\.session\.add\(\s*AuditEvent\(', service)
     assert 'runtime_adapter.build_client' not in service
     assert 'patch_cluster_custom_object' not in service
     assert 'reconcile_provider_access_grant(' not in service
