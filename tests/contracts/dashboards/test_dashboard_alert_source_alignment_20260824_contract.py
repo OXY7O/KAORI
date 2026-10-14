@@ -24,7 +24,8 @@ def test_object_storage_dashboard_uses_kaori_alert_cases_not_raw_source_rows() -
     assert 'Active KAORI AlertCase posture and up to five recent cases.' in alerts
     assert "url_for('alert_intelligence.index'" in alerts
     assert 'components/operational_recommendation_cards.html' in actions
-    assert 'intelligence.recommendation_details' in recommendation_cards
+    assert "url_for('intelligence.recommendations', q=action.rule_key, detail=action.rule_key)" in recommendation_cards
+    assert 'action.href' not in recommendation_cards
     assert 'get_dashboard_recommendation_findings' in service
     assert 'Active Alertmanager and Metrics Source Object Storage alert signals.' not in alerts
     assert 'Alert evidence is unavailable in the committed analytics snapshot.' not in alerts
@@ -76,9 +77,12 @@ def test_inventory_authority_copy_is_compact_and_object_storage_hero_has_more_co
         'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.'
         not in kubernetes_templates
     )
-    assert (
-        'Committed Object Storage Inventory; provider configuration and live health remain integration-owned.'
-        in object_storage_detail
+    assert "operational_callout.render('Authority Boundary'" in object_storage_detail
+    assert 'Committed inventory; provider configuration and live health remain integration-owned.' in (
+        object_storage_detail
+    )
+    assert 'Inventory values come from the latest committed Object Storage Inventory Sync snapshot.' in (
+        object_storage_detail
     )
     assert 'Latest committed Inventory Sync snapshot; no live provider query.' in object_storage_presentation
     assert 'Review inventory coverage across registered Object Storage systems.' in hero
