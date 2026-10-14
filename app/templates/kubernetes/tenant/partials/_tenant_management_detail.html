@@ -104,7 +104,7 @@
         {{ section_intro.render('Tenant Overview',
                 'Identity, provider binding and governance details from committed Tenant state.',
                 'tenant-overview-heading') }}
-        <section class="min-w-0 overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+        <section class="{{ operational_section_card.shell_classes('min-w-0') }}"
                  data-kaori-tenant-record-sheet
                  aria-labelledby="tenant-record-heading">
             <header class="flex min-w-0 items-center gap-2.5 border-b border-outline-subtle px-4 py-2.5 sm:px-5">

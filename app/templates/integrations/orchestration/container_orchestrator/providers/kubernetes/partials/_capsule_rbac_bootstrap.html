@@ -1,12 +1,13 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/operational_section_card.html" as operational_section_card %}
 {% set snapshot = capsule_rbac_bootstrap %}
 {% set roles = snapshot.roles if snapshot and snapshot.roles else [] %}
 {% set is_ready = snapshot and snapshot.status == 'ready' and roles|length == 4 and not snapshot.missing and not snapshot.conflict %}
 {% set can_bootstrap = snapshot and snapshot.status == 'missing' and roles|length == 4 and snapshot.missing and not snapshot.conflict %}
 {% set can_manage = current_user.has_permission('clusters.manage') and current_user.has_permission('integrations.manage') %}
-<section class="mt-5 overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+<section class="{{ operational_section_card.shell_classes('mt-5') }}"
          aria-labelledby="capsule-rbac-bootstrap-heading"
          data-capsule-rbac-bootstrap>
     <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
