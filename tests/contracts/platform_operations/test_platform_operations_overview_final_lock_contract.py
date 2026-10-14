@@ -40,6 +40,7 @@ def test_platform_operations_overview_composes_authoritative_domain_projections(
     presentation = read('app/platform_operations/overview/presentation.py')
     lifecycle = read('app/platform_operations/data_lifecycle/presentation.py')
     kubernetes = read('app/platform_operations/kubernetes/presentation.py')
+    kubernetes_model = read('app/platform_operations/kubernetes/read_model.py')
     kubernetes_routes = read('app/platform_operations/kubernetes/routes.py')
 
     assert 'build_job_execution_status_context()' in presentation
@@ -52,9 +53,14 @@ def test_platform_operations_overview_composes_authoritative_domain_projections(
     assert "JobExecution.job_type == 'data_lifecycle'" in lifecycle
 
     assert 'def build_kubernetes_administration_summary()' in kubernetes
-    assert 'Cluster.query' in kubernetes
-    assert 'cluster_reveal_readiness' in kubernetes
-    assert 'SecretRevealNamespacePolicy.query' in kubernetes
+    assert 'counts = administration_counts()' in kubernetes
+    assert 'def administration_counts()' in kubernetes_model
+    assert 'func.count(Cluster.id)' in kubernetes_model
+    assert 'configured_cluster_readiness()' in kubernetes_model
+    assert 'SecretRevealNamespacePolicy' in kubernetes_model
+    assert 'KubernetesConnection' in kubernetes_model
+    assert 'connection.kubeconfig.is_not(None)' in kubernetes_model
+    assert "'Verification Required'" in kubernetes
     assert '**build_kubernetes_administration_summary(),' in kubernetes_routes
 
 
