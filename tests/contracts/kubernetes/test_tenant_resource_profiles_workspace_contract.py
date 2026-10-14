@@ -1570,9 +1570,13 @@ def test_allocation_technical_details_are_one_accessible_switch_not_expandables(
     script = read('app/static/js/tenant_resource_profile_presets.js')
 
     Environment(autoescape=True).parse(template)
+    shared_tabs = read('app/templates/components/technical_category_tabs.html')
     assert 'Technical Details' in template
-    assert 'role="tablist"' in template
-    assert 'aria-label="Technical contract categories"' in template
+    assert '{% call technical_category_tabs.tablist() %}' in template
+    assert 'role="tablist"' not in template
+    assert 'role="tablist"' in shared_tabs
+    assert 'aria-label="{{ aria_label }}"' in shared_tabs
+    assert 'data-kaori-tab-variant="technical-category-vertical"' in shared_tabs
     assert 'role="tabpanel"' in template
     assert 'data-tenant-allocation-detail-tab="{{ key }}"' in template
     assert 'data-tenant-allocation-detail-panel="{{ key }}"' in template
@@ -1670,9 +1674,12 @@ def test_allocation_full_width_technical_workspace_and_readable_comparison() -> 
     Environment(autoescape=True).parse(template)
 
     assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in template
+    shared_tabs = read('app/templates/components/technical_category_tabs.html')
     assert 'mx-auto max-w-5xl' not in template
-    assert 'role="tablist"' in template
-    assert 'aria-orientation="vertical"' in template
+    assert '{% call technical_category_tabs.tablist() %}' in template
+    assert 'role="tablist"' in shared_tabs
+    assert 'aria-orientation="vertical"' in shared_tabs
+    assert 'data-{{ data_namespace }}-tabs' in shared_tabs
     assert 'aria-controls="allocation-detail-panel-{{ key }}"' in template
     assert 'role="tabpanel"' in template
     assert 'lg:border-l lg:border-outline-subtle lg:pl-6' in template
