@@ -43,7 +43,11 @@ def test_minio_capability_registry_matches_modal_detail_standard() -> None:
     assert 'record_detail_modal.render(' in registry
     assert '"MinIO Capability Evidence"' in registry
     assert 'provider_capability_detail.content(row,' in registry
-    assert "'status_label': 'Ready' if available else 'Blocked'" in presentation
+    assert 'elif definition.required and instance.last_validated_at:' in presentation
+    assert "row_status = 'not_checked'" in presentation
+    assert "'ready': 'Ready'" in presentation
+    assert "'blocked': 'Blocked'" in presentation
+    assert "'not_checked': 'Not Checked'" in presentation
     assert "'source_owner': 'MinIO S3 API'" in presentation
     assert "'technical_checks': []" in presentation
 
