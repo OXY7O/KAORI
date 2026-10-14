@@ -35,7 +35,8 @@ def test_storage_page_stays_available_and_shows_reconnect_guidance() -> None:
     template = read(STORAGE_TEMPLATE)
 
     assert 'payload = get_report_storage_payload(workspace=workspace)' in route_source
-    assert "if payload['integrity_actions_enabled']" in route_source
+    assert "if not payload['integrity_actions_enabled']:" in route_source
+    assert "return redirect(url_for('reports.storage', workspace='integrity'))" in route_source
     assert 'report-storage-connectivity-title' in template
     assert 'Storage Operations' in template
     assert 'data-report-storage-readiness-monitor="true"' in template
