@@ -233,5 +233,12 @@ def test_overview_generic_instance_loader_does_not_drop_object_storage() -> None
     )
     assert "'object_storage'" not in extensions.split('SPECIALIZED_OVERVIEW_TYPES =', 1)[1].split('\n\n', 1)[0]
     assert 'IntegrationInstance.integration_type.in_(integration_types)' in extensions
-    assert 'extension_instances = load_extension_integration_instances()' in workspace
-    assert 'extension_instances=extension_instances' in workspace
+    portfolio = read('app/integrations/overview_sql.py')
+    runtime = read('app/integrations/overview_runtime_sql.py')
+    minio = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
+    assert 'provider_counts, stats = overview_portfolio_counts()' in workspace
+    assert 'identity.integration_type.in_([module.integration_type for module in modules])' in portfolio
+    assert '~identity.integration_type.in_(specialized)' in portfolio
+    assert 'for implementation in registry.implementations_for_type(module.integration_type):' in runtime
+    assert 'implementation.runtime_overview_builder is None' in runtime
+    assert 'runtime_overview_builder=build_runtime_overview_rows' in minio
