@@ -427,14 +427,17 @@ def test_harbor_inventory_lifecycle_keeps_artifact_registry_as_detail_owner() ->
 
 def test_harbor_index_uses_batch_fleet_readiness_with_visible_detail_resolution() -> None:
     source = read('app/integrations/registry/providers/harbor/application/presentation.py')
-    assert 'ready_metric_ids = registry_metrics_ready_provider_ids(identities)' in source
-    assert 'binding_counts: dict[str, int] = {}' in source
-    assert 'IntegrationBinding.asset_key.in_([str(identity_id) for identity_id in identity_ids])' in source
-    assert 'for row in coverage_page_rows:' in source
-    assert "registry_metrics_readiness(row['identity'])" in source
-    assert source.index('for row in coverage_page_rows:') < source.index("registry_metrics_readiness(row['identity'])")
-    assert 'metrics = registry_metrics_readiness(identity)' not in source
-    assert 'inventory_eligibility = registry_inventory_eligibility(identity)' not in source
+    fleet = source.split('def build_index_context(', 1)[1].split('def _provider_status(', 1)[0]
+    assert 'ready_metric_ids = registry_metrics_ready_provider_ids(identities)' in fleet
+    assert 'binding_counts: dict[str, int] = {}' in fleet
+    assert 'IntegrationBinding.asset_key.in_([str(identity_id) for identity_id in identity_ids])' in fleet
+    assert 'for row in coverage_page_rows:' in fleet
+    assert "registry_metrics_readiness(row['identity'])" in fleet
+    visible_page_start = fleet.index('for row in coverage_page_rows:')
+    assert visible_page_start < fleet.index("registry_metrics_readiness(row['identity'])")
+    assert visible_page_start < fleet.index("registry_inventory_eligibility(row['identity'])")
+    assert 'metrics = registry_metrics_readiness(identity)' not in fleet
+    assert 'inventory_eligibility = registry_inventory_eligibility(identity)' not in fleet
 
 
 def test_harbor_full_coverage_is_not_required_for_core_provider_readiness() -> None:
