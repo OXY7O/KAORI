@@ -6,6 +6,7 @@ list/inspector row markup stay shared and must render identical DOM geometry.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
@@ -102,6 +103,7 @@ def test_registry_typography_and_semantics_match_k8s_not_provider_health() -> No
     assert "data.type === 'artifact'" in registry
     assert 'critical > 0' in registry
     assert 'high > 0' in registry
-    assert "readiness.status === 'ready' ? 'info'" in registry
-    assert 'payload.summary.omitted_bindings' in registry
+    assert re.search(r"readiness\.status === 'ready'\s*\? 'info'", registry)
+    assert 'const summary = payload.summary' in registry
+    assert 'summary.omitted_bindings' in registry
     assert 'max-w-[18rem]' in _read('app/templates/components/topology_primitives.html')
