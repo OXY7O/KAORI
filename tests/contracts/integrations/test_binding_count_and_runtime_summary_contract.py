@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -40,12 +41,15 @@ def test_binding_htmx_scope_updates_refresh_tab_and_hero_counts_without_reload()
         scope = scope_path.read_text(encoding='utf-8')
         assert f"value_id='{prefix}-hero-binding-count'" in detail
         expected_tab_update = (
-            f"framed_workspace_tabs.badge_oob('{prefix}', 'scope', (binding_rows|length|string) ~ ' Bindings')"
+            f"framed_workspace_tabs.badge_oob('{prefix}', 'scope', (binding_total|string) ~ ' Bindings')"
         )
         assert expected_tab_update in scope
         assert "{% if request.headers.get('HX-Request') == 'true' %}" in scope
-        assert f'id="{prefix}-hero-binding-count" hx-swap-oob="innerHTML"' in scope
-        assert "{{ (bindings|length|string) ~ ' Bindings' }}" in scope
+        assert re.search(
+            rf'id="{re.escape(prefix)}-hero-binding-count"\s+hx-swap-oob="innerHTML"',
+            scope,
+        )
+        assert "{{ (binding_total|string) ~ ' Bindings' }}" in scope
 
     # Create, validate, validation-poll, and delete all re-render the same
     # committed-state scope partial, so both outer badges follow each swap.

@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -229,7 +230,7 @@ def test_shared_posture_emits_oob_state_only_for_htmx_requests() -> None:
         'metrics-source-posture-readiness',
         'metrics-source-posture-capabilities',
     ):
-        assert f'id="{identity}" hx-swap-oob="innerHTML"' in refreshed
+        assert re.search(rf'id="{re.escape(identity)}"\s+hx-swap-oob="innerHTML"', refreshed)
     assert 'Degraded' in refreshed
     assert 'Attention' in refreshed
     assert '4 Validated Capabilities' in refreshed
