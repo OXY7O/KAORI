@@ -84,7 +84,7 @@ def test_registry_renderer_adopts_kubernetes_graph_semantics() -> None:
     assert 'height: 44' in renderer
     assert 'badgeImage(node.data())' in renderer
     assert 'transform: (_node, position) => (branched ? position : { x: position.y, y: position.x })' in renderer
-    assert "'line-style': (edge) => edge.data('relationship') === 'contains'" in renderer
+    assert "'line-style': (edge) => (edge.data('relationship') === 'contains' ? 'dashed' : 'solid')" in renderer
     assert 'selector: \'edge[relationship = "contains"]\'' in renderer
     assert "'curve-style': 'taxi'" in renderer
     assert "'taxi-direction': 'horizontal'" in renderer
