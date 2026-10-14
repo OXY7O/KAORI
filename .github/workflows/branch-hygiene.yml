@@ -38,7 +38,10 @@ jobs:
 
           protected_branch() {
             case "$1" in
-              main|kaori/staging|kaori/rc-request|kaori/uat-request)
+              # Staging admission source remains the base of open issue-scoped
+              # review PRs. Deleting it on staging push would orphan/close them;
+              # retire only after governed UAT and dependent PR disposition.
+              main|kaori/staging|kaori/rc-request|kaori/uat-request|kaori/review/staging-uat)
                 return 0
                 ;;
               kaori/tenant-*|kaori/*tenant*|tenant/*)
