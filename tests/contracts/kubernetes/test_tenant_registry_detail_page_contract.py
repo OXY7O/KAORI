@@ -63,7 +63,8 @@ def test_single_hero_uses_unmodified_shared_kaori_template_and_spacing():
     assert "'Tenant Details'" in detail
     assert "'Back to Registry'" in detail
     assert 'hero_tenant_metrics' in detail
-    assert 'page_hero.context_panel_classes()' in hero
+    assert 'macro context_panel_classes() -' in hero
+    assert '{{ context_panel_classes() }}' in hero
     assert 'page_hero.context_metric_card_classes()' not in detail
     assert 'data-kaori-hero-profile="transactional-admin"' in detail
     assert detail.count('Back to Registry') == 1
@@ -124,8 +125,8 @@ def test_tenant_overview_record_sheet_preserves_committed_identity_and_audit():
     assert '{% import "components/technical_value.html" as technical_value %}' in detail
     assert 'row.cluster.name if row.cluster else' in overview
     assert "tenant.provider_key|replace('_', ' ')|title" in detail
-    assert "tenant.ownership_status|replace('_', ' ')|title" in overview
-    assert "tenant.reconciliation_authority|replace('_', ' ')|title" in overview
+    assert re.search(r"tenant\.ownership_status\|replace\('_', ' '\)\s*\|title", overview)
+    assert re.search(r"tenant\.reconciliation_authority\|replace\('_', ' '\)\s*\|title", overview)
     assert "tenant.lifecycle_status == 'ready'" in overview
     assert 'table_label.status_label(' in overview
     assert '{{ tenant.generation }}' in overview
@@ -784,7 +785,7 @@ def test_compact_provider_and_lifecycle_evidence_without_duplicate_accordions():
     assert overview.count('id="tenant-provider-authority"') == 1
     assert '<details id="tenant-provider-authority"' not in detail
     assert "tenant.provider_key|replace('_', ' ')|title" in detail
-    assert "tenant.reconciliation_authority|replace('_', ' ')|title" in overview
+    assert re.search(r"tenant\.reconciliation_authority\|replace\('_', ' '\)\s*\|title", overview)
     statement = (
         'KAORI presents committed governance evidence; Kubernetes or Capsule '
         'remains authoritative for provider resources.'
