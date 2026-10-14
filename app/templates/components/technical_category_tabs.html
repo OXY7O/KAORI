@@ -1,0 +1,12 @@
+{# Accessible vertical technical-detail category navigation.
+   The calling form owns buttons, panels, read-only data and its controller. #}
+{% macro tablist(aria_label='Technical contract categories', data_namespace='tenant-allocation-detail') -%}
+    <div class="flex flex-col gap-1 border-l border-outline-subtle pl-1"
+         role="tablist"
+         aria-label="{{ aria_label }}"
+         aria-orientation="vertical"
+         data-{{ data_namespace }}-tabs
+         data-kaori-tab-variant="technical-category-vertical">
+        {{ caller() }}
+    </div>
+{%- endmacro %}
