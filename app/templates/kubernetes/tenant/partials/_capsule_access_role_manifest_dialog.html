@@ -60,7 +60,7 @@
                             <summary class="flex cursor-pointer items-center justify-between gap-3 px-3.5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus">
                                 <span class="min-w-0">
                                     <span class="block text-xs font-semibold text-content-primary">{{ manifest.label }} · v{{ manifest.version }}</span>
-                                    <span class="mt-1 block break-all font-mono text-[11px] leading-5 text-content-muted">{{ manifest.name }}</span>
+                                    <span class="mt-1 block break-all font-mono text-xs leading-5 text-content-muted">{{ manifest.name }}</span>
                                 </span>
                                 <i data-lucide="chevron-down"
                                    class="h-4 w-4 shrink-0 text-content-muted"
@@ -88,7 +88,7 @@
                                     </button>
                                 </div>
                                 <pre data-kaori-copy-source
-                                     class="max-h-48 overflow-auto rounded-lg border border-outline-subtle bg-surface-elevated p-3 font-mono text-[11px] leading-5 text-content-secondary">{{ manifest.yaml }}</pre>
+                                     class="max-h-48 overflow-auto rounded-lg border border-outline-subtle bg-surface-elevated p-3 font-mono text-xs leading-5 text-content-secondary">{{ manifest.yaml }}</pre>
                             </div>
                         </details>
                     {% endfor %}
@@ -132,7 +132,7 @@
                     </summary>
                     <div class="border-t border-outline-subtle px-3 pb-3 pt-2">
                         <pre data-kaori-copy-source
-                             class="max-h-72 overflow-auto rounded-lg border border-outline-subtle bg-surface-elevated p-3 font-mono text-[11px] leading-5 text-content-secondary">{{ access_capsule_role_bundle_yaml }}</pre>
+                             class="max-h-72 overflow-auto rounded-lg border border-outline-subtle bg-surface-elevated p-3 font-mono text-xs leading-5 text-content-secondary">{{ access_capsule_role_bundle_yaml }}</pre>
                     </div>
                 </details>
             </section>
