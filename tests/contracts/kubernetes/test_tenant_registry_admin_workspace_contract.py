@@ -386,7 +386,13 @@ def test_tenant_registry_shortcuts_use_local_anchors_without_page_reload() -> No
 
     assert "'#add-user-membership-form'" in membership_registry
     assert "'#create-tenant-group-form'" in group_registry
-    assert "'#access-grant-form'" in grant_registry
+    grant_shortcut = read('app/static/js/tenant_access_grant_form.js')
+    assert 'data-access-grant-form-shortcut' in grant_registry
+    assert 'aria-controls="access-grant-form"' in grant_registry
+    assert "target?.closest('[data-access-grant-form-shortcut]')" in grant_shortcut
+    assert "document.getElementById('access-grant-form')" in grant_shortcut
+    assert 'navigateToGrantForm()' in grant_shortcut
+    assert "membership.focus({ preventScroll: true })" in grant_shortcut
     assert "'#credential-issuance'" in credential_registry
 
     for template in (membership_registry, group_registry, grant_registry, credential_registry):
