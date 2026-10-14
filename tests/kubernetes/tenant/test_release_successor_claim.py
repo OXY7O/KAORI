@@ -146,6 +146,8 @@ def _mock_context(monkeypatch, *, change_provider=False, previous=None):
     prior = {'plan_sha256': plan['plan_sha256']} if previous == 'same_plan' else previous
     monkeypatch.setattr(module, 'latest_release_successor_claim', lambda _: prior)
     if change_provider:
+        # A coherent fresh provider read-back may still differ from the admitted
+        # plan; do not manufacture incomplete Namespace handoff coverage here.
         snapshot['live_provider_identity'] = [
             {
                 'kind': 'Namespace',
@@ -154,6 +156,9 @@ def _mock_context(monkeypatch, *, change_provider=False, previous=None):
                 'resource_version': '9',
             }
         ]
+        snapshot['handoff_components'][0]['uid'] = 'replaced'
+        snapshot['handoff_components'][0]['resource_version'] = '9'
+        snapshot['handoff_fingerprint'] = handoff_fingerprint(snapshot['handoff_components'])
     monkeypatch.setattr(module, 'review_tenant_release_preflight_committed', lambda **_: snapshot)
     return plan, session
 
