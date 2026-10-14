@@ -130,7 +130,8 @@ def test_intelligence_overview_posture_is_compact_and_cross_workspace() -> None:
     for label in ('Critical Attention', 'Evidence Freshness', 'Automation Readiness'):
         assert f"'label': '{label}'" in overview
 
-    assert 'Overview is database-backed; provider collection and refresh stay worker-owned.' in overview
+    assert 'current Intelligence findings may be incomplete.' in overview
+    assert 'Provider collection and refresh remain worker-owned; this page reads committed KAORI state only.' in template
 
 
 def test_intelligence_overview_exposes_four_owned_workspaces_as_simple_rows() -> None:
