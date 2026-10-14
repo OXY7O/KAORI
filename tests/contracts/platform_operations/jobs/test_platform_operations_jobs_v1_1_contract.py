@@ -67,7 +67,8 @@ def test_queue_worker_readiness_uses_one_shared_topology_snapshot() -> None:
     queue = _read('app/templates/platform_operations/jobs/executions/partials/_queue_activity.html')
     routes = _read('app/platform_operations/jobs/routes.py')
 
-    assert 'topology = inspect_celery_topology() if aggregates else None' in presentation
+    assert 'queue_names.update(definition.queue_name for definition in list_job_definitions())' in presentation
+    assert 'topology = inspect_celery_topology() if queue_names else None' in presentation
     assert 'get_queue_readiness(queue_name, topology=topology)' in presentation
     assert 'Worker Readiness' in queue
     assert 'worker_readiness.description' in queue
