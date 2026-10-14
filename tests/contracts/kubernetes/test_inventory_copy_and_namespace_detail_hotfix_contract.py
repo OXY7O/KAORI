@@ -54,7 +54,7 @@ def test_namespace_detail_card_calls_match_shared_macro_signature() -> None:
     assert (
         "macro inventory_section(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', "
         "class_name='', badge_size='detail', stretch=false, density='compact', description=None, "
-        "compact_layout=false)" in macro
+        'compact_layout=false)' in macro
     )
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
