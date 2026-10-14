@@ -570,7 +570,7 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert "_checked_recently((successor_claim or {}).get('recorded_at'))" in readiness
     assert 'external_readback_prerequisites_current' in readiness
     assert "'external_reference_current': external_reference_current" in readiness
-    assert 'and (dry_run or {}).get("release_authorized") is False' in readiness
+    assert "and (dry_run or {}).get('release_authorized') is False" in readiness
     # Render-gating does not delete or silently replace original protected POST.
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23

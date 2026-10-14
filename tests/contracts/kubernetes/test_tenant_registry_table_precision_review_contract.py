@@ -48,8 +48,15 @@ def test_tenant_registry_tables_use_bounded_existing_table_primitives() -> None:
         assert sum(percentages) == 100, name
         assert 'overflow-x-auto' in template, name
         assert 'table_ui.cell_classes(' in template, name
-        assert 'truncate' in template, name
-        assert 'title=' in template, name
+        if name == '_capacity_governance':
+            # Capacity evidence and cluster identity intentionally wrap rather
+            # than truncate or rely on a redundant title tooltip.
+            assert 'break-words' in template, name
+            assert 'table_ui.cluster_identity(' in template, name
+            assert 'aria-label="View allocation budget for {{ item.cluster.name }}"' in template, name
+        else:
+            assert 'truncate' in template, name
+            assert 'title=' in template, name
 
 
 def test_access_grant_registry_uses_the_approved_responsive_fixed_table() -> None:

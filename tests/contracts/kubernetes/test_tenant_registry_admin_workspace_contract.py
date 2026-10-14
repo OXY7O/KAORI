@@ -774,22 +774,32 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'Capacity Admission' in allocation
     assert 'Provider Reconcile' in allocation
     assert 'Read-back & Commit' in allocation
-    assert 'data-tenant-allocation-current-cpu' in allocation
-    assert 'data-tenant-allocation-current-memory' in allocation
-    assert 'data-tenant-allocation-current-pods' in allocation
-    assert 'data-tenant-allocation-current-storage' in allocation
-    assert 'data-tenant-allocation-current-pvc-min' in allocation
-    assert 'data-tenant-allocation-current-pvc-max' in allocation
-    assert 'data-tenant-allocation-proposed-cpu' in allocation
-    assert 'data-tenant-allocation-proposed-memory' in allocation
-    assert 'data-tenant-allocation-proposed-pods' in allocation
-    assert 'data-tenant-allocation-proposed-storage' in allocation
-    assert 'data-tenant-allocation-proposed-pvc-min' in allocation
-    assert 'data-tenant-allocation-proposed-pvc-max' in allocation
-    assert "const quotaValue = (valueSet, field) => valueSet?.quota?.[field] || 'Unbounded'" in profile_js
-    assert 'currentPods.textContent' in profile_js
-    assert 'proposedStorage.textContent' in profile_js
-
+    # Approved comparison renders Current/Proposed values through a shared
+    # loop + typed metric attributes, not twelve duplicated static IDs.
+    assert "('current', 'Current Contract', 'Active · Frozen evidence')" in allocation
+    assert "('proposed', 'Proposed Contract', 'Pending · Profile intent')" in allocation
+    for attribute in (
+        'data-tenant-allocation-metric-side="{{ side }}"',
+        'data-tenant-allocation-metric-source="{{ source }}"',
+        'data-tenant-allocation-metric-key="{{ key }}"',
+    ):
+        assert attribute in allocation
+    for metric in (
+        'requests.cpu',
+        'limits.cpu',
+        'requests.memory',
+        'limits.memory',
+        'pods',
+        'requests.storage',
+    ):
+        assert metric in allocation
+    assert 'data-tenant-allocation-metric-source="storage_policy"' in allocation
+    assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in allocation
+    assert "form.querySelectorAll('[data-tenant-allocation-metric-side]')" in profile_js
+    assert "cell.dataset.tenantAllocationMetricSide === 'current' ? current : proposed" in profile_js
+    assert 'cell.dataset.tenantAllocationMetricSource' in profile_js
+    assert 'cell.dataset.tenantAllocationMetricKey' in profile_js
+    assert 'cell.textContent = selected ? displayValue(source, key, contractValue(selected, source, key))' in profile_js
     assert 'components/table_registry.html' in decisions
     assert 'table_ui.inventory_block_header' in decisions
     assert 'registry_ui.filter_form' in decisions
@@ -797,7 +807,6 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in decisions
     assert 'overflow-x-auto' in decisions
     assert 'header_cell_classes(action=true)' in decisions
-    assert 'overflow-x-auto' not in decisions
     assert 'min-w-[1180px]' not in decisions
     assert '>Target</th>' in decisions
     assert '>Contract</th>' in decisions
@@ -1631,7 +1640,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert "'namespace_ownership_status': record.ownership_status" in routes
 
     assert '_allocation_cutover.html' in page
-    assert 'Allocation Governance Cutover' in cutover_ui
+    assert 'Adopted Native Governance Cutover' in cutover_ui
     assert 'KAORI Preset · Locked' in cutover_ui
     assert 'Custom · Editable' in cutover_ui
     assert 'Adopted Baseline · Observed' in cutover_ui
@@ -1642,10 +1651,14 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
         'Provider-equivalent baseline; selecting the same profile keeps current values unchanged during takeover.'
         in cutover_ui
     )
-    assert 'data-tenant-allocation-current-pvc-min' in cutover_ui
-    assert 'data-tenant-allocation-current-pvc-max' in cutover_ui
-    assert 'data-tenant-allocation-proposed-pvc-min' in cutover_ui
-    assert 'data-tenant-allocation-proposed-pvc-max' in cutover_ui
+    # Provider baseline and proposed contract share the canonical typed metric
+    # renderer; both PVC bounds must remain visible on either side.
+    assert "('current', 'Observed Baseline', 'Adopted · Provider evidence')" in cutover_ui
+    assert "('proposed', 'Proposed Governed Contract', 'Pending · Explicit cutover')" in cutover_ui
+    assert 'data-tenant-allocation-metric-side="{{ side }}"' in cutover_ui
+    assert 'data-tenant-allocation-metric-source="storage_policy"' in cutover_ui
+    assert 'data-tenant-allocation-metric-key="{{ key }}"' in cutover_ui
+    assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in cutover_ui
     assert 'Control Unavailable' in cutover_ui
     assert 'Namespace lifecycle ownership stays adopted.' in cutover_ui
 
