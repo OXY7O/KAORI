@@ -188,7 +188,11 @@ def test_release_evidence_is_readable_full_width_without_nested_scroll():
         assert label in release
     assert 'divide-y divide-outline-subtle' in release
     assert 'max-h-72' not in release
-    assert 'overflow-y-auto' not in release
+    # Only the bounded Capsule exact-transfer resource list may scroll; the
+    # primary Release evidence and wizard stages remain full-width/readable.
+    assert release.count('overflow-y-auto') == 1
+    assert 'max-h-44 overflow-y-auto' in release
+    assert 'aria-label="Capsule exact transfer resource list"' in release
     assert 'text-sm leading-6' in release
     assert release.count('<form ') == 20
 
@@ -283,7 +287,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
 
     # Recorded independent review does not imply verified successor acceptance.
     assert 'Independent review recorded. External owner acceptance' in approval
-    assert 'role="status" aria-label="External successor evidence"' in approval
+    assert re.search(r'role="status"\s+aria-label="External successor evidence"', approval)
     assert 'successor_claim.plan_sha256 == handoff_plan.plan_sha256' in approval
     assert 'External Reference Unverified' in approval
     assert '{{ successor_claim.successor_reference }}' in approval
@@ -378,7 +382,9 @@ def test_step_three_freshness_matches_native_readiness_and_hides_stale_acceptanc
     assert 'row.native_release_readiness.review_complete' in accept
     assert 'handoff_plan.requested_by != current_user.id' in accept
     assert 'name="confirm_successor_acceptance"' in step
-    assert step.count('<form ') == 7
+    # The reviewed approval stage exposes independent native/Capsule actions
+    # without conflating decision, dry-run and provider read-back authority.
+    assert step.count('<form ') == 11
 
 
 def test_step_four_has_compact_readiness_and_role_scoped_recovery():
@@ -408,7 +414,7 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert "current_user.has_permission('integrations.manage')" in step
     assert 'restart_expired_tenant_release_handoff_route' in step
     assert 'name="confirm_handoff_restart"' in step
-    assert 'value="restart" required' in step
+    assert re.search(r'value="restart"\s+required', step)
     assert 'Restart Expired Handoff Plan' in step
     assert 'This account is not the original requester' in step
     assert 'row.release_handoff_plan.requested_by != current_user.id' in step
@@ -458,7 +464,7 @@ def test_recoverable_executor_has_priority_in_both_release_steps():
     assert "tenant_release_step_urls['approval']" in finalize
     assert "'Recovery Required'" in projection
     assert "if label == 'KAORI provider handoff' and provider_handoff_recovery_required" in projection
-    assert '"provider_handoff_recovery_required": provider_handoff_recovery_required' in projection
+    assert "'provider_handoff_recovery_required': provider_handoff_recovery_required" in projection
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23
     assert detail.count('hx-post=') == 23
@@ -490,7 +496,7 @@ def test_native_no_transfer_recovery_keeps_three_independent_governed_actions():
     assert 'data-native-no-transfer-recovery' in detail
     assert 'Governed No-Transfer Recovery' in detail
     assert 'native_cycle.no_transfer_assessment_candidate' in detail
-    assert '"no_transfer_assessment_candidate": no_transfer_assessment_candidate' in readiness
+    assert "'no_transfer_assessment_candidate': no_transfer_assessment_candidate" in readiness
     assert 'native_cycle.provider_handoff_recovery_required' in detail
     assert 'native_cycle.no_transfer_assessment_current' in detail
     assert 'native_cycle.no_transfer_authorized_current' in detail
@@ -556,7 +562,7 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert 'Last recorded read-back:' in approval
     assert 'This historical observation does not verify external acceptance' in approval
 
-    assert '_checked_recently((successor_claim or {}).get("recorded_at"))' in readiness
+    assert "_checked_recently((successor_claim or {}).get('recorded_at'))" in readiness
     assert 'external_readback_prerequisites_current' in readiness
     assert '"external_reference_current": external_reference_current' in readiness
     assert 'and (dry_run or {}).get("release_authorized") is False' in readiness
@@ -603,7 +609,7 @@ def test_release_wizard_navigation_is_fragment_get_with_history_and_plain_link_f
     assert detail.count('hx-target="#tenant-management-detail"') == 23
     assert detail.count('hx-select="#tenant-release-governance"') == 13
     assert detail.count('hx-target="#tenant-release-governance"') == 13
-    assert detail.count('hx-swap="outerHTML show:none focus-scroll:false"') == 31
+    assert detail.count('hx-swap="outerHTML show:none focus-scroll:false"') == 36
     assert 'hx-history="false"' in detail  # Avoid restoring stale authorization evidence.
     assert detail.count('href="{{ tenant_release_step_urls[') == 13
     assert "request.headers.get('HX-Target') == 'tenant-release-governance'" in routes
@@ -631,7 +637,7 @@ def test_release_action_feedback_reports_server_result_without_persisting_confir
     assert 'The confirmation resets after submission.' in detail
     assert 'hx-history="false"' in detail
     assert detail.count('hx-disabled-elt="find button[type=\'submit\']"') == 23
-    assert detail.count('disabled:cursor-progress disabled:opacity-60') == 16
+    assert detail.count('disabled:cursor-progress disabled:opacity-60') == 20
     assert 'Processing Tenant request…' in detail
     assert 'fixed bottom-4 right-4' in detail
     assert detail.count('<form method="post"') == 23
