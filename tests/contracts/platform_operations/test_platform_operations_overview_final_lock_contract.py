@@ -40,6 +40,7 @@ def test_platform_operations_overview_composes_authoritative_domain_projections(
     presentation = read('app/platform_operations/overview/presentation.py')
     lifecycle = read('app/platform_operations/data_lifecycle/presentation.py')
     kubernetes = read('app/platform_operations/kubernetes/presentation.py')
+    kubernetes_read_model = read('app/platform_operations/kubernetes/read_model.py')
     kubernetes_routes = read('app/platform_operations/kubernetes/routes.py')
 
     assert 'build_job_execution_status_context()' in presentation
@@ -52,9 +53,12 @@ def test_platform_operations_overview_composes_authoritative_domain_projections(
     assert "JobExecution.job_type == 'data_lifecycle'" in lifecycle
 
     assert 'def build_kubernetes_administration_summary()' in kubernetes
-    assert 'Cluster.query' in kubernetes
-    assert 'cluster_reveal_readiness' in kubernetes
-    assert 'SecretRevealNamespacePolicy.query' in kubernetes
+    assert 'counts = administration_counts()' in kubernetes
+    assert 'def administration_counts()' in kubernetes_read_model
+    assert 'from app.models import Cluster, SecretRevealNamespacePolicy' in kubernetes_read_model
+    assert 'Cluster.secret_reveal_encryption_verified.is_(True)' in kubernetes_read_model
+    assert 'Cluster.secret_reveal_audit_verified.is_(True)' in kubernetes_read_model
+    assert 'eligible_reveal_clusters' in kubernetes_read_model
     assert '**build_kubernetes_administration_summary(),' in kubernetes_routes
 
 
