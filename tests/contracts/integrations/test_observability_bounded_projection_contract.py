@@ -26,7 +26,8 @@ def test_coverage_sql_before_projection_and_batch_provider_loader() -> None:
     loader = coverage.split('def _instances(', 1)[1].split('def _coverage_status(', 1)[0]
     assert 'implementation.record_model' in loader
     assert 'model.query.join(model.integration_instance)' in loader
-    assert 'identities = IntegrationInstance.query' in loader  # backwards-compatible fallback
+    assert 'identities_query = IntegrationInstance.query.filter_by(' in loader
+    assert 'identities = identities_query.with_entities(IntegrationInstance.id).all()' in loader
     registry = source('app/integrations/kernel/registry.py')
     assert 'record_model: type[Any] | None = None' in registry
     for filename in (
