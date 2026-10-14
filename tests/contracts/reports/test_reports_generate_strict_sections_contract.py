@@ -10,7 +10,7 @@ def test_posted_sections_and_period_are_preserved_for_backend_validation() -> No
     assert 'sections = submitted_sections' in service
     assert 'elif for_submission:' in service
     assert 'form_state = get_form_state_from_form(request.form, for_submission=True)' in routes
-    assert 'form, for_submission=True' in service
+    assert 'get_form_state_from_form(\n        form,\n        for_submission=True,' in service
     assert 'Analytics reports require an explicit time range.' in service
     assert 'Inventory report sections are fixed by the published contract.' in service
 
