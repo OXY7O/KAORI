@@ -12,7 +12,7 @@ The reviewed Tenant Allocation Change UX has **three technical data categories i
 
 - Shared `tablist()` renders `role="tablist"`, accessible name, `aria-orientation="vertical"`, canonical border/spacing and `data-kaori-tab-variant="technical-category-vertical"`.
 - The calling workspace supplies category buttons and panels as semantic children. Preserve their existing IDs, `aria-controls`, `aria-selected`, roving `tabindex`, named `tabpanel` and per-form `data-tenant-allocation-detail-*` hooks.
-- Tenant Allocation's controller retains Arrow Up/Down (and existing Left/Right support), Home/End, focus, active Violet/inactive neutral visual treatment, and form/HTMX lifecycle. Dynamic `data_namespace` exists solely for an explicit consumer controller hook.
+- Tenant Allocation's controller retains Arrow Up/Down (and existing Left/Right support), Home/End, focus, active Violet/inactive neutral visual treatment, and form/HTMX lifecycle. The shared wrapper uses the static `data-kaori-technical-category-tabs` hook; the form retains its existing button/panel hooks without dynamically constructed HTML attribute names.
 - The current/proposed quota and LimitRange comparison and Advanced Controls remain **read only**; no provider reconcile is performed merely by switching tabs. A selection never implies admission or approval.
 - Preserve approved layout: 14rem technical side rail on large screens, comparison/content panel filling the remainder, and stacking on narrow screens.
 
