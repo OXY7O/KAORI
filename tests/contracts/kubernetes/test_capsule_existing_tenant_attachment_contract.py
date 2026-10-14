@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -22,7 +23,10 @@ def test_capsule_attach_reuses_discovery_and_existing_tenant_provider_authority(
     assert 'tenant_adoption_attachment_only' in discovery
     assert 'correlation_proven' in discovery
     assert 'namespace_items=namespace_items' in discovery
-    assert 'authority_error or ambiguities or not correlation_proven' in discovery
+    assert re.search(r'authority_error\s+or ambiguities\s+or not correlation_proven', discovery)
+    assert "or namespace_status == 'Terminating'" in discovery
+    assert "or not observed.get('uid')" in discovery
+    assert "or not observed.get('resource_version')" in discovery
     assert 'validate_capsule_namespace_attachment(' in discovery
     assert "proof['namespace_resource_version']" in discovery
 
