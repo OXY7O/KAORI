@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from jinja2 import Environment
@@ -44,10 +45,13 @@ def test_native_namespace_can_attach_to_existing_tenant_without_duplicate_tenant
     assert "'Native Namespace Attached · Managed Allocation'" in routes
     assert "(namespace.provisioning_evidence_json or {}).get('provider_mutation_performed')" in routes
     assert "'operation': 'attach_existing_tenant_namespace' if attach_existing" in routes
-    assert "'provider_mutation_may_have_started': not (" in routes
+    # Capsule mirror-only attachment never reports a provider mutation;
+    # Native takeover retains the fail-closed attempted-mutation disclosure.
+    assert "str(request.form.get('provider_key') or '') == 'capsule'" in routes
+    assert "and bool(str(request.form.get('attach_environment_id') or '').strip())" in routes
     assert 'KAORI database rollback' in routes
     assert 'provider_attempt_started = False' in routes
-    assert "'provider_mutation_may_have_started': provider_attempt_started and not (" in routes
+    assert re.search(r"'provider_mutation_may_have_started': provider_attempt_started\s+and not \(", routes)
     assert "'submitted_preflight_provider_uid': request.form.get('provider_uid')" in routes
     assert "'submitted_preflight_resource_version': request.form.get('provider_resource_version')" in routes
     assert "'attach_existing_tenant_namespace'" in routes
@@ -186,7 +190,7 @@ def test_review_adoption_preflight_modal_survives_htmx_swap_target_variants():
     open_modal = open_modal.split('const closeModal = (modal) => {', 1)[0]
     assert open_modal.index("modal.classList.remove('hidden')") < open_modal.index('syncAdoptionDestination(modal)')
 
-    assert 'if (load) reportPreflightFailure(event)' in js
+    assert 'if (event.detail?.successful === false) reportPreflightFailure(event)' in js
     assert 'A successful afterRequest may precede the HTML swap' in js
     assert 'if (!revealPreflight(event)) reportPreflightFailure()' not in js
     assert 'event.detail?.successful === false' in js
