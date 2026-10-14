@@ -1033,7 +1033,9 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
 
     assert 'Adopt & Manage' in preflight
     assert 'Managed after Adopt' in preflight
-    assert 'Adopt as <span class="font-semibold text-content-primary">Managed</span>' in preflight
+    assert 'Adopt as <span class="font-semibold text-content-primary">Adopted / Managed</span>' in preflight
+    assert 'tenant_adoption_attachment_only' in preflight
+    assert 'Attach Namespace to an <strong class="text-content-primary">existing KAORI Tenant</strong>' in preflight
     assert 'remains execution authority' in preflight
     assert 'imports current provider values as the initial contract' in preflight
     assert 'Controls with admitted write authority use equivalent write/read-back' in preflight
@@ -1560,8 +1562,12 @@ def test_managed_adoption_preserves_observed_evidence_and_lifecycle_separation()
     assert 'TenantOwnershipStatus.ADOPTED.value' in adoption
     assert "'allocation_control_state': 'provider_mirrored_policy'" in adoption
 
-    assert "special_label('KAORI Managed', 'normal', 'shield-check')" in namespace_registry
-    assert "special_label('Awaiting Managed Takeover', 'info', 'clock-3')" in namespace_registry
+    assert "{% elif allocation_control == 'kaori_managed' %}" in namespace_registry
+    assert '{% set control_label = "KAORI Managed" %}' in namespace_registry
+    assert "{% elif adopted_observed and allocation_control != 'control_unavailable' %}" in namespace_registry
+    assert '{% set control_label = "Awaiting Takeover" %}' in namespace_registry
+    assert 'title="Control: {{ control_label }}"' in namespace_registry
+    assert 'table_label.status_label(item.ownership_status' in namespace_registry
     assert 'namespace_allocation_options' in allocation_change
     assert '{% for item in namespace_allocation_options %}' in allocation_change
     assert '{% for item in namespace_options %}' not in allocation_change
