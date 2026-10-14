@@ -1648,7 +1648,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'Cut Over Governance' in cutover_ui
     assert 'Use current provider baseline · Custom' in cutover_ui
     assert (
-        'Provider-equivalent baseline; selecting the same profile keeps current values unchanged during takeover.'
+        'Allocation stays unchanged until admission, ownership checks, mutation, and read-back succeed.'
         in cutover_ui
     )
     # Provider baseline and proposed contract share the canonical typed metric
