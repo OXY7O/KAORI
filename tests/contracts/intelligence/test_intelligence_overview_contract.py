@@ -131,7 +131,9 @@ def test_intelligence_overview_posture_is_compact_and_cross_workspace() -> None:
         assert f"'label': '{label}'" in overview
 
     assert 'current Intelligence findings may be incomplete.' in overview
-    assert 'Provider collection and refresh remain worker-owned; this page reads committed KAORI state only.' in template
+    assert (
+        'Provider collection and refresh remain worker-owned; this page reads committed KAORI state only.' in template
+    )
 
 
 def test_intelligence_overview_exposes_four_owned_workspaces_as_simple_rows() -> None:
