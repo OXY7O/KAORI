@@ -1457,7 +1457,7 @@ def test_adopted_native_cutover_reuses_committed_allocation_comparison() -> None
     assert "('Min PVC Size', 'min')" in template
     assert "('Max PVC Size', 'max')" in template
     assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
-    assert 'data-tenant-allocation-highlight-count aria-live="polite"' in template
+    assert re.search(r'data-tenant-allocation-highlight-count\s+aria-live="polite"', template)
     assert 'data-tenant-allocation-highlight-item' in template
     assert 'data-tenant-allocation-change-namespace' in template
     assert 'data-tenant-allocation-change-profile' in template
@@ -1485,9 +1485,9 @@ def test_allocation_comparison_uses_calm_dual_panels_without_metric_card_stacks(
     assert 'data-tenant-allocation-metric-source="{{ source }}"' in template
     assert 'data-tenant-allocation-metric-key="{{ key }}"' in template
     assert 'border-b border-outline-subtle py-3' in template
-    assert 'data-tenant-allocation-highlight-count aria-live="polite"' in template
-    assert 'data-tenant-allocation-highlight-item hidden' in template
-    assert 'data-tenant-allocation-highlight-more hidden' in template
+    assert re.search(r'data-tenant-allocation-highlight-count\s+aria-live="polite"', template)
+    assert re.search(r'data-tenant-allocation-highlight-item\s+hidden', template)
+    assert re.search(r'data-tenant-allocation-highlight-more\s+hidden', template)
     assert 'data-tenant-allocation-change-summary' not in template
     assert 'data-tenant-allocation-diff-panel' not in template
     assert 'view_more_content.render(' not in template
@@ -1647,7 +1647,7 @@ def test_allocation_highlights_are_bounded_conservative_and_selection_sensitive(
     assert "['CPU Limits', 'quota', 'limits.cpu']" in script
     assert "['Memory Limits', 'quota', 'limits.memory']" in script
     assert "['Total Storage', 'quota', 'requests.storage']" in script
-    assert 'const changed = current && proposed ? highlightDimensions.flatMap' in script
+    assert re.search(r'const changed =\s*current && proposed\s*\? highlightDimensions\.flatMap', script)
     assert "form.querySelectorAll('[data-tenant-allocation-highlight-item]')" in script
     assert 'row.hidden = !diff' in script
     assert 'const extra = Math.max(0, changed.length - rows.length)' in script
@@ -1676,7 +1676,7 @@ def test_allocation_full_width_technical_workspace_and_readable_comparison() -> 
     assert "('defaults', 'Container Defaults', 'container', 'LimitRange defaults')" in template
     assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
     assert 'data-tenant-allocation-advanced-row="{{ control_key }}"' in template
-    assert 'data-tenant-allocation-highlight-item hidden' in template
+    assert re.search(r'data-tenant-allocation-highlight-item\s+hidden', template)
     assert 'border-l-2 border-kaori-primary/20 pl-3' in template
     assert 'data-tenant-allocation-change-namespace' in template
     assert 'data-tenant-allocation-change-profile' in template
