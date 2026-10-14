@@ -556,9 +556,11 @@ def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> No
     controller = read('app/static/js/info_tips.js')
 
     assert (
-        "macro render(id, title, text='', items=None, placement='left', button_text=None, button_classes=None)"
+        "macro render(id, title, text='', items=None, placement='left', button_text=None, button_classes=None, variant='icon')"
         in component
     )
+    assert "variant == 'guide' and not button_text" in component
+    assert "data-kaori-info-tip-variant" in component
     assert 'data-kaori-info-tip' in component
     assert 'data-kaori-info-tip-trigger' in component
     assert 'data-kaori-info-tip-preview' in component
