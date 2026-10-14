@@ -63,7 +63,11 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     assert "request.args.get('namespace', '', type=str)" in routes
     assert "request.args.get('match_type', '', type=str)" in routes
     assert "request.args.get('exposure', '', type=str)" in routes
-    assert "request.args.get('artifact_id', type=int)" in routes
+    # Explicit malformed artifact scope must fail closed instead of widening results.
+    assert 'def _runtime_scope_id(name: str) -> int | None:' in routes
+    assert "raw = request.args.get(name)" in routes
+    assert 'abort(404)' in routes
+    assert "artifact_id=_runtime_scope_id('artifact_id')" in routes
     assert "@artifact_registry_bp.get('/runtime/<int:binding_id>/details')" in routes
 
     assert 'artifact_registry/partials/_runtime_workspace.html' in page
