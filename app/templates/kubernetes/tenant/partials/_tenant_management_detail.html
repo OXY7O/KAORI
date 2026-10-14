@@ -488,9 +488,7 @@
                                                    class="h-4 w-4 text-status-warning-text"
                                                    aria-hidden="true"></i>
                                                 View recorded conditions
-                                                <span class="rounded-full bg-status-warning-soft px-2 py-0.5 text-xs font-semibold tabular-nums text-status-warning-text">
-                                                    {{ row.release_preflight.blockers|length }}
-                                                </span>
+                                                {{ table_label.status_label(row.release_preflight.blockers|length, 'warning') }}
                                             </span>
                                             <i data-lucide="chevron-down"
                                                class="h-4 w-4 text-content-muted transition-transform group-open/evidence:rotate-180"
