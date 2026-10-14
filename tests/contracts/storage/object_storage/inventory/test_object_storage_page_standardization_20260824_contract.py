@@ -81,9 +81,12 @@ def test_system_posture_counts_all_provider_attention_without_downgrading_blocke
     presentation = read('app/storage/object_storage/inventory/presentation.py')
     hero = read('app/templates/storage/object_storage/inventory/systems/partials/_hero.html')
 
-    assert (
-        "'attention_systems': sum(1 for row in rows if row['status_tone'] in {'critical', 'warning', 'unknown'})"
-    ) in presentation
+    assert 'query.order_by(None)' in presentation
+    assert "func.lower(ObjectStorageSystem.status).in_(('blocked', 'failed', 'warning', 'unknown'))" in (
+        presentation
+    )
+    assert "'attention_systems': int(attention or 0)" in presentation
+    assert presentation.index('query.order_by(None)') < presentation.index('paged, pagination = paginate_query(')
     assert "'Blocked' if inventory.blocked_systems" in hero
     assert "'critical' if inventory.blocked_systems" in hero
     assert "'Attention Required' if inventory.attention_systems" in hero
