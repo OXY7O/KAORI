@@ -40,7 +40,9 @@ def test_existing_release_preflight_reuses_provider_handoff_normalizer_and_commi
     assert 'patch_namespaced_resource_quota(' not in normalizer
     assert 'patch_namespaced_limit_range(' not in normalizer
 
-    assert 'Handoff inventory' in registry
+    # Provider handoff inventory is rendered in the governed Release wizard
+    # using an explicit accessible section and the committed preflight values.
+    assert 'aria-label="Provider handoff inventory"' in registry
+    assert 'aria-label="Recorded provider handoff resources"' in registry
     assert 'row.release_preflight.handoff_components' in registry
     assert 'row.release_preflight.handoff_required_count' in registry
-    assert 'View evidence' not in registry or 'Handoff inventory' in registry
