@@ -42,7 +42,9 @@ def test_delivery_activity_exposes_persisted_retry_and_dedup_evidence() -> None:
     service = read('app/integrations/delivery/notification_channels/service.py')
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
 
-    assert 'NotificationDelivery.query.order_by(' in service
+    assert 'query = NotificationDelivery.query' in service
+    assert 'query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())' in service
+    assert 'paginate_query(query, page=page, per_page=per_page)' in service
     assert "'attempt_count': delivery.attempt_count" in service
     assert "'provider_message_id': delivery.provider_message_id or ''" in service
     assert "'error_message': delivery.error_message or ''" in service
@@ -189,7 +191,9 @@ def test_report_delivery_source_link_is_exact_committed_and_permissioned() -> No
 
     assert "current_user.has_permission('reports.view')" in routes
     assert 'can_view_reports: bool = False' in service
-    assert "'report_source_url': _report_source_url(row) if can_view_reports else None" in service
+    assert "'report_source_url': _report_source_url(row, report_lookup) if can_view_reports else None" in service
+    assert 'if can_view_reports' in service
+    assert 'report_id not in report_lookup' in service
     assert "delivery.event_type != 'report.generated'" in service
     assert "delivery.asset_type != 'report'" in service
     assert "delivery.event_key != f'report.generated:{report_id}'" in service
