@@ -307,6 +307,9 @@ def test_vulnerability_registry_compact_rows_preserve_complete_committed_evidenc
     assert "macro title_cell(name, supporting_text='', icon='', supporting_content=None)" in read(
         'app/templates/components/table_primitives.html'
     )
+    shared_table = read('app/templates/components/table.html')
+    assert "macro title_cell(name, supporting_text='', icon='', supporting_content=None)" in shared_table
+    assert 'table_primitives.title_cell(name, supporting_text, icon, supporting_content)' in shared_table
     assert "vulnerability_dialog_id = 'artifact-registry-vulnerability-detail-' ~ row.id" in vulns
     assert 'data-kaori-dialog-open' in vulns
     assert 'data-dialog-target="{{ vulnerability_dialog_id }}"' in vulns
