@@ -1485,7 +1485,9 @@ def test_allocation_comparison_uses_calm_dual_panels_without_metric_card_stacks(
     assert 'Managed Contract Comparison' in template
     assert "('current', 'Current Contract', 'Active · Frozen evidence')" in template
     assert "('proposed', 'Proposed Contract', 'Pending · Profile intent')" in template
-    assert 'data-tenant-allocation-{{ side }}-profile' in template
+    assert 'data-tenant-allocation-profile="{{ side }}"' in template
+    assert """form.querySelector('[data-tenant-allocation-profile="current"]')""" in script
+    assert """form.querySelector('[data-tenant-allocation-profile="proposed"]')""" in script
     assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
     assert 'data-tenant-allocation-metric-source="{{ source }}"' in template
     assert 'data-tenant-allocation-metric-key="{{ key }}"' in template
