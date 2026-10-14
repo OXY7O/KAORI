@@ -23,7 +23,8 @@ def test_overview_final_lock_uses_fleet_posture_and_committed_snapshot_boundary(
     assert '_overview_fleet_readings' in presentation
     assert '_overview_provider_distribution' in presentation
     assert "'bucket_posture': bucket_posture" in presentation
-    assert "'fleet_readings': _overview_fleet_readings(bucket_posture)" in presentation
+    assert 'fleet_readings = _overview_fleet_readings(bucket_posture)' in presentation
+    assert "'fleet_readings': fleet_readings" in presentation
     assert "'provider_distribution': _overview_provider_distribution(rows)" in presentation
 
 

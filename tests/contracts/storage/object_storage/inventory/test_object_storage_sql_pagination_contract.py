@@ -67,10 +67,10 @@ def test_canonical_provider_ownership_is_batched_for_the_visible_systems_and_buc
     owners = source.split('def _visible_system_owners(', 1)[1].split('def _sql_provider_label(', 1)[0]
     systems = source.split('def build_systems(', 1)[1].split('def build_system_detail(', 1)[0]
     buckets = source.split('def build_buckets(', 1)[1].split('def build_bucket_detail(', 1)[0]
-    assert '_system_scope().order_by(None).filter(' in owners
+    assert '_system_scope()\n        .order_by(None)\n        .filter(' in owners
     assert 'ObjectStorageSystem.id.in_(ids)' in owners
     assert 'with_entities(' in owners
-    assert 'ObjectStorageSystem.id, IntegrationInstance, MinioInstance' in owners
+    assert 'ObjectStorageSystem.id,\n            IntegrationInstance,\n            MinioInstance,' in owners
     assert 'provider_kind(identity.integration_type, identity.provider_key)' in owners
     assert 'owners = _visible_system_owners([system.id for system in paged])' in systems
     assert 'owner_resolved=True' in systems
