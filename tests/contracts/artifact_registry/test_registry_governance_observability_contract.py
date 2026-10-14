@@ -170,10 +170,12 @@ def test_governance_sync_matches_security_htmx_workspace_contract() -> None:
 
     # Like Security, the sync operations panel contains only JobExecution
     # state/scheduling facts; Governance coverage cards are a separate section.
-    assert 'aria-label="Governance evidence coverage"' in governance
+    assert "aria_label='Governance evidence coverage'" in governance
+    section_card = (ROOT / 'app/templates/components/operational_section_card.html').read_text()
+    assert '{% if aria_label %}aria-label="{{ aria_label }}"{% endif %}' in section_card
     assert (
         governance.index('Last Successful</p>')
-        < governance.index('aria-label="Governance evidence coverage"')
+        < governance.index("aria_label='Governance evidence coverage'")
         < governance.index('id="artifact-registry-governance-registry"')
     )
     assert 'governance.posture_cards' in governance
