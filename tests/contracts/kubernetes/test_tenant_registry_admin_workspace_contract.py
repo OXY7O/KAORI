@@ -807,7 +807,6 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in decisions
     assert 'overflow-x-auto' in decisions
     assert 'header_cell_classes(action=true)' in decisions
-    assert 'overflow-x-auto' not in decisions
     assert 'min-w-[1180px]' not in decisions
     assert '>Target</th>' in decisions
     assert '>Contract</th>' in decisions
