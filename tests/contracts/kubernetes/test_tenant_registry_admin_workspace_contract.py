@@ -392,7 +392,7 @@ def test_tenant_registry_shortcuts_use_local_anchors_without_page_reload() -> No
     assert "target?.closest('[data-access-grant-form-shortcut]')" in grant_shortcut
     assert "document.getElementById('access-grant-form')" in grant_shortcut
     assert 'navigateToGrantForm()' in grant_shortcut
-    assert "membership.focus({ preventScroll: true })" in grant_shortcut
+    assert 'membership.focus({ preventScroll: true })' in grant_shortcut
     assert "'#credential-issuance'" in credential_registry
 
     for template in (membership_registry, group_registry, grant_registry, credential_registry):
