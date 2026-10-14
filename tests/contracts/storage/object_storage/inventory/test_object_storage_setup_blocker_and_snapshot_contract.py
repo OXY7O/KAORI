@@ -12,8 +12,8 @@ def test_object_storage_inventory_has_canonical_setup_state() -> None:
     assert 'def _setup_state(total_systems: int)' in presentation
     assert "'is_blocked': total_systems == 0" in presentation
     assert "'setup': _setup_state(total_systems)" in presentation
-    assert "'setup': _setup_state(len(all_rows))" in presentation
-    assert "'setup': _setup_state(len(system_rows))" in presentation
+    assert "'setup': _setup_state(total_systems)" in presentation
+    assert presentation.count("'setup': _setup_state(ObjectStorageSystem.query.count())") == 2
 
 
 def test_object_storage_overview_hides_inventory_evidence_while_setup_is_blocked() -> None:
