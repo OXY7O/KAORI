@@ -62,7 +62,9 @@ def test_auth_setup_workspace_uses_console_first_laptop_composition() -> None:
     assert 'components/terminal_command.html' in source
     assert 'components/operational_callout.html' in source
     assert 'components/info_flow.html' not in source
-    assert 'components/operational_section_card.html' not in source
+    # Approved section shells are shared, not copied into the setup template.
+    assert 'components/operational_section_card.html' in source
+    assert "operational_section_card.shell_classes('mt-4')" in source
 
     assert "table_label.status_indicator_label('Reachable', 'normal')" in source
     assert "table_label.status_indicator_label('Not Installed', 'warning')" in source
