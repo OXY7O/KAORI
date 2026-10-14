@@ -57,7 +57,7 @@ def test_registry_alert_intelligence_handoff_and_notification_policy_are_explici
     assert 'IntegrationInstance.enabled.is_(True)' in service
     assert "IntegrationInstance.lifecycle_status == 'active'" in service
     assert 'scope_invalid = selected_asset_key == _INVALID_REGISTRY_SCOPE' in service
-    assert 'if scope_invalid:' in workspace
+    assert '{% if payload.scope_invalid %}' in workspace
     assert 'Select an Active Registry Provider' in workspace
     assert "payload.domain == 'registry' and payload.tab == 'routing'" in workspace
     assert 'Registry Notification Routing Is Not Enabled' in workspace

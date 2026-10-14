@@ -114,7 +114,9 @@ def test_unknown_or_operator_suppressed_cases_cannot_autonomously_execute() -> N
     assert "AlertCase.source_state == 'firing'" in candidates
     assert "routing_suppressed = case.routing_state == 'suppressed'" in candidates
     assert "'autonomous_execution_allowed': not human_controlled" in candidates
-    assert "if case.source_state != 'firing' or case.routing_state != 'enabled':" in routing
+    assert (
+        "if case.domain == 'registry' or case.source_state != 'firing' or case.routing_state != 'enabled':" in routing
+    )
 
 
 def test_migration_adds_unknown_routing_and_manual_withdrawal_fields() -> None:
