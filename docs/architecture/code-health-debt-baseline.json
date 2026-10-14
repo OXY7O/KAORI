@@ -249,7 +249,7 @@
     "app/kubernetes/tenant/service.py": 965,
     "app/platform_operations/data_lifecycle/retention/service.py": 826,
     "app/reports/generate/service.py": 820,
-    "app/reports/generated/service.py": 1737,
+    "app/reports/generated/service.py": 1655,
     "app/reports/overview/service.py": 1067,
     "app/reports/report_templates/service.py": 942,
     "app/reports/schedules/service.py": 900,
