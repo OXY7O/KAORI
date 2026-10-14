@@ -85,7 +85,9 @@ def test_generated_detail_visible_labels_follow_title_case_standard() -> None:
     for label in required_title_case:
         assert label in template
 
-    assert "'24h': 'Last 24 Hours'" in service
+    formatter = read('app/reports/generated/presentation_formatters.py')
+    assert '_format_period(' in service
+    assert "'24h': 'Last 24 Hours'" in formatter
     assert "'7d': 'Last 7 Days'" in service
     assert "'30d': 'Last 30 Days'" in service
     assert "'90d': 'Last 90 Days'" in service
