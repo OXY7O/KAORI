@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -130,7 +131,10 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert "table_label.metadata_label('Supplied', 'git-commit-horizontal')" in main
     assert "table_label.status_label('Incomplete', 'warning')" not in main
     assert 'text-status-warning-text' not in main
-    assert 'border-b border-outline-default bg-surface-card" aria-labelledby="release-focus-heading"' in main
+    assert re.search(
+        r'<section class="border-b border-outline-default bg-surface-card"\s+aria-labelledby="release-focus-heading">',
+        main,
+    )
     assert 'bg-surface-muted/40' not in main
     assert 'lg:divide-x lg:divide-outline-subtle' in main
     assert 'lg:divide-x lg:divide-outline-default' in main
@@ -202,7 +206,7 @@ def test_compatibility_workspace_keeps_policy_contract_qualification_and_readine
     assert 'hx-sync="#compatibility-registry-results:replace"' in registry
     assert 'method="get"' in registry
     assert "url_for('settings.general')" in registry
-    assert '<noscript><button type="submit"' in registry
+    assert re.search(r'<noscript>\s*<button type="submit"', registry)
     assert '>Apply\n' not in registry
     assert 'hx-target="#general-settings-page"' in registry
     assert 'Reset</a>' in registry
