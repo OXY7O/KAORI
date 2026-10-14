@@ -11,7 +11,10 @@ def test_native_handoff_dry_run_uses_approved_existing_evidence_and_only_server_
     service = read('app/kubernetes/tenant/native_handoff_dry_run.py')
     route = read('app/kubernetes/tenant/routes.py')
     context = read('app/kubernetes/tenant/registry_context.py')
-    ui = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    # Release controls belong to the governed Tenant Detail wizard, never an
+    # inline action inside the compact registry table.
+    ui = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
+    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
 
     assert 'def build_native_handoff_patch(' in service
     assert 'def dry_run_native_handoff_component(' in service
@@ -49,6 +52,9 @@ def test_native_handoff_dry_run_uses_approved_existing_evidence_and_only_server_
     assert 'name="confirm_native_handoff_dry_run"' in ui
     assert 'Preview Native Transfer' in ui
     assert 'Provider mutation: none. Release is still blocked.' in ui
+    assert 'tenant.dry_run_native_release_handoff_route' not in registry
+    assert 'hx-target="#tenant-management-detail"' in ui
+    assert 'hx-disabled-elt="find button[type=\'submit\']"' in ui
 
 
 def test_native_preview_never_reuses_destructive_allocation_reconcile_or_provider_cleanup():
