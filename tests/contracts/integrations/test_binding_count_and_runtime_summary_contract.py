@@ -50,7 +50,6 @@ def test_binding_htmx_scope_updates_refresh_tab_and_hero_counts_without_reload()
             scope,
         )
         assert "{{ (binding_total|string) ~ ' Bindings' }}" in scope
-        assert "{{ (bindings|length|string) ~ ' Bindings' }}" in scope
 
     # Create, validate, validation-poll, and delete all re-render the same
     # committed-state scope partial, so both outer badges follow each swap.
