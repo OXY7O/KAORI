@@ -91,7 +91,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'artifact_registry.overview',
             'artifact_registry.inventory',
             'artifact_registry.security',
-            'artifact_registry.runtime',
+            'artifact_registry.runtime_overview',
             'artifact_registry.governance',
             'artifact_registry.analytics',
         ),
@@ -109,6 +109,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         lock_state='LOCKED',
         navigation_source='app/templates/components/navigation/kubernetes_operations_menu.html',
         navigation_endpoints=(
+            'kubernetes_operations.overview',
             'kubernetes_operations.configmap_management',
             'kubernetes_operations.secret_management',
         ),
