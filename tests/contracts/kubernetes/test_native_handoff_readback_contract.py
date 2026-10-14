@@ -7,7 +7,7 @@ def test_native_handoff_readback_has_no_provider_or_governance_mutation_path():
     preview = (ROOT / 'app/kubernetes/tenant/native_handoff_dry_run.py').read_text()
     readback = (ROOT / 'app/kubernetes/tenant/native_handoff_readback.py').read_text()
     route = (ROOT / 'app/kubernetes/tenant/routes.py').read_text()
-    registry = (ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_registry.html').read_text()
+    detail = (ROOT / 'app/templates/kubernetes/tenant/partials/_tenant_management_detail.html').read_text()
     assert "'spec_sha256': _stable_sha256(_spec(before))" in preview
     assert "'retained_metadata_sha256': _stable_sha256(" in preview
     assert 'verify_external_native_component(' in readback
@@ -25,7 +25,10 @@ def test_native_handoff_readback_has_no_provider_or_governance_mutation_path():
     ):
         assert f'not _checked_recently({evidence_timestamp})' in readback
     assert 'inspect_native_external_handoff_route' in route
-    assert 'Verify Provider Read-Back' in registry
+    assert "url_for('tenant.inspect_native_external_handoff_route'" in detail
+    assert 'name="confirm_native_handoff_readback"' in detail
+    assert 'Inspect Kubernetes markers without modifying resources' in detail
+    assert 'does not verify successor consent or authorize Release' in detail
     for forbidden in [
         'patch_namespace(',
         'create_namespace(',
