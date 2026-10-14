@@ -80,13 +80,14 @@ def test_inventory_heroes_follow_copy_budget_and_shared_hero_contract() -> None:
 def test_system_posture_counts_all_provider_attention_without_downgrading_blocked_state() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
     hero = read('app/templates/storage/object_storage/inventory/systems/partials/_hero.html')
+    systems_builder = presentation.split('def build_systems(', 1)[1].split('def build_system_detail(', 1)[0]
 
-    assert 'query.order_by(None)' in presentation
+    assert 'query.order_by(None)' in systems_builder
     assert "func.lower(ObjectStorageSystem.status).in_(('blocked', 'failed', 'warning', 'unknown'))" in (
-        presentation
+        systems_builder
     )
-    assert "'attention_systems': int(attention or 0)" in presentation
-    assert presentation.index('query.order_by(None)') < presentation.index('paged, pagination = paginate_query(')
+    assert "'attention_systems': int(attention or 0)" in systems_builder
+    assert systems_builder.index('query.order_by(None)') < systems_builder.index('paged, pagination = paginate_query(')
     assert "'Blocked' if inventory.blocked_systems" in hero
     assert "'critical' if inventory.blocked_systems" in hero
     assert "'Attention Required' if inventory.attention_systems" in hero
