@@ -27,7 +27,7 @@ def test_account_tabs_follow_general_settings_tab_contract() -> None:
         assert 'role="tablist"' not in source
 
     for token in (
-        'border-b border-outline-default bg-surface-subtle px-5 pt-4',
+        'border-b border-outline-default bg-surface-hover px-5 pt-4',
         'flex gap-2 overflow-x-auto',
         'min-h-10 shrink-0',
         'border-b-surface-card',
