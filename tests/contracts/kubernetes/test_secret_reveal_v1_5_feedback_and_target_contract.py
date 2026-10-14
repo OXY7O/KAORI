@@ -18,11 +18,12 @@ def test_secret_reveal_namespace_pagination_includes_rows_label() -> None:
 def test_htmx_secret_reveal_mutations_deliver_feedback_immediately() -> None:
     routes = read('app/platform_operations/kubernetes/secret_reveal/routes.py')
 
-    assert 'queue_feedback=False' in routes
+    assert "if request.headers.get('HX-Request') != 'true':" in routes
     assert 'queue_operational_feedback(operation_feedback)' in routes
     assert "'components/operational_toast.html'" in routes
     assert 'toast_oob=True' in routes
-    assert 'workspace_html + feedback_html' in routes
+    assert 'workspace_html + summary_html + feedback_html' in routes
+    assert "'platform_operations/kubernetes/_summary_oob.html'" in routes
 
     response_block = routes.split('def _settings_response(', 1)[1].split('def _cluster_or_error(', 1)[0]
     assert "request.headers.get('HX-Request') != 'true'" in response_block
@@ -37,7 +38,7 @@ def test_protected_reveal_discovers_only_configured_namespaces_without_namespace
 
     assert 'def list_verified_namespaces(' in live_service
     verify_block = live_service.split('def list_verified_namespaces(', 1)[1].split('def list_live_secrets(', 1)[0]
-    assert 'api.read_namespace(name=namespace)' in verify_block
+    assert 'api.read_namespace(name=namespace, _request_timeout=10)' in verify_block
     assert '.list_namespace()' not in verify_block
     assert 'if status == 404:' in verify_block
 
