@@ -282,7 +282,7 @@ def test_object_storage_analysis_distinguishes_operational_domains_and_provenanc
     assert 'row.usage_source' in bucket_table
     assert 'Bucket Capacity Records' in bucket_table
     assert 'progress_bar.semantic_bar(row.quota_utilization' in bucket_table
-    assert 'Inventory is an explicit field-level fallback where supported.' in bucket_table
+    assert 'Inventory fallback is per field and only where supported.' in bucket_table
 
 
 def test_object_storage_performance_chart_keeps_request_and_error_series_separate() -> None:
