@@ -767,7 +767,7 @@ def test_resource_profile_workspace_redesign_preserves_governance_and_modal_work
 
     # Rollout remains an explicit, Tenant-scoped POST with separate eligibility.
     assert 'aria-labelledby="resource-profile-rollout-{{ profile.id }}-heading"' in dialogs
-    assert 'name="tenant_id" required' in dialogs
+    assert re.search(r'<select name="tenant_id"\s+required', dialogs)
     assert "target.provider_key != 'native_kubernetes'" in dialogs
     assert 'How rollout is applied' in dialogs
     assert 'One Tenant at a time' in dialogs
@@ -1054,7 +1054,8 @@ def test_resource_profile_management_dialogs_support_versioned_builtin_governanc
     assert 'Save New Version' in dialogs
     assert 'Attached Namespace Rollout' in dialogs
     assert "url_for('tenant.rollout_resource_profile_route', profile_id=profile.id)" in dialogs
-    assert 'Each Namespace runs its own capacity admission, provider mutation, and read-back.' in dialogs
+    assert 'Each Namespace is admitted, applied, and verified separately.' in dialogs
+    assert 'Blocked Namespaces retain their prior committed version.' in dialogs
     assert 'Capsule workflow' in dialogs
 
     assert (
