@@ -1,3 +1,4 @@
+import re
 from io import StringIO
 from pathlib import Path
 from tokenize import COMMENT, generate_tokens
@@ -146,7 +147,12 @@ def test_governance_sync_matches_security_htmx_workspace_contract() -> None:
     assert 'hx-target="#artifact-registry-governance-workspace"' in governance
     assert 'name="tab" value="{{ governance.active_tab }}"' in governance
     assert 'name="page" value="{{ governance.pagination.page }}"' in governance
-    assert 'name="per_page" value="{{ governance.pagination.per_page }}"' in governance
+    # Preserve the hidden Rows value even when djLint wraps HTML attributes.
+    assert re.search(
+        r'<input[^>]*name="per_page"[^>]*'
+        r'value="\\{\\{ governance\\.pagination\\.per_page \\}\\}"',
+        governance,
+    )
     assert 'governance.sync_state.is_active %}disabled' in governance
     assert 'Sync Governance' in governance
     assert 'artifact_registry.governance.sync' in governance
@@ -204,8 +210,13 @@ def test_governance_evidence_tabs_are_badgeless_full_kaori_tables() -> None:
     start = workspace.index("content_tabs.render_links('registry-governance',")
     end = workspace.index('{% endif %}', start)
     evidence = workspace[start:end]
-    assert "tab='policies', page=1, per_page=governance.pagination.per_page))" in evidence
-    assert "tab='replication', page=1, per_page=governance.pagination.per_page))" in evidence
+    # Tabs must reset to page 1 while preserving Rows; Jinja whitespace is cosmetic.
+    for tab in ('policies', 'replication'):
+        assert re.search(
+            r"url_for\\('artifact_registry\\.governance',\\s*"
+            rf"tab='{tab}',\\s*page=1,\\s*per_page=governance\\.pagination\\.per_page\\s*\\)",
+            evidence,
+        )
     assert 'governance.project_count)' not in evidence
     assert 'governance.replication_count)' not in evidence
     assert "hx_target='#artifact-registry-governance-registry'" in evidence
@@ -279,7 +290,10 @@ def test_governance_evidence_reuses_entire_canonical_table_workspace() -> None:
     assert 'func.lower(RegistryProject.name).like(pattern,' in presentation
     assert "'retention_label'" in presentation
     assert "'immutability_label'" in presentation
-    assert "observed_state = 'enabled' if enabled is True" in presentation
+    # Persist the provider-observed tri-state instead of coercing None to Disabled.
+    assert "'enabled': item.enabled" in presentation
+    assert 'RegistryReplicationPolicy.enabled.is_(None)' in presentation
+    assert "row.enabled is not none else 'Unknown'" in workspace
     assert "search=request.args.get('q', '', type=str)" in routes
     assert "search = request.form.get('q', '', type=str)" in routes
     assert 'provider=provider,' in routes
