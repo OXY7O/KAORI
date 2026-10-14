@@ -26,6 +26,7 @@ The page-level selection authority is `../patterns/PAGE_ARCHETYPE_AND_NAVIGATION
 | Are these peer operational domains inside an explicit framed parent workspace? | **Tab Style 2 — Framed Workspace Tabs** |
 | Are these peer sections that define one workspace and attach through a simple divider? | **Tab Style 1 — Integrated Workspace Tabs** |
 | Are four measured-resource metric cards a selector for one ranked evidence view? | **Tab Style 5 — Resource Lens Tabs** |
+| Are technical detail categories selected in a vertical navigation rail beside a read-only comparison? | **Tab Style 6 — Vertical Technical Category Tabs** |
 | Does none of the above apply? | **No tabs**; prefer sections, routes, cards, or a detail surface |
 
 Selection is semantic, not aesthetic. A fifth style is not created to change color, radius, spacing, icon placement, or provider branding.
@@ -105,9 +106,23 @@ Use Tab Style 4 for compact intra-route/intra-page content navigation. It is not
 
 This registered style is intentionally distinct from three-option Compact Segmented Tabs and from route navigation. Preserve the already approved resource-card UI and shared tablist geometry; see `RESOURCE_LENS_TABS.md` for authority and interaction requirements.
 
+## Tab Style 6 — Vertical Technical Category Tabs
+
+| Property | Contract |
+|---|---|
+| Semantic key | `technical-category-vertical` |
+| Component | `components/technical_category_tabs.html` |
+| Reference | Tenant Allocation Change technical-details selector |
+| Content relationship | Object Limits, Container Defaults and Advanced Controls under one governed read-only comparison |
+| Surface | Vertical technical side navigation with adjacent evidence panel |
+| State | Existing per-form controller preserves selected/focused tab and corresponding panel |
+| Layout | Responsive stacked/split configuration detail layout; explicitly vertical ARIA |
+
+This is not interchangeable with horizontal route tabs or a compact segmented control. The approved user-facing layout is retained, but accessible navigation geometry is owned by the shared macro; see `TECHNICAL_CATEGORY_TABS.md`.
+
 ## Future Styles
 
-Future styles must be added to this registry before implementation. Use a semantic name in addition to the next numeric review label. A vertical navigation model for a dense configuration workspace may justify another style when a real page requires it.
+Future styles must be added to this registry before implementation. Use a semantic name in addition to the next numeric review label. Only genuinely new information architectures justify additional styles; Tab Style 6 governs the already approved vertical technical detail navigation.
 
 Never name implementation files `tab_style_3.html` or similar. File and component names remain semantic; the numeric label is a review shorthand.
 
