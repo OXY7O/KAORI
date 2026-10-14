@@ -175,8 +175,7 @@
          {% if copyable %}data-kaori-copy-root{% endif %}>
         <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</span>
         <span class="flex min-w-0 items-center gap-2 text-left text-sm font-medium leading-5 text-content-primary">
-            <span class="min-w-0"
-                  {% if copyable %}data-kaori-copy-source{% endif %}>{{ technical_value.render(display_value, align='left', break_all=break_all, class_name=technical_classes, monospace=false, size='body') }}</span>
+            <span class="min-w-0" {% if copyable %}data-kaori-copy-source{% endif %}>{{ technical_value.render(display_value, align='left', break_all=break_all, class_name=technical_classes, monospace=false, size='body') }}</span>
             {% if copyable %}{{ inventory_copy_button(label) }}{% endif %}
         </span>
     </div>
