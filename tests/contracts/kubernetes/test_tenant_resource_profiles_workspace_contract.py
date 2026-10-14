@@ -219,7 +219,7 @@ def test_capacity_decision_modal_uses_single_evidence_surface_and_quiet_traceabi
     assert 'evidence.get("reason") or \'No committed explanation recorded.\'' in dialog
     assert 'whitespace-pre-line break-words text-sm' in dialog
     assert 'decision.resource_profile_version or row.profile.version' in dialog
-    assert "evidence.get('allocation_scope')" in dialog
+    assert 'evidence.get("allocation_scope")' in dialog
     # Full-width canonical Resource Profile is the first row; Operation and
     # Allocation Scope share the following row, never compressing its width.
     contract = dialog.split('id="{{ dialog_id }}-contract-title"', 1)[1].split('id="{{ dialog_id }}-record-title"', 1)[
@@ -1280,6 +1280,7 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     routes = read('app/kubernetes/tenant/routes.py')
     projection = read('app/kubernetes/tenant/allocation_overview.py')
     capacity = read('app/kubernetes/tenant/capacity_governance.py')
+    capacity_scope = read('app/kubernetes/tenant/capacity_allocation_state.py')
 
     assert 'kubernetes/tenant/partials/_tenant_allocation_overview.html' in parent
     assert parent.index('kubernetes/tenant/partials/_tenant_allocation_overview.html') < parent.index(
@@ -1319,7 +1320,13 @@ def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> N
     # committed-state read path. Do not introduce provider calls on navigation.
     assert '_canonical_shared_allocation_quota(cluster_id)' in projection
     assert '_aggregate_committed_allocation(' in projection
-    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in projection
+    # Allocation visibility uses the same committed scope as admission. Both
+    # released and deprovisioned histories are excluded, never live-read.
+    assert '_active_namespace_allocation_query()' in projection
+    assert '_TERMINAL_NAMESPACE_ALLOCATION_STATUSES' in projection
+    assert 'TenantNamespace.provisioning_status.notin_(_TERMINAL_NAMESPACE_ALLOCATION_STATUSES)' in capacity_scope
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in capacity_scope
+    assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in capacity_scope
     assert 'allocation_quota_json' not in overview
     assert 'build_client(' not in projection
     assert 'read_namespace(' not in projection
