@@ -130,7 +130,7 @@ def test_dashboard_sections_are_object_storage_specific_and_committed_evidence_o
     assert 'storage/object_storage/dashboard/partials/_system_health.html' in overview
     for token in (
         'components/table.html',
-        "table_ui.table_classes('min-w-[1040px]')",
+        "table_ui.table_classes('min-w-[1040px]' if pagination.total_items > 0 else '')",
         'Snapshot Sources',
         'Metrics Source',
         'Alert Signals',
@@ -164,7 +164,10 @@ def test_system_health_summary_matches_kubernetes_pagination_contract() -> None:
     assert "normalize_dashboard_page_size(request.args.get('system_health_per_page'))" in routes
     assert "'system_health': 'storage/object_storage/dashboard/partials/_system_health.html'" in routes
     assert 'from app.common.pagination import paginate_sequence' in service
-    assert "'empty_observed_systems': len(empty_observed_systems)" in service
+    assert "'empty_observed_systems': empty_observed" in service
+    assert 'func.count(ObjectStorageSystem.id)' in service
+    assert 'ObjectStorageSystem.inventory_observed_at.is_not(None)' in service
+    assert '~ObjectStorageSystem.buckets.any()' in service
     assert "if section in {'overview', 'system_health'}:" in service
     assert "dashboard['system_health_pagination'] = pagination" in service
     assert "'&system_health_page=' ~ dashboard.system_health_pagination.page" in content
@@ -281,7 +284,7 @@ def test_object_storage_forecast_uses_kubernetes_current_to_projected_comparison
 
     for token in (
         'components/resource_series_legend.html',
-        "resource_series_legend.swatch('storage')",
+        'resource_series_legend.swatch("storage")',
         'sm:col-span-2',
         'data-lucide="arrow-right"',
         '>Current</p>',
