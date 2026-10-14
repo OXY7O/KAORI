@@ -114,7 +114,6 @@ def test_analytics_table_headers_follow_kaori_title_case_contract() -> None:
     expected_headers = {
         'alerts/partials/_alerts_table.html': ['Alert', 'Severity', 'State', 'Scope &amp; Source', 'Started', 'Action'],
         'alerts/partials/_anomalies_table.html': ['Anomaly', 'Severity', 'Namespace &amp; Pod', 'Signal', 'Action'],
-        'components/_ranked_evidence_panel.html': ['Rank', 'Consumer Identity', 'Contribution to Scope', 'Consumption'],
         'top_consumers/partials/_consumer_detail_results.html': [
             'Rank',
             'Consumer Identity',
@@ -148,6 +147,20 @@ def test_analytics_table_headers_follow_kaori_title_case_contract() -> None:
                 or f'>{header}</p>' in content
                 or f"evidence_list.header_cell('{macro_header}'" in content
             )
+
+
+def test_ranked_evidence_card_preserves_accessible_rank_and_scope_semantics() -> None:
+    # The reviewed ranking is a responsive evidence-card layout, not a table.
+    # Verify the visible labels, row identity and bounded evidence semantics.
+    ranked = _read('components/_ranked_evidence_panel.html')
+    assert 'data-kaori-consumer-ranking=' in ranked
+    assert 'aria-label="Rank {{ row.rank }}"' in ranked
+    for label in ('Consumer', 'Observed Usage', 'Scope Share', 'Operational Assessment'):
+        assert f'>{label}</div>' in ranked or f'>{label}</p>' in ranked
+    assert '{{ row.identity.primary }}' in ranked
+    assert '{{ row.contribution_display }}' in ranked
+    assert 'table_label.status_label(row.risk.label, row.risk.tone' in ranked
+    assert 'Pressure uses its own resource denominator.' in ranked
 
 
 def test_table_headers_do_not_use_ambiguous_rank_symbol_or_slash_identity() -> None:
