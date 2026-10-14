@@ -61,12 +61,14 @@ def test_minio_registration_test_does_not_claim_product_identity_authority() -> 
     assert 'Product identity and release compatibility remain authoritative Core Validation evidence.' in service
 
 
-def test_minio_bound_source_registry_hides_empty_pagination_and_uses_metrics_source_copy() -> None:
+def test_minio_bound_source_registry_keeps_canonical_empty_pagination_and_source_copy() -> None:
     registry = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_binding_registry.html')
     scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
     index = read('app/templates/integrations/storage/object_storage/providers/minio/index.html')
 
-    assert '{% if binding_pagination.total_items > 0 %}' in registry
+    assert '{% if binding_pagination.total_items > 0 %}' not in registry
+    assert 'pagination_ui.footer_classes()' in registry
+    assert 'binding_pagination.total_items }}</span> Observability Sources' in registry
     assert 'Metrics Source or Alertmanager' in registry
     assert 'Metrics Source and Alertmanager remain reusable source-owned connections' in scope
     assert 'MinIO owns S3 storage state' in index
