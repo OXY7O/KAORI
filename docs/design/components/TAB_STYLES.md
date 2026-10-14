@@ -25,6 +25,7 @@ The page-level selection authority is `../patterns/PAGE_ARCHETYPE_AND_NAVIGATION
 | Are there several closely related content states/sections inside one established route/page? | **Tab Style 4 — Content Tabs** |
 | Are these peer operational domains inside an explicit framed parent workspace? | **Tab Style 2 — Framed Workspace Tabs** |
 | Are these peer sections that define one workspace and attach through a simple divider? | **Tab Style 1 — Integrated Workspace Tabs** |
+| Are four measured-resource metric cards a selector for one ranked evidence view? | **Tab Style 5 — Resource Lens Tabs** |
 | Does none of the above apply? | **No tabs**; prefer sections, routes, cards, or a detail surface |
 
 Selection is semantic, not aesthetic. A fifth style is not created to change color, radius, spacing, icon placement, or provider branding.
@@ -89,6 +90,20 @@ Compact toolbar tabsets stay content-width by default. Bounded inspectors may us
 | Layout | Wrap by default; approved one-row overflow mode for dense compact navigation |
 
 Use Tab Style 4 for compact intra-route/intra-page content navigation. It is not the route-level level-3 navigator under Sidebar v2.1. The component owns visual active/inactive class tokens. Client-owned tabsets use `render_buttons()` with their controller; URL/server-owned section navigation uses `render_links()`; security-sensitive controlled views that require instant switching plus a real navigation fallback use `render_controlled_links()`. Internal dataset, snapshot, DOM-target, or loader identifiers must never be passed through as visible badges. Dense navigation may use the documented no-wrap mode only with concise user-facing labels. The detailed contract lives in `CONTENT_TABS.md`.
+
+## Tab Style 5 — Resource Lens Tabs
+
+| Property | Contract |
+|---|---|
+| Semantic key | `resource-lens` |
+| Component | `components/resource_lens_tabs.html` |
+| Reference | Kubernetes Analytics Top Consumers metric-rich CPU/Memory/Pods/PVC lens |
+| Content relationship | Four measured-resource selections controlling one ranked-evidence view |
+| Surface | Metric-card grid, not an additional Content Tabs or route navigator |
+| State | Existing Analytics tabset/tabpanel controller, with roving keyboard focus |
+| Layout | Responsive 1/2/4-column cards; approved accessible labels and focus behavior |
+
+This registered style is intentionally distinct from three-option Compact Segmented Tabs and from route navigation. Preserve the already approved resource-card UI and shared tablist geometry; see `RESOURCE_LENS_TABS.md` for authority and interaction requirements.
 
 ## Future Styles
 

@@ -1,0 +1,11 @@
+{# KAORI resource-lens selection: metric cards that switch one ranked evidence panel.
+   Geometry and accessible tablist semantics are shared; the caller owns the
+   existing tab buttons, panel IDs and controller hooks. #}
+{% macro tablist(aria_label='Select resource consumption ranking') -%}
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+         role="tablist"
+         aria-label="{{ aria_label }}"
+         data-kaori-tab-variant="resource-lens">
+        {{ caller() }}
+    </div>
+{%- endmacro %}
