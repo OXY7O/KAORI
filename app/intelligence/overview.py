@@ -14,14 +14,9 @@ from app.intelligence.rule_presentation import normalize_rule
 from app.intelligence.service import get_active_recommendation_findings
 from app.intelligence.verification import verification_outcome_counts
 from app.models.alert_ops import AlertCase, AlertSilence
-from app.models.cluster import Cluster
-from app.models.integration import IntegrationInstance
 from app.models.intelligence import IntelligenceDecision, IntelligenceDecisionCandidate, IntelligenceExecutionJournal
-from app.models.inventory import ClusterInventory
 from app.models.knowledge import KnowledgeRunbookRevision
 from app.models.notification_channel import NotificationDelivery
-from app.models.object_storage import ObjectStorageSystem
-from app.models.registry import RegistryCollectionState
 
 
 def get_intelligence_overview_payload() -> dict[str, Any]:
