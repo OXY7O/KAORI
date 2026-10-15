@@ -46,7 +46,8 @@ def test_report_and_artifact_scope_use_actual_committed_snapshot_timestamps() ->
     source = (Path(__file__).resolve().parents[3] / 'app/artifact_registry/security/presentation.py').read_text(
         encoding='utf-8'
     )
-    assert 'current_scanned_artifacts = successful_scan_scope.filter(' in source
+    assert 'current_scanned_artifacts = (' in source
+    assert 'successful_scan_scope.filter(' in source
     assert 'RegistryScanSnapshot.observed_at >= datetime.now(UTC)' in source
     assert 'latest_evidence_at = successful_scan_scope.with_entities(' in source
     assert 'artifact_freshness = _freshness(security_at)' in source

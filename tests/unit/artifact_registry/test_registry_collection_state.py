@@ -150,6 +150,7 @@ def test_registry_data_freshness_metrics_source_counts_validated_binding_coverag
         'committed_count': 0,
         'metrics_ready_count': 2,
         'analytics_ready_count': 0,
+        'analytics_stale_count': 0,
         'artifact_total': 0,
         'scanned_count': 0,
         'latest_security_at': None,

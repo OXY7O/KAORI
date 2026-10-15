@@ -865,8 +865,16 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'bar.headroom' in capacity
     assert '{{ bar.percent }}% used' in capacity
     assert '{{ bar.free_percent }}% left' in capacity
-    assert 'style="width: {{ bar.percent }}%"' in capacity
-    assert 'style="width: {{ bar.free_percent }}%"' in capacity
+    assert 'components/progress_bar.html' in capacity
+    assert 'progress_bar.stacked_bar(bar.percent,' in capacity
+    assert 'bar.free_percent,' in capacity
+    assert 'style="width: {{ bar.percent }}%"' not in capacity
+    assert 'style="width: {{ bar.free_percent }}%"' not in capacity
+    progress = read('app/templates/components/progress_bar.html')
+    assert 'macro stacked_bar(' in progress
+    assert 'role="progressbar"' in progress
+    assert 'aria-valuenow="{{ safe_primary_value }}"' in progress
+    assert 'data-progress="{{ safe_secondary_value }}"' in progress
     assert 'Percentage unavailable · {{ bar.state }}' in capacity
     assert 'Over budget by {{ bar.shortfall }}' in capacity
     assert 'No governed namespaces' in capacity
@@ -980,7 +988,12 @@ def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_bud
     assert 'bar.headroom' in dialog
     assert '{{ bar.percent }}% used' in dialog
     assert '{{ bar.free_percent }}% left' in dialog
-    assert 'role="img"' in dialog
+    assert 'progress_bar.stacked_bar(bar.percent,' in dialog
+    assert "label=bar.label ~ ': ' ~ bar.percent ~ ' percent committed, '" in dialog
+    assert "bar.free_percent ~ ' percent remaining'" in dialog
+    progress = read('app/templates/components/progress_bar.html')
+    assert 'role="progressbar"' in progress
+    assert 'aria-label="{{ label }}"' in progress
     assert 'Percentage unavailable · {{ bar.state }}' in dialog
     assert 'Over budget by {{ bar.shortfall }}' in dialog
     assert 'overflow-x-auto' not in dialog
