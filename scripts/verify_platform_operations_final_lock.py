@@ -204,7 +204,8 @@ def main() -> int:
     for required in (
         'review_workspace_count = attention_workspace_count + unknown_workspace_count',
         "overall_status_label, overall_status_tone = 'Configuration Review', 'unknown'",
-        'elif not global_enabled:',
+        "status_label = str(kubernetes['administration_status_label'])",
+        "status_tone = str(kubernetes['administration_status_tone'])",
     ):
         if required not in overview_presentation:
             errors.append(f'Platform Operations Overview semantic posture contract missing: {required}')
@@ -241,7 +242,9 @@ def main() -> int:
         "'Global Gate Disabled'",
         "'Readiness Review'",
         "'Policy Required'",
-        "'Operational'",
+        "'Policy Scope Review'",
+        "'Verification Required'",
+        'Live Namespace presence, Kubernetes RBAC, and Secret identity are verified only at execution.',
         "'administration_status_label': status_label",
     ):
         if required not in kubernetes_presentation:
@@ -359,7 +362,8 @@ def main() -> int:
         'JobExecution.completed_at >= cutoff',
         'def _execution_summary(',
         "func.count(func.distinct(JobExecution.queue_name)).label('queues')",
-        'topology = inspect_celery_topology() if aggregates else None',
+        'queue_names.update(definition.queue_name for definition in list_job_definitions())',
+        'topology = inspect_celery_topology() if queue_names else None',
         'get_queue_readiness(queue_name, topology=topology)',
         '.group_by(JobExecution.queue_name)',
     ):
@@ -611,7 +615,7 @@ def main() -> int:
         else ''
     )
     for required in (
-        'api.read_namespace(name=namespace)',
+        'api.read_namespace(name=namespace, _request_timeout=10)',
         'if status == 404:',
         'without broad Secret list/watch access',
     ):
@@ -622,11 +626,12 @@ def main() -> int:
 
     secret_settings_routes = read('app/platform_operations/kubernetes/secret_reveal/routes.py')
     for required in (
-        'queue_feedback=False',
+        "if request.headers.get('HX-Request') != 'true':",
+        "'kaori:notifications-changed'",
         'queue_operational_feedback(operation_feedback)',
         "'components/operational_toast.html'",
         'toast_oob=True',
-        'workspace_html + feedback_html',
+        'workspace_html + summary_html + feedback_html',
     ):
         if required not in secret_settings_routes:
             errors.append(f'Secret Reveal immediate HTMX feedback contract missing: {required}')
