@@ -16,6 +16,7 @@ def test_cluster_rbac_bootstrap_is_governed_separately_from_tenant_adoption():
     bootstrap = read('app/kubernetes/tenant/capsule_rbac_bootstrap.py')
     assert not (ROOT / 'app/kubernetes/cluster/capsule_rbac_bootstrap.py').exists()
     integrations = read('app/integrations/routes.py')
+    operation_adapter = read('app/integrations/orchestration/container_orchestrator/capsule_rbac_web.py')
     composition = read('app/bootstrap/blueprints.py')
     detail = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html')
     ui = read(
@@ -34,9 +35,10 @@ def test_cluster_rbac_bootstrap_is_governed_separately_from_tenant_adoption():
         'latest_capsule_role_bootstrap_evidence',
     ):
         assert f"'{operation}': {operation}" in composition
-        assert f"_capsule_rbac_operation('{operation}')" in integrations
-    assert "current_app.extensions.get('kaori_tenant_capsule_rbac_bootstrap')" in integrations
-    assert 'if not callable(operation):' in integrations
+        assert f"capsule_rbac_operation('{operation}')" in integrations
+    assert 'from app.integrations.orchestration.container_orchestrator.capsule_rbac_web import capsule_rbac_operation' in integrations
+    assert "current_app.extensions.get('kaori_tenant_capsule_rbac_bootstrap')" in operation_adapter
+    assert 'if not callable(operation):' in operation_adapter
     assert 'target_type=_TARGET' in bootstrap
     assert 'latest_capsule_role_bootstrap_evidence' in bootstrap
     assert 'capsule_cluster_role_manifest(profile)' in bootstrap
