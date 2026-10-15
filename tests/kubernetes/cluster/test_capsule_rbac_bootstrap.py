@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 from kubernetes.client.rest import ApiException
 
-from app.kubernetes.cluster import capsule_rbac_bootstrap as bootstrap
+from app.kubernetes.tenant import capsule_rbac_bootstrap as bootstrap
 from app.kubernetes.tenant.access import capsule_cluster_role_manifest, get_access_profile
 
 
