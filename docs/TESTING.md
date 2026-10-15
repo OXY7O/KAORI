@@ -105,6 +105,66 @@ Human acceptance is **separate from the machine execution results**. Record it a
 
 A machine may recommend acceptance readiness but **cannot approve itself or impersonate a human reviewer**. The governing Project Status taxonomy remains unchanged (UAT until the existing completion conditions are satisfied). Do not mark an unfinished or mandatory-SKIP scenario PASS based only on an aggregate pytest/CI exit code.
 
+### Example execution and human acceptance records — Tenant Adoption
+
+These are **unexecuted record examples for #1725**, corresponding to the two reusable Tenant Adoption scenarios above and the #1738 scenario catalog. They show how to record missing evidence without fabricating an execution or a human sign-off. Replace the unselected values only after a real authorized run. The scenario specification remains stable; append one run record per actual attempt and a separate reviewer decision rather than overwriting historical outcomes.
+
+#### `UAT-TEN-001` — positive adoption: execution record
+
+| Field | Example record, not execution evidence |
+| --- | --- |
+| Scenario/version/authority | `UAT-TEN-001`; specification in this document and #1738; Tenant Adoption #125 |
+| Test mapping | Candidate browser/domain/provider assertion owners: `tests/ui/`, `tests/kubernetes/tenant/`; **node IDs unverified**, not executed |
+| Candidate source commit/tree | Not selected / not selected; no exact candidate validated |
+| Delivery identity | Not deployed; OCI digest **not available**; no server UAT claimed |
+| Environment/provider | No UAT environment selected; Native Kubernetes provider requirement **real-provider evidence pending** (simulated tests cannot substitute) |
+| Runner/actor/time/attempt | Not assigned / not assigned / not recorded / no attempt |
+| Setup/cleanup | Governed disposable Namespace, authorized operator, preflight UID/resourceVersion, read-back and cleanup: **not provisioned** |
+| Actual action/observation | Adoption was **not attempted**; there are no observed UI, committed KAORI, Kubernetes or Activity Audit outcomes |
+| Execution status | **NOT RUN** — required identity-bound adoption, side-effect and audit assertions remain unverified |
+| Evidence references | **None** — no JUnit, screenshot, trace, sanitized log, DB/provider read-back or Activity correlation |
+| Finding/retest/exception | No defect inferred from non-execution; findings and exception approvals **none**; record a new candidate-bound attempt after execution |
+
+#### `UAT-TEN-001` — positive adoption: human acceptance record
+
+| Field | Example reviewer record |
+| --- | --- |
+| Review scope | `UAT-TEN-001`, exact source SHA/tree **unselected**, UAT environment and deployed digest **unselected** |
+| Execution/coverage | Positive adoption **NOT RUN**; provider and audit read-back unavailable; no approved N/A |
+| Findings/residual risk | Namespace identity, authorization, committed state and external provider safety not evidenced |
+| Reviewer/time | No authorized reviewer decision or timestamp recorded |
+| Human decision | **PENDING** — neither accepted nor rejected; machine checks and this example cannot grant acceptance |
+| Retest lineage | Pending first run; any later fix requires a fresh source/digest impact assessment and attributable evidence |
+
+#### `UAT-TEN-002` — stale Preflight: execution record
+
+| Field | Example record, not execution evidence |
+| --- | --- |
+| Scenario/version/authority | `UAT-TEN-002`; specification in this document and #1738; Tenant Adoption #125 |
+| Test mapping | Candidate browser/domain/provider rejection owners: `tests/ui/`, `tests/kubernetes/tenant/`; **node IDs unverified**, not executed |
+| Candidate source commit/tree | Not selected / not selected; no exact candidate validated |
+| Delivery identity | Not deployed; OCI digest **not available**; no server UAT claimed |
+| Environment/provider | No UAT environment selected; Native Kubernetes UID/resourceVersion drift and provider read-back **pending** |
+| Runner/actor/time/attempt | Not assigned / not assigned / not recorded / no attempt |
+| Setup/cleanup | Disposable existing Namespace, prior valid Preflight, controlled resourceVersion change and cleanup: **not provisioned** |
+| Actual action/observation | A stale approval was **not submitted**; denial, zero KAORI commit, zero provider mutation and no false-success Activity were **not observed** |
+| Execution status | **NOT RUN** — negative authorization/freshness and no-side-effect assertions remain unverified |
+| Evidence references | **None** — no JUnit, screenshot, trace, sanitized log, DB/provider read-back or Activity correlation |
+| Finding/retest/exception | No defect inferred from non-execution; findings and exception approvals **none**; rerun only within an authorized sandbox |
+
+#### `UAT-TEN-002` — stale Preflight: human acceptance record
+
+| Field | Example reviewer record |
+| --- | --- |
+| Review scope | `UAT-TEN-002`, exact source SHA/tree **unselected**, UAT environment and deployed digest **unselected** |
+| Execution/coverage | Stale-Preflight rejection **NOT RUN**; negative read-back unavailable; no approved N/A or SKIP-to-PASS conversion |
+| Findings/residual risk | Potential stale-identity operation and false success are not ruled out by unexecuted examples |
+| Reviewer/time | No authorized reviewer decision or timestamp recorded |
+| Human decision | **PENDING** — no sign-off without reviewed, exact-candidate negative-path evidence |
+| Retest lineage | Pending first run; any later fix requires a fresh source/digest impact assessment and attributable evidence |
+
+These examples remain **NOT RUN / PENDING** even if another unrelated pytest suite or historical release gate is green. A valid future PASS record must replace every unselected identity with the exact commit/tree, environment, tester/time, real assertions and evidence links; a corresponding human decision must be independently attributable to an authorized reviewer. The #1728 enforcement workstream owns machine evaluation of missing mandatory evidence, not these illustrative records.
+
 ## Practical test commands
 
 Use the narrowest owning test first, then broaden the evidence before release.
