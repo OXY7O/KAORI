@@ -227,7 +227,7 @@
     "app/config/default.py": 802,
     "app/integrations/delivery/notification_channels/service.py": 1005,
     "app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py": 1309,
-    "app/integrations/routes.py": 822,
+    "app/integrations/routes.py": 818,
     "app/integrations/service.py": 876,
     "app/intelligence/alert_intelligence/recommendation_source.py": 944,
     "app/intelligence/alert_intelligence/service.py": 996,
