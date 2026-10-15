@@ -235,7 +235,6 @@
     "app/kubernetes/analytics/job_adapter.py": 827,
     "app/kubernetes/analytics/overview/service.py": 1714,
     "app/kubernetes/analytics/utilization/service.py": 1103,
-    "app/kubernetes/inventory/routes.py": 802,
     "app/kubernetes/tenant/access_service.py": 1060,
     "app/kubernetes/tenant/allocation_cutover.py": 838,
     "app/kubernetes/tenant/capacity_governance.py": 924,
