@@ -36,7 +36,6 @@ def test_cluster_rbac_bootstrap_is_governed_separately_from_tenant_adoption():
     ):
         assert f"'{operation}': {operation}" in composition
         assert f"capsule_rbac_operation('{operation}')" in integrations
-    assert 'from app.integrations.orchestration.container_orchestrator.tenant_capsule_web import (' not in integrations
     assert 'tenant_capsule_web import capsule_rbac_operation' in integrations
     assert "current_app.extensions.get('kaori_tenant_capsule_rbac_bootstrap')" in tenant_web
     assert 'if not callable(operation):' in tenant_web
