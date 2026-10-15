@@ -133,7 +133,32 @@ _LEAF_TEMPLATE_PREFIXES = (
     'app/templates/storage/object_storage/',
     'app/templates/kubernetes/tenant/',
 )
-_SAFE_TEMPLATE_PATH = re.compile(r'^app/templates/[A-Za-z0-9_./-]+\\.html    plan = ValidationPlan()
+_SAFE_TEMPLATE_PATH = re.compile(r'^app/templates/[A-Za-z0-9_./-]+\\.html$')
+
+
+def _route_template(plan: ValidationPlan, path: str) -> None:
+    if not path.startswith('app/templates/'):
+        plan.broad_templates = True
+        plan.add_test_path('tests/contracts')
+        return
+    if (
+        not path.startswith(_LEAF_TEMPLATE_PREFIXES)
+        or not _SAFE_TEMPLATE_PATH.fullmatch(path)
+        or not (ROOT / path).is_file()
+        or '..' in Path(path).parts
+    ):
+        plan.broad_templates = True
+        plan.add_test_path('tests/contracts')
+        return
+    plan.template_paths.add(path)
+    if path.startswith('app/templates/kubernetes/tenant/'):
+        plan.capabilities.add('kubernetes/tenant')
+        plan.add_test_path('tests/kubernetes/tenant')
+        plan.add_test_glob('tests/contracts/kubernetes/test_tenant_*.py')
+
+
+def build_plan(changed_paths: list[str]) -> ValidationPlan:
+    plan = ValidationPlan()
 
     for path in changed_paths:
         if not path:
@@ -299,234 +324,6 @@ def write_github_output(path: Path, plan: ValidationPlan) -> None:
             handle.write(f'{key}={str(value).lower()}\n')
         handle.write(f'test_paths={test_paths}\n')
         handle.write(f'template_paths={template_paths}\n')
-        handle.write(f'summary={plan.summary()}\n')
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--base', default='kaori/staging')
-    parser.add_argument('--head', default='HEAD')
-    parser.add_argument(
-        '--changed-file',
-        type=Path,
-        help='Read newline-delimited changed paths instead of running git diff.',
-    )
-    parser.add_argument(
-        '--github-output',
-        type=Path,
-        help='Append canonical route outputs to this GitHub Actions output file.',
-    )
-    return parser.parse_args()
-
-
-def main() -> int:
-    args = parse_args()
-    if args.changed_file:
-        changed_paths = [
-            line.strip() for line in args.changed_file.read_text(encoding='utf-8').splitlines() if line.strip()
-        ]
-    else:
-        changed_paths = git_changed_paths(args.base, args.head)
-
-    plan = build_plan(changed_paths)
-
-    print('KAORI Developer Check Plan')
-    print(f'Changed paths: {len(changed_paths)}')
-    print(f'Plan: {plan.summary()}')
-
-    if args.github_output:
-        write_github_output(args.github_output, plan)
-
-    return 0
-
-
-if __name__ == '__main__':
-    raise SystemExit(main())
-)
-
-
-def _route_template(plan: ValidationPlan, path: str) -> None:
-    if not path.startswith('app/templates/'):
-        plan.broad_templates = True
-        plan.add_test_path('tests/contracts')
-        return
-    if (
-        not path.startswith(_LEAF_TEMPLATE_PREFIXES)
-        or not _SAFE_TEMPLATE_PATH.fullmatch(path)
-        or not (ROOT / path).is_file()
-        or '..' in Path(path).parts
-    ):
-        plan.broad_templates = True
-        plan.add_test_path('tests/contracts')
-        return
-    plan.template_paths.add(path)
-    if path.startswith('app/templates/kubernetes/tenant/'):
-        plan.capabilities.add('kubernetes/tenant')
-        plan.add_test_path('tests/kubernetes/tenant')
-        plan.add_test_glob('tests/contracts/kubernetes/test_tenant_*.py')
-
-
-def build_plan(changed_paths: list[str]) -> ValidationPlan:
-    plan = ValidationPlan()
-
-    for path in changed_paths:
-        if not path:
-            continue
-
-        if _is_wide_authority(path):
-            plan.wide = True
-            plan.python = True
-            plan.templates = True
-            plan.frontend = True
-            plan.migrations = True
-            plan.contracts = True
-
-        if path.endswith('.py'):
-            plan.python = True
-        if path.startswith('app/templates/') or (path.startswith('app/') and '/templates/' in path):
-            plan.templates = True
-        if (
-            path.startswith('app/static/')
-            or path.startswith('frontend/')
-            or path in {'package.json', 'package-lock.json'}
-        ):
-            plan.frontend = True
-        if path.startswith('migrations/') or path.endswith('/models.py') or '/models/' in path:
-            plan.migrations = True
-            plan.contracts = True
-
-        if path.startswith(('app/welcome/', 'tests/welcome/')):
-            plan.capabilities.add('welcome')
-            plan.add_test_path('tests/welcome')
-        elif path.startswith(('app/access/', 'app/users/', 'tests/access/')):
-            plan.capabilities.add('access')
-            plan.add_test_path('tests/access')
-        elif path.startswith(('app/integrations/', 'tests/integrations/')):
-            plan.capabilities.add('integrations')
-            plan.add_test_path('tests/integrations')
-            # Provider contracts remain integration-owned; cross-domain consumers
-            # receive their existing focused regression evidence as well.
-            if path.startswith('app/integrations/registry/'):
-                plan.capabilities.add('artifact_registry')
-                plan.add_test_path('tests/contracts/artifact_registry')
-                plan.add_test_path('tests/artifact_registry')
-                plan.add_test_path('tests/unit/artifact_registry')
-            if path.startswith('app/integrations/storage/object_storage/'):
-                plan.capabilities.add('storage/object_storage')
-                plan.add_test_path('tests/contracts/storage/object_storage')
-                plan.add_test_path('tests/storage/object_storage')
-        elif path.startswith(('app/kubernetes/tenant/', 'tests/kubernetes/tenant/')):
-            plan.capabilities.add('kubernetes/tenant')
-            plan.add_test_path('tests/kubernetes/tenant')
-            plan.add_test_glob('tests/contracts/kubernetes/test_tenant_*.py')
-        elif path.startswith(('app/kubernetes/', 'tests/kubernetes/')):
-            plan.capabilities.add('kubernetes')
-            plan.add_test_path('tests/kubernetes')
-        elif path.startswith(
-            (
-                'app/artifact_registry/',
-                'app/templates/artifact_registry/',
-                'app/static/js/artifact_registry/',
-                'tests/artifact_registry/',
-                'tests/unit/artifact_registry/',
-            )
-        ):
-            plan.capabilities.add('artifact_registry')
-            plan.add_test_path('tests/artifact_registry')
-            plan.add_test_path('tests/unit/artifact_registry')
-            plan.add_test_path('tests/contracts/artifact_registry')
-        elif path.startswith(
-            (
-                'app/storage/',
-                'app/object_storage/',
-                'app/templates/storage/object_storage/',
-                'app/static/js/storage/object_storage/',
-                'tests/storage/',
-                'tests/object_storage/',
-            )
-        ):
-            plan.capabilities.add('storage')
-            plan.add_test_path('tests/storage')
-            plan.add_test_path('tests/object_storage')
-            if path.startswith(
-                (
-                    'app/storage/object_storage/',
-                    'app/object_storage/',
-                    'app/templates/storage/object_storage/',
-                    'app/static/js/storage/object_storage/',
-                    'tests/storage/object_storage/',
-                    'tests/object_storage/',
-                )
-            ):
-                plan.capabilities.add('storage/object_storage')
-                plan.add_test_path('tests/contracts/storage/object_storage')
-        elif path.startswith(('app/platform_operations/', 'tests/platform_operations/')):
-            plan.capabilities.add('platform_operations')
-            plan.contracts = True
-            plan.add_test_path('tests/platform_operations')
-        elif (
-            path.startswith(('app/reports/', 'tests/reports/')) or path == 'scripts/verify_analytics_pdf_publication.py'
-        ):
-            plan.capabilities.add('reports')
-            plan.reports = True
-            plan.contracts = True
-            plan.add_test_path('tests/reports')
-        elif path.startswith(('app/settings/', 'tests/settings/')):
-            plan.capabilities.add('settings')
-            plan.add_test_path('tests/settings')
-        elif path.startswith(('app/intelligence/', 'tests/intelligence/')):
-            plan.capabilities.add('intelligence')
-            plan.add_test_path('tests/intelligence')
-        elif path.startswith(('app/vault/', 'tests/vault/')):
-            plan.capabilities.add('vault')
-            plan.add_test_path('tests/vault')
-            plan.add_test_path('tests/access')
-        elif path.startswith('tests/ui/'):
-            plan.capabilities.add('ui')
-            plan.frontend = True
-            plan.add_test_path('tests/ui')
-
-        if _select_contract_family(plan, path):
-            continue
-
-        if path.startswith('app/'):
-            plan.contracts = True
-        elif path.startswith('tests/contracts/'):
-            plan.contracts = True
-
-    if plan.wide:
-        plan.add_test_path('tests/contracts')
-        plan.add_test_path('tests/migrations')
-
-    return plan
-
-
-def git_changed_paths(base: str, head: str) -> list[str]:
-    result = subprocess.run(
-        ['git', 'diff', '--name-only', base, head],
-        cwd=ROOT,
-        check=True,
-        text=True,
-        capture_output=True,
-    )
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
-
-
-def write_github_output(path: Path, plan: ValidationPlan) -> None:
-    values = {
-        'python': plan.python,
-        'templates': plan.templates,
-        'frontend': plan.frontend,
-        'migrations': plan.migrations,
-        'contracts': plan.contracts,
-        'reports': plan.reports,
-        'wide': plan.wide,
-    }
-    test_paths = ' '.join(plan.normalized_test_paths())
-    with path.open('a', encoding='utf-8') as handle:
-        for key, value in values.items():
-            handle.write(f'{key}={str(value).lower()}\n')
-        handle.write(f'test_paths={test_paths}\n')
         handle.write(f'summary={plan.summary()}\n')
 
 
