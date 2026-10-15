@@ -25,6 +25,14 @@ Capability-aware routing includes `app/kubernetes/tenant/**` (Tenant behavior an
 
 These are **focused Developer Check** selections; they do not replace canonical source-wide static/domain verifiers or the complete Full Admission suite at the frozen-candidate boundary. When a path has shared or unknown blast radius, retain existing widening/fail-closed behavior. The release-surface verifier checks that every declared contract evidence path contains executable `test_*.py` modules; successful Static & Governance logs enumerate the release surfaces and their test-module counts.
 
+### Incremental Draft validation (issue #1801)
+
+The canonical Developer Check planner emits `template_paths` and a `template_scope` decision. **Only existing leaf HTML templates** in recognized Artifact Registry, Object Storage, or Kubernetes Tenant workspaces may use file-scoped `djlint --check`. The planner still selects domain behavior and contract regression tests. The Object Storage leaf UI path selects `tests/storage/object_storage` and owning contracts rather than unrelated Storage test folders.
+
+Changes to shared template/layout components, unrecognized ownership, removed templates, CI/test authority, or conflicting mixed paths widen to full `app/templates` lint and applicable broad contract tests. A non-authority Markdown-only diff (such as `README.md`) skips CI image/toolchain preparation and heavy validation jobs: the cheap `Route Checks` plus fail-closed `Developer Check` aggregate still execute. CI/security/release/engineering authority docs are deliberately treated as wide changes, not ordinary documentation.
+
+This is a **Draft and Pre-Ready cost optimization**; the frozen Ready candidate still undergoes the existing exact-head Developer Check and complete Full Admission. Existing source-wide evidence reuse is restricted to identical source-tree and validation-authority fingerprints with validated lineage. No cross-source-tree or per-domain admission evidence reuse is enabled. The tracked measurement and feasibility issues are #1796 and #2194. An unexecuted plan is not test PASS.
+
 ### Targeted regression
 
 ```bash
