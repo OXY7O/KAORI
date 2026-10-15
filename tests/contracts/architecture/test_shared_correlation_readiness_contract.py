@@ -19,7 +19,9 @@ def test_correlation_readiness_is_shared_committed_kaori_evidence() -> None:
     assert 'RegistryCollectionState.last_committed_at' in shared
     assert "JobExecution.job_type == 'artifact_registry_runtime_correlation'" in shared
     assert '(signature_fn or runtime_input_signature)(session)' in shared
-    assert '_committed_runtime_correlation_evidence_readiness(session, signature_fn=runtime_input_signature)' in producer
+    assert (
+        '_committed_runtime_correlation_evidence_readiness(session, signature_fn=runtime_input_signature)' in producer
+    )
     assert 'with Session(db.engine) as materialization_session:' in producer
 
 
