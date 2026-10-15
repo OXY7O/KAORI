@@ -45,6 +45,7 @@ def main() -> int:
     boundary = read('app/templates/storage/object_storage/analytics/partials/_evidence_boundary.html')
     readiness = read('app/templates/storage/object_storage/analytics/partials/_metrics_readiness.html')
     controls = read('app/templates/storage/object_storage/analytics/partials/_controls.html')
+    shared_controls = read('app/templates/analytics/components/_controls_readiness.html')
     bucket_table_template = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
     dependency_blocker = read('app/templates/storage/object_storage/analytics/partials/_dependency_blocker.html')
     dependency_notice = read('app/templates/storage/object_storage/analytics/partials/_dependency_notice.html')
@@ -282,8 +283,11 @@ def main() -> int:
     assert "'performance': 'buckets'" in bucket_table_service
     assert "'top_consumers': 'records'" in bucket_table_service
     assert '{5, 10, 25, 50}' in bucket_table_service
-    assert 'components/loading_bar.html' in controls
-    assert 'object-storage-analytics-refresh-indicator' in controls
+    assert 'shared_readiness.frame(' in controls
+    assert "'object-storage-analytics-refresh-indicator'" in controls
+    assert 'hx-indicator="#object-storage-analytics-refresh-indicator"' in controls
+    assert 'components/loading_bar.html' in shared_controls
+    assert 'loading_bar.render(indicator_id' in shared_controls
     assert 'components/loading_bar.html' in bucket_table_template
     assert 'analytics/components/_record_pagination.html' in bucket_table_template
     assert 'object-storage-bucket-table-loading-indicator' in bucket_table_template
