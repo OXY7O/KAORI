@@ -66,6 +66,14 @@ python scripts/verify_final_release.py --all --runtime
 
 The runtime-aware gate additionally requires endpoint-registry evidence and a running Reports worker with the expected queue. Run it only against an environment where those runtime prerequisites are intentionally available.
 
+## Reviewed visual fingerprint and raster stability
+
+The Playwright Visual QA gate remains strict on viewport geometry and the committed `tests/ui/baselines/authenticated-visual.json` manifest. Normal captures compare the existing 128px blurred/24-unit quantized screenshot digest exactly. The proposed #2196 stabilization recognizes **only a one-channel, one-thumbnail-pixel flip at the 8-bit near-white 251/252 quantization boundary**, when correcting that exact channel reproduces the **existing reviewed SHA256**. It emits a warning so the exception remains auditable; two changed channels, non-white changes, geometry mismatches, and missing/changed manifests remain FAIL. There is no baseline regeneration, test skip or change to acceptance authority.
+
+This limited guard is motivated by official runs #38792762830 (baseline PASS) and #38798164894 (same visual source and runner, baseline FAIL): the raw screenshots have identical 390×844 geometry, only 108 of 329,160 pixels differ by at most 2 RGB units, and the quantized thumbnail differs at exactly one channel (240→255) when 251 rounds to 240 versus 252 rounds to 255. The actual and expected images were reviewed against their official retained artifacts. Negative regression cases must prove that meaningful visual changes remain blocked.
+
+**Status:** the guard is a proposed visual QA policy adjustment under #2196 until source/CI validation and explicit human review. Do not interpret a Draft PR or a local pixel comparison as Full Admission PASS.
+
 ## Failure policy
 
 - Do not use `--fix` as proof that a release is clean; rerun Ruff without mutation after fixes.
