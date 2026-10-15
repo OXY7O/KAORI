@@ -41,6 +41,12 @@ python scripts/developer_check_plan.py --base HEAD~1 --head HEAD
 
 Run only the selected pytest paths during the repair loop. This command is **diagnostic local feedback only**: PR Developer Check against the actual staging base and frozen-candidate Full Admission remain mandatory. Never use a last-commit delta as final admission evidence.
 
+### Early Visual QA impact route
+
+Welcome content, the shared Hero/layout, global CSS, and application-shell theme changes may invalidate deterministic visual baselines. The planner now selects **only the existing Welcome visual test** at `tests/ui/test_representative_interactions.py::test_welcome_visual_qa_light_and_dark` on those changed-path families and when its baseline manifest or visual-audit helper changes. This runs the existing canonical six-viewport light/dark test under Draft focused pytest rather than discovering a hash mismatch after lengthy Full Admission functional tests. It does not rebaseline, omit any device/theme, or replace the comprehensive browser tests. Changes unrelated to those visual surfaces do not select this focused Playwright check.
+
+Exact-head Full Admission #38798164894 demonstrated the failure mode: 3,106 other functional cases PASS but `welcome-light-mobile` visual hash FAIL after 14m43s of functional test execution. Incident investigation and human-reviewed baseline authority remain tracked under #2196; an actual hash difference is not proof of an acceptable visual change.
+
 This is a **Draft and Pre-Ready cost optimization**; the frozen Ready candidate still undergoes the existing exact-head Developer Check and complete Full Admission. Existing source-wide evidence reuse is restricted to identical source-tree and validation-authority fingerprints with validated lineage. No cross-source-tree or per-domain admission evidence reuse is enabled. The tracked measurement and feasibility issues are #1796 and #2194. An unexecuted plan is not test PASS.
 
 ### Targeted regression
