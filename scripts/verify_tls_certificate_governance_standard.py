@@ -42,7 +42,9 @@ def main() -> int:
         'def _has_secret_identity(',
         'unique_consumers:',
         'Unexpected Kubernetes collection failure.',
-        'if secret.type == TLS_SECRET_TYPE and _has_secret_identity(secret)',
+        "if getattr(secret, 'type', None) != TLS_SECRET_TYPE:",
+        'if not _has_secret_identity(secret):',
+        "raise ValueError('A Kubernetes TLS Secret is missing required identity metadata.')",
     ):
         require(token in collector, f'TLS collector missing canonical evidence token: {token}', errors)
     require(
