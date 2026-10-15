@@ -80,4 +80,3 @@ def _evidence_coverage() -> dict[str, Any]:
         'complete': bool(total) and recent == total,
         'lookback_hours': 24,
     }
-
