@@ -231,8 +231,10 @@ def main() -> int:
         errors,
     )
     require(
-        'components/operational_section_card.html' not in setup,
-        'Setup Required must not return to the giant outer operational card',
+        'components/operational_section_card.html' in setup
+        and setup.count('operational_section_card.shell_classes(') == setup.count('data-kaori-setup-console')
+        and 'data-kaori-setup-outer-frame' not in setup,
+        'Setup Required must keep shared action cards local to the console, never the outer workspace',
         errors,
     )
 
