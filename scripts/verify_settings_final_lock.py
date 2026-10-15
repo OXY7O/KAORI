@@ -205,9 +205,13 @@ def main() -> int:
         errors,
     )
     compatibility_registry = read('app/templates/settings/general/partials/_compatibility_registry.html')
+    compatibility_results = read('app/templates/settings/general/partials/_compatibility_registry_results.html')
     require(
         'data-compatibility-registry="server-paginated"' in compatibility_registry
-        and 'data-compatibility-product-detail="selected-only"' in compatibility_registry,
+        and 'settings/general/partials/_compatibility_registry_results.html' in compatibility_registry
+        and 'data-compatibility-product-list="page-5"' in compatibility_results
+        and 'data-compatibility-product-detail="selected-only"' in compatibility_results
+        and 'data-compatibility-qualification="paginated"' in compatibility_results,
         'Compatibility Versions must retain the server-paginated Registry + Detail',
         errors,
     )
