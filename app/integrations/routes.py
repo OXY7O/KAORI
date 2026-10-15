@@ -49,17 +49,23 @@ from app.integrations.validation.web import (
     validate_snapshot_access,
     validation_poll_response,
 )
-from app.kubernetes.tenant.capsule_rbac_bootstrap import (
-    bootstrap_missing_capsule_roles,
-    check_capsule_role_bootstrap,
-    latest_capsule_role_bootstrap_evidence,
-)
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
 )
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
+
+
+def _tenant_capsule_rbac_action(name: str):
+    """Resolve Tenant-owned Capsule operations registered for this Flask app."""
+    actions = current_app.extensions.get('kaori_tenant_capsule_rbac_actions')
+    if not isinstance(actions, dict):
+        raise RuntimeError('Tenant Capsule RBAC operations are not registered.')
+    action = actions.get(name)
+    if not callable(action):
+        raise RuntimeError(f'Tenant Capsule RBAC operation {name!r} is not registered.')
+    return action
 
 
 @integrations_bp.get('/')
@@ -214,7 +220,7 @@ def _kubernetes_detail_context(
     )
     context['capability_validation_job'] = build_validation_snapshot(capability_task_id) if capability_task_id else None
     context['runtime_validation_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
-    context['capsule_rbac_bootstrap'] = latest_capsule_role_bootstrap_evidence(cluster_id)
+    context['capsule_rbac_bootstrap'] = _tenant_capsule_rbac_action('latest')(cluster_id)
     context['capability_registry'] = build_kubernetes_capability_registry(
         context['feature_rows'],
         query=request.args.get('capability_q', '').strip(),
@@ -281,7 +287,7 @@ def kubernetes_capsule_rbac_check(cluster_id: str) -> ResponseReturnValue:
         validate_csrf(str(request.form.get('csrf_token') or ''))
     except ValidationError:
         abort(400)
-    result = check_capsule_role_bootstrap(cluster_id, int(current_user.id))
+    result = _tenant_capsule_rbac_action('check')(cluster_id, int(current_user.id))
     flash(
         'Capsule RBAC check: '
         + (
@@ -306,7 +312,7 @@ def kubernetes_capsule_rbac_bootstrap(cluster_id: str) -> ResponseReturnValue:
         abort(400)
     if request.form.get('confirm_cluster_rbac') != 'approved':
         abort(400)
-    result = bootstrap_missing_capsule_roles(cluster_id, int(current_user.id), approved=True)
+    result = _tenant_capsule_rbac_action('bootstrap')(cluster_id, int(current_user.id), approved=True)
     flash(
         'Capsule ClusterRole bootstrap '
         + (
