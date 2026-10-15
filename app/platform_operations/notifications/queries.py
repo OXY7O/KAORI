@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from flask import current_app
 from sqlalchemy import (
     case,
     func,
@@ -190,9 +191,12 @@ def get_activity_center_context(
     # Tenant handoff has one authoritative committed approval, not one
     # Notification per candidate approver. Reuse the shared Work Inbox surface
     # while projecting status from the current plan/acknowledgment evidence.
-    from app.kubernetes.tenant.approval_inbox import get_tenant_release_work_inbox
-
-    tenant_approval_inbox = get_tenant_release_work_inbox(user_id=user_id)
+    # Tenant remains the decision authority. Flask's per-app composition root
+    # registers this read-only projection without a Notification -> Tenant import.
+    tenant_inbox_provider = current_app.extensions.get('kaori_tenant_approval_work_inbox')
+    if not callable(tenant_inbox_provider):
+        raise RuntimeError('Tenant approval Work Inbox provider is not registered.')
+    tenant_approval_inbox = tenant_inbox_provider(user_id=user_id)
     notification_inbox_unread_count = inbox_unread_count
     inbox_unread_count += tenant_approval_inbox['pending_count']
     inbox_total_count += tenant_approval_inbox['total_count']

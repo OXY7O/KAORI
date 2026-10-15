@@ -26,6 +26,7 @@ def register_blueprints(app: Flask) -> None:
     from app.kubernetes.inventory.routes import inventory_bp
     from app.kubernetes.operations.routes import kubernetes_operations_bp
     from app.kubernetes.tenant.routes import tenant_bp
+    from app.kubernetes.tenant.approval_inbox import get_tenant_release_work_inbox
     from app.platform_operations import bp as platform_operations_bp
     from app.platform_operations.health import health_bp
     from app.platform_operations.jobs.routes import bp as jobs_bp
@@ -35,6 +36,10 @@ def register_blueprints(app: Flask) -> None:
     from app.storage.object_storage.dashboard.routes import object_storage_dashboard_bp
     from app.storage.object_storage.inventory.routes import object_storage_inventory_bp
     from app.welcome.routes import welcome_bp
+
+    # Compose the Tenant-owned committed approval projection into the shared
+    # Notification Work Inbox once per Flask app; no global mutable registry.
+    app.extensions['kaori_tenant_approval_work_inbox'] = get_tenant_release_work_inbox
 
     for blueprint in (
         auth_bp,
