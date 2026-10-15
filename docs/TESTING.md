@@ -31,6 +31,16 @@ The canonical Developer Check planner emits `template_paths` and a `template_sco
 
 Changes to shared template/layout components, unrecognized ownership, removed templates, CI/test authority, or conflicting mixed paths widen to full `app/templates` lint and applicable broad contract tests. A non-authority Markdown-only diff (such as `README.md`) skips CI image/toolchain preparation and heavy validation jobs: the cheap `Route Checks` plus fail-closed `Developer Check` aggregate still execute. CI/security/release/engineering authority docs are deliberately treated as wide changes, not ordinary documentation.
 
+Known leaf-template owners now include Access, Integrations, Intelligence, Platform Operations, Reports, Settings, Welcome, Artifact Registry, Object Storage and Kubernetes Tenant. Domains without proven template ownership continue to use broad lint and contract coverage; the planner does not infer ownership from arbitrary filenames.
+
+For fast local troubleshooting on a **large, already-reviewed candidate**, inspect the latest repair delta without changing the canonical PR-base validation authority:
+
+```bash
+python scripts/developer_check_plan.py --base HEAD~1 --head HEAD
+```
+
+Run only the selected pytest paths during the repair loop. This command is **diagnostic local feedback only**: PR Developer Check against the actual staging base and frozen-candidate Full Admission remain mandatory. Never use a last-commit delta as final admission evidence.
+
 This is a **Draft and Pre-Ready cost optimization**; the frozen Ready candidate still undergoes the existing exact-head Developer Check and complete Full Admission. Existing source-wide evidence reuse is restricted to identical source-tree and validation-authority fingerprints with validated lineage. No cross-source-tree or per-domain admission evidence reuse is enabled. The tracked measurement and feasibility issues are #1796 and #2194. An unexecuted plan is not test PASS.
 
 ### Targeted regression
