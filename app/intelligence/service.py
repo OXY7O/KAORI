@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from werkzeug.datastructures import MultiDict
 
-from app.artifact_registry.correlation import runtime_correlation_evidence_readiness
+from app.common.registry_runtime_evidence import runtime_correlation_evidence_readiness
 from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.finding_presentation import (

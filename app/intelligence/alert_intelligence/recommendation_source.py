@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy import or_
 
-from app.artifact_registry.correlation import runtime_correlation_evidence_readiness
+from app.common.registry_runtime_evidence import runtime_correlation_evidence_readiness
 from app.extensions.db import db
 from app.integrations.registry.security_contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.intelligence.alert_intelligence.case_state import (
