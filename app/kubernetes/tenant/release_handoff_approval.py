@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.extensions.db import db
+from app.kubernetes.tenant.handoff_runtime_operations import require_handoff_operation
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 from app.kubernetes.tenant.release_preflight import (
     review_tenant_release_preflight_committed,
@@ -102,7 +103,7 @@ def _capsule_g1_only_origin_obligation(snapshot: dict[str, Any], blocker: str) -
     # KAORI-correlated related controls are a *review obligation* at G1.
     # Worklist revalidates complete LIST coverage/digests and rejects any
     # ambiguous resource. Never treat correlated labels as G2 provenance.
-    from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
+    build_capsule_handoff_worklist = require_handoff_operation('build_capsule_handoff_worklist')
 
     try:
         work = build_capsule_handoff_worklist(
@@ -595,9 +596,9 @@ def _confirm_safe_native_restart_history(
     History alone never authorizes restart; the caller verifies live provider
     preflight with exact original identity, fingerprint and dependencies.
     """
-    from app.kubernetes.tenant.native_handoff_executor import native_handoff_execution_history
-    from app.kubernetes.tenant.native_handoff_readback import native_handoff_readback_history
-    from app.kubernetes.tenant.native_handoff_recovery import readback_proves_handoff_not_started
+    native_handoff_execution_history = require_handoff_operation('native_handoff_execution_history')
+    native_handoff_readback_history = require_handoff_operation('native_handoff_readback_history')
+    readback_proves_handoff_not_started = require_handoff_operation('readback_proves_handoff_not_started')
 
     plan_sha = plan['plan_sha256']
     executions = native_handoff_execution_history(tenant_id)
@@ -612,7 +613,7 @@ def _confirm_safe_native_restart_history(
         if not independently_authorized_executor:
             raise ValueError('Provider handoff execution exists; independent recovery assessment is required.')
         # Revalidate the exact same plan's committed executor sequence.
-        from app.kubernetes.tenant.native_no_transfer_recovery import _source_history
+        _source_history = require_handoff_operation('_source_history')
 
         _source_history(tenant_id, plan)
 
@@ -684,11 +685,9 @@ def restart_expired_native_release_handoff_plan_committed(
     # provider preflight. All executor activity, partial/full or corrupt
     # observations (including older receipts) fail closed.
     # Historical executor evidence is never erased or inferred safe from 0/2.
-    from app.kubernetes.tenant.native_handoff_executor import native_handoff_execution_history
-    from app.kubernetes.tenant.native_no_transfer_recovery import (
-        _verify_original_provider_state,
-        require_authorized_no_transfer_restart,
-    )
+    native_handoff_execution_history = require_handoff_operation('native_handoff_execution_history')
+    _verify_original_provider_state = require_handoff_operation('_verify_original_provider_state')
+    require_authorized_no_transfer_restart = require_handoff_operation('require_authorized_no_transfer_restart')
 
     attempts = native_handoff_execution_history(tenant_id)
     has_original_attempt = any(isinstance(item, dict) and item.get('plan_sha256') == plan_sha256 for item in attempts)
