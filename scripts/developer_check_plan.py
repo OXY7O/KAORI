@@ -84,9 +84,18 @@ def _is_wide_authority(path: str) -> bool:
         'scripts/verify_code_health_baseline_integrity.py',
         'docs/architecture/code-health-debt-baseline.json',
         'docs/engineering/KAORI_DELIVERY_WORKFLOW.md',
+        'docs/setup/GITHUB_ACTIONS_CI_CD.md',
+        'docs/deployment/RELEASE_GOVERNANCE.md',
+        'docs/deployment/CI_CD_RECOVERY_CONTRACT.md',
+        'docs/standards/KAORI_ENGINEERING_STANDARD_V1.md',
+        'docs/TESTING.md',
     }
     return (
-        path.startswith(prefixes) or path in exact or path.startswith('Dockerfile') or path.startswith('docker-compose')
+        path.startswith(prefixes)
+        or path.startswith('scripts/verify_')
+        or path in exact
+        or path.startswith('Dockerfile')
+        or path.startswith('docker-compose')
     )
 
 
@@ -284,7 +293,7 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
         if _select_contract_family(plan, path):
             continue
 
-        if path.startswith('app/'):
+        if path.startswith('app/') and not path.endswith(('.md', '.rst')):
             plan.contracts = True
         elif path.startswith('tests/contracts/'):
             plan.contracts = True
