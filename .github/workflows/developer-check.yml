@@ -158,8 +158,11 @@ jobs:
 
   validation-check:
     name: Frontend & Focused Validation
-    needs: [route, toolchain]
-    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
+    # The heavy kaori-ci lanes share a runner host. Do not spend minutes on
+    # focused tests when Python & Governance has already failed.
+    # Legitimate frontend-only routes may skip Python and still run.
+    needs: [route, toolchain, python-check]
+    if: ${{ !cancelled() && needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.python-check.result == 'success' || needs.python-check.result == 'skipped') && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 20
     steps:
