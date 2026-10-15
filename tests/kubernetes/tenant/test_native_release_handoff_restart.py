@@ -213,15 +213,15 @@ def prepare(monkeypatch, *, expired=True, actor=42, readback=None, mutate=None, 
         'native_handoff_readback_history': lambda *a, **kw: native_handoff_readback.native_handoff_readback_history(
             *a, **kw
         ),
-        'readback_proves_handoff_not_started': lambda *a, **kw: native_handoff_recovery.readback_proves_handoff_not_started(
-            *a, **kw
+        'readback_proves_handoff_not_started': lambda *a, **kw: (
+            native_handoff_recovery.readback_proves_handoff_not_started(*a, **kw)
         ),
         '_source_history': lambda *a, **kw: native_no_transfer_recovery._source_history(*a, **kw),
         '_verify_original_provider_state': lambda *a, **kw: native_no_transfer_recovery._verify_original_provider_state(
             *a, **kw
         ),
-        'require_authorized_no_transfer_restart': lambda *a, **kw: native_no_transfer_recovery.require_authorized_no_transfer_restart(
-            *a, **kw
+        'require_authorized_no_transfer_restart': lambda *a, **kw: (
+            native_no_transfer_recovery.require_authorized_no_transfer_restart(*a, **kw)
         ),
     }
     with app.app_context():
