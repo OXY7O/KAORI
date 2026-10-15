@@ -90,9 +90,7 @@ def _test_page() -> Page:
 def _manifest(tmp_path: Path, *, height: int = 844) -> Path:
     manifest = tmp_path / 'baseline.json'
     manifest.write_text(
-        json.dumps(
-            {'welcome-light-mobile': {'width': 390, 'height': height, 'visual_sha256': '0' * 64}}
-        ),
+        json.dumps({'welcome-light-mobile': {'width': 390, 'height': height, 'visual_sha256': '0' * 64}}),
         encoding='utf-8',
     )
     return manifest
@@ -131,9 +129,7 @@ def test_one_channel_guard_emits_visible_warning(tmp_path: Path, monkeypatch: py
         )
 
 
-def test_material_drift_still_fails_with_screenshot_evidence(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_material_drift_still_fails_with_screenshot_evidence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import tests.ui.visual_audit as visual
 
     monkeypatch.setattr(visual, '_matches_white_raster_rounding_noise', lambda *_: False)
