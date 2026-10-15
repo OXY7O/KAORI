@@ -87,8 +87,8 @@ def test_source_audit_never_claims_executed_uat() -> None:
     rows = [line for line in matrix.splitlines() if line.startswith('| `UAT-')]
     assert len(rows) == 91
     assert all(line.endswith('| NOT RUN / PENDING |') for line in rows)
-    assert '**23/91**' in matrix
-    assert '**68/91**' in matrix
+    assert '**24/91**' in matrix
+    assert '**67/91**' in matrix
     assert '**0/91' in matrix
     assert '**Admission:** HOLD' in matrix
 
@@ -113,3 +113,36 @@ def test_source_audit_never_claims_executed_uat() -> None:
     assert 'NOT RUN' in section
     assert 'PENDING' in section
     assert 'complete scenario-to-node-to-runtime acceptance' in section
+
+
+def test_pilot_manifest_source_trace_is_explicitly_not_executed() -> None:
+    """Cross-branch node references are planned mappings, not candidate-bound UAT PASS."""
+    matrix = (ENGINEERING / 'uat' / 'SCENARIO_COVERAGE_MATRIX.md').read_text(encoding='utf-8')
+    audit = (ENGINEERING / 'KAORI_UAT_TEST_MAPPING_AUDIT.md').read_text(encoding='utf-8')
+    pilot = audit.split('## Exact pilot manifest-to-test traceability', 1)[1]
+    pilot_ids = ('UAT-AUT-002', 'UAT-UIX-006', 'UAT-RPT-003', 'UAT-TEN-004')
+    nodes = (
+        'test_invalid_credentials_return_generic_failure_without_account_disclosure',
+        'test_notification_center_filters_and_rows_survive_htmx_reset',
+        'test_queued_report_failure_persists_failed_detail_without_pending_poll',
+        'test_failed_generated_report_detail_is_truthful_and_responsive',
+        'test_reports_generate_wizard_negative_submission_is_scoped_and_reviewable',
+        'test_namespace_allocation_submit_rechecks_committed_capacity_before_provider_write',
+        'test_tenant_allocation_change_rejected_submit_records_no_provider_write',
+    )
+    assert 'seven exact node IDs' in pilot
+    assert '**27**' in pilot
+    assert '**24 independently attributable screenshot artifacts and 24 trace artifacts**' in pilot
+    assert '`provider_readback`' in pilot
+    assert '`committed_state`' in pilot
+    assert '`activity_audit`' in pilot
+    assert 'NOT RUN' in pilot
+    assert 'PENDING' in pilot
+    for node_name in nodes:
+        assert node_name in pilot
+    for scenario_id in pilot_ids:
+        assert f'`{scenario_id}`' in pilot
+        row = next(line for line in matrix.splitlines() if line.startswith(f'| `{scenario_id}` |'))
+        assert row.endswith('| NOT RUN / PENDING |')
+        assert 'Pilot #1728:' in row
+        assert '([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md))' in row
