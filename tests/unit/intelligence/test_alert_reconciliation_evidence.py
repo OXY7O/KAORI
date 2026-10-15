@@ -62,7 +62,7 @@ def test_missing_finding_with_unavailable_source_stays_unknown_not_resolved(monk
             return [state]
 
     monkeypatch.setattr(source, '_active_recommendation_state_batches', lambda: iter([state]))
-    monkeypatch.setattr(source, '_source_evidence_posture_for_state', lambda _state: (False, 'source_unavailable'))
+    monkeypatch.setattr(source, '_source_evidence_posture_for_state', lambda _state, **_kwargs: (False, 'source_unavailable'))
     monkeypatch.setattr(
         source,
         'db',
@@ -80,6 +80,7 @@ def test_missing_finding_with_unavailable_source_stays_unknown_not_resolved(monk
         fresh_keys=set(),
         now=datetime.now(UTC),
         stats=stats,
+        readiness_cache={},
     )
     assert state.active is True
     assert stats['resolved'] == 0
@@ -106,6 +107,9 @@ def test_capacity_forecast_can_clear_only_after_usable_fresh_projection(monkeypa
         def __gt__(self, other):
             return True
 
+        def __lt__(self, other):
+            return True
+
     class ForecastQuery:
         row = None
 
@@ -116,6 +120,16 @@ def test_capacity_forecast_can_clear_only_after_usable_fresh_projection(monkeypa
             return self.row
 
     query = ForecastQuery()
+    stale_buckets = ForecastQuery()
+    monkeypatch.setattr(
+        source,
+        'ObjectStorageBucket',
+        SimpleNamespace(
+            query=stale_buckets,
+            object_storage_system_id=Column(),
+            observed_at=Column(),
+        ),
+    )
     monkeypatch.setattr(
         source,
         'ObjectStorageForecastSnapshot',
@@ -131,6 +145,9 @@ def test_capacity_forecast_can_clear_only_after_usable_fresh_projection(monkeypa
     assert source._source_evidence_posture_for_state(state) == (False, 'source_unavailable')
     query.row = stale_or_absent
     assert source._source_evidence_posture_for_state(state) == (True, '')
+    stale_buckets.row = SimpleNamespace(id=42)
+    assert source._source_evidence_posture_for_state(state) == (False, 'source_unavailable')
+    stale_buckets.row = None
     query.row = SimpleNamespace(payload_json={'forecast': {'days_to_capacity': None}})
     assert source._source_evidence_posture_for_state(state) == (False, 'source_unavailable')
 
