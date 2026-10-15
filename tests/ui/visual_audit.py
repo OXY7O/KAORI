@@ -226,7 +226,10 @@ def _matches_single_white_quantization_edge(
 def _matches_white_raster_rounding_noise(image: Image.Image, expected_sha: str) -> bool:
     rgb = image.convert('RGB').filter(ImageFilter.GaussianBlur(VISUAL_BLUR_RADIUS))
     thumbnail_height = max(1, round(rgb.height * VISUAL_THUMBNAIL_WIDTH / rgb.width))
-    raw_thumbnail = rgb.resize((VISUAL_THUMBNAIL_WIDTH, thumbnail_height), Image.Resampling.LANCZOS)
+    raw_thumbnail = rgb.resize(
+        (VISUAL_THUMBNAIL_WIDTH, thumbnail_height),
+        Image.Resampling.LANCZOS,
+    )
     normalized = build_visual_thumbnail(image)
     return _matches_single_white_quantization_edge(
         raw_thumbnail.tobytes(),
