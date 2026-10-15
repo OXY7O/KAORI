@@ -49,7 +49,7 @@ from app.integrations.validation.web import (
     validate_snapshot_access,
     validation_poll_response,
 )
-from app.kubernetes.cluster.capsule_rbac_bootstrap import (
+from app.kubernetes.tenant.capsule_rbac_bootstrap import (
     bootstrap_missing_capsule_roles,
     check_capsule_role_bootstrap,
     latest_capsule_role_bootstrap_evidence,
