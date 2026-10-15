@@ -25,10 +25,9 @@ class _Query:
 
 
 def test_batched_metrics_source_readiness_has_constant_query_count(monkeypatch) -> None:
+    from app import create_app
     from app.models.integration import IntegrationBinding
     from app.models.metrics_source import MetricsSource
-
-    from app import create_app
 
     with create_app('testing').app_context():
         binding_hits: list[str] = []
@@ -52,9 +51,8 @@ def test_batched_metrics_source_readiness_has_constant_query_count(monkeypatch) 
 
 
 def test_empty_fleet_does_not_query_metrics_binding_registry(monkeypatch) -> None:
-    from app.models.integration import IntegrationBinding
-
     from app import create_app
+    from app.models.integration import IntegrationBinding
 
     with create_app('testing').app_context():
         monkeypatch.setattr(
