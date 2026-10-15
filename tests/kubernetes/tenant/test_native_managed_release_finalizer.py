@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from flask import Flask
 
 from app.kubernetes.tenant.release_preflight import release_verified_native_tenant_committed
 
@@ -18,6 +19,7 @@ def test_native_managed_release_cannot_skip_explicit_confirmation():
 
 
 def test_missing_verified_handoff_cannot_commit_native_release(monkeypatch):
+    from app.kubernetes.tenant import native_handoff_dry_run as dry_run
     from app.kubernetes.tenant import native_handoff_executor as executor
     from app.kubernetes.tenant import native_handoff_readback as readback
     from app.kubernetes.tenant import native_platform_admin_authority as authority
@@ -38,7 +40,18 @@ def test_missing_verified_handoff_cannot_commit_native_release(monkeypatch):
     monkeypatch.setattr(consent, 'latest_native_successor_acceptance', lambda _: None)
     monkeypatch.setattr(executor, 'latest_native_handoff_execution', lambda _: None)
     monkeypatch.setattr(readback, '_latest_native_dry_run', lambda _: None)
-    with pytest.raises(ValueError, match='Fully verified'):
+    app = Flask('kaori-native-release-test')
+    app.extensions['kaori_tenant_handoff_operations'] = {
+        '_read_resource': dry_run._read_resource,
+        'latest_native_handoff_execution': executor.latest_native_handoff_execution,
+        '_latest_native_dry_run': readback._latest_native_dry_run,
+        'verify_external_native_component': readback.verify_external_native_component,
+        'latest_native_successor_acceptance': consent.latest_native_successor_acceptance,
+        '_plan_hash': approval._plan_hash,
+        'latest_release_handoff_approval': approval.latest_release_handoff_approval,
+        'latest_release_handoff_plan': approval.latest_release_handoff_plan,
+    }
+    with app.app_context(), pytest.raises(ValueError, match='Fully verified'):
         release_verified_native_tenant_committed(
             tenant_id='tenant-a',
             actor_user_id=42,
