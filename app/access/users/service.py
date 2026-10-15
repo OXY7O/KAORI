@@ -468,6 +468,11 @@ def lock_user_for_mutation(user_id: int) -> User | None:
     return db.session.query(User).populate_existing().filter(User.id == int(user_id)).with_for_update().one_or_none()
 
 
+def rollback_user_edit_transaction() -> None:
+    """Release the serialized stale edit transaction before fetching fresh user state."""
+    db.session.rollback()
+
+
 def user_version_matches(user: User, token: str | None) -> bool:
     return bool(token and token == user_version_token(user))
 

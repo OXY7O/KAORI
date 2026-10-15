@@ -14,6 +14,7 @@ from app.access.rbac.decorators import permission_required
 from app.artifact_registry.analytics_job_adapter import (
     build_registry_analytics_readiness,
     get_registry_analytics_job,
+    rollback_registry_analytics_materialization_dispatch,
     should_request_registry_analytics_materialization,
 )
 from app.artifact_registry.governance_job_adapter import (
@@ -50,7 +51,6 @@ from app.dashboards.common.operational import (
     normalize_operational_tab,
 )
 from app.extensions import limiter
-from app.extensions.db import db
 from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable, dispatch_registered_job
 from app.platform_operations.jobs.service import JobQuotaExceeded
 from app.platform_operations.notifications.service import record_operational_activity
@@ -608,7 +608,7 @@ def analytics_materialization_resolve() -> ResponseReturnValue:
             SQLAlchemyError,
             ValueError,
         ) as exc:
-            db.session.rollback()
+            rollback_registry_analytics_materialization_dispatch()
             analytics['data_readiness']['collection_warning'] = (
                 'The analytics worker could not be started. Check the registered '
                 f'analytics-batch worker and JobExecution diagnostics ({type(exc).__name__}).'

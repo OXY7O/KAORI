@@ -8,6 +8,7 @@ from sqlalchemy import func
 from app.common.job_execution_contract import ARTIFACT_REGISTRY_ANALYTICS_MATERIALIZE_OPERATION
 from app.common.job_execution_presentation import present_job_execution
 from app.common.presentation import present_user_datetime
+from app.extensions.db import db
 from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution, JobPolicy
 from app.models.registry import RegistryAnalyticsSnapshot
@@ -15,6 +16,11 @@ from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES, WORKLOAD
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 from app.platform_operations.jobs.policies.presentation import present_interval
+
+
+def rollback_registry_analytics_materialization_dispatch() -> None:
+    """Reset a failed Registry analytics job-dispatch transaction before feedback."""
+    db.session.rollback()
 
 
 def _eligible_ids() -> list[int]:
