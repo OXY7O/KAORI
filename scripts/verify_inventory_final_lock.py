@@ -325,8 +325,9 @@ def main() -> int:
 
     namespace_detail = read('app/templates/kubernetes/inventory/namespaces/partials/_namespace_detail_content.html')
     require(
-        'Unset namespace controls remain neutral until evaluated against an explicit governance policy.'
-        in namespace_detail
+        'A missing ResourceQuota does not automatically indicate a compliance failure' in namespace_detail
+        and 'ResourceQuota collection state:' in namespace_detail
+        and 'ResourceQuota Evidence Not Reported' in namespace_detail
         and 'data-kaori-reported-quota' in namespace_detail
         and 'Hard Limit' in namespace_detail,
         'Namespace detail must keep concise governance wording and the clear Reported Quotas box contract.',
