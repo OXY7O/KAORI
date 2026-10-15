@@ -13,7 +13,8 @@ def read(path: str) -> str:
 
 
 def test_cluster_rbac_bootstrap_is_governed_separately_from_tenant_adoption():
-    bootstrap = read('app/kubernetes/cluster/capsule_rbac_bootstrap.py')
+    bootstrap = read('app/kubernetes/tenant/capsule_rbac_bootstrap.py')
+    assert not (ROOT / 'app/kubernetes/cluster/capsule_rbac_bootstrap.py').exists()
     integrations = read('app/integrations/routes.py')
     detail = read('app/templates/integrations/orchestration/container_orchestrator/providers/kubernetes/detail.html')
     ui = read(
@@ -23,6 +24,7 @@ def test_cluster_rbac_bootstrap_is_governed_separately_from_tenant_adoption():
     access = read('app/kubernetes/tenant/access.py')
     adoption = read('app/kubernetes/tenant/discovery_adoption.py')
 
+    assert 'from app.kubernetes.tenant.capsule_rbac_bootstrap import (' in integrations
     assert 'target_type=_TARGET' in bootstrap
     assert 'latest_capsule_role_bootstrap_evidence' in bootstrap
     assert 'capsule_cluster_role_manifest(profile)' in bootstrap
