@@ -601,13 +601,9 @@ def pods():
 @permission_required('inventory.view')
 @_clusterless_inventory_htmx_guard
 def pod_details(pod_id: int):
-    pod = get_pod_detail(
-        pod_id,
-    )
-
+    pod = get_pod_detail(pod_id)
     if pod is None:
         abort(404)
-
     return render_template(
         'kubernetes/inventory/pods/partials/_pod_detail_content.html',
         pod=pod,
