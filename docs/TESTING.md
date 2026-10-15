@@ -21,7 +21,9 @@ python scripts/developer_check_plan.py --base kaori/staging --head HEAD
 
 The planner is the path/test-selection authority for both Local-First Dev Container work and GitHub Developer Check. It classifies direct capability impact, preserves existing shared/contract widening, and returns deterministic focused pytest paths. Unknown or shared impact widens rather than silently omitting coverage.
 
-Current capability-aware pilot: `app/kubernetes/tenant/**` selects Tenant behavior tests and existing Tenant-owned Kubernetes contracts instead of automatically selecting the entire Kubernetes behavior suite. Full Admission remains comprehensive at the frozen-candidate boundary.
+Capability-aware routing includes `app/kubernetes/tenant/**` (Tenant behavior and Tenant-owned Kubernetes contracts), `app/artifact_registry/**` (Artifact Registry behavior and `tests/contracts/artifact_registry`), and `app/storage/object_storage/**` (Object Storage behavior and `tests/contracts/storage/object_storage`). Changes to Registry/Harbor and Object Storage integration adapters retain Integration tests **and** select their affected operational-domain contracts. Direct `tests/contracts/artifact_registry/**` changes are part of the canonical contract-family routing, not generic release-only fallback.
+
+These are **focused Developer Check** selections; they do not replace canonical source-wide static/domain verifiers or the complete Full Admission suite at the frozen-candidate boundary. When a path has shared or unknown blast radius, retain existing widening/fail-closed behavior. The release-surface verifier checks that every declared contract evidence path contains executable `test_*.py` modules; successful Static & Governance logs enumerate the release surfaces and their test-module counts.
 
 ### Targeted regression
 
