@@ -1,16 +1,10 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 from types import SimpleNamespace
 
 import pytest
 
 from app.kubernetes.operations.configmaps import runtime
-
-
-@contextmanager
-def _tls_context(*, enabled: bool):
-    yield enabled
 
 
 def test_configmap_runtime_delegates_client_creation_to_registered_provider(
