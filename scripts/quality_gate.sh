@@ -121,6 +121,11 @@ run_command_capture() {
     printf '⏳ %s — %s\n' "$group" "$label"
 
     if "$@" >"$log_file" 2>&1; then
+        # Ownership coverage is the one concise successful static report that
+        # needs domain-by-domain visibility; other checks retain quiet PASS.
+        if [[ "$label" == 'Release Surface Coverage' ]]; then
+            cat "$log_file"
+        fi
         return 0
     else
         status=$?
