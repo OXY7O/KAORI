@@ -141,6 +141,47 @@ def test_unknown_template_ownership_widens_even_when_only_one_file_changed() -> 
     assert 'tests/contracts' in plan.normalized_test_paths()
 
 
+def test_welcome_copy_change_selects_early_visual_baseline() -> None:
+    plan = build_plan(['app/templates/welcome/index.html'])
+
+    assert plan.normalized_template_paths() == ['app/templates/welcome/index.html']
+    assert 'ui/welcome-visual' in plan.capabilities
+    assert (
+        'tests/ui/test_representative_interactions.py::test_welcome_visual_qa_light_and_dark'
+        in plan.normalized_test_paths()
+    )
+
+
+def test_shared_shell_and_css_changes_select_visual_contract() -> None:
+    for path in (
+        'app/templates/components/page_hero.html',
+        'app/templates/layouts/base.html',
+        'app/static/css/app.css',
+        'app/static/js/application_shell.js',
+    ):
+        plan = build_plan([path])
+        assert 'ui/welcome-visual' in plan.capabilities, path
+        assert (
+            'tests/ui/test_representative_interactions.py::test_welcome_visual_qa_light_and_dark'
+            in plan.normalized_test_paths()
+        ), path
+
+
+def test_visual_baseline_authority_change_selects_visual_regression() -> None:
+    plan = build_plan(['tests/ui/baselines/authenticated-visual.json'])
+    assert 'ui/welcome-visual' in plan.capabilities
+    assert (
+        'tests/ui/test_representative_interactions.py::test_welcome_visual_qa_light_and_dark'
+        in plan.normalized_test_paths()
+    )
+
+
+def test_unrelated_backend_change_does_not_select_browser_visual_check() -> None:
+    plan = build_plan(['app/artifact_registry/analytics.py'])
+    assert 'ui/welcome-visual' not in plan.capabilities
+    assert all('tests/ui/test_representative_interactions.py' not in p for p in plan.normalized_test_paths())
+
+
 def test_non_authority_document_change_requires_no_heavy_toolchain() -> None:
     plan = build_plan(['README.md'])
 
