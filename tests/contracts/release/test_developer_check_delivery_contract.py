@@ -83,7 +83,6 @@ def test_developer_check_sequenced_lanes_fail_closed_into_one_aggregate() -> Non
         assert token in source
 
 
-
 def test_focused_validation_short_circuits_on_governance_failure() -> None:
     workflow = yaml.safe_load(read(DEVELOPER_WORKFLOW))
     jobs = workflow['jobs']
