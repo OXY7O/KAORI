@@ -23,6 +23,17 @@ def test_artifact_registry_changes_select_their_own_contracts() -> None:
     assert 'tests/contracts/release' not in plan.normalized_test_paths()
 
 
+def test_registry_source_and_unit_contract_edits_route_owning_tests() -> None:
+    for changed_path in (
+        'app/artifact_registry/presentation_inventory.py',
+        'tests/unit/artifact_registry/test_registry_inventory_bounded_detail.py',
+    ):
+        plan = build_plan([changed_path])
+        assert plan.python
+        assert 'artifact_registry' in plan.capabilities
+        assert 'tests/unit/artifact_registry' in plan.normalized_test_paths()
+
+
 def test_artifact_registry_contract_changes_remain_routed() -> None:
     plan = build_plan(['tests/contracts/artifact_registry/test_example_contract.py'])
 
@@ -35,6 +46,7 @@ def test_registry_provider_changes_select_registry_consumer_contracts() -> None:
 
     assert {'integrations', 'artifact_registry'} <= plan.capabilities
     assert 'tests/contracts/artifact_registry' in plan.normalized_test_paths()
+    assert 'tests/unit/artifact_registry' in plan.normalized_test_paths()
 
 
 def test_object_storage_changes_select_own_contracts() -> None:
