@@ -191,21 +191,17 @@ def _matches_single_white_quantization_edge(
     if len(raw_thumbnail) != len(normalized_thumbnail):
         return False
 
-    white_edge = (255 // VISUAL_CHANNEL_QUANTUM) * VISUAL_CHANNEL_QUANTUM + (
-        VISUAL_CHANNEL_QUANTUM // 2
-    )
+    white_edge = (255 // VISUAL_CHANNEL_QUANTUM) * VISUAL_CHANNEL_QUANTUM + (VISUAL_CHANNEL_QUANTUM // 2)
     if white_edge >= 256:
         return False
 
     lower = min(
         255,
-        ((white_edge - 1 + VISUAL_CHANNEL_QUANTUM // 2) // VISUAL_CHANNEL_QUANTUM)
-        * VISUAL_CHANNEL_QUANTUM,
+        ((white_edge - 1 + VISUAL_CHANNEL_QUANTUM // 2) // VISUAL_CHANNEL_QUANTUM) * VISUAL_CHANNEL_QUANTUM,
     )
     upper = min(
         255,
-        ((white_edge + VISUAL_CHANNEL_QUANTUM // 2) // VISUAL_CHANNEL_QUANTUM)
-        * VISUAL_CHANNEL_QUANTUM,
+        ((white_edge + VISUAL_CHANNEL_QUANTUM // 2) // VISUAL_CHANNEL_QUANTUM) * VISUAL_CHANNEL_QUANTUM,
     )
 
     candidate = bytearray(normalized_thumbnail)
