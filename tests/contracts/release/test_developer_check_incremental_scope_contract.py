@@ -63,6 +63,26 @@ def test_other_owned_workspace_templates_use_domain_regressions() -> None:
         assert 'tests/contracts/release' not in plan.normalized_test_paths(), path
 
 
+def test_registry_provider_ui_selects_registry_consumer_contracts() -> None:
+    path = 'app/templates/integrations/registry/providers/harbor/index.html'
+    plan = build_plan([path])
+
+    assert plan.normalized_template_paths() == [path]
+    assert {'integrations', 'artifact_registry'} <= plan.capabilities
+    assert 'tests/contracts/artifact_registry' in plan.normalized_test_paths()
+    assert 'tests/unit/artifact_registry' in plan.normalized_test_paths()
+
+
+def test_object_storage_provider_ui_selects_object_storage_consumer_contracts() -> None:
+    path = 'app/templates/integrations/storage/object_storage/providers/minio/index.html'
+    plan = build_plan([path])
+
+    assert plan.normalized_template_paths() == [path]
+    assert {'integrations', 'storage/object_storage'} <= plan.capabilities
+    assert 'tests/storage/object_storage' in plan.normalized_test_paths()
+    assert 'tests/contracts/storage/object_storage' in plan.normalized_test_paths()
+
+
 def test_reports_leaf_template_preserves_pdf_governance_lane() -> None:
     plan = build_plan(['app/templates/reports/overview/index.html'])
 
