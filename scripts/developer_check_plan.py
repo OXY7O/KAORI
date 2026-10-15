@@ -133,7 +133,7 @@ _LEAF_TEMPLATE_PREFIXES = (
     'app/templates/storage/object_storage/',
     'app/templates/kubernetes/tenant/',
 )
-_SAFE_TEMPLATE_PATH = re.compile(r'^app/templates/[A-Za-z0-9_./-]+\\.html$')
+_SAFE_TEMPLATE_PATH = re.compile(r'^app/templates/[A-Za-z0-9_./-]+\.html$')
 
 
 def _route_template(plan: ValidationPlan, path: str) -> None:
