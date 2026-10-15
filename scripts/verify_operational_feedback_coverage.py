@@ -153,7 +153,10 @@ def main() -> int:
         'app/platform_operations/kubernetes/secret_reveal/routes.py',
         "event_type='kubernetes_secret_reveal_cluster_readiness_updated'",
         "event_type='kubernetes_secret_reveal_namespace_policy_updated'",
-        'record_operational_activity(',
+        'writer = stage_operational_activity if durable_with_operation else record_operational_activity',
+        'return writer(',
+        "'secret_value_recorded': False",
+        "'kubeconfig_recorded': False",
     )
 
     # Access administration and user lifecycle.
