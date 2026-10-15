@@ -147,12 +147,14 @@ def test_runtime_summary_reuses_shared_section_intro_and_grouped_metrics() -> No
 
 def test_runtime_generation_freshness_and_active_scope_contract() -> None:
     correlation = (ROOT / 'app/artifact_registry/correlation.py').read_text()
+    shared_evidence = (ROOT / 'app/common/registry_runtime_evidence.py').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
     prerequisites = (ROOT / 'app/artifact_registry/correlation_sync_jobs.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
     assert 'def runtime_input_signature(' in correlation
-    assert 'ClusterInventory.collected_at' in correlation
-    assert 'RegistryCollectionState.last_committed_at' in correlation
+    assert 'ClusterInventory.collected_at' in shared_evidence
+    assert 'RegistryCollectionState.last_committed_at' in shared_evidence
+    assert 'runtime_correlation_evidence_readiness as _committed_runtime_correlation_evidence_readiness' in correlation
     assert 'if runtime_input_signature(materialization_session) != input_signature:' in correlation
     assert "'input_signature': input_signature" in correlation
     assert 'latest_success.result_summary_json' in presentation
