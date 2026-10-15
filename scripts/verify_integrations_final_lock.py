@@ -855,7 +855,10 @@ def main() -> int:
         and '.order_by(lookup.observed_at.desc(), lookup.id.desc())' in integration_runtime_sql
         and '.limit(1)' in integration_runtime_sql
         and "observation_ids = {int(item['observation_id'])" in integration_overview_workspace
-        and 'latest = {(row.integration_type, row.instance_id): row for row in observations}' in integration_overview_workspace
+        and (
+            'latest = {(row.integration_type, row.instance_id): row for row in observations}'
+            in integration_overview_workspace
+        )
         and 'builder(record, latest)' in integration_overview_workspace
         and "module.build_runtime_overview_rows(latest, int(item['canonical_id']))" in integration_overview_workspace,
         'Integration Runtime Overview must reuse page-bounded latest committed observation evidence',
