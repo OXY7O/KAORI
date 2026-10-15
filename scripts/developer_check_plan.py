@@ -138,10 +138,28 @@ def _select_contract_family(plan: ValidationPlan, path: str) -> bool:
 # Scoped djLint is safe for known leaf templates: it validates only changed
 # files; shared layouts, macros, removed files and unknown ownership widen.
 _LEAF_TEMPLATE_PREFIXES = (
+    'app/templates/access/',
     'app/templates/artifact_registry/',
-    'app/templates/storage/object_storage/',
+    'app/templates/integrations/',
+    'app/templates/intelligence/',
     'app/templates/kubernetes/tenant/',
+    'app/templates/platform_operations/',
+    'app/templates/reports/',
+    'app/templates/settings/',
+    'app/templates/storage/object_storage/',
+    'app/templates/welcome/',
 )
+# Ordinary workspace templates have explicit owning behavior and contract suites.
+# Shared template families (components/layouts/dashboards) remain wide.
+_TEMPLATE_DOMAIN_TESTS = {
+    'access': ('tests/access', 'tests/contracts/access'),
+    'integrations': ('tests/integrations', 'tests/contracts/integrations'),
+    'intelligence': ('tests/intelligence', 'tests/contracts/intelligence'),
+    'platform_operations': ('tests/platform_operations', 'tests/contracts/platform_operations'),
+    'reports': ('tests/reports', 'tests/contracts/reports'),
+    'settings': ('tests/settings', 'tests/contracts/settings'),
+    'welcome': ('tests/welcome', 'tests/contracts/welcome'),
+}
 _SAFE_TEMPLATE_PATH = re.compile(r'^app/templates/[A-Za-z0-9_./-]+\.html$')
 
 
@@ -158,12 +176,21 @@ def _route_template(plan: ValidationPlan, path: str) -> None:
         or '/partials/' in path
         or '/components/' in path
         or Path(path).name.startswith('_')
+        or Path(path).name in {'base.html', 'layout.html', 'macros.html', 'components.html'}
         or '..' in Path(path).parts
     ):
         plan.broad_templates = True
         plan.add_test_path('tests/contracts')
         return
     plan.template_paths.add(path)
+    for domain, test_paths in _TEMPLATE_DOMAIN_TESTS.items():
+        if path.startswith(f'app/templates/{domain}/'):
+            plan.capabilities.add(domain)
+            for test_path in test_paths:
+                plan.add_test_path(test_path)
+            if domain == 'reports':
+                plan.reports = True
+            break
     if path.startswith('app/templates/kubernetes/tenant/'):
         plan.capabilities.add('kubernetes/tenant')
         plan.add_test_path('tests/kubernetes/tenant')
