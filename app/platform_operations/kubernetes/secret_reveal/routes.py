@@ -17,7 +17,6 @@ from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
 
 from app.access.rbac.decorators import permission_required
-from app.extensions.db import db
 from app.kubernetes.operations.secrets.reveal_policy import (
     cluster_reveal_readiness_evidence,
     set_namespace_reveal_policy,
@@ -27,6 +26,7 @@ from app.models import Cluster
 from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
 from app.platform_operations.kubernetes.secret_reveal.service import (
     build_secret_reveal_settings_context,
+    commit_secret_reveal_settings_transaction,
     get_secret_reveal_cluster,
     rollback_secret_reveal_settings_transaction,
 )
@@ -215,7 +215,7 @@ def update_readiness(cluster_id: str):
             },
             durable_with_operation=True,
         )
-        db.session.commit()
+        commit_secret_reveal_settings_transaction()
     except ValueError as exc:
         rollback_secret_reveal_settings_transaction()
         operation_feedback = _record_settings_activity(
@@ -274,7 +274,7 @@ def update_namespace_policy(cluster_id: str):
             },
             durable_with_operation=True,
         )
-        db.session.commit()
+        commit_secret_reveal_settings_transaction()
     except ValueError as exc:
         rollback_secret_reveal_settings_transaction()
         operation_feedback = _record_settings_activity(

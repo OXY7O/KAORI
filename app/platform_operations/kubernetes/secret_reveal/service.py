@@ -31,6 +31,11 @@ def get_secret_reveal_cluster(cluster_id: str) -> Cluster | None:
     return Cluster.query.filter_by(id=cluster_id).first()
 
 
+def commit_secret_reveal_settings_transaction() -> None:
+    """Commit the governed Secret Reveal mutation with its staged Activity Audit evidence."""
+    db.session.commit()
+
+
 def rollback_secret_reveal_settings_transaction() -> None:
     """Reset a failed Secret Reveal administration transaction before recording failure evidence."""
     db.session.rollback()

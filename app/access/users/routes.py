@@ -40,6 +40,7 @@ from app.access.users.service import (
     persist_created_user,
     persist_updated_user,
     reset_user_password,
+    rollback_user_edit_transaction,
     restore_user_account,
     user_version_matches,
     user_version_token,
@@ -206,9 +207,7 @@ def edit(user_id: int):
             return reject('User unavailable', 'The requested user record was not found.', status='error')
         user = locked_user
         if not user_version_matches(user, form.user_version.data):
-            from app.extensions.db import db
-
-            db.session.rollback()
+            rollback_user_edit_transaction()
             user = get_user(user_id)
             if user is None:
                 return reject('User unavailable', 'The requested user record was not found.', status='error')
