@@ -51,6 +51,14 @@ def test_shared_component_widens_template_lint_and_contracts() -> None:
     assert 'tests/contracts' in plan.normalized_test_paths()
 
 
+def test_shared_domain_partial_never_uses_leaf_scoped_lint() -> None:
+    plan = build_plan(['app/templates/storage/object_storage/analytics/partials/_alerts_summary.html'])
+
+    assert plan.templates and plan.broad_templates
+    assert plan.normalized_template_paths() == []
+    assert 'tests/contracts' in plan.normalized_test_paths()
+
+
 def test_missing_template_fails_safe_to_full_template_lint() -> None:
     plan = build_plan(['app/templates/artifact_registry/removed_nonexistent.html'])
 
