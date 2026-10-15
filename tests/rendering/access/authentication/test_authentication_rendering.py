@@ -138,9 +138,16 @@ def test_rendered_database_setup_html_stays_inside_its_workspace() -> None:
             assert not parser.errors, f'setup_required={setup_required}, app_env={app_env}: ' + '; '.join(parser.errors)
             assert not parser.elements, 'unclosed rendered HTML elements'
             assert 'data-kaori-setup-console' in parser.found
-            assert 'data-kaori-terminal-command' in parser.found
-            assert 'data-kaori-setup-security' in parser.found
-            if setup_required:
-                assert 'data-kaori-setup-command' in parser.found
-                assert 'data-kaori-setup-flow' in parser.found
-                assert 'data-kaori-setup-advanced' in parser.found
+            if app_env == 'development':
+                assert 'data-kaori-terminal-command' in parser.found
+                assert 'data-kaori-setup-security' in parser.found
+                if setup_required:
+                    assert 'data-kaori-setup-command' in parser.found
+                    assert 'data-kaori-setup-flow' in parser.found
+                    assert 'data-kaori-setup-advanced' in parser.found
+            else:
+                # Anonymous production readiness shows administrator guidance only.
+                assert 'data-kaori-terminal-command' not in parser.found
+                assert 'data-kaori-setup-command' not in parser.found
+                assert 'data-kaori-setup-flow' not in parser.found
+                assert 'data-kaori-setup-advanced' not in parser.found
