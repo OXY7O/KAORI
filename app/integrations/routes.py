@@ -59,6 +59,7 @@ from app.platform_operations.notifications.service import (
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
 
+
 def _capsule_rbac_operation(name: str) -> Callable[..., Any]:
     """Resolve the Tenant-owned operation via the application composition root."""
     operations = current_app.extensions.get('kaori_tenant_capsule_rbac_bootstrap')
