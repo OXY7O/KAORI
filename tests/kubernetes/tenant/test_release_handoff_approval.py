@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
+from flask import Flask
 
 from app.kubernetes.tenant.capsule_handoff_related_inventory import _digest, capsule_related_scope_sha256
 from app.kubernetes.tenant.release_handoff_approval import (
@@ -19,6 +20,21 @@ from app.kubernetes.tenant.release_handoff_approval import (
 )
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
 from app.kubernetes.tenant.release_preflight import _release_blockers
+
+
+@pytest.fixture
+def tenant_capsule_worklist_app():
+    """Use the same per-app Tenant capability binding as production."""
+    from app.kubernetes.tenant import capsule_handoff_worklist
+
+    app = Flask('kaori-tenant-capsule-unit')
+    app.extensions['kaori_tenant_handoff_operations'] = {
+        'build_capsule_handoff_worklist': lambda *a, **kw: capsule_handoff_worklist.build_capsule_handoff_worklist(
+            *a, **kw
+        ),
+    }
+    with app.app_context():
+        yield
 
 
 def _snapshot(*, status: str = 'blocked', blockers: list[str] | None = None) -> dict:
@@ -383,6 +399,7 @@ def _capsule_g1_related_kaori_control_snapshot() -> dict:
     return snapshot
 
 
+@pytest.mark.usefixtures('tenant_capsule_worklist_app')
 def test_capsule_g1_recognizes_related_warning_and_executor_warning_separately():
     snapshot = _capsule_g1_related_kaori_control_snapshot()
     from app.kubernetes.tenant.release_handoff_approval import (
@@ -397,6 +414,7 @@ def test_capsule_g1_recognizes_related_warning_and_executor_warning_separately()
     )
 
 
+@pytest.mark.usefixtures('tenant_capsule_worklist_app')
 def test_capsule_g1_allows_real_sha_bound_kaori_related_obligation_without_granting_execution():
     snapshot = _capsule_g1_related_kaori_control_snapshot()
     _can_confirm_plan(snapshot)
@@ -412,6 +430,7 @@ def test_capsule_g1_allows_real_sha_bound_kaori_related_obligation_without_grant
         'missing_list',
     ],
 )
+@pytest.mark.usefixtures('tenant_capsule_worklist_app')
 def test_capsule_g1_refuses_incomplete_or_unknown_related_scope(field):
     snapshot = _capsule_g1_related_kaori_control_snapshot()
     related = snapshot['capsule_related_inventory']
