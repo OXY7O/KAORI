@@ -416,14 +416,12 @@
                                                             </div>
                                                         </div>
                                                         {% if bar.known %}
-                                                            {{ progress_bar.stacked_bar(
-                                                                bar.percent,
-                                                                bar.free_percent,
-                                                                'mt-3 flex h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated',
-                                                                'h-full bg-kaori-primary',
-                                                                'h-full bg-kaori-primary/20',
-                                                                label=bar.label ~ ': ' ~ bar.percent ~ ' percent committed, ' ~ bar.free_percent ~ ' percent remaining'
-                                                            ) }}
+                                                            {{ progress_bar.stacked_bar(bar.percent,
+                                                                                                                        bar.free_percent,
+                                                                                                                        'mt-3 flex h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated',
+                                                                                                                        'h-full bg-kaori-primary',
+                                                                                                                        'h-full bg-kaori-primary/20',
+                                                                                                                        label=bar.label ~ ': ' ~ bar.percent ~ ' percent committed, ' ~ bar.free_percent ~ ' percent remaining') }}
                                                         {% else %}
                                                             <p class="mt-2 text-xs text-content-muted">Percentage unavailable · {{ bar.state }}</p>
                                                         {% endif %}

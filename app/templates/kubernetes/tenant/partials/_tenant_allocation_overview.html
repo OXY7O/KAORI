@@ -114,14 +114,12 @@
                         </div>
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ bar.explanation }}</p>
                         {% if bar.known %}
-                            {{ progress_bar.stacked_bar(
-                                bar.percent,
-                                bar.free_percent,
-                                'mt-4 flex h-3 w-full overflow-hidden rounded-full bg-surface-card',
-                                'h-full bg-kaori-primary',
-                                'h-full bg-kaori-primary/20',
-                                label=bar.label ~ ': ' ~ bar.committed ~ ' committed of ' ~ bar.budget ~ ' budget; ' ~ bar.headroom ~ ' headroom'
-                            ) }}
+                            {{ progress_bar.stacked_bar(bar.percent,
+                                                        bar.free_percent,
+                                                        'mt-4 flex h-3 w-full overflow-hidden rounded-full bg-surface-card',
+                                                        'h-full bg-kaori-primary',
+                                                        'h-full bg-kaori-primary/20',
+                                                        label=bar.label ~ ': ' ~ bar.committed ~ ' committed of ' ~ bar.budget ~ ' budget; ' ~ bar.headroom ~ ' headroom') }}
                         {% else %}
                             <div class="mt-4 flex h-3 w-full items-center overflow-hidden rounded-full bg-surface-card"
                                  role="img"
