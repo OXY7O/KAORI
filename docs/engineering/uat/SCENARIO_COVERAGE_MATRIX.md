@@ -2,7 +2,7 @@
 
 **Issue authority:** #1738 catalog, #1726 UI, #1727 non-UI, #1728 execution evidence, #1730 real UAT and human acceptance.
 
-**Checkpoint 2026-10-13:** Specification complete does **not** mean automated coverage. No candidate-specific 91-scenario machine UAT or human acceptance occurred during this work. CI/CD and PR/merge remain on hold.
+**Checkpoint 2026-10-16:** Written specifications remain unchanged. Nine additional IDs underwent read-only source assertion review on #1738's work branch or the independent staging-review candidate. No machine scenario execution or human UAT acceptance is proven. CI/CD, PR and merge remain on hold.
 
 ## Coverage accounting
 
@@ -10,11 +10,15 @@
 | --- | --- |
 | Written case procedures | **91/91** across 18 Gherkin files and case register |
 | Preserved original first-wave | **14**; source mapping audit partial only |
+| Scenario IDs with inspected source assertions | **23/91** (14 first-wave + 9 supplemental, including source-only/adjacent; none prove full UAT) |
+| Scenario IDs without individual assertion-level review | **68/91**; does not prove equivalent tests are absent |
 | Newly expanded for domain-owner review | **77**; not yet approved by owning capability |
 | IDs referenced by the #1728 pilot execution manifest | **4/91**, source references, NOT RUN |
-| Remaining ID-to-test-node mapping | **87/91 unverified**; this does not prove tests do not exist |
+| Remaining #1728 pilot execution-manifest mapping | **87/91 not selected** into four-case pilot; independent of 23 assertion reviews, not proof equivalent tests are absent |
 | Confirmed full machine UAT PASS | **0/91 in this checkpoint** |
 | Human acceptance | **0/91 in this checkpoint** |
+
+**Mapping vocabulary:** The nine `source audit` entries document specific inspected assertions, not completed scenario-to-node coverage. `REVIEW-ONLY` means the named tests were present on `kaori/review/staging-uat` but missing from this staging-based branch. Read the [assertion audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md) for exact test node IDs and limitations. Four #1728 pilot manifest references remain **NOT RUN**, not four passing UAT scenarios.
 
 **Admission:** HOLD. Before invoking existing gates, reconcile owner-reviewed requirements, actual browser/API/node assertions, authorized provider evidence and exact candidate. Unsupported/unadmitted operations remain BLOCKED, not PASS. This document does not define a new CI gate.
 
@@ -22,11 +26,11 @@
 
 | Scenario ID | Risk | Layer | Specification | Test-node mapping | Execution |
 | --- | --- | --- | --- | --- | --- |
-| `UAT-AUT-001` | High | Both | [Gherkin](features/aut-authentication-sessions.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-AUT-001` | High | Both | [Gherkin](features/aut-authentication-sessions.feature) | ADJACENT source audit: login GET/render; no valid-login/session UAT ([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md)) | NOT RUN / PENDING |
 | `UAT-AUT-002` | High | Both | [Gherkin](features/aut-authentication-sessions.feature) | Pilot #1728 references test nodes, integration/runtime unverified | NOT RUN / PENDING |
 | `UAT-AUT-003` | High | Non-UI | [Gherkin](features/aut-authentication-sessions.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
-| `UAT-AUT-004` | High | Both | [Gherkin](features/aut-authentication-sessions.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
-| `UAT-AUT-005` | Medium | UI | [Gherkin](features/aut-authentication-sessions.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-AUT-004` | High | Both | [Gherkin](features/aut-authentication-sessions.feature) | SOURCE-CONTRACT audit: CSRF markup/route; rejected mutation unproven ([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md)) | NOT RUN / PENDING |
+| `UAT-AUT-005` | Medium | UI | [Gherkin](features/aut-authentication-sessions.feature) | SOURCE-CONTRACT audit: POST logout route; browser Back/session revoke unproven ([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md)) | NOT RUN / PENDING |
 | `UAT-IAM-001` | High | Both | [Gherkin](features/iam-access-rbac.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-IAM-002` | High | Both | [Gherkin](features/iam-access-rbac.feature) | First-wave assertions partially audited; no full UAT mapping | NOT RUN / PENDING |
 | `UAT-IAM-003` | High | Non-UI | [Gherkin](features/iam-access-rbac.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
@@ -52,12 +56,12 @@
 | `UAT-GOV-004` | Medium | UI | [Gherkin](features/gov-kubernetes-governance.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-TEN-001` | High | Both | [Gherkin](features/ten-kubernetes-tenant.feature) | First-wave assertions partially audited; no full UAT mapping | NOT RUN / PENDING |
 | `UAT-TEN-002` | High | Both | [Gherkin](features/ten-kubernetes-tenant.feature) | First-wave assertions partially audited; no full UAT mapping | NOT RUN / PENDING |
-| `UAT-TEN-003` | High | Both | [Gherkin](features/ten-kubernetes-tenant.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-TEN-003` | High | Both | [Gherkin](features/ten-kubernetes-tenant.feature) | PARTIAL source audit: capacity preflight only; create/provider read-back unproven ([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md)) | NOT RUN / PENDING |
 | `UAT-TEN-004` | High | Both | [Gherkin](features/ten-kubernetes-tenant.feature) | Pilot #1728 references test nodes, integration/runtime unverified | NOT RUN / PENDING |
 | `UAT-TEN-005` | High | Both | [Gherkin](features/ten-kubernetes-tenant.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
-| `UAT-TEN-006` | High | Both | [Gherkin](features/ten-kubernetes-tenant.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-TEN-006` | High | Both | [Gherkin](features/ten-kubernetes-tenant.feature) | PARTIAL REVIEW-ONLY audit: rollback; provider-patch/commit failure not fully proven ([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md)) | NOT RUN / PENDING |
 | `UAT-TEN-007` | Medium | UI | [Gherkin](features/ten-kubernetes-tenant.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
-| `UAT-TEN-008` | High | Both | [Gherkin](features/ten-kubernetes-tenant.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-TEN-008` | High | Both | [Gherkin](features/ten-kubernetes-tenant.feature) | PARTIAL REVIEW-ONLY audit: foreign ownership; generation replay unproven ([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md)) | NOT RUN / PENDING |
 | `UAT-KOP-001` | High | Both | [Gherkin](features/kop-kubernetes-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-KOP-002` | High | Both | [Gherkin](features/kop-kubernetes-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-KOP-003` | Medium | UI | [Gherkin](features/kop-kubernetes-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
@@ -87,12 +91,12 @@
 | `UAT-INL-004` | Medium | UI | [Gherkin](features/inl-intelligence.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-INL-005` | High | Non-UI | [Gherkin](features/inl-intelligence.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-RPT-001` | High | Both | [Gherkin](features/rpt-reports.feature) | First-wave assertions partially audited; no full UAT mapping | NOT RUN / PENDING |
-| `UAT-RPT-002` | High | Both | [Gherkin](features/rpt-reports.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-RPT-002` | High | Both | [Gherkin](features/rpt-reports.feature) | PARTIAL source audit: source-scope readiness; invalid direct POST unproven ([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md)) | NOT RUN / PENDING |
 | `UAT-RPT-003` | High | Both | [Gherkin](features/rpt-reports.feature) | Pilot #1728 references test nodes, integration/runtime unverified | NOT RUN / PENDING |
 | `UAT-RPT-004` | Medium | UI | [Gherkin](features/rpt-reports.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
-| `UAT-RPT-005` | High | Non-UI | [Gherkin](features/rpt-reports.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-RPT-005` | High | Non-UI | [Gherkin](features/rpt-reports.feature) | SOURCE-CONTRACT audit: template permissions; direct download denial unproven ([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md)) | NOT RUN / PENDING |
 | `UAT-RPT-006` | High | Non-UI | [Gherkin](features/rpt-reports.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
-| `UAT-RPT-007` | Medium | UI | [Gherkin](features/rpt-reports.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
+| `UAT-RPT-007` | Medium | UI | [Gherkin](features/rpt-reports.feature) | SOURCE-CONTRACT audit: Generated polling; Reports browser flows unproven ([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md)) | NOT RUN / PENDING |
 | `UAT-OPS-001` | Medium | Both | [Gherkin](features/ops-platform-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-OPS-002` | High | Non-UI | [Gherkin](features/ops-platform-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
 | `UAT-OPS-003` | High | Both | [Gherkin](features/ops-platform-operations.feature) | Unverified; capability suite inspection pending | NOT RUN / PENDING |
