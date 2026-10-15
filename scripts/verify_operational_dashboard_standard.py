@@ -555,7 +555,7 @@ def _verify_artifact_registry_dashboard(
             "@permission_required('artifact_registry.view')",
             'def _overview_provider_id() -> int | None:',
             "request.args.get('provider_id')",
-            "if raw is None or not raw.strip():",
+            'if raw is None or not raw.strip():',
             'except (TypeError, ValueError):',
             'if provider_id < 1:',
             'abort(404)',
