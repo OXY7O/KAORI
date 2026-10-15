@@ -62,7 +62,9 @@ def test_missing_finding_with_unavailable_source_stays_unknown_not_resolved(monk
             return [state]
 
     monkeypatch.setattr(source, '_active_recommendation_state_batches', lambda: iter([state]))
-    monkeypatch.setattr(source, '_source_evidence_posture_for_state', lambda _state, **_kwargs: (False, 'source_unavailable'))
+    monkeypatch.setattr(
+        source, '_source_evidence_posture_for_state', lambda _state, **_kwargs: (False, 'source_unavailable')
+    )
     monkeypatch.setattr(
         source,
         'db',
