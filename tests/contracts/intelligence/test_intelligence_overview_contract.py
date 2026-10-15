@@ -18,12 +18,16 @@ def test_intelligence_root_renders_dedicated_overview() -> None:
 
 def test_intelligence_overview_is_committed_database_state_only() -> None:
     overview = read('app/intelligence/overview.py')
+    coverage = read('app/intelligence/committed_inventory_coverage.py')
+    service = read('app/intelligence/service.py')
 
     assert 'get_active_recommendation_findings()' in overview
     assert 'INTELLIGENCE_CATALOG' in overview
-    assert 'Cluster.query.count()' in overview
-    assert 'ObjectStorageSystem.query.count()' in overview
-    assert 'db.session.query(' in overview
+    assert 'from app.intelligence.committed_inventory_coverage import _evidence_coverage' in overview
+    assert 'from app.intelligence.committed_inventory_coverage import _evidence_coverage' in service
+    assert 'Cluster.query.count()' in coverage
+    assert 'ObjectStorageSystem.query.count()' in coverage
+    assert 'db.session.query(' in coverage
     assert 'AlertCase.workflow_state' in overview
     assert 'AlertSilence.query.filter' in overview
     assert 'NotificationDelivery.query.filter' in overview
@@ -42,6 +46,7 @@ def test_intelligence_overview_is_committed_database_state_only() -> None:
         'requests.post(',
     ):
         assert forbidden not in overview
+        assert forbidden not in coverage
 
 
 def test_intelligence_overview_surfaces_alert_operations_posture() -> None:

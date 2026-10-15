@@ -699,8 +699,8 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
     else:
         # The existing Intelligence Overview provides a conservative committed
         # 24-hour Inventory baseline, *not* evaluator/scan completeness.
-        # Import here avoids a module import cycle with Overview's service consumer.
-        from app.intelligence.overview import _evidence_coverage
+        # Use the same committed coverage authority as Overview without a reciprocal import.
+        from app.intelligence.committed_inventory_coverage import _evidence_coverage
 
         inventory = _evidence_coverage()
         domain = clean(payload['filters'].get('domain'))
