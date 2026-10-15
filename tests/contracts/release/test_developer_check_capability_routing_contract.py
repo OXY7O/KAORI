@@ -53,6 +53,22 @@ def test_object_storage_provider_changes_select_storage_consumer_contracts() -> 
     assert 'tests/contracts/storage/object_storage' in plan.normalized_test_paths()
 
 
+def test_registry_workspace_template_selects_registry_contracts() -> None:
+    plan = build_plan(['app/templates/artifact_registry/inventory.html'])
+
+    assert plan.templates and plan.contracts
+    assert 'artifact_registry' in plan.capabilities
+    assert 'tests/contracts/artifact_registry' in plan.normalized_test_paths()
+
+
+def test_object_storage_frontend_asset_selects_storage_contracts() -> None:
+    plan = build_plan(['app/static/js/storage/object_storage/analytics.js'])
+
+    assert plan.frontend and plan.contracts
+    assert 'storage/object_storage' in plan.capabilities
+    assert 'tests/contracts/storage/object_storage' in plan.normalized_test_paths()
+
+
 def test_unrelated_access_change_does_not_select_storage_or_registry() -> None:
     plan = build_plan(['app/access/users/service.py'])
 
