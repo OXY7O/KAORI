@@ -36,7 +36,7 @@ def test_cluster_rbac_bootstrap_is_governed_separately_from_tenant_adoption():
         assert f"'{operation}': {operation}" in composition
         assert f"_capsule_rbac_operation('{operation}')" in integrations
     assert "current_app.extensions.get('kaori_tenant_capsule_rbac_bootstrap')" in integrations
-    assert "if not callable(operation):" in integrations
+    assert 'if not callable(operation):' in integrations
     assert 'target_type=_TARGET' in bootstrap
     assert 'latest_capsule_role_bootstrap_evidence' in bootstrap
     assert 'capsule_cluster_role_manifest(profile)' in bootstrap
