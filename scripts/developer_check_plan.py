@@ -171,7 +171,14 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
         elif path.startswith(('app/kubernetes/', 'tests/kubernetes/')):
             plan.capabilities.add('kubernetes')
             plan.add_test_path('tests/kubernetes')
-        elif path.startswith(('app/artifact_registry/', 'tests/artifact_registry/')):
+        elif path.startswith(
+            (
+                'app/artifact_registry/',
+                'app/templates/artifact_registry/',
+                'app/static/js/artifact_registry/',
+                'tests/artifact_registry/',
+            )
+        ):
             plan.capabilities.add('artifact_registry')
             plan.add_test_path('tests/artifact_registry')
             plan.add_test_path('tests/contracts/artifact_registry')
@@ -179,6 +186,8 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
             (
                 'app/storage/',
                 'app/object_storage/',
+                'app/templates/storage/object_storage/',
+                'app/static/js/storage/object_storage/',
                 'tests/storage/',
                 'tests/object_storage/',
             )
@@ -190,6 +199,8 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
                 (
                     'app/storage/object_storage/',
                     'app/object_storage/',
+                    'app/templates/storage/object_storage/',
+                    'app/static/js/storage/object_storage/',
                     'tests/storage/object_storage/',
                     'tests/object_storage/',
                 )
