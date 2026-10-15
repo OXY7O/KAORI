@@ -58,7 +58,6 @@ from app.platform_operations.notifications.service import (
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
 
 
-
 @integrations_bp.get('/')
 @permission_required('integrations.manage')
 def overview() -> ResponseReturnValue:
