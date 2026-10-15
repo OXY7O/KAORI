@@ -137,7 +137,7 @@ def _registered_blueprint_vars() -> set[str]:
 
 def verify() -> None:
     errors: list[str] = []
-    contract_modules_by_surface: dict[str, int] = {}
+    contract_modules_by_surface: dict[str, set[Path]] = {}
     navigation_count = len(navigation_endpoints())
     blueprint_count = len(blueprint_vars())
 
@@ -159,7 +159,7 @@ def verify() -> None:
             if not (ROOT / verifier).exists():
                 errors.append(f'{surface.title}: missing verifier {verifier}')
 
-        contract_modules_by_surface[surface.title] = 0
+        contract_modules_by_surface[surface.title] = set()
         for contract_path in surface.contract_paths:
             evidence_path = ROOT / contract_path
             if not evidence_path.exists():
@@ -169,7 +169,7 @@ def verify() -> None:
             if not modules:
                 errors.append(f'{surface.title}: release evidence has no test modules: {contract_path}')
                 continue
-            contract_modules_by_surface[surface.title] += len(modules)
+            contract_modules_by_surface[surface.title].update(modules)
 
         if surface.navigation_source is None:
             if surface.navigation_endpoints:
@@ -256,7 +256,7 @@ def verify() -> None:
 
     print(f'PASS — KAORI Release Coverage · {navigation_count} links / {blueprint_count} blueprints')
     for surface in SURFACES:
-        print(f'  COVERED — {surface.title}: {contract_modules_by_surface[surface.title]} contract test module(s)')
+        print(f'  COVERED — {surface.title}: {len(contract_modules_by_surface[surface.title])} contract test module(s)')
 
 
 if __name__ == '__main__':
