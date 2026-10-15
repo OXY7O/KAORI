@@ -26,6 +26,11 @@ def register_blueprints(app: Flask) -> None:
     from app.kubernetes.inventory.routes import inventory_bp
     from app.kubernetes.operations.routes import kubernetes_operations_bp
     from app.kubernetes.tenant.approval_inbox import get_tenant_release_work_inbox
+    from app.kubernetes.tenant.capsule_rbac_bootstrap import (
+        bootstrap_missing_capsule_roles,
+        check_capsule_role_bootstrap,
+        latest_capsule_role_bootstrap_evidence,
+    )
     from app.kubernetes.tenant.routes import tenant_bp
     from app.platform_operations import bp as platform_operations_bp
     from app.platform_operations.health import health_bp
@@ -40,6 +45,13 @@ def register_blueprints(app: Flask) -> None:
     # Compose the Tenant-owned committed approval projection into the shared
     # Notification Work Inbox once per Flask app; no global mutable registry.
     app.extensions['kaori_tenant_approval_work_inbox'] = get_tenant_release_work_inbox
+    # Integration presentation invokes Tenant-owned cluster RBAC operations.
+    # Keep this wiring application-scoped to prevent reverse domain imports.
+    app.extensions['kaori_tenant_capsule_rbac_bootstrap'] = {
+        'bootstrap_missing_capsule_roles': bootstrap_missing_capsule_roles,
+        'check_capsule_role_bootstrap': check_capsule_role_bootstrap,
+        'latest_capsule_role_bootstrap_evidence': latest_capsule_role_bootstrap_evidence,
+    }
 
     for blueprint in (
         auth_bp,
