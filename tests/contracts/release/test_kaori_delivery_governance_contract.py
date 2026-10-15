@@ -441,3 +441,32 @@ def test_scenario_driven_uat_maintains_machine_and_human_acceptance_boundaries()
 
     assert 'not new pytest markers' in taxonomy
     assert 'keep human acceptance separate from JUnit results' in taxonomy
+
+
+def test_tenant_uat_example_records_fail_closed_without_evidence() -> None:
+    """Illustrative examples cannot masquerade as an executed or accepted UAT."""
+    testing = read(ROOT / 'docs/TESTING.md')
+    examples = testing.split(
+        '### Example execution and human acceptance records — Tenant Adoption', 1
+    )[1].split('## Practical test commands', 1)[0]
+
+    for scenario_id in ('UAT-TEN-001', 'UAT-TEN-002'):
+        execution = examples.split(
+            f'#### `{scenario_id}` — ', 1
+        )[1].split('#### ', 1)[0]
+        # Each scenario has two consecutive records; the first must be the
+        # unexecuted machine record, while the second stays a human decision.
+        assert '| Execution status | **NOT RUN**' in execution
+        assert '| Evidence references | **None**' in execution
+        assert '| Candidate source commit/tree | Not selected / not selected' in execution
+        assert 'node IDs unverified' in execution
+
+        acceptance = examples.split(
+            f'#### `{scenario_id}` — ', 2
+        )[2].split('#### ', 1)[0]
+        assert '| Human decision | **PENDING**' in acceptance
+        assert '| Reviewer/time | No authorized reviewer decision' in acceptance
+        assert 'source SHA/tree **unselected**' in acceptance
+
+    assert 'NOT RUN / PENDING' in examples
+    assert '#1728 enforcement workstream' in examples
