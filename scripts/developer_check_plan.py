@@ -40,6 +40,11 @@ class ValidationPlan:
         if (ROOT / path).exists():
             self.test_paths.add(path)
 
+    def add_test_node(self, module: str, node: str) -> None:
+        """Select an existing pytest test by its static trusted node identity."""
+        if (ROOT / module).is_file():
+            self.test_paths.add(f'{module}::{node}')
+
     def add_test_glob(self, pattern: str) -> None:
         for path in sorted(ROOT.glob(pattern)):
             if path.is_file():
@@ -161,6 +166,28 @@ _TEMPLATE_DOMAIN_TESTS = {
     'welcome': ('tests/welcome', 'tests/contracts/welcome'),
 }
 _SAFE_TEMPLATE_PATH = re.compile(r'^app/templates/[A-Za-z0-9_./-]+\.html$')
+_WELCOME_VISUAL_MODULE = 'tests/ui/test_representative_interactions.py'
+_WELCOME_VISUAL_NODE = 'test_welcome_visual_qa_light_and_dark'
+
+
+def _select_early_visual_regression(plan: ValidationPlan, path: str) -> None:
+    """Run affected Welcome visual regression during Draft instead of late admission."""
+    if path.startswith(
+        (
+            'app/welcome/',
+            'app/templates/welcome/',
+            'app/templates/layouts/',
+            'app/templates/components/',
+            'app/static/css/',
+        )
+    ) or path in {
+        'app/static/js/application_shell.js',
+        'tests/ui/baselines/authenticated-visual.json',
+        'tests/ui/visual_audit.py',
+    }:
+        plan.capabilities.add('ui/welcome-visual')
+        plan.add_test_node(_WELCOME_VISUAL_MODULE, _WELCOME_VISUAL_NODE)
+
 
 
 def _route_template(plan: ValidationPlan, path: str) -> None:
@@ -211,6 +238,8 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
     for path in changed_paths:
         if not path:
             continue
+
+        _select_early_visual_regression(plan, path)
 
         if _is_wide_authority(path):
             plan.wide = True
