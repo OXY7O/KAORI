@@ -160,6 +160,7 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
                 plan.capabilities.add('artifact_registry')
                 plan.add_test_path('tests/contracts/artifact_registry')
                 plan.add_test_path('tests/artifact_registry')
+                plan.add_test_path('tests/unit/artifact_registry')
             if path.startswith('app/integrations/storage/object_storage/'):
                 plan.capabilities.add('storage/object_storage')
                 plan.add_test_path('tests/contracts/storage/object_storage')
@@ -177,10 +178,12 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
                 'app/templates/artifact_registry/',
                 'app/static/js/artifact_registry/',
                 'tests/artifact_registry/',
+                'tests/unit/artifact_registry/',
             )
         ):
             plan.capabilities.add('artifact_registry')
             plan.add_test_path('tests/artifact_registry')
+            plan.add_test_path('tests/unit/artifact_registry')
             plan.add_test_path('tests/contracts/artifact_registry')
         elif path.startswith(
             (
