@@ -12,6 +12,7 @@ from werkzeug.serving import make_server
 from app import create_app
 from app.access.authentication.readiness import AuthenticationDatabaseReadiness
 from app.access.authentication.results import AuthResult
+from app.common.pagination import build_pagination_window, pagination_payload
 from app.extensions import login_manager
 from app.models import User
 
@@ -112,6 +113,7 @@ EMPTY_INVENTORY_OVERVIEW = {
     'asset_catalog': [],
     'active_signal_count': 0,
     'clusters': [],
+    'resources_pagination': pagination_payload(build_pagination_window(total_items=0)),
     'inventory_summary': {},
     'health': {
         'connected_clusters': 0,
