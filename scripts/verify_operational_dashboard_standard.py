@@ -569,6 +569,8 @@ def _verify_artifact_registry_dashboard(
         ),
         'Artifact Registry dashboard route boundary',
     )
+    if routes.count('provider_id=_overview_provider_id(),') < 2:
+        raise AssertionError('Registry overview and section must share fail-closed provider scope validation')
     _require(
         presentation,
         (
