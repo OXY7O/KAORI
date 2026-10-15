@@ -31,6 +31,8 @@ def main() -> int:
     intelligence_nav = read('app/templates/components/navigation/intelligence_menu.html')
     report_notifications = read('app/reports/notifications.py')
     report_model = read('app/models/report.py')
+    delivery_registry = service.partition('def _delivery_registry_page(')[2].partition('\ndef _report_id_for_delivery(')[0]
+    delivery_template = read('app/templates/integrations/delivery/notification_channels/index.html')
 
     checks = {
         'route ownership': "url_prefix='/integrations/notification-channels'" in routes,
@@ -66,8 +68,14 @@ def main() -> int:
         and "('overview', 'Overview', 'layout-dashboard'" in template
         and "('channels', 'Channels', 'send'" in template
         and "('delivery', 'Delivery Activity', 'history'" in template,
-        'delivery journal surface': 'NotificationDelivery.query.order_by(' in service
-        and 'No Notification Deliveries Recorded' in template,
+        'delivery journal surface': 'query = NotificationDelivery.query' in delivery_registry
+        and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
+        and 'query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())'
+        in delivery_registry
+        and 'rows, pagination = paginate_query(query, page=page, per_page=per_page)' in delivery_registry
+        and "'delivery_pagination': delivery_pagination" in service
+        and 'payload.delivery_pagination' in delivery_template
+        and 'No Notification Deliveries Recorded' in delivery_template,
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
         'platform ownership copy': 'platform delivery capability' in template.lower(),
         'delivery evidence deletion guard': 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle
