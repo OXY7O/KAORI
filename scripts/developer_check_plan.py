@@ -154,6 +154,10 @@ def _route_template(plan: ValidationPlan, path: str) -> None:
         not path.startswith(_LEAF_TEMPLATE_PREFIXES)
         or not _SAFE_TEMPLATE_PATH.fullmatch(path)
         or not (ROOT / path).is_file()
+        or (ROOT / path).is_symlink()
+        or '/partials/' in path
+        or '/components/' in path
+        or Path(path).name.startswith('_')
         or '..' in Path(path).parts
     ):
         plan.broad_templates = True
