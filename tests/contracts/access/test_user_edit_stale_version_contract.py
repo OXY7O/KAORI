@@ -49,7 +49,14 @@ def test_user_edit_uses_committed_version_before_write() -> None:
     assert 'locked_user = lock_user_for_mutation(user_id)' in edit
     assert 'if not user_version_matches(user, form.user_version.data):' in edit
     assert edit.index('user_version_matches(') < edit.index('create_or_update_user(form, user)')
-    assert 'db.session.rollback()' in edit
+    assert 'rollback_user_edit_transaction()' in edit
+    rollback = service.split('def rollback_user_edit_transaction() -> None:', 1)[1]
+    rollback = rollback.split('\ndef ', 1)[0]
+    assert 'db.session.rollback()' in rollback
+    assert edit.index('rollback_user_edit_transaction()') < edit.index(
+        'user = get_user(user_id)', edit.index('rollback_user_edit_transaction()')
+    )
+    assert 'db.session.rollback()' not in edit
     assert 'form.user_version.errors' in edit
     assert 'with_for_update()' in service
     assert '.populate_existing()' in service

@@ -449,7 +449,11 @@ def test_registry_analytics_materialization_is_bounded_and_worker_owned() -> Non
     assert 'requested_by_user_id=None' in routes
     assert 'JobWorkerUnavailable' in routes
     assert 'JobQuotaExceeded' in routes
-    assert 'db.session.rollback()' in routes
+    assert 'rollback_registry_analytics_materialization_dispatch()' in routes
+    rollback = adapter.split('def rollback_registry_analytics_materialization_dispatch() -> None:', 1)[1]
+    rollback = rollback.split('\ndef ', 1)[0]
+    assert 'db.session.rollback()' in rollback
+    assert 'db.session.rollback()' not in routes
     assert "'Cache-Control'] = 'no-store, max-age=0'" in routes
     assert "@artifact_registry_bp.post('/analytics/collect')" not in routes
     assert 'get_registry_analytics_job(public_id)' in routes

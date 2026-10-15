@@ -9,11 +9,16 @@ def test_protected_policy_mutation_defers_commit_until_audit_staged() -> None:
     policy = (ROOT / 'app/kubernetes/operations/secrets/reveal_policy.py').read_text()
     routes = (ROOT / 'app/platform_operations/kubernetes/secret_reveal/routes.py').read_text()
     service = (ROOT / 'app/platform_operations/notifications/service.py').read_text()
+    secret_service = (ROOT / 'app/platform_operations/kubernetes/secret_reveal/service.py').read_text()
     writer = (ROOT / 'app/platform_operations/notifications/writer.py').read_text()
     assert policy.count('commit: bool = True') >= 2
     assert routes.count('commit=False') == 2
     assert routes.count('durable_with_operation=True') == 2
-    assert routes.count('db.session.commit()') == 2
+    assert routes.count('commit_secret_reveal_settings_transaction()') == 2
+    commit = secret_service.split('def commit_secret_reveal_settings_transaction() -> None:', 1)[1]
+    commit = commit.split('\ndef ', 1)[0]
+    assert 'db.session.commit()' in commit
+    assert 'db.session.commit()' not in routes
     assert 'writer = stage_operational_activity if durable_with_operation' in routes
     assert 'def stage_operational_activity(' in service
     assert 'commit=False' in service.split('def stage_operational_activity(', 1)[1]
