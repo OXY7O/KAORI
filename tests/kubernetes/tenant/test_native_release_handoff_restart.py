@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
+from flask import Flask
 
 from app.kubernetes.tenant import release_handoff_approval as service
 from app.kubernetes.tenant.release_handoff_inventory import handoff_fingerprint
@@ -198,12 +199,38 @@ def prepare(monkeypatch, *, expired=True, actor=42, readback=None, mutate=None, 
         'native_handoff_execution_history',
         lambda _: executions or [],
     )
-    result = service.restart_expired_native_release_handoff_plan_committed(
-        tenant_id='tenant-a',
-        actor_user_id=actor,
-        plan_sha256=data['plan_sha256'],
-        confirmed=True,
-    )
+    # Reflect application-scoped Tenant composition without importing an
+    # upstream service from the canonical approval/recovery implementation.
+    # Wrappers resolve patched source functions at call time so safety cases
+    # still verify the actual authorized/blocked paths.
+    from app.kubernetes.tenant import native_handoff_recovery, native_no_transfer_recovery
+
+    app = Flask('kaori-tenant-handoff-unit')
+    app.extensions['kaori_tenant_handoff_operations'] = {
+        'native_handoff_execution_history': lambda *a, **kw: native_handoff_executor.native_handoff_execution_history(
+            *a, **kw
+        ),
+        'native_handoff_readback_history': lambda *a, **kw: native_handoff_readback.native_handoff_readback_history(
+            *a, **kw
+        ),
+        'readback_proves_handoff_not_started': lambda *a, **kw: native_handoff_recovery.readback_proves_handoff_not_started(
+            *a, **kw
+        ),
+        '_source_history': lambda *a, **kw: native_no_transfer_recovery._source_history(*a, **kw),
+        '_verify_original_provider_state': lambda *a, **kw: native_no_transfer_recovery._verify_original_provider_state(
+            *a, **kw
+        ),
+        'require_authorized_no_transfer_restart': lambda *a, **kw: native_no_transfer_recovery.require_authorized_no_transfer_restart(
+            *a, **kw
+        ),
+    }
+    with app.app_context():
+        result = service.restart_expired_native_release_handoff_plan_committed(
+            tenant_id='tenant-a',
+            actor_user_id=actor,
+            plan_sha256=data['plan_sha256'],
+            confirmed=True,
+        )
     return result, data, session
 
 
