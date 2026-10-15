@@ -269,6 +269,10 @@ def kaori_authenticated_base_url() -> Iterator[str]:
             return_value=EMPTY_INVENTORY_OVERVIEW,
         ),
         patch(
+            'app.kubernetes.inventory.routes.get_inventory_clusters',
+            return_value=[],
+        ),
+        patch(
             'app.kubernetes.inventory.routes.get_inventory_freshness_context',
             return_value=EMPTY_INVENTORY_FRESHNESS,
         ),

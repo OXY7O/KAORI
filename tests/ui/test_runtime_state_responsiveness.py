@@ -44,7 +44,9 @@ def test_authentication_readiness_state_is_responsive_and_traceable(
                 exact=True,
             )
         expect(state_marker).to_be_visible()
-        expect(page.get_by_text('Blocked', exact=True)).to_be_visible()
+        readiness_strip = page.get_by_label('Initialization readiness')
+        expect(readiness_strip.get_by_text('Normal Sign-In', exact=True)).to_be_visible()
+        expect(readiness_strip.get_by_text('Unavailable', exact=True).last).to_be_visible()
 
         layout = page.evaluate(
             """() => ({
