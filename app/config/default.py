@@ -438,6 +438,9 @@ class Config:
             'app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
+            'app.platform_operations.notifications.alert_delivery.tasks.recover_notification_channel_deliveries': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            }
             'app.intelligence.alert_signals.tasks.refresh_alert_signals': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
