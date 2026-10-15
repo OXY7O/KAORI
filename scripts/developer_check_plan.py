@@ -84,6 +84,7 @@ def _select_contract_family(plan: ValidationPlan, path: str) -> bool:
     families = (
         'access',
         'analytics',
+        'artifact_registry',
         'architecture',
         'dashboards',
         'definitions',
@@ -153,6 +154,16 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
         elif path.startswith(('app/integrations/', 'tests/integrations/')):
             plan.capabilities.add('integrations')
             plan.add_test_path('tests/integrations')
+            # Provider contracts remain integration-owned; cross-domain consumers
+            # receive their existing focused regression evidence as well.
+            if path.startswith('app/integrations/registry/'):
+                plan.capabilities.add('artifact_registry')
+                plan.add_test_path('tests/contracts/artifact_registry')
+                plan.add_test_path('tests/artifact_registry')
+            if path.startswith('app/integrations/storage/object_storage/'):
+                plan.capabilities.add('storage/object_storage')
+                plan.add_test_path('tests/contracts/storage/object_storage')
+                plan.add_test_path('tests/storage/object_storage')
         elif path.startswith(('app/kubernetes/tenant/', 'tests/kubernetes/tenant/')):
             plan.capabilities.add('kubernetes/tenant')
             plan.add_test_path('tests/kubernetes/tenant')
@@ -160,6 +171,10 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
         elif path.startswith(('app/kubernetes/', 'tests/kubernetes/')):
             plan.capabilities.add('kubernetes')
             plan.add_test_path('tests/kubernetes')
+        elif path.startswith(('app/artifact_registry/', 'tests/artifact_registry/')):
+            plan.capabilities.add('artifact_registry')
+            plan.add_test_path('tests/artifact_registry')
+            plan.add_test_path('tests/contracts/artifact_registry')
         elif path.startswith(
             (
                 'app/storage/',
@@ -171,6 +186,16 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
             plan.capabilities.add('storage')
             plan.add_test_path('tests/storage')
             plan.add_test_path('tests/object_storage')
+            if path.startswith(
+                (
+                    'app/storage/object_storage/',
+                    'app/object_storage/',
+                    'tests/storage/object_storage/',
+                    'tests/object_storage/',
+                )
+            ):
+                plan.capabilities.add('storage/object_storage')
+                plan.add_test_path('tests/contracts/storage/object_storage')
         elif path.startswith(('app/platform_operations/', 'tests/platform_operations/')):
             plan.capabilities.add('platform_operations')
             plan.contracts = True
