@@ -40,6 +40,7 @@ jobs:
       reports: ${{ steps.route.outputs.reports }}
       wide: ${{ steps.route.outputs.wide }}
       test_paths: ${{ steps.route.outputs.test_paths }}
+      template_paths: ${{ steps.route.outputs.template_paths }}
       summary: ${{ steps.route.outputs.summary }}
     steps:
       - name: Checkout Work Branch
@@ -199,6 +200,7 @@ jobs:
         env:
           CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
           CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
+          TEMPLATE_PATHS: ${{ needs.route.outputs.template_paths }}
           CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
           CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
           TEST_PATHS: ${{ needs.route.outputs.test_paths }}
@@ -224,7 +226,15 @@ jobs:
           }
 
           if [[ "$CHECK_TEMPLATES" == "true" ]]; then
-            run_toolchain 'DjLint' python -m djlint app/templates --check
+            if [[ -n "$TEMPLATE_PATHS" ]]; then
+              # The canonical planner only outputs existing, safe, owned leaf HTML paths.
+              # Shell arrays preserve argument boundaries; no eval or dynamic shell commands.
+              read -r -a changed_templates <<< "$TEMPLATE_PATHS"
+              run_toolchain 'DjLint Changed Templates' python -m djlint "${changed_templates[@]}" --check
+            else
+              # Shared, removed, unknown, or wide validation-authority changes widen.
+              run_toolchain 'DjLint Full Templates' python -m djlint app/templates --check
+            fi
           fi
 
           if [[ "$CHECK_FRONTEND" == "true" ]]; then
