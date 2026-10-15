@@ -191,6 +191,14 @@ def _route_template(plan: ValidationPlan, path: str) -> None:
             if domain == 'reports':
                 plan.reports = True
             break
+    if path.startswith('app/templates/integrations/registry/'):
+        plan.capabilities.add('artifact_registry')
+        plan.add_test_path('tests/contracts/artifact_registry')
+        plan.add_test_path('tests/unit/artifact_registry')
+    if path.startswith('app/templates/integrations/storage/object_storage/'):
+        plan.capabilities.add('storage/object_storage')
+        plan.add_test_path('tests/storage/object_storage')
+        plan.add_test_path('tests/contracts/storage/object_storage')
     if path.startswith('app/templates/kubernetes/tenant/'):
         plan.capabilities.add('kubernetes/tenant')
         plan.add_test_path('tests/kubernetes/tenant')
