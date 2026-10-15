@@ -197,6 +197,13 @@ def get_activity_center_context(
     if not callable(tenant_inbox_provider):
         raise RuntimeError('Tenant approval Work Inbox provider is not registered.')
     tenant_approval_inbox = tenant_inbox_provider(user_id=user_id)
+    if (
+        not isinstance(tenant_approval_inbox, dict)
+        or not isinstance(tenant_approval_inbox.get('items'), list)
+        or not isinstance(tenant_approval_inbox.get('pending_count'), int)
+        or not isinstance(tenant_approval_inbox.get('total_count'), int)
+    ):
+        raise RuntimeError('Tenant approval Work Inbox provider returned an invalid projection.')
     notification_inbox_unread_count = inbox_unread_count
     inbox_unread_count += tenant_approval_inbox['pending_count']
     inbox_total_count += tenant_approval_inbox['total_count']

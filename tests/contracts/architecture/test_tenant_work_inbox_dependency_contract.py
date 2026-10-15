@@ -16,6 +16,10 @@ def test_notification_read_model_does_not_import_tenant_domain() -> None:
     assert "current_app.extensions.get('kaori_tenant_approval_work_inbox')" in source
     assert "raise RuntimeError('Tenant approval Work Inbox provider is not registered.')" in source
     assert 'tenant_approval_inbox = tenant_inbox_provider(user_id=user_id)' in source
+    assert 'not isinstance(tenant_approval_inbox, dict)' in source
+    assert "not isinstance(tenant_approval_inbox.get('pending_count'), int)" in source
+    assert "not isinstance(tenant_approval_inbox.get('total_count'), int)" in source
+    assert 'Tenant approval Work Inbox provider returned an invalid projection.' in source
 
 
 def test_bootstrap_registers_tenant_owned_provider_per_application() -> None:
