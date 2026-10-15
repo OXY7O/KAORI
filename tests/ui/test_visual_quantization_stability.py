@@ -3,8 +3,17 @@
 from __future__ import annotations
 
 import hashlib
+import json
+from io import BytesIO
+from pathlib import Path
+from typing import cast
+from unittest.mock import Mock
 
-from tests.ui.visual_audit import _matches_single_white_quantization_edge
+import pytest
+from PIL import Image
+from playwright.sync_api import Page
+
+from tests.ui.visual_audit import _matches_single_white_quantization_edge, assert_visual_baseline
 
 
 def _digest(*channels: int) -> str:
@@ -68,3 +77,74 @@ def test_existing_exact_sha_authority_is_unchanged_for_any_noisy_candidate() -> 
     expected = _digest(240, 240, 240)
     assert strict != expected
     assert _matches_single_white_quantization_edge(bytes((250, 249, 252)), normalized, expected)
+
+
+def _test_page() -> Page:
+    buffer = BytesIO()
+    Image.new('RGB', (390, 844), (255, 255, 255)).save(buffer, format='PNG')
+    page = Mock()
+    page.screenshot.return_value = buffer.getvalue()
+    return cast(Page, page)
+
+
+def _manifest(tmp_path: Path, *, height: int = 844) -> Path:
+    manifest = tmp_path / 'baseline.json'
+    manifest.write_text(
+        json.dumps(
+            {'welcome-light-mobile': {'width': 390, 'height': height, 'visual_sha256': '0' * 64}}
+        ),
+        encoding='utf-8',
+    )
+    return manifest
+
+
+def test_geometry_mismatch_fails_before_rounding_guard(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import tests.ui.visual_audit as visual
+
+    def unexpected_guard(*_args: object) -> bool:
+        raise AssertionError('edge guard cannot bypass geometry')
+
+    monkeypatch.setattr(visual, '_matches_white_raster_rounding_noise', unexpected_guard)
+    with pytest.raises(AssertionError, match='dimensions changed'):
+        assert_visual_baseline(
+            _test_page(),
+            surface='welcome',
+            theme='light',
+            viewport_name='mobile',
+            manifest_path=_manifest(tmp_path, height=800),
+            evidence_root=tmp_path / 'evidence',
+        )
+
+
+def test_one_channel_guard_emits_visible_warning(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import tests.ui.visual_audit as visual
+
+    monkeypatch.setattr(visual, '_matches_white_raster_rounding_noise', lambda *_: True)
+    with pytest.warns(UserWarning, match='one near-white quantization-edge'):
+        assert_visual_baseline(
+            _test_page(),
+            surface='welcome',
+            theme='light',
+            viewport_name='mobile',
+            manifest_path=_manifest(tmp_path),
+            evidence_root=tmp_path / 'evidence',
+        )
+
+
+def test_material_drift_still_fails_with_screenshot_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import tests.ui.visual_audit as visual
+
+    monkeypatch.setattr(visual, '_matches_white_raster_rounding_noise', lambda *_: False)
+    evidence = tmp_path / 'evidence'
+    with pytest.raises(AssertionError, match='visual baseline changed'):
+        assert_visual_baseline(
+            _test_page(),
+            surface='welcome',
+            theme='light',
+            viewport_name='mobile',
+            manifest_path=_manifest(tmp_path),
+            evidence_root=evidence,
+        )
+    assert (evidence / 'welcome-light-mobile-actual.png').is_file()
