@@ -24,7 +24,16 @@ def test_cluster_rbac_bootstrap_is_governed_separately_from_tenant_adoption():
     access = read('app/kubernetes/tenant/access.py')
     adoption = read('app/kubernetes/tenant/discovery_adoption.py')
 
-    assert 'from app.kubernetes.tenant.capsule_rbac_bootstrap import (' in integrations
+    # Integrations is a presentation consumer; Tenant capabilities are wired at bootstrap.
+    app_bootstrap = read('app/bootstrap/blueprints.py')
+    assert 'from app.kubernetes.tenant.capsule_rbac_bootstrap import (' in app_bootstrap
+    assert 'from app.kubernetes.tenant.capsule_rbac_bootstrap import (' not in integrations
+    assert "app.extensions['kaori_tenant_capsule_rbac_actions'] = {" in app_bootstrap
+    assert "current_app.extensions.get('kaori_tenant_capsule_rbac_actions')" in integrations
+    assert "raise RuntimeError('Tenant Capsule RBAC operations are not registered.')" in integrations
+    assert "_tenant_capsule_rbac_action('latest')(cluster_id)" in integrations
+    assert "_tenant_capsule_rbac_action('check')(cluster_id, int(current_user.id))" in integrations
+    assert "_tenant_capsule_rbac_action('bootstrap')(cluster_id, int(current_user.id), approved=True)" in integrations
     assert 'target_type=_TARGET' in bootstrap
     assert 'latest_capsule_role_bootstrap_evidence' in bootstrap
     assert 'capsule_cluster_role_manifest(profile)' in bootstrap
