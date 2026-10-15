@@ -22,7 +22,7 @@ def test_correlation_readiness_is_shared_committed_kaori_evidence() -> None:
     assert (
         '_committed_runtime_correlation_evidence_readiness(session, signature_fn=runtime_input_signature)' in producer
     )
-    assert 'with Session(db.engine) as materialization_session:' in producer
+    assert 'with Session(db.engine) as materialization_session, materialization_session.begin():' in producer
 
 
 def test_central_intelligence_consumes_shared_evidence_not_registry_implementation() -> None:

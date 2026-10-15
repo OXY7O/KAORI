@@ -129,7 +129,10 @@ def test_work_inbox_is_bound_to_committed_evidence_and_existing_notification_dec
     )
     inbox = (root / 'app/kubernetes/tenant/approval_inbox.py').read_text(encoding='utf-8')
 
-    assert 'get_tenant_release_work_inbox(user_id=user_id)' in queries
+    bootstrap = (root / 'app/bootstrap/blueprints.py').read_text(encoding='utf-8')
+    assert "current_app.extensions.get('kaori_tenant_approval_work_inbox')" in queries
+    assert 'tenant_approval_inbox = tenant_inbox_provider(user_id=user_id)' in queries
+    assert "app.extensions['kaori_tenant_approval_work_inbox'] = get_tenant_release_work_inbox" in bootstrap
     assert 'inbox_unread_count += tenant_approval_inbox' in queries
     assert 'tenant_approval_inbox_items' in queries
     assert 'Tenant Release approval requests' in panel
