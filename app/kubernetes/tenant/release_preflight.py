@@ -20,6 +20,7 @@ from app.kubernetes.tenant.decommission_service import (
     _active_membership_count,
 )
 from app.kubernetes.tenant.external_access_observation import latest_external_capsule_access_evidence
+from app.kubernetes.tenant.handoff_runtime_operations import require_handoff_operation
 from app.kubernetes.tenant.release_handoff_inventory import (
     capsule_namespace_handoff_evidence,
     capsule_tenant_handoff_evidence,
@@ -582,20 +583,16 @@ def release_verified_native_tenant_committed(
     from app.kubernetes.tenant.native_platform_admin_authority import require_platform_admin_actor
 
     require_platform_admin_actor(actor_user_id)
-    # Delayed imports avoid a cycle: the executor uses canonical preflight
-    # dependency and provider evidence helpers from this module.
-    from app.kubernetes.tenant.native_handoff_dry_run import _read_resource
-    from app.kubernetes.tenant.native_handoff_executor import latest_native_handoff_execution
-    from app.kubernetes.tenant.native_handoff_readback import (
-        _latest_native_dry_run,
-        verify_external_native_component,
-    )
-    from app.kubernetes.tenant.native_successor_acceptance import latest_native_successor_acceptance
-    from app.kubernetes.tenant.release_handoff_approval import (
-        _plan_hash,
-        latest_release_handoff_approval,
-        latest_release_handoff_plan,
-    )
+    # Resolve Tenant-owned downstream evidence through the application
+    # composition root without a reciprocal module import.
+    _read_resource = require_handoff_operation('_read_resource')
+    latest_native_handoff_execution = require_handoff_operation('latest_native_handoff_execution')
+    _latest_native_dry_run = require_handoff_operation('_latest_native_dry_run')
+    verify_external_native_component = require_handoff_operation('verify_external_native_component')
+    latest_native_successor_acceptance = require_handoff_operation('latest_native_successor_acceptance')
+    _plan_hash = require_handoff_operation('_plan_hash')
+    latest_release_handoff_approval = require_handoff_operation('latest_release_handoff_approval')
+    latest_release_handoff_plan = require_handoff_operation('latest_release_handoff_plan')
 
     plan = latest_release_handoff_plan(tenant_id)
     approval = latest_release_handoff_approval(tenant_id)
