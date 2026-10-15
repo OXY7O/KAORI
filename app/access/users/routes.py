@@ -40,8 +40,8 @@ from app.access.users.service import (
     persist_created_user,
     persist_updated_user,
     reset_user_password,
-    rollback_user_edit_transaction,
     restore_user_account,
+    rollback_user_edit_transaction,
     user_version_matches,
     user_version_token,
 )
