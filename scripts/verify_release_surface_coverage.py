@@ -50,6 +50,15 @@ def _read(relative: str) -> str:
     return path.read_text(encoding='utf-8')
 
 
+def _contract_test_modules(path: Path) -> list[Path]:
+    """Count executable source evidence, not merely a placeholder directory."""
+    if path.is_file():
+        return [path] if path.name.startswith('test_') and path.suffix == '.py' else []
+    if path.is_dir():
+        return sorted(path.rglob('test_*.py'))
+    return []
+
+
 def _literal_url_for_endpoints(source: str) -> set[str]:
     return {match for match in re.findall(r"url_for\(\s*['\"]([^'\"]+)['\"]", source) if match != 'static'}
 
@@ -128,6 +137,7 @@ def _registered_blueprint_vars() -> set[str]:
 
 def verify() -> None:
     errors: list[str] = []
+    contract_modules_by_surface: dict[str, int] = {}
     navigation_count = len(navigation_endpoints())
     blueprint_count = len(blueprint_vars())
 
@@ -149,9 +159,17 @@ def verify() -> None:
             if not (ROOT / verifier).exists():
                 errors.append(f'{surface.title}: missing verifier {verifier}')
 
+        contract_modules_by_surface[surface.title] = 0
         for contract_path in surface.contract_paths:
-            if not (ROOT / contract_path).exists():
+            evidence_path = ROOT / contract_path
+            if not evidence_path.exists():
                 errors.append(f'{surface.title}: missing release evidence {contract_path}')
+                continue
+            modules = _contract_test_modules(evidence_path)
+            if not modules:
+                errors.append(f'{surface.title}: release evidence has no test modules: {contract_path}')
+                continue
+            contract_modules_by_surface[surface.title] += len(modules)
 
         if surface.navigation_source is None:
             if surface.navigation_endpoints:
@@ -237,6 +255,8 @@ def verify() -> None:
         raise SystemExit(1)
 
     print(f'PASS — KAORI Release Coverage · {navigation_count} links / {blueprint_count} blueprints')
+    for surface in SURFACES:
+        print(f'  COVERED — {surface.title}: {contract_modules_by_surface[surface.title]} contract test module(s)')
 
 
 if __name__ == '__main__':
