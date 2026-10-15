@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REVIEWED_TEMPLATE_ROOTS = (ROOT / 'app' / 'templates' / 'integrations',)
 CHECKED_TAGS = {'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'th', 'label', 'button'}
+TECHNICAL_WORDS = {'ntfy'}  # Official lowercase provider brand; not a generic casing exemption.
 MINOR_WORDS = {
     'a',
     'an',
@@ -37,6 +38,8 @@ WORD = re.compile(r'[A-Za-z][A-Za-z0-9]*(?:[-/&][A-Za-z0-9]+)*')
 
 
 def _is_capitalized_or_technical(word: str) -> bool:
+    if word in TECHNICAL_WORDS:
+        return True
     parts = re.split(r'[-/&]', word)
     return all(not part or part[0].isdigit() or part[0].isupper() or part.isupper() for part in parts)
 
@@ -60,9 +63,11 @@ class _VisibleLabelParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self._stack: list[tuple[str, int, list[str]]] = []
         self.labels: list[tuple[int, str]] = []
+        self.checkbox_label_lines: set[int] = set()
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        del attrs
+        if tag == 'input' and ('type', 'checkbox') in attrs:
+            self.checkbox_label_lines.update(line for label_tag, line, _ in self._stack if label_tag == 'label')
         if tag in CHECKED_TAGS:
             self._stack.append((tag, self.getpos()[0], []))
         elif self._stack:
@@ -91,6 +96,9 @@ def verify() -> None:
             parser = _VisibleLabelParser()
             parser.feed(path.read_text(encoding='utf-8'))
             for line, text in parser.labels:
+                # Full-sentence checkbox consent is body copy, not a Title Case heading.
+                if line in parser.checkbox_label_lines and '. ' in text:
+                    continue
                 checked += 1
                 error = _title_case_error(text)
                 if error:
