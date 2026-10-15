@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 SOURCE = (Path(__file__).resolve().parents[3] / 'app/artifact_registry/presentation_inventory.py').read_text(
@@ -27,7 +28,8 @@ def test_repository_modal_limits_sql_artifact_and_tag_previews() -> None:
     assert 'RegistryArtifact.digest.asc()' in section
     assert '.limit(25)' in section
     assert '.all()' in section
-    assert 'func.row_number().over(' in section
+    assert re.search(r'func\.row_number\(\)\s*\.over\(', section)
+    assert 'partition_by=RegistryTag.artifact_id' in section
     assert 'tagged.c.tag_rank <= 3' in section
     assert 'RegistryTag.artifact_id.in_(artifact_ids)' in section
     assert 'repository.artifacts' not in section

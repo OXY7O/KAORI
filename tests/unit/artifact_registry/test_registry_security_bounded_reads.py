@@ -25,7 +25,12 @@ def test_capability_reads_are_one_grouped_query_after_source_page_selection() ->
     assert main.index('visible_capability_sources, capability_pagination = paginate_sequence(') < main.index(
         'capability_rows = ('
     )
-    assert "if view == 'supply_chain' and supply_section == 'capabilities' else []" in main
+    capability_selection = main.split('capability_sources = (', 1)[1].split(
+        'visible_capability_sources, capability_pagination = paginate_sequence(', 1
+    )[0]
+    assert "if view == 'supply_chain' and supply_section == 'capabilities'" in capability_selection
+    assert 'else []' in capability_selection
+    assert 'if visible_capability_sources' in main
     assert 'source_capabilities = capability_rows' in main
 
 
