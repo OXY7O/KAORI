@@ -43,6 +43,41 @@ def test_tenant_leaf_template_selects_tenant_tests() -> None:
     assert 'tests/kubernetes/tenant' in plan.normalized_test_paths()
 
 
+def test_other_owned_workspace_templates_use_domain_regressions() -> None:
+    examples = (
+        ('access', 'app/templates/access/overview/index.html'),
+        ('integrations', 'app/templates/integrations/overview.html'),
+        ('intelligence', 'app/templates/intelligence/overview.html'),
+        ('platform_operations', 'app/templates/platform_operations/overview/index.html'),
+        ('reports', 'app/templates/reports/overview/index.html'),
+        ('settings', 'app/templates/settings/general/index.html'),
+        ('welcome', 'app/templates/welcome/index.html'),
+    )
+    for domain, path in examples:
+        plan = build_plan([path])
+        assert plan.templates and plan.contracts, path
+        assert plan.normalized_template_paths() == [path], path
+        assert domain in plan.capabilities, path
+        assert f'tests/contracts/{domain}' in plan.normalized_test_paths(), path
+        assert f'tests/{domain}' in plan.normalized_test_paths(), path
+        assert 'tests/contracts/release' not in plan.normalized_test_paths(), path
+
+
+def test_reports_leaf_template_preserves_pdf_governance_lane() -> None:
+    plan = build_plan(['app/templates/reports/overview/index.html'])
+
+    assert plan.reports and plan.templates
+    assert 'tests/reports' in plan.normalized_test_paths()
+
+
+def test_shared_workspace_include_components_force_full_template_lint() -> None:
+    plan = build_plan(['app/templates/reports/components/_report_header.html'])
+
+    assert plan.templates and plan.broad_templates
+    assert plan.normalized_template_paths() == []
+    assert 'tests/contracts' in plan.normalized_test_paths()
+
+
 def test_shared_component_widens_template_lint_and_contracts() -> None:
     plan = build_plan(['app/templates/components/page_hero.html'])
 
