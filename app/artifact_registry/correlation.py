@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -12,12 +11,15 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.common.inventory_generation import filter_current_generation
 from app.common.registry_runtime_evidence import (
     _active_registry_source_ids as _committed_active_registry_source_ids,
+)
+from app.common.registry_runtime_evidence import (
     runtime_correlation_evidence_readiness as _committed_runtime_correlation_evidence_readiness,
+)
+from app.common.registry_runtime_evidence import (
     runtime_input_signature as _committed_runtime_input_signature,
 )
 from app.extensions.db import db
 from app.models.inventory import PodInventory
-from app.models.job import JobExecution
 from app.models.registry import (
     RegistryArtifact,
     RegistryCollectionState,
