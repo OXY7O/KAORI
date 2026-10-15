@@ -1436,7 +1436,8 @@ def verify() -> None:
         (
             'macro render(',
             "'Recommended Actions'",
-            'intelligence.recommendation_details',
+            "intelligence.recommendations', q=action.rule_key, detail=action.rule_key",
+            "intelligence.recommendations')",
             'normalized_priority',
             'No Active Recommendations',
         ),
