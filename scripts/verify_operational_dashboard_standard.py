@@ -1071,7 +1071,8 @@ def verify() -> None:
     _require(
         object_signal_overview,
         (
-            'System Signals Available',
+            '4 Indicators',
+            'System Selected · Review Evidence',
             'Select a System for Detailed Signals',
             'hx-push-url="true"',
         ),
