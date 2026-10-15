@@ -10,14 +10,12 @@ def test_notification_read_model_does_not_import_tenant_domain() -> None:
     source = (ROOT / 'app/platform_operations/notifications/queries.py').read_text(encoding='utf-8')
     module = ast.parse(source)
     assert not any(
-        isinstance(node, ast.ImportFrom)
-        and node.module is not None
-        and node.module.startswith('app.kubernetes.tenant')
+        isinstance(node, ast.ImportFrom) and node.module is not None and node.module.startswith('app.kubernetes.tenant')
         for node in ast.walk(module)
     )
     assert "current_app.extensions.get('kaori_tenant_approval_work_inbox')" in source
     assert "raise RuntimeError('Tenant approval Work Inbox provider is not registered.')" in source
-    assert "tenant_approval_inbox = tenant_inbox_provider(user_id=user_id)" in source
+    assert 'tenant_approval_inbox = tenant_inbox_provider(user_id=user_id)' in source
 
 
 def test_bootstrap_registers_tenant_owned_provider_per_application() -> None:
