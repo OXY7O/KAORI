@@ -553,7 +553,13 @@ def _verify_artifact_registry_dashboard(
         routes,
         (
             "@permission_required('artifact_registry.view')",
-            "request.args.get('provider_id', type=int)",
+            'def _overview_provider_id() -> int | None:',
+            "request.args.get('provider_id')",
+            "if raw is None or not raw.strip():",
+            'except (TypeError, ValueError):',
+            'if provider_id < 1:',
+            'abort(404)',
+            'provider_id=_overview_provider_id(),',
             "request.args.get('tab', 'overview', type=str)",
             "'overview': 'artifact_registry/partials/_overview_operations.html'",
             "'capacity': 'artifact_registry/partials/_overview_capacity.html'",
@@ -563,6 +569,8 @@ def _verify_artifact_registry_dashboard(
         ),
         'Artifact Registry dashboard route boundary',
     )
+    if routes.count('provider_id=_overview_provider_id(),') < 2:
+        raise AssertionError('Registry overview and section must share fail-closed provider scope validation')
     _require(
         presentation,
         (
