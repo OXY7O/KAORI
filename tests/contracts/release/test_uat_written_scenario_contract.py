@@ -78,3 +78,38 @@ def test_gherkin_has_tags_and_given_when_then_per_case() -> None:
             for keyword in ('Given', 'When', 'Then'):
                 assert re.search(rf'(?m)^    {keyword} ', body), scenario_id
     assert counts == {'first_wave': 14, 'owner_review': 77}
+
+
+def test_source_audit_never_claims_executed_uat() -> None:
+    """Inspected assertions do not imply scenario execution or human acceptance."""
+    matrix = (ENGINEERING / 'uat' / 'SCENARIO_COVERAGE_MATRIX.md').read_text(encoding='utf-8')
+    audit = (ENGINEERING / 'KAORI_UAT_TEST_MAPPING_AUDIT.md').read_text(encoding='utf-8')
+    rows = [line for line in matrix.splitlines() if line.startswith('| `UAT-')]
+    assert len(rows) == 91
+    assert all(line.endswith('| NOT RUN / PENDING |') for line in rows)
+    assert '**23/91**' in matrix
+    assert '**68/91**' in matrix
+    assert '**0/91' in matrix
+    assert '**Admission:** HOLD' in matrix
+
+    additional_ids = (
+        'UAT-AUT-001',
+        'UAT-AUT-004',
+        'UAT-AUT-005',
+        'UAT-TEN-003',
+        'UAT-TEN-006',
+        'UAT-TEN-008',
+        'UAT-RPT-002',
+        'UAT-RPT-005',
+        'UAT-RPT-007',
+    )
+    section = audit.split('## Supplemental source assertion audit', 1)[1].split(
+        '## Prioritized implementation decisions', 1
+    )[0]
+    for scenario_id in additional_ids:
+        assert any(line.startswith(f'| `{scenario_id}` |') for line in section.splitlines())
+        matrix_line = next(line for line in rows if line.startswith(f'| `{scenario_id}` |'))
+        assert '([audit](../KAORI_UAT_TEST_MAPPING_AUDIT.md))' in matrix_line
+    assert 'NOT RUN' in section
+    assert 'PENDING' in section
+    assert 'complete scenario-to-node-to-runtime acceptance' in section
