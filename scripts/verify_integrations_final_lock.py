@@ -851,7 +851,7 @@ def main() -> int:
         errors,
     )
     require(
-        'observation.id.label(\'observation_id\')' in integration_runtime_sql
+        "observation.id.label('observation_id')" in integration_runtime_sql
         and '.order_by(lookup.observed_at.desc(), lookup.id.desc())' in integration_runtime_sql
         and '.limit(1)' in integration_runtime_sql
         and "observation_ids = {int(item['observation_id'])" in integration_overview_workspace
