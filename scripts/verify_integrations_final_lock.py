@@ -801,6 +801,7 @@ def main() -> int:
     integration_overview = read('app/templates/integrations/overview.html')
     integration_service = read('app/integrations/service.py')
     integration_overview_workspace = read('app/integrations/overview_workspace.py')
+    integration_runtime_sql = read('app/integrations/overview_runtime_sql.py')
     for marker in (
         "available_provider_count ~ ' Providers'",
         'integration_status(item.posture_state, item.posture_label',
@@ -843,13 +844,21 @@ def main() -> int:
     require(
         "if active_tab == 'catalog':" in overview_builder
         and "if active_tab == 'coverage':" in overview_builder
-        and 'latest = _latest_runtime_observations()' in overview_builder,
+        and 'fleet = runtime_fleet()' in overview_builder
+        and 'specs, pagination = runtime_page(selected, page=page, per_page=per_page)' in overview_builder
+        and "'runtime_rows': _visible_runtime_rows(specs)" in overview_builder,
         'Integration Overview selected-workspace build boundary is missing',
         errors,
     )
     require(
-        'build_extension_runtime_rows(latest)' in overview_builder and 'latest=latest' in overview_builder,
-        'Integration Runtime Overview must reuse one latest-observation snapshot per request',
+        'observation.id.label(\'observation_id\')' in integration_runtime_sql
+        and '.order_by(lookup.observed_at.desc(), lookup.id.desc())' in integration_runtime_sql
+        and '.limit(1)' in integration_runtime_sql
+        and "observation_ids = {int(item['observation_id'])" in integration_overview_workspace
+        and 'latest = {(row.integration_type, row.instance_id): row for row in observations}' in integration_overview_workspace
+        and 'builder(record, latest)' in integration_overview_workspace
+        and "module.build_runtime_overview_rows(latest, int(item['canonical_id']))" in integration_overview_workspace,
+        'Integration Runtime Overview must reuse page-bounded latest committed observation evidence',
         errors,
     )
     runtime_detail_builder = integration_service.split('def build_integration_runtime_detail(', 1)[1]
