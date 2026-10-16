@@ -77,7 +77,9 @@ def _freshness_context() -> dict[str, object]:
     }
 
 
-def _overview_context() -> dict[str, object]:
+def _overview_context(*, cluster_page: int = 1, cluster_per_page: int = 5) -> dict[str, object]:
+    assert cluster_page == 1
+    assert cluster_per_page == 5
     return {
         'total_clusters': 1,
         'inventory_total': 0,
