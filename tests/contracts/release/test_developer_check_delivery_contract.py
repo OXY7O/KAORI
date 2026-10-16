@@ -76,7 +76,7 @@ def test_developer_check_sequenced_lanes_fail_closed_into_one_aggregate() -> Non
         'TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}',
         'PYTHON_RESULT: ${{ needs.python-check.result }}',
         'VALIDATION_RESULT: ${{ needs.validation-check.result }}',
-        "assert_lane 'Prepare Toolchain' \"$toolchain_required\" \"$TOOLCHAIN_RESULT\"",
+        'assert_lane \'Prepare Toolchain\' "$toolchain_required" "$TOOLCHAIN_RESULT"',
         "assert_lane 'Python & Governance'",
         "assert_lane 'Frontend & Focused Validation'",
     ):
