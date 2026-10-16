@@ -6,8 +6,8 @@ import pytest
 from flask_login import UserMixin
 
 from app import create_app
-from app.common.pagination import build_pagination_window, pagination_payload
 from app.bootstrap import presentation as bootstrap_presentation
+from app.common.pagination import build_pagination_window, pagination_payload
 from app.extensions import login as login_extension
 from app.extensions import login_manager
 from app.kubernetes.inventory import routes as inventory_routes
