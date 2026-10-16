@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -237,3 +238,52 @@ def test_certbot_issuance_interval_is_not_renewal_interval() -> None:
     assert 'renew_interval="${EDGE_CERTBOT_RENEW_INTERVAL_SECONDS:-43200}"' in source
     assert 'sleep "$issue_retry_interval" &' in source
     assert 'sleep "$renew_interval" &' not in source
+
+def _execute_redirect_awk(assignment: str, headers: str) -> str:
+    source = _read(EDGE_VERIFY)
+    statement = next(
+        line
+        for line in source.splitlines()
+        if line.strip().startswith(f'{assignment}="$(')
+    )
+    expression = statement.split(" | awk '", 1)[1].rsplit("'", 1)[0]
+    result = subprocess.run(
+        ['awk', expression],
+        input=headers,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
+def test_shared_edge_redirect_awk_accepts_posix_http_headers() -> None:
+    samples = (
+        (
+            'HTTP/1.1 301 Moved Permanently\r\n'
+            'Location: https://app.kaori.cloud/health/ready\r\n\r\n',
+            '301',
+            'https://app.kaori.cloud/health/ready',
+        ),
+        (
+            'HTTP/2 308\r\n'
+            'location: https://auto.kaori.cloud/healthz\r\n\r\n',
+            '308',
+            'https://auto.kaori.cloud/healthz',
+        ),
+        (
+            'HTTP/1.1 200 OK\r\n'
+            'content-type: text/plain\r\n\r\n',
+            '200',
+            '',
+        ),
+    )
+    for headers, code, location in samples:
+        assert _execute_redirect_awk('status_code', headers) == code
+        assert _execute_redirect_awk('location', headers) == location
+
+
+def test_shared_edge_redirect_keeps_strict_https_target_gate() -> None:
+    source = _read(EDGE_VERIFY)
+    assert 'if [[ "$status_code" == \'301\' || "$status_code" == \'308\' ]]' in source
+    assert '[[ "$location" == "https://$domain$health_path" ]]' in source
