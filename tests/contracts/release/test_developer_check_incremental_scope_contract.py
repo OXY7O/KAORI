@@ -238,6 +238,6 @@ def test_workflow_preserves_full_lint_fallback_and_aggregate_contract() -> None:
 
     assert 'needs.route.outputs.template_paths' in workflow
     assert 'python -m djlint "${changed_templates[@]}" --check' in workflow
-    assert "python -m djlint app/templates --check" in workflow
-    assert "assert_lane 'Prepare Toolchain' \"$toolchain_required\" \"$TOOLCHAIN_RESULT\"" in workflow
+    assert 'python -m djlint app/templates --check' in workflow
+    assert 'assert_lane \'Prepare Toolchain\' "$toolchain_required" "$TOOLCHAIN_RESULT"' in workflow
     assert 'uses: ./.github/workflows/quality.yml' in workflow
