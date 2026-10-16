@@ -75,9 +75,9 @@ def test_reconciliation_reuses_existing_shared_edge_authorities() -> None:
 def test_reconciliation_uses_portable_application_hostname_authority() -> None:
     source = _read(WORKFLOW)
 
-    assert "/etc/kaori/app.env" in source
-    assert "KAORI_PUBLIC_BASE_URL" in source
-    assert "TRUSTED_HOSTS" in source
+    assert '/etc/kaori/app.env' in source
+    assert 'KAORI_PUBLIC_BASE_URL' in source
+    assert 'TRUSTED_HOSTS' in source
     assert "parsed.scheme != 'https'" in source
     assert "'localhost' not in trusted" in source
     assert '--domain "$app_hostname"' in source
