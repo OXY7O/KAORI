@@ -108,6 +108,13 @@ def test_existing_schema_cutover_is_bounded_and_requires_proven_backup() -> None
     assert 'pg_restore --list' in deploy
     assert 'Schema revision differs from candidate release' in deploy
     assert 'candidate_heads=' in deploy and 'existing_heads=' in deploy
+    # On an existing legacy schema with cutover disabled, reject the release
+    # before backing up, stopping writers, or invoking migrator-only Alembic.
+    assert 'current_db_owner=' in deploy
+    assert "current_db_owner\" == 'kaori_migrator'" in deploy
+    assert 'Existing PostgreSQL is not owned by kaori_migrator' in deploy
+    assert deploy.index('current_db_owner=') < deploy.index('candidate_heads=')
+    assert deploy.index('current_db_owner=') < deploy.index('backup_path="$(bash "$SCRIPT_DIR/backup.sh")"')
     assert deploy.index('candidate_heads=') < deploy.index('stop "${application_services[@]}"')
     assert 'backup_path.roles.sql' in deploy
     assert 'backup_path.schema.sql' in deploy
