@@ -19,7 +19,6 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 from psycopg2 import sql
 
-
 # The four PostgreSQL trigger functions introduced by the admitted Capsule
 # migrations at 20261013_limit_exposure. Never transfer unrelated functions.
 _CAPSULE_TRIGGER_FUNCTIONS = frozenset({
