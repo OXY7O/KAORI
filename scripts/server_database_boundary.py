@@ -3,6 +3,7 @@
 First-run provisioning is permitted only for a provably empty bundled database.
 No existing schema/data is reset; legacy ownership always fails closed.
 """
+
 from __future__ import annotations
 
 import base64
@@ -21,12 +22,14 @@ from psycopg2 import sql
 
 # The four PostgreSQL trigger functions introduced by the admitted Capsule
 # migrations at 20261013_limit_exposure. Never transfer unrelated functions.
-_CAPSULE_TRIGGER_FUNCTIONS = frozenset({
-    'kaori_capsule_handoff_ledger_insert_guard',
-    'kaori_capsule_handoff_ledger_deny_change',
-    'kaori_capsule_proof_deny_change',
-    'kaori_capsule_handback_audit_deny_change',
-})
+_CAPSULE_TRIGGER_FUNCTIONS = frozenset(
+    {
+        'kaori_capsule_handoff_ledger_insert_guard',
+        'kaori_capsule_handoff_ledger_deny_change',
+        'kaori_capsule_proof_deny_change',
+        'kaori_capsule_handback_audit_deny_change',
+    }
+)
 
 
 def fail(message: str) -> None:
@@ -57,7 +60,9 @@ def ensure_same_target(runtime_url: str, migration_url: str) -> None:
     runtime = urlsplit(runtime_url)
     migration = urlsplit(migration_url)
     if (runtime.hostname, runtime.port or 5432, runtime.path) != (
-        migration.hostname, migration.port or 5432, migration.path
+        migration.hostname,
+        migration.port or 5432,
+        migration.path,
     ):
         fail('Runtime and migration URLs target different PostgreSQL databases')
 
@@ -104,21 +109,27 @@ def role_guard(cursor, expected_user: str) -> None:
 
 def migrator_guard(cursor) -> None:
     role_guard(cursor, 'kaori_migrator')
-    if scalar(
-        cursor,
-        """
+    if (
+        scalar(
+            cursor,
+            """
         SELECT pg_get_userbyid(datdba) = 'kaori_migrator'
           FROM pg_database WHERE datname = current_database()
         """,
-    ) is not True:
+        )
+        is not True
+    ):
         fail('Database owner is not kaori_migrator; existing-state cutover required')
-    if scalar(
-        cursor,
-        """
+    if (
+        scalar(
+            cursor,
+            """
         SELECT pg_get_userbyid(nspowner) = 'kaori_migrator'
           FROM pg_namespace WHERE nspname = 'public'
         """,
-    ) is not True:
+        )
+        is not True
+    ):
         fail('public schema owner is not kaori_migrator')
     if scalar(cursor, "SELECT has_schema_privilege(current_user, 'public', 'CREATE')") is not True:
         fail('Migrator lacks schema DDL authority')
@@ -177,8 +188,11 @@ def runtime_guard(cursor) -> None:
     ):
         fail('Runtime retains database CREATE or TEMPORARY privilege')
     for table in (
-        'alembic_version', 'audit_events', 'capsule_handoff_ledger_events',
-        'capsule_handoff_audit_batches', 'capsule_handoff_resource_consent_records',
+        'alembic_version',
+        'audit_events',
+        'capsule_handoff_ledger_events',
+        'capsule_handoff_audit_batches',
+        'capsule_handoff_resource_consent_records',
         'users',
     ):
         cursor.execute('SELECT to_regclass(%s)', (f'public.{table}',))
@@ -253,7 +267,6 @@ def runtime_guard(cursor) -> None:
         fail('First active super administrator has not been initialized')
 
 
-
 def scram_password_verifier(password: str) -> str:
     """Send salted SCRAM verifier, never plaintext role password in DDL."""
     salt = os.urandom(16)
@@ -266,6 +279,7 @@ def scram_password_verifier(password: str) -> str:
     stored_b64 = base64.b64encode(stored_key).decode('ascii')
     server_b64 = base64.b64encode(server_key).decode('ascii')
     return f'SCRAM-SHA-256${iterations}:{salt_b64}${stored_b64}:{server_b64}'
+
 
 def fresh_bundled_bootstrap(runtime_url: str, migration_url: str) -> None:
     """Create the two non-elevated identities only on a genuinely virgin DB."""
