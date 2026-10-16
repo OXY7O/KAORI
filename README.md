@@ -92,7 +92,7 @@ Runtime modes and prerequisites are documented in [`docs/RUNNING.md`](docs/RUNNI
 
 Each provider owns its own Compose/configuration surface. `example/compose.demo.yml` is only a convenience topology for exercising multiple providers together. CI runner infrastructure is intentionally outside this integration-example catalog.
 
-## Quality & Validation
+## Quality and Validation
 
 ```bash
 python scripts/verify_final_release.py
