@@ -7,6 +7,7 @@ from flask_login import UserMixin
 
 from app import create_app
 from app.bootstrap import presentation as bootstrap_presentation
+from app.common.pagination import build_pagination_window, pagination_payload
 from app.extensions import login as login_extension
 from app.extensions import login_manager
 from app.kubernetes.inventory import routes as inventory_routes
@@ -85,7 +86,24 @@ def _overview_context(*, cluster_page: int = 1, cluster_per_page: int = 5) -> di
         'inventory_total': 0,
         'asset_catalog': [],
         'active_signal_count': 0,
-        'clusters': [],
+        'clusters': [
+            {
+                'id': 'inventory-smoke-cluster',
+                'name': 'Inventory Smoke Cluster',
+                'environment': 'uat',
+                'connection_label': 'Connected',
+                'connection_tone': 'normal',
+                'total_objects': 0,
+                'synced_at': None,
+                'sync_status_label': 'Never Collected',
+                'sync_status_tone': 'unknown',
+                'signals': [],
+            },
+        ],
+        'resources_pagination': pagination_payload(
+            build_pagination_window(total_items=1, page=cluster_page, per_page=cluster_per_page)
+        ),
+        'inventory_summary': {},
         'health': {'connected_clusters': 1},
         'posture': {'status': 'Healthy', 'tone': 'normal'},
     }
@@ -105,6 +123,13 @@ def app(monkeypatch: pytest.MonkeyPatch):
         lambda **_kwargs: _empty_navigation_context(),
     )
     monkeypatch.setattr(bootstrap_presentation, 'pop_operational_feedback', lambda: None)
+    # Inventory's blueprint context processor also resolves fleet scope during
+    # page rendering; keep the isolated smoke independent of an installed DB.
+    monkeypatch.setattr(
+        inventory_routes,
+        'get_inventory_clusters',
+        lambda: [SimpleNamespace(id='inventory-smoke-cluster', name='Inventory Smoke Cluster')],
+    )
     monkeypatch.setattr(inventory_routes, 'get_inventory_overview', _overview_context)
     monkeypatch.setattr(inventory_routes, 'get_inventory_freshness_context', lambda **_kwargs: _freshness_context())
     return create_app('testing')
@@ -133,6 +158,8 @@ def test_authorized_user_renders_inventory_overview_in_global_application_shell(
 
     assert response.status_code == 200
     assert 'Inventory Overview' in html
+    assert 'Inventory Smoke Cluster' in html
+    assert 'Rows per page' in html
     assert 'Inventory Asset Catalog' in html
     assert 'Cluster Inventory Summary' in html
     assert 'Quick Actions' in html
