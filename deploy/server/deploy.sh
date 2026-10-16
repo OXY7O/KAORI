@@ -192,6 +192,21 @@ if [[ "$has_existing_state" == 'f' &&
       "${KAORI_BUNDLED_SCHEMA_CUTOVER:-false}" == 'true' ]]; then
   fail 'No schema exists; existing-schema cutover is forbidden'
 fi
+# A populated legacy database must never be sent into the new-role
+# migration service unless an explicitly authorized cutover is in progress.
+# Fail before taking backups, stopping writers or running Alembic. The
+# existing role-separated path remains eligible for normal future upgrades.
+if [[ "$has_existing_state" == 't' &&
+      "${KAORI_BUNDLED_SCHEMA_CUTOVER:-false}" != 'true' ]]; then
+  current_db_owner="$(
+    "${compose[@]}" exec -T postgres sh -ec \
+      'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = current_database();"' |
+      tr -d '[:space:]'
+  )"
+  [[ "$current_db_owner" == 'kaori_migrator' ]] ||
+    fail 'Existing PostgreSQL is not owned by kaori_migrator; use a separately admitted existing-schema cutover, never ordinary release migration'
+fi
+
 if [[ "$has_existing_state" == 't' &&
       "${KAORI_BUNDLED_SCHEMA_CUTOVER:-false}" == 'true' ]]; then
   # Role-only cutover MUST NOT implicitly run newer Alembic migrations.
