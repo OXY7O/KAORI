@@ -126,7 +126,7 @@ jobs:
           host = parsed.hostname or ''
           if (parsed.scheme != 'https' or parsed.netloc != host
                   or parsed.path or parsed.query or parsed.fragment
-                  or not re.fullmatch(r'[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?(?:\\.[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?)+', host)):
+                  or not re.fullmatch(r'[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?)+', host)):
               raise SystemExit('Invalid canonical KAORI HTTPS hostname')
           trusted = {item.strip() for item in settings.get('TRUSTED_HOSTS', '').split(',')}
           if host not in trusted or 'localhost' not in trusted:
