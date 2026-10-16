@@ -211,7 +211,6 @@ def test_standalone_edge_runtime_reconciles_sites_without_docker_socket() -> Non
     assert '/var/run/docker.sock' not in certbot
 
 
-
 def test_certbot_renewal_retries_only_transient_exclusive_lock() -> None:
     verifier = _read(EDGE_VERIFY)
 
