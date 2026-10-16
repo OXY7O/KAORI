@@ -5,11 +5,14 @@ This runbook applies to the existing `deploy/server` Compose adapter and its
 persistent `kaori-vps-postgres-data` volume. PostgreSQL is not replaced.
 External DBA-managed PostgreSQL is tracked separately by #1440.
 
-## Fast path: staging database has no application schema
+## Fast path: only for a *proven uninitialized* bundled database
 
-This is the preferred path for the currently reported empty Staging/UAT
-database. **No volume deletion, `down -v`, ownership-reassignment SQL or
-manual per-table grants.** The same database and bundled container are kept.
+This path is **NOT applicable to the current UAT host**: live read-only
+inventory proved an existing `kaori` database with 99 tables, Alembic
+`20261004_registry_analytics`, and a legacy `kaori` superuser owner.
+Only a separate, genuinely uninitialized installation may use this flow.
+**No volume deletion, `down -v`, ownership-reassignment SQL or manual
+per-table grants.** Preserve the same database and bundled container.
 
 1. Verify that the database is genuinely unused/uninitialized. "Zero data
    rows" is not the same as "no schema." The deployment checks existing user
