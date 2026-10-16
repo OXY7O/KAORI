@@ -239,13 +239,10 @@ def test_certbot_issuance_interval_is_not_renewal_interval() -> None:
     assert 'sleep "$issue_retry_interval" &' in source
     assert 'sleep "$renew_interval" &' not in source
 
+
 def _execute_redirect_awk(assignment: str, headers: str) -> str:
     source = _read(EDGE_VERIFY)
-    statement = next(
-        line
-        for line in source.splitlines()
-        if line.strip().startswith(f'{assignment}="$(')
-    )
+    statement = next(line for line in source.splitlines() if line.strip().startswith(f'{assignment}="$('))
     expression = statement.split(" | awk '", 1)[1].rsplit("'", 1)[0]
     result = subprocess.run(
         ['awk', expression],
@@ -260,20 +257,17 @@ def _execute_redirect_awk(assignment: str, headers: str) -> str:
 def test_shared_edge_redirect_awk_accepts_posix_http_headers() -> None:
     samples = (
         (
-            'HTTP/1.1 301 Moved Permanently\r\n'
-            'Location: https://app.kaori.cloud/health/ready\r\n\r\n',
+            'HTTP/1.1 301 Moved Permanently\r\nLocation: https://app.kaori.cloud/health/ready\r\n\r\n',
             '301',
             'https://app.kaori.cloud/health/ready',
         ),
         (
-            'HTTP/2 308\r\n'
-            'location: https://auto.kaori.cloud/healthz\r\n\r\n',
+            'HTTP/2 308\r\nlocation: https://auto.kaori.cloud/healthz\r\n\r\n',
             '308',
             'https://auto.kaori.cloud/healthz',
         ),
         (
-            'HTTP/1.1 200 OK\r\n'
-            'content-type: text/plain\r\n\r\n',
+            'HTTP/1.1 200 OK\r\ncontent-type: text/plain\r\n\r\n',
             '200',
             '',
         ),
