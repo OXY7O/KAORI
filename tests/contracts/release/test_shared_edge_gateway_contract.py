@@ -209,3 +209,31 @@ def test_standalone_edge_runtime_reconciles_sites_without_docker_socket() -> Non
     assert 'certbot certonly' in certbot
     assert 'certbot renew' in certbot
     assert '/var/run/docker.sock' not in certbot
+
+
+def test_certbot_renewal_retries_only_transient_exclusive_lock() -> None:
+    verifier = _read(EDGE_VERIFY)
+
+    assert 'verify_renewal_with_lock_retry()' in verifier
+    assert 'Another instance of Certbot is already running.' in verifier
+    assert 'local max_attempts=12' in verifier
+    assert 'sleep 15' in verifier
+    assert "fail 'Certbot renewal dry-run failed; investigate ACME error'" in verifier
+    assert "fail 'Certbot renewal dry-run remains locked after bounded retries'" in verifier
+    assert 'verify_renewal_with_lock_retry' in verifier
+    assert "status '✅' 'Certbot renewal dry-run PASS'" in verifier
+
+    # Certificate/host verification must never succeed just because a lock
+    # was seen; the exact same renewal command must eventually return 0.
+    assert 'if "${compose[@]}" exec -T certbot certbot renew --dry-run' in verifier
+    assert 'cat "$output" >&2' in verifier
+    assert '|| true' not in verifier.split('verify_renewal_with_lock_retry()', 1)[1]
+
+
+def test_certbot_issuance_interval_is_not_renewal_interval() -> None:
+    source = _read(EDGE_CERTBOT_ENTRYPOINT)
+
+    assert 'issue_retry_interval="${EDGE_CERTBOT_ISSUE_RETRY_SECONDS:-30}"' in source
+    assert 'renew_interval="${EDGE_CERTBOT_RENEW_INTERVAL_SECONDS:-43200}"' in source
+    assert 'sleep "$issue_retry_interval" &' in source
+    assert 'sleep "$renew_interval" &' not in source

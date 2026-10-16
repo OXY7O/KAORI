@@ -191,9 +191,43 @@ set -e
 [[ "$invalid_tls_rc" -ne 0 ]] || fail 'unknown TLS SNI handshake unexpectedly succeeded'
 status '🔐' 'Unknown Host/SNI rejection PASS'
 
+# Certbot holds an exclusive lock while issuing or renewing a certificate.
+# A concurrent operator/automatic renewal is not a failed security validation:
+# retry only that exact transient condition. All other ACME errors fail closed.
+verify_renewal_with_lock_retry() {
+  local attempt=1
+  local max_attempts=12
+  local output
+  output="$(mktemp)" || fail 'unable to capture Certbot renewal evidence'
+
+  while (( attempt <= max_attempts )); do
+    if "${compose[@]}" exec -T certbot certbot renew --dry-run --webroot --webroot-path /var/www/certbot >"$output" 2>&1; then
+      cat "$output"
+      rm -f -- "$output"
+      return 0
+    fi
+
+    if ! grep -Fq 'Another instance of Certbot is already running.' "$output"; then
+      cat "$output" >&2
+      rm -f -- "$output"
+      fail 'Certbot renewal dry-run failed; investigate ACME error'
+    fi
+
+    if (( attempt == max_attempts )); then
+      cat "$output" >&2
+      rm -f -- "$output"
+      fail 'Certbot renewal dry-run remains locked after bounded retries'
+    fi
+
+    status '⏳' "Certbot is busy with another renewal (attempt ${attempt}/${max_attempts}); retry in 15 seconds"
+    sleep 15
+    attempt=$((attempt + 1))
+  done
+}
+
 if [[ "$renewal_dry_run" == 'true' ]]; then
   status '🔒' 'Running Certbot renewal dry-run for registered TLS lineages'
-  "${compose[@]}" exec -T certbot certbot renew --dry-run --webroot --webroot-path /var/www/certbot
+  verify_renewal_with_lock_retry
   status '✅' 'Certbot renewal dry-run PASS'
 fi
 
