@@ -50,6 +50,8 @@ def test_login_smoke_fails_closed_to_database_setup_surface(app, monkeypatch: py
 
     assert response.status_code == 503
     assert 'Database Setup Required' in html
-    assert 'bash scripts/init_db.sh --bootstrap-admin' in html
+    assert 'Contact your deployment administrator.' in html
+    assert 'bash scripts/init_db.sh --bootstrap-admin' not in html
+    assert 'docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml' not in html
     assert 'users' in html
     assert 'roles' in html
