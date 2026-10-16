@@ -131,3 +131,36 @@ def test_existing_schema_cutover_is_bounded_and_requires_proven_backup() -> None
     assert 'DROP ROLE' not in guard
     assert 'Application sessions still connected' in guard
     assert 'transaction will roll back' in guard
+
+
+def test_deployed_capsule_trigger_function_ownership_is_explicit() -> None:
+    """Admit only exact post-RC.7 trigger functions, never arbitrary public SQL."""
+    guard = source('scripts/server_database_boundary.py')
+    for function in (
+        'kaori_capsule_handoff_ledger_insert_guard',
+        'kaori_capsule_handoff_ledger_deny_change',
+        'kaori_capsule_proof_deny_change',
+        'kaori_capsule_handback_audit_deny_change',
+    ):
+        assert function in guard
+    assert 'pg_get_function_identity_arguments(p.oid)' in guard
+    assert "p.prorettype = 'pg_catalog.trigger'::regtype" in guard
+    assert "args or owner != 'kaori' or kind != 'f' or not is_trigger" in guard
+    assert 'len(functions) != len(_CAPSULE_TRIGGER_FUNCTIONS)' in guard
+    assert 'ALTER FUNCTION public.{}() OWNER TO kaori_migrator' in guard
+    assert 'Capsule trigger functions retain legacy ownership' in guard
+    assert 'Unexpected public function identity or owner' in guard
+
+
+def test_capsule_proof_tables_have_write_once_effective_acl() -> None:
+    """Schema trigger protections must also be enforced by least privilege."""
+    guard = source('scripts/server_database_boundary.py')
+    for table in (
+        'capsule_handoff_audit_batches',
+        'capsule_handoff_resource_consent_records',
+    ):
+        assert f'REVOKE ALL PRIVILEGES ON TABLE public.{table}' in guard
+        assert f'GRANT SELECT, INSERT ON TABLE public.{table}' in guard
+        for operation in ('UPDATE', 'DELETE', 'TRUNCATE'):
+            assert f"has_table_privilege(current_user, 'public.{table}', '{operation}')" in guard
+            assert f"has_table_privilege('kaori_runtime', 'public.{table}', '{operation}')" in guard
