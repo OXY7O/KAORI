@@ -46,8 +46,12 @@ def test_identity_provider_overview_uses_provider_adapter_boundary_and_tabs() ->
         'Authorization Boundary',
     ):
         assert boundary in overview
-    for tab in ('Overview', 'Providers', 'Directory Provisioning'):
-        assert tab in tabs
+    # The posture overview is always visible; only the records have routable tabs.
+    assert 'Authentication Source Posture' in overview
+    assert "('providers', 'Provider Registry'" in tabs
+    assert "('directory', 'Directory Provisioning'" in tabs
+    assert 'framed_tabs.render_navigation(' in tabs
+    assert "hx_target='#identity-provider-workspace'" in tabs
 
 
 def test_provider_registry_uses_dynamic_provider_filter_and_shared_kaori_table() -> None:
@@ -60,12 +64,17 @@ def test_provider_registry_uses_dynamic_provider_filter_and_shared_kaori_table()
     assert 'provider_type' not in registry
     assert 'google_oidc' not in registry
     assert 'github_oauth' not in registry
-    assert 'hx-target="#identity-provider-registry"' in registry
+    # The shared registry filter renders the HTMX target from its positional ID.
+    assert 'registry_ui.filter_form(' in registry
+    assert "'identity-provider-registry'," in registry
+    shared = read('app/templates/components/table_registry.html')
+    assert 'hx-target="#{{ registry_id }}"' in shared
     assert 'access/identity_providers/partials/_provider_detail.html' in registry
     for heading in ('Provider', 'Adapter', 'Configuration', 'State', 'Identity Links', 'Action'):
         assert heading in registry
     assert 'Rows Per Page' in registry
-    assert 'pagination_ui.numeric_pages(' in registry
+    assert 'registry_ui.footer(' in registry
+    assert 'pagination_ui.numeric_pages(' in shared
 
 
 def test_provider_model_and_forms_are_provider_neutral() -> None:

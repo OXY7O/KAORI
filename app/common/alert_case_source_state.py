@@ -10,6 +10,24 @@ from app.models.alert_ops import AlertCase, AlertCaseEvent
 SYSTEM_ROUTING_SUPPRESSION_REASONS = {'source_unavailable', 'source_deleted', 'policy_ineligible'}
 
 
+def is_active_alert_case(case: AlertCase) -> bool:
+    """Canonical committed Alert Intelligence active-case classification."""
+    return (
+        case.source_type == 'recommendation'
+        and case.workflow_state != 'closed'
+        and case.source_state in {'firing', 'unknown'}
+    )
+
+
+def active_alert_case_filters() -> tuple[Any, ...]:
+    """Identical SQL scope for aggregate consumers; unknown is not resolved."""
+    return (
+        AlertCase.source_type == 'recommendation',
+        AlertCase.workflow_state != 'closed',
+        AlertCase.source_state.in_(('firing', 'unknown')),
+    )
+
+
 def mark_case_source_unknown(
     case: AlertCase,
     *,

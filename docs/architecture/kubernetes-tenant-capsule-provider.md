@@ -21,6 +21,41 @@ Capsule is not modeled as a boolean. The provider reports capability evidence fo
 
 Only `available` capabilities may authorize security-sensitive mutations. Degraded or unavailable capabilities fail closed.
 
+## Cluster-scoped RBAC prerequisites
+
+Canonical ClusterRoles for Capsule Tenant grants are shared **per Kubernetes
+cluster**, not per adopted Tenant. The approved operating path is
+**Integrations → Kubernetes → [Cluster] → Validation & Capabilities →
+Capsule Cluster RBAC Bootstrap**: Check existing exact profiles, explicitly
+approve only missing-role creation, and verify committed Audit evidence.
+Native ClusterRole owner roles or broader built-in roles are never reused as
+equivalents. Existing identical roles are reused without mutation; conflicting
+roles stop bootstrap. Readiness is derived from the last committed Check or
+Bootstrap event, never an automatic request on each page load.
+
+This prerequisite operation requires a privileged cluster connection; it
+does not run during discovery, adoption, Grant Apply, or background sync.
+Manual `Prepare Roles` YAML download remains an approved fallback without
+permission to bootstrap. See `docs/architecture/kubernetes-tenant-access-governance.md`.
+
+## Access Grant reconciliation
+
+Issue #966 adds independent Capsule Access Grant capability detection:
+`access_grants_tenant` requires `Tenant.spec.additionalRoleBindings`, while
+`access_grants_scoped` requires supported `Tenant.spec.rules[].namespaceSelector`
+and `permissions.bindings` in the served v1beta2 CRD schema. Both remain
+unavailable or degraded when version/schema evidence is missing. KAORI executes
+all grant scopes through the scoped capability; unbounded
+`additionalRoleBindings` automatic future-Namespace inheritance is **not** admitted.
+
+KAORI keeps identity, scope, versioned Access Profile, audit, and desired/effective
+evidence in the common Tenant domain. Capsule remains the authoritative controller
+for the distributed namespaced RoleBindings, backed by exact pre-approved ClusterRoles.
+No Native fallback, implicit provider takeover, ClusterRole creation, or
+ClusterRoleBinding creation is admitted. See
+`docs/architecture/kubernetes-tenant-access-governance.md` for scope restrictions,
+role preparation, read-back, revocation, and UAT evidence.
+
 ## Authority and degradation
 
 KAORI preserves a single reconciliation authority for every Tenant capability. A Tenant using Capsule remains Capsule-owned while healthy and enters **Capsule Degraded** when required capability evidence is incomplete or unhealthy.
@@ -41,3 +76,20 @@ A controlled **Native Recovery** is an explicit governance workflow:
 During Native Recovery, Capsule remains the reconciliation authority until the final verification succeeds. The transition to `native_kubernetes` is therefore reviewable, auditable, and fail-closed.
 
 Advanced Capsule-only feature execution remains owned by #124. #121 provides discovery, provider safety, degradation, and recovery authority only.
+
+## Capsule provider-preserving Release handoff (#1229)
+
+Capsule Release is a separate workflow from Native Recovery and Native handoff.
+The Capsule v1beta2 Tenant CR remains provider-authoritative for spec, quota,
+limits, owners and RBAC. A review-only source contract for bounded conditional
+Namespace metadata handoff, read-only server dry-run preview, and no-retry
+partial recovery is documented in
+[Capsule Release handoff](kubernetes-tenant-capsule-release-handoff.md).
+
+The current source-only slice is **not** an admitted executor: approved inventory
+still lacks exact ResourceQuota, LimitRange and distributed RoleBinding origins,
+so preview must report incomplete coverage and cannot authorize a live PATCH,
+Kubernetes release, database Released finalization or decommission.
+Independent X.509 successor acceptance and approved plan evidence cannot be
+inferred from source merge. Developer checks, CI/CD, real-provider UAT and
+deployment remain held pending separate operator instruction.

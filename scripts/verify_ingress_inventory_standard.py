@@ -153,6 +153,31 @@ def main() -> int:
         'Ingress table requires caption and scoped columns.',
         errors,
     )
+    ingress_widths = {
+        'Ingress': 24,
+        'Scope': 22,
+        'Publication': 25,
+        'TLS References': 10,
+        'Routing': 9,
+        'Details': 10,
+    }
+    require(
+        sum(ingress_widths.values()) == 100
+        and all(
+            f'w-[{width}%]' in table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+            for heading, width in ingress_widths.items()
+        ),
+        'Ingress columns must prioritize identity, scope and publication evidence.',
+        errors,
+    )
+    require(
+        'class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"' in table
+        and 'class="min-w-0 max-w-full truncate text-sm font-semibold text-content-primary"' in table
+        and 'justify-between gap-x-3' not in table
+        and 'status_indicator_label(ingress.publication_label, ingress.publication_tone)' in table,
+        'Publication status must sit alongside its host instead of floating to the far edge.',
+        errors,
+    )
     require(' · Age ' not in table, 'Age must remain in detail rather than the compact Ingress table.', errors)
     require('inventory.total_ingresses == 0' in summary, 'Empty Ingress posture must not use healthy tones.', errors)
     require(

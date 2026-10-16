@@ -29,7 +29,8 @@ Fleet Inventory Posture
 <Domain> Asset Catalog
 ```
 
-`Fleet Inventory Posture` and `<Domain> Asset Catalog` use `components/section_intro.html` for title/description outside the content blocks. Posture callouts and asset cards sit directly beneath that hierarchy; they are not wrapped in another `operational_section_card`. Fleet posture uses the existing neutral `operational_callout` variant so the block surface stays standard white/elevated while semantic state remains visible through icon/status treatment. Object Storage and Artifact Registry use this extension. Kubernetes intentionally continues with Snapshot → Asset Catalog → Cluster Inventory Table because its fleet comparison is owned by the cluster table rather than a duplicate posture section.
+The overview uses `components/section_intro.html` for the outer section hierarchy.
+Following explicit human DevContainer review under #946, **Artifact Registry and Object Storage** both use the existing grouped-summary Fleet standard: `section_intro` → one `operational_section_card` → `resource_posture_grid`, without additional per-metric cards. Registry has three committed provider/snapshot/visibility metrics; Object Storage preserves all four committed quota/protection/exposure/optional-usage readings, in a responsive two/four-column grid. Each metric keeps its evidence tone and supporting text, and a fleet with no committed bucket/container evidence displays `No Evidence` instead of a fabricated zero/healthy posture. Both catalogs use `Inventory Assets` as the outer section intro and one intentional standard Asset Catalog container with a shared count badge and `inventory_asset_card` links. Object Storage has Systems and Buckets & Containers (two asset types); Registry has Projects, Repositories, and Artifacts (three). Navigation continues to read existing committed-state counts and routes. This current visual authority supersedes the earlier Object Storage flat-callout/flat-catalog instruction in #946; domain metrics are intentionally not forced to be identical. Kubernetes intentionally continues with Snapshot → Asset Catalog → Cluster Inventory Table because its fleet comparison is owned by the cluster table rather than a duplicate posture section.
 
 Consistency applies to reading order and shared primitives, not to forcing identical metrics or equal card counts across domains.
 
@@ -86,7 +87,9 @@ Uses `components/resource_detail_modal.html` and Unified Resource Sheet V10 prim
 - Inventory Signals;
 - Operational Context;
 
-The summary includes total objects, populated asset categories, and largest inventory segment. The final Operational Context section explains that the data is a committed database snapshot and provides one state-aware next step.
+The summary includes total objects, populated asset categories, and largest inventory segment. Inventory Breakdown reuses the shared section metadata badge to display `N/8 Types` from the committed nonzero asset-category count; this is an inventory-composition count, not collection completeness or healthy posture. The Inventory Breakdown subtitle stays concise: `Committed objects by resource type.` The final Operational Context section explains that the data is a committed database snapshot and provides one state-aware next step.
+
+The four section subtitles should remain compact and usually fit one desktop line: Cluster Identity — `Cluster name, version, connection.`; Snapshot Context — `Collection, source, freshness.`; Inventory Breakdown — `Committed objects by resource type.`; Inventory Signals — `Collection and operational signals.` Keep natural wrapping on narrow screens rather than enforcing `whitespace-nowrap`. For a current committed snapshot with no active signals, the state-aware action description is `Snapshot current; no active signals. Review assets.`; disconnected, stale, incomplete, and signalled branches retain their distinct meanings.
 
 ## Data Contract
 
@@ -120,3 +123,36 @@ than its peers.
 
 - The drawer uses the concise source label `Committed Snapshot`, rendered with `detail_row(..., nowrap=True)`, so `Snapshot Source` stays horizontally aligned with `Last Collected` and `Freshness Window`.
 - Inventory Signals are rendered as full-width stacked callouts. Each additional signal starts on the next row; signal cards are not placed side by side.
+
+
+## Collection Coverage and Connection State
+
+A fresh `ClusterInventory.collected_at` timestamp does not establish a complete
+inventory observation. Fleet health, snapshot context, row signals, and detail
+guidance must distinguish fully `Collected` family evidence from partial, failed,
+or absent `collection_evidence`. Unknown connection status means `Not Observed`,
+not a confirmed disconnection. A zero asset count without a committed snapshot
+is not proof that zero objects were collected. All readings are committed-state
+only and use existing KAORI semantic labels.
+
+
+## Bounded Cluster Comparison and Modal Reads
+
+Overview comparison uses canonical SQL pagination (5/10/25/50) **before**
+materializing its per-cluster detail-ready row projections. Exact global fleet
+counts and active signal counts still use grouped committed aggregate evidence;
+only page clusters become full cluster detail records. The Cluster detail endpoint
+projects exactly one committed cluster and its current resource-family counts,
+without invoking a full Overview projection. Table-only HTMX and modal fragments
+do not re-query the Snapshot Context Bar, while full page and workspace renders
+retain committed freshness context. Scope, RBAC and canonical modal stay intact.
+
+
+### Fleet total query reuse
+
+The Overview's eight committed-generation `GROUP BY cluster_id` resource
+count maps are also the authoritative fleet-level totals: sum each resource
+family's grouped counts once, rather than issuing eight duplicate COUNT queries.
+This preserves exact global totals while paging the cluster detail projection
+via the canonical SQL pagination contract. It does not change query freshness
+or the actual count of returned Kubernetes provider objects.

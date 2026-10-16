@@ -63,7 +63,7 @@ def create_human_credential_route():
             event_type='kubernetes_tenant_credential_issued',
             status='success',
             title='Tenant Human Credential Issued',
-            message=f'{credential.service_account_name} is ready for governed JumpServer delivery.',
+            message=f'{credential.service_account_name} is ready for approved human access delivery.',
             metadata={
                 'credential_id': credential.id,
                 'credential_public_id': credential.public_id,
@@ -100,7 +100,7 @@ def create_deployer_credential_route():
             event_type='kubernetes_tenant_deployer_credential_issued',
             status='success',
             title='Tenant Deployer Credential Issued',
-            message=f'{credential.service_account_name} is ready for governed CI/CD delivery.',
+            message=f'{credential.service_account_name} is ready for approved deployment delivery.',
             metadata={
                 'credential_id': credential.id,
                 'credential_public_id': credential.public_id,
@@ -166,20 +166,26 @@ def generate_credential_material_route(credential_id: int):
     context = _tenant_workspace_context()
     if isinstance(material, GeneratedTokenMaterial):
         material_kind = 'token'
-        material_title = 'JumpServer ServiceAccount Token'
+        material_title = 'Human Access Token'
         material_value = material.token
         material_base64 = None
-        delivery_label = 'Manual JumpServer delivery'
-        page_title = 'One-Time Human Token'
+        delivery_label = 'Manual Human Access Delivery'
+        page_title = 'One-Time Human Access Token'
         page_icon = 'user-key'
     elif isinstance(material, GeneratedKubeconfigMaterial):
         material_kind = 'kubeconfig'
-        material_title = 'CI/CD Kubeconfig'
         material_value = material.kubeconfig
         material_base64 = base64.b64encode(material.kubeconfig.encode('utf-8')).decode('ascii')
-        delivery_label = 'GitHub Actions / Helm'
-        page_title = 'One-Time CI/CD Kubeconfig'
-        page_icon = 'git-branch'
+        if material.access_package.get('credential_type') == 'deployer_service_account':
+            material_title = 'Deployment Kubeconfig'
+            delivery_label = 'Automated Deployment'
+            page_title = 'One-Time Deployment Kubeconfig'
+            page_icon = 'git-branch'
+        else:
+            material_title = 'Approved Access Kubeconfig'
+            delivery_label = 'Governed Individual Access'
+            page_title = 'One-Time Access Kubeconfig'
+            page_icon = 'user-key'
     else:
         abort(500)
 
@@ -197,7 +203,7 @@ def generate_credential_material_route(credential_id: int):
             material_expires_at=material.expires_at,
             material_requested_seconds=requested_seconds,
             material_access_package=material.access_package,
-            material_credential_valid_until=material.expires_at,
+            material_credential_valid_until=material.access_package.get('valid_until'),
             delivery_label=delivery_label,
             **context,
         )

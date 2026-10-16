@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from sqlalchemy import or_
+
+from app.common.registry_runtime_evidence import runtime_correlation_evidence_readiness
 from app.extensions.db import db
+from app.integrations.registry.security_contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.intelligence.alert_intelligence.case_state import (
     close_accepted_risk_alert,
     mark_case_source_unknown,
@@ -35,10 +39,21 @@ from app.intelligence.alert_signals.service import alert_signal_source_posture
 from app.intelligence.recommendation_alerting import base_rule_key, catalog_rule, effective_alert_policy
 from app.intelligence.rule_exceptions import active_rule_exceptions, matching_rule_exception
 from app.intelligence.service import get_active_recommendation_findings
+from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
 from app.models.alert_ops import AlertCase, RecommendationAlertState, RuleException
 from app.models.cluster import Cluster
+from app.models.governance import TLSCertificateCollectionState
 from app.models.integration import IntegrationInstance
-from app.models.object_storage import ObjectStorageSystem
+from app.models.inventory import ClusterInventory
+from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
+from app.models.object_storage_analytics import ObjectStorageForecastSnapshot
+from app.models.registry import (
+    RegistryArtifact,
+    RegistryCollectionState,
+    RegistryProject,
+    RegistryRepository,
+    RegistryWorkloadBinding,
+)
 
 _GROUPED_ASSET_TYPES = {
     'kubernetes': 'kubernetes_cluster',
@@ -47,10 +62,38 @@ _GROUPED_ASSET_TYPES = {
 }
 
 
+_REGISTRY_RUNTIME_RULES = frozenset(
+    {
+        'registry.security.critical_runtime_vulnerability',
+        'registry.security.scan_evidence_missing',
+        'registry.runtime.tag_only_correlation',
+    }
+)
+
+
+def _registry_runtime_source_posture(
+    rule_key: str,
+    *,
+    readiness_cache: dict[str, str] | None = None,
+) -> tuple[bool, str]:
+    """Missing runtime findings cannot imply recovery with superseded correlation."""
+    if base_rule_key(rule_key) not in _REGISTRY_RUNTIME_RULES:
+        return True, ''
+    if readiness_cache is None:
+        status = runtime_correlation_evidence_readiness(db.session())['status']
+    else:
+        status = readiness_cache.get('status')
+        if status is None:
+            status = runtime_correlation_evidence_readiness(db.session())['status']
+            readiness_cache['status'] = status
+    return (True, '') if status == 'ready' else (False, 'source_unavailable')
+
+
 def reconcile_recommendation_alert_cases() -> dict[str, int]:
     """Evaluate fresh findings while preserving Unknown state when source evidence is unavailable."""
 
     now = datetime.now(UTC)
+    runtime_readiness_cache: dict[str, str] = {}
     findings = get_active_recommendation_findings()
     fresh_keys: set[str] = set()
     active_exceptions = active_rule_exceptions(
@@ -72,7 +115,9 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         if not finding_key:
             stats['skipped'] += 1
             continue
-        available, source_reason = _source_evidence_posture_for_finding(finding)
+        available, source_reason = _source_evidence_posture_for_finding(
+            finding, readiness_cache=runtime_readiness_cache
+        )
         if not available:
             state = RecommendationAlertState.query.filter_by(finding_key=finding_key).first()
             if state is not None and state.alert_case_id is not None:
@@ -159,9 +204,33 @@ def reconcile_recommendation_alert_cases() -> dict[str, int]:
         _ensure_alert_case(finding, state=state, policy=policy, actor_user_id=None, now=now, automatic=True)
         stats['promoted'] += 1
 
-    _reconcile_missing_recommendation_states(fresh_keys=fresh_keys, now=now, stats=stats)
+    _reconcile_missing_recommendation_states(
+        fresh_keys=fresh_keys,
+        now=now,
+        stats=stats,
+        readiness_cache=runtime_readiness_cache,
+    )
     db.session.commit()
     return stats
+
+
+def _active_recommendation_state_batches():
+    """Read active finding states in bounded stable ID order during reconciliation."""
+    last_id = 0
+    while True:
+        page = (
+            RecommendationAlertState.query.filter(
+                RecommendationAlertState.active.is_(True),
+                RecommendationAlertState.id > last_id,
+            )
+            .order_by(RecommendationAlertState.id.asc())
+            .limit(200)
+            .all()
+        )
+        if not page:
+            return
+        yield from page
+        last_id = int(page[-1].id)
 
 
 def _reconcile_missing_recommendation_states(
@@ -169,11 +238,12 @@ def _reconcile_missing_recommendation_states(
     fresh_keys: set[str],
     now: datetime,
     stats: dict[str, int],
+    readiness_cache: dict[str, str],
 ) -> None:
-    for state in RecommendationAlertState.query.filter_by(active=True).all():
+    for state in _active_recommendation_state_batches():
         if state.finding_key in fresh_keys:
             continue
-        available, source_reason = _source_evidence_posture_for_state(state)
+        available, source_reason = _source_evidence_posture_for_state(state, readiness_cache=readiness_cache)
         case = db.session.get(AlertCase, state.alert_case_id) if state.alert_case_id else None
         if not available:
             if case is not None and case.workflow_state != 'closed':
@@ -702,7 +772,11 @@ def _refresh_grouped_case(case: AlertCase, *, grouping_mode: str, now: datetime)
     case.evidence_json = evidence
 
 
-def _source_evidence_posture_for_finding(finding: dict[str, Any]) -> tuple[bool, str]:
+def _source_evidence_posture_for_finding(
+    finding: dict[str, Any],
+    *,
+    readiness_cache: dict[str, str] | None = None,
+) -> tuple[bool, str]:
     evidence = _finding_evidence(finding)
     asset_key = str(
         evidence.get('asset_key')
@@ -711,22 +785,91 @@ def _source_evidence_posture_for_finding(finding: dict[str, Any]) -> tuple[bool,
         or evidence.get('registry_instance_id')
         or ''
     ).strip()
-    return _source_evidence_posture(
+    source = _source_evidence_posture(
         domain=str(finding.get('domain') or ''),
         asset_key=asset_key,
         signal_source=str(finding.get('signal_source') or ''),
         alert_signal_profile=str(finding.get('alert_signal_profile') or ''),
     )
+    if not source[0]:
+        return source
+    return _registry_runtime_source_posture(str(finding.get('rule_key') or ''), readiness_cache=readiness_cache)
 
 
-def _source_evidence_posture_for_state(state: RecommendationAlertState) -> tuple[bool, str]:
+def _source_evidence_posture_for_state(
+    state: RecommendationAlertState,
+    *,
+    readiness_cache: dict[str, str] | None = None,
+) -> tuple[bool, str]:
     rule = catalog_rule(state.rule_key) or {}
-    return _source_evidence_posture(
+    source = _source_evidence_posture(
         domain=state.domain,
         asset_key=state.asset_key,
         signal_source=str(rule.get('signal_source') or ''),
         alert_signal_profile=str(rule.get('alert_signal_profile') or ''),
     )
+    if not source[0]:
+        return source
+    correlation_source = _registry_runtime_source_posture(state.rule_key, readiness_cache=readiness_cache)
+    if not correlation_source[0]:
+        return correlation_source
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
+    rule_key = str(state.rule_key or '')
+    # Missing TLS findings cannot imply recovery after a partial/failed
+    # certificate collection even when the broader cluster inventory is fresh.
+    if rule_key.startswith('kubernetes.tls_secret.'):
+        collection = db.session.get(TLSCertificateCollectionState, state.asset_key)
+        if (
+            collection is None
+            or collection.secret_collection_status != TLS_COLLECTION_COLLECTED
+            or collection.collected_at is None
+            or _as_utc(collection.collected_at) < cutoff
+        ):
+            return False, 'source_unavailable'
+    if state.domain == 'object_storage':
+        # A fresh system row does not qualify every bucket. Missing per-bucket
+        # findings remain Unknown if any committed bucket observation is stale.
+        stale_bucket = ObjectStorageBucket.query.filter(
+            ObjectStorageBucket.object_storage_system_id == state.asset_key,
+            ObjectStorageBucket.observed_at < cutoff,
+        ).first()
+        if stale_bucket is not None:
+            return False, 'source_unavailable'
+    if rule_key.startswith('object_storage.forecast.'):
+        # A missing capacity warning is not a recovery signal if the
+        # forecast worker has no currently usable committed projection.
+        forecast = ObjectStorageForecastSnapshot.query.filter(
+            ObjectStorageForecastSnapshot.object_storage_system_id == state.asset_key,
+            ObjectStorageForecastSnapshot.history_window == '30d',
+            ObjectStorageForecastSnapshot.method == 'linear-v1',
+            ObjectStorageForecastSnapshot.status == 'ready',
+            ObjectStorageForecastSnapshot.expires_at > datetime.now(UTC),
+        ).first()
+        if forecast is None or not isinstance(forecast.payload_json, dict):
+            return False, 'source_unavailable'
+        values = forecast.payload_json.get('forecast')
+        if not isinstance(values, dict) or not all(
+            isinstance(values.get(key), (int, float)) for key in ('days_to_capacity', 'growth_per_day')
+        ):
+            return False, 'source_unavailable'
+    if rule_key.startswith('registry.security.critical_runtime_vulnerability'):
+        runtime_artifacts = db.session.query(RegistryWorkloadBinding.artifact_id).distinct()
+        incomplete_scan = (
+            RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+            .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+            .filter(
+                RegistryProject.integration_instance_id == int(state.asset_key),
+                RegistryArtifact.id.in_(runtime_artifacts),
+                or_(
+                    RegistryArtifact.scan_status.is_(None),
+                    ~RegistryArtifact.scan_status.in_(tuple(SUCCESSFUL_REGISTRY_SCAN_STATUSES)),
+                ),
+            )
+            .first()
+        )
+        if incomplete_scan is not None:
+            return False, 'source_unavailable'
+    return source
 
 
 def _source_evidence_posture(
@@ -741,10 +884,20 @@ def _source_evidence_posture(
     signal = str(signal_source or '').strip().lower()
     if not normalized_asset:
         return True, ''
+    # A missing recommendation can imply recovery only after a successful,
+    # recent committed observation for the exact source asset. A connected
+    # provider or a live binding alone cannot establish source recovery.
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
     if normalized_domain == 'kubernetes':
         asset = db.session.get(Cluster, normalized_asset)
         if asset is None:
             return False, 'source_deleted'
+        observed = ClusterInventory.query.filter(
+            ClusterInventory.cluster_id == normalized_asset,
+            ClusterInventory.collected_at >= cutoff,
+        ).first()
+        if observed is None:
+            return False, 'source_unavailable'
         if signal == 'alertmanager':
             return _binding_posture('alert_source', 'kubernetes_cluster', normalized_asset)
         if signal in {'metrics_source', 'prometheus'}:
@@ -761,6 +914,8 @@ def _source_evidence_posture(
         asset = db.session.get(ObjectStorageSystem, normalized_asset)
         if asset is None:
             return False, 'source_deleted'
+        if asset.inventory_observed_at is None or _as_utc(asset.inventory_observed_at) < cutoff:
+            return False, 'source_unavailable'
         if signal in {'metrics_source', 'prometheus'}:
             return _binding_posture('metrics_source', 'object_storage_system', normalized_asset)
         if signal == 'alertmanager':
@@ -776,6 +931,14 @@ def _source_evidence_posture(
         if not identity.enabled or str(identity.lifecycle_status or '').lower() != 'active':
             return False, 'source_unavailable'
         if str(identity.readiness_status or '').lower() == 'blocked':
+            return False, 'source_unavailable'
+        collection = db.session.get(RegistryCollectionState, identity.id)
+        if (
+            collection is None
+            or collection.status != 'ready'
+            or collection.last_committed_at is None
+            or _as_utc(collection.last_committed_at) < cutoff
+        ):
             return False, 'source_unavailable'
         return True, ''
     return True, ''

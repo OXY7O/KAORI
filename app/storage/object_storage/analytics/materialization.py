@@ -60,6 +60,7 @@ def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) ->
             'usable': False,
             'stale': False,
             'generated_at': None,
+            'expires_at': None,
             'last_attempt_at': None,
             'last_error': None,
         }
@@ -72,10 +73,24 @@ def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) ->
         else None
     )
     has_payload = isinstance(snapshot.payload_json, dict) and generated_at is not None
-    if snapshot.status == 'pending':
+    # Hard expiration dominates the worker attempt state. Last-known payloads
+    # remain persisted for audit, but cannot be advertised as available.
+    if has_payload and (stale_deadline is None or now > stale_deadline):
+        label, tone = (
+            'Expired · Refreshing'
+            if snapshot.status == 'pending'
+            else 'Expired · Worker Failed'
+            if snapshot.status == 'failed'
+            else 'Expired',
+            'critical',
+        )
+    elif snapshot.status == 'pending':
         label, tone = ('Refreshing · Last Snapshot Available', 'info') if has_payload else ('Refreshing', 'pending')
     elif snapshot.status == 'failed':
-        label, tone = ('Stale · Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
+        if has_payload and expires_at is not None and now <= expires_at:
+            label, tone = 'Current · Refresh Failed', 'warning'
+        else:
+            label, tone = ('Stale · Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
     elif not has_payload:
         label, tone = 'Worker Data', 'warning'
     elif expires_at is not None and now <= expires_at:
@@ -93,6 +108,7 @@ def analytics_snapshot_state(snapshot: ObjectStorageAnalyticsSnapshot | None) ->
         'usable': usable,
         'stale': stale,
         'generated_at': snapshot.generated_at,
+        'expires_at': snapshot.expires_at,
         'last_attempt_at': snapshot.last_attempt_at,
         'last_error': snapshot.last_error,
     }
@@ -151,6 +167,52 @@ def read_latest_known_analytics_snapshot(
     return payload, state
 
 
+class SnapshotSupersededError(RuntimeError):
+    """An older or duplicate worker lost committed snapshot ownership."""
+
+
+def _ensure_new_attempt_is_current(previous_id: int | None, requested_id: int | None) -> None:
+    if previous_id is not None and (requested_id is None or requested_id < previous_id):
+        raise SnapshotSupersededError('A newer JobExecution already owns this Object Storage dataset snapshot.')
+
+
+def _verify_snapshot_claim(
+    snapshot: ObjectStorageAnalyticsSnapshot | ObjectStorageForecastSnapshot,
+    *,
+    job_execution_id: int | None,
+    claimed_at: datetime | None,
+) -> None:
+    if (
+        claimed_at is None
+        or snapshot.status != 'pending'
+        or snapshot.last_job_execution_id != job_execution_id
+        or _aware(snapshot.last_attempt_at) != _aware(claimed_at)
+    ):
+        raise SnapshotSupersededError(
+            'This Object Storage materialization attempt was superseded; committed evidence is unchanged.'
+        )
+
+
+def _locked_analytics_snapshot(*, system_id: str, time_range: str) -> ObjectStorageAnalyticsSnapshot:
+    return (
+        ObjectStorageAnalyticsSnapshot.query.filter_by(object_storage_system_id=str(system_id), time_range=time_range)
+        .with_for_update()
+        .populate_existing()
+        .one()
+    )
+
+
+def _locked_forecast_snapshot(*, system_id: str, history_window: str) -> ObjectStorageForecastSnapshot:
+    return (
+        ObjectStorageForecastSnapshot.query.filter_by(
+            object_storage_system_id=str(system_id), history_window=history_window, method=FORECAST_METHOD
+        )
+        .with_for_update()
+        .populate_existing()
+        .one()
+    )
+
+
 def mark_analytics_pending(
     *,
     system_id: str,
@@ -159,27 +221,38 @@ def mark_analytics_pending(
     stale_grace_minutes: int,
     job_execution_id: int | None,
 ) -> ObjectStorageAnalyticsSnapshot:
-    snapshot = get_analytics_snapshot(system_id=system_id, time_range=time_range)
-    if snapshot is None:
-        snapshot = ObjectStorageAnalyticsSnapshot()
-        snapshot.object_storage_system_id = str(system_id)
-        snapshot.time_range = time_range
-        db.session.add(snapshot)
-    snapshot.status = 'pending'
-    snapshot.last_attempt_at = datetime.now(UTC)
-    snapshot.last_error = None
-    snapshot.freshness_minutes = max(int(freshness_minutes), 5)
-    snapshot.stale_grace_minutes = max(int(stale_grace_minutes), 15)
-    snapshot.last_job_execution_id = job_execution_id
-    try:
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        snapshot = ObjectStorageAnalyticsSnapshot.query.filter_by(
-            object_storage_system_id=str(system_id),
-            time_range=time_range,
-        ).one()
-    return snapshot
+    # The claim is committed *before* source I/O. A later attempt may take
+    # ownership, but the older worker can no longer commit after it finishes.
+    for attempt in range(2):
+        snapshot = (
+            ObjectStorageAnalyticsSnapshot.query.filter_by(
+                object_storage_system_id=str(system_id), time_range=time_range
+            )
+            .with_for_update()
+            .populate_existing()
+            .first()
+        )
+        if snapshot is None:
+            snapshot = ObjectStorageAnalyticsSnapshot()
+            snapshot.object_storage_system_id = str(system_id)
+            snapshot.time_range = time_range
+            db.session.add(snapshot)
+        else:
+            _ensure_new_attempt_is_current(snapshot.last_job_execution_id, job_execution_id)
+        snapshot.status = 'pending'
+        snapshot.last_attempt_at = datetime.now(UTC)
+        snapshot.last_error = None
+        snapshot.freshness_minutes = max(int(freshness_minutes), 5)
+        snapshot.stale_grace_minutes = max(int(stale_grace_minutes), 15)
+        snapshot.last_job_execution_id = job_execution_id
+        try:
+            db.session.commit()
+            return snapshot
+        except IntegrityError:
+            db.session.rollback()
+            if attempt:
+                raise
+    raise RuntimeError('Object Storage analytics snapshot claim could not be established.')
 
 
 def store_analytics_snapshot(
@@ -190,14 +263,18 @@ def store_analytics_snapshot(
     freshness_minutes: int,
     stale_grace_minutes: int,
     job_execution_id: int | None,
+    claimed_at: datetime | None = None,
 ) -> ObjectStorageAnalyticsSnapshot:
-    snapshot = mark_analytics_pending(
-        system_id=system_id,
-        time_range=time_range,
-        freshness_minutes=freshness_minutes,
-        stale_grace_minutes=stale_grace_minutes,
-        job_execution_id=job_execution_id,
-    )
+    if claimed_at is None:
+        claimed_at = mark_analytics_pending(
+            system_id=system_id,
+            time_range=time_range,
+            freshness_minutes=freshness_minutes,
+            stale_grace_minutes=stale_grace_minutes,
+            job_execution_id=job_execution_id,
+        ).last_attempt_at
+    snapshot = _locked_analytics_snapshot(system_id=system_id, time_range=time_range)
+    _verify_snapshot_claim(snapshot, job_execution_id=job_execution_id, claimed_at=claimed_at)
     now = datetime.now(UTC)
     snapshot.payload_json = _encode_snapshot_value({'schema': ANALYTICS_SNAPSHOT_SCHEMA, **payload})
     snapshot.status = 'ready'
@@ -218,14 +295,18 @@ def fail_analytics_snapshot(
     freshness_minutes: int,
     stale_grace_minutes: int,
     job_execution_id: int | None,
+    claimed_at: datetime | None = None,
 ) -> None:
-    snapshot = mark_analytics_pending(
-        system_id=system_id,
-        time_range=time_range,
-        freshness_minutes=freshness_minutes,
-        stale_grace_minutes=stale_grace_minutes,
-        job_execution_id=job_execution_id,
-    )
+    if claimed_at is None:
+        claimed_at = mark_analytics_pending(
+            system_id=system_id,
+            time_range=time_range,
+            freshness_minutes=freshness_minutes,
+            stale_grace_minutes=stale_grace_minutes,
+            job_execution_id=job_execution_id,
+        ).last_attempt_at
+    snapshot = _locked_analytics_snapshot(system_id=system_id, time_range=time_range)
+    _verify_snapshot_claim(snapshot, job_execution_id=job_execution_id, claimed_at=claimed_at)
     snapshot.status = 'failed'
     snapshot.last_attempt_at = datetime.now(UTC)
     snapshot.last_error = str(error)[:4000]
@@ -236,6 +317,10 @@ def fail_analytics_snapshot(
 def analytics_snapshot_due(*, system_id: str, time_range: str) -> bool:
     snapshot = get_analytics_snapshot(system_id=system_id, time_range=time_range)
     if snapshot is None or snapshot.payload_json is None or snapshot.generated_at is None:
+        return True
+    # A failed attempt remains due even when the retained last-good payload has not expired.
+    # JobExecution admission controls overlap; payload expiry governs continuity, not retries.
+    if snapshot.status == 'failed':
         return True
     expires_at = _aware(snapshot.expires_at)
     return expires_at is None or datetime.now(UTC) >= expires_at
@@ -332,10 +417,23 @@ def forecast_snapshot_state(snapshot: ObjectStorageForecastSnapshot | None) -> d
         else None
     )
     has_payload = isinstance(snapshot.payload_json, dict) and generated_at is not None
-    if snapshot.status == 'pending':
+    # The validity boundary takes precedence over a pending/failed attempt.
+    if has_payload and (stale_deadline is None or now > stale_deadline):
+        label, tone = (
+            'Expired · Refreshing'
+            if snapshot.status == 'pending'
+            else 'Expired · Worker Failed'
+            if snapshot.status == 'failed'
+            else 'Expired',
+            'critical',
+        )
+    elif snapshot.status == 'pending':
         label, tone = 'Refreshing', 'pending'
     elif snapshot.status == 'failed':
-        label, tone = ('Stale · Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
+        if has_payload and expires_at is not None and now <= expires_at:
+            label, tone = 'Current · Refresh Failed', 'warning'
+        else:
+            label, tone = ('Stale · Failed', 'warning') if has_payload else ('Worker Failed', 'critical')
     elif not has_payload:
         label, tone = 'Worker Data', 'warning'
     elif expires_at is not None and now <= expires_at:
@@ -364,21 +462,39 @@ def mark_forecast_pending(
     stale_grace_minutes: int,
     job_execution_id: int | None,
 ) -> ObjectStorageForecastSnapshot:
-    snapshot = get_forecast_snapshot(system_id=system_id, history_window=history_window)
-    if snapshot is None:
-        snapshot = ObjectStorageForecastSnapshot()
-        snapshot.object_storage_system_id = str(system_id)
-        snapshot.history_window = history_window
-        snapshot.method = FORECAST_METHOD
-        db.session.add(snapshot)
-    snapshot.status = 'pending'
-    snapshot.last_attempt_at = datetime.now(UTC)
-    snapshot.last_error = None
-    snapshot.freshness_minutes = max(int(freshness_minutes), 5)
-    snapshot.stale_grace_minutes = max(int(stale_grace_minutes), 15)
-    snapshot.last_job_execution_id = job_execution_id
-    db.session.commit()
-    return snapshot
+    for attempt in range(2):
+        snapshot = (
+            ObjectStorageForecastSnapshot.query.filter_by(
+                object_storage_system_id=str(system_id),
+                history_window=history_window,
+                method=FORECAST_METHOD,
+            )
+            .with_for_update()
+            .populate_existing()
+            .first()
+        )
+        if snapshot is None:
+            snapshot = ObjectStorageForecastSnapshot()
+            snapshot.object_storage_system_id = str(system_id)
+            snapshot.history_window = history_window
+            snapshot.method = FORECAST_METHOD
+            db.session.add(snapshot)
+        else:
+            _ensure_new_attempt_is_current(snapshot.last_job_execution_id, job_execution_id)
+        snapshot.status = 'pending'
+        snapshot.last_attempt_at = datetime.now(UTC)
+        snapshot.last_error = None
+        snapshot.freshness_minutes = max(int(freshness_minutes), 5)
+        snapshot.stale_grace_minutes = max(int(stale_grace_minutes), 15)
+        snapshot.last_job_execution_id = job_execution_id
+        try:
+            db.session.commit()
+            return snapshot
+        except IntegrityError:
+            db.session.rollback()
+            if attempt:
+                raise
+    raise RuntimeError('Object Storage forecast snapshot claim could not be established.')
 
 
 def _bucket_forecast_payload(
@@ -438,6 +554,11 @@ def materialize_forecast(
     stale_grace_minutes: int,
     job_execution_id: int | None,
 ) -> ObjectStorageForecastSnapshot:
+    if system.inventory_observed_at is None:
+        raise RuntimeError(
+            'Object Storage Inventory Sync Required before forecasting; '
+            'unobserved inventory must not be interpreted as an empty bucket set.'
+        )
     snapshot = mark_forecast_pending(
         system_id=system.id,
         history_window=history_window,
@@ -445,6 +566,7 @@ def materialize_forecast(
         stale_grace_minutes=stale_grace_minutes,
         job_execution_id=job_execution_id,
     )
+    claimed_at = snapshot.last_attempt_at
     try:
         source = resolve_object_storage_metrics_source(system, execution_mode='background')
         if not required_contract_ready(source):
@@ -461,6 +583,8 @@ def materialize_forecast(
             source=source,
             history_window=history_window,
         )
+        snapshot = _locked_forecast_snapshot(system_id=system.id, history_window=history_window)
+        _verify_snapshot_claim(snapshot, job_execution_id=job_execution_id, claimed_at=claimed_at)
         now = datetime.now(UTC)
         snapshot.payload_json = {
             'method': FORECAST_METHOD,
@@ -486,7 +610,10 @@ def materialize_forecast(
         return snapshot
     except (MetricsSourceError, RuntimeError, SQLAlchemyError) as exc:
         db.session.rollback()
-        snapshot = get_forecast_snapshot(system_id=system.id, history_window=history_window) or snapshot
+        if isinstance(exc, SnapshotSupersededError):
+            raise
+        snapshot = _locked_forecast_snapshot(system_id=system.id, history_window=history_window)
+        _verify_snapshot_claim(snapshot, job_execution_id=job_execution_id, claimed_at=claimed_at)
         snapshot.status = 'failed'
         snapshot.last_attempt_at = datetime.now(UTC)
         snapshot.last_error = str(exc)[:2000]
@@ -502,6 +629,10 @@ def forecast_snapshot_due(
 ) -> bool:
     snapshot = get_forecast_snapshot(system_id=system_id, history_window=history_window)
     if snapshot is None or snapshot.payload_json is None or snapshot.generated_at is None:
+        return True
+    # A failed attempt remains due even when the retained last-good payload has not expired.
+    # JobExecution admission controls overlap; payload expiry governs continuity, not retries.
+    if snapshot.status == 'failed':
         return True
     expires_at = _aware(snapshot.expires_at)
     return expires_at is None or datetime.now(UTC) >= expires_at

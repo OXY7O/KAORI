@@ -64,6 +64,16 @@
                         {{ detail.inventory_row('Workload', binding.workload_type ~ ' · ' ~ binding.workload_name) }}
                         {{ detail.inventory_row('Pod', binding.pod_name) }}
                         {{ detail.inventory_row('Container', binding.container_name) }}
+                        {% if binding.containers %}
+                            <div class="sm:col-span-2">
+                                <dt class="text-xs font-medium text-content-muted">Observed Container Usages</dt>
+                                <dd class="mt-1 space-y-1 text-sm text-content-primary">
+                                    {% for container in binding.containers %}
+                                        <div>{{ container.name }} · {{ container.kind }} #{{ container.index + 1 }}</div>
+                                    {% endfor %}
+                                </dd>
+                            </div>
+                        {% endif %}
                         {{ detail.inventory_technical_row('Image Reference', binding.image_reference, copyable=true, class_name='lg:col-span-2') }}
                     </dl>
                 {% endcall %}

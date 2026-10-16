@@ -117,3 +117,13 @@ Bearer tokens and generated kubeconfigs are never persisted in the package, inve
 GitHub Actions and Helm obtain a short-lived TokenRequest credential only when an approved pipeline needs it. KAORI constructs the kubeconfig in memory from the canonical Kubernetes connection plus the short-lived ServiceAccount token. The pipeline consumes the ephemeral kubeconfig and does not receive a permanent shared administrator kubeconfig.
 
 Suspend, expiry, revoke, and rotation reuse the canonical #115 lifecycle. Removing the dedicated ServiceAccount invalidates bound ServiceAccount token material while the Deployer Access Grant remains separately auditable and revocable.
+
+## One-time generated access delivery UX (#961)
+
+After a governed generate action, the server returns the current short-lived bearer token or kubeconfig **only once**, with non-cacheable response headers. The result page uses the existing KAORI operational section, resource posture grid, semantic one-time warning, and `one_time_secret.material_block` for copy/download.
+
+The responsive result separates the **secret material** (primary visual focus) from a concise **manual delivery checklist** (JumpServer for humans; GitHub Actions/Helm for CI/CD). It distinguishes requested TTL from Kubernetes-authoritative expiry and the governed entitlement. Manual references and delivery instructions do not imply KAORI has uploaded material to JumpServer/GitHub or stored the resulting secret.
+
+No extra secret copies are introduced beyond the single token/kubeconfig value and the existing Base64 representation for CI/CD. Reuse the existing copy/download handlers and page-hide cleanup; do not add session/local storage, auto-copy, client telemetry of material, new recipient APIs or direct credential mutation in the result template. Existing RBAC, CSRF, audit generation evidence, and `Cache-Control: no-store` remain authoritative.
+
+Dev Container Visual QA must test both token and kubeconfig variants, accidental navigation/refresh, safe copy/download, long token wrapping, light/dark, keyboard and narrow screens. No real secret material should be pasted into screenshots, test logs, or issue comments.

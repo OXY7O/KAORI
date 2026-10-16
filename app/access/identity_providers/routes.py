@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import cast
 
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
 from flask_login import current_user
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.access.authentication.identity_provider.adapters.ldap.client import ExternalProviderError
 from app.access.authentication.identity_provider.browser import SsoProviderError
@@ -41,6 +41,7 @@ from app.access.identity_providers.provisioning_proof import (
 )
 from app.access.identity_providers.repository import get_identity_provider
 from app.access.identity_providers.service import (
+    ProviderIdentityRebindError,
     assign_provider_role_choices,
     build_identity_provider_payload,
     commit_identity_projection,
@@ -74,9 +75,17 @@ def _form_context(form: IdentityProviderForm, provider: IdentityProvider | None,
 def index():
     filters = normalize_provider_filters(request.args.to_dict())
     payload = build_identity_provider_payload(filters)
-    payload['active_tab'] = 'providers' if request.args.get('tab') == 'providers' else 'overview'
-    if request.headers.get('HX-Request') == 'true':
-        return render_template('access/identity_providers/partials/_registry.html', **payload)
+    # Overview is always visible. The tab selects only the records workspace.
+    # Legacy ?tab=overview links continue to resolve to the default registry.
+    payload['active_tab'] = 'directory' if request.args.get('tab') == 'directory' else 'providers'
+    if request.headers.get('HX-Request') == 'true' and request.headers.get('HX-History-Restore-Request') != 'true':
+        # Workspace navigation and registry filters have distinct HTMX targets.
+        # Returning the registry for a tab swap would discard its wrapper/tabs.
+        if request.headers.get('HX-Target') == 'identity-provider-workspace':
+            return render_template('access/identity_providers/partials/_workspace.html', **payload)
+        # Filter/Rows/pagination replace only the embedded registry. The
+        # surrounding workspace owns the outer border, radius and shadow.
+        return render_template('access/identity_providers/partials/_registry.html', embedded=True, **payload)
     return render_template('access/identity_providers/index.html', **payload)
 
 
@@ -87,7 +96,9 @@ def create():
     form = IdentityProviderForm()
     assign_provider_role_choices(form, actor=actor)
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        role_error = provider_default_role_assignment_error(
+            actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
+        )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, None))
@@ -95,6 +106,17 @@ def create():
             provider = create_identity_provider(configuration_from_form(form))
         except IntegrityError:
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
+        except SQLAlchemyError:
+            rollback_identity_provider_transaction()
+            current_app.logger.exception('Failed to create identity provider configuration.')
+            form.key.errors = [*form.key.errors, 'The provider could not be saved. Please retry.']
+            identity_provider_feedback(
+                actor=actor,
+                event_type='identity_provider_create_failed',
+                status='error',
+                title='Provider creation failed',
+                message='No provider configuration was saved.',
+            )
         else:
             identity_provider_feedback(
                 actor=actor,
@@ -121,14 +143,34 @@ def edit(provider_id: int):
     if request.method == 'GET':
         populate_form(form, provider)
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        role_error = provider_default_role_assignment_error(
+            actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
+        )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, provider))
         try:
             update_identity_provider(provider, configuration_from_form(form))
+        except ProviderIdentityRebindError as exc:
+            if form.provider_key.data != provider.provider_key:
+                form.provider_key.errors = [*form.provider_key.errors, str(exc)]
+            else:
+                form.key.errors = [*form.key.errors, str(exc)]
         except IntegrityError:
             form.key.errors = [*form.key.errors, 'Provider key already exists.']
+        except SQLAlchemyError:
+            rollback_identity_provider_transaction()
+            current_app.logger.exception('Failed to update identity provider id %s.', provider.id)
+            form.key.errors = [*form.key.errors, 'The provider changes could not be saved. Please retry.']
+            identity_provider_feedback(
+                actor=actor,
+                event_type='identity_provider_update_failed',
+                status='error',
+                title='Provider update failed',
+                message='No provider configuration changes were saved.',
+                provider_id=provider.id,
+                provider_key=provider.provider_key,
+            )
         else:
             identity_provider_feedback(
                 actor=actor,
@@ -155,7 +197,9 @@ def test_configuration(provider_id: int | None = None):
     assign_provider_role_choices(form, actor=actor)
     test_result: dict[str, str]
     if form.validate_on_submit():
-        role_error = provider_default_role_assignment_error(actor, form.default_role_id.data)
+        role_error = provider_default_role_assignment_error(
+            actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
+        )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
             return render_template('access/identity_providers/form.html', **_form_context(form, provider))
@@ -314,6 +358,20 @@ def provision_identity():
             status='error',
             title='Provisioning failed',
             message=str(exc),
+            provider_id=provider.id,
+            provider_key=provider.provider_key,
+        )
+    except SQLAlchemyError:
+        rollback_identity_provider_transaction()
+        current_app.logger.exception(
+            'Directory identity projection transaction failed for provider id %s.', provider.id
+        )
+        identity_provider_feedback(
+            actor=actor,
+            event_type='external_identity_provision_failed',
+            status='error',
+            title='Provisioning failed',
+            message='The identity could not be provisioned because the database transaction failed. Please retry.',
             provider_id=provider.id,
             provider_key=provider.provider_key,
         )

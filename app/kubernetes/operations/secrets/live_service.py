@@ -21,9 +21,7 @@ from app.common.kubernetes_secrets import scrub_secret_payload
 from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     connection_for_cluster,
-    tls_policy_for_cluster,
 )
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.models import Cluster, ConfigurationInventory
 
 _DNS_LABEL = re.compile(r'^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$')
@@ -139,8 +137,7 @@ def list_live_namespaces(
         return []
     cluster = get_cluster(normalized)
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            response = cast(V1NamespaceList, core_api(cluster).list_namespace())
+        response = cast(V1NamespaceList, core_api(cluster).list_namespace(_request_timeout=10))
     except ApiException as exc:
         raise _api_error(exc, 'namespace lookup') from exc
     except ConfigException as exc:
@@ -162,8 +159,7 @@ def list_live_namespaces(
 def verify_live_namespace(cluster: Cluster, namespace: str | None) -> str:
     normalized = validate_resource_name(namespace, 'Namespace', namespace=True)
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            core_api(cluster).read_namespace(name=normalized)
+        core_api(cluster).read_namespace(name=normalized, _request_timeout=10)
     except ApiException as exc:
         raise _api_error(exc, 'namespace verification') from exc
     except ConfigException as exc:
@@ -191,28 +187,27 @@ def list_verified_namespaces(
 
     verified: list[str] = []
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            api = core_api(cluster)
-            for namespace in candidates:
-                try:
-                    api.read_namespace(name=namespace)
-                except ApiException as exc:
-                    status = getattr(exc, 'status', None)
-                    if status == 404:
-                        continue
-                    if status == 403:
-                        raise ValueError(
-                            'Kubernetes denied live Namespace verification. '
-                            'Grant get permission for the configured namespace without broad Secret list/watch access.'
-                        ) from exc
-                    if status == 401:
-                        raise ValueError('Kubernetes authentication failed for the selected cluster.') from exc
-                    if status == 429:
-                        raise ValueError(
-                            'Kubernetes temporarily rate-limited Namespace verification. Retry later.'
-                        ) from exc
-                    raise ValueError('Kubernetes API could not verify the configured Reveal namespace.') from exc
-                verified.append(namespace)
+        api = core_api(cluster)
+        for namespace in candidates:
+            try:
+                api.read_namespace(name=namespace, _request_timeout=10)
+            except ApiException as exc:
+                status = getattr(exc, 'status', None)
+                if status == 404:
+                    continue
+                if status == 403:
+                    raise ValueError(
+                        'Kubernetes denied live Namespace verification. '
+                        'Grant get permission for the configured namespace without broad Secret list/watch access.'
+                    ) from exc
+                if status == 401:
+                    raise ValueError('Kubernetes authentication failed for the selected cluster.') from exc
+                if status == 429:
+                    raise ValueError(
+                        'Kubernetes temporarily rate-limited Namespace verification. Retry later.'
+                    ) from exc
+                raise ValueError('Kubernetes API could not verify the configured Reveal namespace.') from exc
+            verified.append(namespace)
     except ConfigException as exc:
         raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
     except (OSError, Urllib3HTTPError) as exc:
@@ -242,44 +237,59 @@ def list_live_secrets(
         'Namespace',
         namespace=True,
     )
-    response: V1SecretList | None = None
+    options: list[LiveSecretOption] = []
+    continuation: str | None = None
+    seen_tokens: set[str] = set()
+    # Keep every response bounded; never silently return a truncated selector
+    # as though the result represented the full live Kubernetes namespace.
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            response = cast(
-                V1SecretList,
-                core_api(cluster).list_namespaced_secret(
-                    namespace=normalized_namespace,
-                    _request_timeout=10,
-                ),
-            )
-        options: list[LiveSecretOption] = []
-        for item in response.items or []:
-            name = getattr(getattr(item, 'metadata', None), 'name', None)
-            secret_type = str(getattr(item, 'type', None) or 'Opaque')
-            if not name:
-                continue
-            if supported_types is not None and secret_type not in supported_types:
-                continue
-            if blocked_types is not None and secret_type in blocked_types:
-                continue
-            options.append(
-                LiveSecretOption(
-                    name=name,
-                    secret_type=secret_type,
-                    immutable=bool(getattr(item, 'immutable', False)),
+        api = core_api(cluster)
+        for _ in range(100):
+            response: V1SecretList | None = None
+            try:
+                response = cast(
+                    V1SecretList,
+                    api.list_namespaced_secret(
+                        namespace=normalized_namespace,
+                        limit=100,
+                        _continue=continuation,
+                        _request_timeout=10,
+                    ),
                 )
-            )
-        return sorted(options, key=lambda item: item.name)
+                for item in response.items or []:
+                    name = getattr(getattr(item, 'metadata', None), 'name', None)
+                    secret_type = str(getattr(item, 'type', None) or 'Opaque')
+                    if not name:
+                        continue
+                    if supported_types is not None and secret_type not in supported_types:
+                        continue
+                    if blocked_types is not None and secret_type in blocked_types:
+                        continue
+                    options.append(
+                        LiveSecretOption(
+                            name=name,
+                            secret_type=secret_type,
+                            immutable=bool(getattr(item, 'immutable', False)),
+                        )
+                    )
+                continuation = str(getattr(getattr(response, 'metadata', None), '_continue', None) or '')
+            finally:
+                # Scrub each response page, including when parsing fails.
+                if response is not None:
+                    for item in response.items or []:
+                        scrub_secret_payload(item)
+            if not continuation:
+                return sorted(options, key=lambda item: item.name)
+            if continuation in seen_tokens:
+                raise ValueError('Kubernetes repeated a Secret list continuation token; target selection stopped.')
+            seen_tokens.add(continuation)
+        raise ValueError('Too many live Secrets to load safely. Narrow the operation namespace.')
     except ApiException as exc:
         raise _api_error(exc, 'list operation') from exc
     except ConfigException as exc:
         raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
     except (OSError, Urllib3HTTPError) as exc:
         raise _connection_error('list operation') from exc
-    finally:
-        if response is not None:
-            for item in response.items or []:
-                scrub_secret_payload(item)
 
 
 def read_live_secret(
@@ -299,15 +309,14 @@ def read_live_secret(
     normalized_name = validate_resource_name(secret_name, 'Secret name')
     secret: V1Secret | None = None
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            secret = cast(
-                V1Secret,
-                core_api(cluster).read_namespaced_secret(
-                    name=normalized_name,
-                    namespace=normalized_namespace,
-                    _request_timeout=10,
-                ),
-            )
+        secret = cast(
+            V1Secret,
+            core_api(cluster).read_namespaced_secret(
+                name=normalized_name,
+                namespace=normalized_namespace,
+                _request_timeout=10,
+            ),
+        )
         secret_type = str(getattr(secret, 'type', None) or 'Opaque')
         if supported_types is not None and secret_type not in supported_types:
             raise ValueError('This live Secret type is not supported by the selected workflow.')

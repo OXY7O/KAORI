@@ -54,3 +54,17 @@ Recommendations use a two-row desktop filter layout. The first row owns Search, 
 The Recommendation Workspace continues to own filters, records, and pagination. Filter and pagination requests replace only `#recommendations-results-content`; the standalone Summary is refreshed with an HTMX out-of-band swap so it remains synchronized without rerendering the filter form or collapsing the workspace hierarchy. Reset may replace the complete workspace while refreshing the standalone Summary through the same OOB contract.
 
 Recommendations remain evidence-backed findings. The workspace may describe live-validation and remediation steps, but it must not expose a direct infrastructure execution control; live validation remains with the owning operational workspace and governed execution remains with Automation Control.
+
+
+## Audit Remediation — Evaluator, Evidence and Scope (#1501–#1503)
+
+The server must narrow evaluators to the selected canonical domain and an exact Rule Catalog key when opening a finding detail; missing alert-policy overrides must consume the already-batched policy map rather than cause per-finding SQL. Source/domain workers remain authoritative, and Central Intelligence owns finding semantics. All-domain GET still evaluates all applicable domains; UAT must benchmark this operation on large estates before claiming complete bounded performance.
+
+The Recommendations Hero and **Recommendation Summary** are filter-scoped. Their presentation is synchronized by HTMX out-of-band replacements (`#recommendation-hero-posture` and `#recommendation-summary-section`) while results and pagination remain independently owned; no stale global Hero posture may remain after an AJAX filter change. Matching findings, severity, actionable counts and Kubernetes / Object Storage / Artifact Registry distribution are computed across the full matching set **before page slicing**, not from unrelated-domain findings. Filter source status is catalog-only and must not silently constrain Recommendations.
+
+The Alert Handling selector includes Open, Source Unknown, Resolved · Verify, Resolved, Withdrawn, Retired and Accepted Risk states. The list/modal must retain AlertCase lifecycle provenance and must not offer a fresh manual promotion action when a historical or source-unknown case already exists.
+
+**Evidence availability is not finding absence.** The Recommendations projection reports evaluator failures explicitly and classifies a conservative 24-hour committed inventory baseline, distinguishing `baseline_recent`, `partial`, `unavailable` and `not_collected`. `baseline_recent` does **not** certify complete metrics, scan or rule coverage. The empty state differentiates no matching filters, incomplete source evidence and no active findings, without asserting infrastructure health. A worker/reconciliation consumer must fail on evaluator SQL error rather than reconcile source alerts against fabricated no-findings output.
+
+Current active recommendations are derived from committed current-state evidence. Historical Tenant Audit and policy/preflight events stay in immutable Audit evidence instead of being presented indefinitely as ongoing active conditions. Enabled/active provider eligibility and source freshness are prerequisites for current Object Storage findings. An active finding with Accepted Risk remains visible as evidence while escalation is suppressed by its governed Rule Exception.
+

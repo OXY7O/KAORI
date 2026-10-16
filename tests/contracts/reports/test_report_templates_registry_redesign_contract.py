@@ -105,7 +105,7 @@ def test_template_service_is_catalog_driven_and_filterable() -> None:
     assert 'def parse_positive_int' not in service
     assert 'pagination = build_pagination_window(' in service
     assert "'per_page_options': list(PER_PAGE_OPTIONS)" in service
-    assert "'can_generate': status == 'active'" in service
+    assert "'can_generate': contract_valid and status == 'active'" in service
     assert "'registry_return_url': registry_return_url" in service
     assert 'build_template_registry_url(' in service
 

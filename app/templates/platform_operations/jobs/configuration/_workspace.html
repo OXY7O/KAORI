@@ -1,13 +1,15 @@
 {% import "components/table_label.html" as table_label %}
 <div class="grid gap-6 xl:grid-cols-12 xl:items-start"
-     x-data="{ activeJob: '{{ selected_job_key }}' }">
+     x-data="{ activeJob: '{{ (selected_job_key or '')|replace('.', '-') |replace('/', '-') }}' }">
     <aside class="space-y-3 xl:col-span-4">
         <div class="rounded-xl border border-outline-default bg-surface-card p-3">
-            <label class="text-xs font-semibold text-content-secondary">Search Registered Jobs</label>
+            <label for="job-configuration-catalog-search"
+                   class="text-xs font-semibold text-content-secondary">Search Registered Jobs</label>
             <div class="relative mt-2">
                 <i data-lucide="search"
                    class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-content-muted"></i>
-                <input type="search"
+                <input id="job-configuration-catalog-search"
+                       type="search"
                        x-data
                        @input="document.querySelectorAll('[data-job-catalog-row]').forEach((row) => { row.hidden = Boolean($event.target.value) && !row.dataset.jobSearch.includes($event.target.value.toLowerCase()) })"
                        class="h-9 w-full rounded-md border border-outline-default bg-surface-card pl-9 pr-3 text-xs text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-accent/30"

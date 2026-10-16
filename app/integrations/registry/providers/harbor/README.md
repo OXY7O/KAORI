@@ -112,3 +112,64 @@ A Harbor implementation that passes its provider-specific tests but still requir
 Artifact inventory, vulnerability findings, webhook workflows, cross-domain Registry
 correlation, consumer bindings, and operational Registry mutation are outside issue #884.
 Those surfaces must not be inferred from this provider foundation.
+
+## Approved outbound Harbor HTTPS policy (#1480)
+
+Connection registration, Test Connection, Full Validation, Runtime Refresh and
+Registry collectors require **verified HTTPS** and an explicitly approved
+endpoint. Previously saved HTTP or `verify_ssl=false` connections fail
+closed until reconfigured to the approved HTTPS origin.
+
+Set `INTEGRATION_HARBOR_ALLOWED_ORIGINS` as comma-separated exact HTTPS origins
+in **both web application and validation/runtime/collection worker** environments.
+For example: `https://harbor.internal.example,https://harbor.example.com`.
+When unset or empty, the client refuses connections before transport.
+For internal PKI, make a trusted PEM CA bundle available to all these processes
+and set `INTEGRATION_HARBOR_CA_BUNDLE=/etc/ssl/harbor-ca.pem`. Default behavior
+uses normal certificate verification. No insecure TLS bypass is offered.
+
+Harbor must be reachable directly through its approved HTTPS origin, including
+when it is exposed through a reverse proxy. Client requests reject HTTP redirects,
+do not inherit shell proxies/netrc and reject unapproved origins. App-level origin
+allowlisting is **not DNS pinning or network egress isolation**. Restrict DNS and
+egress to sanctioned Harbor targets using operator-managed infrastructure policy.
+Private/internal addresses are allowed only when explicitly approved.
+
+Before promotion, verify good/bad internal certificates, blocked HTTP/unapproved
+hosts, redirect rejection, stored insecure-record behavior, secret-free evidence,
+browser edit/resave and web/worker environment parity. The provider's resources
+remain authoritative and are never modified by this change.
+
+
+## Integration Coverage versus provider readiness (#1483)
+
+**Harbor Integration Coverage** is an operational-adoption summary across four
+independent dimensions: (1) provider Full Validation/API readiness, (2)
+committed Inventory snapshot, (3) eligible Metrics Source binding, and (4)
+enabled Webhook reconciliation. **Full Coverage** means all four are ready;
+**Partial Coverage** means at least one dimension is missing. This is **not**
+an additional Registry Inventory eligibility requirement and does not override
+the authoritative Full Validation gate. Metrics and Webhook are optional for
+the provider's core Registry function; `Not Bound` or `Not Enabled` is a
+factual not-adopted dimension, not a failed connection test.
+
+Disabled or inactive registered connections retain historical validation
+and committed evidence for audit, but appear as **Disabled** or **Inactive**
+rather than Full Coverage or Active Ready in the operational summary.
+The Integration workspace owns connection posture; downstream Artifact
+Registry source/consumer eligibility is governed by its own issues/contract.
+
+
+## Second-provider extension evidence (#1484)
+
+`tests/contracts/integrations/test_registry_second_provider_extension_contract.py`
+now checks a synthetic second provider's kernel registration, normalized
+inventory collector dispatch, independent optional security/governance
+collectors and digest-based consumer source contracts. The fixture
+does not create an AWS/ECR connection or mutate provider-owned resources.
+
+These tests remain authored-but-not-executed in the review-only GitHub
+workflow. The Registry extension gate still requires PostgreSQL persisted
+second-provider commit/correlation tests, worker concurrency and human
+UAT before full acceptance. See
+`docs/architecture/registry-provider-extension-gate.md`.

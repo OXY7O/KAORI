@@ -193,6 +193,8 @@
                             {% endif %}
                         </select>
                         <span class="mt-1.5 block text-xs leading-5 text-content-muted">Options follow the selected cluster's current inventory snapshot.</span>
+                        <span class="mt-1 hidden text-xs font-semibold text-status-critical-text"
+                              data-schedule-namespace-error>Namespace options could not be loaded. Select the cluster again before saving.</span>
                     </label>
                 </div>
                 <label class="hidden sm:col-span-2" data-schedule-object-storage-scope>
@@ -358,6 +360,7 @@
          data-schedule-scope-by-type="{{ payload.scope_asset_type_by_report_type | tojson | forceescape }}"
          data-schedule-domain-by-type="{{ payload.report_domain_by_report_type | tojson | forceescape }}"
          data-schedule-namespaces-by-cluster="{{ payload.namespace_options_by_cluster | tojson | forceescape }}"
+         data-schedule-namespace-options-url="{{ url_for('reports.schedule_namespace_options') }}"
          data-schedule-open-dialog="{{ 'true' if schedule_form_is_edit or payload.open_create_dialog else 'false' }}">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -588,12 +591,14 @@
                                     <i data-lucide="calendar-clock" class="h-5 w-5"></i>
                                 </span>
                                 <div class="min-w-0">
-                                    <h3 class="text-base font-semibold leading-6 text-content-primary">Schedule Registry</h3>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-base font-semibold leading-6 text-content-primary">Schedule Registry</h3>
+                                        {{ table_label.result_count(payload.pagination.total_items) }}
+                                    </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">Filter and manage recurring report definitions, scope, timing, delivery, and execution state.</p>
                                 </div>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.metadata_label(payload.pagination.total_items ~ ' Schedules', 'calendar-clock') }}
                                 {% if payload.selected_filters.search or payload.selected_filters.status or payload.selected_filters.cadence or payload.selected_filters.report_type or payload.selected_filters.asset or payload.selected_filters.delivery %}
                                     {{ registry_ui.clear_filters_link('reports.schedules', 'schedule-registry', 'schedule-registry-loading', payload.pagination.per_page, table_ui.action_classes() , query_params={'workspace': 'registry'}) }}
                                 {% endif %}
@@ -920,12 +925,14 @@
                                     <i data-lucide="history" class="h-5 w-5"></i>
                                 </span>
                                 <div class="min-w-0">
-                                    <h3 class="text-base font-semibold leading-6 text-content-primary">Recent Schedule Runs</h3>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-base font-semibold leading-6 text-content-primary">Recent Schedule Runs</h3>
+                                        {{ table_label.result_count(payload.run_pagination.total_items) }}
+                                    </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">Search retained Run Now and dispatcher lifecycle evidence with server-backed filtering and pagination.</p>
                                 </div>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.metadata_label(payload.run_pagination.total_items ~ ' Runs', 'history') }}
                                 {% set run_filters_active = payload.run_selected_filters.run_search or payload.run_selected_filters.run_schedule or payload.run_selected_filters.run_trigger or payload.run_selected_filters.run_status or payload.run_selected_filters.run_period != '30d' %}
                                 {% if run_filters_active %}
                                     {{ registry_ui.clear_filters_link('reports.schedules', 'schedule-runs-registry', 'schedule-runs-loading', payload.run_pagination.per_page, table_ui.action_classes() , query_params={'workspace': 'runs', 'run_period': '30d'}, page_param='run_page', per_page_param='run_per_page') }}

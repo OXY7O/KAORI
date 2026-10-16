@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import case, func, or_
+from sqlalchemy import and_, case, false, func, or_
 from sqlalchemy.orm import joinedload
+from werkzeug.exceptions import NotFound
 
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.artifact_registry.security.job_adapter import build_registry_security_sync_state
@@ -18,6 +19,7 @@ from app.models.integration import IntegrationInstance
 from app.models.job import JobExecution
 from app.models.registry import (
     RegistryArtifact,
+    RegistryCollectionState,
     RegistryProject,
     RegistryRepository,
     RegistryScanSnapshot,
@@ -43,21 +45,49 @@ def _freshness(observed_at: datetime | None) -> dict[str, str]:
     return {'label': 'Current', 'tone': 'normal'}
 
 
-def _providers() -> list[IntegrationInstance]:
+def _registered_sources() -> list[IntegrationInstance]:
     return (
         IntegrationInstance.query.filter(
             IntegrationInstance.integration_type == 'registry',
+            IntegrationInstance.enabled.is_(True),
             IntegrationInstance.lifecycle_status == 'active',
         )
-        .order_by(IntegrationInstance.name.asc())
+        .order_by(IntegrationInstance.name.asc(), IntegrationInstance.id.asc())
         .all()
     )
 
 
-def _capability_state(*, supported: bool, observed: bool, attempted: bool) -> dict[str, str]:
+def _providers() -> list[IntegrationInstance]:
+    """Eligible operational security evidence scope, not historical provider records."""
+    return (
+        IntegrationInstance.query.join(
+            RegistryCollectionState,
+            RegistryCollectionState.integration_instance_id == IntegrationInstance.id,
+        )
+        .filter(
+            IntegrationInstance.integration_type == 'registry',
+            IntegrationInstance.enabled.is_(True),
+            IntegrationInstance.lifecycle_status == 'active',
+            RegistryCollectionState.last_committed_at.is_not(None),
+        )
+        .order_by(IntegrationInstance.name.asc(), IntegrationInstance.id.asc())
+        .all()
+    )
+
+
+def _capability_state(
+    *,
+    supported: bool,
+    observed: bool,
+    attempted: bool,
+    observed_count: int | None = None,
+    artifact_total: int | None = None,
+) -> dict[str, str]:
     if not supported:
         return {'key': 'unsupported', 'label': 'Unsupported', 'tone': 'unknown'}
     if observed:
+        if artifact_total and observed_count is not None and observed_count < artifact_total:
+            return {'key': 'supported_partial', 'label': 'Partial', 'tone': 'warning'}
         return {'key': 'supported_observed', 'label': 'Observed', 'tone': 'normal'}
     if attempted:
         return {'key': 'supported_unavailable', 'label': 'Unavailable', 'tone': 'warning'}
@@ -96,11 +126,10 @@ def _scoped_sources(
 
 
 def _apply_source_scope(query: Any, source_ids: list[int], *, scoped: bool) -> Any:
+    """Security evidence is never allowed to expand beyond eligible source IDs."""
     if source_ids:
         return query.filter(RegistryProject.integration_instance_id.in_(source_ids))
-    if scoped:
-        return query.filter(RegistryProject.integration_instance_id == -1)
-    return query
+    return query.filter(false())
 
 
 def _snapshot_status(
@@ -110,12 +139,10 @@ def _snapshot_status(
     latest_job: JobExecution | None,
     latest_success: JobExecution | None,
     latest_evidence_at: datetime | None,
+    inventory_committed: bool = False,
 ) -> dict[str, Any]:
-    successful_at = (
-        latest_success.completed_at
-        if latest_success is not None and latest_success.completed_at is not None
-        else latest_evidence_at
-    )
+    # A fleet job completion is an attempt, not proof of committed Registry security evidence.
+    successful_at = latest_evidence_at
     successful_at = _aware_datetime(successful_at)
     latest_status = str(latest_job.status or '') if latest_job is not None else ''
     refresh_failed = bool(
@@ -128,8 +155,15 @@ def _snapshot_status(
     stale = bool(successful_at is not None and successful_at < datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS))
 
     if artifact_total == 0:
-        label, tone = 'Inventory Required', 'warning'
-        description = 'Committed artifact inventory is required before security evidence can be evaluated.'
+        if inventory_committed:
+            label, tone = 'No Artifacts', 'info'
+            description = 'The committed Registry inventory is observed empty; there are no artifacts to scan.'
+        else:
+            label, tone = 'Inventory Required', 'warning'
+            description = 'Committed artifact inventory is required before security evidence can be evaluated.'
+    elif evidence_count > 0 and successful_at is None:
+        label, tone = 'Age Unverified', 'warning'
+        description = 'Security presence is committed, but no qualifying security evidence timestamp is available.'
     elif evidence_count == 0 and successful_at is None:
         label, tone = 'Not Collected', 'unknown'
         description = 'No committed security evidence for this Registry scope.'
@@ -197,37 +231,65 @@ def _security_scope_evidence(
         RegistryArtifact.signature_status.isnot(None),
         RegistryArtifact.sbom_status.isnot(None),
     )
-    artifact_total = artifact_scope.order_by(None).count()
-    evidence_count = artifact_scope.filter(evidence_filter).order_by(None).count()
-    scanned_artifacts = (
-        artifact_scope.filter(func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES))
-        .order_by(None)
-        .count()
-    )
-    signature_observed = (
-        artifact_scope.filter(func.lower(RegistryArtifact.signature_status) == 'signed').order_by(None).count()
-    )
-    sbom_available = (
-        artifact_scope.filter(func.lower(RegistryArtifact.sbom_status) == 'available').order_by(None).count()
-    )
-    coverage_gaps = (
-        artifact_scope.filter(
+    supported = {
+        collector.provider_key: collector.capabilities for collector in registered_registry_security_collectors()
+    }
+    signature_ids = [
+        int(source.id) for source in scoped_sources if 'signature' in supported.get(source.provider_key, ())
+    ]
+    sbom_ids = [int(source.id) for source in scoped_sources if 'sbom' in supported.get(source.provider_key, ())]
+    gap_predicate = or_(
+        and_(
+            RegistryProject.integration_instance_id.in_(signature_ids),
             or_(
                 RegistryArtifact.signature_status.is_(None),
                 func.lower(RegistryArtifact.signature_status) != 'signed',
+            ),
+        ),
+        and_(
+            RegistryProject.integration_instance_id.in_(sbom_ids),
+            or_(
                 RegistryArtifact.sbom_status.is_(None),
                 func.lower(RegistryArtifact.sbom_status) != 'available',
-            )
-        )
-        .order_by(None)
-        .count()
+            ),
+        ),
     )
+
+    def count_if(predicate: Any) -> Any:
+        return func.coalesce(func.sum(case((predicate, 1), else_=0)), 0)
+
+    artifact_total, evidence_count, signature_observed, sbom_available, coverage_gaps = artifact_scope.with_entities(
+        func.count(RegistryArtifact.id),
+        count_if(evidence_filter),
+        count_if(func.lower(RegistryArtifact.signature_status) == 'signed'),
+        count_if(func.lower(RegistryArtifact.sbom_status) == 'available'),
+        count_if(gap_predicate),
+    ).one()
 
     latest_snapshot_ids = (
         RegistryScanSnapshot.query.with_entities(func.max(RegistryScanSnapshot.id).label('id'))
         .group_by(RegistryScanSnapshot.artifact_id)
         .subquery()
     )
+    scan_scope = (
+        RegistryScanSnapshot.query.join(latest_snapshot_ids, RegistryScanSnapshot.id == latest_snapshot_ids.c.id)
+        .join(RegistryArtifact, RegistryScanSnapshot.artifact_id == RegistryArtifact.id)
+        .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+    )
+    scan_scope = _apply_source_scope(scan_scope, source_ids, scoped=scoped)
+    successful_scan_scope = scan_scope.filter(
+        func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)
+    )
+    scanned_artifacts = successful_scan_scope.order_by(None).count()
+    current_scanned_artifacts = (
+        successful_scan_scope.filter(
+            RegistryScanSnapshot.observed_at >= datetime.now(UTC) - timedelta(hours=FRESHNESS_HOURS)
+        )
+        .order_by(None)
+        .count()
+    )
+
     finding_scope = (
         RegistryVulnerability.query.join(
             RegistryScanSnapshot,
@@ -269,36 +331,18 @@ def _security_scope_evidence(
         runtime_scope.with_entities(func.count(func.distinct(RegistryWorkloadBinding.id))).scalar() or 0
     )
 
-    latest_job = (
-        JobExecution.query.filter(JobExecution.job_type == 'artifact_registry_security')
-        .order_by(JobExecution.created_at.desc())
-        .first()
-    )
-    latest_success = (
-        JobExecution.query.filter(
-            JobExecution.job_type == 'artifact_registry_security',
-            JobExecution.status.in_(('succeeded', 'partially_succeeded')),
-        )
-        .order_by(JobExecution.completed_at.desc(), JobExecution.created_at.desc())
-        .first()
-    )
-    latest_scan_query = (
-        RegistryScanSnapshot.query.join(
-            RegistryArtifact,
-            RegistryScanSnapshot.artifact_id == RegistryArtifact.id,
-        )
-        .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
-        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
-    )
-    latest_scan_query = _apply_source_scope(latest_scan_query, source_ids, scoped=scoped)
-    latest_evidence_at = latest_scan_query.with_entities(func.max(RegistryScanSnapshot.observed_at)).scalar()
-    coverage_count = scanned_artifacts if view == 'vulnerabilities' else evidence_count
+    # JobExecution.job_type == 'artifact_registry_security' is fleet authority.
+    # Its last-success/last-failure belongs to sync_state, not a provider's
+    # security evidence age. Never substitute a global job timestamp here.
+    latest_evidence_at = successful_scan_scope.with_entities(func.max(RegistryScanSnapshot.observed_at)).scalar()
+    coverage_count = current_scanned_artifacts if view == 'vulnerabilities' else evidence_count
     snapshot = _snapshot_status(
         artifact_total=artifact_total,
         evidence_count=coverage_count,
-        latest_job=latest_job,
-        latest_success=latest_success,
+        latest_job=None,
+        latest_success=None,
         latest_evidence_at=latest_evidence_at,
+        inventory_committed=bool(scoped_sources),
     )
     return {
         'artifact_scope': artifact_scope,
@@ -307,6 +351,7 @@ def _security_scope_evidence(
         'artifact_total': artifact_total,
         'evidence_count': evidence_count,
         'scanned_artifacts': scanned_artifacts,
+        'current_scanned_artifacts': current_scanned_artifacts,
         'signature_observed': signature_observed,
         'sbom_available': sbom_available,
         'coverage_gaps': coverage_gaps,
@@ -325,49 +370,106 @@ def _security_source_capabilities(
     *,
     evidence_filter: Any,
 ) -> list[dict[str, Any]]:
+    """One grouped committed-artifact aggregation for the visible capability page."""
     collectors = {collector.provider_key: collector for collector in registered_registry_security_collectors()}
+    ids = [int(source.id) for source in scoped_sources]
+    if not ids:
+        return []
+    scan_ready_predicate = and_(
+        func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
+        RegistryArtifact.scan_snapshots.any(
+            func.lower(RegistryScanSnapshot.status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)
+        ),
+    )
+
+    def count_if(predicate: Any) -> Any:
+        return func.coalesce(func.sum(case((predicate, 1), else_=0)), 0)
+
+    grouped = (
+        RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(RegistryProject.integration_instance_id.in_(ids))
+        .with_entities(
+            RegistryProject.integration_instance_id,
+            func.count(RegistryArtifact.id),
+            count_if(scan_ready_predicate),
+            count_if(RegistryArtifact.scan_status.isnot(None)),
+            count_if(func.lower(RegistryArtifact.signature_status) == 'signed'),
+            count_if(RegistryArtifact.signature_status.isnot(None)),
+            count_if(func.lower(RegistryArtifact.sbom_status) == 'available'),
+            count_if(RegistryArtifact.sbom_status.isnot(None)),
+        )
+        .group_by(RegistryProject.integration_instance_id)
+        .all()
+    )
+    counts = {
+        int(provider_id): (
+            int(total),
+            int(scan_ready),
+            int(scan_attempted),
+            int(signature_ready),
+            int(signature_attempted),
+            int(sbom_ready),
+            int(sbom_attempted),
+        )
+        for (
+            provider_id,
+            total,
+            scan_ready,
+            scan_attempted,
+            signature_ready,
+            signature_attempted,
+            sbom_ready,
+            sbom_attempted,
+        ) in grouped
+    }
     rows: list[dict[str, Any]] = []
     for source in scoped_sources:
-        source_artifacts = (
-            RegistryArtifact.query.join(
-                RegistryRepository,
-                RegistryArtifact.repository_id == RegistryRepository.id,
-            )
-            .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
-            .filter(RegistryProject.integration_instance_id == int(source.id))
+        total, scan_ready, scan_attempted, signature_ready, signature_attempted, sbom_ready, sbom_attempted = (
+            counts.get(int(source.id), (0, 0, 0, 0, 0, 0, 0))
         )
-        attempted = bool(source_artifacts.filter(evidence_filter).order_by(None).count())
         collector = collectors.get(source.provider_key)
         capabilities = collector.capabilities if collector is not None else frozenset()
         rows.append(
             {
                 'source_name': source.name,
                 'provider_label': source.provider_key.replace('_', ' ').title(),
-                'artifact_count': source_artifacts.order_by(None).count(),
+                'artifact_count': total,
+                'coverage': {
+                    'vulnerability': scan_ready,
+                    'signature': signature_ready,
+                    'sbom': sbom_ready,
+                },
                 'vulnerability': _capability_state(
                     supported='vulnerability' in capabilities,
-                    observed=bool(
-                        source_artifacts.filter(RegistryArtifact.scan_status.isnot(None)).order_by(None).count()
-                    ),
-                    attempted=attempted,
+                    observed=bool(scan_ready),
+                    attempted=bool(scan_attempted),
+                    observed_count=scan_ready,
+                    artifact_total=total,
                 ),
                 'signature': _capability_state(
                     supported='signature' in capabilities,
-                    observed=bool(
-                        source_artifacts.filter(RegistryArtifact.signature_status.isnot(None)).order_by(None).count()
-                    ),
-                    attempted=attempted,
+                    observed=bool(signature_ready),
+                    attempted=bool(signature_attempted),
+                    observed_count=signature_ready,
+                    artifact_total=total,
                 ),
                 'sbom': _capability_state(
                     supported='sbom' in capabilities,
-                    observed=bool(
-                        source_artifacts.filter(RegistryArtifact.sbom_status.isnot(None)).order_by(None).count()
-                    ),
-                    attempted=attempted,
+                    observed=bool(sbom_ready),
+                    attempted=bool(sbom_attempted),
+                    observed_count=sbom_ready,
+                    artifact_total=total,
                 ),
             }
         )
     return rows
+
+
+def _security_search_pattern(value: str) -> str:
+    """Escape SQL LIKE metacharacters for literal Registry evidence search."""
+    literal = value.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+    return f'%{literal}%'
 
 
 def _security_vulnerability_page(
@@ -388,15 +490,15 @@ def _security_vulnerability_page(
     if severity_value:
         query = query.filter(func.lower(RegistryVulnerability.severity) == severity_value)
     if search_value:
-        pattern = f'%{search_value}%'
+        pattern = _security_search_pattern(search_value)
         query = query.filter(
             or_(
-                func.lower(RegistryVulnerability.vulnerability_id).like(pattern),
-                func.lower(RegistryVulnerability.package).like(pattern),
-                func.lower(func.coalesce(RegistryVulnerability.fixed_version, '')).like(pattern),
-                func.lower(RegistryArtifact.digest).like(pattern),
-                func.lower(RegistryRepository.name).like(pattern),
-                func.lower(RegistryProject.name).like(pattern),
+                func.lower(RegistryVulnerability.vulnerability_id).like(pattern, escape='\\'),
+                func.lower(RegistryVulnerability.package).like(pattern, escape='\\'),
+                func.lower(func.coalesce(RegistryVulnerability.fixed_version, '')).like(pattern, escape='\\'),
+                func.lower(RegistryArtifact.digest).like(pattern, escape='\\'),
+                func.lower(RegistryRepository.name).like(pattern, escape='\\'),
+                func.lower(RegistryProject.name).like(pattern, escape='\\'),
             )
         )
     severity_rank = case(
@@ -408,7 +510,9 @@ def _security_vulnerability_page(
         else_=5,
     )
     page_items, pagination = paginate_query(
-        query.order_by(severity_rank.asc(), RegistryVulnerability.vulnerability_id.asc()),
+        query.order_by(
+            severity_rank.asc(), RegistryVulnerability.vulnerability_id.asc(), RegistryVulnerability.id.asc()
+        ),
         page=page,
         per_page=per_page,
     )
@@ -473,12 +577,12 @@ def _security_supply_evidence_page(
 ) -> tuple[list[dict[str, Any]], Any]:
     query = artifact_scope
     if search_value:
-        pattern = f'%{search_value}%'
+        pattern = _security_search_pattern(search_value)
         query = query.filter(
             or_(
-                func.lower(RegistryArtifact.digest).like(pattern),
-                func.lower(RegistryRepository.name).like(pattern),
-                func.lower(RegistryProject.name).like(pattern),
+                func.lower(RegistryArtifact.digest).like(pattern, escape='\\'),
+                func.lower(RegistryRepository.name).like(pattern, escape='\\'),
+                func.lower(RegistryProject.name).like(pattern, escape='\\'),
             )
         )
     page_items, pagination = paginate_query(
@@ -486,12 +590,32 @@ def _security_supply_evidence_page(
             RegistryProject.name.asc(),
             RegistryRepository.name.asc(),
             RegistryArtifact.digest.asc(),
+            RegistryArtifact.id.asc(),
         ),
         page=page,
         per_page=per_page,
     )
+    artifact_ids = [int(artifact.id) for artifact in page_items]
+    latest_security_at: dict[int, datetime | None] = (
+        dict(
+            RegistryScanSnapshot.query.with_entities(
+                RegistryScanSnapshot.artifact_id,
+                func.max(RegistryScanSnapshot.observed_at),
+            )
+            .filter(RegistryScanSnapshot.artifact_id.in_(artifact_ids))
+            .group_by(RegistryScanSnapshot.artifact_id)
+            .tuples()
+            .all()
+        )
+        if artifact_ids
+        else {}
+    )
     rows: list[dict[str, Any]] = []
     for artifact in page_items:
+        security_at = latest_security_at.get(int(artifact.id))
+        artifact_freshness = _freshness(security_at)
+        if security_at is None and (artifact.signature_status is not None or artifact.sbom_status is not None):
+            artifact_freshness = {'label': 'Age Unverified', 'tone': 'warning'}
         repository = artifact.repository
         project = repository.project
         source = source_by_id.get(int(project.integration_instance_id))
@@ -509,9 +633,9 @@ def _security_supply_evidence_page(
                 'signature': _evidence_state(artifact.signature_status, evidence='signature'),
                 'trust': {'label': 'Not Evaluated', 'tone': 'unknown'},
                 'sbom': _evidence_state(artifact.sbom_status, evidence='sbom'),
-                'snapshot_label': snapshot['status'],
-                'snapshot_tone': snapshot['tone'],
-                'observed_at': snapshot['latest_collected_at'],
+                'snapshot_label': artifact_freshness['label'],
+                'snapshot_tone': artifact_freshness['tone'],
+                'observed_at': security_at,
             }
         )
     return rows, pagination
@@ -522,6 +646,13 @@ def _security_finding_interpretation(evidence: dict[str, Any]) -> dict[str, str]
     scanned_artifacts = evidence['scanned_artifacts']
     artifact_total = evidence['artifact_total']
     finding_total = evidence['finding_total']
+    if snapshot['status'] == 'No Artifacts':
+        return {
+            'title': 'No Artifacts to Scan',
+            'description': 'The selected Registry inventory has a committed empty snapshot.',
+            'tone': 'info',
+            'icon': 'package',
+        }
     if snapshot['status'] == 'Not Collected':
         return {
             'title': 'Security Evidence Not Collected',
@@ -558,10 +689,13 @@ def _security_finding_interpretation(evidence: dict[str, Any]) -> dict[str, str]
             'icon': 'shield-check',
         }
     return {
-        'title': 'Committed Vulnerability Findings',
-        'description': 'Findings reflect the latest committed provider scan evidence and current Registry scope.',
-        'tone': 'critical' if evidence['critical_total'] else ('warning' if evidence['high_total'] else 'info'),
-        'icon': 'shield-alert',
+        'title': 'Committed Evidence',
+        'description': (
+            'Findings reflect the latest committed provider scan evidence for the selected Registry scope. '
+            'Critical and high severity are shown separately in the snapshot and finding rows.'
+        ),
+        'tone': 'info',
+        'icon': 'database',
     }
 
 
@@ -575,6 +709,12 @@ def _security_finding_empty_state(
             'label': 'Filtered Security Evidence',
             'title': 'No Findings Match This View',
             'description': 'Adjust the active filters to review other committed vulnerability findings.',
+        }
+    if evidence['snapshot']['status'] == 'No Artifacts':
+        return {
+            'label': 'Committed Security',
+            'title': 'No Artifacts to Scan',
+            'description': 'The selected Registry has a committed empty inventory; no security findings are expected.',
         }
     if evidence['snapshot']['status'] == 'Not Collected':
         return {
@@ -631,7 +771,10 @@ def build_security(
     provider_value = provider.strip().lower()
     severity_value = severity.strip().lower()
     search_value = search.strip().lower()
+    registered_sources = _registered_sources()
     sources = _providers()
+    if source_id is not None and not any(int(item.id) == source_id for item in sources):
+        raise NotFound('The selected committed Registry security source is unavailable.')
     scoped_sources = _scoped_sources(sources, provider=provider_value, source_id=source_id)
     source_by_id = {int(item.id): item for item in sources}
     evidence = _security_scope_evidence(
@@ -651,20 +794,29 @@ def build_security(
         source_label=source_label,
         view=view,
     )
-    source_capabilities = _security_source_capabilities(
-        scoped_sources,
-        evidence_filter=evidence['evidence_filter'],
+    capability_sources = (
+        [
+            source
+            for source in scoped_sources
+            if not search_value or search_value in f'{source.name} {source.provider_key.replace("_", " ")}'.lower()
+        ]
+        if view == 'supply_chain' and supply_section == 'capabilities'
+        else []
     )
-    capability_filtered = [
-        row
-        for row in source_capabilities
-        if not search_value or search_value in f'{row["source_name"]} {row["provider_label"]}'.lower()
-    ]
-    capability_rows, capability_pagination = paginate_sequence(
-        capability_filtered,
+    visible_capability_sources, capability_pagination = paginate_sequence(
+        capability_sources,
         page=page,
         per_page=per_page,
     )
+    capability_rows = (
+        _security_source_capabilities(
+            visible_capability_sources,
+            evidence_filter=evidence['evidence_filter'],
+        )
+        if visible_capability_sources
+        else []
+    )
+    source_capabilities = capability_rows
 
     rows: list[dict[str, Any]] = []
     if view == 'vulnerabilities':
@@ -704,8 +856,8 @@ def build_security(
         'endpoint': (
             'artifact_registry.security' if view == 'vulnerabilities' else 'artifact_registry.security_supply_chain'
         ),
-        'setup_blocked': not sources,
-        'inventory_required': bool(sources) and RegistryArtifact.query.count() == 0,
+        'setup_blocked': not registered_sources,
+        'inventory_required': bool(registered_sources) and not sources,
         'snapshot': snapshot_context,
         'sync_state': build_registry_security_sync_state(),
         'finding_interpretation': _security_finding_interpretation(evidence),

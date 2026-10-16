@@ -78,7 +78,11 @@ def build_registry_security_sync_state(*, policy: JobPolicy | None = None) -> di
     )
     recent_jobs = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(50).all()
     latest_job = recent_jobs[0] if recent_jobs else None
-    latest_success = next((item for item in recent_jobs if item.status in _SUCCESS_STATUSES), None)
+    latest_success = (
+        jobs.filter(JobExecution.status.in_(_SUCCESS_STATUSES))
+        .order_by(JobExecution.completed_at.desc(), JobExecution.id.desc())
+        .first()
+    )
 
     if active_job is not None and active_job.status == 'queued':
         label, tone, icon = 'Queued', 'pending', 'clock-3'

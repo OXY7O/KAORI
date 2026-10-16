@@ -49,3 +49,56 @@ def test_recommendation_row_preserves_rule_and_evidence_scope() -> None:
     assert row['severity'] == 'critical'
     assert row['tenant_id'] == 'tenant-1'
     assert row['namespace'] == 'payments'
+
+
+def test_tenant_findings_reject_cross_cluster_and_cross_namespace(monkeypatch) -> None:
+    from app.reports.export.payloads import tenant_governance as module
+
+    observed = []
+
+    def findings(*, domain: str, asset_key: str) -> list[dict]:
+        observed.append((domain, asset_key))
+        return [
+            {
+                'rule_key': 'kubernetes.tenant.access.grant_drift',
+                'evidence': {'tenant_id': 'tenant-1', 'namespace': 'selected'},
+            },
+            {
+                'rule_key': 'kubernetes.tenant.access.grant_drift',
+                'evidence': {'tenant_id': 'tenant-1', 'namespace': 'another'},
+            },
+            {
+                'rule_key': 'kubernetes.tenant.credential.expired',
+                'evidence': {'tenant_id': 'tenant-2'},
+            },
+            {
+                'rule_key': 'kubernetes.tenant.provider.degraded',
+                'evidence': {'tenant_id': 'tenant-1'},
+            },
+            {'rule_key': 'kubernetes.tenant.provider.degraded', 'evidence': {'cluster_id': 'cluster-1'}},
+        ]
+
+    monkeypatch.setattr(module, 'get_active_recommendation_findings', findings)
+    rows = module._tenant_findings('cluster-1', namespace='selected', tenant_ids={'tenant-1'})
+    assert observed == [('kubernetes', 'cluster-1')]
+    assert len(rows) == 2
+    assert {row['rule_key'] for row in rows} == {
+        'kubernetes.tenant.access.grant_drift',
+        'kubernetes.tenant.provider.degraded',
+    }
+
+
+def test_cluster_wide_tenant_findings_keep_eligible_cluster_evidence(monkeypatch) -> None:
+    from app.reports.export.payloads import tenant_governance as module
+
+    monkeypatch.setattr(
+        module,
+        'get_active_recommendation_findings',
+        lambda **kwargs: [
+            {'rule_key': 'kubernetes.tenant.access.grant_drift', 'evidence': {'cluster_id': kwargs['asset_key']}},
+            {'rule_key': 'kubernetes.node.capacity', 'evidence': {'cluster_id': kwargs['asset_key']}},
+        ],
+    )
+    rows = module._tenant_findings('cluster-1')
+    assert len(rows) == 1
+    assert rows[0]['rule_key'] == 'kubernetes.tenant.access.grant_drift'

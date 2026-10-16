@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.object_storage import ObjectStorageSystem
-from app.models.report import ReportSchedule
+from app.models.report import ReportSchedule, ReportScheduleRun
 from app.reports.catalog import REPORT_TYPE_OPTIONS
 from app.reports.scope import (
     ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
@@ -38,8 +38,8 @@ def get_cluster_options() -> list[dict[str, str]]:
     return [{'value': item.id, 'label': item.name} for item in clusters]
 
 
-def get_namespace_options_by_cluster() -> dict[str, list[str]]:
-    return get_report_namespace_options_by_cluster()
+def get_namespace_options_by_cluster(cluster_id: str | None = None) -> dict[str, list[str]]:
+    return get_report_namespace_options_by_cluster(cluster_id) if cluster_id else {}
 
 
 def get_cluster_map(cluster_ids: list[str]) -> dict[str, str]:
@@ -195,7 +195,8 @@ def get_delivery_channel_options() -> list[dict[str, Any]]:
     from app.reports.notifications import get_report_notification_channel_options
 
     by_channel: dict[int, dict[str, Any]] = {}
-    for domain in ('kubernetes', 'object_storage'):
+    supported_domains = sorted({str(item.get('domain') or 'kubernetes') for item in REPORT_TYPE_OPTIONS})
+    for domain in supported_domains:
         for option in get_report_notification_channel_options(domain=domain):
             channel_id = int(option['channel_id'])
             existing = by_channel.setdefault(
@@ -233,4 +234,14 @@ def build_schedule_evidence_snapshot(schedule: ReportSchedule) -> dict[str, Any]
         'day_of_week': schedule.day_of_week,
         'day_of_month': schedule.day_of_month,
         'timezone': schedule.timezone,
+        'notification_channel_ids': schedule.notification_channel_ids_as_list(),
     }
+
+
+def get_run_delivery_channel_ids(run: ReportScheduleRun, schedule: ReportSchedule | None) -> list[int]:
+    """Use accepted per-run delivery intent, not later changes to the schedule."""
+    snapshot = run.schedule_snapshot if isinstance(run.schedule_snapshot, dict) else {}
+    stored = snapshot.get('notification_channel_ids')
+    if isinstance(stored, list):
+        return list(dict.fromkeys(int(item) for item in stored if str(item).isdigit() and int(item) > 0))
+    return schedule.notification_channel_ids_as_list() if schedule is not None else []

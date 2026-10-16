@@ -86,7 +86,9 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     scope = read('app/templates/integrations/storage/object_storage/providers/minio/partials/_detail_scope.html')
     storage_presentation = read('app/storage/object_storage/inventory/presentation.py')
 
-    assert 'len(instance.object_storage_system.buckets or ())' in minio_presentation
+    assert "'bucket_count': ObjectStorageBucket.query.filter_by(" in minio_presentation
+    assert 'object_storage_system_id=instance.object_storage_system_id' in minio_presentation
+    assert ').count(),' in minio_presentation
     assert 'instance.object_storage_system.inventory_observed_at' in minio_presentation
     assert 'Inventory Snapshot · ' in scope
     assert 'Object Storage Inventory Sync' in scope
@@ -99,7 +101,8 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     bucket_detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
     bucket_table = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
     assert 'Object Storage Inventory Sync snapshot' in bucket_detail
-    assert 'Object Storage Inventory Sync from Job Execution' in bucket_table
+    assert 'Object Storage Inventory Sync from Job Execution' in storage_presentation
+    assert 'inventory.empty_state.description' in bucket_table
     assert 'Full Validation snapshot' not in bucket_detail
 
 

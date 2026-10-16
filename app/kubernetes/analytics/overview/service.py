@@ -8,6 +8,7 @@ from flask import current_app, has_app_context
 from sqlalchemy import select
 
 from app.common.analytics.coercion import as_dict as _as_dict
+from app.common.analytics.params import get_allowed_time_ranges
 from app.extensions.db import db
 from app.intelligence.recommendation_engine import (
     build_operational_recommendations,
@@ -146,6 +147,7 @@ def get_analytics_overview(
     payload['selected_cluster'] = selected_cluster
     payload['selected_cluster_id'] = _get_cluster_id(selected_cluster)
     payload['selected_time_range'] = time_range or '24h'
+    payload['allowed_time_ranges'] = get_allowed_time_ranges()
     payload['last_analyzed_at'] = _utc_now_display()
 
     cluster_id = str(payload['selected_cluster_id'])
@@ -778,7 +780,7 @@ def _get_forecast_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
         risk_count = 1
 
     risk_note = raw.get('risk_note') or (
-        f'{risk_count} metric(s) may breach warning thresholds in the forecast window.'
+        f'{risk_count} metric{"s" if risk_count != 1 else ""} may breach forecast warning thresholds.'
         if risk_count > 0
         else 'No forecast risk detected in the selected time range.'
     )

@@ -126,7 +126,10 @@ def test_membership_revocation_is_fail_closed_for_dependent_grants() -> None:
 
     assert 'membership.status = TenantMembershipStatus.REVOKED.value' in service
     assert 'grant.status = TenantAccessGrantStatus.REVOKED.value' in service
-    assert 'reconcile_native_access_grant(grant)' in service
+    assert 'reconcile_provider_access_grant(grant)' in service
+    dispatcher = read('app/kubernetes/tenant/access_provider.py')
+    assert 'reconcile_native_access_grant(grant)' in dispatcher
+    assert 'reconcile_capsule_access_grant(grant)' in dispatcher
     assert "action='tenant_access_grant.membership_revoked'" in service
     assert 'one or more Kubernetes RoleBindings require operator attention' in service
 
@@ -265,6 +268,193 @@ def test_apply_access_grant_form_uses_context_preview_instead_of_redundant_helpe
     assert "target.matches('[data-access-environment]')" in script
     assert "target.matches('[data-access-namespace]')" in script
     assert 'Native Kubernetes authority selected.' in script
-    assert 'provider mutation remains blocked.' in script
+    assert 'Unsupported mutation remains blocked.' in script
+    assert 'data-provider-state' in workspace
+    assert 'data-reconciliation-authority' in workspace
     assert 'data-access-profile-guidance' not in script
     assert 'data-access-scope-guidance' not in script
+
+
+def test_access_grant_registry_reconciliation_uses_canonical_accessible_details_popover() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    info_tip = read('app/templates/components/info_tip.html')
+    info_tip_script = read('app/static/js/info_tips.js')
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in registry
+    assert 'table_label.status_label(grant.reconciliation_status|title, reconciliation_tone)' in registry
+    assert 'info_tip.render(' in registry
+    assert "'access-grant-reconciliation-' ~ grant.id" in registry
+    assert "grant.reconciliation_message or 'Awaiting Kubernetes RBAC evidence.'" in registry
+    assert "placement='left'" in registry
+    assert 'max-w-[260px]' not in registry
+    assert 'role="tooltip"' in info_tip
+    assert 'data-kaori-info-tip-trigger' in info_tip
+    assert "event.key === 'Escape'" in info_tip_script
+    assert "document.addEventListener('click'" in info_tip_script
+    assert "document.addEventListener('focusin'" in info_tip_script
+    assert "document.addEventListener('htmx:beforeSwap'" in info_tip_script
+
+
+def test_grant_context_exposes_canonical_capsule_role_preparation_modal_without_provider_mutation() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    modal = read('app/templates/kubernetes/tenant/partials/_capsule_access_role_manifest_dialog.html')
+    service = read('app/kubernetes/tenant/access_service.py')
+    access = read('app/kubernetes/tenant/access.py')
+    reconciliation = read('app/kubernetes/tenant/capsule_access_reconciliation.py')
+    native_dialogs = read('app/static/js/native_dialogs.js')
+    clipboard = read('app/static/js/clipboard.js')
+
+    assert 'data-access-grant-context' in workspace
+    assert 'Capsule RBAC Prerequisites' in workspace
+    assert 'Prepare Roles' in workspace
+    assert 'data-kaori-dialog-open' in workspace
+    assert 'data-dialog-target="capsule-access-role-manifest-dialog"' in workspace
+    assert '{% include "kubernetes/tenant/partials/_capsule_access_role_manifest_dialog.html" %}' in workspace
+    assert 'data-kaori-native-dialog' in modal
+    assert 'aria-labelledby="capsule-access-role-manifest-title"' in modal
+    assert 'data-kaori-dialog-close' in modal
+    assert 'access_capsule_role_manifests' in modal
+    assert 'access_capsule_role_bundle_yaml' in modal
+    assert 'data-kaori-copy-button' in modal
+    assert 'data-kaori-download-button' in modal
+    assert 'data-kaori-copy-source' in modal
+    assert 'kubectl apply -f kaori-capsule-access-clusterroles.yaml' in modal
+    assert 'No Kubernetes mutation has occurred.' in modal
+    assert 'data-kaori-dialog-open' in native_dialogs
+    assert 'data-kaori-copy-root' in clipboard
+    assert 'data-kaori-download-button' in clipboard
+    assert 'capsule_cluster_role_manifest(profile)' in service
+    assert 'yaml.safe_dump_all(' in service
+    assert 'def capsule_cluster_role_manifest(' in access
+    assert 'capsule_cluster_role_name(profile)' in reconciliation
+    assert 'create_cluster_role(' not in modal
+    assert 'ClusterRoleBinding' not in modal
+
+
+def test_access_grant_registry_shortcut_scrolls_nested_main_to_complete_form() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    form = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    script = read('app/static/js/tenant_access_grant_form.js')
+    shell = read('app/templates/layouts/app.html')
+
+    assert 'data-access-grant-form-shortcut' in registry
+    assert 'Go to Grant Form' in registry
+    assert 'aria-controls="access-grant-form"' in registry
+    assert "'#access-grant-form'" not in registry
+    assert "'Apply Grant'," not in registry
+    assert 'id="access-grant-form"' in form
+    assert 'data-access-submit' in form
+    assert 'data-kaori-main-scroll' in shell
+    assert "form.closest('[data-kaori-main-scroll]')" in script
+    assert 'scrollHost.scrollTop' in script
+    assert 'form.getBoundingClientRect().top' in script
+    assert 'scrollHost.getBoundingClientRect().top' in script
+    assert "scrollHost.scrollTo({ top: Math.max(0, destination), behavior: 'auto' })" in script
+    assert "document.addEventListener('click'" in script
+    assert "target?.closest('[data-access-grant-form-shortcut]')" in script
+    assert 'event.preventDefault()' in script
+    assert "form.querySelector('[data-access-membership]')" in script
+    assert 'membership.focus({ preventScroll: true })' in script
+
+
+def test_access_grants_included_capsule_evidence_template_compiles_and_renders() -> None:
+    """#1211: a malformed include must never turn Access Grants GET/HTMX into HTTP 500."""
+    from types import SimpleNamespace
+
+    from jinja2 import Environment, FileSystemLoader
+
+    templates = ROOT / 'app/templates'
+    environment = Environment(loader=FileSystemLoader(str(templates)), autoescape=True)
+    for name in (
+        'kubernetes/tenant/partials/_tenant_admin_workspace.html',
+        'kubernetes/tenant/partials/_tenant_access_grants_workspace.html',
+        'kubernetes/tenant/partials/_external_capsule_access_inventory.html',
+    ):
+        environment.get_template(name)
+
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_admin_workspace.html')
+    grants = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+    assert "('access-grants', 'Access Grants'" in workspace
+    assert "hx_target='#tenant-admin-workspace'" in workspace
+    assert "hx_select='#tenant-admin-workspace'" in workspace
+    assert '_tenant_access_grants_workspace.html' in workspace
+    assert '_external_capsule_access_inventory.html' in grants
+
+    view = environment.get_template('kubernetes/tenant/partials/_external_capsule_access_inventory.html')
+    baseline = {
+        'can_manage': False,
+        'external_capsule_tenants': [],
+        'recent_external_capsule_access': [],
+        'recent_capsule_access_drift': [],
+        'recent_capsule_access_remediation': [],
+        'recent_native_access_remediation': [
+            SimpleNamespace(
+                metadata_json={
+                    'provider': 'native_kubernetes',
+                    'tenant_id': 'kaori-demo',
+                    'explicit_reconcile_count': 0,
+                    'manual_review_count': 0,
+                    'items': [],
+                }
+            )
+        ],
+        'external_native_tenants': [],
+        'recent_external_native_access': [],
+        'recent_external_access_profile_reviews': [],
+        'recent_native_access_drift': [],
+    }
+    rendered = view.render(**baseline)
+    assert 'Governed Remediation Decisions' in rendered
+    assert 'Native Kubernetes · Tenant kaori-demo' in rendered
+    assert 'Preview only: no Kubernetes mutation.' in rendered
+    baseline['recent_native_access_remediation'] = [SimpleNamespace(metadata_json=None)]
+    assert 'Governed Remediation Decisions' in view.render(**baseline)
+    assert '{% set plan = event.metadata_json or {} %}' in read(
+        'app/templates/kubernetes/tenant/partials/_external_capsule_access_inventory.html'
+    )
+
+
+def test_access_grant_registry_actions_fit_desktop_and_use_existing_native_more_dialog() -> None:
+    """#1215: no clipped actions or mutation form trapped in horizontally scrolling table."""
+    from jinja2 import Environment
+
+    registry = read('app/templates/kubernetes/tenant/partials/_access_grant_registry.html')
+    Environment(autoescape=True).parse(registry)
+    credentials = read('app/templates/kubernetes/tenant/partials/_credential_registry.html')
+    assert "table_ui.table_classes('min-w-[1040px] table-fixed xl:min-w-0')" in registry
+    assert 'overflow-x-auto xl:overflow-visible' in registry
+    assert "table_ui.table_classes('min-w-[1300px] !table-fixed')" not in registry
+    assert 'w-[20%]">Actions' in registry
+    assert 'min-w-[15rem] flex-wrap' not in registry
+    assert 'flex items-center justify-end gap-1.5 whitespace-nowrap' in registry
+    assert registry.count('data-kaori-dialog-open') == 1
+    assert registry.count('data-kaori-native-dialog') == 1
+    assert registry.count('data-kaori-dialog-close') == 1
+    assert 'access-grant-more-actions-{{ grant.id }}' in registry
+    assert 'aria-haspopup="dialog"' in registry
+    assert 'aria-labelledby="access-grant-more-actions-{{ grant.id }}-title"' in registry
+    assert 'aria-describedby="access-grant-more-actions-{{ grant.id }}-description"' in registry
+    assert 'data-kaori-native-dialog' in credentials
+    assert 'data-dialog-target="credential-more-actions-{{ credential.id }}"' in credentials
+
+    viewport_end = registry.index('</table>')
+    footer_end = registry.index('registry_ui.footer(', viewport_end)
+    dialog_start = registry.index('<dialog id="access-grant-more-actions-{{ grant.id }}"')
+    assert viewport_end < footer_end < dialog_start
+    assert registry.index('inspect_access_grant_route') < viewport_end
+    assert registry.index('reconcile_access_grant_route') > dialog_start
+    assert registry.index('revoke_access_grant_route') > dialog_start
+    assert "if can_manage and (grant.status == 'active' or grant.reconciliation_status != 'revoked')" in registry
+    assert "{% if grant.status == 'active' %}" in registry
+
+    for route in ('inspect', 'reconcile', 'revoke'):
+        endpoint = f'tenant.{route}_access_grant_route'
+        assert registry.count(f'action="{{{{ url_for(\'{endpoint}\', grant_id=grant.id) }}}}"') == 1
+        assert registry.count(f'hx-post="{{{{ url_for(\'{endpoint}\', grant_id=grant.id) }}}}"') == 1
+    assert registry.count('name="csrf_token"') == 3
+    assert registry.count('hx-target="#tenant-admin-workspace"') == 3
+    assert registry.count('hx-select="#tenant-admin-workspace"') == 3
+    assert registry.count('hx-disabled-elt="find button"') == 3
+    assert 'registry_ui.filter_form' in registry
+    assert 'registry_ui.footer' in registry
+    assert 'access_grant_pagination.allowed_per_page' in registry

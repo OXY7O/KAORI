@@ -31,7 +31,7 @@ Compact segmented tabs must render the configured `data-*` attribute with the ta
 - Header actions own explicit committed-snapshot reload and the canonical conditional Clear Filters action. Both are peer utilities and use the same compact header-action geometry; Reload Snapshot is not styled as a dominant primary CTA.
 - Filter Bar owns graph data scope.
 - Canvas Toolbar owns local presentation and export actions.
-- Inspector owns selected resource or relationship context.
+- Inspector owns selected resource or relationship context. The existing Details inspector shows a compact **Relationship Summary**, grouped by visible committed edge type and direction; a keyboard-accessible **View Relationships** action opens the existing full Relationships tab without duplicating the graph or making live provider requests.
 
 The hero must not repeat exact sync time or snapshot source.
 
@@ -58,6 +58,14 @@ A truncated graph uses a warning callout with omitted counts. Renderer errors pr
 ## Readable Graph Node Refinement
 
 The canonical graph uses compact rounded domain badges with a resource-type glyph and semantic status dot. The object name is rendered below the badge as one external line with bounded ellipsis, while the complete name and type remain available in Resource List and Details. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.
+
+## Relationship Focus and Namespace Grouping
+
+Selecting a graph resource uses the existing one-hop neighborhood focus to foreground its related resources and their operational edges, while quiet containment links stay subordinate. The Details inspector presents bounded, direction-aware counts from the **visible committed edges** and delegates full navigation to the existing Relationships tab. Namespace boundary overlays appear only when their scope has visible non-Namespace resources; their labels report the visible resource count, without implying unseen or live Kubernetes resources.
+
+## Compact Hierarchy and Viewport Safety
+
+Hierarchy View retains the existing Cytoscape breadth-first layout, but node spacing adapts to the visible graph: compact at 8 or fewer nodes, intermediate through 35, and the established wide spacing for larger views. Layout fitting uses the visible graph's bounding box including external node labels and a bounded canvas safety margin. Resize only re-fits when visible evidence is clipped by the resized viewport; normal operator pan/zoom remains under the user's control. Dependency View remains independent, preserving its existing COSE geometry. Namespace grouping, list fallback and snapshot read boundary do not change.
 
 ## Canonical Server Architecture
 
@@ -90,3 +98,77 @@ same `.kaori-topology-domain-*` classes so light and dark mode cannot diverge.
 Topology is a canvas-first workspace. Controls and Topology Details remain overlay drawers at every breakpoint; they never become persistent desktop columns. The canvas therefore keeps the full workspace width until the operator intentionally opens a drawer. Selecting a resource or relationship opens the right Details drawer, while Display Controls opens from the toolbar on demand. Closing either drawer restores the unchanged full-width graph.
 
 The right drawer uses the shared visualization drawer geometry (`max-w-2xl`) and does not participate in page grid sizing. The wider inspector is reserved for technical metadata and relationship review; the left Controls drawer remains compact. `API Server` keeps the canonical horizontal field row. Its value is single-line, right aligned, and truncated only when the endpoint exceeds the available drawer width. The complete endpoint remains exposed through the native `title` attribute. A dedicated stacked-row compatibility template is prohibited.
+
+
+## Bounded Shallow Graph Source (2026-10-11)
+
+At Depth 1, only Cluster, Namespace, and Node elements participate in graph
+projection. Namespace and Node ORM fetches therefore use a deterministic
+`max_nodes` SQL window, with independent exact committed-generation SQL counts
+for omitted-type reporting. Namespace selector bootstrap projects DISTINCT scalar
+cluster/namespace values rather than full Namespace ORM records. Deeper graph
+modes intentionally retain full relationship candidate loading until a separate
+relation-preserving bounded strategy can be verified for Service selectors,
+Ingress, Pod configuration references, and PVC/PV links. Do not apply an
+unconditional SQL LIMIT to those relationship-sensitive paths.
+
+
+## Bounded relationship candidates (Depth 2 / 3 / Full)
+
+When the complete Cluster + Namespace parent cohort fits within 350 graph nodes,
+repository queries retain deterministic type-specific prefixes with exact SQL
+counts for omitted-by-type evidence. Namespace-backed types must have a latest
+committed Namespace parent. ConfigMap/Secret and PVC/PV candidates have separate
+budgets matching the fair group-selection algorithm. Namespace-specific Node
+placement uses committed SQL EXISTS rather than loading all Pods. All/Compute
+Pod scopes use bounded query prefixes; Networking/Configuration/Storage Pod
+scopes retain complete candidates because their selection depends on labels and
+JSON references. Namespace-selected PVC/PV bindings retain complete scoped
+candidates. Parent-heavy graph scopes preserve the previous safe full load and
+truncation path until equivalent bounded relationship closure is proven. No
+live Kubernetes API calls are permitted in read operations.
+
+
+Deep Networking Pod visibility also depends on **all** committed Service
+selectors; for Networking Depth 3/Full, Service ORM selection deliberately
+remains complete. The graph still applies its ordinary bounded visible-node
+budget afterward, but no selector may be discarded before determining which
+Pods are relevant. Benchmark and verify this fallback before any later SQL
+selector pushdown optimization.
+
+## Reusable topology presentation primitives
+
+**Authority:** Kubernetes Inventory Topology remains the canonical visual and
+interaction reference. New topology domains MUST consume existing KAORI
+primitives rather than copying independent markup.
+
+- `app/templates/components/visualization_workspace.html` — the shared
+  canvas-first workspace, bounded loading bar, and overlay drawer geometry
+- `app/templates/components/segmented_tabs.html` — Compact Segmented Tabs for
+  Graph/Resource List and Details/Relationships
+- `app/templates/components/topology_primitives.html` — shared toolbar action
+  and export classes, **Resource List row**, **inspector field row**,
+  **relationship card**, **relationship summary chip**, and
+  **empty relationships** templates
+
+Kubernetes Inventory and Artifact Registry Runtime both import these
+primitives. Their IDs remain domain-prefixed but geometry, typography, icons,
+interactive affordances, and semantic badge slots must remain identical.
+
+For Cytoscape external labels, the Kubernetes topology style is the source
+of truth: font-weight **400**, min zoomed font **8**, external label max width
+**220px** (240px for Cluster), 11px vertical margin, 0.94-opacity surface
+background, tokenized border and ellipsis rendered by Cytoscape. Do not
+truncate the identity artificially at a fixed character count or raise node
+label weight in a consuming domain.
+
+The status badge is a **presentation slot**, not a shared health conclusion.
+Kubernetes binds committed resource operational status; Registry binds
+artifact scan exposure for Artifact nodes and correlation readiness for
+other nodes. A ready correlation is evidence readiness, not "Healthy".
+Any omitted graph records and uncertain evidence remain explicit.
+
+The topology-specific graph/data builders, event handlers and relationship
+semantics remain domain-owned; do not extend the shared primitives with
+provider-specific correlation logic.
+

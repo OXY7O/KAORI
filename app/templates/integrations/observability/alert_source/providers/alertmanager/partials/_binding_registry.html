@@ -18,12 +18,14 @@
             <div class="flex min-w-0 items-start gap-3">
                 {{ integration_ui.palette_icon("boxes", "brand", size="md") }}
                 <div class="min-w-0">
-                    <h3 id="alertmanager-bound-scopes-title"
-                        class="text-base font-semibold leading-6 text-content-primary">Consumer Binding Registry</h3>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 id="alertmanager-bound-scopes-title"
+                            class="text-base font-semibold leading-6 text-content-primary">Consumer Binding Registry</h3>
+                        {{ table_label.result_count(binding_registry_pagination.total_items) }}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Keep binding posture and actions visible. Open View More for alert identity, consumer profile, resolver preference, and the latest binding-owned validation evidence.</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(binding_rows|length ~ (" Binding" if binding_rows|length == 1 else " Bindings") , "link-2") }}
         </div>
         {{ loading_bar.render("alertmanager-binding-registry-loading", label="Refreshing Alert Source Consumer Bindings") }}
     </header>

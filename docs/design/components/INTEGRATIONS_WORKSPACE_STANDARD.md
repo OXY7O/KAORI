@@ -97,6 +97,30 @@ Operational semantics are explicit:
 
 Top-level workspace switching uses `framed_workspace_tabs.render_navigation(...)` with URL/HTMX ownership. Client-hidden copies of all three deep workspaces are prohibited.
 
+Integration Overview reads committed, canonical state with **SQL-first
+portfolio aggregation** across registered provider types and a scoped Runtime
+candidate/observation projection. The initial Catalog or Domain Coverage
+request must not hydrate all Kubernetes, Metrics Source, Alertmanager, MinIO,
+or Harbor ORM connections/bindings to calculate summary metrics. Canonical
+`IntegrationInstance.enabled` and `lifecycle_status == active` gate Ready
+counts for every provider, while keeping registered inactive identities
+visible in the non-ready/disabled cohort.
+
+Runtime Overview resolves provider records using the Integration Registry's
+registered `record_model`, projects filtered and global counts in SQL, and
+selects a stable five-row page (approved sizes 5/10/25/50) **before**
+hydrating the selected provider objects and their latest persisted
+`IntegrationRuntimeObservation`. Runtime observation identity remains the
+provider **record** ID; View More detail URLs for extension providers use the
+distinct canonical **integration** ID, converted through the provider module
+rather than assuming independent sequences match. The provider-owned runtime
+builder must not make live provider requests on GET. Full-page and HTMX
+pagination preserve the canonical `integration_type` parameter.
+
+DevContainer PostgreSQL query-count/fleet profiling, filter/page-size UAT
+and actual provider detail modal verification remain admission evidence,
+not substitutes for this committed-state architecture contract.
+
 ## Provider Front Page Contract
 
 Kubernetes, Metrics Source, Alertmanager, MinIO, and Harbor provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.

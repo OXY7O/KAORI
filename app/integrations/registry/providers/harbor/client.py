@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from time import perf_counter, sleep
 from typing import Any
@@ -15,8 +16,16 @@ from app.integrations.registry.providers.harbor.exceptions import (
     HarborConnectionError,
     HarborResponseError,
 )
+from app.integrations.registry.providers.harbor.transport_policy import validate_harbor_endpoint
 
 _TRANSIENT_STATUS_CODES = frozenset({429, 502, 503, 504})
+
+
+def _direct_get(url: str, **kwargs: Any) -> Response:
+    """Never inherit environment proxies/netrc and never follow redirects."""
+    with requests.Session() as session:
+        session.trust_env = False
+        return session.get(url, allow_redirects=False, **kwargs)
 
 
 class HarborClient:
@@ -33,7 +42,7 @@ class HarborClient:
         verify_ssl: bool = True,
         retry_policy: HarborRetryPolicy | None = None,
     ) -> None:
-        self.endpoint = endpoint.rstrip('/')
+        self.endpoint = validate_harbor_endpoint(endpoint, verify_ssl=verify_ssl)
         self.auth_type = auth_type
         self.username = username
         self.password = password
@@ -264,7 +273,11 @@ class HarborClient:
     def _object_list(payload: Any, label: str) -> list[dict[str, Any]]:
         if not isinstance(payload, list):
             raise HarborResponseError(f'Harbor {label} response is not a list.')
-        return [item for item in payload if isinstance(item, dict)]
+        if any(not isinstance(item, dict) for item in payload):
+            raise HarborResponseError(
+                f'Harbor {label} contains a malformed item; refusing an incomplete inventory snapshot.'
+            )
+        return payload
 
     def _request_json(
         self,
@@ -297,12 +310,12 @@ class HarborClient:
         last_transport_error: requests.RequestException | None = None
         for attempt in range(self.transport_retries + 1):
             try:
-                response = requests.get(
+                response = _direct_get(
                     f'{self.endpoint}{path}',
                     params=params,
                     auth=auth,
                     timeout=self.timeout,
-                    verify=self.verify_ssl,
+                    verify=os.getenv('INTEGRATION_HARBOR_CA_BUNDLE', '').strip() or True,
                     headers=request_headers,
                 )
             except requests.RequestException as exc:
@@ -313,6 +326,11 @@ class HarborClient:
                     sleep(self.retry_backoff_seconds * (2**attempt))
                 continue
 
+            if 300 <= response.status_code < 400:
+                raise HarborResponseError(
+                    'Harbor API redirect was rejected; verify the approved HTTPS origin.',
+                    status=response.status_code,
+                )
             if response.status_code in {401, 403}:
                 raise HarborAuthError(
                     f'Harbor authentication or authorization failed with HTTP {response.status_code}.',

@@ -134,27 +134,34 @@ def serialize_schedule(
     }
 
 
+def present_delivery_result(delivery_result: dict[str, Any]) -> tuple[str, str]:
+    requested = int(delivery_result.get('requested', 0) or 0)
+    successful = int(delivery_result.get('successful', 0) or 0)
+    failed = int(delivery_result.get('failed', 0) or 0)
+    skipped = int(delivery_result.get('skipped', 0) or 0)
+    duplicate = int(delivery_result.get('duplicate', 0) or 0)
+    if requested == 0:
+        return 'No Delivery', 'unknown'
+    if failed:
+        return ('Delivery Failed', 'critical') if not successful else ('Partial Delivery', 'warning')
+    if skipped:
+        if duplicate >= requested:
+            return 'Already Delivered', 'normal'
+        return ('Partial Delivery', 'warning') if successful else ('Delivery Skipped', 'warning')
+    if successful:
+        return 'Delivered', 'normal'
+    return 'Delivery Pending', 'pending'
+
+
 def serialize_run(
     run: ReportScheduleRun,
     schedule_context_map: dict[int, dict[str, str]],
 ) -> dict[str, Any]:
     delivery_result = run.delivery_result or {}
-    requested = int(delivery_result.get('requested', 0) or 0)
     successful = int(delivery_result.get('successful', 0) or 0)
     failed = int(delivery_result.get('failed', 0) or 0)
     skipped = int(delivery_result.get('skipped', 0) or 0)
-    if requested == 0:
-        delivery_label = 'No Delivery'
-        delivery_tone = 'unknown'
-    elif failed:
-        delivery_label = 'Delivery Failed' if successful == 0 else 'Partial Delivery'
-        delivery_tone = 'critical' if successful == 0 else 'warning'
-    elif successful:
-        delivery_label = 'Delivered'
-        delivery_tone = 'normal'
-    else:
-        delivery_label = 'Delivery Pending'
-        delivery_tone = 'pending'
+    delivery_label, delivery_tone = present_delivery_result(delivery_result)
 
     duration = format_run_duration(run.started_at, run.finished_at)
     raw_snapshot = getattr(run, 'schedule_snapshot', None)
@@ -183,7 +190,7 @@ def serialize_run(
     return {
         'id': run.id,
         'schedule_id': run.schedule_id,
-        'schedule_name': schedule_context['name'],
+        'schedule_name': str(snapshot.get('name') or schedule_context['name']),
         'schedule_icon': schedule_context['icon'],
         'report_id': run.report_id,
         'job_execution_id': run.job_execution_id,

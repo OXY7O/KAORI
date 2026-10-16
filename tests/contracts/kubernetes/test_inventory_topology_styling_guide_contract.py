@@ -254,7 +254,8 @@ def test_topology_cluster_icon_and_api_server_layout_are_readable() -> None:
     assert "normalizedLabel === 'api server'" in script
     assert "valueElement.classList.add('min-w-0', 'flex-1', 'truncate', 'whitespace-nowrap')" in script
     assert "valueElement.title = String(displayValue || 'Not Reported')" in script
-    assert 'max-w-[28rem]' in inspector
+    assert 'topology_parts.field_row_template("topology-field-row-template")' in inspector
+    assert 'max-w-[28rem]' in _read('app/templates/components/topology_primitives.html')
     assert 'max-w-2xl' in _read('app/templates/components/visualization_workspace.html')
 
 
@@ -281,3 +282,119 @@ def test_topology_runtime_status_strips_use_shared_semantic_border_authority() -
     assert 'id="topology-runtime-status"' in workspace
     assert 'role="status"' in workspace
     assert workspace_path not in baseline['files']
+
+
+def test_topology_hover_only_relationship_labels_and_legend() -> None:
+    script = _read('app/static/js/kubernetes/inventory/topology.js')
+    workspace = _read('app/templates/kubernetes/inventory/topology/partials/_workspace.html')
+    palette = _read('docs/design/components/TOPOLOGY_PALETTE.md')
+
+    # Relationship labels stay hidden by default, including on small graphs.
+    assert "if (workspaceState.edgeLabels) cy.edges(':visible').addClass('edge-label-visible')" in script
+    assert 'smallGraph' not in script
+    assert 'visibleEdges.length <= 8' not in script
+    assert "cy.edges('.edge-hovered:visible').addClass('edge-label-visible')" in script
+    assert "cy.edges(':selected:visible').addClass('edge-label-visible')" in script
+    assert "cy.edges('.path-active:visible').addClass('edge-label-visible')" in script
+    # Only the hovered edge gains a label and emphasis; mouseout restores persistent states.
+    assert "cy.on('mouseover', 'edge', (event) => {" in script
+    assert "event.target.addClass('edge-hovered edge-label-visible')" in script
+    assert "cy.on('mouseout', 'edge', (event) => {" in script
+    assert "event.target.removeClass('edge-hovered')" in script
+    assert 'updateEdgeLabelClasses()' in script
+    assert "selector: 'edge.edge-hovered'" in script
+    assert "'line-color': brandPrimary" in script
+    assert "cy.on('mouseover', 'node'" not in script
+    # Retain the existing semantic label chip and explicit opt-in control.
+    assert "'text-background-shape': 'roundrectangle'" in script
+    assert "'text-rotation': 'none'" in script
+    assert 'selector: \'edge[relationship = "contains"].edge-label-visible\'' in script
+    assert "style: { 'text-margin-y': 24 }" in script
+    assert 'Always Show Relationship Labels' in workspace
+    assert 'Dashed: scope · Arrows: operational' in workspace
+    assert 'mt-2 whitespace-nowrap text-xs leading-5 text-content-muted' in workspace
+    assert (
+        'title="Dashed lines show scope containment; solid arrows show directional operational relationships.'
+        in workspace
+    )
+    assert (
+        'aria-label="Dashed lines show scope containment; solid arrows show directional operational relationships.'
+        in workspace
+    )
+    assert 'Relationship legend: dashed lines show scope containment' not in workspace
+    assert 'Hover or select an edge to reveal its label' in workspace
+    assert 'Relationship labels stay hidden by default' in palette
+
+
+def test_topology_compact_layout_fits_external_labels_and_resize() -> None:
+    script = _read('app/static/js/kubernetes/inventory/topology.js')
+    pattern = _read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
+
+    assert "const visibleCount = cy ? cy.nodes(':visible').length : 0" in script
+    assert 'spacingFactor: visibleCount <= 8 ? 1.18 : visibleCount <= 35 ? 1.48 : 1.88' in script
+    assert 'visible.boundingBox({ includeLabels: true, includeOverlays: false })' in script
+    assert 'cy.fit(bounds, padding)' in script
+    assert 'cy.center(visible)' not in script
+    assert "if (!cy || activeView !== 'graph') return" in script
+    assert 'visible.renderedBoundingBox({ includeLabels: true, includeOverlays: false })' in script
+    assert 'window.requestAnimationFrame(fitGraphToCanvas)' in script
+    assert '## Compact Hierarchy and Viewport Safety' in pattern
+    assert 'Dependency View remains independent' in pattern
+
+
+def test_topology_relationship_summary_reuses_existing_inspector() -> None:
+    inspector = _read('app/templates/kubernetes/inventory/topology/partials/_inspector_templates.html')
+    script = _read('app/static/js/kubernetes/inventory/topology.js')
+    pattern = _read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
+
+    assert 'data-node-relationship-summary' in inspector
+    assert 'topology-relationship-summary-item-template' in inspector
+    assert 'data-open-relationships' in inspector
+    assert 'role="list"' in inspector
+    assert 'aria-label="View all visible relationships for this resource"' in inspector
+    assert "const edges = node.connectedEdges(':visible')" in script
+    assert 'const renderRelationshipSummary = (view, node) =>' in script
+    assert 'renderRelationshipSummary(view, node)' in script
+    assert "activateTab('relationships')" in script
+    assert 'edgeColor(relationship)' in script
+    assert 'Relationship Summary' in pattern
+    assert "selector: 'edge.focused'" in script
+    assert 'edge.focused[relationship' in script
+    assert "const resourceCount = nodes.filter((node) => node.data('type') !== 'namespace').length" in script
+    assert 'if (!resourceCount) return' in script
+    assert 'Namespace boundary overlays appear only' in pattern
+    assert 'visible committed edge type and direction' in pattern
+
+
+def test_topology_regular_external_labels_and_semantic_operational_arrows() -> None:
+    script = _read('app/static/js/kubernetes/inventory/topology.js')
+    workspace = _read('app/templates/kubernetes/inventory/topology/partials/_workspace.html')
+    edge_builder = _read('app/kubernetes/inventory/topology/edge_builder.py')
+    palette = _read('docs/design/components/TOPOLOGY_PALETTE.md')
+
+    # External resource labels are regular; glyphs inside the badge still identify node type.
+    assert "'font-size': 10,\n                    'font-weight': 400" in script
+    assert "'font-size': 11, 'font-weight': 400" in script
+    assert 'font-weight="700"' in script
+    assert "'font-size': 9,\n                    'font-weight': 500" in script
+
+    # Subtle operational paths remain directional and distinct from containment.
+    assert 'selector: \'edge[relationship = "owns"]\'' in script
+    assert "style: { 'line-opacity': 0.74, 'arrow-scale': 0.66, width: 1.7 }" in script
+    assert 'selector: \'edge[relationship = "scheduled_on"]\'' in script
+    assert "style: { 'line-opacity': 0.58, 'arrow-scale': 0.58, width: 1.35 }" in script
+    assert 'selector: \'edge[relationship = "contains"]\'' in script
+    assert "'target-arrow-shape': 'none'" in script
+    assert "'target-arrow-shape': 'triangle'" in script
+    assert "relationship='owns'" in edge_builder
+    assert "relationship='scheduled_on'" in edge_builder
+    assert "('owns', 'Owns', 'owns')" in workspace
+    assert "('scheduled_on', 'Scheduled on', 'scheduled')" in workspace
+    assert 'Dashed: scope · Arrows: operational' in workspace
+    assert '## Readable Label and Operational Edge Hierarchy' in palette
+
+    # Intentional interaction emphasis and previously approved hover behavior stay intact.
+    assert "selector: 'edge.edge-hovered'" in script
+    assert "cy.edges(':selected:visible').addClass('edge-label-visible')" in script
+    assert "'text-margin-y': 24" in script
+    assert 'Always Show Relationship Labels' in workspace

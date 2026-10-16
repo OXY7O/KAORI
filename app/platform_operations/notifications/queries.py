@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from flask import current_app
 from sqlalchemy import (
     case,
     func,
@@ -187,6 +188,26 @@ def get_activity_center_context(
         for notification in inbox_notifications
     ]
 
+    # Tenant handoff has one authoritative committed approval, not one
+    # Notification per candidate approver. Reuse the shared Work Inbox surface
+    # while projecting status from the current plan/acknowledgment evidence.
+    # Tenant remains the decision authority. Flask's per-app composition root
+    # registers this read-only projection without a Notification -> Tenant import.
+    tenant_inbox_provider = current_app.extensions.get('kaori_tenant_approval_work_inbox')
+    if not callable(tenant_inbox_provider):
+        raise RuntimeError('Tenant approval Work Inbox provider is not registered.')
+    tenant_approval_inbox = tenant_inbox_provider(user_id=user_id)
+    if (
+        not isinstance(tenant_approval_inbox, dict)
+        or not isinstance(tenant_approval_inbox.get('items'), list)
+        or not isinstance(tenant_approval_inbox.get('pending_count'), int)
+        or not isinstance(tenant_approval_inbox.get('total_count'), int)
+    ):
+        raise RuntimeError('Tenant approval Work Inbox provider returned an invalid projection.')
+    notification_inbox_unread_count = inbox_unread_count
+    inbox_unread_count += tenant_approval_inbox['pending_count']
+    inbox_total_count += tenant_approval_inbox['total_count']
+
     presented_jobs = [present_job_execution(job) for job in active_jobs]
     queued_jobs = [job for job in presented_jobs if job['status'] == 'queued']
     if queued_jobs:
@@ -203,11 +224,13 @@ def get_activity_center_context(
         'history_items': history_items,
         'attention_items': attention_items,
         'inbox_items': inbox_items,
+        'tenant_approval_inbox_items': tenant_approval_inbox['items'],
         'active_jobs': presented_jobs,
         'active_count': active_count,
         'attention_count': attention_count,
         'unread_count': unread_count,
         'inbox_unread_count': inbox_unread_count,
+        'notification_inbox_unread_count': notification_inbox_unread_count,
         'inbox_total_count': inbox_total_count,
         'total_count': total_count,
         'display_limit': normalized_notification_limit,

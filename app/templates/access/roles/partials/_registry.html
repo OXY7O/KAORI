@@ -2,7 +2,6 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% import "components/pagination.html" as pagination_ui %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <section id="role-registry" class="{{ table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -10,39 +9,35 @@
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-tree" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h2 class="{{ table_ui.block_title_classes() }}">Role Registry</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="{{ table_ui.block_title_classes() }}">Role Registry</h2>
+                        {{ table_label.result_count(summary.matching) }}
+                    </div>
                     <p class="{{ table_ui.block_description_classes() }}">Review role type, lifecycle state, baseline integrity, assignments, permission coverage, and governed actions.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(summary.matching ~ ' Matching ' ~ ('Role' if summary.matching == 1 else 'Roles') , 'list-filter') }}
                 {% if filters.search or filters.role_type != 'all' or filters.state != 'all' %}
-                    {{ registry_ui.clear_filters_action(url_for('access.roles.index', per_page=filters.per_page) ,
-                    table_ui.action_classes(),
-                    hx_get=url_for('access.roles.index', per_page=filters.per_page),
-                    target='#role-registry',
-                    indicator='#role-registry-loading',
-                    push_url='true',
-                    sync='#role-registry:replace'
-                    ) }}
+                    {% set clear_action_classes = table_ui.action_classes() %}
+                    {{ registry_ui.clear_filters_link('access.roles.index',
+                                        'role-registry',
+                                        'role-registry-loading',
+                                        filters.per_page,
+                                        clear_action_classes) }}
                 {% endif %}
             </div>
         </div>
         {{ loading_bar.render('role-registry-loading', label='Refreshing Role Registry') }}
     </header>
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
-        <form method="get"
-              action="{{ url_for('access.roles.index') }}"
-              class="{{ table_ui.filter_layout_classes() }}"
-              hx-get="{{ url_for('access.roles.index') }}"
-              hx-trigger="keyup changed delay:400ms from:input[name='search'], change from:select[name='role_type'], change from:select[name='state']"
-              hx-target="#role-registry"
-              hx-swap="outerHTML settle:150ms"
-              hx-push-url="true"
-              hx-indicator="#role-registry-loading"
-              hx-sync="#role-registry:replace">
-            <input type="hidden" name="page" value="1">
-            <input type="hidden" name="per_page" value="{{ filters.per_page }}">
+        {% call registry_ui.filter_form(
+            'access.roles.index',
+            'role-registry',
+            'role-registry-loading',
+            filters.per_page,
+            form_id='role-registry-filter-form',
+            aria_label='Role Registry filters'
+            ) %}
             <label class="min-w-0">
                 <span class="{{ table_ui.filter_label_classes() }}">Search Role</span>
                 {{ table_ui.search_field('search', filters.search, 'Role name, slug, or purpose', 'role-search') }}
@@ -66,7 +61,7 @@
                             {% if filters.state == 'inactive' %}selected{% endif %}>Inactive</option>
                 </select>
             </label>
-        </form>
+        {% endcall %}
     </div>
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
@@ -108,61 +103,15 @@
             </tbody>
         </table>
     </div>
-    <div class="{{ pagination_ui.footer_classes() }}">
-        <div class="{{ pagination_ui.summary_group_classes() }}">
-            <span class="font-medium text-content-secondary">Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} {{ pagination_ui.resource_name('Roles', pagination.total_items) }}</span>
-            <form method="get"
-                  action="{{ url_for('access.roles.index') }}"
-                  class="{{ pagination_ui.rows_group_classes() }}"
-                  hx-get="{{ url_for('access.roles.index') }}"
-                  hx-trigger="change from:select[name='per_page']"
-                  hx-target="#role-registry"
-                  hx-swap="outerHTML settle:150ms"
-                  hx-push-url="true"
-                  hx-indicator="#role-registry-loading">
-                <input type="hidden" name="page" value="1">
-                <input type="hidden" name="search" value="{{ filters.search }}">
-                <input type="hidden" name="role_type" value="{{ filters.role_type }}">
-                <input type="hidden" name="state" value="{{ filters.state }}">
-                <span class="text-xs font-semibold text-content-secondary">Rows</span>
-                <select name="per_page"
-                        aria-label="Rows Per Page"
-                        class="{{ pagination_ui.page_size_classes() }}">
-                    {% for option in per_page_options %}
-                        <option value="{{ option }}"
-                                {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
-                    {% endfor %}
-                </select>
-            </form>
-        </div>
-        <div class="{{ pagination_ui.navigation_group_classes() }}">
-            {% set previous_args = pagination_query.copy() %}
-            {% set _ = previous_args.update({'page': pagination.prev_page}) %}
-            {% if pagination.has_prev %}
-                <a href="{{ url_for('access.roles.index', **previous_args) }}"
-                   hx-get="{{ url_for('access.roles.index', **previous_args) }}"
-                   hx-target="#role-registry"
-                   hx-swap="outerHTML settle:150ms"
-                   hx-push-url="true"
-                   hx-indicator="#role-registry-loading"
-                   class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
-            {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
-            {% endif %}
-            {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, hx_target='#role-registry', hx_indicator='#role-registry-loading', endpoint='access.roles.index', query_params=pagination_query, hx_swap='outerHTML settle:150ms') }}
-            {% set next_args = pagination_query.copy() %}
-            {% set _ = next_args.update({'page': pagination.next_page}) %}
-            {% if pagination.has_next %}
-                <a href="{{ url_for('access.roles.index', **next_args) }}"
-                   hx-get="{{ url_for('access.roles.index', **next_args) }}"
-                   hx-target="#role-registry"
-                   hx-swap="outerHTML settle:150ms"
-                   hx-push-url="true"
-                   hx-indicator="#role-registry-loading"
-                   class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
-            {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
-            {% endif %}
-        </div>
-    </div>
+    {% set footer_query = pagination_query.copy() %}
+    {% set _ = footer_query.pop('per_page', none) %}
+    {{ registry_ui.footer('access.roles.index',
+        'role-registry',
+        'role-registry-loading',
+        pagination,
+        footer_query,
+        per_page_options,
+        resource_label='Roles',
+        rows_aria_label='Rows Per Page',
+        control_name='role-registry') }}
 </section>

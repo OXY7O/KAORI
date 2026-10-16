@@ -16,8 +16,14 @@ def all_analytics_templates() -> str:
 def test_shared_controls_and_metrics_source_contract_are_compatible() -> None:
     workspace = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
     metrics_source = read('app/templates/kubernetes/analytics/components/_metrics_source_status.html')
+    shared_source = read('app/templates/analytics/components/_controls_readiness.html')
 
-    assert 'data-analytics-metrics-source-status' in metrics_source
+    # Kubernetes owns the source semantics; the shared macro owns rendered markup.
+    assert 'shared_readiness.source_card(' in metrics_source
+    assert 'metric_source_state=' in metrics_source
+    assert 'data-analytics-metrics-source-status' in shared_source
+    assert 'metric_source_state is not none' in shared_source
+    assert 'data-analytics-metrics-source-status' not in metrics_source
     assert 'Metrics Source Status' in metrics_source
     assert 'Query Ready' in metrics_source
     assert 'Query Degraded' in metrics_source
@@ -28,7 +34,8 @@ def test_shared_controls_and_metrics_source_contract_are_compatible() -> None:
     assert 'Latest Data Snapshot' in workspace
     assert 'Source Evidence Incomplete' in workspace
     assert 'Latest Refresh Error' in workspace
-    assert 'loading_bar.render(indicator_id' in workspace
+    assert 'shared_readiness.frame(' in workspace
+    assert 'loading_bar.render(indicator_id' in shared_source
 
 
 def test_analytics_tabs_use_one_shared_runtime_and_native_fallback() -> None:
@@ -63,10 +70,19 @@ def test_analytics_tabs_use_one_shared_runtime_and_native_fallback() -> None:
 def test_analytics_templates_do_not_use_nonstandard_layout_patterns() -> None:
     content = all_analytics_templates()
 
+    # Only the committed Incident Readiness evidence table needs bounded horizontal
+    # scrolling for narrow viewports. It is not an analytics page-layout shell.
+    incident_table = ANALYTICS_TEMPLATES / 'alerts/partials/_incident_readiness.html'
+    incident_source = incident_table.read_text(encoding='utf-8')
+    assert '<div class="overflow-x-auto">' in incident_source
+    assert 'min-w-[34rem] table-fixed' in incident_source
+    for template in ANALYTICS_TEMPLATES.rglob('*.html'):
+        if template != incident_table:
+            assert 'overflow-x-auto' not in template.read_text(encoding='utf-8'), template
+
     for forbidden in (
         '<details',
         '<summary',
-        'overflow-x-auto',
         'style=',
         'bg-red-',
         'text-red-',

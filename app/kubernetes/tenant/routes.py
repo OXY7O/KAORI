@@ -8,7 +8,9 @@ from flask_login import current_user
 from kubernetes.client.rest import ApiException
 
 from app.access.rbac.decorators import any_permission_required, permission_required
+from app.common.navigation import build_navigation_breadcrumb
 from app.common.pagination import paginate_sequence
+from app.common.presentation import present_user_datetime
 from app.kubernetes.tenant import routes_access as _routes_access
 from app.kubernetes.tenant import routes_credentials as _routes_credentials
 from app.kubernetes.tenant.admin_workspace import (
@@ -19,6 +21,13 @@ from app.kubernetes.tenant.allocation_drift import (
     accept_provider_allocation_state_committed,
     build_allocation_drift_action_state,
     reapply_kaori_allocation_intent_committed,
+)
+from app.kubernetes.tenant.allocation_overview import (
+    build_tenant_allocation_bars,
+    build_tenant_contribution_rows,
+    describe_tightest_headroom,
+    filter_tenant_contribution_rows,
+    summarize_tenant_contributions,
 )
 from app.kubernetes.tenant.audit import record_tenant_sync_dispatch_audit
 from app.kubernetes.tenant.capacity_governance import (
@@ -32,6 +41,24 @@ from app.kubernetes.tenant.capsule_allocation_governance import (
     get_capsule_shared_allocation_context,
     reapply_capsule_shared_allocation_intent_committed,
 )
+from app.kubernetes.tenant.capsule_handoff_executor import (
+    execute_capsule_handoff_committed,
+)
+from app.kubernetes.tenant.capsule_handoff_preview_service import (
+    preview_capsule_release_namespace_committed,
+)
+from app.kubernetes.tenant.capsule_handoff_restart import (
+    restart_expired_capsule_handoff_plan_committed,
+)
+from app.kubernetes.tenant.capsule_release_finalizer import (
+    release_verified_capsule_tenant_committed,
+)
+from app.kubernetes.tenant.capsule_successor_acceptance import (
+    accept_capsule_successor_handoff_committed,
+)
+from app.kubernetes.tenant.capsule_successor_handback import (
+    handback_capsule_successor_governance_committed,
+)
 from app.kubernetes.tenant.capsule_tenant_quota_governance import (
     CapsuleTenantQuotaStateConflictError,
     accept_capsule_tenant_provider_state_committed,
@@ -44,7 +71,11 @@ from app.kubernetes.tenant.decommission_service import (
     TenantDecommissionBlocked,
     request_tenant_decommission_committed,
 )
-from app.kubernetes.tenant.discovery_adoption import adopt_discovered_tenant_committed
+from app.kubernetes.tenant.discovery_adoption import (
+    adopt_discovered_tenant_committed,
+    attach_discovered_capsule_namespace_committed,
+    attach_discovered_native_namespace_committed,
+)
 from app.kubernetes.tenant.discovery_service import get_tenant_adoption_preflight_context
 from app.kubernetes.tenant.job_adapter import (
     build_tenant_sync_state,
@@ -52,7 +83,47 @@ from app.kubernetes.tenant.job_adapter import (
     get_visible_tenant_sync_job,
 )
 from app.kubernetes.tenant.live_connection import get_live_tenant_connection_context
+from app.kubernetes.tenant.native_handoff_dry_run import (
+    dry_run_native_release_handoff_committed,
+)
+from app.kubernetes.tenant.native_handoff_executor import execute_native_handoff_committed
+from app.kubernetes.tenant.native_handoff_readback import (
+    observe_external_native_handoff_committed,
+)
+from app.kubernetes.tenant.native_no_transfer_recovery import (
+    assess_native_no_transfer_recovery_committed,
+    authorize_native_no_transfer_recovery_committed,
+)
+from app.kubernetes.tenant.native_residual_recovery_assessment import (
+    assess_legacy_native_profile_residue_readonly,
+)
+from app.kubernetes.tenant.native_residual_recovery_executor import (
+    execute_native_residual_cleanup_committed,
+)
+from app.kubernetes.tenant.native_residual_recovery_governance import (
+    approve_native_residual_cleanup_committed,
+    prepare_native_residual_cleanup_committed,
+)
+from app.kubernetes.tenant.native_successor_acceptance import (
+    accept_native_successor_handoff_committed,
+)
+from app.kubernetes.tenant.native_successor_handback import (
+    handback_native_successor_governance_committed,
+)
 from app.kubernetes.tenant.overview import dispatch_tenant_inventory_sync
+from app.kubernetes.tenant.release_handoff_approval import (
+    approve_release_handoff_plan_committed,
+    prepare_release_handoff_plan_committed,
+    restart_expired_native_release_handoff_plan_committed,
+)
+from app.kubernetes.tenant.release_preflight import (
+    release_adopted_tenant_committed,
+    release_verified_native_tenant_committed,
+    review_tenant_release_preflight_committed,
+)
+from app.kubernetes.tenant.release_successor_claim import (
+    record_release_successor_claim_committed,
+)
 from app.kubernetes.tenant.route_common import (
     _csrf,
     _operations_active_tab,
@@ -62,6 +133,7 @@ from app.kubernetes.tenant.route_common import (
     _tenant_active_section_context,
     _tenant_admin_section,
     _tenant_admin_support_context,
+    _tenant_detail_context,
     _tenant_section_redirect,
     _tenant_workspace_context,
     tenant_bp,
@@ -293,6 +365,46 @@ def tenants():
     )
 
 
+@tenant_bp.get('/tenants/<string:tenant_id>/manage')
+@any_permission_required('tenant.view', 'tenant.manage')
+def tenant_detail(tenant_id: str):
+    """Dedicated committed-only Tenant workflow; no provider read on GET."""
+    detail_context = _tenant_detail_context(tenant_id)
+    # Wizard HTMX GETs exchange only the Tenant Detail. Plain links and
+    # browser history restores still return the complete page as a fallback.
+    if (
+        request.headers.get('HX-Request') == 'true'
+        and request.headers.get('HX-Target') == 'tenant-release-governance'
+        and request.headers.get('HX-History-Restore-Request') != 'true'
+    ):
+        response = make_response(
+            render_template(
+                'kubernetes/tenant/partials/_tenant_management_detail.html',
+                can_manage=current_user.has_permission('tenant.manage'),
+                **detail_context,
+            )
+        )
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+
+    context = _tenant_workspace_context(include_sync=False)
+    context.update(detail_context)
+    # Reuse the canonical topbar hierarchy, but identify the actual committed
+    # Tenant instead of falling back to a generic/incorrect Overview label.
+    breadcrumb = build_navigation_breadcrumb('tenant.tenant_detail')
+    breadcrumb[-1]['label'] = context['row']['tenant'].name
+    context['navigation_breadcrumb'] = breadcrumb
+    return render_template(
+        'kubernetes/tenant/tenant_detail.html',
+        tenant_page='tenants',
+        tenant_page_title='Tenant Management',
+        tenant_page_icon='building-2',
+        can_manage=current_user.has_permission('tenant.manage'),
+        **context,
+    )
+
+
 @tenant_bp.get('/resource-profiles')
 @any_permission_required('tenant.view', 'tenant.manage')
 def resource_profiles():
@@ -314,6 +426,39 @@ def resource_profiles():
 
     capacity_search = str(request.args.get('capacity_search') or '').strip()
     capacity_rows = list(context.get('capacity_governance') or [])
+
+    # Read-only cluster visual projection uses the same committed #654 summaries
+    # already resolved for this page. Only one cluster's Tenant contributions are
+    # queried on the Capacity tab (no provider calls or speculative admission).
+    selection = str(request.args.get('allocation_cluster_id') or '').strip()
+    selected = next(
+        (row for row in capacity_rows if str(row['cluster'].id) == selection),
+        capacity_rows[0] if capacity_rows else None,
+    )
+    context['allocation_cluster_options'] = capacity_rows
+    context['allocation_cluster_id'] = str(selected['cluster'].id) if selected else ''
+    context['allocation_overview'] = None
+    context['allocation_tenant_rows'] = []
+    context['allocation_tenant_matches'] = 0
+    context['allocation_tenant_total'] = 0
+    context['allocation_tenant_summary'] = {'tenants': 0, 'namespaces': 0, 'shared': 0, 'attention': 0}
+    allocation_search = str(request.args.get('allocation_search') or '').strip()
+    context['allocation_search'] = allocation_search
+    if active_view == 'capacity' and selected is not None:
+        bars = build_tenant_allocation_bars(selected)
+        context['allocation_overview'] = {
+            'cluster': selected['cluster'],
+            'summary': selected,
+            'bars': bars,
+            'tightest_headroom': describe_tightest_headroom(bars, selected['state']),
+            'cutoff': present_user_datetime(selected.get('data_cutoff')),
+        }
+        tenant_rows = build_tenant_contribution_rows(str(selected['cluster'].id))
+        context['allocation_tenant_total'] = len(tenant_rows)
+        context['allocation_tenant_summary'] = summarize_tenant_contributions(tenant_rows)
+        tenant_rows = filter_tenant_contribution_rows(tenant_rows, allocation_search)
+        context['allocation_tenant_rows'] = tenant_rows
+        context['allocation_tenant_matches'] = len(tenant_rows)
     if capacity_search:
         needle = capacity_search.lower()
         capacity_rows = [
@@ -327,6 +472,11 @@ def resource_profiles():
         per_page=request.args.get('capacity_per_page', 5, type=int) or 5,
     )
     context['capacity_governance'] = capacity_items
+    # Reuse the read-only #1034 presentation percentages for each visible
+    # committed #654 Allocation Budget row; no new evidence or admission path.
+    context['capacity_budget_bars'] = {
+        str(item['cluster'].id): build_tenant_allocation_bars(item) for item in capacity_items
+    }
     context['capacity_pagination'] = capacity_pagination
     context['capacity_filters'] = {'search': capacity_search}
 
@@ -464,7 +614,7 @@ def operations():
                 search=str(request.args.get('ops_evidence_search') or ''),
             )
         )
-    elif active_tab == 'drift-reconcile':
+    elif active_tab in {'allocation-drift', 'operational-reconcile'}:
         context.update(_operations_drift_context())
 
     return render_template(
@@ -486,6 +636,7 @@ def tenant_adoption_preflight_route():
             cluster_id=str(request.args.get('cluster_id') or ''),
             provider_key=str(request.args.get('provider_key') or ''),
             resource_name=str(request.args.get('resource_name') or ''),
+            capsule_tenant_name=str(request.args.get('capsule_tenant_name') or ''),
         )
     except (ValueError, ApiException) as exc:
         rendered = render_template(
@@ -508,30 +659,74 @@ def tenant_adoption_preflight_route():
 @tenant_bp.post('/discovery/adopt')
 @permission_required('tenant.manage')
 def adopt_discovered_tenant_route():
+    provider_attempt_started = False
     try:
         _csrf()
-        tenant, environment, namespace = adopt_discovered_tenant_committed(request.form)
+        attach_existing = bool(str(request.form.get('attach_environment_id') or '').strip())
+        if attach_existing:
+            provider_key = str(request.form.get('provider_key') or '').strip()
+            if provider_key == 'capsule':
+                provider_attempt_started = True
+                tenant, environment, namespace = attach_discovered_capsule_namespace_committed(request.form)
+            elif provider_key == 'native_kubernetes':
+                provider_attempt_started = True
+                tenant, environment, namespace = attach_discovered_native_namespace_committed(request.form)
+            else:
+                raise ValueError('Unsupported provider authority for existing-Tenant Namespace attachment.')
+        else:
+            provider_attempt_started = True
+            tenant, environment, namespace = adopt_discovered_tenant_committed(request.form)
     except (ValueError, ApiException) as exc:
         _record(
             event_type='kubernetes_tenant_discovery_adoption_failed',
             status='error',
             title='Tenant Adoption Requires Attention',
             message=str(exc),
-            detail='Discovery adoption is fail-closed. Governance takeover occurs only after provider-equivalent validation and read-back.',
+            detail=(
+                'Capsule Namespace attachment is mirror-only: no provider write is attempted.'
+                if str(request.form.get('provider_key') or '') == 'capsule'
+                and bool(str(request.form.get('attach_environment_id') or '').strip())
+                else 'A provider write may have started before failure. KAORI database rollback '
+                'does not revert Kubernetes/Capsule mutations; inspect live provider identity '
+                'and allocation before retrying.'
+                if provider_attempt_started
+                else 'No provider operation started; review request/CSRF authority before retrying.'
+            ),
             metadata={
                 'cluster_id': request.form.get('cluster_id'),
                 'provider_key': request.form.get('provider_key'),
                 'resource_name': request.form.get('resource_name'),
-                'operation': 'adopt_discovered_tenant',
+                'operation': (
+                    'attach_existing_tenant_namespace'
+                    if str(request.form.get('attach_environment_id') or '').strip()
+                    else 'adopt_discovered_tenant'
+                ),
+                'provider_mutation_may_have_started': provider_attempt_started
+                and not (
+                    str(request.form.get('provider_key') or '') == 'capsule'
+                    and bool(str(request.form.get('attach_environment_id') or '').strip())
+                ),
+                'submitted_preflight_provider_uid': request.form.get('provider_uid'),
+                'submitted_preflight_resource_version': request.form.get('provider_resource_version'),
             },
         )
     else:
         _record(
             event_type='kubernetes_tenant_discovery_adopted',
             status='success',
-            title='Tenant Adopted · Managed',
+            title=(
+                'Capsule Namespace Attached · Provider Mirrored'
+                if attach_existing and tenant.provider_key == 'capsule'
+                else 'Native Namespace Attached · Managed Allocation'
+                if attach_existing and tenant.provider_key == 'native_kubernetes'
+                else 'Tenant Adopted · Managed'
+            ),
             message=(
-                f'{tenant.name} is adopted into KAORI with supported governance controls managed immediately. '
+                f'{namespace.namespace} attached to existing {tenant.name}; Capsule policies remain provider-mirrored.'
+                if attach_existing and tenant.provider_key == 'capsule' and namespace is not None
+                else f'{namespace.namespace} was attached to existing Tenant {tenant.name} with governed allocation.'
+                if attach_existing and namespace is not None
+                else f'{tenant.name} is adopted into KAORI with supported governance controls managed immediately. '
                 'Observed provider values are preserved as the initial managed baseline.'
             ),
             detail=(
@@ -545,9 +740,11 @@ def adopt_discovered_tenant_route():
                 'provider_key': tenant.provider_key,
                 'tenant_generation': tenant.generation,
                 'namespace_id': namespace.id if namespace is not None else None,
-                'operation': 'adopt_discovered_tenant',
-                'provider_mutation_performed': bool(
-                    (tenant.provider_evidence_json or {}).get('provider_mutation_performed')
+                'operation': 'attach_existing_tenant_namespace' if attach_existing else 'adopt_discovered_tenant',
+                'provider_mutation_performed': (
+                    (namespace.provisioning_evidence_json or {}).get('provider_mutation_performed')
+                    if attach_existing and namespace is not None
+                    else (tenant.provider_evidence_json or {}).get('provider_mutation_performed')
                 ),
             },
         )
@@ -600,6 +797,992 @@ def create_tenant_route():
             },
         )
     return _tenant_section_redirect('tenant-setup')
+
+
+@tenant_bp.post('/capsule/namespace-attach')
+@permission_required('tenant.manage')
+def attach_existing_capsule_namespace_route():
+    """Registry entry point into the SAME canonical Discovery attachment service."""
+    try:
+        _csrf()
+        source = {
+            'provider_key': 'capsule',
+            'attach_environment_id': str(request.form.get('environment_id') or ''),
+            'resource_name': str(request.form.get('namespace') or ''),
+            'provider_uid': str(request.form.get('namespace_uid') or ''),
+            'provider_resource_version': str(request.form.get('namespace_resource_version') or ''),
+        }
+        tenant, environment, namespace = attach_discovered_capsule_namespace_committed(source)
+    except (ValueError, ApiException) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_attachment_blocked',
+            status='warning',
+            title='Capsule Namespace Attachment Blocked',
+            message=str(exc),
+            detail='Capsule Tenant, Namespace and external RBAC remain provider authoritative.',
+            metadata={'environment_id': request.form.get('environment_id'), 'operation': 'attach_capsule_namespace'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_attached',
+            status='success',
+            title='Capsule Namespace Attached',
+            message=f'{namespace.namespace} attached to {tenant.name} · {environment.environment}.',
+            detail='Provider remains authoritative; no Namespace/quota/RBAC mutation.',
+            metadata={'tenant_id': tenant.id, 'namespace_id': namespace.id, 'operation': 'attach_capsule_namespace'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-preflight')
+@permission_required('tenant.manage')
+@permission_required('clusters.manage')
+def review_tenant_release_route(tenant_id: str):
+    try:
+        _csrf()
+        result = review_tenant_release_preflight_committed(tenant_id=tenant_id, actor_user_id=int(current_user.id))
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_preflight_failed',
+            status='error',
+            title='Release Governance Review Unavailable',
+            message=str(exc),
+            detail='No Tenant, Namespace or RBAC was released.',
+            metadata={'tenant_id': tenant_id, 'operation': 'review_tenant_release'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_preflight_reviewed',
+            status='warning' if result['blockers'] else 'info',
+            title='Release Governance Preflight Recorded',
+            message=f'{len(result["blockers"])} blocker(s); no provider resource was modified.',
+            detail='Release is not yet admitted. Review the committed dependency and provider handoff evidence.',
+            metadata={'tenant_id': tenant_id, 'operation': 'review_tenant_release'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/prepare')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def prepare_tenant_release_handoff_route(tenant_id: str):
+    try:
+        _csrf()
+        result = prepare_release_handoff_plan_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            successor_owner=str(request.form.get('successor_owner') or ''),
+            change_reference=str(request.form.get('change_reference') or ''),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_plan_blocked',
+            status='warning',
+            title='Handoff Plan Not Prepared',
+            message=str(exc),
+            detail='Release governance and provider ownership remain unchanged.',
+            metadata={'tenant_id': tenant_id, 'operation': 'prepare_release_handoff'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_plan_prepared',
+            status='info',
+            title='Handoff Plan Prepared',
+            message=f'Successor {result["successor_owner"]} · {result["change_reference"]}',
+            detail='Independent approval and provider ownership transfer are still required.',
+            metadata={'tenant_id': tenant_id, 'operation': 'prepare_release_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/no-transfer/assess')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def assess_native_no_transfer_recovery_route(tenant_id: str):
+    """Explicit requester read-only provider assessment, no Kubernetes mutation."""
+    try:
+        _csrf()
+        result = assess_native_no_transfer_recovery_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_no_transfer_assessment') == 'assess',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_recovery_assessment_blocked',
+            status='warning',
+            title='Recovery Assessment Blocked',
+            message=str(exc),
+            detail='No Kubernetes ownership marker or Released lifecycle changed.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_no_transfer_assessment'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_recovery_assessment_recorded',
+            status='info',
+            title='No-Transfer Assessment Recorded',
+            message='Provider evidence verified; a separate authorized reviewer must approve the exact assessment.',
+            detail='Assessment is time-limited and never authorizes a provider mutation or Release.',
+            metadata={
+                'tenant_id': tenant_id,
+                'operation': 'native_no_transfer_assessment',
+                'assessment_sha256': result['assessment_sha256'],
+            },
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/no-transfer/authorize')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def authorize_native_no_transfer_recovery_route(tenant_id: str):
+    """Independent acceptance of exact committed assessment, not ownership transfer."""
+    try:
+        _csrf()
+        result = authorize_native_no_transfer_recovery_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            assessment_sha256=str(request.form.get('assessment_sha256') or ''),
+            confirmed=request.form.get('confirm_no_transfer_authorization') == 'authorize',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_recovery_authorization_blocked',
+            status='warning',
+            title='Recovery Authorization Blocked',
+            message=str(exc),
+            detail='Independent authorization was not recorded; provider state is unchanged.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_no_transfer_authorization'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_recovery_authorized',
+            status='info',
+            title='No-Transfer Recovery Authorized',
+            message='Original requester may now attempt a fresh provider-verified plan restart.',
+            detail='Fresh assessment/decision expire; new SHA will require independent approval again.',
+            metadata={
+                'tenant_id': tenant_id,
+                'operation': 'native_no_transfer_authorization',
+                'assessment_sha256': result['assessment_sha256'],
+            },
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/restart-expired')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def restart_expired_tenant_release_handoff_route(tenant_id: str):
+    """Explicit requester-only renewal; no Kubernetes mutations or Release."""
+    try:
+        _csrf()
+        result = restart_expired_native_release_handoff_plan_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_handoff_restart') == 'restart',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_restart_blocked',
+            status='warning',
+            title='Handoff Restart Blocked',
+            message=str(exc),
+            detail='Existing approval history and provider resources are unchanged.',
+            metadata={'tenant_id': tenant_id, 'operation': 'restart_expired_release_handoff'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_restarted',
+            status='info',
+            title='Expired Handoff Plan Restarted',
+            message=f'New plan {result["plan_sha256"][:12]} requires a fresh independent review.',
+            detail='Previous approval and external reference are historical only; no provider transfer occurred.',
+            metadata={'tenant_id': tenant_id, 'operation': 'restart_expired_release_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/capsule-restart-expired')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def restart_expired_capsule_handoff_route(tenant_id: str):
+    """Original-requester-only G1 restart, with zero attempt ledger evidence."""
+    try:
+        _csrf()
+        receipt = restart_expired_capsule_handoff_plan_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_capsule_handoff_restart') == 'restart',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_handoff_restart_blocked',
+            status='warning',
+            title='Capsule Handoff Restart Blocked',
+            message=str(exc),
+            detail='Prior approved scope and provider resources were not changed. A START/attempt requires independent recovery.',
+            metadata={'tenant_id': tenant_id, 'operation': 'restart_expired_capsule_handoff'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_handoff_plan_restarted',
+            status='info',
+            title='Fresh Capsule Handoff Plan Prepared',
+            message=f'Plan {receipt["plan_sha256"][:12]} requires another independent review.',
+            detail='Old acceptance/previews remain historical and cannot authorize provider mutations under the new SHA.',
+            metadata={'tenant_id': tenant_id, 'operation': 'restart_expired_capsule_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/approve')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def approve_tenant_release_handoff_route(tenant_id: str):
+    try:
+        _csrf()
+        if request.form.get('confirm_handoff_approval') != 'approved':
+            raise ValueError('Independent handoff acknowledgement must be explicit.')
+        result = approve_release_handoff_plan_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            approved=True,
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_approval_blocked',
+            status='warning',
+            title='Handoff Approval Blocked',
+            message=str(exc),
+            detail='No provider mutation was attempted; Release is not unlocked.',
+            metadata={'tenant_id': tenant_id, 'operation': 'approve_release_handoff'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_handoff_acknowledged',
+            status='info',
+            title='Independent Handoff Review Recorded',
+            message=f'Review recorded for {result["successor_owner"]}; external transfer remains pending.',
+            detail='Provider read-back and a separately admitted transfer executor are still required.',
+            metadata={'tenant_id': tenant_id, 'operation': 'approve_release_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/successor-reference')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def record_tenant_release_successor_reference_route(tenant_id: str):
+    try:
+        _csrf()
+        if request.form.get('confirm_successor_reference') != 'record':
+            raise ValueError('Explicit unverified external reference acknowledgement is required.')
+        result = record_release_successor_claim_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            successor_reference=str(request.form.get('successor_reference') or ''),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_successor_reference_blocked',
+            status='warning',
+            title='External Successor Reference Not Recorded',
+            message=str(exc),
+            detail='Provider ownership and Release authority remain unchanged.',
+            metadata={'tenant_id': tenant_id, 'operation': 'successor_reference'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_successor_reference_recorded',
+            status='info',
+            title='Unverified Successor Reference Recorded',
+            message=f'External reference {result["successor_reference"]} recorded for review.',
+            detail='Not verified acceptance; no provider transfer or Release authorized.',
+            metadata={'tenant_id': tenant_id, 'operation': 'successor_reference'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/successor-accept')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def accept_native_successor_handoff_route(tenant_id: str):
+    """Platform Admin intent plus configured Kubernetes provider identity/RBAC."""
+    try:
+        _csrf()
+        if request.form.get('confirm_successor_acceptance') != 'accept':
+            raise ValueError('Independent Platform Admin must explicitly accept the governance handoff.')
+        result = accept_native_successor_handoff_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=True,
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_successor_acceptance_blocked',
+            status='warning',
+            title='Successor Acceptance Blocked',
+            message=str(exc),
+            detail='No Kubernetes ownership markers or Release state changed.',
+            metadata={'tenant_id': tenant_id, 'operation': 'successor_acceptance'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_successor_acceptance_verified',
+            status='success',
+            title='Platform Admin Handoff Accepted',
+            message=(
+                f'KAORI Platform Admin approved {result["scope_count"]} resource(s); '
+                f'provider connection: {result["provider_username"]}.'
+            ),
+            detail='Existing kubeconfig identity and scoped permissions verified. Provider handoff remains a separate explicit action.',
+            metadata={'tenant_id': tenant_id, 'operation': 'successor_acceptance'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/capsule-successor-accept')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def accept_capsule_successor_handoff_route(tenant_id: str):
+    """Verify and commit independent Capsule consent, never perform provider transfer."""
+    try:
+        _csrf()
+        if request.form.get('confirm_capsule_successor_acceptance') != 'accept':
+            raise ValueError('Explicit independent Capsule Platform Admin acceptance is required.')
+        result = accept_capsule_successor_handoff_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=True,
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_successor_acceptance_blocked',
+            status='warning',
+            title='Capsule Successor Acceptance Blocked',
+            message=str(exc),
+            detail='Capsule Tenant and Namespace remain unchanged; no provider handoff or Release occurred.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_acceptance'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_successor_acceptance_recorded',
+            status='success',
+            title='Capsule Platform Admin Acceptance Recorded',
+            message=(f'Verified {result["scope_count"]} provider resource(s) for {result["provider_username"]}.'),
+            detail='Independent consent recorded only. Provider transfer and Released finalization are separate.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_acceptance'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/capsule-namespace-preview')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def preview_capsule_release_namespace_route(tenant_id: str):
+    """Explicit Capsule whole-scope provider preview, never live PATCH."""
+    try:
+        _csrf()
+        result = preview_capsule_release_namespace_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_capsule_namespace_preview') == 'preview',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_preview_blocked',
+            status='warning',
+            title='Capsule Preview Blocked',
+            message=str(exc),
+            detail='No live PATCH or governance Release was authorized. Review provider scope and dependencies.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_namespace_preview'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_namespace_preview_observed',
+            status='info',
+            title='Capsule Provider Preview Recorded',
+            message=(
+                f'{result["namespace_count"]} Namespaces and '
+                f'{result["related_preview_count"]} quota/limit/RBAC candidates '
+                'inspected with Kubernetes server-side dry-run.'
+            ),
+            detail='Whole-scope preview only. Per-resource consent, durable START, actual PATCH and Release remain blocked.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_namespace_preview'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/capsule-execute')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def execute_capsule_handoff_route(tenant_id: str):
+    """One START-fenced exact Capsule provider metadata handoff, no retry."""
+    try:
+        _csrf()
+        result = execute_capsule_handoff_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            worklist_sha256=str(request.form.get('worklist_sha256') or ''),
+            confirmed=request.form.get('confirm_capsule_handoff_execute') == 'execute',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_provider_handoff_blocked',
+            status='warning',
+            title='Capsule Handoff Blocked',
+            message=str(exc),
+            detail='If START was committed, provider outcome requires manual recovery. Do not retry.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_provider_handoff'},
+        )
+    except Exception:
+        _record(
+            event_type='kubernetes_tenant_capsule_provider_handoff_unknown',
+            status='error',
+            title='Capsule Provider Outcome Uncertain',
+            message='Inspect the immutable START and live provider state before any recovery.',
+            detail='No auto retry or governance Released; verify the exact operation history.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_provider_handoff'},
+        )
+    else:
+        success = result['status'] == 'provider_handoff_verified'
+        _record(
+            event_type='kubernetes_tenant_capsule_provider_handoff_result',
+            status='success' if success else 'warning',
+            title='Capsule Provider Handoff Observed' if success else 'Capsule Recovery Required',
+            message=(
+                f'{result["verified_resource_count"]} provider resources in full read-back.'
+                if success
+                else 'Provider transfer is partial or unknown; inspect the immutable attempt.'
+            ),
+            detail=(
+                'Run a separate complete G4 provider verification before finalizing Released.'
+                if success
+                else 'Partial or unknown PATCH outcome: never retry automatically.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_provider_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-dry-run')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def dry_run_native_release_handoff_route(tenant_id: str):
+    try:
+        _csrf()
+        if request.form.get('confirm_native_handoff_dry_run') != 'approved':
+            raise ValueError('Explicit Native provider dry-run approval is required.')
+        result = dry_run_native_release_handoff_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_dry_run_blocked',
+            status='warning',
+            title='Native Handoff Dry-Run Blocked',
+            message=str(exc),
+            detail='No Kubernetes ownership markers or resource specifications were changed.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_handoff_dry_run'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_dry_run_recorded',
+            status='success' if result['status'] == 'dry_run_passed' else 'warning',
+            title='Native Handoff Preview Recorded',
+            message=(
+                f'{len(result["previewed_components"])} of '
+                f'{result["expected_component_count"]} provider previews completed.'
+            ),
+            detail='This was a Kubernetes server-side dry-run only. Release remains blocked.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_handoff_dry_run'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-execute')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def execute_native_release_handoff_route(tenant_id: str):
+    """Explicit Platform Admin Native provider mutation, never Released."""
+    try:
+        _csrf()
+        result = execute_native_handoff_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_native_handoff_execution') == 'transfer',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_execution_blocked',
+            status='warning',
+            title='Native Provider Transfer Blocked',
+            message=str(exc),
+            detail='Provider state must be read back; never assume a failed request had no side effects.',
+            metadata={'tenant_id': tenant_id, 'operation': 'execute_native_handoff'},
+        )
+    else:
+        completed = result['status'] == 'provider_handoff_verified'
+        _record(
+            event_type='kubernetes_tenant_native_handoff_execution_recorded',
+            status='success' if completed else 'warning',
+            title='Provider Handoff Verified' if completed else 'Native Handoff Recovery Required',
+            message=f'{result["verified_count"]} of {result["expected_component_count"]} provider objects verified.',
+            detail=(
+                'Ownership markers transferred; governance Release remains a separate verified step.'
+                if completed
+                else 'Partial/failed provider transfer. Do not Release or retry blindly.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'execute_native_handoff'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handoff/native-readback')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def inspect_native_external_handoff_route(tenant_id: str):
+    """Explicit provider read-back after external owner actions, no Release."""
+    try:
+        _csrf()
+        if request.form.get('confirm_native_handoff_readback') != 'inspect':
+            raise ValueError('Explicit provider read-back confirmation is required.')
+        result = observe_external_native_handoff_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_handoff_readback_blocked',
+            status='warning',
+            title='Native External Handoff Read-Back Blocked',
+            message=str(exc),
+            detail='Governance remains Ready and provider resources are untouched.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_external_handoff_readback'},
+        )
+    else:
+        partial = result['status'] != 'provider_handoff_observed_acceptance_unverified'
+        recovery = result.get('recovery') or {
+            'transferred_count': result.get('observed_count', 0),
+            'pending_count': 0,
+        }
+        _record(
+            event_type='kubernetes_tenant_native_handoff_readback_observed',
+            status='warning' if partial else 'info',
+            title='Native Handoff Recovery Required' if partial else 'Native Provider Handoff Observed',
+            message=(
+                f'{recovery["transferred_count"]} of '
+                f'{recovery["transferred_count"] + recovery["pending_count"]} '
+                'provider components show successor markers.'
+            ),
+            detail=(
+                'Incomplete provider transfer requires explicit recovery; do not retry blindly or Release.'
+                if partial
+                else 'External successor consent remains unverified. Release remains blocked.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'native_external_handoff_readback'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-governance')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def release_tenant_governance_route(tenant_id: str):
+    try:
+        _csrf()
+        if request.form.get('confirm_release_governance') != 'approved':
+            raise ValueError('Explicit provider-preserving governance Release approval is required.')
+        result = release_adopted_tenant_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            approved=True,
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_release_governance_blocked',
+            status='warning',
+            title='Release Governance Blocked',
+            message=str(exc),
+            detail='Existing Kubernetes Namespace/Capsule resources were not deleted or changed.',
+            metadata={'tenant_id': tenant_id, 'operation': 'release_tenant_governance'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_release_governance_completed',
+            status='success',
+            title='Tenant Governance Released',
+            message=f'Generation {result["generation"]} released; {result["released_namespace_count"]} namespaces retained.',
+            detail='Provider resources remain externally managed. Re-adopt requires fresh provider discovery.',
+            metadata={'tenant_id': tenant_id, 'operation': 'release_tenant_governance'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-managed-native')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def finalize_verified_native_release_route(tenant_id: str):
+    """Finalizer only; all provider objects remain intact."""
+    try:
+        _csrf()
+        result = release_verified_native_tenant_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            approved=request.form.get('confirm_native_release_finalization') == 'release',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_native_release_finalization_blocked',
+            status='warning',
+            title='Native Governance Release Blocked',
+            message=str(exc),
+            detail='No Kubernetes objects were modified by this Release finalizer.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_release_finalization'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_native_governance_released',
+            status='success',
+            title='Native Tenant Governance Released',
+            message=f'Generation {result["generation"]} released; {result["released_namespace_count"]} namespaces retained.',
+            detail='Provider ownership belongs to the verified successor. New adoption requires its explicit handback.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_release_finalization'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-managed-capsule')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def finalize_verified_capsule_release_route(tenant_id: str):
+    """Finalize only authoritative whole-scope G3 Capsule provider read-back."""
+    try:
+        _csrf()
+        result = release_verified_capsule_tenant_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            approved=request.form.get('confirm_capsule_release_finalization') == 'release',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_release_finalization_blocked',
+            status='warning',
+            title='Capsule Governance Release Blocked',
+            message=str(exc),
+            detail='No Kubernetes PATCH or object deletion occurs in this finalizer. Complete G2/G3 proof is mandatory.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_release_finalization'},
+        )
+    except Exception:
+        _record(
+            event_type='kubernetes_tenant_capsule_release_finalization_unverified',
+            status='error',
+            title='Capsule Release Requires Operator Review',
+            message='Release commit or provider verification outcome is uncertain.',
+            detail='Inspect canonical Tenant/Namespace lifecycle and provider evidence before any retry.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_release_finalization'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_capsule_release_finalization_completed',
+            status='success',
+            title='Capsule Governance Released',
+            message=(
+                f'Generation {result["generation"]} Released; '
+                f'{result["released_namespace_count"]} Namespaces and '
+                f'{result["verified_resource_count"]} provider objects preserved.'
+            ),
+            detail='Fresh Discovery and explicit successor handback are required before any new-generation Re-Adopt.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_release_finalization'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-capsule-handback')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def verify_capsule_successor_handback_route(tenant_id: str):
+    """Explicit Capsule successor metadata handback, never auto-Re-Adopt."""
+    try:
+        _csrf()
+        result = handback_capsule_successor_governance_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            release_plan_sha256=str(request.form.get('release_plan_sha256') or ''),
+            confirmed=request.form.get('confirm_capsule_successor_handback') == 'handback',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_capsule_successor_handback_blocked',
+            status='warning',
+            title='Capsule Successor Handback Blocked',
+            message=str(exc),
+            detail='If a START attempt was committed, inspect provider state manually. Never retry automatically.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_handback'},
+        )
+    except Exception:
+        _record(
+            event_type='kubernetes_tenant_capsule_successor_handback_unknown',
+            status='error',
+            title='Capsule Handback Needs Operator Recovery',
+            message='Provider handback outcome is unknown; review the committed START and every object.',
+            detail='Do not retry or Re-Adopt until provider and ledger reconciliation is complete.',
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_handback'},
+        )
+    else:
+        verified = result['status'] == 'verified'
+        _record(
+            event_type='kubernetes_tenant_capsule_successor_handback_result',
+            status='success' if verified else 'warning',
+            title='Capsule Handback Verified' if verified else 'Capsule Recovery Required',
+            message=(
+                f'{result["verified_count"]} of {result["expected_component_count"]} '
+                'provider resources independently read back.'
+            ),
+            detail=(
+                'Run fresh Discovery, then explicitly approve the new Re-Adopt generation.'
+                if verified
+                else 'Do not repeat PATCH; manually investigate the partial provider outcome.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'capsule_successor_handback'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/release-handback')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def verify_native_successor_handback_route(tenant_id: str):
+    """Platform Admin authorizes Native governance handback, not auto-adopt."""
+    try:
+        _csrf()
+        result = handback_native_successor_governance_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            release_plan_sha256=str(request.form.get('release_plan_sha256') or ''),
+            confirmed=request.form.get('confirm_successor_handback') == 'handback',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_successor_handback_blocked',
+            status='warning',
+            title='Native Successor Handback Blocked',
+            message=str(exc),
+            detail='Check provider state before any retry; Released lineage is retained.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_successor_handback'},
+        )
+    else:
+        done = result['status'] == 'verified'
+        _record(
+            event_type='kubernetes_tenant_successor_handback_recorded',
+            status='success' if done else 'warning',
+            title='Platform Admin Handback Verified' if done else 'Handback Recovery Required',
+            message=f'{result["verified_count"]} of {result["expected_component_count"]} resources verified.',
+            detail=(
+                'Use fresh Discovery to explicitly Re-adopt as a new Tenant generation.'
+                if done
+                else 'Partial provider handback is not ready for Re-adopt.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'native_successor_handback'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/residual-recovery/assess')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def assess_native_residual_cleanup_route(tenant_id: str):
+    """Explicit, read-only live evidence request; normal Detail GET is committed only."""
+    try:
+        _csrf()
+        result = assess_legacy_native_profile_residue_readonly(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_residual_assessment_blocked',
+            status='warning',
+            title='Recovery Assessment Blocked',
+            message=str(exc),
+            detail='No Kubernetes metadata was changed; check historical provider identity and receipt.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_assessment'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_residual_assessment_candidate',
+            status='info',
+            title='Read-only Recovery Candidate',
+            message=(
+                f'{result["residual_component_count"]} of '
+                f'{result["component_count"]} provider components contain profile residue.'
+            ),
+            detail='This is not mutation approval. Prepare an immutable plan for independent review.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_assessment'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/residual-recovery/prepare')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def prepare_native_residual_cleanup_route(tenant_id: str):
+    """Authenticated requester records exact assessment digest. No provider PATCH."""
+    try:
+        _csrf()
+        result = prepare_native_residual_cleanup_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            change_reference=str(request.form.get('change_reference') or ''),
+            confirmed=request.form.get('confirm_native_residual_prepare') == 'prepare',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_residual_plan_blocked',
+            status='warning',
+            title='Recovery Plan Blocked',
+            message=str(exc),
+            detail='Released/Handback evidence stays intact; no provider mutation was attempted.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_prepare'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_residual_plan_prepared',
+            status='info',
+            title='Recovery Plan Prepared',
+            message=f'Change {result["change_reference"]} · {result["residual_component_count"]} component(s).',
+            detail='An independent Platform Admin must review the exact committed Plan SHA.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_prepare'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/residual-recovery/approve')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def approve_native_residual_cleanup_route(tenant_id: str):
+    """Different authenticated Platform Admin approves; does not patch provider."""
+    try:
+        _csrf()
+        result = approve_native_residual_cleanup_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_native_residual_approval') == 'approve',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_residual_approval_blocked',
+            status='warning',
+            title='Independent Recovery Review Blocked',
+            message=str(exc),
+            detail='Plan SHA, actor separation, freshness and provider scope must agree.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_approve'},
+        )
+    else:
+        _record(
+            event_type='kubernetes_tenant_residual_approval_recorded',
+            status='info',
+            title='Recovery Plan Independently Approved',
+            message=f'Exact plan {result["plan_sha256"][:12]}… was approved, not executed.',
+            detail='Provider metadata remains unchanged until separately confirmed execution.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_approve'},
+        )
+    return _tenant_section_redirect('registry')
+
+
+@tenant_bp.post('/tenants/<string:tenant_id>/residual-recovery/execute')
+@permission_required('tenant.manage')
+@permission_required('integrations.manage')
+@permission_required('clusters.manage')
+def execute_native_residual_cleanup_route(tenant_id: str):
+    """Exact conditional metadata-only execution; never adopts or retries partials."""
+    try:
+        _csrf()
+        result = execute_native_residual_cleanup_committed(
+            tenant_id=tenant_id,
+            actor_user_id=int(current_user.id),
+            plan_sha256=str(request.form.get('plan_sha256') or ''),
+            confirmed=request.form.get('confirm_native_residual_execute') == 'execute',
+        )
+    except (ApiException, ValueError) as exc:
+        _record(
+            event_type='kubernetes_tenant_residual_execution_blocked',
+            status='error',
+            title='Native Residual Recovery Blocked',
+            message=str(exc),
+            detail='Provider write may have started. Inspect immutable execution evidence before any recovery.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_execute'},
+        )
+    except Exception:
+        # Do not expose provider exception internals/credential identifiers to
+        # clients. The committed in-progress receipt prevents blind replay.
+        _record(
+            event_type='kubernetes_tenant_residual_execution_unverified',
+            status='error',
+            title='Provider Recovery Needs Manual Review',
+            message='Execution result is uncertain; review provider state and committed audit.',
+            detail='Do not retry, manually delete labels, or force Re-adopt.',
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_execute'},
+        )
+    else:
+        verified = result.get('status') == 'verified'
+        _record(
+            event_type='kubernetes_tenant_residual_execution_verified'
+            if verified
+            else 'kubernetes_tenant_residual_execution_partial',
+            status='success' if verified else 'warning',
+            title='Metadata Recovery Verified' if verified else 'Recovery Review Required',
+            message=(
+                f'{result["verified_count"]} / {result["expected_component_count"]} provider components verified.'
+            ),
+            detail=(
+                'Run fresh Discovery and explicit Re-adopt; no automatic adoption occurred.'
+                if verified
+                else 'Partial recovery requires manual provider investigation; do not retry.'
+            ),
+            metadata={'tenant_id': tenant_id, 'operation': 'native_residual_execute'},
+        )
+    return _tenant_section_redirect('registry')
 
 
 @tenant_bp.post('/tenants/<string:tenant_id>/decommission')

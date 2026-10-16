@@ -1,4 +1,5 @@
 {% import "components/reporting_dashboard_workspace.html" as reporting_workspace %}
-{{ reporting_workspace.guidance('Kubernetes cluster',
+{% set reporting_scope = 'Selected Cluster' if dashboard.selected_cluster_id else 'All Clusters' %}
+{{ reporting_workspace.guidance(reporting_scope,
 'Committed cluster evidence',
 'cluster or namespace scope') }}

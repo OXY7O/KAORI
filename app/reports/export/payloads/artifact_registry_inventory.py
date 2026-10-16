@@ -24,6 +24,66 @@ def _severity_count(summary: dict[str, Any] | None, key: str) -> int:
         return 0
 
 
+def _inventory_rows(instance: IntegrationInstance, projects: list[RegistryProject]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for project in projects:
+        if not project.repositories:
+            rows.append(
+                {
+                    'entity_type': 'project',
+                    'registry': instance.name,
+                    'environment': instance.environment or 'Not Set',
+                    'project': project.name,
+                    'repository': None,
+                    'digest': None,
+                    'observed_at': getattr(project, 'observed_at', None),
+                }
+            )
+        for repository in project.repositories or ():
+            if not repository.artifacts:
+                rows.append(
+                    {
+                        'entity_type': 'repository',
+                        'registry': instance.name,
+                        'environment': instance.environment or 'Not Set',
+                        'project': project.name,
+                        'repository': repository.name,
+                        'digest': None,
+                        'observed_at': getattr(repository, 'observed_at', None),
+                    }
+                )
+            for artifact in repository.artifacts or ():
+                summary = dict(artifact.vulnerability_summary or {})
+                rows.append(
+                    {
+                        'entity_type': 'artifact',
+                        'registry': instance.name,
+                        'environment': instance.environment or 'Not Set',
+                        'project': project.name,
+                        'repository': repository.name,
+                        'digest': artifact.digest,
+                        'tags': ', '.join(tag.name for tag in artifact.tags or ()) or 'Untagged',
+                        'artifact_type': artifact.artifact_type or 'Not Available',
+                        'media_type': artifact.media_type or 'Not Available',
+                        'size_mib': (
+                            round(float(artifact.size_bytes) / (1024.0 * 1024.0), 2)
+                            if artifact.size_bytes is not None
+                            else None
+                        ),
+                        'scan_status': artifact.scan_status or 'not_collected',
+                        'critical_findings': _severity_count(summary, 'critical'),
+                        'high_findings': _severity_count(summary, 'high'),
+                        'signature_status': artifact.signature_status or 'not_collected',
+                        'sbom_status': artifact.sbom_status or 'not_collected',
+                        'push_time': artifact.push_time,
+                        'pull_time': artifact.pull_time,
+                        'observed_at': artifact.observed_at,
+                    }
+                )
+
+    return rows
+
+
 def get_report_artifact_registry_inventory_payload(report: Report) -> dict[str, Any]:
     """Return committed provider-neutral Artifact Registry evidence only."""
 
@@ -50,32 +110,7 @@ def get_report_artifact_registry_inventory_payload(report: Report) -> dict[str, 
         .all()
     )
 
-    rows: list[dict[str, Any]] = []
-    for project in projects:
-        for repository in project.repositories or ():
-            for artifact in repository.artifacts or ():
-                summary = dict(artifact.vulnerability_summary or {})
-                rows.append(
-                    {
-                        'registry': instance.name,
-                        'environment': instance.environment or 'Not Set',
-                        'project': project.name,
-                        'repository': repository.name,
-                        'digest': artifact.digest,
-                        'tags': ', '.join(tag.name for tag in artifact.tags or ()) or 'Untagged',
-                        'artifact_type': artifact.artifact_type or 'Not Available',
-                        'media_type': artifact.media_type or 'Not Available',
-                        'size_mib': round(float(artifact.size_bytes or 0) / (1024.0 * 1024.0), 2),
-                        'scan_status': artifact.scan_status or 'not_collected',
-                        'critical_findings': _severity_count(summary, 'critical'),
-                        'high_findings': _severity_count(summary, 'high'),
-                        'signature_status': artifact.signature_status or 'not_collected',
-                        'sbom_status': artifact.sbom_status or 'not_collected',
-                        'push_time': artifact.push_time,
-                        'pull_time': artifact.pull_time,
-                        'observed_at': artifact.observed_at,
-                    }
-                )
+    rows = _inventory_rows(instance, projects)
 
     cutoff = state.last_committed_at if state is not None else None
     return {

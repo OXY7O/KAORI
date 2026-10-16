@@ -35,8 +35,8 @@ def test_namespace_lifecycle_and_policy_semantics_are_factual() -> None:
     assert "'Transitioning', 'info'" in service
     assert "'Review Required', 'warning'" in service
     assert 'does not automatically indicate a compliance failure' in detail
-    assert 'Unset namespace controls remain neutral until evaluated against an explicit governance policy' in detail
-    assert 'does not infer cluster-level Pod Security Admission defaults' in detail
+    assert 'Unset controls remain neutral pending policy review' in detail
+    assert 'PSA defaults are not inferred' in detail
     assert 'Available For Workload Placement' not in detail
 
 

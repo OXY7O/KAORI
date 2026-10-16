@@ -50,6 +50,7 @@ class _SecurityResultSummary:
     synced: int
     partial_source_count: int
     repository_failure_count: int
+    report_failure_count: int
     artifact_count: int
     refreshed_reports: int
     reused_reports: int
@@ -57,7 +58,7 @@ class _SecurityResultSummary:
 
     @property
     def has_partial_refresh(self) -> bool:
-        return bool(self.partial_source_count or self.repository_failure_count)
+        return bool(self.partial_source_count or self.repository_failure_count or self.report_failure_count)
 
 
 def _checkpoint_source_progress(
@@ -217,6 +218,8 @@ def sync_registry_security_source_task(
         repository_failures = list(provider_metadata.get('repository_failures') or [])
         repository_failure_count = int(provider_metadata.get('repository_failure_count') or len(repository_failures))
         result['repository_failure_count'] = repository_failure_count
+        report_failures = list(provider_metadata.get('report_failures') or [])
+        result['report_failure_count'] = int(provider_metadata.get('report_failure_count') or len(report_failures))
 
         warning_evidence: list[dict[str, str]] = []
         for failure in repository_failures:
@@ -233,8 +236,23 @@ def sync_registry_security_source_task(
                     'message': str(failure.get('message') or '')[:500],
                 }
             )
+        for failure in report_failures:
+            if not isinstance(failure, dict):
+                continue
+            warning_evidence.append(
+                {
+                    'integration_instance_id': source_key,
+                    'instance_name': instance_name,
+                    'provider_key': result['provider_key'],
+                    'project_name': str(failure.get('project_name') or ''),
+                    'repository_name': str(failure.get('repository_name') or ''),
+                    'digest': str(failure.get('digest') or ''),
+                    'error_type': 'VulnerabilityReportIncomplete',
+                    'message': str(failure.get('message') or '')[:500],
+                }
+            )
         result['warning_evidence'] = warning_evidence[:50]
-        result['status'] = 'warning' if repository_failure_count else 'success'
+        result['status'] = 'warning' if repository_failure_count or result['report_failure_count'] else 'success'
     except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
         db.session.rollback()
         result['status'] = 'error'
@@ -293,6 +311,7 @@ def _summarize_security_results(source_results: list[dict[str, Any]]) -> _Securi
         synced=sum(1 for item in normalized_results if str(item.get('status') or '') != 'error'),
         partial_source_count=sum(1 for item in normalized_results if str(item.get('status') or '') == 'warning'),
         repository_failure_count=sum(int(item.get('repository_failure_count') or 0) for item in normalized_results),
+        report_failure_count=sum(int(item.get('report_failure_count') or 0) for item in normalized_results),
         artifact_count=sum(int(item.get('artifact_count') or 0) for item in normalized_results),
         refreshed_reports=sum(int(item.get('refreshed_report_count') or 0) for item in normalized_results),
         reused_reports=sum(int(item.get('reused_report_count') or 0) for item in normalized_results),
@@ -335,7 +354,8 @@ def _finalize_security_result(
         ),
         'message': (
             f'{summary.synced} Registry provider(s) synchronized; {len(summary.failures)} failed; '
-            f'{summary.repository_failure_count} repository refresh warning(s).'
+            f'{summary.repository_failure_count} repository refresh warning(s); '
+            f'{summary.report_failure_count} vulnerability report failure(s).'
         ),
         'detail': detail,
         'total_count': source_total,
@@ -347,6 +367,7 @@ def _finalize_security_result(
         'finding_count': summary.finding_count,
         'partial_source_count': summary.partial_source_count,
         'repository_failure_count': summary.repository_failure_count,
+        'report_failure_count': summary.report_failure_count,
         'failure_evidence': summary.failures,
         'warning_evidence': summary.warning_evidence[:50],
         'requested_by_user_id': requested_by_user_id,

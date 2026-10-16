@@ -6,6 +6,7 @@ from typing import Any
 from flask import current_app
 
 from app.common.analytics.metrics import MetricsSourceError
+from app.common.analytics.params import ALLOWED_TIME_RANGE_VALUES
 from app.common.job_execution_contract import (
     OBJECT_STORAGE_ANALYTICS_MATERIALIZE_OPERATION,
     OBJECT_STORAGE_FORECAST_MATERIALIZE_OPERATION,
@@ -42,7 +43,7 @@ def _configured_windows(policy: JobPolicy) -> list[str]:
 
 def _configured_time_ranges(policy: JobPolicy) -> list[str]:
     configuration = policy.configuration_json or {}
-    allowed = {'1h', '6h', '12h', '24h', '7d', '30d', '60d'}
+    allowed = set(ALLOWED_TIME_RANGE_VALUES)
     ranges = [str(value) for value in configuration.get('time_ranges') or ['24h', '7d', '30d', '60d']]
     normalized = list(dict.fromkeys(value for value in ranges if value in allowed))
     if '24h' not in normalized:
@@ -74,6 +75,12 @@ def _work_items(
     requested_history_window: str | None = None,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     eligible, diagnostics = _eligible_systems()
+    pending_inventory = [system.name for system in eligible if system.inventory_observed_at is None]
+    if pending_inventory:
+        diagnostics.extend(
+            f'{name}: Object Storage Inventory Sync Required before forecasting.' for name in pending_inventory
+        )
+    eligible = [system for system in eligible if system.inventory_observed_at is not None]
     if requested_system_id:
         eligible = [system for system in eligible if str(system.id) == requested_system_id]
     configuration = policy.configuration_json or {}
@@ -115,9 +122,7 @@ def _analytics_work_items(
     stale_grace_minutes = int(configuration.get('stale_grace_minutes') or 1440)
     time_ranges = _configured_time_ranges(policy)
     if requested_time_range:
-        time_ranges = (
-            [requested_time_range] if requested_time_range in {'1h', '6h', '12h', '24h', '7d', '30d', '60d'} else []
-        )
+        time_ranges = [requested_time_range] if requested_time_range in ALLOWED_TIME_RANGE_VALUES else []
     items: list[dict[str, Any]] = []
     for system in eligible:
         for time_range in time_ranges:
@@ -361,6 +366,12 @@ def dispatch_object_storage_forecast_materialization(
 
 def build_object_storage_forecast_materialization_context(policy: JobPolicy) -> dict[str, Any]:
     eligible, diagnostics = _eligible_systems()
+    pending_inventory = [system.name for system in eligible if system.inventory_observed_at is None]
+    if pending_inventory:
+        diagnostics.extend(
+            f'{name}: Object Storage Inventory Sync Required before forecasting.' for name in pending_inventory
+        )
+    eligible = [system for system in eligible if system.inventory_observed_at is not None]
     windows = _configured_windows(policy)
     states: list[dict[str, Any]] = []
     for system in eligible:

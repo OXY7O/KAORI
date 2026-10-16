@@ -164,12 +164,14 @@
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="library" class="h-5 w-5"></i></span>
                         <div class="min-w-0">
-                            <h2 class="{{ table_ui.block_title_classes() }}">Template Registry</h2>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="{{ table_ui.block_title_classes() }}">Template Registry</h2>
+                                {{ table_label.result_count(payload.pagination.total_items) }}
+                            </div>
                             <p class="{{ table_ui.block_description_classes() }}">Review protected system definitions and reusable custom report contracts.</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        {{ table_label.metadata_label(payload.pagination.total_items ~ ' Templates', 'layout-template') }}
                         {% if payload.active_filter_count > 0 %}
                             {{ registry_ui.clear_filters_link('reports.report_templates',
                                                         'templates-registry',
@@ -439,34 +441,46 @@
                                         </div>
                                     </section>
                                     <div class="flex flex-wrap items-center justify-end gap-2 border-t border-outline-subtle pt-4">
-                                        {% if template.can_generate %}
+                                        {% if template.can_generate and current_user.has_permission('reports.generate') %}
                                             <a href="{{ template.generate_href }}"
                                                class="{{ table_ui.action_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>Generate Report</a>
+                                        {% elif template.can_generate %}
+                                            <span class="{{ table_ui.action_classes() }} cursor-not-allowed opacity-60"
+                                                  aria-disabled="true"
+                                                  title="Generate Report permission is required."><i data-lucide="lock-keyhole" class="h-4 w-4" aria-hidden="true"></i>Generate Access Required</span>
+                                        {% elif template.source == 'custom' and not template.contract_valid %}
+                                            <span class="{{ table_ui.action_classes() }} cursor-not-allowed opacity-60"
+                                                  aria-disabled="true"
+                                                  title="{{ template.contract_errors|join(' ') }}"><i data-lucide="shield-alert" class="h-4 w-4" aria-hidden="true"></i>Contract Needs Review</span>
                                         {% else %}
                                             <span class="{{ table_ui.action_classes() }} cursor-not-allowed opacity-60"
                                                   aria-disabled="true"
                                                   title="Activate this custom template before using it to generate a report."><i data-lucide="pause" class="h-4 w-4" aria-hidden="true"></i>Activate to Generate</span>
                                         {% endif %}
                                         {% if template.source == 'system' %}
-                                            <form method="POST" action="{{ template.duplicate_href }}">
-                                                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
-                                                <button type="submit"
-                                                        data-operation-submit
-                                                        data-loading-label="Creating Custom Template..."
-                                                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
-                                            </form>
+                                            {% if template.can_duplicate %}
+                                                <form method="POST" action="{{ template.duplicate_href }}">
+                                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                    <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
+                                                    <button type="submit"
+                                                            data-operation-submit
+                                                            data-loading-label="Creating Custom Template..."
+                                                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
+                                                </form>
+                                            {% endif %}
                                         {% else %}
                                             <a href="{{ template.edit_href }}"
                                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Template</a>
-                                            <form method="POST" action="{{ template.duplicate_href }}">
-                                                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
-                                                <button type="submit"
-                                                        data-operation-submit
-                                                        data-loading-label="Duplicating Template..."
-                                                        class="{{ table_ui.action_classes() }}"><i data-lucide="copy" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Duplicate</span></button>
-                                            </form>
+                                            {% if template.can_duplicate %}
+                                                <form method="POST" action="{{ template.duplicate_href }}">
+                                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                    <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
+                                                    <button type="submit"
+                                                            data-operation-submit
+                                                            data-loading-label="Duplicating Template..."
+                                                            class="{{ table_ui.action_classes() }}"><i data-lucide="copy" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Duplicate</span></button>
+                                                </form>
+                                            {% endif %}
                                             <button type="button"
                                                     data-kaori-dialog-open
                                                     data-dialog-target="template-delete-{{ loop.index }}"
@@ -540,10 +554,22 @@
             <form method="POST"
                   action="{{ template_form_action }}"
                   data-template-form
-                  data-template-open-form-dialog="{{ 'true' if template_form_is_edit else 'false' }}"
+                  data-template-open-form-dialog="{{ 'true' if template_form_is_edit or payload.get('form_errors') else 'false' }}"
+                  data-template-has-server-errors="{{ 'true' if payload.get('form_errors') else 'false' }}"
                   class="space-y-5">
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                 <input type="hidden" name="next" value="{{ payload.registry_return_url }}">
+                {% if payload.get('form_errors') %}
+                    <div role="alert"
+                         aria-live="assertive"
+                         data-template-server-validation
+                         class="rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft px-4 py-3 text-sm text-status-critical-text">
+                        <p class="font-semibold">Report Template Validation Failed</p>
+                        <ul class="mt-2 list-disc space-y-1 pl-5">
+                            {% for error in payload.form_errors %}<li>{{ error }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
                 <section class="grid gap-4 sm:grid-cols-2">
                     <label class="block sm:col-span-2">
                         <span class="text-xs font-semibold text-content-muted">Template Name</span>
@@ -563,6 +589,9 @@
                         <select name="report_type"
                                 data-template-report-type
                                 class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            {% if payload.get('form_errors') and template_form.report_type not in payload.report_family_by_report_type %}
+                                <option value="" selected disabled>Choose a valid report type (previous: {{ template_form.report_type or 'none' }})</option>
+                            {% endif %}
                             {% for option in payload.filter_options.report_types %}
                                 {% if option.value %}
                                     <option value="{{ option.value }}"
@@ -576,6 +605,9 @@
                         <select name="output_format"
                                 data-template-output-format
                                 class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            {% if payload.get('form_errors') and template_form.output_format not in payload.allowed_formats_by_report_type.get(template_form.report_type, []) %}
+                                <option value="" selected disabled>Choose a supported output (previous: {{ template_form.output_format or 'none' }})</option>
+                            {% endif %}
                             {% for option in payload.output_format_options %}
                                 <option value="{{ option.value }}"
                                         {% if template_form.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -586,6 +618,9 @@
                         <span class="text-xs font-semibold text-content-muted">Template Status</span>
                         <select name="status"
                                 class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            {% if payload.get('form_errors') and template_form.status not in ['draft', 'active'] %}
+                                <option value="" selected disabled>Choose a valid status (previous: {{ template_form.status or 'none' }})</option>
+                            {% endif %}
                             <option value="draft"
                                     {% if template_form.status == 'draft' %}selected{% endif %}>Draft</option>
                             <option value="active"

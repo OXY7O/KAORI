@@ -1,17 +1,18 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
+{% set provider_authority_embedded = provider_authority_embedded|default(false) %}
 {% set registry_id = "operations-provider-authority-registry" %}
 {% set loading_id = "operations-provider-authority-loading" %}
 {% set query_params = {
-    'tab': 'drift-reconcile',
+    'tab': 'operational-reconcile',
     'ops_provider_search': operations_provider_filters.search,
     'ops_provider_cluster_id': operations_provider_filters.cluster_id,
     'ops_provider_environment': operations_provider_filters.environment,
     'ops_provider_lifecycle': operations_provider_filters.lifecycle_status
 } %}
 <section id="{{ registry_id }}"
-         class="{{ table_ui.block_classes() }}"
+         class="{{ 'bg-surface-card' if provider_authority_embedded else table_ui.block_classes() }}"
          aria-label="Provider Authority Registry">
     {% set header_actions %}
         {% if operations_provider_filters.search or operations_provider_filters.cluster_id or operations_provider_filters.environment or operations_provider_filters.lifecycle_status %}
@@ -20,20 +21,35 @@
                         loading_id,
                         operations_provider_pagination.per_page,
                         table_ui.action_classes() ,
-            query_params={'tab': 'drift-reconcile'},
+            query_params={'tab': 'operational-reconcile'},
             page_param='ops_provider_page',
             per_page_param='ops_provider_per_page'
             ) }}
         {% endif %}
     {% endset %}
-    {{ table_ui.inventory_block_header('shield-check',
-        'Provider Authority',
-        'Committed provider ownership and reconciliation authority for every Tenant.',
-        loading_id,
-        'Refreshing Provider Authority',
-        none,
-        none,
-        header_actions=header_actions) }}
+    {% if provider_authority_embedded %}
+        <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 sm:px-5">
+            <p class="text-xs leading-5 text-content-muted">Committed Tenant provider and reconciliation authority.</p>
+            <div class="flex flex-wrap items-center gap-3">
+                {{ header_actions }}
+                <a href="{{ url_for('tenant.tenants', section='registry') }}"
+                   class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    Tenant Registry
+                    <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                </a>
+            </div>
+        </div>
+    {% else %}
+        {{ table_ui.inventory_block_header('shield-check',
+                'Provider Authority',
+                'Committed provider ownership and reconciliation authority for every Tenant.',
+                loading_id,
+                'Refreshing Provider Authority',
+                none,
+                none,
+                header_actions=header_actions,
+                result_count=operations_provider_pagination.total_items) }}
+    {% endif %}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.operations',
@@ -43,7 +59,7 @@
             page_param='ops_provider_page',
             per_page_param='ops_provider_per_page'
             ) %}
-            <input type="hidden" name="tab" value="drift-reconcile">
+            <input type="hidden" name="tab" value="operational-reconcile">
             <div>
                 <label for="ops-provider-cluster"
                        class="{{ table_ui.filter_label_classes() }}">Cluster</label>
@@ -91,44 +107,51 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[860px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[980px] !table-fixed' if operations_provider_rows else '!table-fixed') }}">
             <caption class="sr-only">Tenant provider authority registry.</caption>
-            <thead class="{{ table_ui.head_classes() }}">
-                <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Cluster / Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Authority</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Lifecycle</th>
-                </tr>
-            </thead>
+            {% if operations_provider_rows %}
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Tenant</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[28%]">Cluster / Environment</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[31%]">Provider / Authority</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Lifecycle</th>
+                    </tr>
+                </thead>
+            {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for row in operations_provider_rows %}
                     {% set tenant = row.tenant %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(tenant.name, tenant.slug, 'building-2') }}</td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ row.cluster.name if row.cluster else 'Unknown cluster' }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ row.environments|map("title") |join(', ') if row.environments else 'No environment' }} · {{ row.namespace_count }} active Namespace{{ '' if row.namespace_count == 1 else 's' }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">{{ table_ui.title_cell(tenant.name, tenant.slug, 'building-2') }}</td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ row.cluster.name if row.cluster else 'Unknown cluster' }}">{{ row.cluster.name if row.cluster else 'Unknown cluster' }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ row.environments|map('title') |join(', ') if row.environments else 'No environment' }} · {{ row.namespace_count }} active Namespace{{ '' if row.namespace_count == 1 else 's' }}">{{ row.environments|map("title") |join(', ') if row.environments else 'No environment' }} · {{ row.namespace_count }} active Namespace{{ '' if row.namespace_count == 1 else 's' }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label(tenant.provider_state|replace('_', ' ') |title, 'normal' if tenant.provider_state in ['native', 'capsule'] else 'warning') }}
-                            <p class="mt-1 text-xs text-content-muted">{{ tenant.provider_key|replace('_', ' ') |title }}</p>
+                            <p class="mt-1 text-xs font-medium text-content-primary min-w-0 max-w-full truncate"
+                               title="Reconciliation authority: {{ tenant.reconciliation_authority|replace('_', ' ') |title }}">
+                                Authority: {{ tenant.reconciliation_authority|replace('_', ' ') |title }}
+                            </p>
+                            <p class="mt-0.5 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="Provider key: {{ tenant.provider_key }}">{{ tenant.provider_key|replace('_', ' ') |title }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ tenant.reconciliation_authority|replace('_', ' ') |title }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Effective mutation authority</p>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.status_label(tenant.lifecycle_status|replace('_', ' ') |title, 'normal' if tenant.lifecycle_status == 'ready' else 'warning') }}
                         </td>
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="5" class="p-0">
+                        <td colspan="4" class="p-0">
                             {% set empty_state_icon = "shield-check" %}
                             {% set empty_state_title = "No Provider Authority Records" %}
                             {% set empty_state_description = "Adjust filters or create/adopt a governed Tenant." %}
+                            {% set empty_state_label = "" %}
+                            {% set empty_state_min_height = "min-h-[128px]" %}
+                            {% set empty_state_container_class = "!py-5" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -136,17 +159,15 @@
             </tbody>
         </table>
     </div>
-    {% if operations_provider_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.operations',
-                registry_id,
-                loading_id,
-                operations_provider_pagination,
-                query_params,
-                operations_provider_pagination.allowed_per_page,
-                resource_label='Tenants',
-                rows_aria_label='Provider Authority rows per page',
-                control_name='operations-provider',
-                page_param='ops_provider_page',
-                per_page_param='ops_provider_per_page') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.operations',
+        registry_id,
+        loading_id,
+        operations_provider_pagination,
+        query_params,
+        operations_provider_pagination.allowed_per_page,
+        resource_label='Tenants',
+        rows_aria_label='Provider Authority rows per page',
+        control_name='operations-provider',
+        page_param='ops_provider_page',
+        per_page_param='ops_provider_per_page') }}
 </section>

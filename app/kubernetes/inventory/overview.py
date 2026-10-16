@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy import func
 
 from app.common.inventory_generation import filter_current_generation
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.models import (
     Cluster,
@@ -50,10 +51,36 @@ def _is_stale_inventory(value: datetime | None) -> bool:
     return age.total_seconds() > INVENTORY_FRESHNESS_HOURS * 3600
 
 
+def _collection_evidence_complete(evidence: dict[str, Any] | None) -> bool:
+    """A timestamp alone never establishes complete resource-family collection."""
+    return bool(evidence) and all(state == 'Collected' for state in evidence.values())
+
+
+def _collection_evidence_exceptions(
+    evidence: dict[str, Any] | None, synced_at: datetime | None
+) -> list[tuple[str, str]]:
+    if synced_at is None:
+        return []
+    if not evidence:
+        return [('inventory', 'Not Reported')]
+    return [(name, str(state)) for name, state in evidence.items() if state != 'Collected']
+
+
+def _connection_presentation(value: str | None) -> tuple[str, str]:
+    key = str(value or '').strip().lower()
+    if key == 'connected':
+        return 'Connected', 'normal'
+    if key == 'failed':
+        return 'Disconnected', 'critical'
+    return 'Not Observed', 'unknown'
+
+
 def _build_inventory_signals(
     *,
     connected: bool,
     synced_at: datetime | None,
+    connection_status: str,
+    collection_evidence: dict[str, Any] | None,
     node_count: int,
     workload_count: int,
     pod_count: int,
@@ -64,11 +91,13 @@ def _build_inventory_signals(
     if not connected:
         signals.append(
             {
-                'label': 'Connection Risk',
-                'tone': 'critical',
+                'label': 'Connection Risk' if connection_status == 'failed' else 'Connection Not Observed',
+                'tone': 'critical' if connection_status == 'failed' else 'unknown',
                 'icon': 'plug-zap',
                 'description': (
-                    'The cluster connection is unavailable, so future inventory updates cannot be confirmed.'
+                    'Cluster connection is reported failed; future inventory updates cannot be confirmed.'
+                    if connection_status == 'failed'
+                    else 'Current cluster connection readiness has not been observed.'
                 ),
             }
         )
@@ -91,6 +120,16 @@ def _build_inventory_signals(
                 'description': (
                     f'The latest snapshot is older than the {INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
                 ),
+            }
+        )
+
+    if _collection_evidence_exceptions(collection_evidence, synced_at):
+        signals.append(
+            {
+                'label': 'Collection Incomplete',
+                'tone': 'warning',
+                'icon': 'database-zap',
+                'description': 'Some resource families lack complete committed collection evidence.',
             }
         )
 
@@ -124,15 +163,19 @@ def _inventory_guidance(
     connected: bool,
     synced_at: datetime | None,
     signals: list[dict[str, str]],
+    connection_status: str = 'unknown',
+    collection_evidence: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     if not connected:
         return {
-            'title': 'Restore Cluster Connection',
+            'title': 'Restore Cluster Connection' if connection_status == 'failed' else 'Verify Cluster Connection',
             'description': (
                 'Reconnect the cluster before relying on future inventory updates or '
                 'using this snapshot for operational decisions.'
+                if connection_status == 'failed'
+                else 'Check provider readiness: the cluster connection state has not been observed.'
             ),
-            'tone': 'critical',
+            'tone': 'critical' if connection_status == 'failed' else 'unknown',
             'icon': 'plug-zap',
         }
     if synced_at is None:
@@ -155,6 +198,16 @@ def _inventory_guidance(
             'tone': 'warning',
             'icon': 'refresh-cw',
         }
+    if _collection_evidence_exceptions(collection_evidence, synced_at):
+        return {
+            'title': 'Review Collection Coverage',
+            'description': (
+                'The latest committed snapshot has missing or incomplete resource-family collection evidence. '
+                'Review synchronization results before interpreting absent assets as zero.'
+            ),
+            'tone': 'warning',
+            'icon': 'database-zap',
+        }
     if signals:
         return {
             'title': 'Review Inventory Signals',
@@ -166,10 +219,7 @@ def _inventory_guidance(
         }
     return {
         'title': 'Snapshot Ready for Review',
-        'description': (
-            'The committed snapshot is current and no inventory signals require immediate '
-            'attention. Continue to an asset inventory for object-level review.'
-        ),
+        'description': 'Snapshot current; no active signals. Review assets.',
         'tone': 'normal',
         'icon': 'circle-check',
     }
@@ -198,11 +248,13 @@ def _grouped_current_counts(model: Any, cluster_ids: list[Any]) -> dict[Any, int
     }
 
 
-def get_inventory_cluster_summary() -> tuple[
+def get_inventory_cluster_summary(
+    clusters: list[Cluster] | None = None,
+) -> tuple[
     list[Cluster],
     dict[str, dict[str, Any]],
 ]:
-    clusters = get_inventory_clusters()
+    clusters = get_inventory_clusters() if clusters is None else clusters
     cluster_ids = [cluster.id for cluster in clusters]
 
     inventories: dict[str, ClusterInventory] = {}
@@ -249,8 +301,10 @@ def _selected_freshness_scope(
     exceptions = [
         (cluster.name, family, state)
         for cluster in selected
-        for family, state in (summary.get(cluster.id, {}).get('collection_evidence') or {}).items()
-        if state != 'Collected'
+        for family, state in _collection_evidence_exceptions(
+            summary.get(cluster.id, {}).get('collection_evidence'),
+            summary.get(cluster.id, {}).get('synced_at'),
+        )
     ]
     return selected, committed, exceptions
 
@@ -349,9 +403,15 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
         'collection_exception_count': collection_exception_count,
         'collection_exceptions': collection_exceptions,
         'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
-        'scope_label': selected[0].name if selected_count == 1 else f'{selected_count} Clusters',
+        'scope_label': (
+            selected[0].name
+            if cluster_id and selected_count == 1
+            else f'{selected_count} Cluster'
+            if selected_count == 1
+            else f'{selected_count} Clusters'
+        ),
         'scope_supporting': 'Selected cluster'
-        if selected_count == 1
+        if cluster_id and selected_count == 1
         else ('Fleet scope' if selected_count else 'No active scope'),
         'latest_supporting': f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window'
         if latest
@@ -438,7 +498,99 @@ def _asset_catalog(totals: dict[str, int]) -> list[dict[str, Any]]:
     ]
 
 
-def get_inventory_overview() -> dict[str, Any]:
+def _cluster_overview_row(
+    cluster: Cluster,
+    inventory_summary: dict[str, dict[str, Any]],
+    count_maps: dict[str, dict[str, int]],
+) -> dict[str, Any]:
+    summary = inventory_summary.get(cluster.id, {})
+    synced_at = summary.get('synced_at')
+    counts = {key: values.get(cluster.id, 0) for key, values in count_maps.items()}
+    total_objects = sum(counts.values())
+    sync_label, sync_tone = _sync_status(synced_at)
+    connected = cluster.status == 'connected'
+    collection_evidence = summary.get('collection_evidence') or {}
+    connection_label, connection_tone = _connection_presentation(cluster.status)
+    signals = _build_inventory_signals(
+        connected=connected,
+        synced_at=synced_at,
+        connection_status=cluster.status,
+        collection_evidence=collection_evidence,
+        node_count=counts['nodes'],
+        workload_count=counts['workloads'],
+        pod_count=counts['pods'],
+        storage_count=counts['storage'],
+    )
+    populated_asset_types = sum(1 for count in counts.values() if count > 0)
+    dominant_asset_key = max(counts, key=lambda asset_key: counts[asset_key]) if total_objects else None
+    dominant_asset = (
+        {
+            'label': INVENTORY_ASSET_LABELS[dominant_asset_key],
+            'count': counts[dominant_asset_key],
+        }
+        if dominant_asset_key
+        else {'label': 'No Assets', 'count': 0}
+    )
+
+    return {
+        'id': cluster.id,
+        'name': cluster.name,
+        'environment': cluster.environment,
+        'status': cluster.status,
+        'connection_label': connection_label,
+        'connection_tone': connection_tone,
+        'kubernetes_version': summary.get('version') or '-',
+        'synced_at': synced_at,
+        'sync_status_label': sync_label,
+        'sync_status_tone': sync_tone,
+        'counts': counts,
+        'total_objects': total_objects,
+        'signals': signals,
+        'populated_asset_types': populated_asset_types,
+        'dominant_asset': dominant_asset,
+        'snapshot_source': 'Committed Snapshot',
+        'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
+        'guidance': _inventory_guidance(
+            connected=connected,
+            synced_at=synced_at,
+            signals=signals,
+            connection_status=cluster.status,
+            collection_evidence=collection_evidence,
+        ),
+    }
+
+
+def _fleet_active_signal_count(
+    clusters: list[Cluster],
+    inventory_summary: dict[str, dict[str, Any]],
+    count_maps: dict[str, dict[str, int]],
+) -> int:
+    """Count fleet signals without materializing every full cluster detail DTO."""
+    total = 0
+    for cluster in clusters:
+        summary = inventory_summary.get(cluster.id, {})
+        counts = {key: mapping.get(cluster.id, 0) for key, mapping in count_maps.items()}
+        total += len(
+            _build_inventory_signals(
+                connected=cluster.status == 'connected',
+                connection_status=cluster.status,
+                collection_evidence=summary.get('collection_evidence') or {},
+                synced_at=summary.get('synced_at'),
+                node_count=counts['nodes'],
+                workload_count=counts['workloads'],
+                pod_count=counts['pods'],
+                storage_count=counts['storage'],
+            )
+        )
+    return total
+
+
+def get_inventory_overview(*, cluster_page: int = 1, cluster_per_page: int = 5) -> dict[str, Any]:
+    page_clusters, resources_pagination = paginate_query(
+        Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()),
+        page=cluster_page,
+        per_page=cluster_per_page,
+    )
     clusters, inventory_summary = get_inventory_cluster_summary()
     cluster_ids = [cluster.id for cluster in clusters]
 
@@ -453,72 +605,18 @@ def get_inventory_overview() -> dict[str, Any]:
         'configuration': _grouped_current_counts(ConfigurationInventory, cluster_ids),
     }
 
-    cluster_rows: list[dict[str, Any]] = []
-    for cluster in clusters:
-        summary = inventory_summary.get(cluster.id, {})
-        synced_at = summary.get('synced_at')
-        counts = {key: values.get(cluster.id, 0) for key, values in count_maps.items()}
-        total_objects = sum(counts.values())
-        sync_label, sync_tone = _sync_status(synced_at)
-        connected = cluster.status == 'connected'
-        signals = _build_inventory_signals(
-            connected=connected,
-            synced_at=synced_at,
-            node_count=counts['nodes'],
-            workload_count=counts['workloads'],
-            pod_count=counts['pods'],
-            storage_count=counts['storage'],
-        )
-        populated_asset_types = sum(1 for count in counts.values() if count > 0)
-        dominant_asset_key = max(counts, key=lambda asset_key: counts[asset_key]) if total_objects else None
-        dominant_asset = (
-            {
-                'label': INVENTORY_ASSET_LABELS[dominant_asset_key],
-                'count': counts[dominant_asset_key],
-            }
-            if dominant_asset_key
-            else {'label': 'No Assets', 'count': 0}
-        )
+    cluster_rows = [_cluster_overview_row(cluster, inventory_summary, count_maps) for cluster in page_clusters]
 
-        cluster_rows.append(
-            {
-                'id': cluster.id,
-                'name': cluster.name,
-                'environment': cluster.environment,
-                'status': cluster.status,
-                'kubernetes_version': summary.get('version') or '-',
-                'synced_at': synced_at,
-                'sync_status_label': sync_label,
-                'sync_status_tone': sync_tone,
-                'counts': counts,
-                'total_objects': total_objects,
-                'signals': signals,
-                'populated_asset_types': populated_asset_types,
-                'dominant_asset': dominant_asset,
-                'snapshot_source': 'Committed Snapshot',
-                'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
-                'guidance': _inventory_guidance(
-                    connected=connected,
-                    synced_at=synced_at,
-                    signals=signals,
-                ),
-            }
-        )
-
+    # Grouped counts already cover every registered cluster in its committed
+    # generation. Reuse that same evidence for global totals instead of eight
+    # additional COUNT queries over the identical resource families.
     totals = {
-        'clusters': _count_rows(Cluster),
-        'nodes': _count_rows(NodeInventory),
-        'namespaces': _count_rows(NamespaceInventory),
-        'workloads': _count_rows(WorkloadInventory),
-        'pods': _count_rows(PodInventory),
-        'services': _count_rows(ServiceInventory),
-        'ingresses': _count_rows(IngressInventory),
-        'storage': _count_rows(StorageInventory),
-        'configuration': _count_rows(ConfigurationInventory),
+        'clusters': len(clusters),
+        **{key: sum(per_cluster.values()) for key, per_cluster in count_maps.items()},
     }
     inventory_total = sum(value for key, value in totals.items() if key != 'clusters')
     asset_catalog = _asset_catalog(totals)
-    active_signal_count = sum(len(cluster['signals']) for cluster in cluster_rows)
+    active_signal_count = _fleet_active_signal_count(clusters, inventory_summary, count_maps)
     health = get_inventory_health()
     total_clusters = totals['clusters']
     posture_status = (
@@ -540,6 +638,7 @@ def get_inventory_overview() -> dict[str, Any]:
         'asset_catalog': asset_catalog,
         'active_signal_count': active_signal_count,
         'clusters': cluster_rows,
+        'resources_pagination': resources_pagination,
         'inventory_summary': inventory_summary,
         'health': health,
         'posture': {
@@ -550,12 +649,23 @@ def get_inventory_overview() -> dict[str, Any]:
 
 
 def get_inventory_overview_cluster_detail(cluster_id: str) -> dict[str, Any] | None:
-    """Return one committed cluster-inventory overview row for detail presentation."""
-    normalized_id = str(cluster_id)
-    return next(
-        (cluster for cluster in get_inventory_overview()['clusters'] if str(cluster['id']) == normalized_id),
-        None,
-    )
+    """Project only the selected cluster and its committed resource counts."""
+    cluster = get_cluster_by_id(str(cluster_id))
+    if cluster is None:
+        return None
+    _, summary = get_inventory_cluster_summary([cluster])
+    ids = [cluster.id]
+    count_maps = {
+        'nodes': _grouped_current_counts(NodeInventory, ids),
+        'namespaces': _grouped_current_counts(NamespaceInventory, ids),
+        'workloads': _grouped_current_counts(WorkloadInventory, ids),
+        'pods': _grouped_current_counts(PodInventory, ids),
+        'services': _grouped_current_counts(ServiceInventory, ids),
+        'ingresses': _grouped_current_counts(IngressInventory, ids),
+        'storage': _grouped_current_counts(StorageInventory, ids),
+        'configuration': _grouped_current_counts(ConfigurationInventory, ids),
+    }
+    return _cluster_overview_row(cluster, summary, count_maps)
 
 
 def _count_rows(model: Any) -> int:
@@ -601,7 +711,7 @@ def get_inventory_health() -> dict[str, Any]:
             stale_synced += 1
         else:
             fresh_synced += 1
-            if connected:
+            if connected and _collection_evidence_complete(inventory.collection_evidence):
                 healthy_clusters += 1
 
         if collected_at and (last_sync is None or collected_at > last_sync):

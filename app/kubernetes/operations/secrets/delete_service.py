@@ -8,10 +8,6 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
-    tls_policy_for_cluster,
-)
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.kubernetes.operations.secrets.contracts import SecretOperationResult
 from app.kubernetes.operations.secrets.impact import get_secret_impact_context
 from app.kubernetes.operations.secrets.live_service import (
@@ -161,11 +157,10 @@ def _validate_delete_authorization(target: LiveSecretSnapshot) -> None:
         )
     )
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(target.cluster)[1]):
-            response = authorization_api(target.cluster).create_self_subject_access_review(
-                body=review,
-                _request_timeout=10,
-            )
+        response = authorization_api(target.cluster).create_self_subject_access_review(
+            body=review,
+            _request_timeout=10,
+        )
     except ApiException as exc:
         if exc.status == 401:
             raise ValueError('Kubernetes authentication failed while validating Secret delete access.') from exc
@@ -214,13 +209,12 @@ def execute_secret_deletion(
                 propagation_policy='Background',
                 preconditions=V1Preconditions(resource_version=resource_version),
             )
-            with weak_tls_context(enabled=tls_policy_for_cluster(target.cluster)[1]):
-                core_api(target.cluster).delete_namespaced_secret(
-                    name=target.name,
-                    namespace=target.namespace,
-                    body=body,
-                    _request_timeout=10,
-                )
+            core_api(target.cluster).delete_namespaced_secret(
+                name=target.name,
+                namespace=target.namespace,
+                body=body,
+                _request_timeout=10,
+            )
     except ApiException as exc:
         raise ValueError(_api_error_message(exc)) from exc
     except ConfigException as exc:

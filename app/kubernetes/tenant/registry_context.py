@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from sqlalchemy import case, func, or_
+from sqlalchemy.orm import joinedload
 
 from app.common.pagination import paginate_query
 from app.common.presentation import present_user_datetime
@@ -24,7 +25,7 @@ from app.kubernetes.tenant.service_contracts import (
     RESOURCE_PROFILE_ADVANCED_CONTROLS,
     RESOURCE_PROFILE_PRESETS,
 )
-from app.models import Cluster
+from app.models import AuditEvent, Cluster
 from app.models.cluster import ClusterStatus
 from app.models.kubernetes import KubernetesConnection
 from app.models.tenant import (
@@ -67,11 +68,18 @@ def get_tenant_shell_context() -> dict[str, Any]:
     return {
         'ready_clusters': ready_clusters,
         'tenant_count': Tenant.query.filter(
-            Tenant.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value
+            Tenant.lifecycle_status.notin_(
+                (TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value)
+            )
         ).count(),
         'profile_count': TenantResourceProfile.query.count(),
         'namespace_count': TenantNamespace.query.filter(
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
+            TenantNamespace.provisioning_status.notin_(
+                (
+                    TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                    TenantNamespaceProvisioningStatus.RELEASED.value,
+                )
+            )
         ).count(),
         'ready_namespace_count': TenantNamespace.query.filter_by(
             provisioning_status=TenantNamespaceProvisioningStatus.READY.value
@@ -106,7 +114,12 @@ def get_resource_profile_workspace_context() -> dict[str, Any]:
                 profile_class=TenantResourceProfileClass.CUSTOM.value
             ).count(),
             'active_allocations': TenantNamespace.query.filter(
-                TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                TenantNamespace.provisioning_status.notin_(
+                    (
+                        TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                        TenantNamespaceProvisioningStatus.RELEASED.value,
+                    )
+                ),
                 TenantNamespace.resource_profile_id.isnot(None),
             ).count(),
         },
@@ -167,7 +180,12 @@ def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[
         .join(TenantResourceProfile, TenantResourceProfile.id == TenantNamespace.resource_profile_id)
         .filter(
             TenantNamespace.resource_profile_id.in_(profile_ids),
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+            TenantNamespace.provisioning_status.notin_(
+                (
+                    TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                    TenantNamespaceProvisioningStatus.RELEASED.value,
+                )
+            ),
         )
         .group_by(
             TenantNamespace.resource_profile_id,
@@ -232,6 +250,7 @@ def get_tenant_registry_context(
     environment: str = '',
     lifecycle_status: str = '',
     include_decommission_preflight: bool = True,
+    tenant_id: str = '',
 ) -> dict[str, Any]:
     normalized_search = search.strip()
     normalized_cluster_id = cluster_id.strip()
@@ -239,6 +258,10 @@ def get_tenant_registry_context(
     normalized_lifecycle = lifecycle_status.strip().lower()
 
     query = Tenant.query
+    if tenant_id:
+        # The detail route resolves exactly one committed Tenant regardless of
+        # the Registry's current pagination and filters; no provider live read.
+        query = query.filter(Tenant.id == tenant_id)
 
     if normalized_search:
         pattern = f'%{normalized_search.lower()}%'
@@ -267,6 +290,7 @@ def get_tenant_registry_context(
 
     tenant_ids = [item.id for item in items]
     environment_map: dict[str, list[str]] = {tenant_id: [] for tenant_id in tenant_ids}
+    capsule_environment_map: dict[str, list[dict[str, Any]]] = {tenant_id: [] for tenant_id in tenant_ids}
     namespace_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
     namespace_history_count_map: dict[str, int] = {tenant_id: 0 for tenant_id in tenant_ids}
 
@@ -278,6 +302,12 @@ def get_tenant_registry_context(
         )
         for environment_row in environment_rows:
             environment_map.setdefault(environment_row.tenant_id, []).append(environment_row.environment)
+            capsule_environment_map.setdefault(environment_row.tenant_id, []).append(
+                {
+                    'id': environment_row.id,
+                    'environment': environment_row.environment,
+                }
+            )
 
         if include_decommission_preflight:
             namespace_history_rows = (
@@ -296,7 +326,12 @@ def get_tenant_registry_context(
             .join(TenantNamespace, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
             .filter(
                 TenantEnvironment.tenant_id.in_(tenant_ids),
-                TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                TenantNamespace.provisioning_status.notin_(
+                    (
+                        TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                        TenantNamespaceProvisioningStatus.RELEASED.value,
+                    )
+                ),
             )
             .group_by(TenantEnvironment.tenant_id)
             .all()
@@ -313,17 +348,197 @@ def get_tenant_registry_context(
     if include_decommission_preflight:
         from app.kubernetes.tenant.decommission_service import build_tenant_decommission_preflight
 
+    release_evidence: dict[str, dict[str, Any]] = {}
+    if tenant_ids and include_decommission_preflight:
+        latest_ids = (
+            db.session.query(func.max(AuditEvent.id).label('id'))
+            .filter(
+                AuditEvent.target_type == 'kubernetes_tenant_release_preflight',
+                AuditEvent.target_id.in_(tenant_ids),
+            )
+            .group_by(AuditEvent.target_id)
+            .subquery()
+        )
+        recent_rows = db.session.query(AuditEvent).join(latest_ids, AuditEvent.id == latest_ids.c.id).all()
+        release_evidence = {str(event.target_id): dict(event.metadata_json or {}) for event in recent_rows}
+
+    handoff_plans: dict[str, dict[str, Any]] = {}
+    handoff_approvals: dict[str, dict[str, Any]] = {}
+    handoff_dry_runs: dict[str, dict[str, Any]] = {}
+    handoff_readbacks: dict[str, dict[str, Any]] = {}
+    handoff_executions: dict[str, dict[str, Any]] = {}
+    no_transfer_assessments: dict[str, dict[str, Any]] = {}
+    no_transfer_decisions: dict[str, dict[str, Any]] = {}
+    successor_handbacks: dict[str, dict[str, Any]] = {}
+    residual_cleanup_plans: dict[str, dict[str, Any]] = {}
+    residual_cleanup_approvals: dict[str, dict[str, Any]] = {}
+    residual_cleanup_executions: dict[str, dict[str, Any]] = {}
+    successor_claims: dict[str, dict[str, Any]] = {}
+    successor_acceptances: dict[str, dict[str, Any]] = {}
+    capsule_successor_acceptances: dict[str, dict[str, Any]] = {}
+    capsule_scope_previews: dict[str, dict[str, Any]] = {}
+    capsule_successor_handbacks: dict[str, dict[str, Any]] = {}
+    capsule_handoff_executions: dict[str, dict[str, Any]] = {}
+    if tenant_ids and include_decommission_preflight:
+        for target_type, destination in (
+            ('kubernetes_tenant_release_handoff_plan', handoff_plans),
+            ('kubernetes_tenant_release_handoff_approval', handoff_approvals),
+            ('kubernetes_tenant_release_native_handoff_dry_run', handoff_dry_runs),
+            ('kubernetes_tenant_release_native_handoff_readback', handoff_readbacks),
+            ('kubernetes_tenant_release_native_handoff_execution', handoff_executions),
+            ('kubernetes_tenant_release_native_no_transfer_assessment', no_transfer_assessments),
+            ('kubernetes_tenant_release_native_no_transfer_decision', no_transfer_decisions),
+            ('kubernetes_tenant_verified_native_successor_handback', successor_handbacks),
+            ('kubernetes_tenant_native_residual_cleanup_plan', residual_cleanup_plans),
+            ('kubernetes_tenant_native_residual_cleanup_approval', residual_cleanup_approvals),
+            ('kubernetes_tenant_native_residual_cleanup_execution', residual_cleanup_executions),
+            ('kubernetes_tenant_release_successor_claim', successor_claims),
+            ('kubernetes_tenant_release_verified_successor_acceptance', successor_acceptances),
+            ('kubernetes_tenant_release_capsule_successor_acceptance', capsule_successor_acceptances),
+            ('kubernetes_tenant_release_capsule_namespace_preview', capsule_scope_previews),
+            ('kubernetes_tenant_verified_capsule_successor_handback', capsule_successor_handbacks),
+            ('kubernetes_tenant_release_capsule_handoff_execution', capsule_handoff_executions),
+        ):
+            latest_ids = (
+                db.session.query(func.max(AuditEvent.id).label('id'))
+                .filter(
+                    AuditEvent.target_type == target_type,
+                    AuditEvent.target_id.in_(tenant_ids),
+                )
+                .group_by(AuditEvent.target_id)
+                .subquery()
+            )
+            rows = db.session.query(AuditEvent).join(latest_ids, AuditEvent.id == latest_ids.c.id).all()
+            destination.update({str(event.target_id): dict(event.metadata_json or {}) for event in rows})
+
+    # For restart eligibility, latest alone may hide an older partial
+    # transfer behind a later no-transfer observation. Read committed history
+    # for this paginated Tenant set; never call the Kubernetes provider on GET.
+    readback_histories: dict[str, list[dict[str, Any]]] = {}
+    execution_histories: dict[str, list[dict[str, Any]]] = {}
+    if tenant_ids and include_decommission_preflight:
+        history_rows = (
+            db.session.query(AuditEvent)
+            .filter(
+                AuditEvent.target_id.in_(tenant_ids),
+                AuditEvent.target_type.in_(
+                    (
+                        'kubernetes_tenant_release_native_handoff_readback',
+                        'kubernetes_tenant_release_native_handoff_execution',
+                    )
+                ),
+            )
+            .order_by(AuditEvent.id.desc())
+            .all()
+        )
+        for event in history_rows:
+            destination = (
+                readback_histories
+                if event.target_type == 'kubernetes_tenant_release_native_handoff_readback'
+                else execution_histories
+            )
+            destination.setdefault(str(event.target_id), []).append(dict(event.metadata_json or {}))
+
+    # The read model uses the same eligibility predicate as the locked
+    # preparation service. No provider read or independent plan decision here.
+    from app.kubernetes.tenant.native_release_readiness import project_native_release_readiness
+    from app.kubernetes.tenant.release_handoff_approval import handoff_plan_preparation_state
+
     tenant_rows: list[dict[str, Any]] = []
     for item in items:
         row: dict[str, Any] = {
             'tenant': item,
             'cluster': cluster_map.get(str(item.cluster_id)),
             'environments': environment_map.get(item.id, []),
+            'capsule_environment_options': capsule_environment_map.get(item.id, []),
             'namespace_count': namespace_count_map.get(item.id, 0),
         }
         if include_decommission_preflight:
             row['namespace_history_count'] = namespace_history_count_map.get(item.id, 0)
             row['decommission_preflight'] = build_tenant_decommission_preflight(item.id)
+            row['release_preflight'] = release_evidence.get(item.id)
+            row['release_handoff_plan'] = handoff_plans.get(item.id)
+            row['release_handoff_approval'] = handoff_approvals.get(item.id)
+            row['release_handoff_preparation_state'] = handoff_plan_preparation_state(
+                row['release_handoff_plan'],
+                row['release_handoff_approval'],
+            )
+            row['release_native_handoff_dry_run'] = handoff_dry_runs.get(item.id)
+            row['release_native_handoff_readback'] = handoff_readbacks.get(item.id)
+            row['release_native_handoff_execution'] = handoff_executions.get(item.id)
+            row['release_native_no_transfer_assessment'] = no_transfer_assessments.get(item.id)
+            row['release_native_no_transfer_decision'] = no_transfer_decisions.get(item.id)
+            row['release_successor_handback'] = successor_handbacks.get(item.id)
+            row['native_residual_cleanup_plan'] = residual_cleanup_plans.get(item.id)
+            row['native_residual_cleanup_approval'] = residual_cleanup_approvals.get(item.id)
+            row['native_residual_cleanup_execution'] = residual_cleanup_executions.get(item.id)
+            # Only AuditEvent / committed Tenant state on normal UI GET.
+            # Fresh Kubernetes verification occurs through an explicit POST.
+            from app.kubernetes.tenant.release_handoff_approval import _checked_recently
+
+            plan = row['native_residual_cleanup_plan'] or {}
+            approved = row['native_residual_cleanup_approval'] or {}
+            row['native_residual_plan_current'] = plan.get(
+                'status'
+            ) == 'pending_independent_review' and _checked_recently(plan.get('requested_at'))
+            row['native_residual_approval_current'] = (
+                approved.get('status') == 'approved_for_exact_metadata_cleanup'
+                and _checked_recently(approved.get('approved_at'))
+                and approved.get('plan_sha256') == plan.get('plan_sha256')
+                and row['native_residual_plan_current']
+            )
+            row['release_successor_claim'] = successor_claims.get(item.id)
+            row['release_successor_acceptance'] = successor_acceptances.get(item.id)
+            row['release_capsule_successor_acceptance'] = capsule_successor_acceptances.get(item.id)
+            row['release_capsule_scope_preview'] = capsule_scope_previews.get(item.id)
+            row['release_capsule_successor_handback'] = capsule_successor_handbacks.get(item.id)
+            row['release_capsule_handoff_execution'] = capsule_handoff_executions.get(item.id)
+            capsule_consent = row['release_capsule_successor_acceptance'] or {}
+            approved_capsule_plan = row['release_handoff_plan'] or {}
+            capsule_review = row['release_handoff_approval'] or {}
+            row['capsule_approved_plan_expired'] = bool(
+                item.provider_key == 'capsule'
+                and approved_capsule_plan.get('provider') == 'capsule'
+                and row['release_handoff_preparation_state'] == 'acknowledged'
+                and capsule_review.get('plan_sha256') == approved_capsule_plan.get('plan_sha256')
+                and (
+                    not _checked_recently(approved_capsule_plan.get('requested_at'))
+                    or not _checked_recently(capsule_review.get('approved_at'))
+                )
+            )
+            row['capsule_successor_acceptance_current'] = bool(
+                item.provider_key == 'capsule'
+                and approved_capsule_plan.get('provider') == 'capsule'
+                and capsule_consent.get('status') == 'platform_admin_handoff_accepted'
+                and capsule_consent.get('authority_mode') == 'capsule_platform_admin_governed'
+                and capsule_consent.get('plan_sha256') == approved_capsule_plan.get('plan_sha256')
+                and capsule_consent.get('handoff_fingerprint') == approved_capsule_plan.get('handoff_fingerprint')
+                and capsule_consent.get('reviewed_by') == capsule_review.get('approved_by')
+                and capsule_review.get('status') == 'acknowledged_pending_provider_handoff'
+                and capsule_consent.get('consent_verified') is True
+                and capsule_consent.get('provider_handoff_verified') is False
+                and capsule_consent.get('release_authorized') is False
+                and _checked_recently(capsule_consent.get('accepted_at'))
+                and _checked_recently(approved_capsule_plan.get('requested_at'))
+                and _checked_recently(capsule_review.get('approved_at'))
+            )
+            if item.provider_key == 'native_kubernetes' and (
+                row['release_handoff_plan'] or (row['release_preflight'] or {}).get('handoff_required_count')
+            ):
+                row['native_release_readiness'] = project_native_release_readiness(
+                    preflight=row['release_preflight'],
+                    plan=row['release_handoff_plan'],
+                    approval=row['release_handoff_approval'],
+                    successor_claim=row['release_successor_claim'],
+                    successor_acceptance=row['release_successor_acceptance'],
+                    dry_run=row['release_native_handoff_dry_run'],
+                    readback=row['release_native_handoff_readback'],
+                    handoff_execution=row['release_native_handoff_execution'],
+                    readback_history=readback_histories.get(str(item.id), []),
+                    execution_history=execution_histories.get(str(item.id), []),
+                    no_transfer_assessment=row['release_native_no_transfer_assessment'],
+                    no_transfer_decision=row['release_native_no_transfer_decision'],
+                )
         tenant_rows.append(row)
 
     return {
@@ -558,6 +773,72 @@ def _namespace_profile_version(record: TenantNamespace) -> object:
     return _namespace_profile_lineage(record).get('profile_version')
 
 
+def _recorded_allocation_advanced_controls(record: TenantNamespace) -> dict[str, Any]:
+    """Return only version-matched, committed capability evaluation evidence.
+
+    This is NOT evidence that another provider domain executed the control.
+    """
+    evidence = record.provisioning_evidence_json or {}
+    recorded = evidence.get('advanced_profile_controls') if isinstance(evidence, Mapping) else None
+    if not isinstance(recorded, Mapping) or record.resource_profile is None:
+        return {'recorded': False, 'controls': {}}
+    if (
+        recorded.get('source_profile_id') != record.resource_profile.public_id
+        or recorded.get('source_profile_version') != record.resource_profile_version
+    ):
+        return {'recorded': False, 'controls': {}}
+    controls = recorded.get('controls') or {}
+    return {
+        'recorded': isinstance(controls, Mapping),
+        'controls': {
+            key: {
+                'requested': bool(value.get('requested')),
+                'state': str(value.get('state') or 'unknown'),
+                'reason': str(value.get('reason') or ''),
+            }
+            for key, value in dict(controls).items()
+            if isinstance(value, Mapping)
+        }
+        if isinstance(controls, Mapping)
+        else {},
+    }
+
+
+def _allocation_advanced_preflight_state(
+    namespace_options: list[TenantNamespace],
+    profile_options: list[TenantResourceProfile],
+) -> dict[str, Any]:
+    """Bounded provider-capability evaluations, not execution/read-back proof."""
+    configured = [p for p in profile_options if p.advanced_controls_json]
+    if not configured:
+        return {}
+    tenant_statuses: dict[str, dict[str, str]] = {}
+    result: dict[str, Any] = {}
+    for record in namespace_options:
+        tenant = record.environment.tenant
+        if tenant.provider_key != 'native_kubernetes':
+            continue
+        if tenant.id not in tenant_statuses:
+            tenant_statuses[tenant.id] = _tenant_capability_statuses(tenant)
+        result[str(record.id)] = {
+            str(profile.id): {
+                key: {
+                    'requested': bool(value.get('requested')),
+                    'state': str(value.get('state') or 'unknown'),
+                    'reason': str(value.get('reason') or ''),
+                }
+                for key, value in evaluate_resource_profile_advanced_controls(
+                    profile.advanced_controls_json,
+                    provider_key=tenant.provider_key,
+                    capability_statuses=tenant_statuses[tenant.id],
+                ).items()
+                if value.get('requested')
+            }
+            for profile in configured
+        }
+    return result
+
+
 def _namespace_allocation_state(namespace_options: list[TenantNamespace]) -> dict[str, dict[str, Any]]:
     return {
         str(record.id): {
@@ -568,10 +849,284 @@ def _namespace_allocation_state(namespace_options: list[TenantNamespace]) -> dic
             'quota': record.allocation_quota_json or {},
             'limits': record.allocation_limit_defaults_json or {},
             'storage_policy': record.allocation_storage_policy_json or {},
+            'advanced_evidence': _recorded_allocation_advanced_controls(record),
             'control_state': allocation_control_state(record),
         }
         for record in namespace_options
     }
+
+
+def _matches_verified_native_profile_predecessor(
+    tenant: Tenant,
+    current: Tenant,
+    prior: Tenant | None,
+    lineage: Mapping[str, Any],
+) -> bool:
+    """Validate recorded Re-adoption handoff, not a name-only candidate."""
+    if prior is None:
+        return False
+    evidence = current.provider_evidence_json or {}
+    prior_evidence = prior.provider_evidence_json or {}
+    if not isinstance(evidence, Mapping) or not isinstance(prior_evidence, Mapping):
+        return False
+    release = prior_evidence.get('release_governance')
+    return bool(
+        prior.id == lineage.get('predecessor_tenant_id')
+        and prior.cluster_id == tenant.cluster_id
+        and prior.slug == tenant.slug
+        and prior.provider_key == tenant.provider_key
+        and prior.lifecycle_status == TenantLifecycleStatus.RELEASED.value
+        and prior.generation < current.generation
+        and lineage.get('predecessor_generation') == prior.generation
+        and lineage.get('predecessor_correlation_id') == prior.correlation_id
+        and lineage.get('provider_uid_verified') is True
+        and isinstance(release, Mapping)
+        and release.get('status') == 'released'
+        and bool(current.provider_reference)
+        and current.provider_reference == prior.provider_reference
+        and bool(evidence.get('provider_uid'))
+        and evidence.get('provider_uid') == prior_evidence.get('provider_uid')
+    )
+
+
+def _verified_native_profile_predecessors(
+    tenant: Tenant,
+    *,
+    limit: int = 5,
+) -> list[Tenant]:
+    """Follow only committed provider-UID-verified Re-adoption ancestry.
+
+    Never correlate cross-Tenant history based on Namespace name alone.
+    A missing or mismatched hop stops the history without guessing.
+    """
+    if tenant.provider_key != 'native_kubernetes':
+        return []
+    ancestors: list[Tenant] = []
+    seen = {tenant.id}
+    current: Tenant = tenant
+    for _ in range(limit):
+        evidence = current.provider_evidence_json or {}
+        if not isinstance(evidence, Mapping):
+            break
+        lineage = evidence.get('re_adoption_lineage')
+        if not isinstance(lineage, Mapping):
+            break
+        predecessor_id = lineage.get('predecessor_tenant_id')
+        if (
+            not isinstance(predecessor_id, str)
+            or not predecessor_id
+            or predecessor_id in seen
+            or lineage.get('provider_uid_verified') is not True
+        ):
+            break
+        prior = db.session.get(Tenant, predecessor_id)
+        if prior is None or not _matches_verified_native_profile_predecessor(
+            tenant,
+            current,
+            prior,
+            lineage,
+        ):
+            break
+        ancestors.append(prior)
+        seen.add(prior.id)
+        current = prior
+    return ancestors
+
+
+def _committed_profile_history(
+    tenant: Tenant,
+    records: list[TenantNamespace],
+) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    """Read a bounded provider-UID-verified predecessor snapshot set."""
+    ancestors = _verified_native_profile_predecessors(tenant)
+    if not ancestors or not records:
+        return {}
+    names = {row.namespace for row in records if row.provider_reference}
+    uids = {row.provider_reference for row in records if row.provider_reference}
+    if not names or not uids:
+        return {}
+    ancestors_by_id = {item.id: item for item in ancestors}
+    candidates = (
+        TenantNamespace.query.join(
+            TenantEnvironment,
+            TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+        )
+        .options(
+            joinedload(TenantNamespace.environment),
+            joinedload(TenantNamespace.resource_profile),
+        )
+        .filter(
+            TenantEnvironment.tenant_id.in_(list(ancestors_by_id)),
+            TenantNamespace.cluster_id == tenant.cluster_id,
+            TenantNamespace.namespace.in_(names),
+            TenantNamespace.provider_reference.in_(uids),
+            TenantNamespace.provisioning_status == TenantNamespaceProvisioningStatus.RELEASED.value,
+        )
+        .order_by(
+            TenantNamespace.generation.desc(),
+            TenantNamespace.id.desc(),
+        )
+        .limit(75)
+        .all()
+    )
+    result: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    seen: set[tuple[str, str, str, int]] = set()
+    for previous in candidates:
+        prior_tenant_id = previous.environment.tenant_id
+        prior_tenant = ancestors_by_id.get(prior_tenant_id)
+        if (
+            prior_tenant is None
+            or prior_tenant.provider_reference != previous.namespace
+            or previous.provider_reference != (prior_tenant.provider_evidence_json or {}).get('provider_uid')
+        ):
+            continue
+        key = (previous.namespace, str(previous.provider_reference))
+        dedup = (
+            prior_tenant_id,
+            previous.namespace,
+            str(previous.provider_reference),
+            previous.generation,
+        )
+        if dedup in seen:
+            continue
+        seen.add(dedup)
+        evidence = prior_tenant.provider_evidence_json or {}
+        release = evidence.get('release_governance') or {}
+        result.setdefault(key, []).append(
+            {
+                'tenant_generation': prior_tenant.generation,
+                'namespace_generation': previous.generation,
+                'profile_name': _namespace_profile_name(previous),
+                'profile_version': _namespace_profile_version(previous),
+                'quota': dict(previous.allocation_quota_json or {}),
+                'released_at': release.get('released_at'),
+                'provider_uid': previous.provider_reference,
+                'status': 'Released',
+            }
+        )
+    for history in result.values():
+        history.sort(
+            key=lambda row: (row['tenant_generation'], row['namespace_generation']),
+            reverse=True,
+        )
+        del history[5:]
+    return result
+
+
+def get_tenant_namespace_profile_mapping_context(
+    tenant_id: str,
+    *,
+    limit: int = 5,
+) -> dict[str, Any]:
+    """Bounded, committed-only Tenant → Namespace → profile lineage.
+
+    This read model does not infer current Kubernetes state. It includes
+    Released generations to explain preserved allocations during handoff
+    and later re-adoption without making Tenant Detail a second registry.
+    """
+    if limit != 5:
+        raise ValueError('Tenant Detail uses the canonical five-row preview.')
+    query = TenantNamespace.query.join(
+        TenantEnvironment,
+        TenantNamespace.tenant_environment_id == TenantEnvironment.id,
+    ).filter(TenantEnvironment.tenant_id == tenant_id)
+    # Count independently of eager ORM loader options; materialize only five.
+    total = query.count()
+    records = (
+        query.options(
+            joinedload(TenantNamespace.environment),
+            joinedload(TenantNamespace.resource_profile),
+        )
+        .order_by(
+            TenantNamespace.created_at.desc(),
+            TenantNamespace.id.desc(),
+        )
+        .limit(limit)
+        .all()
+    )
+    tenant = db.session.get(Tenant, tenant_id)
+    history_by_provider = _committed_profile_history(tenant, records) if tenant else {}
+    rows: list[dict[str, Any]] = []
+    for record in records:
+        evidence = record.provisioning_evidence_json or {}
+        allocation = evidence.get('allocation') if isinstance(evidence, Mapping) else {}
+        allocation = allocation if isinstance(allocation, Mapping) else {}
+        lineage = _namespace_profile_lineage(record)
+        attached = record.resource_profile is not None
+        if attached:
+            name = record.resource_profile.name
+            source = 'Linked Resource Profile'
+        elif lineage.get('label'):
+            name = str(lineage['label'])
+            source = 'Imported Provider Lineage'
+        elif allocation.get('provenance') == 'adopted_observed':
+            name = 'Imported Provider Baseline'
+            source = 'Observed (not linked)'
+        else:
+            name = 'No linked Resource Profile'
+            source = 'Unlinked'
+
+        historical = record.provisioning_status in (
+            TenantNamespaceProvisioningStatus.RELEASED.value,
+            TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        )
+        rows.append(
+            {
+                'namespace': record.namespace,
+                'environment': record.environment.environment,
+                'generation': record.generation,
+                'ownership_status': record.ownership_status,
+                'provisioning_status': record.provisioning_status,
+                'historical': historical,
+                'profile_name': name,
+                'profile_source': source,
+                'profile_public_id': (record.resource_profile.public_id if attached else None),
+                'profile_version': _namespace_profile_version(record),
+                'allocation_customized': record.allocation_customized,
+                'control_state': allocation_control_state(record),
+                'quota': dict(record.allocation_quota_json or {}),
+                'last_reconciled_at_label': present_user_datetime(
+                    record.last_reconciled_at,
+                    empty='No reconciliation timestamp',
+                ),
+                'provider_uid': record.provider_reference,
+                'verified_history': history_by_provider.get((record.namespace, str(record.provider_reference)), []),
+            }
+        )
+    return {'rows': rows, 'total': total, 'limit': limit}
+
+
+def _allocation_workflow_target_options(
+    namespaces: list[TenantNamespace],
+) -> tuple[list[TenantNamespace], list[TenantNamespace]]:
+    """Offer active Namespace generations only; preserve Released history in the registry.
+
+    Allocation Change executes Native-only. Cutover intentionally retains
+    Capsule observed records as disabled / Control Unavailable for explanation.
+    """
+    active = [
+        record
+        for record in namespaces
+        if record.environment.tenant.lifecycle_status == TenantLifecycleStatus.READY.value
+        and record.provisioning_status
+        not in (
+            TenantNamespaceProvisioningStatus.RELEASED.value,
+            TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        )
+    ]
+    managed = [
+        record
+        for record in active
+        if record.environment.tenant.provider_key == 'native_kubernetes'
+        and allocation_control_state(record) == 'kaori_managed'
+    ]
+    cutover = [
+        record
+        for record in active
+        if record.ownership_status == TenantOwnershipStatus.ADOPTED.value
+        and allocation_control_state(record) not in {'kaori_managed', 'provider_mirrored_policy'}
+    ]
+    return managed, cutover
 
 
 def get_namespace_registry_context(
@@ -612,19 +1167,7 @@ def get_namespace_registry_context(
         return base_context
 
     namespace_options = TenantNamespace.query.order_by(TenantNamespace.created_at.desc()).all()
-    namespace_allocation_options = [
-        record
-        for record in namespace_options
-        if allocation_control_state(record) == 'kaori_managed'
-        and record.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
-    ]
-    namespace_cutover_options = [
-        record
-        for record in namespace_options
-        if record.ownership_status == TenantOwnershipStatus.ADOPTED.value
-        and allocation_control_state(record) not in {'kaori_managed', 'provider_mirrored_policy'}
-        and record.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value
-    ]
+    namespace_allocation_options, namespace_cutover_options = _allocation_workflow_target_options(namespace_options)
     namespace_cutover_state = {
         str(record.id): build_allocation_cutover_state(record) for record in namespace_cutover_options
     }
@@ -640,6 +1183,10 @@ def get_namespace_registry_context(
         'namespace_cutover_supported': any(item['supported'] for item in namespace_cutover_state.values()),
         'profiles': profile_options,
         'namespace_allocation_state': _namespace_allocation_state(namespace_options),
+        'namespace_allocation_advanced_preflight': _allocation_advanced_preflight_state(
+            namespace_allocation_options, profile_options
+        ),
+        'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS,
         'namespace_allocation_profiles': {
             str(profile.id): {
                 'quota': profile.quota_hard_json or {},
@@ -676,7 +1223,9 @@ def get_tenant_context() -> dict[str, Any]:
         profile_class=TenantResourceProfileClass.CUSTOM.value
     ).count()
     active_profile_allocation_count = TenantNamespace.query.filter(
-        TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+        TenantNamespace.provisioning_status.notin_(
+            (TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value)
+        ),
         TenantNamespace.resource_profile_id.isnot(None),
     ).count()
     return {

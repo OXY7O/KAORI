@@ -142,7 +142,8 @@
         <form method="post"
               action="{{ url_for('platform_operations.data_lifecycle.save_policy') }}"
               hx-post="{{ url_for('platform_operations.data_lifecycle.save_policy') }}"
-              hx-target="#data-lifecycle-domain-workspace"
+              hx-target="#data-lifecycle-page"
+              hx-select="#data-lifecycle-page"
               hx-swap="outerHTML"
               hx-indicator="#data-lifecycle-policy-loading"
               class="space-y-4">

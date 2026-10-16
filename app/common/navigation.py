@@ -41,7 +41,11 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'artifact_registry.overview': 'Overview',
     'artifact_registry.inventory': 'Inventory',
     'artifact_registry.security': 'Security',
+    'artifact_registry.runtime_overview': 'Overview',
     'artifact_registry.runtime': 'Runtime Usage',
+    'artifact_registry.runtime_topology': 'Topology',
+    'artifact_registry.runtime_topology_data': 'Topology',
+    'artifact_registry.runtime_binding_details': 'Runtime Usage',
     'artifact_registry.governance': 'Governance',
     'artifact_registry.analytics': 'Analytics',
     # Analytics
@@ -74,12 +78,15 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'reports.schedules': 'Schedules',
     'reports.storage': 'Storage',
     # Kubernetes operations and governance
+    'kubernetes_operations.overview': 'Overview',
     'kubernetes_operations.configmap_management': 'ConfigMaps',
     'kubernetes_operations.secret_management': 'Secrets',
     'governance.overview': 'Overview',
     'governance.tls_certificates': 'TLS Certificates',
     'tenant.index': 'Overview',
     'tenant.tenants': 'Tenants',
+    'tenant.tenant_detail': 'Tenant Details',
+    'tenant.generate_credential_material_route': 'Access Material',
     'tenant.resource_profiles': 'Resource Profiles',
     'tenant.namespace_provisioning': 'Namespace Provisioning',
     'tenant.operations': 'Operations',
@@ -240,6 +247,12 @@ def build_navigation_breadcrumb(
             BreadcrumbItem(integration_owner['provider_label']),
         ]
         items = _append_workflow(items, endpoint)
+    elif endpoint.startswith('artifact_registry.runtime'):
+        items = [
+            BreadcrumbItem('Artifact Registry', 'package'),
+            BreadcrumbItem('Runtime', 'waypoints'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
     elif endpoint.startswith('artifact_registry.'):
         items = [
             BreadcrumbItem('Artifact Registry', 'package'),
@@ -263,6 +276,13 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Kubernetes', 'boxes'),
             BreadcrumbItem('Operations'),
             BreadcrumbItem(_leaf(endpoint, fallback)),
+        ]
+    elif endpoint == 'tenant.tenant_detail':
+        items = [
+            BreadcrumbItem('Kubernetes', 'boxes'),
+            BreadcrumbItem('Tenant'),
+            BreadcrumbItem('Tenants'),
+            BreadcrumbItem('Tenant Details'),
         ]
     elif endpoint.startswith(('governance.', 'tenant.')):
         domain_key = endpoint.split('.', 1)[0]

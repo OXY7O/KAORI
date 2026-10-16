@@ -49,6 +49,15 @@ The Overview must preserve capability ownership:
 
 The Overview may surface top recommendation priorities and lightweight control posture, but it must not duplicate alert retrieval, execute automation, or become another analytics provider client.
 
+
+### Intelligence Overview committed-evidence posture and alert semantics (#1490–#1492)
+
+- **Active AlertCase** is the source-qualified recommendation-origin condition `workflow_state != closed` **and** `source_state in (firing, unknown)`; resolved-source cases remain available in Alert Intelligence history, not Active. Critical and warning counts require **firing** evidence. Source-unknown remains an attention state and must not become false critical or green.
+- Pending Automation candidates and pending approval decisions are actionable only while `expires_at > now`. Post-action verification failures are counted in operational control attention even if resolver execution returned `succeeded`. The shared SQL-grouped verification projection is used by Intelligence Overview and Automation Control.
+- **Evidence Freshness** is a conservative **24-hour committed Inventory baseline** for managed Kubernetes, Object Storage, and enabled/active Registry instances; it is *not* a guarantee of scan/security/metrics/rule evaluator coverage. The Overview must not say `Operationally Clear` merely because no findings exist. Incomplete recent Inventory produces `Evidence Review Required`; complete inventory with no findings is `No Active Findings`, not a provider-health claim.
+- Alert notification delivery rows stay auditable. Only failed alert-operation deliveries updated during the past 24 hours affect the current Overview control-attention summary; a successful retry transitions its row to `sent`. Historic failures remain in Notification Channels.
+- The Overview remains a SQL/committed-evidence projection; there is no provider request, automatic corrective action, or parallel Intelligence rule engine on page load. Live UAT must also validate collection lag, record expiry, failed verification and source-unknown transitions before acceptance.
+
 ## Baseline lock semantics
 
 The Intelligence surface may be baseline-locked while feature delivery is still in
@@ -79,6 +88,14 @@ and route/model scaffolding alone must never be interpreted as execution readine
 - Rule definitions use a generic `evidence_boundary` contract. Metrics Source, Alertmanager, provider APIs, committed inventory, and worker-materialized artifacts are evidence sources; no single backend owns the catalog schema.
 - Object Storage metric-signal definitions must stay aligned with the thresholds used by Object Storage Analytics. Threshold changes require coordinated updates to analysis behavior, catalog definition, recommendation semantics where applicable, and contract tests.
 
+### Alert Intelligence source-aware read model and posture (#1513)
+
+Active and resolved queues are paginated by the shared SQL pagination utility **before** case serialization (default 5, options 5/10/25/50). Owner relationships and active-silence evidence are fetched in bounded page batches; aggregate counts are source-state scoped SQL projections. Read-only detail access is constrained to the selected domain and asset, not a fleet scan. Silence registries must include only recommendation-origin AlertCases.
+
+Source State is an **independent** filter from Severity. The Source Unknown shortcut, form, URL and HTMX pagination must all carry `source_state=unknown`, never `severity=unknown`. Modal mutation forms must also preserve `source_state` when refreshing the queue after an operator action. Resolved Today means **source recovery recorded**, not necessarily verified case closure. Alert Intelligence delivery failures and Intelligence Overview attention use the same current 24-hour failed-delivery window, retaining older failures in the immutable journal.
+
+The overview must never state Operationally Clear solely because active cases are zero. A conservative 24-hour committed-inventory readiness label is not proof that all recommendation, scan or alert workers completed successfully. Missing/partial source evidence warrants Evidence Review Required; complete inventory with zero cases is merely No Open Cases Observed. Continue to use the shared Violet Hero, Resource Detail Modal, access gates, contextual HTMX and accessible feedback components.
+
 ## Alert Intelligence and outbound notification ownership
 
 Alert Intelligence is a read-oriented, asset-scoped interpretation workspace. Kubernetes and Object Storage consume their existing alert-source contracts: Automatic mode prefers Alertmanager and may fall back to Metrics Source alert evidence. Provider alert lifecycle, KAORI recommendations, and catalog rules must remain distinguishable; contextual correlation must never be presented as causal attribution without evidence.
@@ -88,3 +105,11 @@ The Alert Intelligence page keeps the **Alert Intelligence Summary** visible as 
 Notification Channels is owned by **Integrations** at `/integrations/notification-channels`. Alert Intelligence emits governed `alert_intelligence.active_alert` events into that shared delivery layer; it does not own provider credentials, transport adapters, or channel lifecycle. Alertmanager remains responsible for raw alert grouping, inhibition, silences, routing, and receiver delivery. Recent Alert Intelligence delivery evidence shown for a selected asset must be filtered by the current domain + asset identity rather than mixing unrelated asset deliveries into the workspace.
 
 The provider contract must remain extensible so future Slack, generic webhook, or additional enterprise messaging adapters can be added without changing Alert Intelligence semantics. Microsoft Teams delivery uses the Teams Workflows / Power Automate webhook contract rather than legacy Office 365 connector URLs. SMTP email supports STARTTLS, TLS/SMTPS, and trusted-relay operation. The dispatcher sends first-seen active alert episodes that match channel policy and deduplicates them per channel/event identity. Resolved-event delivery is not part of the current outbound contract and must not be implied by UI status or delivery history.
+
+### Rule Catalog filtered posture and HTMX coherence (#1524)
+
+Rule Catalog summary, Hero counts, and posture describe **matching canonical definitions after all filters**, not global engine readiness or connected provider health. `Available` means a definition has an implemented KAORI evaluator/evidence boundary, not that a current provider observation succeeded. A reserved-only selection reports Reserved Plan, imported-only reports Imported Signal, and zero matches report No Matching Rules; mixed nonavailable definitions report Catalog Only. Scope labels identify filtered views. The server-owned Hero and Summary use out-of-band HTMX refresh alongside the results; standard full-page rendering remains authoritative on reload and history restoration. Do not introduce provider-live readiness checks or a second rule catalog.
+
+### Rule Catalog page-size and escalation controls (#1525)
+
+The shared Intelligence result pagination can replace only the results region. On Rows changes, the response must also update the corresponding hidden per_page input in the separate filter form through a scoped HTMX out-of-band element; Recommendations and Rule Catalog retain the same default of 5 and supported 5/10/25/50 values. URL navigation, filter changes, and reset retain the selected page size. Reserved Plan and Imported Signal definitions are read-only and never display an editable escalation form, even to authorized decision users; the Available-only server-side mutation guard remains authoritative.

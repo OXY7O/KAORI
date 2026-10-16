@@ -1,7 +1,13 @@
 ;(() => {
     'use strict'
 
-    const detectedTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+    const detectedTimezone = () => {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        if (typeof timezone !== 'string' || !timezone.trim()) {
+            throw new Error('Browser timezone unavailable')
+        }
+        return timezone
+    }
 
     const renderPreview = (previewClock, previewTimestamp, timezone) => {
         if (!previewClock) return
@@ -29,6 +35,16 @@
         const previewClock = document.getElementById('general-current-time')
         const previewTimestamp = workspace.dataset.timezonePreviewTimestamp || ''
 
+        const notifyDetection = (status, message) => {
+            const template = workspace.querySelector(`template[data-timezone-detection-toast="${status}"]`)
+            const toast = template?.content?.firstElementChild?.cloneNode(true)
+            if (!(toast instanceof HTMLElement)) return
+
+            const messageNode = toast.querySelector('[data-operational-toast-message]')
+            if (messageNode) messageNode.textContent = message
+            window.showOperationalToast?.(toast)
+        }
+
         const selectedMode = () => workspace.querySelector('input[name="timezone_mode"]:checked')?.value
 
         const renderSelectedPreview = (timezone) => {
@@ -36,10 +52,19 @@
         }
 
         const detect = () => {
-            const timezone = detectedTimezone()
+            let timezone
+            try {
+                timezone = detectedTimezone()
+            } catch (_) {
+                if (browserLabel && browserLabel.textContent === 'Detecting…') {
+                    browserLabel.textContent = 'Unavailable'
+                }
+                return null
+            }
             if (browserInput) browserInput.value = timezone
             if (browserLabel) browserLabel.textContent = timezone
             if (selectedMode() === 'automatic') renderSelectedPreview(timezone)
+            return timezone
         }
 
         const syncMode = () => {
@@ -52,7 +77,7 @@
                 manualSelect.setAttribute('aria-disabled', automatic ? 'true' : 'false')
             }
 
-            const timezone = automatic ? browserInput?.value || detectedTimezone() : manualSelect?.value || 'UTC'
+            const timezone = automatic ? browserInput?.value || 'UTC' : manualSelect?.value || 'UTC'
             renderSelectedPreview(timezone)
         }
 
@@ -61,8 +86,24 @@
         modeInputs.forEach((input) => input.addEventListener('change', syncMode))
         manualSelect?.addEventListener('change', syncMode)
         detectButton?.addEventListener('click', () => {
-            detect()
+            const previousTimezone = browserInput?.value || ''
+            const timezone = detect()
+            if (!timezone) {
+                notifyDetection(
+                    'error',
+                    'Unable to detect browser time zone. The previously detected value is unchanged; no preference was saved.'
+                )
+                return
+            }
+
             syncMode()
+            const unchanged = timezone === previousTimezone
+            notifyDetection(
+                'success',
+                unchanged
+                    ? `Browser time zone is unchanged (${timezone}). No preference was saved.`
+                    : `Detected browser time zone: ${timezone}. No preference was saved.`
+            )
         })
 
         detect()

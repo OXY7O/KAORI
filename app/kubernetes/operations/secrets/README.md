@@ -296,3 +296,56 @@ If a Namespace is policy-enabled but the Protected Kubernetes Secret Reveal Clus
 - The 4/12 right context column owns `Info Flow` plus one compact safety/policy guide; it never owns the mutation action or Secret values.
 - Protected Reveal uses Form + Right Context only in the `New Request` tab. `My Requests` and `Approvals` remain full-width registries.
 - TLS rotation keeps its dedicated reviewed full-width composition.
+
+
+## Protected Reveal live object provenance (#1303)
+
+New requests commit only the Kubernetes Secret `metadata.uid` alongside
+cluster/namespace/name/key/type approval scope, never credential values or
+value digests. The requester must have a nonempty live UID. Approval under
+`approval_required` and final one-time reveal independently verify that
+the live Secret UID still matches the requested object, and type/key remain
+valid. A Secret deleted and recreated under an identical namespace/name is
+**not** covered by the old approval. Request rows predating the migration
+(with null UID) fail closed and must be submitted again. Kubernetes
+`resourceVersion` may legitimately change on the *same* UID; it is not
+frozen into the approval. Existing policy, session reauthentication and
+single-consume checks remain mandatory. Run the migration only after the
+explicit admission gate is lifted; adding the migration file does not
+execute it.
+
+
+## Concurrent decision admission (#1304)
+
+Each approval/denial locks only its SecretRevealRequest row on PostgreSQL
+and performs an atomic `pending`+unexpired compare-and-set before committing.
+The first committed decision is authoritative; a racing or replayed decision
+is rejected and cannot publish a second success notification. SQLite's
+`FOR UPDATE` support is limited; the conditional update is the safety boundary
+there. Approval still verifies live UID/type/key against the original request,
+while the separate one-time reveal lock remains unchanged. A browser success
+cannot substitute for the durable committed status.
+
+
+## Bounded live Secret selector pages (#1305)
+
+Secret operations must continue to identify targets through the live Kubernetes
+API. Namespace LIST/GET calls have a 10-second request timeout, and Secret
+LIST requests use Kubernetes `limit=100` and `continue` paging (max 100
+pages). Each page is scrubbed immediately after its metadata is consumed,
+even on an error. Repeated continuation tokens or excessive listings fail
+with an explicit selector error rather than silently returning an incomplete
+option set. No live Secret plaintext is committed to KAORI. This is a
+provider-request bound, not a replacement of live target discovery with
+Inventory evidence; throughput and authorization behavior still need
+DevContainer UAT and large-namespace benchmark.
+
+
+## Protected Reveal registry pagination (#1307)
+
+My Requests and Pending Approvals now call the canonical SQL
+`paginate_query`/pagination-window helpers with default 5 rows and
+approved 5/10/25/50 sizes. Independent query parameters, tab anchors,
+permission-gated Approvals, existing HTMX fragments, and the existing
+consumer-facing pagination aliases are preserved. Pages are clamped and
+empty windows use 0–0 count labels rather than a custom 3-row default.

@@ -264,3 +264,232 @@ Metrics Source and Alertmanager own binding mutation for their respective source
 Metrics Source and Alertmanager are source-owned mutation workspaces. Their binding registries expose Consumer Asset, provider identity selector, Consumer Profile, Resolver Preference, Binding Validation, Effective Resolution, and Actions with canonical pagination/loading behavior. Resolver preference is safety-first. Metrics sources add query-horizon routing: eligible/healthy sources are ranked by horizon match, then `Primary → Secondary → Fallback`, then routing weight, with lower numeric priority breaking remaining ties inside the same role/weight.
 
 A saved binding starts in `Validation Required`. Selector changes clear stale binding evidence and return the record to `Validation Required`; only the explicit binding `Validate` action rebuilds consumer-specific evidence. Provider Full Validation is intentionally provider-core only and never revalidates consumer bindings implicitly. Object Storage binding validation additionally persists canonical metric-family, label-schema, and executable-query readiness so Analytics can distinguish contract gaps from current runtime reachability. Kubernetes and Object Storage inventory/lifecycle pages show the relationship read-only and link operators back to the source workspace for mutation.
+
+
+## Notification Channels — durable delivery recovery (#1431)
+
+New outbound attempts commit their `notification_deliveries` journal row as
+`queued` with `attempt_count` incremented **before any provider request**;
+the result is committed separately. An encrypted transport/message snapshot
+is embedded in the existing journal JSON field (no schema migration). The
+snapshot is encrypted using the canonical
+`INTEGRATION_CREDENTIAL_KEY` rotation contract and is not exposed in
+Delivery Activity or Activity Audit.
+
+Recovery uses the existing maintenance Celery queue with one PostgreSQL
+`SKIP LOCKED` claim at a time (maximum 25 rows per invocation).
+`NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false` is the safe default during
+DevContainer review; set it to `true` only after UAT approval.
+`NOTIFICATION_DELIVERY_RECOVERY_INTERVAL_MINUTES` defaults to 1 (1–60),
+`NOTIFICATION_DELIVERY_RETRY_DELAY_SECONDS` to 180 (120–86400,
+longer than the maximum provider transport timeout), and existing
+`NOTIFICATION_DELIVERY_MAX_ATTEMPTS` remains the bounded attempt budget.
+Recovery is independent of Alert Intelligence scheduling. Legacy records
+without the committed encrypted snapshot cannot be reliably replayed; policy,
+credentials and destination are rechecked before any attempt.
+
+**Guarantee: at-least-once attempts, not exactly-once provider delivery.**
+A worker interruption after remote acceptance but before committing its result
+can still cause a duplicate provider message. A `sent` journal row and unique
+channel/event identity suppress committed duplicates, but providers are external
+authorities and may not support remote idempotency. Do not enable the recovery
+schedule until Celery worker/Beat, database crash injection, secret rotation,
+test-adapter delivery, duplicate/concurrency and human acceptance are verified.
+
+
+## Telegram Forum Topics — Notification Channels (#1454)
+
+The Telegram provider in **Integrations → Notification Channels** supports an optional
+numeric `message_thread_id` (Forum Topic ID) alongside the existing `chat_id`
+and encrypted bot token. The chat ID identifies a supergroup or chat;
+`message_thread_id` targets an existing **Topic** within a Telegram Forum
+supergroup. KAORI does not create/manage Telegram topics or treat them as
+new integration providers.
+
+Configure a single private **KAORI** supergroup with Topics enabled and create
+separate Telegram topics such as **🚨 Alert**, **🔄 GitHub**, and **💬 Diskusi**.
+For application alerts create one notification channel pointing to the supergroup
+and **Alert** Topic ID; select only the intended domain/event types in its policy.
+Leave Topic ID empty for ordinary Telegram chat/group/channel destinations.
+
+**GitHub Actions Topic remains separately authoritative** under issue #64:
+`.github/workflows/telegram-github-actions.yml` and
+`scripts/ci_delivery_notify.py` use GitHub repository secret
+`TELEGRAM_BOT_TOKEN` plus `TELEGRAM_CHAT_ID` /
+`TELEGRAM_GITHUB_ACTIONS_TOPIC_ID`. Do not duplicate GitHub events through
+the application Notification Channels catalog. The discussion topic belongs
+to Telegram's human conversation and needs no KAORI application channel.
+
+Topic IDs must be positive integers (1–2147483647); invalid configurations
+fail closed rather than accidentally posting to the general supergroup.
+The Topic ID is ordinary provider configuration (not a secret). It is preserved
+for edit and transport replay; changing or clearing it resets channel validation
+through the existing `update_channel` transport-change check. Always run
+**Test Delivery** after modifying a Topic ID and confirm the message arrived
+in the intended topic before enabling operational use. Existing channels with
+no Topic ID keep their chat-only behavior. Replayed deliveries obey the
+existing provider_config snapshot/transport mismatch guard. No migration
+or global delivery worker change is required.
+
+
+## Notification Channels — approved hybrid provider roadmap (#1456)
+
+**Status: Phase 1 provider source merged to review; runtime UAT/admission pending.**
+KAORI's delivery capability is **hybrid**: internal/self-hosted operational push
+and popular team collaboration endpoints use one existing
+`Integrations → Delivery → Notification Channels` governance surface.
+The three **pre-Phase-1** adapters are Telegram (including Telegram
+Forum Topic ID), Email/SMTP, and Microsoft Teams Workflows. Phase 1 adapter
+code for **ntfy, Slack, and Discord** is now merged on
+`kaori/review/staging-uat`, but has not completed runtime UAT or staging admission. GitHub Actions'
+trusted-branch Telegram notifier retains its separate GitHub ownership (#64);
+a second application-based CI notifier must not duplicate those messages.
+
+### Sequencing and workstreams
+
+| Phase | Provider | Role | Delivery authority |
+| --- | --- | --- | --- |
+| **1 / first** | **ntfy** — [#1458](https://github.com/OXY7O/KAORI/issues/1458) | Owned/self-hosted push to a protected topic, including mobile subscribers | ntfy server and client remain authoritative for receipt/subscription |
+| **1 / second** | **Slack Incoming Webhooks** — [#1459](https://github.com/OXY7O/KAORI/issues/1459) | Popular enterprise/team-channel delivery | Slack workspace and bound webhook channel |
+| **1 / third** | **Discord Webhooks** — [#1460](https://github.com/OXY7O/KAORI/issues/1460) | Developer/ops community channel delivery | Discord owns guild/channel and messages |
+| **2 / candidate** | Gotify, Mattermost, Google Chat | Additional self-managed push and enterprise collaboration | Respective external systems |
+| **3 / candidate** | Matrix, PagerDuty | Federated messaging and on-call escalation | Matrix rooms / PagerDuty incident lifecycle |
+
+Phases 2–3 are **candidate evaluation only**, not build commitments.
+Gotify overlaps the first self-hosted push use case: assess demand and
+operational value after ntfy acceptance rather than implementing two
+near-identical transports at once. PagerDuty stays authoritative for
+acknowledgement, escalation policies and incident state. Separate
+provider-specific issues are required before any implementation starts.
+
+The approved provider plan is parent [#1456](https://github.com/OXY7O/KAORI/issues/1456).
+This documentation is the bounded task
+[#1457](https://github.com/OXY7O/KAORI/issues/1457);
+the three Phase 1 provider issues are independent implementation authorities.
+Their order is an **execution priority, not a `blocked by` dependency**
+between ntfy, Slack and Discord.
+
+### Shared delivery contract — no new architecture
+
+- Extend the existing `NotificationProviderAdapter` catalog with one
+  domain-owned provider adapter/form per supported service. Keep
+  `NotificationChannel` instances provider-neutral; one instance represents
+  a specific approved destination. No separate notification product, provider
+  database schema, or generic arbitrary-URL webhook sender.
+- Reuse `integrations.manage`, CSRF, server-side field validation, encrypted
+  credential storage, secret-free form edit and audited configuration lifecycle.
+  Every provider has a **Test Delivery** path; changing destination, transport
+  or credentials resets validation and must not auto-enable delivery.
+- Event routing retains the existing domain/event/severity catalog
+  (`app/definitions/catalogs/platform_operations/notifications/outbound_delivery.yaml`).
+  Do not invent new source events or clone external provider state as an
+  implementation shortcut. GitHub Actions notification authority remains
+  independent of the application catalog.
+- Reuse committed `NotificationDelivery` event identity, status, attempt
+  count, provider-result evidence, redacted failures and encrypted transport
+  snapshot. Delivery remains **at least once**, not exactly once. The bounded
+  Celery recovery worker must remain **opt-in / disabled by default**
+  (`NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false`) until explicit UAT
+  authorization. Do not claim a provider accepted a message as proof a human
+  or mobile client received or read it.
+- Use KAORI shared Violet UI/UX components, provider-specific setup guidance,
+  compact actionable messages, light/dark/responsive forms, accessible dialogs,
+  standard loading/error/toast/empty state and pagination **5 by default**.
+  Provider-specific runtime quirks belong in their adapter, not a second UI.
+- All outbound transports need bounded timeouts/payloads, secure TLS/trust,
+  destination authorization, redirect restrictions, secret-free errors/logs,
+  retry/rate-limit classification, and threat-modelled egress. **ntfy internal
+  servers are allowed only through an explicitly governed internal-endpoint
+  policy** with approved CA/trust; do not turn this into unrestricted
+  private-network access or a TLS-verification-off toggle. Credentials and
+  secret-bearing webhook URLs must not leak into URLs, logs, HTML, activity
+  metadata, debug errors or delivery journal.
+
+### Phase 1 provider-specific boundaries
+
+**ntfy:** server-managed HTTPS base URL + topic, optional encrypted access
+token or approved authenticated publishing; publish title, body, bounded
+priority and safe KAORI link. Validate topic/URL, internal PKI, destination
+policy and redirect/network protections without breaking approved self-managed
+servers. Do not implement subscriptions, mobile receipts or a self-hosted
+ntfy server inside KAORI. Publishing API:
+https://docs.ntfy.sh/publish/ .
+
+**Slack:** channel-bound Incoming Webhook with encrypted secret URL.
+Validate official endpoint and forbid redirects/host switching; normalize
+provider errors and bounded HTTP 429 / `Retry-After` behavior. No Slack
+OAuth user impersonation, chat history mirroring, arbitrary channel override,
+or fabricated message acknowledgement. Official docs:
+https://api.slack.com/messaging/webhooks ;
+https://docs.slack.dev/apis/web-api/rate-limits/ .
+
+**Discord:** channel-bound webhook with encrypted token/URL and outbound
+allowlist, bounded content/embeds, `allowed_mentions` denying mass pings by
+default, and rate-limit aware provider status. No Discord full bot,
+server-directory access, DMs or chat history. Official references:
+https://discord.com/developers/docs/resources/webhook ;
+https://support-dev.discord.com/hc/en-us/articles/6223003921559-My-Bot-is-Being-Rate-Limited .
+
+### Review / UAT boundary
+
+Each provider gets its own branch/PR, tests, mocked transport-negative paths,
+DevContainer safe destination UAT, permission and secret-redaction checks,
+desktop/mobile/light-dark accessibility evidence and human acceptance. For
+self-hosted ntfy include trusted internal CA and blocked unsafe endpoint cases;
+for Slack/Discord include redirect/revocation/429/secret-leak cases.
+**Three new Phase 1 adapters are integrated to the review branch only; this does not authorize deployment or live provider use**. Under the
+current review session, CI/CD, Developer Check, Full Admission, DAST,
+`kaori/staging`, `main`, deployment and release are **HOLD** pending explicit
+authorization. A review-only documentation merge is not staging UAT acceptance.
+
+
+### Phase 1 provider setup and UAT notes (#1473)
+
+**Status:** review-only adapter source integrated via ntfy PR #1468, Slack PR
+#1471 and Discord PR #1472. Existing three providers are unchanged.
+Provider availability on the review UI is **not** proof of live connectivity,
+permissioned destination ownership, UAT acceptance or release readiness.
+
+**ntfy, self-hosted:** Set `NOTIFICATION_NTFY_ALLOWED_ORIGINS` on the KAORI
+web process and Celery worker to explicit comma-separated HTTPS server origins,
+for example `https://notify.internal.example`; when unset, destination
+validation and delivery fail closed. Optionally provide a trusted PEM bundle
+using `NOTIFICATION_NTFY_CA_BUNDLE` for your internal PKI. Never disable TLS
+certificate verification. Explicitly restrict DNS resolution and network
+egress at infrastructure policy: the application origin allowlist plus
+redirect denial does **not** protect against all malicious DNS changes.
+Create a protected topic and optional publish-scoped access token, configure
+the channel with that approved origin and topic, then Test Delivery to an
+operator-owned subscriber. Server acknowledgement does not prove mobile
+receipt or human reading.
+
+**Slack:** Configure an official, channel-bound Incoming Webhook on
+`hooks.slack.com` (or approved GovSlack host), store its secret URL only in
+the password field, and assign a human destination label. Webhook ownership
+determines the Slack channel; do not assume the label changes the destination.
+Credentials are encrypted and never rendered back. Validate the destination
+and Test Delivery against a sanctioned sandbox, then confirm channel receipt.
+
+**Discord:** Configure an official `https://discord.com/api/webhooks/...`
+Execute Webhook with minimum privileges. Store its secret URL through the
+password field; Test Delivery before enabling the channel. The payload
+includes `allowed_mentions: {"parse": []}` to suppress accidental user,
+role and mass mentions. No Discord bot, chat history, guild discovery or
+subscriber-read status is replicated.
+
+**Reliability boundary:** Slack and Discord classify HTTP 429 with sanitized
+provider failures. The existing opt-in journal recovery currently uses the
+KAORI bounded retry delay; it does **not yet honor provider-specific
+`Retry-After` scheduling deadlines**. Do not claim rate-limit-compliant
+retry, exactly-once remote delivery, or production readiness. Governed
+follow-up work must address provider-specific deadlines and concurrent
+claims before enabling `NOTIFICATION_DELIVERY_RECOVERY_ENABLED=true`.
+Keep `NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false` during DevContainer
+review.
+
+**UAT still pending:** run existing regression suites, provider mocked
+transport tests (2xx, 4xx, 429, redirects, timeouts, TLS, invalid secret),
+explicit ntfy internal network/CA tests, Flask permission/CSRF checks,
+responsive/light-dark/keyboard Visual QA, and permitted sandbox Test Delivery
+on authorized destinations. Do not advance staging/main promotion or claim
+human acceptance without evidence.

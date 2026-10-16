@@ -4,12 +4,17 @@ from typing import Any
 
 from sqlalchemy import case, func
 
-from app.artifact_registry.observability import RegistryMetricsReadiness, registry_metrics_readiness
+from app.artifact_registry.observability import (
+    RegistryMetricsReadiness,
+    registry_metrics_readiness,
+    registry_metrics_ready_provider_ids,
+)
 from app.artifact_registry.presentation_common import (
     _analytics_snapshot_view,
     _fmt_bytes,
     _freshness_value,
     _latest_registry_analytics,
+    _overview_inventory_kpi_evidence,
     _overview_kpi_values,
     _overview_scope_context,
     _registry_alerts,
@@ -59,9 +64,19 @@ def _provider_health_status(
             'warning',
             'Latest inventory refresh failed; the previous committed snapshot is retained.',
         )
+    if security['high'] > 0:
+        return 'Warning', 'warning', f'{security["high"]} high security finding(s).'
+    if security['artifacts'] > 0 and security['scanned'] < security['artifacts']:
+        return (
+            'Warning',
+            'warning',
+            f'Security scans incomplete: {security["scanned"]} / {security["artifacts"]} artifacts assessed.',
+        )
     if readiness == 'degraded':
         return 'Warning', 'warning', 'Provider is usable with compatibility attention.'
-    return 'Healthy', 'normal', 'Provider and committed inventory are operational.'
+    if readiness != 'ready':
+        return 'Warning', 'warning', 'Provider readiness has not been validated as ready.'
+    return 'Healthy', 'normal', 'Ready provider, committed inventory and assessed security evidence.'
 
 
 def _provider_health_projection(
@@ -78,6 +93,12 @@ def _provider_health_projection(
     dict[int, dict[str, int]],
 ]:
     state_by_provider = {int(state.integration_instance_id): state for state in states}
+    # Page *before* per-provider source resolution and grouped inventory reads.
+    visible_providers, pagination = paginate_sequence(
+        scoped_providers,
+        page=provider_health_page,
+        per_page=provider_health_per_page,
+    )
 
     project_counts_query = RegistryProject.query.with_entities(
         RegistryProject.integration_instance_id,
@@ -106,25 +127,39 @@ def _provider_health_projection(
                 0,
             ),
             func.coalesce(
-                func.sum(RegistryArtifact.vulnerability_summary['critical'].as_integer()),
+                func.sum(
+                    case(
+                        (
+                            func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
+                            RegistryArtifact.vulnerability_summary['critical'].as_integer(),
+                        ),
+                        else_=0,
+                    )
+                ),
                 0,
             ),
             func.coalesce(
-                func.sum(RegistryArtifact.vulnerability_summary['high'].as_integer()),
+                func.sum(
+                    case(
+                        (
+                            func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
+                            RegistryArtifact.vulnerability_summary['high'].as_integer(),
+                        ),
+                        else_=0,
+                    )
+                ),
                 0,
             ),
         )
     )
-    if selected_provider is not None:
-        project_counts_query = project_counts_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        repository_counts_query = repository_counts_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        security_counts_query = security_counts_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
+    scoped_provider_ids = [int(provider.id) for provider in visible_providers]
+    project_counts_query = project_counts_query.filter(RegistryProject.integration_instance_id.in_(scoped_provider_ids))
+    repository_counts_query = repository_counts_query.filter(
+        RegistryProject.integration_instance_id.in_(scoped_provider_ids)
+    )
+    security_counts_query = security_counts_query.filter(
+        RegistryProject.integration_instance_id.in_(scoped_provider_ids)
+    )
 
     project_counts = {
         int(provider_id): int(count)
@@ -146,9 +181,9 @@ def _provider_health_projection(
         ).all()
     }
 
-    metrics_by_provider = {int(provider.id): registry_metrics_readiness(provider) for provider in scoped_providers}
+    metrics_by_provider = {int(provider.id): registry_metrics_readiness(provider) for provider in visible_providers}
     provider_rows: list[dict[str, Any]] = []
-    for provider in scoped_providers:
+    for provider in visible_providers:
         key = int(provider.id)
         state = state_by_provider.get(key)
         snapshot = _state_view(state)
@@ -160,7 +195,10 @@ def _provider_health_projection(
         readiness = str(provider.readiness_status or 'validation_required')
         inventory_ready = bool(state is not None and state.last_committed_at is not None)
         provider_artifact_count = security['artifacts']
-        security_ready = bool(security['scanned'])
+        security_ready = inventory_ready and (
+            provider_artifact_count > 0 and security['scanned'] >= provider_artifact_count
+        )
+        security_partial = bool(security['scanned']) and security['scanned'] < provider_artifact_count
         security_not_applicable = inventory_ready and provider_artifact_count == 0
 
         overall_status, overall_tone, status_reason = _provider_health_status(
@@ -191,21 +229,33 @@ def _provider_health_projection(
                 'inventory_ready': inventory_ready,
                 'metrics_ready': metrics.get('status') == 'ready',
                 'security_ready': security_ready,
+                'security_partial': security_partial,
+                'scanned_count': security['scanned'],
                 'security_not_applicable': security_not_applicable,
                 'snapshot': snapshot,
             }
         )
 
-    visible_rows, pagination = paginate_sequence(
-        provider_rows,
-        page=provider_health_page,
-        per_page=provider_health_per_page,
+    return provider_rows, pagination, metrics_by_provider, security_counts
+
+
+def _fleet_successfully_scanned_artifacts(committed_provider_ids: list[int]) -> int:
+    """Count qualifying scan evidence across *all* committed providers, not the visible page."""
+    if not committed_provider_ids:
+        return 0
+    return (
+        RegistryArtifact.query.join(RegistryRepository)
+        .join(RegistryProject)
+        .filter(
+            RegistryProject.integration_instance_id.in_(committed_provider_ids),
+            func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES),
+        )
+        .count()
     )
-    return visible_rows, pagination, metrics_by_provider, security_counts
 
 
 def _overview_inventory_evidence(
-    selected_provider: IntegrationInstance | None,
+    committed_provider_ids: list[int],
 ) -> tuple[int, int, Any]:
     artifact_summary_query = (
         RegistryArtifact.query.join(RegistryRepository)
@@ -232,16 +282,15 @@ def _overview_inventory_evidence(
             func.max(RegistryScanSnapshot.observed_at),
         )
     )
-    if selected_provider is not None:
-        artifact_summary_query = artifact_summary_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        public_projects_query = public_projects_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
-        security_freshness_query = security_freshness_query.filter(
-            RegistryProject.integration_instance_id == selected_provider.id
-        )
+    artifact_summary_query = artifact_summary_query.filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
+    public_projects_query = public_projects_query.filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
+    security_freshness_query = security_freshness_query.filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
     observed_by_provider = {
         int(provider_id): observed_at
         for provider_id, observed_at in security_freshness_query.group_by(RegistryProject.integration_instance_id).all()
@@ -259,8 +308,9 @@ def _overview_inventory_items(
     artifact_total: int,
     total_size_bytes: int,
     public_project_count: int,
+    has_committed_inventory: bool,
 ) -> list[dict[str, Any]]:
-    return [
+    items = [
         {'label': 'Projects', 'value': counts['projects'], 'icon': 'folder-kanban', 'role': 'Scope'},
         {'label': 'Repositories', 'value': counts['repositories'], 'icon': 'package-open', 'role': 'Catalog'},
         {'label': 'Artifacts', 'value': artifact_total, 'icon': 'fingerprint', 'role': 'Immutable'},
@@ -268,6 +318,10 @@ def _overview_inventory_items(
         {'label': 'Artifact Footprint', 'value': _fmt_bytes(total_size_bytes), 'icon': 'database', 'role': 'Storage'},
         {'label': 'Public Projects', 'value': public_project_count, 'icon': 'globe-2', 'role': 'Exposure'},
     ]
+    if not has_committed_inventory:
+        for item in items:
+            item['value'] = 'Not Collected'
+    return items
 
 
 def _security_freshness_status(
@@ -281,8 +335,8 @@ def _security_freshness_status(
         return 'No Artifacts', 'info', 'No committed artifacts to scan'
     if scanned_count:
         return (
-            'Available',
-            'normal',
+            'Available' if scanned_count >= artifact_total else 'Partial',
+            'normal' if scanned_count >= artifact_total else 'warning',
             _freshness_value(latest_security_at, missing='Committed scan evidence available'),
         )
     return (
@@ -329,11 +383,11 @@ def _selected_provider_freshness(
             'icon': 'database-zap',
         },
         {
-            'label': 'Metrics Snapshot',
+            'label': 'Metrics Source',
             'status': str(selected_metrics.get('label') or 'Not Bound'),
             'tone': str(selected_metrics.get('tone') or 'unknown'),
             'value': str(selected_metrics.get('selected_source') or 'No validated Metrics Source'),
-            'description': 'Validated Registry Metrics Source binding; independent from provider readiness.',
+            'description': 'Validated Metrics Source binding readiness; not a committed metrics snapshot.',
             'icon': 'activity',
         },
         {
@@ -389,10 +443,23 @@ def _fleet_freshness(
     )
     metrics_ready_count = stats['metrics_ready_count']
     analytics_ready_count = stats['analytics_ready_count']
+    analytics_stale_count = stats['analytics_stale_count']
     artifact_total = stats['artifact_total']
     scanned_count = stats['scanned_count']
     metrics_all_ready = bool(provider_count) and metrics_ready_count == provider_count
     analytics_all_ready = bool(provider_count) and analytics_ready_count == provider_count
+    analytics_status = (
+        'Ready'
+        if analytics_all_ready
+        else 'Partial'
+        if analytics_ready_count
+        else 'Stale'
+        if analytics_stale_count
+        else 'Required'
+    )
+    analytics_tone = (
+        'normal' if analytics_all_ready else 'warning' if analytics_ready_count or analytics_stale_count else 'unknown'
+    )
     return [
         {
             'label': 'Inventory Snapshot',
@@ -406,28 +473,36 @@ def _fleet_freshness(
             'icon': 'database-zap',
         },
         {
-            'label': 'Metrics Snapshot',
+            'label': 'Metrics Source',
             'status': 'Ready' if metrics_all_ready else ('Partial' if metrics_ready_count else 'Not Bound'),
             'tone': 'normal' if metrics_all_ready else ('warning' if metrics_ready_count else 'unknown'),
-            'value': (
-                'Validated Metrics Source available'
-                if metrics_all_ready
-                else (
-                    'Validated Metrics Source partially available'
-                    if metrics_ready_count
-                    else 'No validated Metrics Source'
-                )
-            ),
-            'description': 'Validated Registry Metrics Source availability across the active scope.',
+            'value': f'{metrics_ready_count} / {provider_count} providers',
+            'description': 'Validated Registry Metrics Source bindings; not committed metrics snapshots.',
             'icon': 'activity',
         },
         {
             'label': 'Security Snapshot',
-            'status': 'No Artifacts' if artifact_total == 0 else ('Available' if scanned_count else 'Required'),
-            'tone': 'info' if artifact_total == 0 else ('normal' if scanned_count else 'warning'),
+            'status': (
+                'No Artifacts'
+                if artifact_total == 0 and stats['committed_count']
+                else 'Required'
+                if not scanned_count
+                else 'Available'
+                if scanned_count >= artifact_total
+                else 'Partial'
+            ),
+            'tone': (
+                'info'
+                if artifact_total == 0 and stats['committed_count']
+                else 'unknown'
+                if artifact_total == 0
+                else 'normal'
+                if scanned_count >= artifact_total
+                else 'warning'
+            ),
             'value': (
                 'No committed artifacts to scan'
-                if artifact_total == 0
+                if artifact_total == 0 and stats['committed_count']
                 else (
                     _freshness_value(
                         stats['latest_security_at'],
@@ -442,13 +517,13 @@ def _fleet_freshness(
         },
         {
             'label': 'Analytics Snapshot',
-            'status': 'Ready' if analytics_all_ready else ('Partial' if analytics_ready_count else 'Required'),
-            'tone': 'normal' if analytics_all_ready else ('warning' if analytics_ready_count else 'unknown'),
+            'status': analytics_status,
+            'tone': analytics_tone,
             'value': _freshness_value(
                 stats['latest_analytics_at'],
                 missing='No analytics snapshot',
             ),
-            'description': 'Latest ready Registry analytics materialization across the active scope.',
+            'description': 'Current and stale materialized Registry analytics are assessed separately across this scope.',
             'icon': 'chart-no-axes-combined',
         },
     ]
@@ -470,15 +545,24 @@ def _overview_operations_projection(
         provider_health_page=provider_health_page,
         provider_health_per_page=provider_health_per_page,
     )
-    counts = _overview_kpi_values(selected_provider)
-    total_size_bytes, public_project_count, latest_security_at = _overview_inventory_evidence(selected_provider)
-    state_by_provider = {int(state.integration_instance_id): state for state in states}
     committed_states = [state for state in states if state.last_committed_at is not None]
+    committed_provider_ids, _kpi_source_label = _overview_inventory_kpi_evidence(scoped_providers, states)
+    counts = _overview_kpi_values(committed_provider_ids)
+    total_size_bytes, public_project_count, latest_security_at = _overview_inventory_evidence(committed_provider_ids)
+    state_by_provider = {int(state.integration_instance_id): state for state in states}
     artifact_total = counts['artifacts']
-    scanned_count = sum(item['scanned'] for item in security_counts.values())
+    scanned_count = _fleet_successfully_scanned_artifacts(committed_provider_ids)
     analytics_by_provider = _latest_registry_analytics(scoped_providers)
-    metrics_ready_count = sum(metrics.get('status') == 'ready' for metrics in metrics_by_provider.values())
-    analytics_ready_count = sum(snapshot is not None for snapshot in analytics_by_provider.values())
+    metrics_ready_count = len(registry_metrics_ready_provider_ids(scoped_providers))
+    if selected_provider is not None and int(selected_provider.id) not in metrics_by_provider:
+        # A selected provider remains the evidence scope even for an out-of-range
+        # health-page bookmark; never substitute another provider's readiness.
+        metrics_by_provider[int(selected_provider.id)] = registry_metrics_readiness(selected_provider)
+    analytics_views = {
+        provider_id: _analytics_snapshot_view(snapshot) for provider_id, snapshot in analytics_by_provider.items()
+    }
+    analytics_ready_count = sum(view['is_current'] for view in analytics_views.values())
+    analytics_stale_count = sum(view['is_stale'] for view in analytics_views.values())
     latest_analytics_at = max(
         (
             snapshot.generated_at
@@ -493,6 +577,7 @@ def _overview_operations_projection(
         'committed_count': len(committed_states),
         'metrics_ready_count': metrics_ready_count,
         'analytics_ready_count': analytics_ready_count,
+        'analytics_stale_count': analytics_stale_count,
         'latest_security_at': latest_security_at,
         'latest_analytics_at': latest_analytics_at,
     }
@@ -533,6 +618,7 @@ def _overview_operations_projection(
             artifact_total=artifact_total,
             total_size_bytes=total_size_bytes,
             public_project_count=public_project_count,
+            has_committed_inventory=bool(committed_provider_ids),
         ),
         'freshness': freshness,
     }
@@ -542,12 +628,14 @@ def _overview_capacity_projection(
     *,
     context: dict[str, Any],
     scoped_providers: list[IntegrationInstance],
-    selected_provider: IntegrationInstance | None,
+    selected_provider: IntegrationInstance,
     states: list[RegistryCollectionState],
 ) -> dict[str, Any]:
-    artifact_query = RegistryArtifact.query.join(RegistryRepository).join(RegistryProject)
-    if selected_provider is not None:
-        artifact_query = artifact_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
+    artifact_query = (
+        RegistryArtifact.query.join(RegistryRepository)
+        .join(RegistryProject)
+        .filter(RegistryProject.integration_instance_id == selected_provider.id)
+    )
     artifact_total, total_size_bytes = artifact_query.with_entities(
         func.count(RegistryArtifact.id),
         func.coalesce(func.sum(RegistryArtifact.size_bytes), 0),
@@ -558,7 +646,7 @@ def _overview_capacity_projection(
     metrics_by_provider = {int(provider.id): registry_metrics_readiness(provider) for provider in scoped_providers}
     metrics_ready_count = sum(metrics.get('status') == 'ready' for metrics in metrics_by_provider.values())
     analytics_by_provider = _latest_registry_analytics(scoped_providers)
-    capacity, forecast, top_consumers = _registry_capacity_views(
+    capacity, forecast, top_consumers, quota_watch, consumer_insights = _registry_capacity_views(
         scoped_providers=scoped_providers,
         analytics_by_provider=analytics_by_provider,
         total_size_bytes=total_size_bytes,
@@ -571,6 +659,8 @@ def _overview_capacity_projection(
         'capacity': capacity,
         'forecast': forecast,
         'top_consumers': top_consumers,
+        'quota_watch': quota_watch,
+        'consumer_insights': consumer_insights,
     }
 
 
@@ -609,31 +699,34 @@ def build_overview_section(
     )
 
     if section == 'kpi_cards':
-        counts = _overview_kpi_values(selected_provider)
+        committed_provider_ids, source_label = _overview_inventory_kpi_evidence(scoped_providers, states)
+        committed_count = len(committed_provider_ids)
+        counts = _overview_kpi_values(committed_provider_ids)
         return {
             **context,
+            'kpi_source_label': source_label,
             'kpis': [
                 {
                     'label': 'Projects',
-                    'value': counts['projects'],
+                    'value': counts['projects'] if committed_count else 'Not Collected',
                     'description': 'Committed provider-neutral namespaces.',
                     'icon': 'folder-kanban',
                 },
                 {
                     'label': 'Repositories',
-                    'value': counts['repositories'],
+                    'value': counts['repositories'] if committed_count else 'Not Collected',
                     'description': 'Committed Registry repositories.',
                     'icon': 'package-open',
                 },
                 {
                     'label': 'Artifacts',
-                    'value': counts['artifacts'],
+                    'value': counts['artifacts'] if committed_count else 'Not Collected',
                     'description': 'Digest-oriented committed identities.',
                     'icon': 'fingerprint',
                 },
                 {
                     'label': 'Tags',
-                    'value': counts['tags'],
+                    'value': counts['tags'] if committed_count else 'Not Collected',
                     'description': 'Mutable aliases linked to committed digests.',
                     'icon': 'tags',
                 },
@@ -665,6 +758,8 @@ def build_overview_section(
         )
 
     if section == 'capacity':
+        if selected_provider is None:
+            return context
         return _overview_capacity_projection(
             context=context,
             scoped_providers=scoped_providers,
@@ -673,6 +768,8 @@ def build_overview_section(
         )
 
     if section == 'signals':
+        if selected_provider is None:
+            return context
         return {
             **context,
             'alerts': _registry_alerts(selected_provider),

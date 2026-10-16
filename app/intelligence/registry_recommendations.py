@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import UTC, datetime
+from hashlib import sha256
+from json import dumps
 from typing import Any
 
 from sqlalchemy.orm import joinedload, selectinload
 
+from app.extensions.db import db
 from app.integrations.registry.security_contracts import registry_scan_evidence_ready
 from app.models.integration import IntegrationInstance
 from app.models.registry import (
@@ -40,17 +44,48 @@ def _finding(
     return row
 
 
-def _identity(project: RegistryProject) -> tuple[IntegrationInstance | None, str, str]:
-    identity = IntegrationInstance.query.filter_by(
-        id=project.integration_instance_id,
-        integration_type='registry',
-    ).first()
-    if identity is None:
+def _active_registry_instances() -> dict[int, IntegrationInstance]:
+    """Reuse the active provider eligibility boundary across Registry evaluators."""
+    rows = IntegrationInstance.query.filter(
+        IntegrationInstance.integration_type == 'registry',
+        IntegrationInstance.enabled.is_(True),
+        IntegrationInstance.lifecycle_status == 'active',
+    ).all()
+    return {int(row.id): row for row in rows}
+
+
+def _identity(
+    project: RegistryProject,
+    identities: dict[int, IntegrationInstance] | None = None,
+) -> tuple[IntegrationInstance | None, str, str]:
+    if identities is None:
+        identities = _active_registry_instances()
+    identity = identities.get(int(project.integration_instance_id))
+    if identity is None or not identity.enabled or identity.lifecycle_status != 'active':
         return None, '', 'Registry'
     metadata = identity.metadata_json if isinstance(identity.metadata_json, dict) else {}
     provider_key = str(identity.provider_key or '').strip().lower()
     provider_label = str(metadata.get('provider_label') or provider_key.replace('_', ' ').title() or 'Registry')
     return identity, provider_key, provider_label
+
+
+def _tag_only_finding_key(
+    rule_key: str,
+    artifact: RegistryArtifact,
+    identity: IntegrationInstance,
+    binding: RegistryWorkloadBinding,
+) -> str:
+    """Stable provider/source/artifact/Pod/image identity, independent of binding PK."""
+    parts = [
+        int(identity.id),
+        artifact.digest,
+        binding.cluster_id,
+        binding.namespace,
+        binding.pod_name,
+        binding.image_reference,
+    ]
+    fingerprint = sha256(dumps(parts, separators=(',', ':')).encode('utf-8')).hexdigest()[:32]
+    return f'{rule_key}:{fingerprint}'
 
 
 def _artifact_evidence(
@@ -59,9 +94,11 @@ def _artifact_evidence(
     identity: IntegrationInstance,
     provider_key: str,
     provider_label: str,
+    bindings: list[RegistryWorkloadBinding],
 ) -> dict[str, Any]:
-    bindings = RegistryWorkloadBinding.query.filter_by(artifact_id=artifact.id).all()
-    summary = artifact.vulnerability_summary if isinstance(artifact.vulnerability_summary, dict) else {}
+    # Old vulnerability JSON does not constitute a valid assessed finding.
+    scan_usable = bool(registry_scan_evidence_ready(artifact.scan_status))
+    summary = artifact.vulnerability_summary if scan_usable and isinstance(artifact.vulnerability_summary, dict) else {}
     return {
         'asset_key': str(identity.id),
         'registry_instance_id': str(identity.id),
@@ -85,24 +122,68 @@ def _artifact_evidence(
     }
 
 
+def _artifact_pages(
+    identities: dict[int, IntegrationInstance],
+    *,
+    page_size: int = 200,
+):
+    """Keyset bounded hydration, restricted to running active-source artifacts."""
+    if not identities:
+        return
+    last_id = 0
+    running_ids = db.session.query(RegistryWorkloadBinding.artifact_id).distinct()
+    while True:
+        page = (
+            RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+            .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+            .options(
+                joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
+                selectinload(RegistryArtifact.tags),
+            )
+            .filter(
+                RegistryProject.integration_instance_id.in_(tuple(identities)),
+                RegistryArtifact.id > last_id,
+                RegistryArtifact.id.in_(running_ids),
+            )
+            .order_by(RegistryArtifact.id.asc())
+            .limit(page_size)
+            .all()
+        )
+        if not page:
+            break
+        artifact_ids = [item.id for item in page]
+        grouped: dict[int, list[RegistryWorkloadBinding]] = defaultdict(list)
+        for binding in RegistryWorkloadBinding.query.filter(
+            RegistryWorkloadBinding.artifact_id.in_(artifact_ids)
+        ).all():
+            grouped[int(binding.artifact_id)].append(binding)
+        for artifact in page:
+            yield artifact, grouped[int(artifact.id)]
+        last_id = int(page[-1].id)
+
+
 def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    artifacts = RegistryArtifact.query.options(
-        joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
-        selectinload(RegistryArtifact.tags),
-    ).all()
+    if not any(
+        key in rules
+        for key in (
+            'registry.security.critical_runtime_vulnerability',
+            'registry.security.scan_evidence_missing',
+            'registry.runtime.tag_only_correlation',
+        )
+    ):
+        return []
+    identities = _active_registry_instances()
     findings: list[dict[str, Any]] = []
-    for artifact in artifacts:
-        identity, provider_key, provider_label = _identity(artifact.repository.project)
-        if identity is None:
-            continue
-        bindings = RegistryWorkloadBinding.query.filter_by(artifact_id=artifact.id).all()
-        if not bindings:
+    for artifact, bindings in _artifact_pages(identities):
+        identity, provider_key, provider_label = _identity(artifact.repository.project, identities)
+        if identity is None or not bindings:
             continue
         evidence = _artifact_evidence(
             artifact,
             identity=identity,
             provider_key=provider_key,
             provider_label=provider_label,
+            bindings=bindings,
         )
         critical = int(evidence['critical_count'])
         if critical > 0:
@@ -115,7 +196,8 @@ def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
                         title=f'{critical} critical finding(s) affect a running Registry artifact',
                         summary=(
                             f'{artifact.repository.project.name}/{artifact.repository.name}@{artifact.digest[:20]}… '
-                            f'has {critical} critical vulnerability finding(s) and {len(bindings)} committed runtime binding(s).'
+                            f'has {critical} critical vulnerability finding(s) and '
+                            f'{len(bindings)} committed runtime binding(s).'
                         ),
                         condition_summary=(
                             'Critical vulnerability evidence and committed Kubernetes runtime usage are both present '
@@ -124,7 +206,6 @@ def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
                         evidence=evidence,
                     )
                 )
-
         if not registry_scan_evidence_ready(artifact.scan_status):
             rule = rules.get('registry.security.scan_evidence_missing')
             if rule is not None:
@@ -136,7 +217,8 @@ def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
                         title='Running Registry artifact has no usable scan evidence',
                         summary=(
                             f'{artifact.repository.project.name}/{artifact.repository.name}@{artifact.digest[:20]}… '
-                            f'is referenced at runtime but committed scan status {scan_label!r} is not usable evidence.'
+                            f'is referenced at runtime but committed scan status {scan_label!r} '
+                            'is not usable evidence.'
                         ),
                         condition_summary=(
                             'Runtime binding count is positive while Registry scan_status is not a normalized '
@@ -145,49 +227,32 @@ def _artifact_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
                         evidence=evidence,
                     )
                 )
-
-    tag_rule = rules.get('registry.runtime.tag_only_correlation')
-    if tag_rule is not None:
-        for binding in RegistryWorkloadBinding.query.filter_by(match_type='tag').all():
-            artifact = (
-                RegistryArtifact.query.options(
-                    joinedload(RegistryArtifact.repository).joinedload(RegistryRepository.project),
-                )
-                .filter_by(id=binding.artifact_id)
-                .first()
-            )
-            if artifact is None:
+        tag_rule = rules.get('registry.runtime.tag_only_correlation')
+        if tag_rule is None:
+            continue
+        for binding in bindings:
+            if binding.match_type != 'tag':
                 continue
-            identity, provider_key, provider_label = _identity(artifact.repository.project)
-            if identity is None:
-                continue
-            evidence = _artifact_evidence(
-                artifact,
-                identity=identity,
-                provider_key=provider_key,
-                provider_label=provider_label,
-            )
-            evidence.update(
-                {
-                    'match_type': binding.match_type,
-                    'match_confidence': binding.confidence,
-                    'image_reference': binding.image_reference,
-                    'cluster_id': binding.cluster_id,
-                    'namespace': binding.namespace,
-                    'pod_name': binding.pod_name,
-                }
-            )
+            tag_evidence = {
+                **evidence,
+                'match_type': binding.match_type,
+                'match_confidence': binding.confidence,
+                'image_reference': binding.image_reference,
+                'cluster_id': binding.cluster_id,
+                'namespace': binding.namespace,
+                'pod_name': binding.pod_name,
+            }
             findings.append(
                 _finding(
                     tag_rule,
-                    finding_key=f'{tag_rule["rule_key"]}:{binding.id}',
+                    finding_key=_tag_only_finding_key(tag_rule['rule_key'], artifact, identity, binding),
                     title=f'{binding.namespace}/{binding.pod_name} resolves Registry identity through a tag',
                     summary=(
                         f'Runtime image reference {binding.image_reference} matched the Registry artifact with '
                         f'{binding.confidence} confidence because no immutable digest was available.'
                     ),
                     condition_summary='RegistryWorkloadBinding match_type is tag rather than digest.',
-                    evidence=evidence,
+                    evidence=tag_evidence,
                 )
             )
     return findings
@@ -197,17 +262,26 @@ def _governance_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any
     rule = rules.get('registry.governance.public_project_without_immutability')
     if rule is None:
         return []
+    identities = _active_registry_instances()
+    if not identities:
+        return []
     rows = (
-        RegistryProjectGovernance.query.options(joinedload(RegistryProjectGovernance.project))
-        .filter(RegistryProjectGovernance.immutability_status == 'not_configured')
-        .all()
+        RegistryProjectGovernance.query.join(
+            RegistryProject, RegistryProjectGovernance.project_id == RegistryProject.id
+        )
+        .options(joinedload(RegistryProjectGovernance.project))
+        .filter(
+            RegistryProjectGovernance.immutability_status == 'not_configured',
+            RegistryProject.integration_instance_id.in_(tuple(identities)),
+        )
+        .yield_per(200)
     )
     findings: list[dict[str, Any]] = []
     for row in rows:
         project = row.project
         if project.public is not True:
             continue
-        identity, provider_key, provider_label = _identity(project)
+        identity, provider_key, provider_label = _identity(project, identities)
         if identity is None:
             continue
         evidence = {
@@ -241,12 +315,13 @@ def _governance_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any
 
 def _forecast_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
-    identities = IntegrationInstance.query.filter_by(integration_type='registry').all()
-    for identity in identities:
+    identities = _active_registry_instances()
+    for identity in identities.values():
         snapshot = (
             RegistryAnalyticsSnapshot.query.filter_by(
                 integration_instance_id=identity.id,
                 status='ready',
+                time_range='current',
             )
             .order_by(RegistryAnalyticsSnapshot.generated_at.desc(), RegistryAnalyticsSnapshot.id.desc())
             .first()
@@ -254,11 +329,12 @@ def _forecast_findings(rules: dict[str, dict[str, Any]]) -> list[dict[str, Any]]
         if snapshot is None or not isinstance(snapshot.payload_json, dict):
             continue
         expires_at = snapshot.expires_at
-        if expires_at is not None:
-            if expires_at.tzinfo is None:
-                expires_at = expires_at.replace(tzinfo=UTC)
-            if datetime.now(UTC) > expires_at:
-                continue
+        if expires_at is None:
+            continue
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+        if datetime.now(UTC) > expires_at:
+            continue
         capacity = snapshot.payload_json.get('capacity')
         forecasts = capacity.get('project_forecasts') if isinstance(capacity, dict) else None
         if not isinstance(forecasts, list):

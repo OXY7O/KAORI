@@ -3,10 +3,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy import func, or_
+from sqlalchemy.orm import load_only
 
 from app.common.pagination import paginate_sequence
+from app.extensions.db import db
 from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
 from app.intelligence.dashboard_recommendations import get_dashboard_recommendation_findings
 from app.models import Report, ReportSchedule, ReportTemplate
@@ -24,16 +25,25 @@ from app.storage.object_storage.analytics.materialization import (
 )
 from app.storage.object_storage.analytics.presentation import format_bytes, format_number
 from app.storage.object_storage.dashboard.presentation import build_forecast_view, build_top_consumers_view
+from app.storage.object_storage.inventory.aggregates import bucket_usage_by_system, bucket_usage_summary
 
 _DASHBOARD_TIME_RANGE = '24h'
 _DASHBOARD_FORECAST_WINDOW = '30d'
 
 
 def _systems() -> list[ObjectStorageSystem]:
+    # The Fast Shell only requires identity, scope, provider status and observation time.
+    # Never hydrate bucket collections for shell or section selection.
     return list(
-        ObjectStorageSystem.query.options(selectinload(ObjectStorageSystem.buckets)).order_by(
-            ObjectStorageSystem.name.asc()
-        )
+        ObjectStorageSystem.query.options(
+            load_only(
+                ObjectStorageSystem.id,
+                ObjectStorageSystem.name,
+                ObjectStorageSystem.environment,
+                ObjectStorageSystem.status,
+                ObjectStorageSystem.inventory_observed_at,
+            )
+        ).order_by(ObjectStorageSystem.name.asc(), ObjectStorageSystem.id.asc())
     )
 
 
@@ -122,51 +132,78 @@ def _kaori_alert_posture(system: ObjectStorageSystem | None) -> dict[str, Any]:
     }
 
 
-def _inventory_summary(systems: list[ObjectStorageSystem]) -> dict[str, Any]:
-    buckets = [bucket for system in systems for bucket in (system.buckets or ())]
-    observed_systems = [system for system in systems if system.inventory_observed_at is not None]
-    empty_observed_systems = [system for system in observed_systems if not (system.buckets or ())]
-    size_values = [int(bucket.size_bytes) for bucket in buckets if bucket.size_bytes is not None]
-    object_values = [int(bucket.object_count) for bucket in buckets if bucket.object_count is not None]
-    quota_configured = [
-        bucket for bucket in buckets if bucket.quota_state == 'configured' and bucket.quota_bytes is not None
-    ]
-    usage_collected = [
-        bucket for bucket in buckets if bucket.size_bytes is not None and bucket.object_count is not None
-    ]
+def _inventory_summary(
+    systems: list[ObjectStorageSystem], *, selected: ObjectStorageSystem | None = None
+) -> dict[str, Any]:
+    """Summarize committed bucket evidence without hydrating bucket ORM rows."""
+    evidence = (
+        bucket_usage_summary(system_id=str(selected.id) if selected is not None else None)
+        if systems
+        else {
+            'buckets': 0,
+            'stored_bytes': 0,
+            'stored_samples': 0,
+            'objects': 0,
+            'object_samples': 0,
+            'quota_configured': 0,
+            'usage_collected': 0,
+        }
+    )
+    observed = sum(system.inventory_observed_at is not None for system in systems)
+    empty_observed = 0
+    if observed:
+        # Correlated EXISTS uses the indexed bucket system ID; no relationship load.
+        query = db.session.query(func.count(ObjectStorageSystem.id)).filter(
+            ObjectStorageSystem.inventory_observed_at.is_not(None),
+            ~ObjectStorageSystem.buckets.any(),
+        )
+        if selected is not None:
+            query = query.filter(ObjectStorageSystem.id == str(selected.id))
+        empty_observed = int(query.one()[0] or 0)
     return {
         'systems': len(systems),
-        'buckets': len(buckets),
-        'stored_bytes': sum(size_values),
-        'stored_display': format_bytes(sum(size_values)) if size_values else 'Not Collected',
-        'objects': sum(object_values),
-        'objects_display': format_number(sum(object_values)) if object_values else 'Not Collected',
-        'quota_configured': len(quota_configured),
-        'usage_collected': len(usage_collected),
-        'observed_systems': len(observed_systems),
-        'empty_observed_systems': len(empty_observed_systems),
+        'buckets': evidence['buckets'],
+        'stored_bytes': evidence['stored_bytes'],
+        'stored_display': (format_bytes(evidence['stored_bytes']) if evidence['stored_samples'] else 'Not Collected'),
+        'objects': evidence['objects'],
+        'objects_display': (format_number(evidence['objects']) if evidence['object_samples'] else 'Not Collected'),
+        'quota_configured': evidence['quota_configured'],
+        'usage_collected': evidence['usage_collected'],
+        'observed_systems': observed,
+        'empty_observed_systems': empty_observed,
     }
 
 
 def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    # System Health paginates first; aggregate only its visible system IDs.
+    bucket_evidence = bucket_usage_by_system([str(system.id) for system in systems])
     for system in systems:
         payload, snapshot_state = _snapshot_payload(system)
         overview = _page_metrics(payload, 'overview')
         posture = _kaori_alert_posture(system)
-        buckets = list(system.buckets or ())
-        inventory_usage_values = [float(bucket.size_bytes) for bucket in buckets if bucket.size_bytes is not None]
+        usage = bucket_evidence.get(str(system.id), {})
+        inventory_stored = usage.get('stored_bytes', 0) if usage.get('stored_samples', 0) else None
         snapshot_usage = overview.get('usage_total')
-        stored_bytes = (
-            snapshot_usage
-            if snapshot_usage is not None
-            else (sum(inventory_usage_values) if inventory_usage_values else None)
-        )
+        stored_bytes = snapshot_usage if snapshot_usage is not None else inventory_stored
         usage_source = (
-            'Snapshot' if snapshot_usage is not None else ('Inventory' if inventory_usage_values else 'Not Collected')
+            'Snapshot'
+            if snapshot_usage is not None
+            else ('Inventory' if inventory_stored is not None else 'Not Collected')
         )
         provider_status = str(system.status or 'unknown').replace('_', ' ').title()
         analytics_usable = bool(snapshot_state.get('usable'))
+        alert_stream, _alert_posture = _alert_view(payload)
+        alerts_connected = analytics_usable and bool(alert_stream.get('connected'))
+        alerts_fallback = alerts_connected and bool(alert_stream.get('fallback_used'))
+        if alerts_fallback:
+            alert_source_label = 'Metrics Source fallback · committed alert evidence'
+        elif alerts_connected and alert_stream.get('resolved_source') == 'alertmanager':
+            alert_source_label = 'Alertmanager · committed alert evidence'
+        elif alerts_connected:
+            alert_source_label = 'Committed alert evidence available'
+        else:
+            alert_source_label = 'No usable committed alert evidence'
         critical_alerts = int(posture.get('critical') or 0)
         warning_alerts = int(posture.get('warning') or 0)
 
@@ -178,18 +215,36 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
             overall_status = 'Critical'
             overall_tone = 'critical'
             status_reason = f'{critical_alerts} active critical alert signal(s).'
+        elif system.inventory_observed_at is None:
+            overall_status = 'Warning'
+            overall_tone = 'warning'
+            status_reason = 'Committed inventory has not been collected.'
         elif not analytics_usable:
             overall_status = 'Warning'
             overall_tone = 'warning'
             status_reason = f'Analytics snapshot is {snapshot_state.get("label") or "not ready"}.'
+        elif snapshot_state.get('state') in {'pending', 'failed'} or snapshot_state.get('stale'):
+            overall_status = 'Warning'
+            overall_tone = 'warning'
+            status_reason = (
+                f'Analytics snapshot is {snapshot_state.get("label") or "not ready"}; prior evidence may be retained.'
+            )
         elif warning_alerts > 0:
             overall_status = 'Warning'
             overall_tone = 'warning'
             status_reason = f'{warning_alerts} active warning alert signal(s).'
+        elif not alerts_connected:
+            overall_status = 'Warning'
+            overall_tone = 'warning'
+            status_reason = 'Committed alert-source evidence is unavailable.'
+        elif alerts_fallback:
+            overall_status = 'Warning'
+            overall_tone = 'warning'
+            status_reason = 'Alert evidence is using the Metrics Source fallback.'
         else:
             overall_status = 'Healthy'
             overall_tone = 'normal'
-            status_reason = 'Inventory & analytics ready.'
+            status_reason = 'Inventory, analytics, and primary alert evidence ready.'
 
         rows.append(
             {
@@ -199,12 +254,15 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
                 'provider_status': provider_status,
                 'inventory_updated': _human_time(system.inventory_observed_at),
                 'inventory_ready': system.inventory_observed_at is not None,
-                'bucket_count': len(buckets),
+                'bucket_count': int(usage.get('buckets', 0)),
                 'stored_display': format_bytes(stored_bytes),
                 'usage_source': usage_source,
                 'snapshot_label': str(snapshot_state.get('label') or 'Worker Data'),
                 'snapshot_tone': str(snapshot_state.get('tone') or 'unknown'),
                 'snapshot_ready': analytics_usable,
+                'alerts_connected': alerts_connected,
+                'alerts_fallback': alerts_fallback,
+                'alert_source_label': alert_source_label,
                 'utilization_display': str(overview.get('utilization_display') or 'N/A'),
                 'utilization_tone': str(overview.get('utilization_tone') or 'unknown'),
                 'active_alerts': int(posture.get('total') or 0),
@@ -219,7 +277,7 @@ def _health_rows(systems: list[ObjectStorageSystem]) -> list[dict[str, Any]]:
 
 def _dashboard_kpis(systems: list[ObjectStorageSystem], selected: ObjectStorageSystem | None) -> list[dict[str, str]]:
     scoped = [selected] if selected is not None else systems
-    inventory = _inventory_summary(scoped)
+    inventory = _inventory_summary(scoped, selected=selected)
     active_alerts = 0
     analytics_ready = 0
     operational_usage: float | None = None
@@ -295,27 +353,98 @@ def _dashboard_kpis(systems: list[ObjectStorageSystem], selected: ObjectStorageS
 def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorageSystem]) -> list[dict[str, str]]:
     if selected is None:
         observed = _inventory_observation_times(systems)
-        analytics_states = [
-            analytics_snapshot_state(get_analytics_snapshot(system_id=str(system.id), time_range=_DASHBOARD_TIME_RANGE))
-            for system in systems
-        ]
-        ready = sum(bool(state.get('usable')) for state in analytics_states)
+        inventory_ready = len(observed)
+        analytics_ready = 0
+        forecast_ready = 0
+        alert_ready = 0
+        alert_fallback = 0
+        for system in systems:
+            payload, analytics_state = _snapshot_payload(system)
+            analytics_usable = bool(analytics_state.get('usable'))
+            analytics_ready += int(analytics_usable)
+            forecast_state = forecast_snapshot_state(
+                get_forecast_snapshot(system_id=str(system.id), history_window=_DASHBOARD_FORECAST_WINDOW)
+            )
+            forecast_ready += int(bool(forecast_state.get('usable')))
+            if not analytics_usable or not isinstance(payload, dict):
+                continue
+            stream, _posture = _alert_view(payload)
+            if stream.get('connected'):
+                alert_ready += 1
+                alert_fallback += int(bool(stream.get('fallback_used')))
+
+        system_count = len(systems)
         return [
             {
                 'label': 'Inventory Fleet',
-                'status': 'Available' if observed else 'Not Collected',
-                'tone': 'normal' if observed else 'warning',
-                'value': _human_time(max(observed)) if observed else 'No committed inventory',
-                'description': 'Most recent Object Storage Inventory observation across registered systems.',
+                'status': (
+                    'Ready'
+                    if system_count and inventory_ready == system_count
+                    else ('Partial' if inventory_ready else 'Not Collected')
+                ),
+                'tone': (
+                    'normal'
+                    if system_count and inventory_ready == system_count
+                    else ('warning' if inventory_ready else 'unknown')
+                ),
+                'value': f'{inventory_ready} / {system_count} systems',
+                'description': (
+                    f'Latest inventory {_human_time(max(observed))}; committed observations across registered systems.'
+                    if observed
+                    else 'No committed inventory observation across registered systems.'
+                ),
                 'icon': 'database',
             },
             {
                 'label': 'Analytics Fleet',
-                'status': 'Ready' if ready == len(systems) and systems else ('Partial' if ready else 'Required'),
-                'tone': 'normal' if ready == len(systems) and systems else ('warning' if ready else 'unknown'),
-                'value': f'{ready} / {len(systems)} systems',
+                'status': (
+                    'Ready'
+                    if analytics_ready == system_count and systems
+                    else ('Partial' if analytics_ready else 'Required')
+                ),
+                'tone': (
+                    'normal'
+                    if analytics_ready == system_count and systems
+                    else ('warning' if analytics_ready else 'unknown')
+                ),
+                'value': f'{analytics_ready} / {system_count} systems',
                 'description': 'Usable 24h Object Storage Analytics worker snapshots.',
                 'icon': 'database-zap',
+            },
+            {
+                'label': 'Forecast Fleet',
+                'status': (
+                    'Ready'
+                    if forecast_ready == system_count and systems
+                    else ('Partial' if forecast_ready else 'Required')
+                ),
+                'tone': (
+                    'normal'
+                    if forecast_ready == system_count and systems
+                    else ('warning' if forecast_ready else 'unknown')
+                ),
+                'value': f'{forecast_ready} / {system_count} systems',
+                'description': 'Usable committed 30d Object Storage Forecast worker snapshots.',
+                'icon': 'trending-up',
+            },
+            {
+                'label': 'Alert Evidence Fleet',
+                'status': (
+                    ('Fallback' if alert_fallback else 'Available')
+                    if alert_ready == system_count and systems
+                    else ('Partial' if alert_ready else 'Required')
+                ),
+                'tone': (
+                    'normal'
+                    if alert_ready == system_count and systems and not alert_fallback
+                    else ('warning' if alert_ready else 'unknown')
+                ),
+                'value': f'{alert_ready} / {system_count} systems',
+                'description': (
+                    'Committed 24h alerts; Alertmanager primary, Metrics Source fallback.'
+                    + (f' {alert_fallback} system(s) using fallback evidence.' if alert_fallback else '')
+                ),
+                'icon': 'bell-ring',
             },
         ]
 
@@ -325,6 +454,8 @@ def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorage
     forecast_state = forecast_snapshot_state(forecast_snapshot)
     payload, _state = _snapshot_payload(selected)
     stream, _posture = _alert_view(payload)
+    alert_connected = bool(stream.get('connected'))
+    alert_fallback = alert_connected and bool(stream.get('fallback_used'))
     return [
         {
             'label': 'Inventory Snapshot',
@@ -352,8 +483,8 @@ def _freshness(selected: ObjectStorageSystem | None, systems: list[ObjectStorage
         },
         {
             'label': 'Alert Evidence',
-            'status': 'Available' if stream.get('connected') else 'Unavailable',
-            'tone': 'normal' if stream.get('connected') else 'warning',
+            'status': 'Fallback' if alert_fallback else ('Available' if alert_connected else 'Unavailable'),
+            'tone': 'warning' if alert_fallback else ('normal' if alert_connected else 'unknown'),
             'value': str(stream.get('resolved_label') or stream.get('label') or 'Unavailable'),
             'description': 'Alertmanager preferred with Metrics Source fallback, resolved from the analytics snapshot.',
             'icon': 'bell-ring',
@@ -559,7 +690,7 @@ def get_dashboard_section(
         dashboard['system_health_pagination'] = pagination
         if section == 'system_health':
             return dashboard
-        dashboard['inventory'] = _inventory_summary([selected] if selected is not None else systems)
+        dashboard['inventory'] = _inventory_summary([selected] if selected is not None else systems, selected=selected)
         dashboard['freshness'] = _freshness(selected, systems)
     elif section == 'kpi_cards':
         dashboard['kpis'] = _dashboard_kpis(systems, selected)

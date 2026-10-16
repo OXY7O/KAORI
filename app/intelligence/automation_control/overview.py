@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from typing import Any
 
 from app.extensions.db import db
 from app.intelligence.automation_control.notifications import DECISION_NOTIFICATION_EVENTS
 from app.intelligence.resolver.notifications import EXECUTION_NOTIFICATION_EVENTS
 from app.intelligence.resolver.production_readiness import ProductionReadinessError, assess_readiness
+from app.intelligence.verification import verification_outcome_counts
 from app.models.intelligence import (
     IntelligenceDecision,
     IntelligenceDecisionCandidate,
@@ -33,8 +35,15 @@ def build_automation_overview(*, execution_enabled: bool, registry_rows: Sequenc
     )
     readiness_total = len(readiness_records)
 
-    pending_candidates = IntelligenceDecisionCandidate.query.filter_by(review_status='pending').count()
-    awaiting_approval = IntelligenceDecision.query.filter_by(workflow_status='pending_approval').count()
+    now = datetime.now(UTC)
+    pending_candidates = IntelligenceDecisionCandidate.query.filter(
+        IntelligenceDecisionCandidate.review_status == 'pending',
+        IntelligenceDecisionCandidate.expires_at > now,
+    ).count()
+    awaiting_approval = IntelligenceDecision.query.filter(
+        IntelligenceDecision.workflow_status == 'pending_approval',
+        IntelligenceDecision.expires_at > now,
+    ).count()
     approved_waiting = IntelligenceDecision.query.filter(
         IntelligenceDecision.workflow_status.in_(('ready', 'approved'))
     ).count()
@@ -47,13 +56,10 @@ def build_automation_overview(*, execution_enabled: bool, registry_rows: Sequenc
             IntelligenceExecutionJournal.status == 'failed',
         )
     ).count()
-    verification_states = [
-        str(((row.result_json or {}).get('verification') or {}).get('status') or '')
-        for row in IntelligenceExecutionJournal.query.filter_by(status='succeeded').all()
-    ]
-    verification_verified = sum(state == 'verified' for state in verification_states)
-    verification_pending = sum(state == 'pending' for state in verification_states)
-    verification_failed = sum(state == 'failed' for state in verification_states)
+    verification = verification_outcome_counts()
+    verification_verified = verification['verified']
+    verification_pending = verification['pending']
+    verification_failed = verification['failed']
     failures += verification_failed
     active_policies = ResolverDeploymentPolicy.query.filter_by(lifecycle_status='active').count()
     published_runbooks = KnowledgeRunbookRevision.query.filter_by(publication_status='published').count()

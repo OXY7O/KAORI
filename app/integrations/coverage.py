@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import contains_eager
 
 from app.integrations.binding_selectors import selector_is_configured, selector_summary
 from app.integrations.consumer_assets import registered_consumer_asset_definitions
+from app.integrations.coverage_query import paged_coverage_scopes
 from app.kubernetes.cluster.constants import get_environment_label
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -159,7 +161,8 @@ def _coverage_source_options(
     blocked = {'blocked', 'unavailable', 'disabled', 'incompatible'}
     options: list[dict[str, Any]] = []
     for instance in instances:
-        if not instance.enabled:
+        canonical = instance.integration_instance
+        if not instance.enabled or not canonical.enabled or canonical.lifecycle_status != 'active':
             continue
         readiness = (instance.readiness_status or 'validation_required').lower()
         canonical_id = instance.integration_instance_id or -1
@@ -189,6 +192,37 @@ def _coverage_source_options(
     return options
 
 
+def _source_binding_counts(
+    integration_type: str,
+) -> tuple[dict[int, int], dict[int, int]]:
+    """Aggregate source picker counts without loading every IntegrationBinding."""
+    invalid_selector = or_(
+        IntegrationBinding.selector_json.is_(None),
+        IntegrationBinding.selector_json['matchers'][0]['label'].as_string().is_(None),
+        IntegrationBinding.selector_json['matchers'][0]['value'].as_string().is_(None),
+        IntegrationBinding.selector_json['matchers'][0]['label'].as_string() == '',
+        IntegrationBinding.selector_json['matchers'][0]['value'].as_string() == '',
+    )
+    rows = (
+        IntegrationBinding.query.join(IntegrationInstance)
+        .with_entities(
+            IntegrationBinding.integration_instance_id,
+            func.count(IntegrationBinding.id),
+            func.sum(case((invalid_selector, 1), else_=0)),
+        )
+        .filter(
+            IntegrationInstance.integration_type == integration_type,
+            IntegrationBinding.enabled.is_(True),
+        )
+        .group_by(IntegrationBinding.integration_instance_id)
+        .all()
+    )
+    return (
+        {int(source_id): int(count) for source_id, count, _ in rows},
+        {int(source_id): int(unscoped or 0) for source_id, _, unscoped in rows},
+    )
+
+
 def build_provider_coverage(
     integration_type: str,
     *,
@@ -199,56 +233,58 @@ def build_provider_coverage(
     status: str = '',
 ) -> dict[str, Any]:
     meta = provider_meta(integration_type)
+    # Filter/count/page in SQL before resolving bindings or provider records.
+    snapshot = paged_coverage_scopes(
+        integration_type,
+        page=page,
+        per_page=per_page,
+        query=query,
+        environment=environment,
+        status=status,
+    )
     instances = _instances(integration_type)
     instance_by_canonical = {
         instance.integration_instance_id: instance
         for instance in instances
         if instance.integration_instance_id is not None
     }
-    _, bindings_by_asset, sharing_counts, unscoped_counts = _provider_binding_indexes(integration_type)
-    all_rows = [
-        _coverage_row(
-            scope,
-            bindings_by_asset=bindings_by_asset,
-            instance_by_canonical=instance_by_canonical,
-            sharing_counts=sharing_counts,
+    sharing_counts, unscoped_counts = _source_binding_counts(integration_type)
+    binding_ids = [row['binding_id'] for row in snapshot['rows'] if row['binding_id'] is not None]
+    bindings = IntegrationBinding.query.filter(IntegrationBinding.id.in_(binding_ids)).all() if binding_ids else []
+    by_id = {binding.id: binding for binding in bindings}
+    page_rows: list[dict[str, Any]] = []
+    for scoped in snapshot['rows']:
+        binding = by_id.get(scoped['binding_id'])
+        scope = {
+            'scope_type': scoped['asset_type'],
+            'scope_key': scoped['asset_key'],
+            'scope_name': scoped['asset_name'],
+            'environment': get_environment_label(scoped['environment']),
+            'search_hint': scoped['hint'],
+        }
+        bindings_by_asset = {(scope['scope_type'], scope['scope_key']): [binding]} if binding else {}
+        page_rows.append(
+            _coverage_row(
+                scope,
+                bindings_by_asset=bindings_by_asset,
+                instance_by_canonical=instance_by_canonical,
+                sharing_counts=sharing_counts,
+            )
         )
-        for scope in _managed_asset_scopes()
-    ]
-    filtered_rows = all_rows
-    normalized_query = query.strip().lower()
-    if normalized_query:
-        filtered_rows = [row for row in filtered_rows if normalized_query in row['search_text']]
-    if environment:
-        filtered_rows = [row for row in filtered_rows if row['environment'] == environment]
-    if status:
-        filtered_rows = [row for row in filtered_rows if row['coverage_status'] == status]
 
-    page_rows, pagination = _paginate(filtered_rows, page=page, per_page=per_page)
     return {
         'provider': meta,
         'coverage_rows': page_rows,
-        'coverage_pagination': pagination,
+        'coverage_pagination': snapshot['pagination'],
         'selected_coverage_query': query,
         'selected_coverage_environment': environment,
         'selected_coverage_status': status,
-        'coverage_environment_options': sorted({row['environment'] for row in all_rows}),
-        'coverage_status_options': [
-            option
-            for option in ('ready', 'degraded', 'validation_required', 'blocked', 'uncovered')
-            if any(row['coverage_status'] == option for row in all_rows)
-        ],
+        'coverage_environment_options': snapshot['environment_options'],
+        'coverage_status_options': snapshot['status_options'],
         'source_options': _coverage_source_options(
             instances, meta=meta, sharing_counts=sharing_counts, unscoped_counts=unscoped_counts
         ),
-        'coverage_stats': {
-            'total': len(all_rows),
-            'ready': sum(1 for row in all_rows if row['coverage_status'] == 'ready'),
-            'attention': sum(
-                1 for row in all_rows if row['coverage_status'] in {'degraded', 'validation_required', 'blocked'}
-            ),
-            'uncovered': sum(1 for row in all_rows if row['coverage_status'] == 'uncovered'),
-        },
+        'coverage_stats': snapshot['stats'],
     }
 
 
@@ -329,18 +365,32 @@ def bound_sources_for_scopes(
         provider_by_instance[binding.integration_instance_id] = provider
         candidates.setdefault((provider, str(binding.asset_key)), []).append(binding)
 
+    # Hydrate only the preferred binding for each *visible* asset, not every
+    # failover candidate or every registered Metrics/Alert source in the fleet.
+    winners: dict[tuple[str, str], IntegrationBinding] = {}
+    for key, options in candidates.items():
+        winners[key] = min(
+            options,
+            key=lambda item: (_role_rank(item.binding_role), item.priority, item.id),
+        )
+    selected_ids = {
+        provider: {
+            binding.integration_instance_id
+            for binding in winners.values()
+            if provider_by_instance.get(binding.integration_instance_id) == provider
+        }
+        for provider in normalized_providers
+    }
     source_maps = {
         provider: {
             instance.integration_instance_id: instance
-            for instance in _instances(provider)
+            for instance in _instances(provider, canonical_ids=selected_ids[provider])
             if instance.integration_instance_id is not None
         }
         for provider in normalized_providers
     }
     resolved: dict[tuple[str, str], tuple[Any | None, IntegrationBinding | None]] = {}
-    for key, options in candidates.items():
-        options.sort(key=lambda item: (_role_rank(item.binding_role), item.priority, item.id))
-        binding = options[0]
+    for key, binding in winners.items():
         provider = provider_by_instance.get(binding.integration_instance_id, key[0])
         source = source_maps.get(provider, {}).get(binding.integration_instance_id)
         resolved[key] = (source, binding)
@@ -388,21 +438,38 @@ def bound_source_for_scope(
     return source, binding
 
 
-def _instances(integration_type: str) -> list[Any]:
-    from app.integrations.kernel.registry import get_integration
+def _instances(integration_type: str, *, canonical_ids: set[int] | None = None) -> list[Any]:
+    """Batch registered provider models rather than resolving every canonical row."""
+    from app.integrations.kernel.registry import get_integration, registry
 
+    if canonical_ids is not None and not canonical_ids:
+        return []
     module = get_integration(integration_type)
-    identities = (
-        IntegrationInstance.query.filter_by(integration_type=integration_type)
-        .order_by(IntegrationInstance.name.asc(), IntegrationInstance.id.asc())
-        .all()
-    )
     records: list[Any] = []
-    for identity in identities:
-        record = module.get_record_for_canonical(identity.id)
-        if record is not None:
-            records.append(record)
-    return records
+    for implementation in registry.implementations_for_type(integration_type):
+        model = implementation.record_model
+        if model is not None:
+            query = model.query.join(model.integration_instance).filter(
+                IntegrationInstance.integration_type == integration_type,
+                IntegrationInstance.provider_key == implementation.provider_key,
+            )
+            if canonical_ids is not None:
+                query = query.filter(model.integration_instance_id.in_(canonical_ids))
+            records.extend(query.all())
+            continue
+        # Future provider implementations without a batch mapping retain correctness.
+        identities_query = IntegrationInstance.query.filter_by(
+            integration_type=integration_type,
+            provider_key=implementation.provider_key,
+        )
+        if canonical_ids is not None:
+            identities_query = identities_query.filter(IntegrationInstance.id.in_(canonical_ids))
+        identities = identities_query.with_entities(IntegrationInstance.id).all()
+        for (identity_id,) in identities:
+            record = module.get_record_for_canonical(identity_id)
+            if record is not None:
+                records.append(record)
+    return sorted(records, key=lambda record: (record.name.lower(), record.id))
 
 
 def _coverage_status(
@@ -416,6 +483,11 @@ def _coverage_status(
         return 'uncovered', 'Not Bound', 'Select an existing registered source for this operational scope.'
     if selected_source is None:
         return 'blocked', 'Source Missing', 'The binding points to a provider record that no longer exists.'
+    canonical = selected_source.integration_instance
+    if canonical is None or not selected_source.enabled or not canonical.enabled:
+        return 'blocked', 'Source Disabled', 'Reactivate the source before relying on its consumer bindings.'
+    if canonical.lifecycle_status != 'active':
+        return 'blocked', 'Source Inactive', 'The source lifecycle is not active; its binding is not eligible.'
     if shared and not selector_configured:
         return (
             'blocked',

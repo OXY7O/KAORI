@@ -100,6 +100,13 @@ Central Recommendation
 
 The domain produces the evidence. Intelligence evaluates whether that evidence satisfies a rule and owns the resulting recommendation.
 
+
+### Active-source and bounded Registry evidence evaluation (#1491)
+
+Central Intelligence must qualify Registry findings to **enabled, active** Registry integration instances before evaluating committed Security, Governance, Runtime, and Capacity evidence. A retired, disabled, missing, or inactive provider cannot contribute active finding counts. Critical vulnerability facts require normalized successful scan evidence; a stale vulnerability JSON summary alone is not a valid assessed critical finding.
+
+For high-cardinality runtime-backed Registry artifacts, the evaluator uses provider-scoped keyset batches and batch-fetches workload bindings instead of loading the entire artifact estate and issuing per-artifact binding queries. Rule identity and findings stay central; no provider or page owns a shadow recommendation registry. Registry capacity forecasts are qualified by a current, nonexpired Analytics snapshot. The normal Overview still evaluates the broader multi-domain central rule set; future persisted finding materialization, if required for scale, must be separately designed under a bounded implementation issue rather than assumed complete from source-only checks.
+
 ## Rule namespace and provider coverage
 
 Rules use canonical domain-oriented namespaces where possible:
@@ -163,6 +170,12 @@ Intelligence → Automation Control
 ```
 
 Domain drill-down and Intelligence drill-back should preserve domain, asset, source evidence, and provenance.
+
+### AlertCase source-recovery qualification (#1511)
+
+For recommendation-origin AlertCases, the absence of a current finding is **not** proof of recovery. Active RecommendationAlertState reconciliation reads committed states in stable keyset batches of 200 to prevent full-table hydration before evaluation. Reconciliation first checks the exact source asset against recent committed source inventory (24-hour conservative baseline) and the rule-specific source readiness where available. Kubernetes requires a recent ClusterInventory; TLS findings also require a successful current certificate-collection state. Object Storage requires recent system inventory and no stale bucket observations; missing capacity-forecast recommendations additionally require a fresh, ready, numerically usable 30-day forecast snapshot before source recovery can be asserted. Registry requires an active, enabled, ready provider with a current successful Registry commit; a missing Registry critical vulnerability finding cannot resolve while runtime-bound artifact scans are unusable. A missing qualified source keeps the AlertCase in Source Unknown (with history and routing governed), never synthetic Resolved.
+
+Read-side inventory currency is **not** worker success or provider health: user-visible readiness must explicitly identify this limitation. Only completed evidence qualification can support absent-finding resolution. Existing Rules, provider execution, and Automation Control verification retain their ownership. Registry notification routes remain blocked until explicitly approved under #1186.
 
 ## Alert Intelligence boundary
 

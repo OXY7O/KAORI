@@ -133,6 +133,34 @@ def main() -> int:
         'Configuration table requires a caption and six scoped columns.',
         errors,
     )
+    configuration_widths = {
+        'Configuration Object': 27,
+        'Scope': 23,
+        'Object Type': 11,
+        'Key Index & Mutation': 15,
+        'Current Pod References': 14,
+        'Details': 10,
+    }
+    require(
+        sum(configuration_widths.values()) == 100
+        and all(
+            f'w-[{width}%]' in table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+            for heading, width in configuration_widths.items()
+        ),
+        'Configuration columns must reserve most space for object identity and scope.',
+        errors,
+    )
+    require(
+        "item.type_supporting if item.type == 'Secret' else 'Values not stored'" in table
+        and 'title="{{ item.type_supporting }}"' in table
+        and '{% if item.reference_count is none %}' in table
+        and "{{ item.reference_count }} {{ 'Pod' if item.reference_count == 1 else 'Pods' }}" in table
+        and 'title="{{ item.reference_label }}"' in table
+        and 'title="{{ item.reference_supporting }}"' in table
+        and 'In committed snapshot' in table,
+        'Compact configuration wording must preserve Secret type and factual Pod reference evidence.',
+        errors,
+    )
     require(
         'hx-target="#configuration-table-content"' in table and 'name="partial_mode" value="table_content"' in table,
         'Configuration pagination must use the canonical table-content boundary.',

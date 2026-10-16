@@ -4,7 +4,7 @@
 {% set registry_id = "operations-drift-registry" %}
 {% set loading_id = "operations-drift-loading" %}
 {% set query_params = {
-    'tab': 'drift-reconcile',
+    'tab': 'operational-reconcile',
     'ops_drift_search': operations_drift_filters.search,
     'ops_drift_tenant_id': operations_drift_filters.tenant_id,
     'ops_drift_environment': operations_drift_filters.environment
@@ -19,7 +19,7 @@
                         loading_id,
                         operations_drift_pagination.per_page,
                         table_ui.action_classes() ,
-            query_params={'tab': 'drift-reconcile'},
+            query_params={'tab': 'operational-reconcile'},
             page_param='ops_drift_page',
             per_page_param='ops_drift_per_page'
             ) }}
@@ -32,7 +32,8 @@
         'Refreshing Namespace Provider Drift',
         none,
         none,
-        header_actions=header_actions) }}
+        header_actions=header_actions,
+        result_count=operations_drift_pagination.total_items) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.operations',
@@ -42,7 +43,7 @@
             page_param='ops_drift_page',
             per_page_param='ops_drift_per_page'
             ) %}
-            <input type="hidden" name="tab" value="drift-reconcile">
+            <input type="hidden" name="tab" value="operational-reconcile">
             <div>
                 <label for="ops-drift-tenant" class="{{ table_ui.filter_label_classes() }}">Tenant</label>
                 <select id="ops-drift-tenant"
@@ -75,39 +76,46 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1100px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1420px] !table-fixed' if operations_drift_rows else '!table-fixed') }}">
             <caption class="sr-only">Tenant Namespace and allocation provider drift.</caption>
-            <thead class="{{ table_ui.head_classes() }}">
-                <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant / Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Ownership / Authority</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Evidence</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
-                </tr>
-            </thead>
+            {% if operations_drift_rows %}
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Namespace</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Tenant / Environment</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Ownership / Authority</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[28%]">Evidence</th>
+                        <th scope="col"
+                            class="{{ table_ui.header_cell_classes(action=true) }} w-[20%]">Action</th>
+                    </tr>
+                </thead>
+            {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for item in operations_drift_rows %}
                     {% set allocation_state = operations_allocation_drift_state.get(item.id|string) or {} %}
                     {% set allocation_drift = allocation_state.get('drift') or {} %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_ui.title_cell(item.namespace,
                                                         'Allocation contract divergent' if allocation_state.get('is_allocation_drift') else 'Provider object missing or divergent',
                             'triangle-alert'
                             ) }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.name }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
+                            <p class="text-sm font-semibold text-content-primary min-w-0 max-w-full truncate"
+                               title="{{ item.environment.tenant.name }}">{{ item.environment.tenant.name }}</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ item.environment.environment|title }}">{{ item.environment.environment|title }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.metadata_label(item.ownership_status|title) }}
-                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
+                            <p class="mt-1 text-xs text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0">
                             {{ table_label.special_label('Drifted', 'warning', 'triangle-alert') }}
-                            <p class="mt-1 max-w-[420px] text-xs leading-5 text-content-muted">{{ item.provisioning_message }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted min-w-0 max-w-full truncate"
+                               title="{{ item.provisioning_message }}">{{ item.provisioning_message }}</p>
                             {% if allocation_state.get('is_allocation_drift') %}
                                 {% if allocation_drift.get('differences') %}
                                     <div class="mt-3 space-y-1.5">
@@ -119,18 +127,21 @@
                                             </p>
                                         {% endfor %}
                                         {% if allocation_drift.get('differences', [])|length > 4 %}
-                                            <p class="text-xs text-content-muted">
+                                            <p class="text-xs text-content-muted min-w-0 max-w-full truncate"
+                                               title="+{{ allocation_drift.get('differences', []) |length - 4 }} more changed dimensions">
                                                 +{{ allocation_drift.get('differences', []) |length - 4 }} more changed dimensions
                                             </p>
                                         {% endif %}
                                     </div>
                                 {% elif allocation_drift.get('observed_matches_desired') %}
-                                    <p class="mt-2 text-xs leading-5 text-status-success-text">
+                                    <p class="mt-2 text-xs leading-5 text-status-success-text min-w-0 max-w-full truncate"
+                                       title="Provider values now match KAORI intent; explicit confirmation is still required.">
                                         Provider values now match KAORI intent; explicit confirmation is still required.
                                     </p>
                                 {% endif %}
                                 {% set observed = allocation_drift.get('observed') or {} %}
-                                <p class="mt-2 max-w-[420px] text-xs leading-5 text-content-muted">
+                                <p class="mt-2 text-xs leading-5 text-content-muted min-w-0 max-w-full truncate"
+                                   title="Authority {{ allocation_drift.get('authority') |default('Unknown', true)|replace('_', ' ')|title }} · observed {{ allocation_drift.get('observed_at') |default('Unknown', true) }}">
                                     Authority {{ allocation_drift.get("authority") |default('Unknown', true)|replace('_', ' ')|title }}
                                     · observed {{ allocation_drift.get("observed_at") |default('Unknown', true) }}
                                 </p>
@@ -144,7 +155,8 @@
                                             </p>
                                         {% endfor %}
                                         {% if observed.get('source_resources', [])|length > 3 %}
-                                            <p class="text-xs text-content-muted">
+                                            <p class="text-xs text-content-muted min-w-0 max-w-full truncate"
+                                               title="+{{ observed.get('source_resources', []) |length - 3 }} more provider source(s)">
                                                 +{{ observed.get('source_resources', []) |length - 3 }} more provider source(s)
                                             </p>
                                         {% endif %}
@@ -177,7 +189,8 @@
                                     </div>
                                 {% else %}
                                     {{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}
-                                    <p class="mt-2 max-w-[280px] text-right text-xs leading-5 text-content-muted">
+                                    <p class="mt-2 text-right text-xs leading-5 text-content-muted min-w-0 max-w-full truncate"
+                                       title="{{ allocation_state.get('blocked_reason') or 'Provider reconciliation is unavailable.' }}">
                                         {{ allocation_state.get("blocked_reason") or 'Provider reconciliation is unavailable.' }}
                                     </p>
                                 {% endif %}
@@ -205,6 +218,9 @@
                             {% set empty_state_icon = "circle-check" %}
                             {% set empty_state_title = "No Namespace or Allocation Drift" %}
                             {% set empty_state_description = "No committed Namespace currently requires provider or allocation drift recovery." %}
+                            {% set empty_state_label = "" %}
+                            {% set empty_state_min_height = "min-h-[128px]" %}
+                            {% set empty_state_container_class = "!py-5" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -212,17 +228,15 @@
             </tbody>
         </table>
     </div>
-    {% if operations_drift_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.operations',
-                registry_id,
-                loading_id,
-                operations_drift_pagination,
-                query_params,
-                operations_drift_pagination.allowed_per_page,
-                resource_label='Drifted Records',
-                rows_aria_label='Drift rows per page',
-                control_name='operations-drift',
-                page_param='ops_drift_page',
-                per_page_param='ops_drift_per_page') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.operations',
+        registry_id,
+        loading_id,
+        operations_drift_pagination,
+        query_params,
+        operations_drift_pagination.allowed_per_page,
+        resource_label='Drifted Records',
+        rows_aria_label='Drift rows per page',
+        control_name='operations-drift',
+        page_param='ops_drift_page',
+        per_page_param='ops_drift_per_page') }}
 </section>

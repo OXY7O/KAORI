@@ -185,6 +185,37 @@ Overview section endpoints hydrate only the requested snapshot-backed section.
   Domain Readiness. It is not silently discarded or misrepresented as a source
   outage.
 
+## Shared Analytics presentation ownership (#1122)
+
+Kubernetes Analytics Overview now uses the common `controls_readiness`
+frame, selector and two-card readiness grid. Its Metrics Source-specific
+readiness projector still resolves waiting/not-configured/ready/degraded/
+unavailable states, but delegates source card geometry, status badge/dot
+and response/checked-at detail cells to shared `source_card`. Snapshot
+card layout remains shared. The seven Overview Time Range options come
+from canonical `get_allowed_time_ranges()` supplied by its service payload,
+not a second hard-coded list in Jinja. No change to MetricsConsumer,
+JobExecution, workload materialization or committed snapshot ownership.
+
+## Shared section-request loading tracker (#1106)
+
+Analytics Overview retains the approved compact Violet tracker geometry and
+actual `Requested Sections` counter, now supplied by one shared Jinja macro
+(`analytics/components/_section_load_tracker.html`) and one JS controller
+(`js/analytics/section_load_tracker.js`). Kubernetes and Registry are both
+consumers. The tracker counts only real requested HTMX fragments (loading,
+loaded, failed); hidden inactive panels do not contribute until requested.
+HTMX filter changes trigger a separate refresh presentation. Tracker failure
+states must remain explicit; a completed/error tracker disappears after a
+bounded delay. Compatibility with the K8s `kaoriInitializeOverviewLoadTracker`
+hook and `data-overview-lazy-section` markers is retained.
+
+**Important:** this section-loading progress is never a Celery progress
+percentage and must not be displayed as JobExecution evidence. Worker
+materialization has its own canonical progress through JobExecution/readiness
+header and `analytics-batch`. No synchronous provider call occurs in the
+shared tracker.
+
 ## Operational validation
 
 After deployment:
@@ -207,3 +238,19 @@ worker, and Beat. No database migration is introduced. Existing snapshots remain
 compatible; snapshots whose payload contains `dependency_blocker` are rejected
 by this version and may be regenerated after rollback if the old behavior is
 restored.
+
+
+### Snapshot lifecycle regression contract (#1347)
+
+A retained AnalyticsSnapshot payload must **never** be interpreted as Fresh or
+Ready by the normal `read_snapshot` / batch `read_snapshots` reader while its
+row has `pending` or `failed` lifecycle status. Those readers return no
+current context and preserve the authoritative lifecycle status; only the
+explicit `read_last_known_snapshot` continuity reader can return an older
+payload while labeling it `refreshing` / `failed`. Normal requests do not
+redispatch a pending generation already under JobExecution ownership. A failed
+snapshot may be retried through the existing page retry/registered-job path,
+subject to standard deduplication; no provider work is performed by the web
+request. A subsequent successful worker commit is the only way to restore a
+Fresh ready projection. This ensures Overview status and detailed analytics
+agree on failed and pending committed generations.

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -84,6 +86,36 @@ def test_tenant_sync_workspace_context_is_constructed_from_sync_state() -> None:
     assert 'sync_state=sync_state' in workspace
 
 
+def test_tenant_estate_credentials_and_findings_render_committed_zero_counts() -> None:
+    workspace = (ROOT / 'app/kubernetes/tenant/workspace.py').read_text(encoding='utf-8')
+    overview = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text(encoding='utf-8')
+    builder = workspace.split('def get_tenant_overview_context(', 1)[1].split(
+        'def get_tenant_operations_summary_context(', 1
+    )[0]
+
+    assert 'findings = get_active_tenant_governance_findings()' in builder
+    assert "'tenant_credential_count': TenantCredential.query.count()" in builder
+    assert "'tenant_governance_finding_count': len(findings)" in builder
+    assert "'tenant_attention_rows': _tenant_attention_rows(findings)" in builder
+    assert "('key-round', 'Credentials', tenant_credential_count," in overview
+    assert "('shield-alert', 'Findings', tenant_governance_finding_count," in overview
+
+    # A real committed zero must render as 0, not disappear as an undefined value.
+    env = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+    grid = env.get_template('components/resource_posture_grid.html').module
+    html = grid.render(
+        [
+            ('key-round', 'Credentials', 0, 'Human & machine identities', 'info'),
+            ('shield-alert', 'Findings', 0, 'Active Tenant Governance findings', 'normal'),
+        ],
+        columns=5,
+    )
+    for label in ('Credentials', 'Findings'):
+        start = html.index(f'>{label}</p>')
+        end = html.index('</article>', start)
+        assert '>0</p>' in html[start:end]
+
+
 def test_tenant_overview_uses_tls_style_collection_snapshot_and_contextual_sync_actions() -> None:
     overview = (ROOT / 'app/templates/kubernetes/tenant/overview.html').read_text(encoding='utf-8')
     sync_workspace = (ROOT / 'app/templates/kubernetes/tenant/partials/_sync_workspace.html').read_text(
@@ -130,7 +162,7 @@ def test_tenant_overview_keeps_multicluster_posture_compact_and_canonical() -> N
     assert 'kubernetes/tenant/partials/_cluster_estate.html' in overview
     assert 'components/table.html' in cluster_estate
     assert 'components/pagination.html' in cluster_estate
-    assert "table_ui.table_classes('min-w-[900px]')" in cluster_estate
+    assert "table_ui.table_classes('min-w-[900px] !table-fixed')" in cluster_estate
     assert 'table_ui.cluster_identity_with_status(' in cluster_estate
     assert 'macro cluster_identity_with_status' in table
     assert 'row.provider_status|title' in cluster_estate

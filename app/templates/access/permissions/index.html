@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/section_intro.html" as section_intro %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% block title %}Permission Catalog{% endblock title %}
@@ -112,7 +113,12 @@
                 {% endif %}
             </div>
         </section>
-        {% include "access/permissions/partials/_workspace.html" %}
+        <div class="space-y-3">
+            {{ section_intro.render('Permission Governance',
+                        'Explore code-owned permission contracts, registry alignment, and role coverage.',
+                        id='permission-workspace-heading') }}
+            {% include "access/permissions/partials/_workspace.html" %}
+        </div>
         {{ resource_detail_modal.host('Permission',
                 url_for('access.permissions.modal_details', permission_key='__detail__') ,
         footer_text='Permission evidence reflects application code and the current committed RBAC registry.',

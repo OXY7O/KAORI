@@ -29,20 +29,20 @@
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             <div data-kaori-unified-resource-sheet
                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Service Identity', 'badge-info', service.age, badge_size='detail', stretch=false, density='compact', description='Service identity, namespace ownership, type, lifecycle age, and collection context.') %}
+                {% call detail.inventory_section('Service Identity', 'badge-info', service.age, badge_size='detail', stretch=false, density='compact', description='Service type and snapshot.') %}
                     {{ detail.inventory_row('Cluster', service.cluster_name) }}
                     {{ detail.inventory_row('Namespace', service.namespace) }}
                     {{ detail.inventory_metadata_row('Service Type', service.type) }}
                     {{ detail.inventory_row('Age', service.age) }}
-                    {{ detail.inventory_technical_row('Kubernetes UID', service.uid, copyable=true) }}
+                    {{ detail.inventory_technical_row('Kubernetes UID', service.uid) }}
                     {{ detail.inventory_row('Generation', service.generation) }}
                     {{ detail.inventory_row('Created', service.created_at|user_datetime if service.created_at else 'Not Reported') }}
                     {{ detail.inventory_row('Collected', service.collected_at|user_datetime if service.collected_at else 'Not Reported') }}
                     <div class="mt-3">{{ operational_callout.render('Access Model Context', service.type_description, 'network', 'info') }}</div>
                 {% endcall %}
-                {% call detail.inventory_section('Network Identity', 'globe-2', service.access_model, badge_size='detail', stretch=false, density='compact', description='Cluster addressing, external exposure, ports, and IP-family evidence for this Service.') %}
+                {% call detail.inventory_section('Network Identity', 'globe-2', service.access_model, badge_size='detail', stretch=false, density='compact', description='IPs, ports, external access.') %}
                     {{ detail.inventory_fact_grid([
-                                        {'label': 'Cluster IP', 'value': service.cluster_ip, 'copyable': true},
+                                        {'label': 'Cluster IP', 'value': service.cluster_ip},
                                         {'label': 'Cluster IPs', 'value': service.cluster_ips|join(', ') if service.cluster_ips else ('Not Applicable' if service.type == 'Headless' else 'Not Configured')},
                     {'label': 'Declared External IPs', 'value': service.declared_external_ips|join(', ') if service.declared_external_ips else 'Not Configured'},
                     {'label': 'Load Balancer Addresses', 'value': service.load_balancer_addresses|join(', ') if service.load_balancer_addresses else (('No Address Assigned' if service.load_balancer_status_reported else 'Not Reported') if service.type == 'LoadBalancer' else 'Not Applicable')},
@@ -55,7 +55,7 @@
             </div>
             <div data-kaori-unified-resource-sheet
                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Backend Registration', 'waypoints', service.backend.label, 'status', service.backend.tone, badge_size='detail', stretch=false, density='compact', description='Endpoint and selector evidence that determines whether traffic has registered backends.') %}
+                {% call detail.inventory_section('Backend Registration', 'waypoints', service.backend.label, 'status', service.backend.tone, badge_size='detail', stretch=false, density='compact', description='Endpoints and Pod selectors.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'Registration State', 'value': service.backend.label, 'supporting': service.backend.supporting},
                                         {'label': 'Evidence Source', 'value': 'Not Applicable' if service.type == 'ExternalName' else service.endpoint_source},
@@ -70,7 +70,7 @@
                         <div class="mt-3">{{ detail.empty_evidence('No Service Selector Configured', 'Backend registration for this Service is managed independently from Pod label selection.', 'scan-search') }}</div>
                     {% endif %}
                 {% endcall %}
-                {% call detail.inventory_section('Traffic Configuration', 'sliders-horizontal', service.ip_family_policy, badge_size='detail', stretch=false, density='compact', description='Traffic policy, session affinity, IP-family behavior, and publication settings.') %}
+                {% call detail.inventory_section('Traffic Configuration', 'sliders-horizontal', service.ip_family_policy, badge_size='detail', stretch=false, density='compact', description='Traffic and IP policies.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'IP Family Policy', 'value': service.ip_family_policy},
                                         {'label': 'Session Affinity', 'value': service.session_affinity},
@@ -132,14 +132,14 @@
                         <div class="p-4">{{ detail.empty_evidence('Endpoint Registration Not Applicable', 'ExternalName Services delegate resolution to DNS and do not use Service endpoint registration.', 'external-link') }}</div>
                     </section>
                 {% elif service.endpoints_reported %}
-                    {{ related_collection.inventory_render('Endpoint Addresses', 'Registered backend addresses from EndpointSlice or Endpoints evidence.', service.endpoint_resources, service.ready_endpoint_count + service.not_ready_endpoint_count, 'waypoints', 'No Endpoint Addresses', 'No registered backend address is represented in the committed snapshot.', service.endpoints_truncated, embedded=true) }}
+                    {{ related_collection.inventory_render('Endpoint Addresses', 'Committed backend addresses.', service.endpoint_resources, service.ready_endpoint_count + service.not_ready_endpoint_count, 'waypoints', 'No Endpoint Addresses', 'No registered backend address is represented in the committed snapshot.', service.endpoints_truncated, embedded=true) }}
                 {% else %}
                     <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="p-4">{{ detail.empty_evidence('Endpoint Evidence Not Reported', 'EndpointSlice and Endpoints evidence was unavailable during the committed inventory collection.', 'database-zap') }}</div>
                     </section>
                 {% endif %}
                 {% if service.pod_relationship_applicable %}
-                    {{ related_collection.inventory_render('Selected Pods', 'Pods matching the Service selector in the current committed snapshot.', service.pods, service.pod_count, 'package-check', 'No Selected Pods', 'No committed Pod label set matches the Service selector.', service.pods_truncated, url_for('inventory.pods', cluster_id=service.cluster_id, namespace=service.namespace) , 'Open Pod Inventory', embedded=true) }}
+                    {{ related_collection.inventory_render('Selected Pods', 'Selector-matched Pods in snapshot.', service.pods, service.pod_count, 'package-check', 'No Selected Pods', 'No committed Pod label set matches the Service selector.', service.pods_truncated, url_for('inventory.pods', cluster_id=service.cluster_id, namespace=service.namespace) , 'Open Pod Inventory', embedded=true) }}
                 {% else %}
                     <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                         <div class="p-4">{{ detail.empty_evidence('Pod Selection Not Applicable', 'This Service does not declare a Pod selector. Backend registration is external or manually managed.', 'package-x') }}</div>
@@ -154,7 +154,7 @@
             <section class="space-y-3">
                 <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>
                 <div class="grid gap-3 lg:grid-cols-2">
-                    {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports Service configuration and registered backend evidence. It does not prove application reachability, traffic health, or public exposure.', 'database', 'info') }}
+                    {{ operational_callout.render('Committed Snapshot Boundary', 'Committed Service and backends; live traffic and public exposure unverified.', 'database', 'info') }}
                     {{ operational_callout.render(service.operational_context.title, service.operational_context.description, service.operational_context.icon, service.operational_context.tone, 'semantic') }}
                 </div>
             </section>

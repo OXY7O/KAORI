@@ -38,6 +38,14 @@
         {%- else -%}grid-2x2
         {%- endif -%}
     {%- endmacro %}
+    {% macro role_state_badge(active_label, inactive_label) -%}
+        <span data-role-state-preview aria-live="polite">
+            <span data-role-state-active
+                  {% if not form.is_active.data %}hidden{% endif %}>{{ table_label.status_label(active_label, 'normal', 'circle-check') }}</span>
+            <span data-role-state-inactive
+                  {% if form.is_active.data %}hidden{% endif %}>{{ table_label.status_label(inactive_label, 'unknown', 'pause-circle') }}</span>
+        </span>
+    {%- endmacro %}
     {% set selected_count = selected_permission_ids|length %}
     {% set selected_module_ns = namespace(count=0) %}
     {% for module_name, module_permissions in permissions_by_module.items() %}
@@ -219,7 +227,7 @@
                                     <span class="min-w-0 flex-1">
                                         <span class="flex flex-wrap items-center gap-2">
                                             <span class="text-sm font-bold text-content-primary">Assignment availability</span>
-                                            {{ table_label.status_label('Active Role', 'normal', 'circle-check') }}
+                                            {{ role_state_badge('Active Role' if read_only else 'Active on Save', 'Inactive Role' if read_only else 'Inactive on Save') }}
                                         </span>
                                         <span class="mt-1 block text-sm leading-6 text-content-muted">Active custom roles can be assigned in User Management and selected as an Identity Provider default. Deactivation removes role-derived access from assigned users.</span>
                                     </span>
@@ -392,7 +400,7 @@
                                         <p class="mt-1 text-xs leading-5 text-content-muted">Current assignment and authorization effect.</p>
                                     </div>
                                 </div>
-                                {% if role %}{{ table_label.status_label('Active' if form.is_active.data else 'Inactive', 'normal' if form.is_active.data else 'unknown', 'circle-check' if form.is_active.data else 'pause-circle') }}{% endif %}
+                                {% if role %}{{ role_state_badge('Active' if read_only else 'Active on Save', 'Inactive' if read_only else 'Inactive on Save') }}{% endif %}
                             </div>
                         </header>
                         <div class="space-y-3 p-5">

@@ -196,6 +196,9 @@ def _policy_json(policy: TenantCapacityPolicy) -> dict[str, Any]:
         'unmanaged_commitment_pods': policy.unmanaged_commitment_pods,
         'tenant_storage_budget': policy.tenant_storage_budget,
         'tenant_storage_budget_gib': _quantity_gib_text(policy.tenant_storage_budget),
+        'limit_exposure_mode': getattr(policy, 'limit_exposure_mode', 'observe'),
+        'cpu_limit_ratio': getattr(policy, 'cpu_limit_ratio', '1.50'),
+        'memory_limit_ratio': getattr(policy, 'memory_limit_ratio', '1.00'),
     }
 
 

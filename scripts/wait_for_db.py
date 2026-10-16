@@ -59,6 +59,52 @@ def _current_migration_heads(database_url: str) -> frozenset[str]:
         connection.close()
 
 
+def _runtime_database_admitted(database_url: str) -> bool:
+    """Fail closed until DevContainer app identity and immutable ledger ACLs are ready."""
+    if os.getenv('APP_ENV') != 'development':
+        return True  # server deployment has separate guarded admission authority
+    with psycopg2.connect(database_url, connect_timeout=5) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    current_user = 'kaori_runtime',
+                    NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole
+                         OR r.rolreplication OR r.rolbypassrls),
+                    NOT pg_has_role('kaori_runtime', 'kaori_migrator', 'MEMBER'),
+                    NOT has_schema_privilege(current_user, 'public', 'CREATE'),
+                    has_table_privilege(current_user, 'public.capsule_handoff_ledger_events', 'SELECT'),
+                    has_table_privilege(current_user, 'public.capsule_handoff_ledger_events', 'INSERT'),
+                    NOT has_table_privilege(current_user, 'public.capsule_handoff_ledger_events', 'UPDATE'),
+                    NOT has_table_privilege(current_user, 'public.capsule_handoff_ledger_events', 'DELETE'),
+                    NOT has_table_privilege(current_user, 'public.capsule_handoff_ledger_events', 'TRUNCATE'),
+                    has_table_privilege(current_user, 'public.alembic_version', 'SELECT'),
+                    NOT has_table_privilege(current_user, 'public.alembic_version', 'INSERT'),
+                    NOT has_table_privilege(current_user, 'public.alembic_version', 'UPDATE'),
+                    NOT has_table_privilege(current_user, 'public.alembic_version', 'DELETE'),
+                    NOT has_table_privilege(current_user, 'public.alembic_version', 'TRUNCATE'),
+                    EXISTS (
+                        SELECT 1 FROM public.users
+                        WHERE is_super_admin = TRUE AND is_active = TRUE
+                          AND deleted_at IS NULL
+                    ),
+                    (
+                        SELECT count(*) = 4
+                        FROM pg_trigger t
+                        WHERE t.tgrelid = 'public.capsule_handoff_ledger_events'::regclass
+                          AND t.tgname IN (
+                              'tr_capsule_ledger_guard_insert',
+                              'tr_capsule_ledger_deny_update',
+                              'tr_capsule_ledger_deny_delete',
+                              'tr_capsule_ledger_deny_truncate'
+                          )
+                          AND t.tgenabled IN ('O', 'A')
+                    )
+                FROM pg_roles r WHERE r.rolname = current_user
+            """)
+            result = cursor.fetchone()
+            return bool(result and all(result))
+
+
 def wait_for_database() -> None:
     database_url = _database_url()
     attempts = max(_env_int('DB_WAIT_ATTEMPTS', 30), 1)
@@ -89,12 +135,18 @@ def wait_for_schema() -> None:
     while True:
         try:
             current_heads = _current_migration_heads(database_url)
-        except OperationalError:
+        except psycopg2.Error:
             current_heads = frozenset()
 
         if current_heads == expected_heads:
-            print(f'Database schema ready at migration head(s): {", ".join(sorted(expected_heads))}')
-            return
+            try:
+                if _runtime_database_admitted(database_url):
+                    print(
+                        f'Database schema and restricted runtime ready at head(s): {", ".join(sorted(expected_heads))}'
+                    )
+                    return
+            except psycopg2.Error:
+                pass  # grants/immutable ledger are not yet ready: keep workers gated
 
         if not announced:
             current_label = ', '.join(sorted(current_heads)) or 'uninitialized'

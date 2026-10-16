@@ -5,6 +5,85 @@ Object Storage systems. MinIO is the first qualified Object Storage provider and
 Metrics Source is the only operational metrics category; concrete products are resolved by the source contract and are not part of the domain
 contract.
 
+## Shared Analytics loading and controls (#1114)
+
+Object Storage Analytics uses the same approved Violet **Analytics Controls &
+Data Readiness** header as K8s/Registry through
+`analytics/components/_controls_readiness.html::frame`. System/Time Range,
+Forecast History Window, and Alert Source selectors remain domain-owned and
+fully functional. Their HTMX request indicator is a **filter refresh**, not
+JobExecution progress; existing Inventory, Metrics Contract, Worker Snapshot,
+Forecast, and Alertmanager/Alert Source evidence retain independent provenance
+and semantics.
+
+The shared top **Analytics Section Loading** tracker uses
+`analytics/components/_section_load_tracker.html` and
+`js/analytics/section_load_tracker.js` once per page, under
+`data-analytics-section-tracker-root`. Unlike Kubernetes's demand-loaded
+Overview panels, Object Storage Overview/Capacity/Performance/Forecast/
+Top Consumers/Alerts currently render their main committed snapshot workspaces
+in the initial server response. These panels **must not** count as requested
+HTMX sections. Only actual standalone Bucket Records, Bucket Forecast Records,
+and Provider Alert Records fragment requests are marked
+`data-analytics-lazy-section="true"`. Their stable panel IDs let the shared
+controller reconcile HTMX outerHTML replacement; the initial server-rendered
+panel state remains `idle` to avoid a fabricated 1/1 load notification.
+
+System/time-range/alert-source changes use a distinct **Applying Filter**
+top tracker state while the canonical control header's HTMX progress indicator
+remains in place. Errors/timeouts become explicit and recover after a bounded
+delay. The top tracker never displays worker percentage; JobExecution and
+`analytics-batch` remain under canonical Platform Operations job progress.
+No new Metrics Source/Alertmanager requests or provider mutations are caused
+by the UI tracker. A future change to true lazy Overview content requires a
+separate scoped issue with fast-shell read-model, fragment endpoints and
+real data-loading evidence; don't turn static tabs into fake HTMX requests.
+
+## Canonical Analytics selectors and reusable presentation (#1122)
+
+The Object Storage Analytics Controls form now calls shared
+`analytics/components/_controls_readiness.html::selector`,
+`controls_grid` and `readiness_grid` for all System, Time Range,
+Forecast History Window and Alert Source selectors. The canonical
+`app/common/analytics/params.py` options remain the only time-range
+vocabulary source; provider-specific forecast/alert choices stay with
+their owning domain. Two main cards already used shared `source_card`
+and `snapshot_card`. A subsequent shared layout/style adjustment now
+reaches all three Analytics capabilities without copying template markup.
+HTMX targets, worker dispatch, committed evidence and Alertmanager
+authority are unchanged.
+
+## Canonical two-card Analytics readiness layout (#1114)
+
+The six Object Storage Analytics views now use the same **two-column,
+two-card** shared composition as Kubernetes and Registry Analytics, rather
+than the former three/four equal-width status tiles. The form and header
+continue to reuse `analytics/components/_controls_readiness.html::frame`.
+
+- **Metrics Source Status** (Overview, Capacity, Performance, Forecast,
+  Top Consumers) uses the reusable `source_card`: the status is the
+  **committed Metrics Contract At Collection** state, with source provider,
+  qualified instance and committed inventory timestamp. This must not
+  impersonate a live Metrics Source connectivity probe.
+- **Alert Source Status** (Alerts) uses the same `source_card` with
+  committed selected stream and Alertmanager lifecycle provenance.
+  Metrics Snapshot Source and fallback/unavailable warnings remain visible
+  as contextual evidence below the two main cards.
+- **Latest Analytics Data Snapshot** uses the reusable `snapshot_card`
+  with committed `generated_at`, selected materialized dataset time range,
+  `expires_at` (Refresh Due) and `last_attempt_at` (Worker Attempt).
+  `analytics_snapshot_state` exposes `expires_at` read-only from the
+  existing snapshot model; no database schema or worker mutation changed.
+- Forecast's separate worker remains distinct and visible as a contextual
+  **Forecast Worker Snapshot** status below the main analytics evidence.
+  Source alerts, stale-grace and dispatch diagnostics are preserved.
+
+Normal page GET remains committed-state only, with existing bounded
+JobExecution refresh behavior; no additional live Metrics Source query,
+UI-only collector, scheduler, or false coverage count is introduced. Use
+the existing strict Jinja render regression over all six page variants
+to guard the actual two-card output and supporting source evidence.
+
 ## Evidence ownership
 
 - Committed Object Storage Inventory is authoritative for current-state asset,
@@ -88,6 +167,8 @@ Object Storage operational analytics follows the same materialization boundary a
 5. The worker also collects both Alertmanager and Metrics Source alert streams so `Automatic`, explicit Alertmanager, and explicit Metrics Source selection can be resolved later from committed evidence without provider access in the page request.
 6. A successful collection is stored in `ObjectStorageAnalyticsSnapshot`. The UI reads only this committed artifact plus committed Object Storage Inventory and, where required, the separate forecast snapshot.
 7. When the operational snapshot becomes stale, KAORI keeps the last usable payload inside the configured stale-grace window and queues an on-demand refresh. Missing or expired evidence blocks with `Object Storage Analytics Snapshot Required` until a worker commits usable data.
+
+Scheduled due checks treat a failed Analytics or Forecast refresh as retry-eligible even if the previous committed payload has not expired. The previous generation may still be displayed as explicitly labeled last-known evidence inside stale grace; JobExecution deduplication prevents concurrent duplicate work. A ready or in-progress generation with an unexpired payload remains governed by its expiry window. This separates materialization recovery from the last-good evidence validity boundary.
 
 The registered job defaults to a 15-minute freshness interval with 24-hour stale grace. Its snapshot table is bounded by the unique `(object_storage_system_id, time_range)` scope: refreshes replace the current artifact instead of appending unbounded analytics history.
 
@@ -178,3 +259,27 @@ Object Storage Alerts & Anomalies keeps two different evidence families explicit
 2. **KAORI metric-derived signals** evaluate Object Storage capacity, request error, queue-pressure, and node-health operating boundaries from the metrics collected in the same operational snapshot. These signals are not duplicated Alertmanager records and do not claim routing, silence, inhibition, or receiver evidence.
 
 Alertmanager and Metrics Source remain independent evidence families inside the snapshot. A collection failure for one stream must not fabricate evidence for the other, and the UI preserves the committed fallback semantics until the next successful worker refresh.
+
+## Alert-source response integrity (#1394)
+
+A source connection alone does not prove an empty alert set. The Object Storage worker requires a successful Prometheus alert-query envelope with a complete `data.result` array and well-formed alert series; it also requires an explicit normalized Alertmanager `alerts` array. Missing or malformed results are committed as unavailable alert-source evidence rather than `No Active Alerts`. A valid empty array remains a legitimate observed zero. Alertmanager remains authoritative for alert lifecycle, while Metrics Source fallback is independently qualified.
+
+## Metrics-backed alert asset isolation (#1390)
+
+Prometheus `ALERTS` is a global metrics family even when its Metrics Source runtime is bound to an Object Storage system. Metrics-backed alert fallback therefore requires a positive exact-label binding selector, checks that the selector is disjoint from other Object Storage bindings sharing that runtime, and applies the canonical `apply_promql_scope` matcher to the worker query. Unscoped, regex-only, and overlapping identities are labeled `Metrics Alert Scope Unverified` rather than promoting arbitrary alerts or empty responses to verified current-system evidence. Configure and validate unique asset labels on each consumer binding. Alertmanager remains the preferred provider-owned lifecycle source.
+
+## Bounded Analytics page selectors (#1391)
+
+Ordinary Analytics GET, filter updates and HTMX record fragments load only lightweight Object Storage system identity and committed inventory-observation fields for selector choices. The read path no longer eagerly loads every bucket from the entire registered fleet. Worker collection remains the only path that reads selected-system per-bucket inventory; provider calls never occur in the normal page request. Validate large-fleet SQL statement/object counts and six-page browser regressions during DevContainer UAT.
+
+## Snapshot validity and attempt-state labels (#1393)
+
+Hard expiry at `expires_at + stale_grace_minutes` takes precedence over a pending or failed refresh label. After that boundary the snapshot remains stored for audit but is `usable=False` and labeled `Expired` with explicit `Worker Failed` or `Refreshing` context. Within stale grace, failed worker attempts may still display last-good committed evidence as degraded. Freshness does not change the #1368 retry rule or JobExecution's worker-attempt status.
+
+## Forecast Inventory prerequisite (#1395)
+
+The forecasting dispatcher, Job Configuration readiness and worker now require `ObjectStorageSystem.inventory_observed_at` before producing long-range system/bucket forecast snapshots, matching the existing Analytics UI Inventory prerequisite. An observed empty bucket inventory is valid; **never-collected** Inventory is not. The worker rechecks the prerequisite to reject queued jobs whose eligible context has changed.
+
+## Concurrent Analytics / Forecast snapshot writer fencing (#1392)
+
+Fleet and system-level JobExecutions can overlap at a stable snapshot identity even when their request-level fingerprints differ. The existing unique snapshot row now also carries a **committed attempt claim**: `last_job_execution_id` and `last_attempt_at` are recorded *before* provider reads. A new attempt with a lower JobExecution ID cannot displace a newer claim. Success and failure writers obtain the existing PostgreSQL row lock and verify status `pending`, JobExecution ID, and the exact attempt timestamp before modifying payload, generated_at, last_error, or status. Duplicate deliveries of the same job also have independent timestamp tokens. A superseded worker produces its own failed JobExecution evidence but **must not** write stale success or downgrade the snapshot after another worker has claimed or committed it. The stable primary/unique key and existing JobExecution admission/queues remain unchanged; no schema, scheduler, or framework added. This requires PostgreSQL concurrency and retry/cancellation UAT, not only source checks.

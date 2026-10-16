@@ -259,6 +259,7 @@ def configuration() -> ResponseReturnValue:
 @bp.get('/configuration/<path:job_key>/status')
 @permission_required('jobs.view')
 def configuration_status(job_key: str) -> ResponseReturnValue:
+    _get_job_definition_or_404(job_key)
     context = _configuration_live_context(job_key)
     response = make_response(
         render_template('platform_operations/jobs/configuration/_live_status_response.html', **context)
@@ -478,10 +479,26 @@ def run_now(job_key: str) -> ResponseReturnValue:
 
     try:
         recover_stale_jobs()
+        # Only the Object Storage and Artifact Registry Inventory jobs accept a
+        # scoped confirmed-empty form. Domain dispatchers verify confirmation.
+        empty_parameters = None
+        if job_key == 'object_storage.inventory.sync' and request.form.get('empty_reconciliation'):
+            empty_parameters = {
+                'empty_reconciliation': request.form.get('empty_reconciliation'),
+                'confirm_empty_system_id': request.form.get('confirm_empty_system_id'),
+                'confirmation_phrase': request.form.get('confirmation_phrase'),
+            }
+        elif job_key == 'artifact_registry.inventory.sync' and request.form.get('empty_reconciliation'):
+            empty_parameters = {
+                'empty_reconciliation': request.form.get('empty_reconciliation'),
+                'confirm_empty_instance_id': request.form.get('confirm_empty_instance_id'),
+                'confirmation_phrase': request.form.get('confirmation_phrase'),
+            }
         outcome = dispatch_registered_job(
             job_key=job_key,
             trigger_type='manual',
             requested_by_user_id=int(current_user.id),
+            parameters=empty_parameters,
         )
     except JobWorkerUnavailable as exc:
         rollback_job_dispatch_transaction()

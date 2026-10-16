@@ -99,8 +99,10 @@ def test_resolved_workspace_adds_posture_and_keeps_clear_next_to_archive_policy(
     assert 'table_registry.clear_filters_action' in template
     assert "loading_bar.render('alert-operations-history-loading'" in template
     assert "'resolved_total': len(history_cases)" in service
-    assert "'closed': sum(case.workflow_state == 'closed' for case in history_cases)" in service
-    assert "'false_positive': sum(case.closure_reason == 'false_positive' for case in history_cases)" in service
+    assert 'def _case_counts_from_query(query) -> dict[str, int]:' in service
+    assert "and_(historical, AlertCase.workflow_state == 'closed')" in service
+    assert "and_(historical, AlertCase.closure_reason == 'false_positive')" in service
+    assert 'paginate_query(' in service
     assert 'data-resource-detail-toggle' in template
     assert 'alert_intelligence.case_details' in template
     assert 'Close Review' not in template

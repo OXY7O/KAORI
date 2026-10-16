@@ -8,7 +8,6 @@ from flask import url_for
 from app.common.workspace_navigation_catalog import (
     _CAPABILITY_CONTEXT_KEYS,
     _CAPABILITY_VIEWS,
-    _KUBERNETES_CONFIGMAP_PERMISSIONS,
     _SECTION_ORDER,
     _WORKSPACE_CONTEXT_KEYS,
     WORKSPACES,
@@ -36,6 +35,10 @@ def _capability_key(endpoint: str) -> str | None:
         return 'artifact_registry_inventory'
     if endpoint.startswith('artifact_registry.security'):
         return 'artifact_registry_security'
+    if endpoint.startswith('artifact_registry.analytics'):
+        return 'artifact_registry_analytics'
+    if endpoint.startswith('artifact_registry.runtime'):
+        return 'artifact_registry_runtime'
     return None
 
 
@@ -50,6 +53,8 @@ def _capability_label(capability_key: str) -> str:
         'object_storage_analytics': 'Analytics',
         'artifact_registry_inventory': 'Inventory',
         'artifact_registry_security': 'Security',
+        'artifact_registry_analytics': 'Analytics',
+        'artifact_registry_runtime': 'Runtime',
     }[capability_key]
 
 
@@ -73,12 +78,15 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
         'inventory.configuration_details': 'configuration',
     },
     'kubernetes_operations': {
+        'kubernetes_operations.overview': 'overview',
         'kubernetes_operations.create_configmap': 'configmaps',
         'kubernetes_operations.update_configmap': 'configmaps',
         'kubernetes_operations.delete_configmap': 'configmaps',
     },
     'kubernetes_tenant': {
         'tenant.tenants': 'tenants',
+        'tenant.tenant_detail': 'tenants',
+        'tenant.generate_credential_material_route': 'tenants',
         'tenant.resource_profiles': 'resource_profiles',
         'tenant.namespace_provisioning': 'namespace_provisioning',
         'tenant.operations': 'operations',
@@ -101,6 +109,23 @@ _CAPABILITY_ACTIVE_EXACT: dict[str, dict[str, str]] = {
     'artifact_registry_security': {
         'artifact_registry.security': 'vulnerabilities',
         'artifact_registry.security_supply_chain': 'supply_chain',
+    },
+    'artifact_registry_runtime': {
+        'artifact_registry.runtime_overview': 'overview',
+        'artifact_registry.runtime': 'usage',
+        'artifact_registry.runtime_topology': 'topology',
+        'artifact_registry.runtime_topology_data': 'topology',
+        'artifact_registry.runtime_binding_details': 'usage',
+    },
+    'artifact_registry_analytics': {
+        'artifact_registry.analytics_growth': 'growth',
+        'artifact_registry.analytics_capacity': 'capacity',
+        'artifact_registry.analytics_usage': 'usage',
+        'artifact_registry.analytics_risk': 'risk',
+        'artifact_registry.analytics_governance': 'governance',
+        'artifact_registry.analytics_alerts': 'alerts',
+        'artifact_registry.analytics_insights': 'insights',
+        'artifact_registry.analytics_alerts_table': 'alerts',
     },
     'object_storage_analytics': {
         'analytics.object_storage_capacity': 'capacity',
@@ -214,11 +239,6 @@ def _visible_capabilities(workspace: WorkspaceDefinition, user: Any) -> tuple[Wo
 
 
 def _resolved_capability_endpoint(workspace_key: str, tab: WorkspaceCapabilityDefinition, user: Any) -> str:
-    if workspace_key == 'kubernetes' and tab.key == 'operations':
-        if _has_any_permission(user, _KUBERNETES_CONFIGMAP_PERMISSIONS):
-            return 'kubernetes_operations.configmap_management'
-        return 'kubernetes_operations.secret_management'
-
     if workspace_key == 'kubernetes' and tab.key == 'governance':
         if user.has_permission('governance.view'):
             return 'governance.overview'

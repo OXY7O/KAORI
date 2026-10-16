@@ -22,7 +22,7 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 id="job-execution-registry-title"
                         class="text-base font-semibold text-content-primary">Execution Registry</h3>
-                    {{ table_label.metadata_label(job_pagination.total_items ~ ' Records') }}
+                    {{ table_label.result_count(job_pagination.total_items) }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Search execution ownership, progress, timing, and terminal outcomes.</p>
             </div>

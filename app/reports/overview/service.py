@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from flask import current_app, url_for
@@ -55,6 +55,23 @@ ARCHIVED_REPORT_STATUSES = [
 IMPLEMENTED_REPORT_TYPES = frozenset(spec.value for spec in REPORT_TYPE_SPECS)
 
 
+def get_reporting_posture(
+    report_counts: dict[str, int],
+    storage_context: dict[str, Any],
+    worker_context: dict[str, Any],
+) -> dict[str, str]:
+    """Derive one conservative overview posture from canonical runtime evidence."""
+    if not bool(storage_context.get('ready')):
+        return {'label': 'Degraded', 'tone': 'warning', 'reason': 'storage'}
+    if not bool(worker_context.get('ready')):
+        if str(worker_context.get('status') or '') == 'unknown':
+            return {'label': 'Needs Review', 'tone': 'warning', 'reason': 'queue_unknown'}
+        return {'label': 'Degraded', 'tone': 'warning', 'reason': 'queue'}
+    if int(report_counts.get('failed', 0)) > 0:
+        return {'label': 'Needs Review', 'tone': 'warning', 'reason': 'failed_requests'}
+    return {'label': 'Ready', 'tone': 'normal', 'reason': 'ready'}
+
+
 def get_reports_overview_payload() -> dict[str, Any]:
     report_counts = get_report_counts()
     storage_context = get_storage_context()
@@ -80,6 +97,7 @@ def get_reports_overview_payload() -> dict[str, Any]:
         'report_type_summary': get_report_type_summary(report_type_coverage),
         'storage_context': storage_context,
         'worker_context': worker_context,
+        'reporting_posture': get_reporting_posture(report_counts, storage_context, worker_context),
     }
 
 
@@ -118,11 +136,25 @@ def count_reports_by_status(statuses: list[str]) -> int:
     return int(db.session.scalar(select(func.count(Report.id)).where(Report.status.in_(statuses))) or 0)
 
 
-def count_reports_generated_this_month() -> int:
-    now = datetime.now(UTC)
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+def current_utc_month_bounds(now: datetime) -> tuple[datetime, datetime]:
+    """Return [start, next start) for a UTC calendar month, including December rollover."""
+    utc_now = now.astimezone(UTC)
+    month_start = utc_now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    next_month = (month_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    return month_start, next_month
 
-    return int(db.session.scalar(select(func.count(Report.id)).where(Report.created_at >= month_start)) or 0)
+
+def count_reports_generated_this_month() -> int:
+    month_start, next_month = current_utc_month_bounds(datetime.now(UTC))
+    return int(
+        db.session.scalar(
+            select(func.count(Report.id)).where(
+                Report.created_at >= month_start,
+                Report.created_at < next_month,
+            )
+        )
+        or 0
+    )
 
 
 def count_report_schedules() -> int:
@@ -202,6 +234,7 @@ def get_reporting_operations(
             ),
             'action_label': 'Generate Report',
             'href': url_for('reports.generate_report'),
+            'permission': 'reports.generate',
         },
         {
             'label': 'Active Schedules',
@@ -212,6 +245,7 @@ def get_reporting_operations(
             'caption': f'{int(report_counts.get("schedules", 0))} total schedule definition(s).',
             'action_label': 'Open Schedules',
             'href': url_for('reports.schedules'),
+            'permission': 'reports.manage_schedules',
         },
         {
             'label': 'Artifact Storage',
@@ -222,6 +256,7 @@ def get_reporting_operations(
             'caption': f'{storage_context.get("checked_label", "Readiness checked")} · shared readiness state.',
             'action_label': 'Open Storage',
             'href': url_for('reports.storage'),
+            'permission': 'reports.manage_storage',
         },
     ]
 
@@ -267,11 +302,16 @@ def get_reporting_coverage_summary() -> list[dict[str, Any]]:
     return [groups[REPORT_FAMILY_ANALYTICS], groups[REPORT_FAMILY_INVENTORY]]
 
 
-def get_artifact_statistics(report_counts: dict[str, int]) -> list[dict[str, str]]:
+def format_all_time_completion_rate(report_counts: dict[str, int]) -> str:
+    """Only terminal report requests participate in the lifetime completion rate."""
     completed = int(report_counts.get('ready', 0)) + int(report_counts.get('archived', 0))
     failed = int(report_counts.get('failed', 0))
     resolved = completed + failed
-    completion_rate = f'{round((completed / resolved) * 100)}%' if resolved else '—'
+    return f'{round((completed / resolved) * 100)}%' if resolved else '—'
+
+
+def get_artifact_statistics(report_counts: dict[str, int]) -> list[dict[str, str]]:
+    completion_rate = format_all_time_completion_rate(report_counts)
     footprint_bytes = int(
         db.session.scalar(
             select(func.coalesce(func.sum(Report.file_size_bytes), 0)).where(
@@ -285,13 +325,13 @@ def get_artifact_statistics(report_counts: dict[str, int]) -> list[dict[str, str
         {
             'label': 'Requests This Month',
             'value': str(report_counts.get('generated_this_month', 0)),
-            'caption': 'Report requests created this calendar month',
+            'caption': 'Requests created this UTC calendar month',
             'icon': 'calendar-range',
         },
         {
             'label': 'Completion Rate',
             'value': completion_rate,
-            'caption': 'Ready or archived among resolved requests',
+            'caption': 'All-time: ready or archived among resolved requests',
             'icon': 'badge-check',
         },
         {
@@ -455,8 +495,9 @@ def get_report_type_coverage() -> dict[str, Any]:
 
 def get_storage_context() -> dict[str, Any]:
     backend_name = get_configured_storage_backend_name()
-    local_health = build_local_storage_health()
-    s3_health = build_s3_storage_health()
+    # Overview only needs selected-backend readiness; Storage owns the full census.
+    local_health = build_local_storage_health(include_artifact_inventory=False) if backend_name == 'local' else None
+    s3_health = build_s3_storage_health() if backend_name == 's3' else None
     backend_status = get_report_storage_backend_status(backend_name)
     is_ready = bool(backend_status.get('write_available', False))
     state = str(backend_status.get('state') or 'unknown')

@@ -5,7 +5,7 @@ from typing import Any
 from urllib.parse import urlencode
 
 from flask import url_for
-from sqlalchemy import select
+from sqlalchemy import cast, func, or_, select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
@@ -58,12 +58,28 @@ def get_report_templates_payload(
     args: MultiDict[str, str] | None = None,
 ) -> dict[str, Any]:
     selected_filters = get_selected_filters(args)
-    all_templates = get_all_template_items()
-    filtered_templates = [
-        template for template in all_templates if template_matches_filters(template, selected_filters)
-    ]
-    pagination = build_templates_pagination(args, selected_filters, len(filtered_templates))
-    templates = filtered_templates[pagination['offset'] : pagination['offset'] + pagination['per_page']]
+    system_items = [build_system_template_item(item) for item in SYSTEM_TEMPLATE_ITEMS]
+    filtered_system = [item for item in system_items if template_matches_filters(item, selected_filters)]
+    custom_statement = get_custom_template_filtered_query(selected_filters)
+    custom_count = int(
+        db.session.scalar(select(func.count()).select_from(custom_statement.order_by(None).subquery())) or 0
+    )
+    total = len(filtered_system) + custom_count
+    pagination = build_templates_pagination(args, selected_filters, total)
+    offset, size = pagination['offset'], pagination['per_page']
+    page_system = filtered_system[offset : offset + size]
+    remaining = size - len(page_system)
+    custom_offset = max(0, offset - len(filtered_system))
+    page_custom = (
+        db.session.scalars(
+            custom_statement.order_by(ReportTemplate.updated_at.desc(), ReportTemplate.name.asc(), ReportTemplate.id)
+            .offset(custom_offset)
+            .limit(remaining)
+        ).all()
+        if remaining > 0 and custom_offset < custom_count
+        else []
+    )
+    templates = page_system + [build_custom_template_item(item) for item in page_custom]
     registry_return_url = build_template_registry_url(selected_filters, pagination)
     for template in templates:
         if template['source'] == 'custom':
@@ -71,12 +87,14 @@ def get_report_templates_payload(
                 selected_filters, pagination, edit_template_id=int(template['database_id'])
             )
     edit_template = get_edit_template_context(args) if args is not None else None
+    # Aggregated weighting preserves all-estate KPIs without reading every custom row.
+    summary_items = system_items + get_custom_template_aggregate_items()
 
     return {
         'page_title': 'Report Templates',
         'page_subtitle': ('Manage report templates for Analytics and Inventory output formats.'),
-        'summary_cards': get_summary_cards(all_templates),
-        'posture': get_template_posture(all_templates),
+        'summary_cards': get_summary_cards(summary_items),
+        'posture': get_template_posture(summary_items),
         'filter_options': get_filter_options(),
         'selected_filters': selected_filters,
         'active_filter_count': count_active_filters(selected_filters),
@@ -97,6 +115,65 @@ def get_report_templates_payload(
         },
         'report_family_by_report_type': {str(option['value']): str(option['family']) for option in REPORT_TYPE_OPTIONS},
     }
+
+
+def get_custom_template_aggregate_items() -> list[dict[str, Any]]:
+    """One grouped query carries counts without loading custom template entities."""
+    rows = db.session.execute(
+        select(ReportTemplate.report_type, ReportTemplate.status, func.count(ReportTemplate.id)).group_by(
+            ReportTemplate.report_type, ReportTemplate.status
+        )
+    ).all()
+    return [
+        {
+            'ownership': 'custom',
+            'status': status,
+            'family': get_report_family(report_type) if report_type in get_allowed_report_types() else 'unknown',
+            '_weight': int(count),
+        }
+        for report_type, status, count in rows
+    ]
+
+
+def get_custom_template_filtered_query(filters: dict[str, str]):
+    """Compose SQL-side registry search; only the current page is materialized."""
+    query = select(ReportTemplate)
+    if filters['domain']:
+        query = query.where(ReportTemplate.report_domain == filters['domain'])
+    if filters['family']:
+        family_types = [spec.value for spec in REPORT_TYPE_SPECS if spec.family == filters['family']]
+        query = query.where(ReportTemplate.report_type.in_(family_types))
+    if filters['report_type']:
+        query = query.where(ReportTemplate.report_type == filters['report_type'])
+    if filters['ownership'] == 'system' or filters['status'] == 'system':
+        query = query.where(ReportTemplate.id == -1)
+    if filters['status'] in {'active', 'draft'}:
+        query = query.where(ReportTemplate.status == filters['status'])
+    if filters['output_format']:
+        query = query.where(func.lower(ReportTemplate.output_format) == filters['output_format'])
+    if filters['search']:
+        term = filters['search'].strip().lower()
+        escaped = term.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        pattern = f'%{escaped}%'
+        matching_report_types = [
+            spec.value for spec in REPORT_TYPE_SPECS if term in spec.label.lower() or term in spec.family.lower()
+        ]
+        matching_domains = [domain for domain, label in REPORT_DOMAIN_LABELS.items() if term in label.lower()]
+        matching_sections = [str(item['value']) for item in SECTION_OPTIONS if term in str(item['label']).lower()]
+        section_text = func.lower(cast(ReportTemplate.sections, db.String))
+        predicates = [
+            func.lower(ReportTemplate.name).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.description).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.created_by_display_name_snapshot).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.created_by_username_snapshot).like(pattern, escape='\\'),
+            func.lower(ReportTemplate.report_type).like(pattern, escape='\\'),
+            section_text.like(pattern, escape='\\'),
+            ReportTemplate.report_type.in_(matching_report_types),
+            ReportTemplate.report_domain.in_(matching_domains),
+        ]
+        predicates.extend(section_text.like(f'%{section}%') for section in matching_sections)
+        query = query.where(or_(*predicates))
+    return query
 
 
 def get_all_template_items() -> list[dict[str, Any]]:
@@ -159,11 +236,41 @@ def build_system_template_item(template: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def get_custom_template_contract_errors(template: ReportTemplate) -> list[str]:
+    """Evaluate historical records without rewriting removed catalog contracts."""
+    try:
+        spec = get_report_type_spec(template.report_type)
+    except ReportContractError:
+        return ['Report type is no longer published in the canonical catalog.']
+    errors: list[str] = []
+    if template.output_format not in spec.allowed_formats:
+        errors.append('Stored output format is not supported by this report type.')
+    sections = template.sections_as_list()
+    allowed = set(spec.default_sections)
+    if (
+        not sections
+        or any(not isinstance(item, str) or item not in allowed for item in sections)
+        or len(sections) != len(set(item for item in sections if isinstance(item, str)))
+    ):
+        errors.append('Stored section selection no longer matches the canonical contract.')
+    elif spec.family == REPORT_FAMILY_INVENTORY and sections != list(spec.default_sections):
+        errors.append('Inventory sections no longer match the protected contract.')
+    if template.status not in {'draft', 'active'}:
+        errors.append('Stored template lifecycle status is unsupported.')
+    return errors
+
+
 def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
-    sections = sanitize_sections(template.report_type, template.sections_as_list())
+    contract_errors = get_custom_template_contract_errors(template)
+    contract_valid = not contract_errors
+    # Historical JSON is untrusted presentation data; malformed entries must not
+    # crash get_section_labels or expose nested metadata in operator-facing UI.
+    sections = [item if isinstance(item, str) else 'Invalid Section' for item in template.sections_as_list()]
     report_type_label = get_report_type_label(template.report_type)
     status = template.status or 'draft'
-    family = get_report_family(template.report_type)
+    family = (
+        get_report_family(template.report_type) if template.report_type in get_allowed_report_types() else 'unknown'
+    )
     return {
         'id': str(template.id),
         'template_key': f'custom:{template.id}',
@@ -175,22 +282,30 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         'report_type': template.report_type,
         'report_type_label': report_type_label,
         'family': family,
-        'family_label': get_report_family_label(family),
+        'family_label': get_report_family_label(family) if family != 'unknown' else 'Needs Review',
         'domain_label': REPORT_DOMAIN_LABELS.get(template.report_domain or DEFAULT_REPORT_DOMAIN, 'Unknown Domain'),
         'description': template.description or 'Custom report template.',
         'status': status,
-        'output_format': template.output_format.upper(),
-        'allowed_formats': [value.upper() for value in get_allowed_output_formats(template.report_type)],
+        'output_format': str(template.output_format or '').upper(),
+        'allowed_formats': (
+            [value.upper() for value in get_allowed_output_formats(template.report_type)] if family != 'unknown' else []
+        ),
         'icon': get_report_type_icon(template.report_type),
         'sections': get_section_labels(sections),
         'section_values': sections,
         'section_count': len(sections),
-        'status_label': format_status_label(status),
-        'status_tone': get_status_tone(status),
-        'renderer_status': 'Ready',
-        'renderer_tone': 'green',
-        'renderer_label': 'Canonical artifact renderer ready',
-        'generate_href': build_generate_href(template.report_type, sections, template.name, template.output_format),
+        'status_label': format_status_label(status) if contract_valid else 'Needs Review',
+        'status_tone': get_status_tone(status) if contract_valid else 'warning',
+        'renderer_status': 'Ready' if contract_valid else 'Needs Review',
+        'renderer_tone': 'green' if contract_valid else 'warning',
+        'renderer_label': 'Canonical artifact renderer ready' if contract_valid else 'Contract requires review',
+        'contract_valid': contract_valid,
+        'contract_errors': contract_errors,
+        'generate_href': (
+            build_generate_href(template.report_type, sections, template.name, template.output_format)
+            if contract_valid
+            else ''
+        ),
         'duplicate_href': url_for('reports.duplicate_custom_template', template_id=template.id),
         'edit_href': url_for('reports.report_templates', edit_template_id=template.id),
         'delete_href': url_for('reports.delete_report_template', template_id=template.id),
@@ -202,16 +317,23 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         or 'Unknown user',
         'can_edit': True,
         'can_delete': True,
-        'can_duplicate': True,
-        'can_generate': status == 'active',
+        'can_duplicate': contract_valid,
+        'can_generate': contract_valid and status == 'active',
     }
 
 
 def get_template_form_context(template: ReportTemplate | None = None) -> dict[str, Any]:
     report_type = template.report_type if template else 'analytics_overview'
-    sections = (
-        sanitize_sections(report_type, template.sections_as_list()) if template else get_default_sections(report_type)
-    )
+    if template is None:
+        sections = get_default_sections(report_type)
+    else:
+        # Historical JSON may contain nested values; the Edit form must remain usable.
+        historical_sections = [item for item in template.sections_as_list() if isinstance(item, str)]
+        sections = (
+            sanitize_sections(report_type, historical_sections)
+            if report_type in get_allowed_report_types()
+            else historical_sections
+        )
     return {
         'id': template.id if template else None,
         'name': template.name if template else '',
@@ -348,6 +470,10 @@ def duplicate_custom_template(template_id: int, user_id: int | None) -> tuple[bo
     if source is None:
         return False, 'Custom template was not found.', None
 
+    contract_errors = get_custom_template_contract_errors(source)
+    if contract_errors:
+        return False, 'Custom template must be repaired before duplication.', None
+
     template = ReportTemplate()
     template.name = build_copy_name(source.name)
     template.description = source.description
@@ -367,18 +493,19 @@ def duplicate_custom_template(template_id: int, user_id: int | None) -> tuple[bo
 def get_template_form_state(
     form: MultiDict[str, str] | ImmutableMultiDict[str, str],
 ) -> dict[str, Any]:
-    report_type = normalize_report_type(form.get('report_type', 'analytics_overview'))
-    sections = sanitize_sections(report_type, form.getlist('sections'))
-    if not sections:
-        sections = get_default_sections(report_type)
+    # POST values are authoritative until validated; never replace a rejected type.
+    report_type = str(form.get('report_type') or '').strip()
+    fallback_type = report_type if report_type in get_allowed_report_types() else REPORT_TYPE_SPECS[0].value
+    # The posted selection is authoritative until backend catalog validation.
+    sections = form.getlist('sections')
 
     return {
         'name': form.get('name', '').strip(),
         'description': form.get('description', '').strip(),
         'report_type': report_type,
-        'status': normalize_template_status(form.get('status', 'draft')),
+        'status': str(form.get('status') or '').strip(),
         'sections': sections,
-        'output_format': str(form.get('output_format', get_default_output_format(report_type))).strip().lower(),
+        'output_format': str(form.get('output_format', get_default_output_format(fallback_type))).strip().lower(),
     }
 
 
@@ -394,10 +521,22 @@ def validate_template_form_state(form_state: dict[str, Any]) -> list[str]:
         errors.append('Please select a valid report type.')
     if form_state['status'] not in {'draft', 'active'}:
         errors.append('Please select a valid template status.')
+    # Invalid catalog types fail before calling helpers that require published types.
+    if form_state['report_type'] not in get_allowed_report_types():
+        return errors
     if form_state['output_format'] not in get_allowed_output_formats(form_state['report_type']):
         errors.append('Please select an output format supported by the report type.')
     if not form_state['sections']:
         errors.append('Please select at least one template section.')
+    else:
+        spec = get_report_type_spec(form_state['report_type'])
+        defaults = list(spec.default_sections)
+        selected = form_state['sections']
+        if spec.family == REPORT_FAMILY_INVENTORY:
+            if selected != defaults:
+                errors.append('Inventory sections are fixed by the published report contract.')
+        elif len(selected) != len(set(selected)) or any(item not in defaults for item in selected):
+            errors.append('One or more selected template sections are invalid or duplicated.')
     return errors
 
 
@@ -430,10 +569,16 @@ def apply_template_owner_snapshot(template: ReportTemplate, user_id: int | None)
 
 
 def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
-    system_templates = sum(1 for template in templates if template['ownership'] == 'system')
-    custom_templates = sum(1 for template in templates if template['ownership'] == 'custom')
+    system_templates = sum(
+        int(template.get('_weight', 1)) for template in templates if template['ownership'] == 'system'
+    )
+    custom_templates = sum(
+        int(template.get('_weight', 1)) for template in templates if template['ownership'] == 'custom'
+    )
     active_custom_templates = sum(
-        1 for template in templates if template['ownership'] == 'custom' and template['status'] == 'active'
+        int(template.get('_weight', 1))
+        for template in templates
+        if template['ownership'] == 'custom' and template['status'] == 'active'
     )
     return [
         {
@@ -459,7 +604,7 @@ def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
         },
         {
             'label': 'Total Templates',
-            'value': str(len(templates)),
+            'value': str(system_templates + custom_templates),
             'caption': 'System and custom definitions',
             'icon': 'layout-template',
             'tone': 'info',
@@ -468,14 +613,24 @@ def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
 
 
 def get_template_posture(templates: list[dict[str, Any]]) -> dict[str, Any]:
-    analytics_count = sum(1 for item in templates if item.get('family') == REPORT_FAMILY_ANALYTICS)
-    inventory_count = sum(1 for item in templates if item.get('family') == REPORT_FAMILY_INVENTORY)
-    system_count = sum(1 for item in templates if item.get('ownership') == 'system')
-    custom_count = sum(1 for item in templates if item.get('ownership') == 'custom')
-    active_custom_count = sum(
-        1 for item in templates if item.get('ownership') == 'custom' and item.get('status') == 'active'
+    analytics_count = sum(
+        int(item.get('_weight', 1)) for item in templates if item.get('family') == REPORT_FAMILY_ANALYTICS
     )
-    draft_count = sum(1 for item in templates if item.get('ownership') == 'custom' and item.get('status') == 'draft')
+    inventory_count = sum(
+        int(item.get('_weight', 1)) for item in templates if item.get('family') == REPORT_FAMILY_INVENTORY
+    )
+    system_count = sum(int(item.get('_weight', 1)) for item in templates if item.get('ownership') == 'system')
+    custom_count = sum(int(item.get('_weight', 1)) for item in templates if item.get('ownership') == 'custom')
+    active_custom_count = sum(
+        int(item.get('_weight', 1))
+        for item in templates
+        if item.get('ownership') == 'custom' and item.get('status') == 'active'
+    )
+    draft_count = sum(
+        int(item.get('_weight', 1))
+        for item in templates
+        if item.get('ownership') == 'custom' and item.get('status') == 'draft'
+    )
     catalog_count = len(REPORT_TYPE_SPECS)
     catalog_analytics_count = sum(1 for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_ANALYTICS)
     catalog_inventory_count = sum(1 for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_INVENTORY)

@@ -26,12 +26,13 @@
     {% endset %}
     {{ table_ui.inventory_block_header('library-big',
         'Resource Profile Registry',
-        'Compact contract registry. Open a profile to inspect allocation, lineage, dependencies, and allowed lifecycle actions.',
+        'Reusable allocation profiles. Open Manage for full contract details.',
         loading_id,
         'Refreshing Resource Profile Registry',
         none,
         none,
-        header_actions=header_actions) }}
+        header_actions=header_actions,
+        result_count=profile_pagination.total_items) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.resource_profiles',
@@ -74,64 +75,80 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[900px]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[1150px] !table-fixed') }}">
             <caption class="sr-only">Committed Tenant Resource Profile contracts.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Profile</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Contract</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Allocation</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Usage</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[29%]">Profile</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Contract</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[26%]">Allocation</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">Usage</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[9%]">Action</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for profile in profiles %}
                     {% set usage = profile_dependencies.get(profile.id) %}
+                    {# Presentation-only identity: the immutable full name and description remain in Manage. #}
+                    {% set adopted_baseline = profile.name.startswith('Adopted ') %}
+                    {% set registry_name = profile.name[8:] if adopted_baseline else profile.name %}
+                    {% set name_parts = registry_name.rsplit(' · ', 1) %}
+                    {% if name_parts|length == 2 and name_parts[1]|length == 36 and name_parts[1].count('-') == 4 %}
+                        {% set registry_name = name_parts[0] ~ ' · ' ~ name_parts[1][:8] %}
+                    {% endif %}
+                    {% set registry_name = registry_name|truncate(44, True, '…') %}
+                    {% set registry_meta = ('Adopted baseline' if adopted_baseline else 'Profile') ~ ' · #' ~ profile.id %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
-                            {{ table_ui.title_cell(profile.name, profile.description or 'Reusable allocation contract', 'layers-3') }}
+                        <td class="{{ table_ui.cell_classes() }} align-middle min-w-0">
+                            {{ table_ui.title_cell(registry_name, registry_meta, 'layers-3') }}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
-                            <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.status_label(profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ') |title), 'info' if profile.profile_class == 'custom' else 'normal') }}
-                                {{ table_label.status_label('Editable Values' if profile.profile_class == 'custom' else 'Versioned Controls', 'info' if profile.profile_class == 'custom' else 'maintenance') }}
-                                {{ table_label.status_label('Enabled' if profile.enabled else 'Disabled', 'normal' if profile.enabled else 'unknown') }}
+                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    {{ table_label.status_label(profile_class_labels.get(profile.profile_class, profile.profile_class|replace('_', ' ') |title),
+                                    'info' if profile.profile_class == 'custom' else 'normal') }}
+                                    {{ table_label.status_label('Enabled' if profile.enabled else 'Disabled',
+                                                                        'normal' if profile.enabled else 'unknown') }}
+                                </div>
+                                <p class="mt-1.5 truncate text-xs text-content-muted"
+                                   title="Version {{ profile.version }} · {{ 'Editable Values' if profile.profile_class == 'custom' else 'Versioned Controls' }}">
+                                    v{{ profile.version }} · {{ 'Editable Values' if profile.profile_class == 'custom' else 'Versioned Controls' }}
+                                </p>
                             </div>
-                            <p class="mt-1 text-xs text-content-muted">
-                                v{{ profile.version }} ·
-                                {% if profile.profile_class == 'custom' and profile.base_preset_class %}
-                                    Based on {{ profile_class_labels.get(profile.base_preset_class, profile.base_preset_class|replace('_', ' ') |title) }} v{{ profile.base_preset_version or '—' }}
-                                {% elif profile.profile_class == 'custom' %}
-                                    Independent Custom
-                                {% else %}
-                                    KAORI preset · Fixed values
-                                {% endif %}
-                            </p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
-                            <p class="text-xs font-semibold text-content-primary">
-                                {{ profile.quota_hard_json.get("requests.cpu") or 'Not Managed' }} CPU ·
-                                {{ profile.quota_hard_json.get("requests.memory") or 'Not Managed' }} memory
-                            </p>
-                            <p class="mt-1 text-xs text-content-muted">
-                                {{ profile.quota_hard_json.get("pods") or 'Not Managed' }} pods ·
-                                {{ profile.quota_hard_json.get("requests.storage") or 'Not Managed' }} storage
-                            </p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
+                            <dl class="grid grid-cols-2 gap-x-3 gap-y-2">
+                                {% for label, value in [
+                                    ('CPU', profile.quota_hard_json.get('requests.cpu') or 'Not Managed'),
+                                    ('Memory', profile.quota_hard_json.get('requests.memory') or 'Not Managed'),
+                                    ('Pods', profile.quota_hard_json.get('pods') or 'Not Managed'),
+                                    ('Storage', profile.quota_hard_json.get('requests.storage') or 'Not Managed')
+                                    ] %}
+                                    <div class="min-w-0">
+                                        <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                        <dd class="mt-0.5 break-words text-xs font-semibold leading-5 text-content-primary"
+                                            title="{{ label }}: {{ value }}">
+                                            {{ value }}
+                                        </dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }} align-middle">
+                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
                             {% set rollout_targets = profile_rollout_targets.get(profile.id, []) %}
                             {% set pending_rollout = rollout_targets|sum(attribute='outdated') if rollout_targets else 0 %}
-                            <p class="text-xs font-semibold text-content-primary">{{ usage.namespaces }} Namespace ref{{ '' if usage.namespaces == 1 else 's' }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ usage.capacity_decisions }} Capacity Decision{{ '' if usage.capacity_decisions == 1 else 's' }}</p>
+                            <p class="text-xs font-semibold text-content-primary">{{ usage.namespaces }} Namespace{{ '' if usage.namespaces == 1 else 's' }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ usage.capacity_decisions }} Decision{{ '' if usage.capacity_decisions == 1 else 's' }}</p>
                             {% if pending_rollout %}
-                                <div class="mt-1.5">{{ table_label.status_label(pending_rollout ~ ' pending rollout', 'warning') }}</div>
+                                <div class="mt-2">{{ table_label.status_label(pending_rollout ~ ' pending rollout', 'warning') }}</div>
                             {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
                             <button type="button"
                                     data-kaori-dialog-open
                                     data-dialog-target="resource-profile-manage-{{ profile.id }}"
+                                    aria-label="Manage Resource Profile {{ profile.name }}"
                                     class="{{ table_ui.action_classes() }}">
                                 <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
                                 Manage
@@ -151,16 +168,14 @@
             </tbody>
         </table>
     </div>
-    {% if profile_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.resource_profiles',
-                registry_id,
-                loading_id,
-                profile_pagination,
-                query_params,
-                profile_pagination.allowed_per_page,
-                resource_label='Resource Profiles',
-                rows_aria_label='Resource Profile rows per page',
-                control_name='resource-profile') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.resource_profiles',
+        registry_id,
+        loading_id,
+        profile_pagination,
+        query_params,
+        profile_pagination.allowed_per_page,
+        resource_label='Resource Profiles',
+        rows_aria_label='Resource Profile rows per page',
+        control_name='resource-profile') }}
     {% include "kubernetes/tenant/partials/_resource_profile_management_dialogs.html" %}
 </section>

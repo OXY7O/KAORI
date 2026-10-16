@@ -104,6 +104,23 @@ def main() -> int:
         'Service table requires caption and scoped columns.',
         errors,
     )
+    service_widths = {
+        'Service': 27,
+        'Scope': 24,
+        'Access Model': 14,
+        'Port Mapping': 14,
+        'Backend Registration': 11,
+        'Details': 10,
+    }
+    require(
+        sum(service_widths.values()) == 100
+        and all(
+            f'w-[{width}%]' in table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+            for heading, width in service_widths.items()
+        ),
+        'Service columns must give the largest proportional space to Service and Scope.',
+        errors,
+    )
     require(
         "service.service_type ~ ' · Age '" not in table,
         'Age must remain in detail rather than the compact table.',

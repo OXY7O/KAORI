@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 <section id="configuration-inventory-card"
@@ -20,7 +21,12 @@
         'Refreshing Configuration Inventory',
         url_for('integrations.kubernetes') ,
     'Open Cluster Integrations',
-    header_actions=inventory_header_actions
+    header_actions=inventory_header_actions,
+    result_count=pagination.total_items,
+    title_extra=info_tip.render('k8s-inventory-configuration-title', 'Configuration Inventory Guide', 'Meaning of the committed evidence in this table.', items=[
+    'Configuration Keys and Mutation: Indexed key count and whether the object is Mutable or Immutable. This is update capability, not a history of changes; configuration values are not persisted.',
+    'Current Pod References: Number of referring Pods in the committed snapshot. Zero requires collected Pod evidence; unavailable collection remains Not Reported. Other consumers may exist.'
+    ], placement='right', variant='guide')
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.configuration') }}"

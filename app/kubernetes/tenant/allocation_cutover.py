@@ -20,7 +20,10 @@ from kubernetes.utils.quantity import parse_quantity
 
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
+from app.kubernetes.tenant.allocation_observation import (
+    capsule_namespace_authority_present,
+    observe_native_namespace_allocation,
+)
 from app.kubernetes.tenant.validation import COUNT_QUOTA_KEYS, validate_profile_spec, validate_storage_policy
 from app.models import Cluster
 from app.models.tenant import TenantNamespace, TenantOwnershipStatus, TenantResourceProfile
@@ -214,22 +217,72 @@ def _mutate_namespace_ownership(
 ) -> None:
     existing = api.read_namespace(record.namespace)
     metadata = getattr(existing, 'metadata', None)
+    observed_uid = _metadata_value(metadata, 'uid')
+    observed_version = _metadata_value(metadata, 'resource_version')
+    expected_uid = str(getattr(record, 'provider_reference', None) or '').strip()
+    if record.ownership_status == 'adopted' and (not expected_uid or not observed_uid or observed_uid != expected_uid):
+        raise ValueError('Adopted Namespace UID differs from committed provider identity; inspect before mutation.')
+    if not observed_version:
+        raise ValueError('Namespace resourceVersion is unavailable; refusing ownership mutation.')
+    if (
+        record.ownership_status == TenantOwnershipStatus.ADOPTED.value
+        and allocation_control_state(record) == 'adopted_observed'
+    ):
+        baseline_version = str((record.provisioning_evidence_json or {}).get('resource_version') or '').strip()
+        if not baseline_version or baseline_version != observed_version:
+            raise ValueError(
+                'Native Namespace resourceVersion differs from committed adoption evidence; '
+                'refresh provider observation before initial takeover.'
+            )
     labels = dict(getattr(metadata, 'labels', None) or {})
+    if capsule_namespace_authority_present(
+        labels=labels,
+        owner_references=getattr(metadata, 'owner_references', None),
+    ):
+        raise ValueError('Namespace has Capsule Tenant authority; Native ownership takeover is prohibited.')
+    if allocation_control_state(record) == 'adopted_observed' and any(
+        key in labels
+        for key in (
+            _TENANT_ID_KEY,
+            _ENVIRONMENT_KEY,
+            _PROFILE_ID_KEY,
+            'kaori.io/tenant-generation',
+        )
+    ):
+        raise ValueError('Native Namespace has residual KAORI ownership labels; inspect before initial takeover.')
     owner = str(labels.get(_MANAGED_BY_KEY) or '')
     if owner and owner != _MANAGED_BY_VALUE:
         raise ValueError(f'Namespace is managed by {owner}; governance takeover fails closed.')
+    claimed_tenant = str(labels.get(_TENANT_ID_KEY) or '').strip()
+    if (claimed_tenant and claimed_tenant != str(record.environment.tenant.id)) or (
+        owner == _MANAGED_BY_VALUE and not claimed_tenant
+    ):
+        raise ValueError('Namespace already carries an ambiguous or foreign KAORI Tenant ownership claim.')
 
     desired_labels = {**labels, **_labels(record, profile)}
     body = {
         'metadata': {
             'name': record.namespace,
-            'resourceVersion': _metadata_value(metadata, 'resource_version') or None,
+            'resourceVersion': observed_version,
             'labels': desired_labels,
         }
     }
     api.patch_namespace(name=record.namespace, body=body)
     verified = api.read_namespace(record.namespace)
-    verified_labels = dict(getattr(getattr(verified, 'metadata', None), 'labels', None) or {})
+    verified_metadata = getattr(verified, 'metadata', None)
+    verified_uid = _metadata_value(verified_metadata, 'uid')
+    verified_labels = dict(getattr(verified_metadata, 'labels', None) or {})
+    if capsule_namespace_authority_present(
+        labels=verified_labels,
+        owner_references=getattr(verified_metadata, 'owner_references', None),
+    ):
+        raise ValueError('Capsule authority appeared during Native ownership read-back.')
+    if (
+        (observed_uid and verified_uid != observed_uid)
+        or (record.ownership_status == 'adopted' and verified_uid != expected_uid)
+        or not _metadata_value(verified_metadata, 'resource_version')
+    ):
+        raise ValueError('Namespace UID/resourceVersion changed during ownership read-back.')
     if (
         verified_labels.get(_MANAGED_BY_KEY) != _MANAGED_BY_VALUE
         or verified_labels.get(_TENANT_ID_KEY) != record.environment.tenant.id
@@ -337,7 +390,7 @@ def _mutate_limit_range(
     expected: dict[str, str] | None,
     managed: bool,
     profile: TenantResourceProfile,
-) -> str:
+) -> str | None:
     name = str((expected or {}).get('name') or _DEFAULT_LIMIT_RANGE_NAME)
     existing = _read_limit_range(api, namespace=record.namespace, name=name)
     _verify_existing(existing, expected, kind='LimitRange', managed=managed)
@@ -349,7 +402,8 @@ def _mutate_limit_range(
                 namespace=record.namespace,
                 body=_delete_options(existing),
             )
-        return name
+        # No LimitRange is part of the committed managed contract after this operation.
+        return None
 
     existing_labels = dict(getattr(getattr(existing, 'metadata', None), 'labels', None) or {})
     metadata = V1ObjectMeta(
@@ -453,7 +507,7 @@ class _PreparedNativeAllocationReconcile:
 @dataclass(frozen=True, slots=True)
 class _NativeAllocationMutationResult:
     quota_name: str
-    limit_name: str
+    limit_name: str | None
     after: dict[str, Any]
 
 
@@ -506,6 +560,31 @@ def reconcile_adopted_native_allocation(
     return _reconcile_adopted_native_allocation(record, resolved)
 
 
+def _intentionally_absent_managed_limit_range(
+    record: TenantNamespace,
+    before: dict[str, Any],
+) -> bool:
+    """Distinguish an omitted managed dimension from a lost provider resource.
+
+    The original managed-resource name alone is not reliable: older commits
+    recorded it even after the profile intentionally deleted its LimitRange.
+    Accept absence only with an explicit empty frozen policy AND matching
+    committed effective provider observation; otherwise fail closed.
+    """
+    return (
+        allocation_control_state(record) == 'kaori_managed'
+        and record.allocation_limit_defaults_json is not None
+        and not record.allocation_limit_defaults_json
+        and record.allocation_storage_policy_json is not None
+        and not record.allocation_storage_policy_json
+        and bool(record.effective_hash)
+        and str(record.effective_hash) == str(before.get('effective_hash') or '')
+        and not before.get('limits')
+        and not before.get('storage_policy')
+        and _observed_source(before, 'LimitRange') is None
+    )
+
+
 def _prepare_native_allocation_reconcile(
     record: TenantNamespace,
     request: _NativeAllocationReconcileRequest,
@@ -541,6 +620,10 @@ def _prepare_native_allocation_reconcile(
             )
         quota_expected = _expected_source(record, 'ResourceQuota')
         limit_expected = _expected_source(record, 'LimitRange')
+        if limit_expected and _intentionally_absent_managed_limit_range(record, before):
+            # Legacy name-only evidence does not prove an active resource exists.
+            # Do not weaken checks for a live source, required control or stale hash.
+            limit_expected = None
 
     return _PreparedNativeAllocationReconcile(
         api=api,
@@ -651,9 +734,11 @@ def _record_native_allocation_reconcile_failure(
         'secret_material_persisted': False,
     }
     record.provisioning_evidence_json = evidence
-    record.provisioning_status = request.failure_status
-    record.provisioning_message = str(exc)[:1000]
-    record.last_reconciled_at = failed_at
+    if mutation_started:
+        # A failed verification before any write is not provisioning failure.
+        record.provisioning_status = request.failure_status
+        record.provisioning_message = str(exc)[:1000]
+        record.last_reconciled_at = failed_at
 
 
 def _commit_native_allocation_reconcile(
@@ -694,7 +779,7 @@ def _commit_native_allocation_reconcile(
             'allocation_control_state': 'kaori_managed',
             'managed_resource_names': {
                 'quota': mutation.quota_name,
-                'limit_range': mutation.limit_name,
+                **({'limit_range': mutation.limit_name} if mutation.limit_name else {}),
             },
             'allocation': {
                 **mutation.after,
@@ -725,8 +810,8 @@ def _commit_native_allocation_reconcile(
     record.last_reconciled_at = now
     record.provisioning_status = 'ready'
     record.provisioning_message = (
-        'KAORI Managed namespace allocation verified against Native Kubernetes provider read-back. '
-        'Adoption origin remains retained in evidence.'
+        'KAORI Managed Namespace allocation verified by Native Kubernetes read-back. '
+        'Adoption origin retained in evidence.'
     )
     return record
 

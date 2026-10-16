@@ -8,12 +8,16 @@ from app.common.presentation import present_user_datetime
 from app.integrations.asset_owner_sources import build_bound_observability_source_rows
 from app.integrations.deletion import asset_owner_deletion_guard
 from app.integrations.registry.eligibility import RegistryInventoryEligibility, registry_inventory_eligibility
-from app.integrations.registry.observability import RegistryMetricsReadiness, registry_metrics_readiness
+from app.integrations.registry.observability import (
+    RegistryMetricsReadiness,
+    registry_metrics_readiness,
+    registry_metrics_ready_provider_ids,
+)
 from app.integrations.registry.providers.harbor.capabilities import CAPABILITIES, CAPABILITY_PROFILE
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.harbor import HarborInstance
-from app.models.integration import IntegrationInstance
+from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.registry import RegistryCollectionState, RegistryWebhookEndpoint
 
 
@@ -54,7 +58,27 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
     instances = (
         HarborInstance.query.join(HarborInstance.integration_instance).order_by(IntegrationInstance.name.asc()).all()
     )
-    identity_ids = [int(instance.integration_instance_id) for instance in instances]
+    identities = [instance.integration_instance for instance in instances]
+    identity_ids = [int(identity.id) for identity in identities]
+    # Batch fleet evidence once; do not run Metrics Source resolution for every
+    # registered Harbor connection before the two independent UI paginators.
+    ready_metric_ids = registry_metrics_ready_provider_ids(identities)
+    binding_counts: dict[str, int] = {}
+    if identity_ids:
+        for binding in (
+            IntegrationBinding.query.join(
+                IntegrationInstance,
+                IntegrationBinding.integration_instance_id == IntegrationInstance.id,
+            )
+            .filter(
+                IntegrationInstance.integration_type == 'metrics_source',
+                IntegrationBinding.asset_type == 'registry_instance',
+                IntegrationBinding.asset_key.in_([str(identity_id) for identity_id in identity_ids]),
+                IntegrationBinding.enabled.is_(True),
+            )
+            .all()
+        ):
+            binding_counts[binding.asset_key] = binding_counts.get(binding.asset_key, 0) + 1
     collection_states = {
         int(state.integration_instance_id): state
         for state in (
@@ -82,23 +106,44 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
 
     for instance in instances:
         identity = instance.integration_instance
-        metrics = registry_metrics_readiness(identity)
-        binding_count = int(metrics.get('binding_count') or 0)
+        binding_count = binding_counts.get(str(identity.id), 0)
         total_bindings += binding_count
+        metrics: RegistryMetricsReadiness = {
+            'status': 'ready' if identity.id in ready_metric_ids else 'unavailable' if binding_count else 'not_bound',
+            'label': 'Ready' if identity.id in ready_metric_ids else 'Unavailable' if binding_count else 'Not Bound',
+            'tone': 'normal' if identity.id in ready_metric_ids else 'warning' if binding_count else 'unknown',
+            'binding_count': binding_count,
+            'validated_binding_count': 0,
+            'selected_source': None,
+            'detail': 'Batch fleet readiness; full binding resolution belongs to the visible coverage page.',
+        }
 
         collection = collection_states.get(int(identity.id))
         webhook = webhook_endpoints.get(int(identity.id))
         api_status = _provider_status(instance)
-        inventory_eligibility = registry_inventory_eligibility(identity)
-        inventory_status = _inventory_status(collection, eligibility=inventory_eligibility)
+        is_active = bool(identity.enabled and identity.lifecycle_status == 'active')
+        is_disabled = not identity.enabled
+        # Eligibility details need provider resolution only for the visible page.
+        # Full Coverage depends on committed status, not the explanation text.
+        inventory_status = _inventory_status(collection)
         metrics_status = _metrics_status(metrics)
         webhook_status = _webhook_status(webhook)
 
         complete = all(
             item['status'] == 'ready' for item in (api_status, inventory_status, metrics_status, webhook_status)
         )
-        coverage_status = 'ready' if complete else 'attention'
-        coverage_label = 'Complete' if complete else 'Partial'
+        coverage_status = (
+            'disabled' if is_disabled else 'inactive' if not is_active else 'ready' if complete else 'attention'
+        )
+        coverage_label = (
+            'Disabled'
+            if is_disabled
+            else 'Inactive'
+            if not is_active
+            else 'Full Coverage'
+            if complete
+            else 'Partial Coverage'
+        )
 
         rows.append(
             {
@@ -107,7 +152,13 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
                 'environment': instance.environment,
                 'endpoint': instance.endpoint,
                 'auth_type': instance.auth_type,
-                'readiness_status': instance.readiness_status or 'validation_required',
+                'readiness_status': (
+                    'disabled'
+                    if is_disabled
+                    else 'inactive'
+                    if not is_active
+                    else instance.readiness_status or 'validation_required'
+                ),
                 'compatibility_profile': instance.compatibility_profile,
                 'detected_version': instance.detected_version,
                 'last_checked': present_user_datetime(instance.last_checked_at, empty='Not observed'),
@@ -148,7 +199,27 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
         page=query.coverage_page,
         per_page=query.coverage_per_page,
     )
-    ready = sum(1 for item in instances if item.readiness_status == 'ready')
+    # Deep provider/binding explanations are bounded by the visible Coverage page.
+    for row in coverage_page_rows:
+        row['metrics_status'] = _metrics_status(registry_metrics_readiness(row['identity']))
+        collection = collection_states.get(int(row['identity'].id))
+        if collection is None or collection.status == 'not_collected':
+            row['inventory_status'] = _inventory_status(
+                collection,
+                eligibility=registry_inventory_eligibility(row['identity']),
+            )
+    active = sum(
+        1
+        for instance in instances
+        if instance.integration_instance.enabled and instance.integration_instance.lifecycle_status == 'active'
+    )
+    ready = sum(
+        1
+        for instance in instances
+        if instance.integration_instance.enabled
+        and instance.integration_instance.lifecycle_status == 'active'
+        and instance.readiness_status == 'ready'
+    )
     return {
         'rows': page_rows,
         'coverage_rows': coverage_page_rows,
@@ -172,27 +243,42 @@ def build_index_context(query: HarborIndexQuery | None = None) -> dict[str, Any]
             {'value': 'degraded', 'label': 'Degraded'},
             {'value': 'blocked', 'label': 'Blocked'},
             {'value': 'validation_required', 'label': 'Validation Required'},
+            {'value': 'disabled', 'label': 'Disabled'},
+            {'value': 'inactive', 'label': 'Inactive'},
         ],
         'compatibility_options': sorted(
             {row['compatibility_profile'] for row in rows if row.get('compatibility_profile')}
         ),
         'coverage_environment_options': sorted({row['environment'] for row in coverage_rows if row.get('environment')}),
         'coverage_status_options': [
-            {'value': 'ready', 'label': 'Complete'},
-            {'value': 'attention', 'label': 'Partial'},
+            {'value': 'ready', 'label': 'Full Coverage'},
+            {'value': 'attention', 'label': 'Partial Coverage'},
+            {'value': 'disabled', 'label': 'Disabled'},
+            {'value': 'inactive', 'label': 'Inactive'},
         ],
         'stats': {
             'total': len(instances),
             'configured': len(instances),
             'ready': ready,
-            'attention': len(instances) - ready,
+            'active': active,
+            'disabled': sum(1 for instance in instances if not instance.integration_instance.enabled),
+            'attention': active - ready,
             'bindings': total_bindings,
-            'uncovered': sum(1 for row in coverage_rows if row['coverage_status'] != 'ready'),
+            'uncovered': sum(1 for row in coverage_rows if row['coverage_status'] == 'attention'),
         },
     }
 
 
 def _provider_status(instance: HarborInstance) -> dict[str, str]:
+    identity = instance.integration_instance
+    if not identity.enabled:
+        return {
+            'status': 'disabled',
+            'label': 'Disabled',
+            'detail': 'Connection disabled; retained validation is historical',
+        }
+    if identity.lifecycle_status != 'active':
+        return {'status': 'inactive', 'label': 'Inactive', 'detail': 'Connection lifecycle is not active'}
     readiness = str(instance.readiness_status or 'validation_required')
     if readiness == 'ready':
         return {'status': 'ready', 'label': 'Ready', 'detail': 'Full Validation ready'}

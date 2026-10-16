@@ -14,6 +14,7 @@ from app.kubernetes.analytics.materialization.keys import (
     FORECAST_DATASET_KEY,
     TOP_CONSUMERS_DATASET_KEY,
 )
+from app.kubernetes.analytics.materialization.service import read_snapshots
 from app.kubernetes.dashboard.repository import (
     count_records,
     count_records_with_values,
@@ -308,6 +309,22 @@ def _populate_data_freshness(
             parameters=forecast_parameters(cluster_id),
         )
 
+    fleet_cluster_count = fleet_metrics_count = fleet_alerts_count = 0
+    if selected is None:
+        cluster_ids = [str(cluster.id) for cluster in dashboard.clusters]
+        fleet_cluster_count = len(cluster_ids)
+        if cluster_ids:
+            capacity_by_cluster = read_snapshots(
+                dataset_key=CAPACITY_DATASET_KEY,
+                parameters_by_cluster={cluster_id: capacity_parameters(cluster_id) for cluster_id in cluster_ids},
+            )
+            alerts_by_cluster = read_snapshots(
+                dataset_key=DASHBOARD_ALERTS_DATASET_KEY,
+                parameters_by_cluster={cluster_id: alerts_parameters(cluster_id) for cluster_id in cluster_ids},
+            )
+            fleet_metrics_count = sum(result.available for result in capacity_by_cluster.values())
+            fleet_alerts_count = sum(result.available for result in alerts_by_cluster.values())
+
     latest_sync = _latest_inventory_sync(selected_cluster_id)
     metrics_results = (capacity_result, top_result, forecast_result)
     has_metrics_source_data = any(result is not None and result.available for result in metrics_results)
@@ -319,6 +336,9 @@ def _populate_data_freshness(
         has_alertmanager_data=has_alertmanager_data,
         reporting_snapshot=reporting_snapshot,
         selected_cluster=selected,
+        fleet_cluster_count=fleet_cluster_count,
+        fleet_metrics_count=fleet_metrics_count,
+        fleet_alerts_count=fleet_alerts_count,
     )
     dashboard.meta['snapshot_states'] = {
         'capacity': getattr(capacity_result, 'state', 'not_applicable'),
@@ -346,8 +366,9 @@ def _populate_signals(
     selected_cluster_id: str | None,
     selected: Any | None,
 ) -> None:
-    if selected is not None:
-        dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)
+    if selected is None:
+        return
+    dashboard.alerts_snapshot = _kaori_alert_snapshot(selected)
     dashboard.recommended_actions = build_recommendations(selected_cluster_id=selected_cluster_id)
 
 

@@ -20,7 +20,11 @@ def test_utilization_scope_and_snapshot_are_outside_tab_workspace() -> None:
     assert 'Active Cluster' in readiness
     assert 'controls_readiness' in readiness
     assert 'analytics_materialization' in readiness
-    assert 'Worker Attempt' in read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
+    workspace = read('app/templates/kubernetes/analytics/components/_analysis_workspace.html')
+    shared_controls = read('app/templates/analytics/components/_controls_readiness.html')
+    assert 'shared_readiness.snapshot_card(' in workspace
+    assert 'snapshot.latest_worker_attempt_at' in workspace
+    assert 'Worker Attempt' in shared_controls
     assert 'bg-surface-hover px-4 py-4 sm:grid-cols-2 xl:grid-cols-4' not in readiness
 
 

@@ -72,7 +72,9 @@ def test_generated_archive_transition_uses_one_canonical_status_contract() -> No
 
     assert 'ARCHIVABLE_STATUSES = (' in service
     assert "'requested',\n    'failed',\n    'ready'," in service
-    assert 'Report.status.in_(ARCHIVABLE_STATUSES)' in service
+    assert 'report.status not in ARCHIVABLE_STATUSES' in service
+    assert 'active_ids = _get_active_report_generation_ids(reports)' in service
+    assert '.with_for_update()' in service
     assert "'can_archive_report': report.status in ARCHIVABLE_STATUSES" in service
     assert 'if report.status not in ARCHIVABLE_STATUSES:' in service
     assert 'Queued reports cannot be archived' not in service
@@ -184,6 +186,22 @@ def test_generated_service_removed_unrendered_legacy_presentation_debt() -> None
         assert f'def {function_name}(' not in service
 
     assert 'app/reports/generated/service.py::get_report_detail_recommended_actions' not in baseline
+
+    # Pure display formatting is no longer coupled to the oversized SQL/service
+    # module; the legacy import surface remains stable through re-exported names.
+    formatters = read('app/reports/generated/presentation_formatters.py')
+    assert 'from app.reports.generated.presentation_formatters import (' in service
+    for helper in (
+        '_format_report_domain',
+        '_format_source_badge',
+        '_format_source_kind',
+        '_format_period',
+        '_format_datetime',
+        '_safe_int',
+    ):
+        assert f'def {helper}(' in formatters
+        assert f'def {helper}(' not in service
+
     debt = json.loads(baseline)['module_line_limits']['app/reports/generated/service.py']
     assert 800 < debt <= 1688
 

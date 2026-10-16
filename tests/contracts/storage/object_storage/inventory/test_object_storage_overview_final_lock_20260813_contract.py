@@ -17,13 +17,18 @@ def test_overview_final_lock_uses_fleet_posture_and_committed_snapshot_boundary(
     assert '_summary_cards.html' in index
     assert '_systems_snapshot.html' not in index
     assert 'Fleet Inventory Posture' in fleet
-    assert "variant='neutral'" in fleet
+    assert 'posture_grid.render(overview.fleet_posture_metrics, columns=4)' in fleet
+    assert "'Object Storage Fleet Evidence'" in fleet
     assert '_overview_bucket_posture' in presentation
     assert '_overview_fleet_readings' in presentation
     assert '_overview_provider_distribution' in presentation
     assert "'bucket_posture': bucket_posture" in presentation
-    assert "'fleet_readings': _overview_fleet_readings(bucket_posture)" in presentation
-    assert "'provider_distribution': _overview_provider_distribution(rows)" in presentation
+    assert 'fleet_readings = _overview_fleet_readings(bucket_posture)' in presentation
+    assert "'fleet_readings': fleet_readings" in presentation
+    assert 'owner_query = _system_scope().order_by(None)' in presentation
+    assert 'provider_label = _sql_provider_label()' in presentation
+    assert '.group_by(provider_label)' in presentation
+    assert "'provider_distribution': provider_distribution" in presentation
 
 
 def test_overview_fleet_posture_covers_quota_protection_exposure_and_usage() -> None:

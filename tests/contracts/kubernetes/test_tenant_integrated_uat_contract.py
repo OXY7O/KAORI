@@ -98,8 +98,8 @@ def test_tenant_tenants_surface_exposes_governed_access_and_credential_lifecycle
 
     assert 'Memberships' in template
     assert 'Access Grants' in template
-    assert 'Issue Human Access' in template
-    assert 'Issue CI/CD Deployer' in template
+    assert 'Human Access Credential' in template
+    assert 'Workload Deployment Credential' in template
     assert 'Namespace Access' in template
     assert 'service_account_name' in template
     assert 'renewal_due_at' in template
@@ -134,7 +134,7 @@ def test_tenant_operations_uses_shared_content_tabs_without_sidebar_third_level(
 
     assert 'components/content_tabs.html' in operations
     assert 'content_tabs.render_links' in operations
-    for label in ('Provisioning', 'Runs & Evidence', 'Drift & Reconcile', 'Activity'):
+    for label in ('Provisioning', 'Runs & Evidence', 'Allocation Drift', 'Operational Reconcile', 'Activity'):
         assert label in operations
         assert f'>{label}</span>' not in menu
 

@@ -466,7 +466,7 @@ def reconcile_native_namespace(record: TenantNamespace) -> TenantNamespace:
         }
         if effective_hash == desired_hash:
             record.provisioning_status = TenantNamespaceProvisioningStatus.READY.value
-            record.provisioning_message = 'Namespace, ResourceQuota, and LimitRange match committed Tenant intent.'
+            record.provisioning_message = 'Namespace, ResourceQuota, and LimitRange match committed intent.'
         else:
             record.provisioning_status = TenantNamespaceProvisioningStatus.DRIFTED.value
             record.provisioning_message = 'Provider state does not match committed Tenant intent.'

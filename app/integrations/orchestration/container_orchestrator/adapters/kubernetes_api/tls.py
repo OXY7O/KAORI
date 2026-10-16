@@ -1,57 +1,46 @@
 from __future__ import annotations
 
+import ssl
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
-import urllib3.connection as urllib3_connection
-import urllib3.util.ssl_ as urllib3_ssl
+from urllib3.util.ssl_ import create_urllib3_context
+
+
+def configure_weak_tls(api_client: Any, *, enabled: bool, verify_ssl: bool) -> None:
+    """Scope operator-approved legacy cipher policy to one Kubernetes API transport.
+
+    Kubernetes SDK RESTClientObject owns an urllib3 pool manager per ApiClient.
+    Set its TLS context before the first request; never monkey-patch urllib3
+    functions, which would weaken unrelated concurrent provider connections.
+    The SDK's CA bundle and optional client certificate are still configured on
+    that manager and remain authoritative for certificate validation.
+    """
+    if not enabled:
+        return
+    manager = getattr(getattr(api_client, 'rest_client', None), 'pool_manager', None)
+    pool_options = getattr(manager, 'connection_pool_kw', None)
+    if not isinstance(pool_options, dict):
+        raise RuntimeError('Kubernetes client cannot scope legacy TLS to this transport.')
+
+    context = create_urllib3_context(
+        ciphers='DEFAULT:@SECLEVEL=0',
+        cert_reqs=ssl.CERT_REQUIRED if verify_ssl else ssl.CERT_NONE,
+    )
+    if not verify_ssl:
+        context.check_hostname = False
+    pool_options['ssl_context'] = context
 
 
 @contextmanager
-def weak_tls_context(
-    *,
-    enabled: bool,
-) -> Iterator[None]:
-    if not enabled:
-        yield
-        return
+def weak_tls_context(*, enabled: bool) -> Iterator[None]:
+    """Temporary import-compatibility bridge for pre-migration callers.
 
-    original_util_create_context = urllib3_ssl.create_urllib3_context
-    original_connection_create_context = getattr(
-        urllib3_connection,
-        'create_urllib3_context',
-        None,
-    )
-
-    def create_weak_tls_context(
-        *args: Any,
-        **kwargs: Any,
-    ):
-        kwargs['ciphers'] = 'DEFAULT:@SECLEVEL=0'
-
-        return original_util_create_context(
-            *args,
-            **kwargs,
-        )
-
-    urllib3_ssl.create_urllib3_context = create_weak_tls_context
-
-    if original_connection_create_context is not None:
-        setattr(
-            urllib3_connection,
-            'create_urllib3_context',
-            create_weak_tls_context,
-        )
-
-    try:
-        yield
-    finally:
-        urllib3_ssl.create_urllib3_context = original_util_create_context
-
-        if original_connection_create_context is not None:
-            setattr(
-                urllib3_connection,
-                'create_urllib3_context',
-                original_connection_create_context,
-            )
+    Legacy TLS is owned by KubernetesClient's per-transport configuration.
+    This deliberately never patches urllib3 process globals or relaxes TLS.
+    The `enabled` flag cannot change TLS for a client built outside the
+    canonical adapter; such callers must migrate to Kubernetes client.build.
+    Do not use this compatibility bridge for new provider operations.
+    """
+    yield

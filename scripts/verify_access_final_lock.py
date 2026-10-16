@@ -102,8 +102,8 @@ def main() -> int:
     for required in (
         'build_user_access_summary',
         'build_identity_provider_summary',
-        'build_roles_index_context',
-        'build_permission_registry_snapshot',
+        'build_roles_overview_summary',
+        'build_permission_registry_summary',
         'get_activity_audit_summary',
     ):
         require(
@@ -144,7 +144,8 @@ def main() -> int:
         'lock_role_for_mutation(role_id)',
         'This role changed after the page was opened',
         'Protected role cannot be edited',
-        'ensure_role_within_delegation_boundary(actor=actor, role=role)',
+        'ensure_role_within_delegation_boundary(actor=actor, role=source_role)',
+        'ensure_role_within_management_boundary(actor=actor, role=role)',
     ):
         require(required in roles_routes, f'Roles security contract missing: {required}', errors)
     for required in (
@@ -153,14 +154,23 @@ def main() -> int:
         'def role_version_matches',
         'def ensure_permission_selection_within_delegation_boundary',
         'def ensure_role_within_delegation_boundary',
+        'def ensure_role_within_management_boundary',
         'def validate_custom_role_slug',
         'Confirm the user and Identity Provider impact before deactivating this referenced role.',
     ):
         require(required in roles_service, f'Roles concurrency contract missing: {required}', errors)
     for required in ('components/page_hero.html', 'components/resource_detail_modal.html'):
         require(required in roles_index, f'Roles shared UI contract missing: {required}', errors)
-    for required in ('components/table.html', 'components/loading_bar.html', 'components/pagination.html'):
+    for required in (
+        'components/table.html',
+        'components/loading_bar.html',
+        'components/table_registry.html',
+        'registry_ui.footer(',
+    ):
         require(required in roles_registry, f'Role Registry shared UI contract missing: {required}', errors)
+    shared_registry = read('app/templates/components/table_registry.html')
+    for required in ('components/pagination.html', 'pagination_ui.numeric_pages(', 'pagination.per_page'):
+        require(required in shared_registry, f'Shared Role Registry pagination contract missing: {required}', errors)
     require('xl:sticky xl:top-5' in roles_form, 'Role form sticky context rail contract drifted', errors)
     for required in ('Delegation Boundary', 'Outside Ceiling', 'impact_acknowledged'):
         require(required in roles_form, f'Role form delegation/impact guardrail missing: {required}', errors)
@@ -342,12 +352,20 @@ def main() -> int:
     )
     require('get_browser_sso_adapter(' in provider_registry, 'Browser adapter registry contract missing', errors)
     require('Authentication Source Posture' in provider_overview, 'Identity Provider overview contract missing', errors)
-    for tab in ('Overview', 'Providers', 'Directory Provisioning'):
-        require(
-            tab in read('app/templates/access/identity_providers/partials/_tabs.html'),
-            f'Identity Provider tab missing: {tab}',
-            errors,
-        )
+    provider_index = read('app/templates/access/identity_providers/index.html')
+    require(
+        'access/identity_providers/partials/_overview.html' in provider_index,
+        'Identity Provider overview must remain visible outside workspace tabs',
+        errors,
+    )
+    provider_tabs = read('app/templates/access/identity_providers/partials/_tabs.html')
+    for tab in ('Provider Registry', 'Directory Provisioning'):
+        require(tab in provider_tabs, f'Identity Provider tab missing: {tab}', errors)
+    require(
+        'components/framed_workspace_tabs.html' in provider_tabs,
+        'Identity Provider tabs must use shared framed navigation',
+        errors,
+    )
     for forbidden in ('Client Secret Value', 'Bind Password Value', 'Last Validated'):
         require(
             forbidden not in provider_detail, f'Identity Provider secret/durable-validation leak: {forbidden}', errors

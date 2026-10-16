@@ -12,8 +12,8 @@ def test_object_storage_inventory_has_canonical_setup_state() -> None:
     assert 'def _setup_state(total_systems: int)' in presentation
     assert "'is_blocked': total_systems == 0" in presentation
     assert "'setup': _setup_state(total_systems)" in presentation
-    assert "'setup': _setup_state(len(all_rows))" in presentation
-    assert "'setup': _setup_state(len(system_rows))" in presentation
+    assert "'setup': _setup_state(total_systems)" in presentation
+    assert presentation.count("'setup': _setup_state(ObjectStorageSystem.query.count())") == 2
 
 
 def test_object_storage_overview_hides_inventory_evidence_while_setup_is_blocked() -> None:
@@ -78,11 +78,12 @@ def test_ready_inventory_empty_states_distinguish_filters_from_collection_pendin
     systems = read('app/templates/storage/object_storage/inventory/systems/partials/_table_content.html')
     buckets = read('app/templates/storage/object_storage/inventory/buckets/partials/_table_content.html')
 
-    assert "'total_committed_assets': len(rows)" in presentation
+    assert "'total_committed_assets': total_committed_assets" in presentation
     assert 'No Object Storage Systems Match These Filters' in systems
     assert 'No Matches' in systems
     assert 'Storage Required' not in systems
-    assert 'inventory.total_committed_assets == 0' in buckets
-    assert 'Collection Pending' in buckets
-    assert 'No Buckets or Containers Collected Yet' in buckets
-    assert 'No Buckets or Containers Match These Filters' in buckets
+    assert 'def _bucket_empty_state(' in presentation
+    for status in ('Collection Pending', 'Observed Empty', 'Partial Inventory', 'No Matches'):
+        assert f"'label': '{status}'" in presentation
+    assert 'inventory.empty_state.label' in buckets
+    assert 'inventory.empty_state.description' in buckets

@@ -2,58 +2,61 @@
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
-<section class="overflow-visible rounded-xl border border-kaori-primary/20 bg-kaori-soft/40 shadow-sm"
+<section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="allocation-cutover-heading">
-    <header class="flex items-start justify-between gap-4 border-b border-kaori-primary/15 px-5 py-4">
+    <header class="flex min-w-0 items-start gap-4 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                   aria-hidden="true">
-                <i data-lucide="git-compare-arrows" class="h-5 w-5"></i>
+                <i data-lucide="git-compare-arrows" class="h-4 w-4"></i>
             </span>
             <div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 id="allocation-cutover-heading"
-                        class="text-base font-semibold text-content-primary">Allocation Governance Cutover</h2>
+                    <span class="inline-flex min-w-0 items-center gap-1.5">
+                        <h2 id="allocation-cutover-heading"
+                            class="text-base font-semibold text-content-primary">Adopted Native Governance Cutover</h2>
+                        {{ info_tip.render('allocation-cutover-tip',
+                                                'Governance cutover',
+                                                'Cutover changes allocation authority only. Namespace lifecycle ownership stays adopted.',
+                                                [
+                                                'KAORI revalidates the live provider state before any write.',
+                                                'Native legacy ResourceQuota / LimitRange UID and resourceVersion must still match adoption evidence.',
+                                                'Provider read-back must equal the proposed Resource Profile before KAORI marks allocation control managed.',
+                                                'Capsule allocation stays Control Unavailable unless an admitted Capsule mutation capability owns that contract.'
+                                                ], placement='right') }}
+                    </span>
                     {{ table_label.special_label('Explicit Takeover', 'info', 'shield-check') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Move only the allocation contract from Adopted / Observed to KAORI Managed after authority, capacity, ownership, and provider read-back checks succeed.</p>
             </div>
         </div>
-        {{ info_tip.render('allocation-cutover-tip',
-                'Governance cutover',
-                'Cutover changes allocation authority only. Namespace lifecycle ownership stays adopted.',
-                [
-                'KAORI revalidates the live provider state before any write.',
-                'Native legacy ResourceQuota / LimitRange UID and resourceVersion must still match adoption evidence.',
-                'Provider read-back must equal the proposed Resource Profile before KAORI marks allocation control managed.',
-                'Capsule allocation stays Control Unavailable unless an admitted Capsule mutation capability owns that contract.'
-                ]) }}
     </header>
     <form method="post"
           action="{{ url_for('tenant.cutover_namespace_allocation_route') }}"
           data-tenant-allocation-change-form>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="space-y-5 p-5">
-            <div class="grid gap-3 md:grid-cols-4">
-                <div class="rounded-xl border border-outline-subtle bg-surface-card p-3">
-                    <p class="text-xs text-content-muted">Preset Definition</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">KAORI Preset · Locked</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">View/use only; built-in definition is not edited.</p>
-                </div>
-                <div class="rounded-xl border border-outline-subtle bg-surface-card p-3">
-                    <p class="text-xs text-content-muted">Custom Definition</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">Custom · Editable</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Reusable operator-managed profile definition.</p>
-                </div>
-                <div class="rounded-xl border border-outline-subtle bg-surface-card p-3">
-                    <p class="text-xs text-content-muted">Current Allocation</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">Adopted Baseline · Observed</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Provider-equivalent baseline; selecting the same profile keeps current values unchanged during takeover.</p>
-                </div>
-                <div class="rounded-xl border border-outline-subtle bg-surface-card p-3">
-                    <p class="text-xs text-content-muted">After Verified Cutover</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">KAORI Managed</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Governed allocation actions become available.</p>
+            <div class="flex flex-wrap items-center gap-2 border-b border-outline-subtle pb-4 text-xs text-content-secondary">
+                <i data-lucide="eye"
+                   class="h-4 w-4 text-kaori-primary"
+                   aria-hidden="true"></i>
+                Adopted Baseline · Observed
+                <i data-lucide="arrow-right"
+                   class="h-4 w-4 text-content-muted"
+                   aria-hidden="true"></i>
+                <i data-lucide="shield-check"
+                   class="h-4 w-4 text-kaori-primary"
+                   aria-hidden="true"></i>
+                KAORI Managed · Only after verified cutover
+            </div>
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="crosshair" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-sm font-semibold text-content-primary">Change Target</h3>
+                    <p class="mt-1 text-xs text-content-muted">Select the adopted Namespace and governed Resource Profile.</p>
                 </div>
             </div>
             <div class="grid gap-4 md:grid-cols-2">
@@ -89,86 +92,101 @@
                     </select>
                 </label>
             </div>
-            <div class="grid gap-4 md:grid-cols-2">
-                <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"
-                         aria-label="Observed adopted allocation">
-                    <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed Baseline</p>
-                        {{ table_label.special_label('Read Only', 'info', 'eye') }}
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     aria-label="Native cutover contract comparison">
+                <div class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
+                    <span class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
+                        <i data-lucide="git-compare-arrows"
+                           class="h-4 w-4 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        Managed Contract Comparison
+                    </span>
+                    {{ table_label.special_label('Preflight · Read Only', 'maintenance', 'shield-check') }}
+                </div>
+                <div class="grid md:grid-cols-2">
+                    {% for side, title, caption in [
+                        ('current', 'Observed Baseline', 'Adopted · Provider evidence'),
+                        ('proposed', 'Proposed Governed Contract', 'Pending · Explicit cutover')
+                        ] %}
+                        <section aria-label="{{ title }}"
+                                 class="min-w-0 px-5 py-4 {% if side == 'proposed' %}border-t border-outline-subtle md:border-t-0 md:border-l{% endif %}">
+                            <p class="text-sm font-semibold {{ 'text-kaori-primary' if side == 'proposed' else 'text-content-secondary' }}">{{ title }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ caption }}</p>
+                            <p class="mt-2 break-words text-sm font-semibold text-content-primary"
+                               data-tenant-allocation-
+                               {{ side }}
+                               -profile>—
+                            </p>
+                            <p class="mt-4 border-b border-outline-subtle pb-2 text-xs font-semibold text-content-secondary">ResourceQuota · Requests &amp; Limits</p>
+                            <dl class="grid grid-cols-2 gap-x-5 sm:grid-cols-3">
+                                {% for name, key in [
+                                    ('CPU Requests', 'requests.cpu'), ('CPU Limits', 'limits.cpu'),
+                                    ('Memory Requests', 'requests.memory'), ('Memory Limits', 'limits.memory'),
+                                    ('Pods', 'pods'), ('Total Storage', 'requests.storage')
+                                    ] %}
+                                    <div class="border-b border-outline-subtle py-3">
+                                        <dt class="text-xs text-content-muted">{{ name }}</dt>
+                                        <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                            data-tenant-allocation-metric-side="{{ side }}"
+                                            data-tenant-allocation-metric-source="quota"
+                                            data-tenant-allocation-metric-key="{{ key }}">
+                                            —
+                                        </dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
+                            <p class="mt-3 text-xs font-semibold text-content-secondary">Per-PVC Policy</p>
+                            <dl class="mt-2 grid grid-cols-2 gap-4">
+                                {% for name, key in [('Min PVC Size', 'min'), ('Max PVC Size', 'max')] %}
+                                    <div>
+                                        <dt class="text-xs text-content-muted">{{ name }}</dt>
+                                        <dd class="mt-1 text-sm font-semibold text-content-primary"
+                                            data-tenant-allocation-metric-side="{{ side }}"
+                                            data-tenant-allocation-metric-source="storage_policy"
+                                            data-tenant-allocation-metric-key="{{ key }}">
+                                            —
+                                        </dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
+                        </section>
+                    {% endfor %}
+                </div>
+                <div class="border-t border-outline-subtle bg-surface-elevated px-4 py-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-content-primary">
+                            <i data-lucide="chart-no-axes-column-increasing"
+                               class="h-4 w-4 text-kaori-primary"
+                               aria-hidden="true"></i>
+                            Change Highlights
+                        </span>
+                        <span data-tenant-allocation-highlight-count
+                              aria-live="polite"
+                              class="text-xs text-content-muted">Choose contracts</span>
                     </div>
-                    <p class="mt-3 text-sm font-semibold text-content-primary"
-                       data-tenant-allocation-current-profile>—</p>
-                    <dl class="mt-4 grid grid-cols-2 gap-3">
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">CPU requests</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-current-cpu>
-                                —
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">Memory requests</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-current-memory>
-                                —
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">Min PVC size</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-current-pvc-min>
-                                —
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">Max PVC size</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-current-pvc-max>
-                                —
-                            </dd>
-                        </div>
-                    </dl>
-                </section>
-                <section class="rounded-xl border border-kaori-primary/20 bg-surface-card p-4"
-                         aria-label="Proposed governed allocation">
-                    <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Proposed Governed Contract</p>
-                        {{ table_label.special_label('Preflight Required', 'warning', 'shield-check') }}
+                    <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                        {% for _ in range(3) %}
+                            <div data-tenant-allocation-highlight-item
+                                 class="border-l-2 border-kaori-primary/20 pl-3"
+                                 hidden>
+                                <p data-tenant-allocation-highlight-label
+                                   class="text-xs font-semibold text-content-secondary">—</p>
+                                <p class="mt-1 flex flex-wrap items-center gap-1.5 text-sm">
+                                    <span data-tenant-allocation-highlight-from class="text-content-muted">—</span>
+                                    <i data-lucide="arrow-right"
+                                       class="h-3 w-3 text-content-muted"
+                                       aria-hidden="true"></i>
+                                    <span data-tenant-allocation-highlight-to
+                                          class="font-semibold text-content-primary">—</span>
+                                </p>
+                            </div>
+                        {% endfor %}
                     </div>
-                    <p class="mt-3 text-sm font-semibold text-content-primary"
-                       data-tenant-allocation-proposed-profile>—</p>
-                    <dl class="mt-4 grid grid-cols-2 gap-3">
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">CPU requests</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-proposed-cpu>
-                                —
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">Memory requests</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-proposed-memory>
-                                —
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">Min PVC size</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-proposed-pvc-min>
-                                —
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                            <dt class="text-xs text-content-muted">Max PVC size</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary"
-                                data-tenant-allocation-proposed-pvc-max>
-                                —
-                            </dd>
-                        </div>
-                    </dl>
-                </section>
-            </div>
+                    <p data-tenant-allocation-highlight-more
+                       class="mt-2 text-xs text-content-muted"
+                       hidden></p>
+                </div>
+            </section>
             {% set blocked_cutovers = namespace_cutover_state.values()|rejectattr('supported')|list %}
             {% if blocked_cutovers %}
                 <div class="rounded-xl border border-outline-subtle bg-status-warning-soft p-4 text-status-warning-text">
@@ -184,8 +202,8 @@
                 </div>
             {% endif %}
         </div>
-        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-kaori-primary/15 bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p class="max-w-2xl text-xs leading-5 text-content-muted">No allocation authority changes until capacity admission, resource ownership checks, provider mutation, and read-back all succeed.</p>
+        <footer class="flex flex-col gap-3 rounded-b-xl border-t border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p class="max-w-2xl text-xs leading-5 text-content-muted">Allocation stays unchanged until admission, ownership checks, mutation, and read-back succeed.</p>
             <button type="submit"
                     {% if not can_manage or not namespace_cutover_supported or not profiles %}disabled aria-disabled="true"{% endif %}
                     class="{{ action_button.classes('primary') }}">

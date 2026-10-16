@@ -13,9 +13,9 @@
                         <h1 class="{{ page_hero.title_classes() }}">Overview</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Review identity, authorization, and administrative audit posture.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('blocks', access_overview.workspace_count ~ ' Workspaces') }}
-                            {{ page_hero.meta_label('triangle-alert', access_overview.attention_workspace_count ~ ' Review') }}
+                            {{ page_hero.meta_label('layers', 'Domain-Owned Summaries') }}
                             {{ page_hero.meta_label('shield-check', 'Permission Scoped') }}
+                            {{ page_hero.meta_label('history', 'Committed Evidence') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -48,7 +48,7 @@
             ) %}
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
                 {% for workspace in access_overview.workspaces %}
-                    <article class="group flex min-h-[20rem] flex-col rounded-xl border border-outline-default bg-surface-card shadow-sm transition hover:border-outline-strong hover:shadow-md {{ workspace.grid_classes }} {% if access_overview.workspace_count is odd and loop.last %}md:col-span-2{% endif %}">
+                    <article class="group flex flex-col rounded-xl border border-outline-default bg-surface-card shadow-sm transition hover:border-outline-strong hover:shadow-md md:min-h-[20rem] {{ workspace.grid_classes }} {% if access_overview.workspace_count is odd and loop.last %}md:col-span-2{% endif %}">
                         <div class="flex items-start justify-between gap-4 p-5">
                             <div class="flex min-w-0 items-start gap-3">
                                 <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
@@ -63,14 +63,14 @@
                             {{ table_label.status_indicator_label(workspace.status_label, workspace.status_tone) }}
                         </div>
                         <p class="px-5 text-sm leading-6 text-content-secondary">{{ workspace.description }}</p>
-                        <dl class="mt-5 grid grid-cols-3 divide-x divide-outline-subtle border-y border-outline-subtle bg-surface-subtle">
+                        <dl class="mt-5 grid grid-cols-1 divide-y divide-outline-subtle border-y border-outline-subtle bg-surface-subtle sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                             {% for icon, label, value in workspace.metrics %}
-                                <div class="min-w-0 px-3 py-4">
-                                    <dt class="flex items-center gap-1.5 text-xs font-semibold leading-5 text-content-muted">
+                                <div class="flex min-w-0 flex-col px-3 py-3 sm:py-4">
+                                    <dt class="flex min-w-0 flex-1 items-start gap-1.5 text-xs font-semibold leading-5 text-content-muted">
                                         <i data-lucide="{{ icon }}"
-                                           class="h-3.5 w-3.5 shrink-0"
+                                           class="mt-0.5 h-3.5 w-3.5 shrink-0"
                                            aria-hidden="true"></i>
-                                        <span class="truncate" title="{{ label }}">{{ label }}</span>
+                                        <span class="min-w-0 break-words">{{ label }}</span>
                                     </dt>
                                     <dd class="mt-1 text-lg font-semibold leading-6 text-content-primary">
                                         {{ value }}

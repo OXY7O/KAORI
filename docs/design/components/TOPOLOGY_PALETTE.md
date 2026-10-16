@@ -32,7 +32,14 @@ The canonical node treatment uses:
 - the complete name and resource type in Resource List, search results, and Details;
 - layout calculation that includes the external label to reduce collisions.
 
-Containment relationships use quiet dashed orthogonal lines without arrowheads. Operational/dependency relationships retain colored arrows and only reveal text labels on hover, selection, explicit label mode, or highlighted paths.
+Containment relationships use quiet dashed orthogonal lines without arrowheads. Operational/dependency relationships retain colored arrows. Relationship labels stay hidden by default at every graph size to avoid colliding with resource names. Hovering one edge reveals only that relationship label and highlights that edge; an explicitly selected edge retains its label, while the existing path-highlight mode and Always Show Relationship Labels control may reveal additional labels intentionally. The existing Relationship Visibility controls double as the tokenized relationship legend, explaining dashed scope containment versus solid operational dependencies. Edge labels use a compact horizontal, tokenized background. Visible `contains` labels sit below the dashed elbow connector, in the open relationship corridor rather than directly on external resource names; the same clearance applies to hover, selected edges, highlighted paths, and the explicit always-show mode.
+
+## Readable Label and Operational Edge Hierarchy
+
+- External **resource names** use regular Inter 400 (including Cluster), while compact **CL/NS/ND/WL/PD** glyphs remain bold inside each badge. This preserves hierarchy without bolding long Kubernetes identifiers.
+- Edge relationship chips use medium Inter 500; relationship text remains hover/selection/explicit-toggle only, and containment chip clearance is unchanged.
+- Containment lines remain quiet dashed lines without arrowheads. Operational arrows preserve the direction of committed source-to-target evidence: `owns` (Workload → Pod) and `scheduled_on` (Pod → Node). They must not be restyled to look like containment, nor should arrows be removed to hide the relationship.
+- Default operational lines use restrained widths/opacity and smaller arrowheads (scheduled placement is less prominent than ownership); hovering, explicit path focus and selection retain their existing emphasis. Reuse the current Violet/semantic relationship tokens in both themes, including the Controls legend.
 
 ## Relationship Tokens
 

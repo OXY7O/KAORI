@@ -91,8 +91,8 @@ def test_harbor_registration_copy_is_concise_and_preserves_authority_boundaries(
     assert 'How KAORI registers a reusable Registry connection.' in form
     assert 'How changes restore Registry provider readiness.' in form
     assert (
-        'Register Harbor once; committed Registry inventory, Metrics Source bindings, webhook readiness, '
-        'and provider validation remain independent.'
+        'Full Coverage combines four independent dimensions: provider API, committed Inventory, '
+        'Metrics Source, and Webhook. Core readiness is separate.'
     ) in index
 
 
@@ -331,7 +331,7 @@ def test_harbor_frontpage_matches_canonical_provider_workspace_hierarchy() -> No
     assert 'No Consumer Binding Surface Yet' not in index
     assert 'committed Registry inventory' in index
     assert 'Metrics Source bindings' in index
-    assert 'webhook readiness' in index
+    assert 'Webhook. Core readiness is separate.' in index
 
 
 def test_harbor_coverage_keeps_independent_registry_readiness_planes() -> None:
@@ -341,11 +341,14 @@ def test_harbor_coverage_keeps_independent_registry_readiness_planes() -> None:
     for label in ('Harbor API', 'Inventory', 'Metrics Source', 'Webhook', 'Coverage'):
         assert label in coverage or label in read('app/templates/integrations/components/_provider_registry.html')
     assert '_provider_status(instance)' in presentation
+    assert 'inventory_status = _inventory_status(collection)' in presentation
+    assert "eligibility=registry_inventory_eligibility(row['identity'])" in presentation
     assert 'inventory_eligibility = registry_inventory_eligibility(identity)' in presentation
-    assert '_inventory_status(collection, eligibility=inventory_eligibility)' in presentation
+    assert '_inventory_status(collection_state, eligibility=inventory_eligibility)' in presentation
     assert '_metrics_status(metrics)' in presentation
     assert '_webhook_status(webhook)' in presentation
-    assert "coverage_label = 'Complete' if complete else 'Partial'" in presentation
+    assert "'Full Coverage'" in presentation
+    assert "'Partial Coverage'" in presentation
 
 
 def test_harbor_coverage_does_not_force_desktop_horizontal_scroll() -> None:
@@ -420,3 +423,33 @@ def test_harbor_inventory_lifecycle_keeps_artifact_registry_as_detail_owner() ->
     assert 'client.' not in inventory
     assert 'list_projects' not in presentation
     assert 'list_repositories' not in presentation
+
+
+def test_harbor_index_uses_batch_fleet_readiness_with_visible_detail_resolution() -> None:
+    source = read('app/integrations/registry/providers/harbor/application/presentation.py')
+    fleet = source.split('def build_index_context(', 1)[1].split('def _provider_status(', 1)[0]
+    assert 'ready_metric_ids = registry_metrics_ready_provider_ids(identities)' in fleet
+    assert 'binding_counts: dict[str, int] = {}' in fleet
+    assert 'IntegrationBinding.asset_key.in_([str(identity_id) for identity_id in identity_ids])' in fleet
+    assert 'for row in coverage_page_rows:' in fleet
+    assert "registry_metrics_readiness(row['identity'])" in fleet
+    visible_page_start = fleet.index('for row in coverage_page_rows:')
+    assert visible_page_start < fleet.index("registry_metrics_readiness(row['identity'])")
+    assert visible_page_start < fleet.index("registry_inventory_eligibility(row['identity'])")
+    assert 'metrics = registry_metrics_readiness(identity)' not in fleet
+    assert 'inventory_eligibility = registry_inventory_eligibility(identity)' not in fleet
+
+
+def test_harbor_full_coverage_is_not_required_for_core_provider_readiness() -> None:
+    presentation = read('app/integrations/registry/providers/harbor/application/presentation.py')
+    overview = read('app/templates/integrations/registry/providers/harbor/index.html')
+    coverage = read('app/templates/integrations/registry/providers/harbor/partials/_coverage.html')
+    docs = read('app/integrations/registry/providers/harbor/README.md')
+    assert (
+        "item['status'] == 'ready' for item in (api_status, inventory_status, metrics_status, webhook_status)"
+        in presentation
+    )
+    assert "'label': 'Full Coverage'" in presentation
+    assert 'Core readiness is separate.' in overview
+    assert 'optional integration dimensions do not gate core provider readiness.' in coverage
+    assert 'not a failed connection test' in docs

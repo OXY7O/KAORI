@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import selectinload
 
-from app.integrations.managed_assets import object_storage_owner
+from app.integrations.managed_assets import ManagedAssetOwner, object_storage_owner
 from app.models.object_storage import ObjectStorageSystem
 
 OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24
@@ -101,6 +101,18 @@ def _snapshot_status(value: datetime | None) -> tuple[str, str]:
 
 def _inventory_signals(row: dict[str, Any]) -> list[dict[str, str]]:
     signals: list[dict[str, str]] = []
+    if row.get('inventory_source_changed'):
+        signals.append(
+            {
+                'label': 'Source Changed',
+                'tone': 'warning',
+                'icon': 'refresh-cw',
+                'description': (
+                    'The retained bucket snapshot belongs to a previous storage connection generation. '
+                    'Revalidate the source, then run Object Storage Inventory Sync.'
+                ),
+            }
+        )
     if row['status_tone'] in {'critical', 'warning', 'unknown'}:
         signals.append(
             {
@@ -135,6 +147,16 @@ def _inventory_signals(row: dict[str, Any]) -> list[dict[str, str]]:
 
 def _inventory_guidance(row: dict[str, Any], signals: list[dict[str, str]]) -> dict[str, str]:
     labels = {signal['label'] for signal in signals}
+    if 'Source Changed' in labels:
+        return {
+            'title': 'Revalidate Storage Source',
+            'description': (
+                'Run provider Full Validation and Object Storage Inventory Sync '
+                'before treating retained inventory as current.'
+            ),
+            'icon': 'refresh-cw',
+            'tone': 'warning',
+        }
     if 'Provider Attention' in labels:
         return {
             'title': 'Review Provider Readiness',
@@ -170,13 +192,25 @@ def _system_query():
     )
 
 
-def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
-    owner = object_storage_owner(system.id)
+def _system_row(
+    system: ObjectStorageSystem, *, owner: ManagedAssetOwner | None = None, owner_resolved: bool = False
+) -> dict[str, Any]:
+    if not owner_resolved:
+        owner = object_storage_owner(system.id)
     connection = owner.record if owner is not None else None
     status_label, status_tone = _status(system.status)
     buckets = list(system.buckets or ())
     latest_observed_at = system.inventory_observed_at
-    sync_status_label, sync_status_tone = _snapshot_status(latest_observed_at)
+    metadata = (owner.identity.metadata_json or {}) if owner is not None else {}
+    source_changed = latest_observed_at is not None and (
+        int(metadata.get('object_storage_connection_generation') or 0)
+        != int(metadata.get('object_storage_inventory_generation') or 0)
+    )
+    sync_status_label, sync_status_tone = (
+        ('Source Changed', 'warning')
+        if source_changed and latest_observed_at is not None
+        else _snapshot_status(latest_observed_at)
+    )
     row: dict[str, Any] = {
         'id': system.id,
         'name': system.name,
@@ -216,7 +250,8 @@ def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
         'last_inventory_at': latest_observed_at,
         'sync_status_label': sync_status_label,
         'sync_status_tone': sync_status_tone,
-        'snapshot_source': 'Committed Snapshot',
+        'inventory_source_changed': source_changed,
+        'snapshot_source': 'Last-Known Snapshot' if source_changed else 'Committed Snapshot',
         'freshness_window_hours': OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS,
         'last_validated_at': connection.last_validated_at if connection is not None else None,
         'last_checked_at': connection.last_checked_at if connection is not None else None,
@@ -239,13 +274,15 @@ def _system_filter_options(rows: list[dict[str, Any]]) -> dict[str, list[dict[st
     }
 
 
-def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    total_systems = len(rows)
-    inventoried = [row for row in rows if row['last_inventory_at'] is not None]
-    latest = max((row['last_inventory_at'] for row in inventoried), default=None)
-    missing_count = total_systems - len(inventoried)
-    stale_count = sum(_is_stale(row['last_inventory_at']) for row in inventoried)
-    provider_exception_count = sum(row['status_tone'] in {'critical', 'warning', 'unknown'} for row in rows)
+def _overview_snapshot_from_counts(
+    total_systems: int,
+    inventoried_count: int,
+    latest: datetime | None,
+    missing_count: int,
+    stale_count: int,
+    provider_exception_count: int,
+) -> dict[str, Any]:
+    """Build one canonical snapshot from committed fleet aggregate evidence."""
     has_exceptions = bool(missing_count or stale_count or provider_exception_count)
 
     if total_systems == 0:
@@ -267,11 +304,11 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
         )
         if count
     ]
-    coverage_label = f'{len(inventoried)} / {total_systems} Systems' if total_systems else '0 / 0 Systems'
+    coverage_label = f'{inventoried_count} / {total_systems} Systems' if total_systems else '0 / 0 Systems'
     coverage_supporting = (
         'Fully committed'
-        if total_systems and len(inventoried) == total_systems
-        else ('No committed data' if not inventoried else 'Partially committed')
+        if total_systems and inventoried_count == total_systems
+        else ('No committed data' if not inventoried_count else 'Partially committed')
     )
     return {
         'source_label': 'Committed Snapshot',
@@ -288,10 +325,22 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
         'coverage_supporting': coverage_supporting,
         'coverage_tone': (
             'normal'
-            if total_systems and len(inventoried) == total_systems
+            if total_systems and inventoried_count == total_systems
             else ('unknown' if total_systems == 0 else 'warning')
         ),
         'exception_label': ' · '.join(exception_parts) if exception_parts else 'No Exceptions',
         'exceptions_supporting': 'Review required' if has_exceptions else 'No issues detected',
         'exceptions_tone': 'warning' if has_exceptions else 'normal',
     }
+
+
+def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    inventoried = [row for row in rows if row['last_inventory_at'] is not None]
+    return _overview_snapshot_from_counts(
+        total_systems=len(rows),
+        inventoried_count=len(inventoried),
+        latest=max((row['last_inventory_at'] for row in inventoried), default=None),
+        missing_count=len(rows) - len(inventoried),
+        stale_count=sum(_is_stale(row['last_inventory_at']) for row in inventoried),
+        provider_exception_count=sum(row['status_tone'] in {'critical', 'warning', 'unknown'} for row in rows),
+    )

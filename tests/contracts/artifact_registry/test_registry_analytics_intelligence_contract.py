@@ -108,15 +108,39 @@ def test_registry_analytics_materializes_operational_harbor_metric_profile() -> 
     assert "scope_type='registry_instance'" in analytics
 
 
+def test_registry_historical_snapshots_use_measured_source_range_and_scope() -> None:
+    history = (ROOT / 'app/artifact_registry/analytics_history.py').read_text()
+    analytics = (ROOT / 'app/artifact_registry/analytics.py').read_text()
+    adapter = (ROOT / 'app/artifact_registry/analytics_job_adapter.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    common = (ROOT / 'app/artifact_registry/presentation_common.py').read_text()
+
+    assert 'consumer.query_range(' in history
+    assert "'60d': timedelta(days=60)" in history
+    assert 'MAX_HISTORY_POINTS = 240' in history
+    assert 'MAX_HISTORY_SERIES = 250' in history
+    assert 'snapshot.time_range = time_range' in analytics
+    assert "'history': history" not in presentation
+    assert 'time_range=normalize_registry_analytics_window(snapshot_window)' in presentation
+    assert 'RegistryAnalyticsSnapshot.time_range == normalized_window' in adapter
+    assert "RegistryAnalyticsSnapshot.time_range == 'current'" in common
+    assert "parameters={'snapshot_window': window}" in routes
+    assert "scope_key=f'all:{time_range}'" in adapter
+    assert 'artifact_growth_per_day' in history
+    assert 'size_growth_bytes_per_day' in history
+
+
 def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> None:
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
     section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
     presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
     routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
 
-    assert 'components/framed_workspace_tabs.html' in shell
-    assert 'framed_workspace_tabs.render_navigation' in shell
-    assert 'Analytics Workspace' in shell
+    assert 'components/framed_workspace_tabs.html' not in shell
+    assert 'framed_workspace_tabs.render_navigation' not in shell
+    assert 'artifact-registry-analytics-workspace' in shell
+    assert 'Explore Analytics' in shell
     for title in (
         'Registry Growth',
         'Capacity Outlook',
@@ -130,10 +154,11 @@ def test_registry_analytics_workspace_is_reusable_and_intelligence_bounded() -> 
         assert title in section
 
     for tab in ('growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'):
-        assert f"'{tab}'" in shell
+        assert f"'artifact_registry.analytics_{tab}'" in shell
         assert f"'{tab}'" in presentation
 
-    assert "active_tab=request.args.get('tab', 'growth', type=str)" in routes
+    assert "return _render_registry_analytics_page('overview')" in routes
+    assert "legacy_tab = request.args.get('tab', '', type=str)" in routes
     assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in shell
     assert 'never auto-cleaned' in section
     assert (
@@ -152,14 +177,341 @@ def test_registry_analytics_uses_fast_shell_and_bounded_fragments() -> None:
     template = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
 
     assert 'def build_analytics_shell(' in presentation
-    assert "active_tab: str = 'growth'" in presentation
+    assert "active_tab: str = 'overview'" in presentation
     assert 'analytics=build_analytics_shell(' in routes
     assert "@artifact_registry_bp.get('/analytics/section/<string:section>')" in routes
     assert "section='summary'" in template
     assert 'section=analytics.active_tab' in template
     assert 'hx-trigger="load"' in template
-    assert 'Fast shell · bounded HTMX projection' in template
+    assert 'Fast Shell · Committed Evidence' in template
     assert 'never waits on live Harbor, Alertmanager, Prometheus, or Thanos requests' in template
+
+
+def test_registry_analytics_readiness_reuses_k8s_shared_controls_without_buttons() -> None:
+    from jinja2 import Environment
+
+    template_paths = (
+        'app/templates/analytics/components/_controls_readiness.html',
+        'app/templates/kubernetes/analytics/components/_analysis_workspace.html',
+        'app/templates/artifact_registry/partials/_analytics_controls_readiness.html',
+        'app/templates/artifact_registry/partials/_analytics_collect_live_state.html',
+        'app/templates/artifact_registry/analytics.html',
+    )
+    templates = {path: (ROOT / path).read_text() for path in template_paths}
+    for text in templates.values():
+        Environment().parse(text)
+    common, k8s, registry, live, page = templates.values()
+    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+
+    assert '{% macro frame(' in common
+    assert 'analysis_surface.snapshot_shell_classes()' in common
+    assert 'analysis_surface.snapshot_header_icon_classes()' in common
+    assert 'loading_bar.render(indicator_id, active=loading' in common
+    assert '{% macro snapshot_card(' in common
+    assert '{% macro source_card(' in common
+    assert 'shared_readiness.frame(title, description, icon, indicator_id' in k8s
+    assert '{% set outer_caller = caller %}' in k8s
+    assert '{{ outer_caller() }}' in k8s
+    assert 'shared_readiness.snapshot_card(' in k8s
+    assert 'shared_readiness.frame(' in registry
+    assert 'shared_readiness.source_card(' in registry
+    assert 'shared_readiness.snapshot_card(' in registry
+    assert 'Analytics Controls & Data Readiness' in registry
+    assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry
+    assert "'Registry'" in registry
+    assert "'Time Range'" in registry
+    assert 'All Registries' in registry
+    assert 'analytics.time_range_options' in registry
+    assert "'time_range_options': get_allowed_time_ranges()" in presenter
+    assert "legacy_label='Current (Instant)'" in registry
+    assert 'Registry Source Status' in registry
+    assert 'icon=none' in registry
+    assert "'bg-status-normal'" in common
+    assert "'bg-status-warning'" in common
+    assert "'bg-status-critical'" in common
+    assert "'bg-status-unknown'" in common
+    assert "legacy_value='current'" in registry
+    assert 'Latest Analytics Data Snapshot' in registry
+    assert 'shared_readiness.selector(' in registry
+    assert "'artifact-registry-analytics-provider'" in registry
+    assert "'artifact-registry-analytics-window'" in registry
+    assert "'provider_id'" in registry
+    assert "'snapshot_window'" in registry
+    assert 'analytics.provider_options' in registry
+    assert 'shared_readiness.controls_grid()' in registry
+    assert 'shared_readiness.readiness_grid()' in registry
+    assert 'kubernetes/analytics/components/_analysis_workspace.html' not in registry
+    assert 'hx-trigger="change delay:120ms"' in registry
+    assert 'hx-push-url="true"' in registry
+    assert 'hx-indicator="#artifact-registry-analytics-refresh-indicator"' in registry
+    assert 'loading=readiness.is_active' in registry
+    assert "header_content=worker_status if readiness.is_active else ''" in registry
+    assert 'header_content' in common
+    assert '{% if header_content %}{{ header_content }}{% endif %}' in common
+    assert registry.index('header_content=worker_status') < registry.index(
+        '<form id="artifact-registry-analytics-filter"'
+    )
+    assert registry.count('include "artifact_registry/partials/_analytics_collect_live_state.html"') == 1
+    assert 'Collect Analytics Data' not in registry
+    assert 'Configure Collection' not in registry
+    assert 'hx-post=' not in registry
+    assert 'action_button' not in registry
+    assert 'hx-trigger="every 1s"' in live
+    assert 'progress_bar.job_progress(' in live
+    assert '{% if readiness.is_active %}' in registry
+    assert "url_for('artifact_registry.analytics_materialization_resolve', section=analytics.active_tab" in page
+    assert 'provider_id=analytics.selected_provider_id' in page
+    assert 'snapshot_window=analytics.snapshot_window' in page
+    assert 'hx-trigger="load once"' in page
+    assert 'hx-indicator="#artifact-registry-analytics-refresh-indicator"' in page
+    assert 'hx-select="#artifact-registry-analytics-page"' in page
+    assert 'artifactRegistryAnalyticsMaterializationFinished from:body' in page
+
+
+def test_kubernetes_and_registry_render_shared_readiness_without_duplicate_shells() -> None:
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')))
+    env.filters['user_datetime'] = lambda value, default='Unavailable': str(value or default)
+    env.globals['url_for'] = lambda endpoint, **kwargs: f'/{endpoint.replace(".", "/")}'
+
+    kubernetes = env.from_string(
+        """
+        {% import "kubernetes/analytics/components/_analysis_workspace.html" as controls %}
+        {% call controls.controls_readiness(
+            'Capacity Controls & Data Readiness',
+            'Worker-backed analysis and committed snapshot.',
+            'sliders-horizontal',
+            'capacity-refresh-indicator',
+            {'status_label': 'Waiting for Cluster'}
+        ) %}
+            <span>Cluster selector remains rendered</span>
+        {% endcall %}
+        """
+    ).render()
+    assert kubernetes.count('data-analytics-controls-readiness') == 1
+    assert 'Cluster selector remains rendered' in kubernetes
+    assert 'Metrics Source Status' in kubernetes
+    assert 'Latest Data Snapshot' in kubernetes
+    assert 'Capacity Controls & Data Readiness' in kubernetes
+
+    registry = env.get_template('artifact_registry/partials/_analytics_controls_readiness.html').render(
+        analytics={
+            'active_tab': 'overview',
+            'provider_options': [],
+            'selected_provider_id': None,
+            'snapshot_window': '24h',
+            'alert_filters': {},
+            'data_readiness': {
+                'eligible_count': 1,
+                'registered_count': 1,
+                'covered_count': 1,
+                'current_count': 1,
+                'label': 'Current Snapshot',
+                'tone': 'normal',
+                'latest_generated_at': None,
+                'latest_expiry_at': None,
+                'last_attempt_label': 'Never',
+                'helper': 'Current committed evidence.',
+                'is_active': False,
+                'execution_tone': 'normal',
+                'collection_warning': None,
+            },
+        }
+    )
+    assert registry.count('data-analytics-controls-readiness') == 1
+    assert 'Registry Source Status' in registry
+    assert 'Latest Analytics Data Snapshot' in registry
+    assert 'Analytics Controls & Data Readiness' in registry
+    # The conditional belongs to Jinja source, not the rendered HTML output.
+    registry_source = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
+    assert "eyebrow='Analytics Overview' if analytics.active_tab == 'overview'" in registry_source
+    assert 'Analytics Overview' in registry
+    assert 'Collect Analytics Data' not in registry
+    assert 'Configure Collection' not in registry
+
+
+def test_registry_analytics_scope_and_committed_measured_range_are_real_filters() -> None:
+    from types import SimpleNamespace
+
+    import pytest
+    from werkzeug.exceptions import NotFound
+
+    from app.artifact_registry.analytics_job_adapter import (
+        analytics_snapshot_matches_window,
+        normalize_registry_analytics_window,
+    )
+    from app.artifact_registry.presentation_analytics import _registry_analytics_scope
+
+    identities = [SimpleNamespace(id=4), SimpleNamespace(id=9)]
+    assert _registry_analytics_scope(4, identities) == 4
+    assert _registry_analytics_scope(9, identities) == 9
+    with pytest.raises(NotFound):
+        _registry_analytics_scope(999, identities)
+    assert _registry_analytics_scope(None, identities) is None
+
+    assert normalize_registry_analytics_window('bogus') == '24h'
+    assert normalize_registry_analytics_window('current') == 'current'
+    for value in ('1h', '6h', '12h', '24h', '7d', '30d', '60d'):
+        assert normalize_registry_analytics_window(value) == value
+        assert analytics_snapshot_matches_window(SimpleNamespace(time_range=value), value)
+        assert not analytics_snapshot_matches_window(SimpleNamespace(time_range='current'), value)
+    assert analytics_snapshot_matches_window(SimpleNamespace(time_range='current'), 'current')
+
+    readiness_source = (ROOT / 'app/artifact_registry/analytics_job_adapter.py').read_text()
+    assert 'Historical Materialization Required' in readiness_source
+    assert 'RegistryAnalyticsSnapshot.time_range == normalized_window' in readiness_source
+
+
+def test_registry_analytics_selector_preserves_scope_through_routes_and_alerts() -> None:
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
+    section = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
+    controls = (ROOT / 'app/templates/artifact_registry/partials/_analytics_controls_readiness.html').read_text()
+
+    # A single fail-closed parser now owns explicit Registry provider scope.
+    assert "value = request.args.get('provider_id')" in routes
+    assert 'if not value.isascii() or not value.isdecimal() or len(value) > 18:' in routes
+    assert 'if int(value) <= 0:' in routes
+    assert routes.count('provider_id=_analytics_provider_id()') >= 3
+    assert 'provider_id = _analytics_provider_id()' in routes
+    assert routes.count("snapshot_window=request.args.get('snapshot_window', '24h', type=str)") >= 3
+    assert 'analytics = build_analytics_shell(' in routes
+    assert "'alert_search': request.args.get('alert_q', '', type=str)" in routes
+    assert "'alert_page': request.args.get('alert_page', 1, type=int) or 1" in routes
+    assert 'snapshot_window=window, **alert_params' in routes
+    assert 'should_request_registry_analytics_materialization(' in routes
+    assert 'build_registry_analytics_readiness(provider_id=provider_id, snapshot_window=window)' in routes
+    # Legacy analytics redirects must retain all independently selected filters.
+    redirect_args = routes.split('alert_args: dict[str, Any] = {', 1)[1]
+    redirect_args = redirect_args.split('return redirect(', 1)[0]
+    for query_key in ('provider_id', 'snapshot_window', 'alert_q'):
+        assert f"'{query_key}'," in redirect_args
+    assert 'selected_provider_id = _registry_analytics_scope(provider_id, identities)' in presentation
+    assert 'bundle = _collect_analytics_rows(identities, snapshot_window=selected_window)' in presentation
+    assert 'analytics_snapshot_matches_window(snapshot, snapshot_window)' in presentation
+    assert 'selected_provider_id' in presentation
+    assert 'snapshot_window' in presentation
+    assert 'hx-push-url="true"' in controls
+    assert 'action="{{ url_for(page_endpoint) }}"' in controls
+    assert 'provider_id=analytics.selected_provider_id' in shell
+    assert 'snapshot_window=analytics.snapshot_window' in shell
+    assert "snapshot_window: str = '24h'" in presentation
+    assert "request.args.get('snapshot_window', '24h', type=str)" in routes
+    # djLint may split hidden field attributes over multiple lines.
+    section_fields = ' '.join(section.split())
+    assert 'name="provider_id" value="{{ analytics.selected_provider_id or \'\' }}"' in section_fields
+    assert 'name="snapshot_window" value="{{ analytics.snapshot_window }}"' in section_fields
+    assert "'snapshot_window': analytics.snapshot_window" in section
+    assert 'artifact-registry-analytics-collect-live-state' not in controls
+    assert "header_content=worker_status if readiness.is_active else ''" in controls
+
+
+def test_registry_analytics_explicit_provider_scope_parser_fails_closed() -> None:
+    import pytest
+    from flask import Flask
+    from werkzeug.exceptions import NotFound
+
+    from app.artifact_registry.routes import _analytics_provider_id
+
+    flask_app = Flask(__name__)
+    with flask_app.test_request_context('/analytics'):
+        assert _analytics_provider_id() is None
+
+    for malformed in ('0', '-1', 'abc', '1a', '1.2', '1234567890123456789', '６'):
+        with flask_app.test_request_context('/analytics', query_string={'provider_id': malformed}):
+            with pytest.raises(NotFound):
+                _analytics_provider_id()
+
+    for value, expected in (('1', 1), ('42', 42), ('0002', 2)):
+        with flask_app.test_request_context('/analytics', query_string={'provider_id': value}):
+            assert _analytics_provider_id() == expected
+
+
+def test_registry_analytics_materialization_is_bounded_and_worker_owned() -> None:
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    adapter = (ROOT / 'app/artifact_registry/analytics_job_adapter.py').read_text()
+    presenter = (ROOT / 'app/artifact_registry/presentation_analytics.py').read_text()
+    job_catalog = (ROOT / 'app/definitions/catalogs/platform_operations/jobs/registered_jobs.yaml').read_text()
+
+    assert "@artifact_registry_bp.get('/analytics/materialization/resolve')" in routes
+    assert "@permission_required('artifact_registry.view')" in routes
+    # Materialization is guarded by source + measured-window readiness.
+    materialization_guard = routes.split('if should_request_registry_analytics_materialization(', 1)[1]
+    materialization_guard = materialization_guard.split('):', 1)[0]
+    assert (
+        'build_registry_analytics_readiness(provider_id=provider_id, snapshot_window=window)' in materialization_guard
+    )
+    assert 'dispatch_registered_job(' in routes
+    assert "trigger_type='on_demand'" in routes
+    assert "job_key='artifact_registry.analytics.materialize'" in routes
+    assert 'requested_by_user_id=None' in routes
+    assert 'JobWorkerUnavailable' in routes
+    assert 'JobQuotaExceeded' in routes
+    assert 'rollback_registry_analytics_materialization_dispatch()' in routes
+    rollback = adapter.split('def rollback_registry_analytics_materialization_dispatch() -> None:', 1)[1]
+    rollback = rollback.split('\ndef ', 1)[0]
+    assert 'db.session.rollback()' in rollback
+    assert 'db.session.rollback()' not in routes
+    assert "'Cache-Control'] = 'no-store, max-age=0'" in routes
+    assert "@artifact_registry_bp.post('/analytics/collect')" not in routes
+    assert 'get_registry_analytics_job(public_id)' in routes
+    assert 'artifactRegistryAnalyticsMaterializationFinished' in routes
+    assert "'artifact_registry/partials/_analytics_controls_readiness.html'" in routes
+    assert 'def should_request_registry_analytics_materialization(' in adapter
+    assert 'timedelta(minutes=5)' in adapter
+    assert "'latest_attempt_at': latest.created_at if latest else None" in adapter
+    assert 'require_registered_worker=True' in adapter
+    assert "queue_name='analytics-batch'" in adapter
+    assert 'JobPolicy.query.filter_by(job_key=ANALYTICS_JOB_KEY).first()' in adapter
+    assert 'get_or_create_job_policy(' not in adapter
+    assert 'RegistryAnalyticsSnapshot.query' in adapter
+    assert 'present_job_execution(active)' in adapter
+    assert 'build_registry_analytics_readiness(' in presenter
+    assert 'MetricsConsumer' not in presenter
+    assert 'queue_name: analytics-batch' in job_catalog
+    assert 'key: artifact_registry.analytics.materialize' in job_catalog
+
+
+def test_registry_analytics_posture_classifies_missing_partial_and_current_snapshots() -> None:
+    from app.artifact_registry.analytics_job_adapter import _analytics_snapshot_posture
+
+    assert _analytics_snapshot_posture(eligible_count=0, covered_count=0, current_count=0)[0] == 'Blocked'
+    assert _analytics_snapshot_posture(eligible_count=2, covered_count=0, current_count=0)[0] == 'Not Materialized'
+    assert _analytics_snapshot_posture(eligible_count=2, covered_count=2, current_count=2)[0] == 'Current Snapshot'
+    assert _analytics_snapshot_posture(eligible_count=3, covered_count=2, current_count=1)[0] == 'Partial Coverage'
+    assert _analytics_snapshot_posture(eligible_count=2, covered_count=2, current_count=0)[0] == 'Stale Snapshot'
+
+
+def test_registry_analytics_auto_collection_cooldown_and_evidence_checks() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from app.artifact_registry.analytics_job_adapter import (
+        should_request_registry_analytics_materialization,
+    )
+
+    now = datetime(2026, 10, 10, 12, tzinfo=UTC)
+    defaults = {
+        'eligible_count': 2,
+        'current_count': 0,
+        'is_active': False,
+        'latest_attempt_at': None,
+    }
+    assert should_request_registry_analytics_materialization(defaults, now=now)
+    assert not should_request_registry_analytics_materialization({**defaults, 'eligible_count': 0}, now=now)
+    assert not should_request_registry_analytics_materialization({**defaults, 'current_count': 2}, now=now)
+    assert not should_request_registry_analytics_materialization({**defaults, 'is_active': True}, now=now)
+    assert not should_request_registry_analytics_materialization(
+        {**defaults, 'latest_attempt_at': now - timedelta(minutes=2)}, now=now
+    )
+    assert should_request_registry_analytics_materialization(
+        {**defaults, 'latest_attempt_at': now - timedelta(minutes=6)}, now=now
+    )
+    assert not should_request_registry_analytics_materialization(
+        {**defaults, 'latest_attempt_at': (now - timedelta(minutes=2)).replace(tzinfo=None)},
+        now=now,
+    )
 
 
 def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> None:
@@ -175,7 +527,10 @@ def test_registry_alert_source_is_worker_materialized_and_provider_neutral() -> 
     assert "scope_type='registry_instance'" in analytics
     assert 'list_alerts_for_scope(' in analytics
     assert 'ACTIVE_ALERTS_EXPRESSION' in analytics
-    assert "'alerts': state.alerts" in analytics
+    # The alert source and fallback rows are committed into the snapshot payload.
+    assert 'alerts = _alert_evidence(identity)' in analytics
+    assert "'alerts': alerts" in analytics
+    assert 'snapshot.payload_json = payload' in analytics
 
     assert 'list_alerts_for_scope' not in presentation
     assert 'list_alerts_for_scope' not in routes
@@ -187,7 +542,7 @@ def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> 
     template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text()
     shell = (ROOT / 'app/templates/artifact_registry/analytics.html').read_text()
 
-    assert "('alerts', 'Alerts', 'siren'" in shell
+    assert "'artifact_registry.analytics_alerts'" in shell
     assert 'Alertmanager is primary. Metrics Source is fallback evidence.' in template
     assert 'committed Analytics materialization' in template
     assert 'alert_per_page' in template

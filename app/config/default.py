@@ -381,9 +381,7 @@ class Config:
                 'queue': FORECASTING_CELERY_QUEUE,
             },
             'app.kubernetes.cluster.tasks.sync_all_clusters': {'queue': 'inventory'},
-            'app.kubernetes.cluster.tasks.sync_single_cluster': {
-                'queue': 'inventory',
-            },
+            'app.kubernetes.cluster.tasks.sync_single_cluster': {'queue': 'inventory'},
             'app.storage.object_storage.inventory.tasks.sync_all_object_storage': {
                 'queue': 'inventory',
             },
@@ -405,9 +403,7 @@ class Config:
             'app.kubernetes.governance.tls_certificates.tasks.sync_tls_certificates': {
                 'queue': 'inventory',
             },
-            'app.kubernetes.tenant.tasks.sync_tenant_inventory': {
-                'queue': 'inventory',
-            },
+            'app.kubernetes.tenant.tasks.sync_tenant_inventory': {'queue': 'inventory'},
             'app.kubernetes.tenant.tasks.decommission_tenant': {
                 'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
             },
@@ -438,6 +434,9 @@ class Config:
             'app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
+            'app.platform_operations.notifications.alert_delivery.tasks.recover_notification_channel_deliveries': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
             'app.intelligence.alert_signals.tasks.refresh_alert_signals': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
@@ -463,6 +462,9 @@ class Config:
                 'queue': REPORT_STORAGE_HEALTH_CELERY_QUEUE,
             },
             'app.reports.storage.tasks.verify_report_storage_task': {
+                'queue': REPORT_STORAGE_HEALTH_CELERY_QUEUE,
+            },
+            'app.reports.storage.tasks.scan_report_storage_integrity_task': {
                 'queue': REPORT_STORAGE_HEALTH_CELERY_QUEUE,
             },
             'app.intelligence.resolver.tasks.execute_authorized_resolution': {

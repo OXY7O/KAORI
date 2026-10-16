@@ -1,0 +1,204 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table_registry.html" as registry_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+<section id="activity-administrative-evidence"
+         class="{{ '' if embedded|default(false) else table_ui.block_classes() }}"
+         data-activity-evidence-source="administrative-audit-events">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="file-clock" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="{{ table_ui.block_title_classes() }}">Administrative Source Evidence</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">
+                        Review committed administrative actions by source, outcome and recorded time.
+                    </p>
+                </div>
+            </div>
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-semibold text-content-secondary">
+                    {{ administrative_evidence.pagination.total_items }} Recorded
+                </span>
+                {% if administrative_evidence.has_active_filters %}
+                    {% set reset_url = url_for('access.activity_audit.index',
+                                            view='administrative',
+                                        admin_per_page=administrative_evidence.pagination.per_page) %}
+                    {{ registry_ui.clear_filters_action(reset_url,
+                                        table_ui.action_classes() ,
+                    hx_get=reset_url,
+                    target='#activity-administrative-evidence',
+                    select='#activity-administrative-evidence',
+                    indicator='#administrative-activity-loading',
+                    push_url='true',
+                    sync='closest section:replace',
+                    marker='activity-administrative-evidence'
+                    ) }}
+                {% endif %}
+            </div>
+        </div>
+        {{ loading_bar.render('administrative-activity-loading', label='Refreshing Administrative Evidence') }}
+    </header>
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        {# Canonical registry form owns GET/HTMX, debounce, loading and page reset. #}
+        {% call registry_ui.filter_form(
+            'access.activity_audit.index',
+            'activity-administrative-evidence',
+            'administrative-activity-loading',
+            administrative_evidence.pagination.per_page,
+            classes='w-full',
+            form_id='administrative-evidence-filter-form',
+            aria_label='Administrative source filters',
+            page_param='admin_page',
+            per_page_param='admin_per_page'
+            ) %}
+            <input type="hidden" name="view" value="administrative">
+            <div class="min-w-0 sm:min-w-80">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="administrative-search">Search Activity</label>
+                {{ table_ui.search_field('admin_search',
+                                administrative_evidence.filters.search,
+                                'Action, summary or source ID',
+                                'administrative-search') }}
+            </div>
+            <div class="min-w-0">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="administrative-source-scope">Source Scope</label>
+                <select id="administrative-source-scope"
+                        name="admin_scope"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for option in administrative_evidence.scope_options %}
+                        <option value="{{ option.key }}"
+                                {% if option.key == administrative_evidence.scope %}selected{% endif %}>
+                            {{ option.label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-0">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="administrative-outcome">Outcome</label>
+                <select id="administrative-outcome"
+                        name="admin_outcome"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in administrative_evidence.outcome_options %}
+                        <option value="{{ value }}"
+                                {% if value == administrative_evidence.filters.outcome %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-0">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="administrative-time-range">Recorded Time</label>
+                <select id="administrative-time-range"
+                        name="admin_time_range"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in administrative_evidence.time_range_options %}
+                        <option value="{{ value }}"
+                                {% if value == administrative_evidence.filters.time_range %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <noscript>
+                <button type="submit" class="{{ table_ui.action_classes() }}">Apply Filters</button>
+            </noscript>
+        {% endcall %}
+    </div>
+    {% if administrative_evidence.rows %}
+        <div class="overflow-x-auto overscroll-x-contain">
+            <table class="{{ table_ui.table_classes('min-w-[72rem]') }}"
+                   aria-label="Separate administrative AuditEvent register">
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Activity</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source / Actor</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Outcome</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Recorded</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }}">
+                    {% for row in administrative_evidence.rows %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="min-w-0 max-w-xl">
+                                    {{ table_ui.title_cell(row.display_action, row.summary, 'file-clock') }}
+                                    <p class="mt-1 truncate pl-12 font-mono text-xs text-content-muted"
+                                       title="{{ row.action }}">Event: {{ row.action }}</p>
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex min-w-0 flex-col items-start gap-1.5">
+                                    {{ table_label.metadata_label(row.source_label, 'database') }}
+                                    <span class="text-xs leading-5 text-content-muted"
+                                          title="{{ row.actor_detail }}">{{ row.actor_reference }}</span>
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.status_label, row.status_tone) }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="whitespace-nowrap text-sm font-medium text-content-secondary">{{ row.created_at|user_datetime }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes(action=true) }}">
+                                {% if row.job_url %}
+                                    <a href="{{ row.job_url }}" class="{{ table_ui.action_classes() }}">
+                                        Open Job
+                                        <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
+                                    </a>
+                                {% elif row.archive_history_url %}
+                                    <div class="flex min-w-0 flex-col items-end gap-1.5">
+                                        <a href="{{ row.archive_history_url }}"
+                                           class="{{ table_ui.action_classes() }}"
+                                           aria-label="Browse Job Archives in Data Lifecycle">
+                                            Browse Job Archives
+                                            <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
+                                        </a>
+                                        <span class="max-w-52 text-right text-xs leading-4 text-content-muted">
+                                            Archive bundles only; job match not verified.
+                                        </span>
+                                    </div>
+                                {% elif row.job_unavailable %}
+                                    <div class="flex min-w-0 flex-col items-end gap-1">
+                                        <span class="text-xs font-medium text-content-secondary">Job unavailable</span>
+                                        <span class="text-right text-xs leading-4 text-content-muted">Not in current Job Registry.</span>
+                                    </div>
+                                {% else %}
+                                    <span class="text-xs text-content-muted">Source-owned</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        {% set empty_state_icon = "file-clock" %}
+        {% set empty_state_title = "No Administrative Source Evidence" %}
+        {% set empty_state_description = "No committed hot AuditEvent records exist for this source scope." %}
+        {% set empty_state_min_height = "min-h-[260px]" %}
+        {% include "components/states/_empty_state.html" %}
+    {% endif %}
+    {% set administrative_query = {
+            'view': 'administrative',
+            'admin_scope': administrative_evidence.scope,
+            'admin_search': administrative_evidence.filters.search,
+            'admin_outcome': administrative_evidence.filters.outcome,
+            'admin_time_range': administrative_evidence.filters.time_range
+        } %}
+    {{ registry_ui.footer('access.activity_audit.index',
+        'activity-administrative-evidence',
+        'administrative-activity-loading',
+        administrative_evidence.pagination,
+        administrative_query,
+        administrative_evidence.pagination.allowed_per_page,
+        resource_label='Administrative Events',
+        rows_aria_label='Administrative Events per page',
+        control_name='administrative-evidence',
+        page_param='admin_page',
+        per_page_param='admin_per_page') }}
+</section>

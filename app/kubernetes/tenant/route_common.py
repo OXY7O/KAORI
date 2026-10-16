@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Blueprint, g, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, abort, g, make_response, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
@@ -17,6 +17,9 @@ from app.kubernetes.tenant.admin_workspace import (
     get_tenant_summary_context,
 )
 from app.kubernetes.tenant.discovery_service import get_tenant_discovery_context
+from app.kubernetes.tenant.registry_context import (
+    get_tenant_namespace_profile_mapping_context,
+)
 from app.kubernetes.tenant.service import (
     get_namespace_registry_context,
     get_tenant_registry_context,
@@ -86,7 +89,16 @@ def _tenant_admin_support_context(section: str) -> dict[str, Any]:
 
 def _operations_active_tab() -> str:
     active_tab = str(request.args.get('tab') or 'provisioning')
-    if active_tab not in {'provisioning', 'runs-evidence', 'drift-reconcile', 'activity'}:
+    if active_tab == 'drift-reconcile':
+        # Support existing bookmarked URLs until consumers adopt primary tabs.
+        return 'operational-reconcile' if request.args.get('drift_view') == 'operations' else 'allocation-drift'
+    if active_tab not in {
+        'provisioning',
+        'runs-evidence',
+        'allocation-drift',
+        'operational-reconcile',
+        'activity',
+    }:
         return 'provisioning'
     return active_tab
 
@@ -127,8 +139,146 @@ def _tenant_admin_section(value: str | None) -> str:
     return normalized if normalized in _TENANT_ADMIN_SECTIONS else 'registry'
 
 
+_REGISTRY_DETAIL_KEYS = (
+    'page',
+    'per_page',
+    'search',
+    'cluster_id',
+    'environment',
+    'lifecycle_status',
+)
+
+
+def _tenant_registry_detail_state() -> dict[str, str]:
+    """Preserve only explicitly allowlisted, bounded Registry return filters."""
+    state: dict[str, str] = {
+        key: str(request.values.get(f'registry_{key}') or '').strip()[:256] for key in _REGISTRY_DETAIL_KEYS
+    }
+    for key, fallback in (('page', 1), ('per_page', 5)):
+        try:
+            number = int(state[key])
+        except ValueError:
+            number = fallback
+        state[key] = str(number if number > 0 else fallback)
+    state['per_page'] = str(int(state['per_page']) if int(state['per_page']) in {5, 10, 25, 50} else 5)
+    return state
+
+
+def _tenant_detail_context(tenant_id: str) -> dict[str, Any]:
+    """One exact committed Tenant for the detail page or HTMX refresh.
+
+    Preserve only explicitly named Registry query fields, never an arbitrary
+    return URL. The detail is not bound to a paginated/filtered Registry row.
+    """
+    context = get_tenant_registry_context(tenant_id=tenant_id, per_page=1)
+    rows = context['tenant_rows']
+    if not rows:
+        abort(404)
+    state = _tenant_registry_detail_state()
+    context['row'] = rows[0]
+    context['tenant_namespace_profile_mapping'] = get_tenant_namespace_profile_mapping_context(tenant_id)
+    context['registry_state'] = state
+    # A detail POST reopens its governed section after the HTMX swap. If a
+    # lifecycle transition makes it ineligible, use the next permitted view;
+    # do not trust arbitrary form text to disclose an administrative panel.
+    tenant = rows[0]['tenant']
+    can_manage = current_user.has_permission('tenant.manage')
+    can_integrate = current_user.has_permission('integrations.manage')
+    can_cluster = current_user.has_permission('clusters.manage')
+    admin = can_manage and can_integrate and can_cluster
+    allowed_sections = {'provider', 'lifecycle'}
+    if admin and tenant.ownership_status == 'adopted' and tenant.lifecycle_status == 'ready':
+        allowed_sections.add('release')
+    if (
+        admin
+        and tenant.provider_key == 'native_kubernetes'
+        and tenant.lifecycle_status == 'released'
+        and (tenant.provider_evidence_json or {}).get('release_governance', {}).get('release_mode') == 'managed_handoff'
+    ):
+        allowed_sections.add('handback')
+    requested_section = str(request.values.get('tenant_detail_section') or '').strip()
+    if requested_section in allowed_sections:
+        active_section = requested_section
+    elif requested_section == 'release' and 'handback' in allowed_sections:
+        active_section = 'handback'
+    else:
+        active_section = (
+            'release'
+            if 'release' in allowed_sections
+            else ('handback' if 'handback' in allowed_sections else 'provider')
+        )
+    context['tenant_detail_open_section'] = active_section
+    # Wizard navigation is presentation only. No step is treated as approved,
+    # executable, or complete without the existing committed checks/services.
+    steps = ('scope', 'handoff', 'approval', 'finalize')
+    requested_step = (
+        str(request.values.get('tenant_release_step') or request.values.get('release_step') or 'scope').strip().lower()
+    )
+    context['tenant_release_step'] = requested_step if requested_step in steps else 'scope'
+    context['tenant_release_step_index'] = steps.index(context['tenant_release_step']) + 1
+    registry_query: dict[str, Any] = {f'registry_{key}': value for key, value in state.items() if value}
+    context['tenant_release_step_urls'] = {
+        step: url_for(
+            'tenant.tenant_detail',
+            tenant_id=tenant_id,
+            tenant_detail_section='release',
+            release_step=step,
+            _anchor='tenant-release-governance',
+            **registry_query,
+        )
+        for step in steps
+    }
+
+    return_query: dict[str, Any] = {f'registry_{key}': value for key, value in state.items() if value}
+    context['return_to_registry_url'] = url_for(
+        'tenant.tenants',
+        section='registry',
+        **return_query,
+    )
+    return context
+
+
 def _tenant_section_redirect(section: str):
     resolved_section = _tenant_admin_section(section)
+    detail_id = str(request.form.get('tenant_detail_id') or '').strip()
+    if resolved_section == 'registry' and detail_id:
+        context = _tenant_detail_context(detail_id)
+        if request.headers.get('HX-Request') != 'true':
+            return redirect(
+                url_for(
+                    'tenant.tenant_detail',
+                    tenant_id=detail_id,
+                    tenant_detail_section=context['tenant_detail_open_section'],
+                    release_step=context['tenant_release_step']
+                    if context['tenant_detail_open_section'] == 'release'
+                    else None,
+                    _anchor={
+                        'release': 'tenant-release-governance',
+                        'handback': 'tenant-native-handback',
+                        'provider': 'tenant-provider-authority',
+                        'lifecycle': 'tenant-lifecycle-actions',
+                    }[context['tenant_detail_open_section']],
+                    **{f'registry_{key}': value for key, value in context['registry_state'].items() if value},
+                )
+            )
+        feedback = getattr(g, 'tenant_operational_feedback', None)
+        rendered = render_template(
+            'kubernetes/tenant/partials/_tenant_management_detail.html',
+            can_manage=current_user.has_permission('tenant.manage'),
+            tenant_action_feedback=feedback,
+            **context,
+        )
+        if feedback:
+            rendered += render_template(
+                'components/operational_toast.html',
+                **feedback,
+                toast_oob=True,
+            )
+        response = make_response(rendered)
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+
     if request.headers.get('HX-Request') != 'true':
         return redirect(url_for('tenant.tenants', section=resolved_section))
 
@@ -164,14 +314,33 @@ def _query_text(name: str) -> str:
 
 
 def _registry_section_context() -> dict[str, Any]:
-    return get_tenant_registry_context(
-        page=_query_int('page'),
-        per_page=_query_int('per_page', 5),
-        search=_query_text('search'),
-        cluster_id=_query_text('cluster_id'),
-        environment=_query_text('environment'),
-        lifecycle_status=_query_text('lifecycle_status'),
+    # Registry form POSTs inherit only prefixed context values from the selected
+    # expandable panel. Keep those distinct from provider mutation form fields.
+    def field(name: str, default: str = '') -> str:
+        return str(request.values.get(f'registry_{name}') or request.values.get(name) or default)
+
+    def number(name: str, default: int) -> int:
+        try:
+            value = int(field(name, str(default)))
+        except ValueError:
+            return default
+        return value if value > 0 else default
+
+    context = get_tenant_registry_context(
+        page=number('page', 1),
+        per_page=number('per_page', 5),
+        search=field('search'),
+        cluster_id=field('cluster_id'),
+        environment=field('environment'),
+        lifecycle_status=field('lifecycle_status'),
     )
+    # Never render an arbitrary off-page Tenant solely because a caller supplied
+    # its ID. The selected Tenant must belong to the current authorized registry.
+    requested = str(request.values.get('manage_tenant_id') or '').strip()
+    context['managed_tenant_id'] = (
+        requested if any(str(row['tenant'].id) == requested for row in context['tenant_rows']) else ''
+    )
+    return context
 
 
 def _discovery_section_context() -> dict[str, Any]:

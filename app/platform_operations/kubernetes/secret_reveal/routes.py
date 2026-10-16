@@ -23,13 +23,15 @@ from app.kubernetes.operations.secrets.reveal_policy import (
     update_cluster_reveal_readiness,
 )
 from app.models import Cluster
+from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
 from app.platform_operations.kubernetes.secret_reveal.service import (
     build_secret_reveal_settings_context,
+    commit_secret_reveal_settings_transaction,
     get_secret_reveal_cluster,
     rollback_secret_reveal_settings_transaction,
 )
 from app.platform_operations.notifications.feedback import queue_operational_feedback
-from app.platform_operations.notifications.service import record_operational_activity
+from app.platform_operations.notifications.service import record_operational_activity, stage_operational_activity
 
 bp = Blueprint('secret_reveal', __name__)
 
@@ -83,7 +85,11 @@ def _settings_response(cluster_id: str, operation_feedback: dict[str, Any] | Non
             **operation_feedback,
             toast_oob=True,
         )
-    response = make_response(workspace_html + feedback_html)
+    summary_html = render_template(
+        'platform_operations/kubernetes/_summary_oob.html',
+        **build_kubernetes_administration_summary(),
+    )
+    response = make_response(workspace_html + summary_html + feedback_html)
     response.headers['HX-Push-Url'] = page_url
     response.headers['HX-Trigger'] = json.dumps({'kaori:notifications-changed': True})
     return response
@@ -103,8 +109,10 @@ def _record_settings_activity(
     title: str,
     message: str,
     metadata: dict[str, object],
+    durable_with_operation: bool = False,
 ) -> dict[str, Any]:
-    return record_operational_activity(
+    writer = stage_operational_activity if durable_with_operation else record_operational_activity
+    return writer(
         user_id=current_user.id,
         event_type=event_type,
         status=status,
@@ -118,7 +126,6 @@ def _record_settings_activity(
             'secret_value_recorded': False,
             'kubeconfig_recorded': False,
         },
-        queue_feedback=False,
     )
 
 
@@ -183,6 +190,7 @@ def update_readiness(cluster_id: str):
             cluster,
             encryption_verified=request.form.get('encryption_verified') == '1',
             audit_verified=request.form.get('audit_verified') == '1',
+            commit=False,
         )
         readiness = cluster_reveal_readiness_evidence(cluster)
         ready = readiness['ready']
@@ -205,7 +213,9 @@ def update_readiness(cluster_id: str):
                 'cluster_credential_configured': readiness['credential_configured'],
                 'uses_cluster_kubeconfig': True,
             },
+            durable_with_operation=True,
         )
+        commit_secret_reveal_settings_transaction()
     except ValueError as exc:
         rollback_secret_reveal_settings_transaction()
         operation_feedback = _record_settings_activity(
@@ -242,6 +252,7 @@ def update_namespace_policy(cluster_id: str):
             namespace,
             requested_policy,
             actor_user_id=current_user.id,
+            commit=False,
         )
         enabled = change.policy != 'disabled'
         operation_feedback = _record_settings_activity(
@@ -261,7 +272,9 @@ def update_namespace_policy(cluster_id: str):
                 'previous_policy': change.previous_policy,
                 'uses_cluster_kubeconfig': True,
             },
+            durable_with_operation=True,
         )
+        commit_secret_reveal_settings_transaction()
     except ValueError as exc:
         rollback_secret_reveal_settings_transaction()
         operation_feedback = _record_settings_activity(

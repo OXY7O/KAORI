@@ -105,7 +105,10 @@ def test_minio_owner_relationship_is_not_a_consumer_self_binding() -> None:
     assert 'ensure_primary_asset_binding' not in service
     assert "'binding.create'" not in registration
     assert "'binding.validate'" not in registration
-    assert 'build_bound_observability_source_rows(' in presentation
+    assert 'paginate_bound_observability_source_rows(' in presentation
+    assert "asset_type='object_storage_system'" in presentation
+    assert 'paginate_query(' in source_projection
+    assert 'IntegrationBinding.asset_type == asset_type' in source_projection
     assert 'IntegrationInstance.integration_type.in_(_OBSERVABILITY_PROVIDER_TYPES)' in source_projection
     assert 'Native Provider Contract' not in presentation
     assert 'DELETE FROM integration_bindings' in cleanup

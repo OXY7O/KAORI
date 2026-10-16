@@ -67,6 +67,7 @@ def sync_all_registry_task(
     requested_by_user_id: int | None,
     targets: list[dict[str, str]] | None = None,
     job_execution_id: int | None = None,
+    empty_reconciliation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     task_id = str(self.request.id)
     context = JobExecutionContext(task_id, job_execution_id)
@@ -76,6 +77,7 @@ def sync_all_registry_task(
     synced = 0
     artifact_count = 0
     failures: list[dict[str, str]] = []
+    empty_reconciliation_evidence: list[dict[str, Any]] = []
     context.start(
         message='Preparing Artifact Registry inventory synchronization.',
         total=total,
@@ -84,6 +86,16 @@ def sync_all_registry_task(
         target='Registry Estate',
     )
     try:
+        if empty_reconciliation is not None:
+            if (
+                job_execution_id is None
+                or requested_by_user_id is None
+                or int(empty_reconciliation.get('confirmed_by_user_id') or 0) != requested_by_user_id
+                or len(targets) != 1
+                or int(targets[0]['integration_instance_id'])
+                != int(empty_reconciliation.get('integration_instance_id') or 0)
+            ):
+                raise RuntimeError('Registry confirmed-empty job scope or operator evidence is invalid.')
         for index, target in enumerate(targets, start=1):
             instance_name = target['instance_name']
             canonical_id = int(target['integration_instance_id'])
@@ -151,7 +163,10 @@ def sync_all_registry_task(
                 result = sync_registry_inventory(
                     identity,
                     progress_callback=report_inventory_progress,
+                    empty_reconciliation=empty_reconciliation,
                 )
+                if result.get('empty_reconciliation_evidence'):
+                    empty_reconciliation_evidence.append(result['empty_reconciliation_evidence'])
                 synced += 1
                 artifact_count += int(result.get('artifacts') or 0)
             except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
@@ -183,6 +198,7 @@ def sync_all_registry_task(
             requested_by_user_id=requested_by_user_id,
             started=started,
         )
+        result['empty_reconciliation_evidence'] = empty_reconciliation_evidence
         status = str(result['status'])
         if requested_by_user_id is not None:
             create_notification(

@@ -57,12 +57,17 @@ def test_runtime_usage_is_cross_domain_canonical_workspace() -> None:
     assert "'security_exposed': counts['security_exposed']" in presentation
     assert 'def build_runtime_binding_detail(binding_id: int)' in presentation
 
-    assert "request.args.get('source_id', type=int)" in routes
+    assert "source_id=_runtime_scope_id('source_id')" in routes
+    assert "artifact_id=_runtime_scope_id('artifact_id')" in routes
     assert "request.args.get('cluster_id', '', type=str)" in routes
     assert "request.args.get('namespace', '', type=str)" in routes
     assert "request.args.get('match_type', '', type=str)" in routes
     assert "request.args.get('exposure', '', type=str)" in routes
-    assert "request.args.get('artifact_id', type=int)" in routes
+    # Explicit malformed artifact scope must fail closed instead of widening results.
+    assert 'def _runtime_scope_id(name: str) -> int | None:' in routes
+    assert 'raw = request.args.get(name)' in routes
+    assert 'abort(404)' in routes
+    assert "artifact_id=_runtime_scope_id('artifact_id')" in routes
     assert "@artifact_registry_bp.get('/runtime/<int:binding_id>/details')" in routes
 
     assert 'artifact_registry/partials/_runtime_workspace.html' in page
@@ -116,3 +121,112 @@ def test_runtime_usage_preserves_digest_first_and_explicit_tag_confidence() -> N
     assert "'description': 'Mutable reference; lower confidence.'" in presentation
     assert "'tone': 'warning'" in presentation
     assert 'row.match.description' in workspace
+
+
+def test_runtime_summary_reuses_shared_section_intro_and_grouped_metrics() -> None:
+    from jinja2 import Environment
+
+    template = (ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html').read_text()
+    Environment().parse(template)
+    start = template.index("section_intro.render('Runtime Correlation',")
+    end = template.index("section_intro.render('Runtime Bindings',", start)
+    summary = template[start:end]
+
+    assert 'artifact-registry-runtime-summary-heading' in template
+    assert 'section_card.render(' in summary
+    assert "'Runtime Evidence Summary'" in summary
+    assert "body_classes='p-0'" in summary
+    assert 'posture_grid.render(runtime_metrics, columns=4)' in summary
+    for name in ('Runtime Bindings', 'Digest Matched', 'Tag Matched', 'Security Exposed'):
+        assert name in summary
+    assert "'warning' if runtime.tag_matches else 'info'" in summary
+    assert "'critical' if runtime.security_exposed else 'info'" in summary
+    assert 'metric_card.render(' not in summary
+    assert 'registry.footer(' in template
+
+
+def test_runtime_generation_freshness_and_active_scope_contract() -> None:
+    correlation = (ROOT / 'app/artifact_registry/correlation.py').read_text()
+    shared_evidence = (ROOT / 'app/common/registry_runtime_evidence.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
+    prerequisites = (ROOT / 'app/artifact_registry/correlation_sync_jobs.py').read_text()
+    routes = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    assert 'def runtime_input_signature(' in correlation
+    assert 'ClusterInventory.collected_at' in shared_evidence
+    assert 'RegistryCollectionState.last_committed_at' in shared_evidence
+    assert 'runtime_correlation_evidence_readiness as _committed_runtime_correlation_evidence_readiness' in correlation
+    assert 'if runtime_input_signature(materialization_session) != input_signature:' in correlation
+    assert "'input_signature': input_signature" in correlation
+    assert 'latest_success.result_summary_json' in presentation
+    assert "status, tone = 'Inputs Changed', 'warning'" in presentation
+    assert "description = 'Inputs changed or correlation lacks generation proof; rebuild.'" in presentation
+    assert 'or the previous correlation has no input-generation proof.' not in presentation
+    assert 'RegistryProject.integration_instance_id.in_(active_source_ids)' in presentation
+    assert 'RegistryProject.integration_instance_id.in_(source_ids)' in presentation
+    assert 'IntegrationInstance.enabled.is_(True)' in prerequisites
+    assert 'def _runtime_scope_id(name: str)' in routes
+
+
+def test_runtime_read_and_materialization_bounded_projection() -> None:
+    correlation = (ROOT / 'app/artifact_registry/correlation.py').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_runtime.py').read_text()
+    workspace = (ROOT / 'app/templates/artifact_registry/partials/_runtime_workspace.html').read_text()
+    assert 'for artifact in artifact_query.yield_per(normalized_batch_size):' in correlation
+    assert 'class IndexedArtifact:' in correlation
+    assert 'artifact_query.all()' not in correlation
+    assert 'artifact_ids = [artifact.id for artifact in artifacts]' not in correlation
+    assert 'RegistryWorkloadBinding.artifact_id.in_(artifact_id_scope)' in correlation
+    assert 'def _runtime_security_index(' in presentation
+    assert 'RegistryArtifact.id.in_(bound_artifact_ids)' in presentation
+    assert '.yield_per(250)' in presentation
+    assert 'Runtime bindings associated with artifacts reporting Critical or High findings.' in workspace
+
+
+def test_runtime_binding_detail_template_compiles_and_handles_optional_containers() -> None:
+    from jinja2 import Environment
+
+    source = (ROOT / 'app/templates/artifact_registry/partials/_runtime_binding_detail.html').read_text()
+    env = Environment(autoescape=True)
+    # Plain Jinja lacks application filters; register stubs for compilation.
+    env.filters['environment_name'] = lambda value, empty='Not Set': value
+    env.filters['user_datetime'] = lambda value: value
+    # Compile the entire partial to catch malformed template delimiters.
+    env.from_string(source)
+    assert '{% if binding.containers %}' in source
+    assert '{% endif %}' in source
+    assert 'endif %>' not in source
+
+    start = source.index('{% if binding.containers %}')
+    end = source.index("{{ detail.inventory_technical_row('Image Reference'", start)
+    optional_usages = env.from_string(source[start:end])
+
+    no_containers = optional_usages.render(binding={'containers': []})
+    assert 'Observed Container Usages' not in no_containers
+
+    with_containers = optional_usages.render(
+        binding={
+            'containers': [
+                {'name': 'web', 'kind': 'container', 'index': 0},
+                {'name': 'init-db', 'kind': 'initContainer', 'index': 1},
+            ]
+        }
+    )
+    assert 'Observed Container Usages' in with_containers
+    assert 'web · container #1' in with_containers
+    assert 'init-db · initContainer #2' in with_containers
+    assert "detail.inventory_technical_row('Image Reference'" in source
+    assert 'Security Exposure' in source
+    assert 'Correlation Evidence' in source
+
+
+def test_pod_inventory_refresh_preserves_runtime_binding_foreign_keys() -> None:
+    persistence = (ROOT / 'app/kubernetes/inventory/persistence.py').read_text()
+    pod_sync = persistence.split('def save_pods(', 1)[1].split('def save_services(', 1)[0]
+
+    assert 'existing_pods = {' in pod_sync
+    assert '(row.namespace, row.pod_name): row' in pod_sync
+    assert 'existing_pods.pop(key, None)' in pod_sync
+    assert 'pod_inventory.collected_at = collected_at' in pod_sync
+    assert 'for stale_pod in existing_pods.values():' in pod_sync
+    assert 'db.session.delete(stale_pod)' in pod_sync
+    assert '.delete(synchronize_session=' not in pod_sync

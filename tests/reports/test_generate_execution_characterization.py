@@ -153,7 +153,7 @@ def test_create_report_request_commits_record_for_fresh_session_readback(
         scope_asset_type='characterization_scope',
     )
 
-    monkeypatch.setattr(generate_service, 'get_form_state_from_form', lambda _form: form_state)
+    monkeypatch.setattr(generate_service, 'get_form_state_from_form', lambda _form, *, for_submission=False: form_state)
     monkeypatch.setattr(generate_service, 'validate_form_state', lambda _form_state: [])
     monkeypatch.setattr(generate_service, 'get_report_storage_backend_status', lambda: {'write_available': True})
     monkeypatch.setattr(generate_service, 'get_report_type_spec', lambda _report_type: report_spec)

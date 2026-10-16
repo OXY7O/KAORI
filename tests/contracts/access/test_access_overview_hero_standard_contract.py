@@ -19,7 +19,9 @@ def test_access_overview_hero_uses_shared_kaori_hero_contract() -> None:
     assert 'page_hero.context_info' in template
     assert 'Access Posture' in template
     assert 'Permission Scoped' in template
-    assert 'access_overview.attention_workspace_count' in template
+    assert 'access_overview.hero_metrics' in template
+    assert "page_hero.meta_label('layers', 'Domain-Owned Summaries')" in template
+    assert "page_hero.meta_label('history', 'Committed Evidence')" in template
     assert 'Read-only composition; posture comes from each authoritative Access workspace.' in template
 
 

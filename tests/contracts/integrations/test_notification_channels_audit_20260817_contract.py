@@ -42,7 +42,9 @@ def test_delivery_activity_exposes_persisted_retry_and_dedup_evidence() -> None:
     service = read('app/integrations/delivery/notification_channels/service.py')
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
 
-    assert 'NotificationDelivery.query.order_by(' in service
+    assert 'query = NotificationDelivery.query' in service
+    assert 'query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())' in service
+    assert 'paginate_query(query, page=page, per_page=per_page)' in service
     assert "'attempt_count': delivery.attempt_count" in service
     assert "'provider_message_id': delivery.provider_message_id or ''" in service
     assert "'error_message': delivery.error_message or ''" in service
@@ -161,3 +163,45 @@ def test_notification_channel_activity_audit_uses_integrations_category_and_read
     assert "normalized.replace('.', ' ').replace('_', ' ')" in event_catalog
     assert "'channel_name': channel_name" in read('app/integrations/delivery/notification_channels/routes.py')
     assert "'provider_key': provider_key" in read('app/integrations/delivery/notification_channels/routes.py')
+
+
+def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+
+    assert "request.args.get('delivery_event_key', '')" in routes
+    assert 'query.filter(NotificationDelivery.event_key == event_key)' in service
+    assert "normalized_delivery_key = str(delivery_event_key or '').strip()[:255]" in service
+    assert "'delivery_filter': normalized_delivery_key" in service
+    assert 'name="delivery_event_key"' in page
+    assert 'hx-select="#notification-channels-workspace"' in page
+    assert "'delivery_event_key': payload.delivery_filter" in page
+    assert 'Delivery attempts and channel retries are provider-delivery evidence' in page
+    assert 'No Matching Deliveries' in page
+    assert 'No committed channel delivery matches this exact event key.' in page
+
+
+def test_report_delivery_source_link_is_exact_committed_and_permissioned() -> None:
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    producer = read('app/reports/notifications.py')
+    source_routes = read('app/reports/generated/routes.py')
+
+    assert "current_user.has_permission('reports.view')" in routes
+    assert 'can_view_reports: bool = False' in service
+    assert "'report_source_url': _report_source_url(row, report_lookup) if can_view_reports else None" in service
+    assert 'if can_view_reports' in service
+    assert 'report_id not in report_lookup' in service
+    assert "delivery.event_type != 'report.generated'" in service
+    assert "delivery.asset_type != 'report'" in service
+    assert "delivery.event_key != f'report.generated:{report_id}'" in service
+    assert 'Report.query.filter(Report.id.in_(report_ids)).all()' in service
+    assert 'report_id = _report_id_for_delivery(delivery)' in service
+    assert "delivery.event_key != f'report.generated:{report_id}'" in service
+    assert "return url_for('reports.generated_report_detail', report_id=report_id)" in service
+    assert "event_key=f'report.generated:{report.id}'" in producer
+    assert "@permission_required('reports.view')" in source_routes
+    assert 'delivery.report_source_url' in page
+    assert 'Open Report' in page

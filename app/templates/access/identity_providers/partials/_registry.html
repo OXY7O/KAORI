@@ -3,9 +3,8 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/details/_expandable_row.html" as expandable %}
-{% import "components/pagination.html" as pagination_ui %}
 <section id="identity-provider-registry"
-         class="{{ table_ui.block_classes() }}">
+         class="{{ '' if embedded|default(false) else table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -13,24 +12,21 @@
                     <i data-lucide="blocks" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="{{ table_ui.block_title_classes() }}">Provider Registry</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="{{ table_ui.block_title_classes() }}">Provider Registry</h2>
+                        {{ table_label.result_count(summary.matching) }}
+                    </div>
                     <p class="{{ table_ui.block_description_classes() }}">Review configuration, enablement, identity links, and provider-owned actions.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-md border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-secondary">
-                    <i data-lucide="scan-search"
-                       class="h-3.5 w-3.5 text-kaori-primary"
-                       aria-hidden="true"></i>
-                    {{ summary.matching }} Matching {{ 'Provider' if summary.matching == 1 else 'Providers' }}
-                </span>
                 {% if filters.search or filters.provider_key != 'all' or filters.state != 'all' %}
-                    {{ registry_ui.clear_filters_action(url_for('identity_providers.index', per_page=pagination.per_page, tab='providers') ,
-                    table_ui.action_classes(),
-                    hx_get=url_for('identity_providers.index', per_page=pagination.per_page, tab='providers'),
-                    target='#identity-provider-registry',
-                    indicator='#identity-provider-registry-loading',
-                    push_url='true'
+                    {{ registry_ui.clear_filters_link('identity_providers.index',
+                                        'identity-provider-registry',
+                                        'identity-provider-registry-loading',
+                                        filters.per_page,
+                                        table_ui.action_classes() ,
+                    query_params={'tab': 'providers'}
                     ) }}
                 {% endif %}
             </div>
@@ -38,18 +34,15 @@
         {{ loading_bar.render('identity-provider-registry-loading', label='Refreshing Provider Registry') }}
     </header>
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
-        <form method="get"
-              action="{{ url_for('identity_providers.index') }}"
-              class="{{ table_ui.filter_layout_classes() }}"
-              hx-get="{{ url_for('identity_providers.index') }}"
-              hx-trigger="keyup changed delay:400ms from:input[name='search'], change from:select[name='provider_key'], change from:select[name='state']"
-              hx-target="#identity-provider-registry"
-              hx-swap="outerHTML settle:150ms"
-              hx-push-url="true"
-              hx-indicator="#identity-provider-registry-loading">
-            <input type="hidden" name="page" value="1">
+        {% call registry_ui.filter_form(
+            'identity_providers.index',
+            'identity-provider-registry',
+            'identity-provider-registry-loading',
+            filters.per_page,
+            form_id='identity-provider-registry-filter-form',
+            aria_label='Provider Registry filters'
+            ) %}
             <input type="hidden" name="tab" value="providers">
-            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <label class="min-w-0">
                 <span class="{{ table_ui.filter_label_classes() }}">Search Provider</span>
                 <div class="relative">
@@ -83,7 +76,7 @@
                             {% if filters.state == 'disabled' %}selected{% endif %}>Disabled</option>
                 </select>
             </label>
-        </form>
+        {% endcall %}
     </div>
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes() }}">
@@ -140,68 +133,15 @@
             </tbody>
         </table>
     </div>
-    <footer class="{{ pagination_ui.footer_classes() }}">
-        <div class="{{ pagination_ui.summary_group_classes() }}">
-            <span class="font-medium text-content-secondary">
-                Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} {{ pagination_ui.resource_name('Providers', pagination.total_items) }}
-            </span>
-            <form method="get"
-                  action="{{ url_for('identity_providers.index') }}"
-                  class="{{ pagination_ui.rows_group_classes() }}"
-                  hx-get="{{ url_for('identity_providers.index') }}"
-                  hx-trigger="change from:select[name='per_page']"
-                  hx-target="#identity-provider-registry"
-                  hx-swap="outerHTML settle:150ms"
-                  hx-push-url="true"
-                  hx-indicator="#identity-provider-registry-loading">
-                <input type="hidden" name="page" value="1">
-                <input type="hidden" name="tab" value="providers">
-                <input type="hidden" name="search" value="{{ filters.search }}">
-                <input type="hidden" name="provider_key" value="{{ filters.provider_key }}">
-                <input type="hidden" name="state" value="{{ filters.state }}">
-                <span class="text-xs font-semibold text-content-secondary">Rows</span>
-                <select name="per_page"
-                        aria-label="Rows Per Page"
-                        class="{{ pagination_ui.page_size_classes() }}">
-                    {% for option in per_page_options %}
-                        <option value="{{ option }}"
-                                {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
-                    {% endfor %}
-                </select>
-            </form>
-        </div>
-        <div class="{{ pagination_ui.navigation_group_classes() }}">
-            {% if pagination.has_prev %}
-                <a href="{{ url_for('identity_providers.index', page=pagination.prev_page, **pagination_query) }}"
-                   hx-get="{{ url_for('identity_providers.index', page=pagination.prev_page, **pagination_query) }}"
-                   hx-target="#identity-provider-registry"
-                   hx-swap="outerHTML settle:150ms"
-                   hx-push-url="true"
-                   hx-indicator="#identity-provider-registry-loading"
-                   class="{{ pagination_ui.navigation_classes() }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
-            {% else %}
-                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
-                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
-            {% endif %}
-            {{ pagination_ui.numeric_pages(pagination.page,
-                        pagination.total_pages,
-                        hx_target='#identity-provider-registry',
-                        hx_indicator='#identity-provider-registry-loading',
-                        endpoint='identity_providers.index',
-                        query_params=pagination_query,
-                        hx_swap='outerHTML settle:150ms') }}
-            {% if pagination.has_next %}
-                <a href="{{ url_for('identity_providers.index', page=pagination.next_page, **pagination_query) }}"
-                   hx-get="{{ url_for('identity_providers.index', page=pagination.next_page, **pagination_query) }}"
-                   hx-target="#identity-provider-registry"
-                   hx-swap="outerHTML settle:150ms"
-                   hx-push-url="true"
-                   hx-indicator="#identity-provider-registry-loading"
-                   class="{{ pagination_ui.navigation_classes() }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
-            {% else %}
-                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
-                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
-            {% endif %}
-        </div>
-    </footer>
+    {% set footer_query = pagination_query.copy() %}
+    {% set _ = footer_query.pop('per_page', none) %}
+    {{ registry_ui.footer('identity_providers.index',
+        'identity-provider-registry',
+        'identity-provider-registry-loading',
+        pagination,
+        footer_query,
+        per_page_options,
+        resource_label='Providers',
+        rows_aria_label='Rows Per Page',
+        control_name='identity-provider-registry') }}
 </section>

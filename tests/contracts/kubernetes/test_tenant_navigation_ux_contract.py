@@ -41,6 +41,27 @@ def test_tenant_is_a_kubernetes_sidebar_capability_under_v21() -> None:
     assert 'data-kaori-sidebar-capability="{{ child[\'key\'] }}"' in sidebar
 
 
+def test_tenant_generated_credential_material_preserves_tenants_navigation_and_breadcrumb() -> None:
+    workspace_navigation = _read('app/common/workspace_navigation.py')
+    breadcrumb_source = _read('app/common/navigation.py')
+    sidebar_tenant = _read('app/templates/components/navigation/tenant_menu.html')
+    route = _read('app/kubernetes/tenant/routes_credentials.py')
+    material = _read('app/templates/kubernetes/tenant/credential_material.html')
+
+    assert "'tenant.generate_credential_material_route': 'tenants'" in workspace_navigation
+    assert "'tenant.generate_credential_material_route': 'Access Material'" in breadcrumb_source
+    assert (
+        "request.endpoint in ['tenant.tenants', 'tenant.tenant_detail', 'tenant.generate_credential_material_route']"
+        in sidebar_tenant
+    )
+    assert 'def generate_credential_material_route(credential_id: int):' in route
+    assert "tenant_page='tenants'" in route
+    assert 'data-kaori-hero-profile="transactional-admin"' in material
+    assert 'page_hero.shell_classes()' in material
+    assert '{% block dashboard_content %}' in material
+    assert '{% block tenant_content %}' not in material
+
+
 def test_tenant_routes_own_only_five_primary_destinations() -> None:
     routes = (ROOT / 'app/kubernetes/tenant/routes.py').read_text(encoding='utf-8')
 
@@ -82,7 +103,7 @@ def test_tenant_pages_reuse_kaori_shared_presentation_patterns() -> None:
     assert 'components/content_tabs.html' in operations
     assert 'content_tabs.render_links' in operations
 
-    for label in ('Provisioning', 'Runs & Evidence', 'Drift & Reconcile', 'Activity'):
+    for label in ('Provisioning', 'Runs & Evidence', 'Allocation Drift', 'Operational Reconcile', 'Activity'):
         assert label in operations
 
     for path in (
@@ -230,3 +251,32 @@ def test_tenant_readiness_matches_runtime_fallback_and_blocker_distinguishes_val
     assert 'Open Cluster Integrations' in onboarding
     assert 'Validate Cluster' in onboarding
     assert 'Confirm Ready' in onboarding
+
+
+def test_tenant_detail_uses_tenants_active_capability_and_contextual_topbar():
+    source = _read('app/common/workspace_navigation.py')
+    breadcrumb = _read('app/common/navigation.py')
+    sidebar = _read('app/templates/components/navigation/tenant_menu.html')
+    page = _read('app/templates/kubernetes/tenant/tenant_detail.html')
+    partial = _read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
+    assert "'tenant.tenant_detail': 'tenants'" in source
+    assert "'tenant.tenant_detail': 'Tenant Details'" in breadcrumb
+    assert "elif endpoint == 'tenant.tenant_detail':" in breadcrumb
+    assert "'tenant.tenant_detail'" in sidebar
+    assert '{% block dashboard_content %}' in page
+    assert '{% block tenant_content %}' not in page
+    assert 'data-kaori-hero-profile="transactional-admin"' in partial
+    assert partial.count('Back to Registry') == 1
+
+
+def test_tenant_detail_runtime_navigation_projection_is_tenants_not_overview():
+    from app.common.navigation import build_navigation_breadcrumb
+    from app.common.workspace_navigation import _capability_active_key
+
+    assert _capability_active_key('kubernetes_tenant', 'tenant.tenant_detail') == 'tenants'
+    assert [item['label'] for item in build_navigation_breadcrumb('tenant.tenant_detail')] == [
+        'Kubernetes',
+        'Tenant',
+        'Tenants',
+        'Tenant Details',
+    ]

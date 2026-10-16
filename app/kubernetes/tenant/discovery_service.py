@@ -10,8 +10,18 @@ from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
-from app.kubernetes.tenant.allocation_observation import observe_native_namespace_allocation
-from app.kubernetes.tenant.capsule_allocation_observation import observe_capsule_tenant_allocation
+from app.kubernetes.tenant.allocation_observation import (
+    capsule_namespace_authority_present,
+    observe_native_namespace_allocation,
+)
+from app.kubernetes.tenant.capsule_allocation_observation import (
+    _capsule_namespace_correlation,
+    _capsule_status_namespace_names,
+    observe_capsule_tenant_allocation,
+)
+from app.kubernetes.tenant.capsule_namespace_attachment_authority import (
+    validate_capsule_namespace_attachment,
+)
 from app.kubernetes.tenant.capsule_provider import discover_capsule
 from app.models import Cluster
 from app.models.kubernetes import KubernetesConnection
@@ -66,19 +76,44 @@ def _tone(status: str) -> str:
     return 'warning'
 
 
+def _unclaimed_provider_ownership_reason(*, labels: Mapping[str, Any], resource_kind: str) -> str | None:
+    """Reject orphaned KAORI labels and foreign managers before any provider takeover."""
+    manager = str(labels.get('app.kubernetes.io/managed-by') or '').strip()
+    reserved_claims = (
+        'kaori.io/tenant-id',
+        'kaori.io/tenant-generation',
+        'kaori.io/environment',
+        'kaori.io/resource-profile',
+    )
+    if manager.lower() == 'kaori' or any(key in labels for key in reserved_claims):
+        return (
+            f'{resource_kind} has KAORI ownership markers without active governance; '
+            'inspect provider residue and recover the prior Tenant before adoption.'
+        )
+    if manager:
+        return f'{resource_kind} declares external manager {manager}.'
+    return None
+
+
 def _native_management(
     *,
     namespace: str,
     labels: dict[str, str],
     managed_record: TenantNamespace | None,
+    owner_references: Any = None,
 ) -> tuple[str, str]:
     if managed_record is not None:
         return 'Managed', 'Already governed by KAORI.'
     if namespace in _SYSTEM_NAMESPACES:
         return 'Blocked', 'Kubernetes system namespaces are not Tenant adoption candidates.'
-    external_manager = str(labels.get('app.kubernetes.io/managed-by') or '').strip()
-    if external_manager and external_manager.lower() != 'kaori':
-        return 'Blocked', f'Provider resource declares external manager {external_manager}.'
+    if capsule_namespace_authority_present(
+        labels=labels,
+        owner_references=owner_references,
+    ):
+        return 'Blocked', 'Namespace remains correlated to Capsule Tenant authority; use Capsule governance.'
+    ownership_reason = _unclaimed_provider_ownership_reason(labels=labels, resource_kind='Namespace')
+    if ownership_reason:
+        return 'Blocked', ownership_reason
     return 'Discovered', 'Candidate for governed adoption preflight; no provider mutation has occurred.'
 
 
@@ -88,7 +123,7 @@ def _managed_namespace_map(cluster_ids: list[str]) -> dict[tuple[str, str], Tena
     rows = (
         TenantNamespace.query.filter(
             TenantNamespace.cluster_id.in_(cluster_ids),
-            TenantNamespace.provisioning_status != 'deprovisioned',
+            TenantNamespace.provisioning_status.notin_(('deprovisioned', 'released')),
         )
         .join(TenantEnvironment, TenantNamespace.tenant_environment_id == TenantEnvironment.id)
         .join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
@@ -103,7 +138,7 @@ def _managed_capsule_map(cluster_ids: list[str]) -> dict[tuple[str, str], Tenant
     rows = Tenant.query.filter(
         Tenant.cluster_id.in_(cluster_ids),
         Tenant.provider_key == 'capsule',
-        Tenant.lifecycle_status != 'decommissioned',
+        Tenant.lifecycle_status.notin_(('decommissioned', 'released')),
     ).all()
     result: dict[tuple[str, str], Tenant] = {}
     for tenant in rows:
@@ -231,6 +266,7 @@ def get_tenant_discovery_context(
                 namespace=name,
                 labels=labels,
                 managed_record=managed_record,
+                owner_references=getattr(metadata, 'owner_references', None),
             )
             if managed_record is None and provider_status == 'Terminating':
                 management_status = 'Blocked'
@@ -304,8 +340,18 @@ def get_tenant_discovery_context(
             observed_capsule_names.add(name)
             tenant = managed_capsule.get((cluster_key, name))
             status = _capsule_phase(item)
+            provider_labels = metadata.get('labels') or {}
+            ownership_reason = (
+                _unclaimed_provider_ownership_reason(labels=provider_labels, resource_kind='Capsule Tenant')
+                if isinstance(provider_labels, Mapping)
+                else 'Capsule Tenant ownership labels are malformed.'
+            )
             management_status = (
-                'Managed' if tenant is not None else ('Blocked' if status == 'Terminating' else 'Discovered')
+                'Managed'
+                if tenant is not None
+                else 'Blocked'
+                if status == 'Terminating' or ownership_reason
+                else 'Discovered'
             )
             rows.append(
                 {
@@ -330,14 +376,113 @@ def get_tenant_discovery_context(
                         if tenant is not None
                         else (
                             'Capsule Tenant is terminating and cannot be adopted.'
-                            if management_status == 'Blocked'
-                            else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+                            if status == 'Terminating'
+                            else (
+                                ownership_reason
+                                or 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+                            )
                         )
                     ),
                     'provider_reference': str(metadata.get('uid') or name),
                     'provider_api_version': capsule_version,
                 }
             )
+
+        # Surface only ungoverned Capsule Namespaces correlated to an already
+        # governed Capsule Tenant; never require operators to recreate the Tenant.
+        namespace_by_name = {
+            str(getattr(getattr(item, 'metadata', None), 'name', '') or ''): item for item in namespace_items
+        }
+        for capsule_item in capsule_items:
+            capsule_metadata = capsule_item.get('metadata') or {}
+            capsule_name = str(capsule_metadata.get('name') or '').strip()
+            capsule_tenant = managed_capsule.get((cluster_key, capsule_name))
+            if (
+                capsule_tenant is None
+                or capsule_tenant.provider_state != 'capsule'
+                or capsule_tenant.reconciliation_authority != 'capsule'
+                or capsule_tenant.lifecycle_status != 'ready'
+                or _capsule_phase(capsule_item) == 'Terminating'
+            ):
+                continue
+            correlated, ambiguities = _capsule_namespace_correlation(
+                core_api=client.core_api(),
+                tenant_name=capsule_name,
+                tenant_item=capsule_item,
+                namespace_items=namespace_items,
+            )
+            capsule_uid = str(capsule_metadata.get('uid') or '').strip()
+            expected_uid = str((capsule_tenant.provider_evidence_json or {}).get('provider_uid') or '')
+            if not capsule_uid or capsule_uid != expected_uid:
+                ambiguities.append('Capsule Tenant CR UID changed since KAORI adoption.')
+            for observed in correlated[:30]:
+                name = str(observed.get('name') or '')
+                if not name or managed_namespaces.get((cluster_key, name)) is not None:
+                    continue
+                obj = namespace_by_name.get(name)
+                if obj is None:
+                    continue
+                namespace_status = _namespace_phase(obj)
+                label_claims = set(observed.get('label_claims') or [])
+                owner_claims = set(observed.get('owner_claims') or [])
+                correlation_proven = bool(
+                    (label_claims or owner_claims)
+                    and (not label_claims or label_claims == {capsule_name})
+                    and (not owner_claims or owner_claims == {capsule_name})
+                )
+                authority_error = ''
+                try:
+                    validate_capsule_namespace_attachment(
+                        tenant=capsule_tenant,
+                        cluster_id=cluster_key,
+                        capsule_item=capsule_item,
+                        namespace=obj,
+                        expected_namespace_uid=str(observed.get('uid') or ''),
+                        status_namespace_names=_capsule_status_namespace_names(capsule_item),
+                    )
+                except ValueError as exc:
+                    authority_error = str(exc)
+                blocked = bool(
+                    authority_error
+                    or ambiguities
+                    or not correlation_proven
+                    or namespace_status == 'Terminating'
+                    or not observed.get('uid')
+                    or not observed.get('resource_version')
+                )
+                eligibility = (
+                    authority_error
+                    if authority_error
+                    else '; '.join(ambiguities[:3])
+                    if ambiguities
+                    else 'Capsule Namespace is terminating.'
+                    if namespace_status == 'Terminating'
+                    else 'Explicit Capsule label/owner-ref correlation is missing.'
+                    if not correlation_proven
+                    else 'Provider Namespace UID/resourceVersion is incomplete.'
+                    if blocked
+                    else 'Attach this Capsule-correlated Namespace to its existing KAORI Tenant.'
+                )
+                rows.append(
+                    {
+                        'cluster': cluster,
+                        'cluster_id': cluster_key,
+                        'provider_key': 'capsule',
+                        'provider_label': 'Capsule',
+                        'resource_kind': 'Capsule Namespace',
+                        'resource_name': name,
+                        'capsule_tenant_name': capsule_name,
+                        'provider_status': namespace_status,
+                        'provider_tone': _tone(namespace_status),
+                        'management_status': 'Blocked' if blocked else 'Discovered',
+                        'management_tone': 'warning' if blocked else 'info',
+                        'tenant_name': capsule_tenant.name,
+                        'tenant_id': capsule_tenant.id,
+                        'eligibility': eligibility,
+                        'provider_reference': str(observed['uid']),
+                        'provider_resource_version': str(observed['resource_version']),
+                    }
+                )
 
         managed_capsule_tenants = {
             tenant.id: tenant
@@ -420,6 +565,7 @@ def get_tenant_adoption_preflight_context(
     cluster_id: str,
     provider_key: str,
     resource_name: str,
+    capsule_tenant_name: str = '',
 ) -> dict[str, Any]:
     """Build one deep, live Adoption Preflight only after explicit operator review."""
 
@@ -440,6 +586,14 @@ def get_tenant_adoption_preflight_context(
         raise ValueError('The selected Kubernetes cluster is no longer available.')
 
     client = runtime_adapter.build_client(cluster)
+    if normalized_provider == 'capsule' and capsule_tenant_name:
+        return _capsule_namespace_attachment_preflight(
+            cluster=cluster,
+            client=client,
+            cluster_id=normalized_cluster,
+            namespace=normalized_resource,
+            capsule_tenant_name=capsule_tenant_name,
+        )
 
     if normalized_provider == 'native_kubernetes':
         try:
@@ -457,12 +611,15 @@ def get_tenant_adoption_preflight_context(
             namespace=normalized_resource,
             labels=labels,
             managed_record=managed_record,
+            owner_references=getattr(metadata, 'owner_references', None),
         )
         if managed_record is None and provider_status == 'Terminating':
             management_status = 'Blocked'
             eligibility = 'Namespace is terminating and cannot enter governed adoption.'
         if management_status != 'Discovered':
             raise ValueError(eligibility)
+        if not getattr(metadata, 'uid', None) or not getattr(metadata, 'resource_version', None):
+            raise ValueError('Native Namespace preflight has no immutable UID/resourceVersion evidence.')
 
         allocation = observe_native_namespace_allocation(
             client.core_api(),
@@ -482,27 +639,43 @@ def get_tenant_adoption_preflight_context(
             'tenant_name': None,
             'tenant_id': None,
             'eligibility': eligibility,
-            'provider_reference': str(getattr(metadata, 'uid', None) or normalized_resource),
+            'provider_reference': str(getattr(metadata, 'uid', '')),
+            'provider_resource_version': str(getattr(metadata, 'resource_version', '')),
             'allocation_preflight': allocation,
         }
     else:
         capsule_version, item = _read_capsule_tenant(client, normalized_resource)
         tenant = _managed_capsule_map([normalized_cluster]).get((normalized_cluster, normalized_resource))
         provider_status = _capsule_phase(item)
+        provider_meta = item.get('metadata') or {}
+        provider_labels = provider_meta.get('labels') or {}
+        ownership_reason = (
+            _unclaimed_provider_ownership_reason(labels=provider_labels, resource_kind='Capsule Tenant')
+            if isinstance(provider_labels, Mapping)
+            else 'Capsule Tenant ownership labels are malformed.'
+        )
         management_status = (
-            'Managed' if tenant is not None else ('Blocked' if provider_status == 'Terminating' else 'Discovered')
+            'Managed'
+            if tenant is not None
+            else 'Blocked'
+            if provider_status == 'Terminating' or ownership_reason
+            else 'Discovered'
         )
         eligibility = (
             'Already governed by KAORI.'
             if tenant is not None
+            else 'Capsule Tenant is terminating and cannot be adopted.'
+            if provider_status == 'Terminating'
             else (
-                'Capsule Tenant is terminating and cannot be adopted.'
-                if management_status == 'Blocked'
-                else 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
+                ownership_reason
+                or 'Candidate for governed Capsule adoption preflight; provider authority remains Capsule.'
             )
         )
         if management_status != 'Discovered':
             raise ValueError(eligibility)
+        provider_meta = item.get('metadata') or {}
+        if not provider_meta.get('uid') or not provider_meta.get('resourceVersion'):
+            raise ValueError('Capsule Tenant preflight has no immutable UID/resourceVersion evidence.')
 
         allocation = observe_capsule_tenant_allocation(
             client,
@@ -532,14 +705,185 @@ def get_tenant_adoption_preflight_context(
             'tenant_name': None,
             'tenant_id': None,
             'eligibility': eligibility,
-            'provider_reference': str(metadata.get('uid') or normalized_resource),
+            'provider_reference': str(metadata['uid']),
+            'provider_resource_version': str(metadata['resourceVersion']),
             'provider_api_version': capsule_version,
             'allocation_preflight': allocation,
             'capsule_capability_preflight': capsule_capability_evidence,
         }
 
+    existing_tenant_environments: list[dict[str, Any]] = []
+    if normalized_provider == 'native_kubernetes':
+        candidates = (
+            TenantEnvironment.query.join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
+            .filter(
+                Tenant.cluster_id == normalized_cluster,
+                Tenant.provider_key == 'native_kubernetes',
+                Tenant.provider_state == 'native',
+                Tenant.reconciliation_authority == 'native_kubernetes',
+                Tenant.lifecycle_status == 'ready',
+            )
+            .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
+            .all()
+        )
+        existing_tenant_environments = [
+            {
+                'id': environment.id,
+                'tenant_id': environment.tenant_id,
+                'tenant_name': environment.tenant.name,
+                'environment': environment.environment,
+            }
+            for environment in candidates
+        ]
+
     return {
         'tenant_adoption_row': row,
+        'tenant_adoption_existing_environments': existing_tenant_environments,
+        'tenant_adoption_checked_at': present_user_datetime(datetime.now(UTC)),
+    }
+
+
+def select_capsule_namespace_attachment_candidate(
+    allocation: Mapping[str, Any],
+    *,
+    namespace: str,
+    capsule_tenant_name: str,
+    expected_uid: str = '',
+    expected_resource_version: str = '',
+) -> dict[str, Any]:
+    """Single fail-closed provider correlation contract for preview and submit."""
+    if (
+        allocation.get('authority_unsupported_dimensions')
+        or allocation.get('authority_ambiguous_dimensions')
+        or allocation.get('ambiguous_dimensions')
+    ):
+        raise ValueError('Capsule authority or Namespace correlation is ambiguous.')
+    matches = [item for item in allocation.get('correlated_namespaces') or [] if item.get('name') == namespace]
+    if len(matches) != 1:
+        raise ValueError('Namespace is not uniquely correlated to its Capsule Tenant.')
+    candidate = dict(matches[0])
+    label_claims = set(candidate.get('label_claims') or [])
+    owner_claims = set(candidate.get('owner_claims') or [])
+    if (
+        not capsule_tenant_name
+        or (not label_claims and not owner_claims)
+        or (label_claims and label_claims != {capsule_tenant_name})
+        or (owner_claims and owner_claims != {capsule_tenant_name})
+    ):
+        raise ValueError('Capsule Namespace must have an unambiguous Tenant label or owner reference.')
+    uid = str(candidate.get('uid') or '')
+    version = str(candidate.get('resource_version') or '')
+    if not uid or not version:
+        raise ValueError('Capsule Namespace identity evidence is incomplete.')
+    if expected_uid and uid != expected_uid:
+        raise ValueError('Namespace UID changed since Capsule Adoption Preflight.')
+    if expected_resource_version and version != expected_resource_version:
+        raise ValueError('Namespace resourceVersion changed since Capsule Adoption Preflight.')
+    observed = candidate.get('allocation') or {}
+    if (
+        observed.get('control_state') != 'observed'
+        or observed.get('unsupported_dimensions')
+        or observed.get('ambiguous_dimensions')
+    ):
+        raise ValueError('Capsule Namespace allocation is unsupported or ambiguous.')
+    return candidate
+
+
+def _capsule_namespace_attachment_preflight(
+    *,
+    cluster: Cluster,
+    client: Any,
+    cluster_id: str,
+    namespace: str,
+    capsule_tenant_name: str,
+) -> dict[str, Any]:
+    """Read-only, provider-correlated Capsule Namespace attachment preview."""
+    tenant = _managed_capsule_map([cluster_id]).get((cluster_id, capsule_tenant_name))
+    if (
+        tenant is None
+        or tenant.lifecycle_status != 'ready'
+        or tenant.provider_state != 'capsule'
+        or tenant.reconciliation_authority != 'capsule'
+        or str(tenant.provider_reference or '') != capsule_tenant_name
+    ):
+        raise ValueError('No healthy governed Capsule Tenant matches the selected Namespace.')
+    if _managed_namespace_map([cluster_id]).get((cluster_id, namespace)) is not None:
+        raise ValueError('Namespace is already governed by KAORI.')
+
+    capsule_version, item = _read_capsule_tenant(client, capsule_tenant_name)
+    metadata = item.get('metadata') or {}
+    if (
+        not metadata.get('uid')
+        or metadata.get('uid') != (tenant.provider_evidence_json or {}).get('provider_uid')
+        or _capsule_phase(item) == 'Terminating'
+    ):
+        raise ValueError('Capsule Tenant identity is stale or terminating.')
+    allocation = observe_capsule_tenant_allocation(
+        client,
+        tenant_name=capsule_tenant_name,
+        tenant_item=item,
+    )
+    correlated = select_capsule_namespace_attachment_candidate(
+        allocation,
+        namespace=namespace,
+        capsule_tenant_name=capsule_tenant_name,
+    )
+    observed = client.core_api().read_namespace(namespace, _request_timeout=5)
+    provider_status = _namespace_phase(observed)
+    proof = validate_capsule_namespace_attachment(
+        tenant=tenant,
+        cluster_id=cluster_id,
+        capsule_item=item,
+        namespace=observed,
+        expected_namespace_uid=str(correlated['uid']),
+        status_namespace_names=_capsule_status_namespace_names(item),
+    )
+    if proof['namespace_resource_version'] != str(correlated['resource_version']):
+        raise ValueError('Capsule Namespace changed since Discovery; review provider authority again.')
+    meta = getattr(observed, 'metadata', None)
+    if (
+        provider_status == 'Terminating'
+        or not correlated.get('uid')
+        or correlated['uid'] != str(getattr(meta, 'uid', '') or '')
+        or str(correlated.get('resource_version') or '') != str(getattr(meta, 'resource_version', '') or '')
+    ):
+        raise ValueError('Capsule Namespace is terminating or provider identity changed.')
+    environments = (
+        TenantEnvironment.query.filter_by(tenant_id=tenant.id).order_by(TenantEnvironment.environment.asc()).all()
+    )
+    if not environments:
+        raise ValueError('The governed Capsule Tenant has no destination environment.')
+    return {
+        'tenant_adoption_row': {
+            'cluster': cluster,
+            'cluster_id': cluster_id,
+            'provider_key': 'capsule',
+            'provider_label': 'Capsule',
+            'resource_kind': 'Capsule Namespace',
+            'resource_name': namespace,
+            'capsule_tenant_name': capsule_tenant_name,
+            'provider_status': provider_status,
+            'provider_tone': _tone(provider_status),
+            'management_status': 'Discovered',
+            'management_tone': 'info',
+            'tenant_name': tenant.name,
+            'tenant_id': tenant.id,
+            'eligibility': 'Provider-correlated Namespace can attach to the existing Capsule Tenant.',
+            'provider_reference': str(correlated['uid']),
+            'provider_resource_version': str(correlated['resource_version']),
+            'provider_api_version': capsule_version,
+            'allocation_preflight': {**allocation, 'correlated_namespaces': [correlated]},
+        },
+        'tenant_adoption_existing_environments': [
+            {
+                'id': env.id,
+                'tenant_id': tenant.id,
+                'tenant_name': tenant.name,
+                'environment': env.environment,
+            }
+            for env in environments
+        ],
+        'tenant_adoption_attachment_only': True,
         'tenant_adoption_checked_at': present_user_datetime(datetime.now(UTC)),
     }
 
@@ -558,7 +902,8 @@ def _next_tenant_generation(*, cluster_id: str, slug: str) -> int:
         .order_by(Tenant.generation.desc(), Tenant.created_at.desc())
         .all()
     )
-    if any(item.lifecycle_status != TenantLifecycleStatus.DECOMMISSIONED.value for item in prior):
+    terminal = {TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value}
+    if any(item.lifecycle_status not in terminal for item in prior):
         raise ValueError('An active KAORI Tenant with this name/slug already exists on the selected cluster.')
     return max((int(item.generation or 1) for item in prior), default=0) + 1
 
@@ -569,7 +914,8 @@ def _next_namespace_generation(*, cluster_id: str, namespace: str) -> int:
         .order_by(TenantNamespace.generation.desc(), TenantNamespace.created_at.desc())
         .all()
     )
-    if any(item.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value for item in prior):
+    terminal = {TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value}
+    if any(item.provisioning_status not in terminal for item in prior):
         raise ValueError('This namespace is already represented by an active KAORI Tenant record.')
     return max((int(item.generation or 1) for item in prior), default=0) + 1
 

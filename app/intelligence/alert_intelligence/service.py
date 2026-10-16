@@ -3,26 +3,33 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from sqlalchemy import and_, case, func, or_
+from sqlalchemy.orm import selectinload
 from werkzeug.datastructures import MultiDict
 
-from app.common.pagination import paginate_sequence
+from app.common.alert_case_source_state import is_active_alert_case
+from app.common.pagination import paginate_query, paginate_sequence
 from app.integrations.delivery.notification_channels.service import notification_channel_summary
-from app.intelligence.alert_intelligence.lifecycle import active_delivery_silence, get_case
+from app.intelligence.alert_intelligence.lifecycle import active_delivery_silence
 from app.intelligence.alert_intelligence.notifications import case_delivery_rows
 from app.intelligence.alert_intelligence.routing import notification_channel_options, routing_policy_rows
 from app.intelligence.alert_intelligence.templates import built_in_templates
 from app.models.alert_ops import AlertCase, AlertCaseEvent, AlertSilence
 from app.models.cluster import Cluster
+from app.models.integration import IntegrationInstance
+from app.models.inventory import ClusterInventory
 from app.models.notification_channel import NotificationDelivery
 from app.models.object_storage import ObjectStorageSystem
+from app.models.registry import RegistryCollectionState
 from app.models.user import User
 
-_VALID_DOMAINS = {'kubernetes', 'object_storage'}
+_VALID_DOMAINS = {'kubernetes', 'object_storage', 'registry'}
 _VALID_TABS = {'overview', 'active', 'routing', 'templates', 'silences', 'resolved', 'history'}
 _VALID_SEVERITIES = {'all', 'critical', 'warning', 'info', 'unknown'}
 _VALID_WORKFLOW_STATES = {'all', 'open', 'acknowledged', 'mitigating', 'verification_pending'}
 _VALID_SOURCE_TYPES = {'all', 'recommendation'}
-_DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage'}
+_VALID_SOURCE_STATES = {'all', 'firing', 'unknown'}
+_DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage', 'registry': 'Artifact Registry'}
 _VALID_ROUTING_DOMAINS = {'all', 'kubernetes', 'object_storage'}
 _VALID_ROUTING_STATUSES = {'all', 'enabled', 'disabled'}
 
@@ -32,7 +39,16 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     systems = ObjectStorageSystem.query.order_by(ObjectStorageSystem.name.asc()).all()
     domain = _selected_domain(args, clusters=clusters, systems=systems)
     assets = _asset_options(domain, clusters=clusters, systems=systems)
-    selected_asset_key = _selected_asset_key(args, assets)
+    selected_asset_key = _selected_asset_key(args, assets, domain=domain)
+    scope_invalid = selected_asset_key == _INVALID_REGISTRY_SCOPE
+    if scope_invalid:
+        assets.append(
+            {
+                'value': _INVALID_REGISTRY_SCOPE,
+                'label': 'Unavailable Registry Provider',
+                'environment': 'Select an active provider',
+            }
+        )
     selected_asset_name = next(
         (row['label'] for row in assets if row['value'] == selected_asset_key),
         'All Managed Assets',
@@ -43,6 +59,7 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     severity = _choice(args.get('severity'), _VALID_SEVERITIES, 'all')
     workflow = _choice(args.get('workflow'), _VALID_WORKFLOW_STATES, 'all')
     source_type = _choice(args.get('source'), _VALID_SOURCE_TYPES, 'all')
+    source_state = _choice(args.get('source_state'), _VALID_SOURCE_STATES, 'all')
     search = str(args.get('q') or '').strip()
     silence_search = str(args.get('silence_q') or '').strip()
     silence_severity = _choice(args.get('silence_severity'), _VALID_SEVERITIES, 'all')
@@ -50,29 +67,85 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     routing_domain = _choice(args.get('routing_domain'), _VALID_ROUTING_DOMAINS, 'all')
     routing_status = _choice(args.get('routing_status'), _VALID_ROUTING_STATUSES, 'all')
 
-    scoped_cases = _case_rows(domain=domain, asset_key=selected_asset_key)
-    active_cases = [
-        row for row in scoped_cases if row.source_state in {'firing', 'unknown'} and row.workflow_state != 'closed'
-    ]
-    history_cases = [row for row in scoped_cases if row.source_state == 'resolved' or row.workflow_state == 'closed']
-    filtered_active = _filter_cases(
-        active_cases, severity=severity, workflow=workflow, source_type=source_type, search=search
-    )
-    filtered_history = _filter_cases(
-        history_cases, severity=severity, workflow='all', source_type=source_type, search=search
-    )
-    active_page, active_pagination = paginate_sequence(
-        [_serialize_case(row) for row in filtered_active],
-        page=args.get('page', 1),
-        per_page=args.get('per_page', 5),
-    )
-    history_page, history_pagination = paginate_sequence(
-        [_serialize_case(row) for row in filtered_history],
-        page=args.get('history_page', 1),
-        per_page=args.get('history_per_page', 5),
-    )
-    selected_case = _selected_case(args.get('case'), scoped_cases)
+    scoped_cases = [] if scope_invalid else _case_rows(domain=domain, asset_key=selected_asset_key)
+    if isinstance(scoped_cases, list):
+        # Minimal compatibility for deterministic source fixtures. Production
+        # uses the SQL query branch below and does not hydrate the whole estate.
+        active_cases = [row for row in scoped_cases if is_active_alert_case(row)]
+        history_cases = [
+            row for row in scoped_cases if row.source_state == 'resolved' or row.workflow_state == 'closed'
+        ]
+        filtered_active = _filter_cases(
+            active_cases,
+            severity=severity,
+            workflow=workflow,
+            source_type=source_type,
+            search=search,
+            source_state=source_state,
+        )
+        filtered_history = _filter_cases(
+            history_cases,
+            severity=severity,
+            workflow='all',
+            source_type=source_type,
+            search=search,
+        )
+        active_page, active_pagination = paginate_sequence(
+            [_serialize_case(row) for row in filtered_active],
+            page=args.get('page', 1),
+            per_page=args.get('per_page', 5),
+        )
+        history_page, history_pagination = paginate_sequence(
+            [_serialize_case(row) for row in filtered_history],
+            page=args.get('history_page', 1),
+            per_page=args.get('history_per_page', 5),
+        )
+        selected_case = _selected_case(args.get('case'), scoped_cases)
+        metrics = _case_counts_from_rows(active_cases, history_cases)
+    else:
+        active = scoped_cases.filter(
+            AlertCase.source_state.in_(('firing', 'unknown')),
+            AlertCase.workflow_state != 'closed',
+        )
+        historical = scoped_cases.filter(
+            or_(AlertCase.source_state == 'resolved', AlertCase.workflow_state == 'closed')
+        )
+        filtered_active = _filter_case_query(
+            active,
+            severity=severity,
+            workflow=workflow,
+            source_type=source_type,
+            search=search,
+            source_state=source_state,
+        )
+        filtered_history = _filter_case_query(
+            historical,
+            severity=severity,
+            workflow='all',
+            source_type=source_type,
+            search=search,
+        )
+        active_rows, active_pagination = paginate_query(
+            filtered_active.options(selectinload(AlertCase.owner)),
+            page=args.get('page', 1),
+            per_page=args.get('per_page', 5),
+        )
+        history_rows, history_pagination = paginate_query(
+            filtered_history.options(selectinload(AlertCase.owner)),
+            page=args.get('history_page', 1),
+            per_page=args.get('history_per_page', 5),
+        )
+        silences_by_case = _page_silences([*active_rows, *history_rows])
+        active_page = [_serialize_case(row, silence=silences_by_case.get(row.id)) for row in active_rows]
+        history_page = [_serialize_case(row, silence=silences_by_case.get(row.id)) for row in history_rows]
+        selected_public_id = str(args.get('case') or '').strip()
+        selected_case = (
+            scoped_cases.filter(AlertCase.public_id == selected_public_id).first() if selected_public_id else None
+        )
+        metrics = _case_counts_from_query(scoped_cases)
     snapshot = _snapshot_context(domain=domain, asset_key=selected_asset_key)
+    if scope_invalid:
+        snapshot = {**snapshot, 'available': False, 'label': 'Registry Scope Unavailable', 'tone': 'warning'}
     channel_summary = notification_channel_summary()
     all_routing = routing_policy_rows()
     routing = _filter_routing_policies(
@@ -89,25 +162,29 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
     selected_policy = _selected_routing_policy(args.get('policy'), all_routing)
     channels = notification_channel_options()
     templates = built_in_templates()
-    active_silences = _active_silence_rows(
-        domain=domain,
-        asset_key=selected_asset_key,
-        search=silence_search,
-        severity=silence_severity,
+    active_silences = (
+        []
+        if scope_invalid
+        else _active_silence_rows(
+            domain=domain,
+            asset_key=selected_asset_key,
+            search=silence_search,
+            severity=silence_severity,
+        )
     )
     silence_page, silence_pagination = paginate_sequence(
         active_silences,
         page=args.get('silence_page', 1),
         per_page=args.get('silence_per_page', 5),
     )
-    now = datetime.now(UTC)
-
     return {
         'domain': domain,
         'domain_label': _DOMAIN_LABELS[domain],
+        'scope_invalid': scope_invalid,
         'domain_options': [
             {'value': 'kubernetes', 'label': 'Kubernetes'},
             {'value': 'object_storage', 'label': 'Object Storage'},
+            {'value': 'registry', 'label': 'Artifact Registry'},
         ],
         'assets': assets,
         'selected_asset_key': selected_asset_key,
@@ -115,26 +192,21 @@ def get_alert_intelligence_payload(args: MultiDict[str, str]) -> dict[str, Any]:
         'tab': tab,
         'snapshot': snapshot,
         'summary': {
-            'active': len(active_cases),
-            'critical': sum(case.severity == 'critical' and case.source_state == 'firing' for case in active_cases),
-            'source_unknown': sum(case.source_state == 'unknown' for case in active_cases),
-            'acknowledged': sum(case.workflow_state == 'acknowledged' for case in active_cases),
+            **metrics,
             'silenced': len(active_silences),
-            'verification_pending': sum(case.workflow_state == 'verification_pending' for case in history_cases),
-            'resolved_today': sum(
-                bool(case.source_resolved_at and _as_utc(case.source_resolved_at) >= now - timedelta(days=1))
-                for case in history_cases
+            'delivery_failures': (
+                0 if scope_invalid else _delivery_failure_count(domain=domain, asset_key=selected_asset_key)
             ),
-            'resolved_total': len(history_cases),
-            'closed': sum(case.workflow_state == 'closed' for case in history_cases),
-            'false_positive': sum(case.closure_reason == 'false_positive' for case in history_cases),
-            'accepted_risk': sum(case.closure_reason == 'accepted_risk' for case in history_cases),
-            'delivery_failures': _delivery_failure_count(domain=domain, asset_key=selected_asset_key),
-            'postmortem_required': sum(case.postmortem_status in {'required', 'draft'} for case in history_cases),
             'routing_policies': len(all_routing),
             'channels': channel_summary.get('eligible', 0),
         },
-        'filters': {'severity': severity, 'workflow': workflow, 'source': source_type, 'q': search},
+        'filters': {
+            'severity': severity,
+            'workflow': workflow,
+            'source': source_type,
+            'source_state': source_state,
+            'q': search,
+        },
         'silence_filters': {'q': silence_search, 'severity': silence_severity},
         'routing_filters': {'q': routing_search, 'domain': routing_domain, 'status': routing_status},
         'active_cases': active_page,
@@ -195,14 +267,123 @@ def list_active_alert_events() -> list[dict[str, Any]]:
     ]
 
 
-def _case_rows(*, domain: str, asset_key: str) -> list[AlertCase]:
+def _case_rows(*, domain: str, asset_key: str):
+    """Return a scoped SQL query; pagination and aggregates execute in SQL."""
     query = AlertCase.query.filter(
         AlertCase.domain == domain,
         AlertCase.source_type == 'recommendation',
     )
     if asset_key != 'all':
         query = query.filter(AlertCase.asset_key == asset_key)
-    return query.order_by(AlertCase.first_seen_at.desc(), AlertCase.id.desc()).all()
+    return query.order_by(AlertCase.first_seen_at.desc(), AlertCase.id.desc())
+
+
+def _filter_case_query(
+    query,
+    *,
+    severity: str,
+    workflow: str,
+    source_type: str,
+    search: str,
+    source_state: str = 'all',
+):
+    if severity != 'all':
+        query = query.filter(AlertCase.severity == severity)
+    if workflow != 'all':
+        query = query.filter(AlertCase.workflow_state == workflow)
+    if source_type != 'all':
+        query = query.filter(AlertCase.source_type == source_type)
+    if source_state != 'all':
+        query = query.filter(AlertCase.source_state == source_state)
+    if search:
+        escaped = search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        pattern = '%' + escaped + '%'
+        query = query.filter(
+            or_(
+                AlertCase.public_id.ilike(pattern, escape='\\'),
+                AlertCase.alert_name.ilike(pattern, escape='\\'),
+                AlertCase.asset_name.ilike(pattern, escape='\\'),
+                AlertCase.namespace.ilike(pattern, escape='\\'),
+                AlertCase.summary.ilike(pattern, escape='\\'),
+                AlertCase.source_ref.ilike(pattern, escape='\\'),
+                AlertCase.rule_key.ilike(pattern, escape='\\'),
+            )
+        )
+    return query
+
+
+def _case_counts_from_rows(active_cases, history_cases) -> dict[str, int]:
+    now = datetime.now(UTC)
+    return {
+        'active': len(active_cases),
+        'critical': sum(row.severity == 'critical' and row.source_state == 'firing' for row in active_cases),
+        'source_unknown': sum(row.source_state == 'unknown' for row in active_cases),
+        'acknowledged': sum(row.workflow_state == 'acknowledged' for row in active_cases),
+        'verification_pending': sum(row.workflow_state == 'verification_pending' for row in history_cases),
+        'resolved_today': sum(
+            bool(row.source_resolved_at and _as_utc(row.source_resolved_at) >= now - timedelta(days=1))
+            for row in history_cases
+        ),
+        'resolved_total': len(history_cases),
+        'closed': sum(row.workflow_state == 'closed' for row in history_cases),
+        'false_positive': sum(row.closure_reason == 'false_positive' for row in history_cases),
+        'accepted_risk': sum(row.closure_reason == 'accepted_risk' for row in history_cases),
+        'postmortem_required': sum(row.postmortem_status in {'required', 'draft'} for row in history_cases),
+    }
+
+
+def _case_counts_from_query(query) -> dict[str, int]:
+    active = and_(AlertCase.source_state.in_(('firing', 'unknown')), AlertCase.workflow_state != 'closed')
+    historical = or_(AlertCase.source_state == 'resolved', AlertCase.workflow_state == 'closed')
+    conditions = (
+        active,
+        and_(active, AlertCase.severity == 'critical', AlertCase.source_state == 'firing'),
+        and_(active, AlertCase.source_state == 'unknown'),
+        and_(active, AlertCase.workflow_state == 'acknowledged'),
+        and_(historical, AlertCase.workflow_state == 'verification_pending'),
+        and_(historical, AlertCase.source_resolved_at >= datetime.now(UTC) - timedelta(days=1)),
+        historical,
+        and_(historical, AlertCase.workflow_state == 'closed'),
+        and_(historical, AlertCase.closure_reason == 'false_positive'),
+        and_(historical, AlertCase.closure_reason == 'accepted_risk'),
+        and_(historical, AlertCase.postmortem_status.in_(('required', 'draft'))),
+    )
+    values = (
+        query.order_by(None).with_entities(*(func.sum(case((condition, 1), else_=0)) for condition in conditions)).one()
+    )
+    keys = (
+        'active',
+        'critical',
+        'source_unknown',
+        'acknowledged',
+        'verification_pending',
+        'resolved_today',
+        'resolved_total',
+        'closed',
+        'false_positive',
+        'accepted_risk',
+        'postmortem_required',
+    )
+    return dict(zip(keys, (int(value or 0) for value in values), strict=True))
+
+
+def _page_silences(rows: list[AlertCase]) -> dict[int, AlertSilence]:
+    if not rows:
+        return {}
+    now = datetime.now(UTC)
+    result: dict[int, AlertSilence] = {}
+    for silence in (
+        AlertSilence.query.filter(
+            AlertSilence.case_id.in_([row.id for row in rows]),
+            AlertSilence.starts_at <= now,
+            AlertSilence.ends_at > now,
+            AlertSilence.revoked_at.is_(None),
+        )
+        .order_by(AlertSilence.ends_at.desc())
+        .all()
+    ):
+        result.setdefault(int(silence.case_id), silence)
+    return result
 
 
 def _filter_cases(
@@ -212,6 +393,7 @@ def _filter_cases(
     workflow: str,
     source_type: str,
     search: str,
+    source_state: str = 'all',
 ) -> list[AlertCase]:
     rows = cases
     if severity != 'all':
@@ -220,6 +402,8 @@ def _filter_cases(
         rows = [case for case in rows if case.workflow_state == workflow]
     if source_type != 'all':
         rows = [case for case in rows if case.source_type == source_type]
+    if source_state != 'all':
+        rows = [case for case in rows if case.source_state == source_state]
     if search:
         needle = search.casefold()
         rows = [
@@ -241,8 +425,12 @@ def _filter_cases(
     return rows
 
 
-def _serialize_case(case: AlertCase) -> dict[str, Any]:
-    silence = active_delivery_silence(case)
+_SILENCE_UNLOADED = object()
+
+
+def _serialize_case(case: AlertCase, *, silence: AlertSilence | None | object = _SILENCE_UNLOADED) -> dict[str, Any]:
+    silence = active_delivery_silence(case) if silence is _SILENCE_UNLOADED else silence
+    silence = silence if isinstance(silence, AlertSilence) else None
     duration_end = case.closed_at or case.source_resolved_at or datetime.now(UTC)
     duration_seconds = max(int((_as_utc(duration_end) - _as_utc(case.first_seen_at)).total_seconds()), 0)
     owner = case.owner
@@ -457,15 +645,64 @@ def _timeline_event_tone(event_type: str) -> str:
 
 
 def _snapshot_context(*, domain: str, asset_key: str) -> dict[str, Any]:
-    del domain, asset_key
+    """Conservative committed inventory readiness, never a worker-health claim."""
+    if asset_key == _INVALID_REGISTRY_SCOPE:
+        recent, total = 0, 0
+    elif asset_key == 'all':
+        # Reuse the approved cross-domain committed inventory projection.
+        from app.intelligence.overview import _evidence_coverage
+
+        domain_evidence = _evidence_coverage().get(domain, {})
+        recent = int(domain_evidence.get('recent', 0))
+        total = int(domain_evidence.get('total', 0))
+    else:
+        now = datetime.now(UTC)
+        cutoff = now - timedelta(days=1)
+        total = 1
+        if domain == 'kubernetes':
+            recent = int(
+                ClusterInventory.query.filter(
+                    ClusterInventory.cluster_id == asset_key,
+                    ClusterInventory.collected_at >= cutoff,
+                    ClusterInventory.collected_at <= now,
+                ).first()
+                is not None
+            )
+        elif domain == 'object_storage':
+            recent = int(
+                ObjectStorageSystem.query.filter(
+                    ObjectStorageSystem.id == asset_key,
+                    ObjectStorageSystem.inventory_observed_at >= cutoff,
+                    ObjectStorageSystem.inventory_observed_at <= now,
+                ).first()
+                is not None
+            )
+        elif domain == 'registry':
+            recent = int(
+                RegistryCollectionState.query.filter(
+                    RegistryCollectionState.integration_instance_id == int(asset_key),
+                    RegistryCollectionState.status == 'ready',
+                    RegistryCollectionState.last_committed_at >= cutoff,
+                    RegistryCollectionState.last_committed_at <= now,
+                ).first()
+                is not None
+            )
+        else:
+            recent = 0
+    available = total > 0 and recent == total
     return {
-        'available': True,
-        'label': 'KAORI Alert Case Registry',
-        'tone': 'normal',
+        'available': available,
+        'label': f'Committed Inventory · {recent}/{total} Recent (24h)',
+        'tone': 'info' if available else 'warning',
+        # Inventory recency alone does not prove a recoverable last-good alert snapshot.
         'serving_last_good': False,
         'generated_at': None,
         'last_attempt_at': None,
-        'refresh_owner': 'Recommendation Alert Worker',
+        'refresh_owner': 'Domain Collection + Recommendation Alert Worker',
+        'readiness_basis': (
+            '24h committed inventory baseline; worker reconciliation, scan and '
+            'signal-specific evaluation may have separate readiness.'
+        ),
     }
 
 
@@ -479,6 +716,7 @@ def _active_silence_rows(
     now = datetime.now(UTC)
     query = AlertSilence.query.join(AlertCase, AlertCase.id == AlertSilence.case_id).filter(
         AlertCase.domain == domain,
+        AlertCase.source_type == 'recommendation',
         AlertSilence.starts_at <= now,
         AlertSilence.ends_at > now,
         AlertSilence.revoked_at.is_(None),
@@ -487,7 +725,11 @@ def _active_silence_rows(
         query = query.filter(AlertCase.asset_key == asset_key)
     if severity != 'all':
         query = query.filter(AlertCase.severity == severity)
-    rows = query.order_by(AlertSilence.ends_at.asc()).all()
+    rows = (
+        query.options(selectinload(AlertSilence.case), selectinload(AlertSilence.created_by))
+        .order_by(AlertSilence.ends_at.asc())
+        .all()
+    )
     result = [
         {
             'id': row.id,
@@ -560,6 +802,7 @@ def _delivery_failure_count(*, domain: str, asset_key: str) -> int:
         NotificationDelivery.event_type.in_(('alert_ops.firing', 'alert_ops.resolved')),
         NotificationDelivery.domain == domain,
         NotificationDelivery.status == 'failed',
+        NotificationDelivery.updated_at >= datetime.now(UTC) - timedelta(days=1),
     )
     if asset_key != 'all':
         query = query.filter(NotificationDelivery.asset_key == asset_key)
@@ -589,7 +832,7 @@ def _selected_case(value: Any, rows: list[AlertCase]) -> AlertCase | None:
     requested = str(value or '').strip()
     if not requested:
         return None
-    return next((case for case in rows if case.public_id == requested), None) or get_case(requested)
+    return next((case for case in rows if case.public_id == requested), None)
 
 
 def _selected_domain(args: MultiDict[str, str], *, clusters: list[Cluster], systems: list[ObjectStorageSystem]) -> str:
@@ -604,7 +847,26 @@ def _selected_domain(args: MultiDict[str, str], *, clusters: list[Cluster], syst
 
 
 def _asset_options(domain: str, *, clusters: list[Cluster], systems: list[ObjectStorageSystem]) -> list[dict[str, str]]:
-    records = clusters if domain == 'kubernetes' else systems
+    if domain == 'registry':
+        # Central AlertCase read-model scope only; the Registry provider remains authoritative.
+        providers = (
+            IntegrationInstance.query.filter(
+                IntegrationInstance.integration_type == 'registry',
+                IntegrationInstance.enabled.is_(True),
+                IntegrationInstance.lifecycle_status == 'active',
+            )
+            .order_by(IntegrationInstance.name.asc(), IntegrationInstance.id.asc())
+            .all()
+        )
+        records = [
+            row
+            for row in providers
+            if bool(row.enabled)
+            and str(row.lifecycle_status or '').lower() == 'active'
+            and str(row.readiness_status or '').lower() != 'blocked'
+        ]
+    else:
+        records = clusters if domain == 'kubernetes' else systems
     return [
         {'value': 'all', 'label': 'All Managed Assets', 'environment': 'Fleet scope'},
         *[
@@ -618,10 +880,17 @@ def _asset_options(domain: str, *, clusters: list[Cluster], systems: list[Object
     ]
 
 
-def _selected_asset_key(args: MultiDict[str, str], assets: list[dict[str, str]]) -> str:
+_INVALID_REGISTRY_SCOPE = '__invalid_registry_scope__'
+
+
+def _selected_asset_key(args: MultiDict[str, str], assets: list[dict[str, str]], *, domain: str = '') -> str:
     requested = str(args.get('asset') or 'all').strip()
     valid = {item['value'] for item in assets}
-    return requested if requested in valid else 'all'
+    if requested in valid:
+        return requested
+    # Unlike a cross-domain selector change, a direct Registry deep-link must
+    # never silently expand an unknown/disabled provider to fleet scope.
+    return _INVALID_REGISTRY_SCOPE if domain == 'registry' else 'all'
 
 
 def _choice(value: Any, valid: set[str], default: str) -> str:

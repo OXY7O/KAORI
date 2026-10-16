@@ -3,11 +3,16 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any, overload
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+from werkzeug.exceptions import NotFound
 
+from app.artifact_registry.correlation import runtime_correlation_evidence_readiness, runtime_input_signature
 from app.common.pagination import paginate_sequence
 from app.dashboards.common.operational import normalize_operational_tab
 from app.definitions.loader import load_definition_document
+from app.extensions.db import db
 from app.intelligence.alert_intelligence.dashboard_cases import active_recommendation_alert_cases
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.dashboard_recommendations import get_dashboard_recommendation_findings
@@ -20,6 +25,7 @@ from app.models.registry import (
     RegistryProject,
     RegistryRepository,
     RegistryTag,
+    RegistryWorkloadBinding,
 )
 from app.models.report import Report, ReportSchedule, ReportTemplate
 
@@ -43,6 +49,7 @@ def _providers() -> list[IntegrationInstance]:
         IntegrationInstance.query.filter(
             IntegrationInstance.integration_type == 'registry',
             IntegrationInstance.lifecycle_status == 'active',
+            IntegrationInstance.enabled.is_(True),
         )
         .order_by(IntegrationInstance.name.asc())
         .all()
@@ -107,7 +114,51 @@ def _state_view(state: RegistryCollectionState | RegistryGovernanceState | None)
     }
 
 
+def _registry_analytics_inputs_changed(snapshot: RegistryAnalyticsSnapshot | None) -> bool:
+    """Compare committed Analytics input generation, without requesting provider state."""
+    if snapshot is None or not isinstance(snapshot.payload_json, dict):
+        return True
+    if getattr(snapshot, 'integration_instance_id', None) is None:
+        return True
+    evidence = snapshot.payload_json.get('evidence')
+    if not isinstance(evidence, dict) or not evidence.get('inventory_committed_at'):
+        return True
+    state = db.session.get(RegistryCollectionState, int(snapshot.integration_instance_id))
+    actual = state.last_committed_at.isoformat() if state and state.last_committed_at else None
+    if actual != evidence.get('inventory_committed_at'):
+        return True
+    source_id = int(snapshot.integration_instance_id)
+    governance = db.session.get(RegistryGovernanceState, source_id)
+    committed = governance.last_committed_at.isoformat() if governance and governance.last_committed_at else None
+    if committed != evidence.get('governance_committed_at'):
+        return True
+    if runtime_input_signature(db.session()) != evidence.get('correlation_input_signature'):
+        return True
+
+    artifacts = (
+        RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(RegistryProject.integration_instance_id == source_id)
+    )
+    latest_scan = artifacts.with_entities(func.max(RegistryArtifact.scan_completed_at)).scalar()
+    scan_time = latest_scan.isoformat() if latest_scan else None
+    if scan_time != evidence.get('security_latest_scan_at'):
+        return True
+
+    latest_runtime = (
+        RegistryWorkloadBinding.query.join(RegistryArtifact, RegistryWorkloadBinding.artifact_id == RegistryArtifact.id)
+        .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(RegistryProject.integration_instance_id == source_id)
+        .with_entities(func.max(RegistryWorkloadBinding.observed_at))
+        .scalar()
+    )
+    runtime_time = latest_runtime.isoformat() if latest_runtime else None
+    return runtime_time != evidence.get('runtime_observed_at')
+
+
 def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict[str, Any]:
+    """Evaluate usable committed evidence, not merely a row with status=ready."""
     if snapshot is None:
         return {
             'status': 'not_materialized',
@@ -115,15 +166,48 @@ def _analytics_snapshot_view(snapshot: RegistryAnalyticsSnapshot | None) -> dict
             'tone': 'unknown',
             'generated_at': None,
             'is_stale': False,
+            'is_current': False,
         }
+    generated_at = _aware_datetime(snapshot.generated_at)
     expires_at = _aware_datetime(snapshot.expires_at)
-    stale = bool(expires_at is not None and datetime.now(UTC) > expires_at)
+    valid = bool(
+        snapshot.status == 'ready'
+        and isinstance(snapshot.payload_json, dict)
+        and generated_at is not None
+        and expires_at is not None
+        and expires_at >= generated_at
+    )
+    stale = bool(valid and expires_at is not None and datetime.now(UTC) > expires_at)
+    inputs_changed = _registry_analytics_inputs_changed(snapshot) if valid else True
+    sections = snapshot.payload_json if isinstance(snapshot.payload_json, dict) else {}
+    metrics = sections.get('metrics')
+    governance = sections.get('evidence')
+    partial = bool(
+        isinstance(metrics, dict)
+        and metrics.get('status') != 'ready'
+        or isinstance(governance, dict)
+        and governance.get('governance_status') not in {'ready', None}
+    )
+    current = bool(valid and not stale and not inputs_changed and not partial)
     return {
         'status': snapshot.status,
-        'label': 'Stale Snapshot' if stale else 'Current Snapshot',
-        'tone': 'warning' if stale else 'normal',
+        'label': (
+            'Current Snapshot'
+            if current
+            else 'Inputs Changed'
+            if valid and inputs_changed
+            else 'Stale Snapshot'
+            if stale
+            else 'Partial Evidence'
+            if partial
+            else 'Unavailable'
+        ),
+        'tone': 'normal' if current else ('warning' if stale or inputs_changed or partial else 'unknown'),
         'generated_at': snapshot.generated_at,
         'is_stale': stale,
+        'inputs_changed': inputs_changed,
+        'is_partial': partial,
+        'is_current': current,
     }
 
 
@@ -231,7 +315,7 @@ def _registry_capacity_posture(project_forecasts: list[dict[str, Any]]) -> dict[
         ),
         'Low': (
             'Committed quota evidence currently shows usable project headroom.',
-            'No current project quota forecast is inside the warning threshold.',
+            'Project quota forecasts remain outside warning thresholds, with sufficient headroom.',
             'Continue worker materialization and review growth after major publication changes.',
         ),
         'Unknown': (
@@ -273,24 +357,26 @@ def _registry_capacity_summary(
                 'label': 'Artifact Footprint',
                 'value': _fmt_bytes(total_size_bytes),
                 'description': f'{artifact_total} committed artifact identities.',
-                'used_percent': None,
+                'progress_percent': None,
+                'progress_label': 'Inventory',
             },
             {
                 'label': 'Quota Utilization',
                 'value': f'{quota_utilization:.1f}%' if quota_utilization is not None else 'N/A',
                 'description': (
-                    f'{_fmt_bytes(round(float(posture["total_usage"])))} used of '
-                    f'{_fmt_bytes(round(total_quota))} committed project quota.'
+                    f'{_fmt_bytes(round(float(posture["total_usage"])))} / {_fmt_bytes(round(total_quota))} quota.'
                     if total_quota > 0
                     else 'No committed project quota denominator is available.'
                 ),
-                'used_percent': quota_utilization,
+                'progress_percent': quota_utilization,
+                'progress_label': 'Used',
             },
             {
-                'label': 'Quota Headroom',
+                'label': 'Quota Left',
                 'value': _fmt_bytes(round(quota_headroom)) if quota_headroom is not None else 'N/A',
-                'description': 'Remaining Registry quota headroom.',
-                'used_percent': quota_utilization,
+                'description': 'Remaining project quota.',
+                'progress_percent': 100 - quota_utilization if quota_utilization is not None else None,
+                'progress_label': 'Free',
             },
         ],
         'risk': posture['risk'],
@@ -316,22 +402,13 @@ def _registry_capacity_forecast(
         'artifact_growth_per_day': (f'{float(growth["artifacts_per_day"]):.1f} artifacts/day' if observed else 'N/A'),
         'nearest_quota_days': f'{nearest_days:.1f} days' if nearest_days is not None else 'N/A',
         'risk': posture['risk'],
-        'detail': (
-            'Worker-materialized Registry analytics combines committed inventory deltas with bound Metrics Source quota evidence.'
-        ),
+        'detail': ('Registry growth uses committed inventory changes and Metrics Source quota evidence.'),
     }
 
 
-def _registry_top_consumers(project_forecasts: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    top_consumers = sorted(
-        project_forecasts,
-        key=lambda item: (
-            -(float(item['usage_bytes']) if item['usage_bytes'] is not None else -1.0),
-            -(float(item['utilization_percent']) if item['utilization_percent'] is not None else -1.0),
-            item['project_name'].casefold(),
-        ),
-    )[:5]
-    for item in top_consumers:
+def _format_registry_project_consumers(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Present already committed project quota evidence without inferring missing values."""
+    for item in rows:
         item['usage_display'] = (
             _fmt_bytes(round(float(item['usage_bytes']))) if item['usage_bytes'] is not None else 'N/A'
         )
@@ -344,7 +421,40 @@ def _registry_top_consumers(project_forecasts: list[dict[str, Any]]) -> list[dic
         item['days_to_quota_display'] = (
             f'{float(item["days_to_quota"]):.1f} days' if item['days_to_quota'] is not None else 'N/A'
         )
-    return top_consumers
+    return rows
+
+
+def _registry_top_consumers(project_forecasts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    top_consumers = sorted(
+        (item for item in project_forecasts if item['usage_bytes'] is not None),
+        key=lambda item: (
+            -float(item['usage_bytes']),
+            -(float(item['utilization_percent']) if item['utilization_percent'] is not None else -1.0),
+            item['project_name'].casefold(),
+        ),
+    )[:5]
+    return _format_registry_project_consumers(top_consumers)
+
+
+def _registry_quota_watch(project_forecasts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Rank all projects with a committed numerical horizon, not only usage top five."""
+    nearest = sorted(
+        (item for item in project_forecasts if item['days_to_quota'] is not None),
+        key=lambda item: (float(item['days_to_quota']), item['project_name'].casefold()),
+    )[:5]
+    return _format_registry_project_consumers(nearest)
+
+
+def _registry_consumer_insights(project_forecasts: list[dict[str, Any]]) -> dict[str, int]:
+    """Coverage indicators from the same already-read project evidence."""
+    return {
+        'project_count': len(project_forecasts),
+        'horizon_count': sum(item['days_to_quota'] is not None for item in project_forecasts),
+        'high_utilization_count': sum(
+            item['utilization_percent'] is not None and float(item['utilization_percent']) >= 90
+            for item in project_forecasts
+        ),
+    }
 
 
 def _registry_capacity_views(
@@ -355,7 +465,7 @@ def _registry_capacity_views(
     artifact_total: int,
     committed_snapshot_count: int,
     metrics_ready_count: int,
-) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
+) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], dict[str, int]]:
     project_forecasts, growth = _collect_registry_capacity_analytics(
         scoped_providers=scoped_providers,
         analytics_by_provider=analytics_by_provider,
@@ -374,7 +484,13 @@ def _registry_capacity_views(
         metrics_ready_count=metrics_ready_count,
         posture=posture,
     )
-    return capacity, forecast, _registry_top_consumers(project_forecasts)
+    return (
+        capacity,
+        forecast,
+        _registry_top_consumers(project_forecasts),
+        _registry_quota_watch(project_forecasts),
+        _registry_consumer_insights(project_forecasts),
+    )
 
 
 def _registry_alerts(selected_provider: IntegrationInstance | None) -> dict[str, Any]:
@@ -399,7 +515,17 @@ def _registry_alerts(selected_provider: IntegrationInstance | None) -> dict[str,
         domain='registry',
         asset_key=str(selected_provider.id),
     )
+    try:
+        with Session(db.engine) as evidence_session:
+            runtime_evidence = runtime_correlation_evidence_readiness(evidence_session)
+    except SQLAlchemyError:
+        runtime_evidence = {
+            'status': 'unavailable',
+            'title': 'Registry Runtime Evidence Unavailable',
+            'description': 'Committed runtime evidence could not be qualified. Review Runtime Usage and Job Executions.',
+        }
     return {
+        'runtime_evidence': runtime_evidence,
         'available': True,
         'critical': sum(str(case.severity or '').lower() == 'critical' for case in cases),
         'warning': sum(str(case.severity or '').lower() == 'warning' for case in cases),
@@ -500,12 +626,16 @@ def _overview_scope_context(
         (provider for provider in providers if provider_id is not None and int(provider.id) == int(provider_id)),
         None,
     )
+    if provider_id is not None and selected_provider is None:
+        # A disabled, retired or unknown bookmarked scope must not silently
+        # expand to all eligible providers (or expose their committed evidence).
+        raise NotFound('The selected active Registry provider is unavailable.')
     scoped_providers = [selected_provider] if selected_provider is not None else providers
 
-    states_query = RegistryCollectionState.query
-    if selected_provider is not None:
-        states_query = states_query.filter(RegistryCollectionState.integration_instance_id == selected_provider.id)
-    states = states_query.all()
+    scoped_provider_ids = [int(provider.id) for provider in scoped_providers]
+    states = RegistryCollectionState.query.filter(
+        RegistryCollectionState.integration_instance_id.in_(scoped_provider_ids)
+    ).all()
     committed_states = [state for state in states if state.last_committed_at is not None]
     latest = max(
         (state.last_committed_at for state in committed_states if state.last_committed_at),
@@ -539,6 +669,7 @@ def _overview_scope_context(
         'active_tab': normalize_operational_tab(active_tab),
         'provider_count': len(scoped_providers),
         'latest_committed_at': latest,
+        'last_updated': _human_time(latest),
         'posture': posture,
         'snapshot_count': len(committed_states),
         'stale_snapshot_count': stale_count,
@@ -550,18 +681,48 @@ def _overview_scope_context(
     return context, providers, selected_provider, scoped_providers, states
 
 
+def _overview_inventory_kpi_evidence(
+    scoped_providers: list[IntegrationInstance],
+    states: list[RegistryCollectionState],
+) -> tuple[list[int], str]:
+    """Qualify KPI counts by active-scope committed snapshot coverage."""
+    eligible_ids = {int(provider.id) for provider in scoped_providers}
+    committed_ids = sorted(
+        {
+            int(state.integration_instance_id)
+            for state in states
+            if state.last_committed_at is not None and int(state.integration_instance_id) in eligible_ids
+        }
+    )
+    if not committed_ids:
+        return [], 'Not Collected'
+    if len(committed_ids) < len(eligible_ids):
+        return committed_ids, f'Partial Inventory ({len(committed_ids)}/{len(eligible_ids)})'
+    return committed_ids, 'Committed Inventory'
+
+
 def _overview_kpi_values(
-    selected_provider: IntegrationInstance | None,
+    committed_provider_ids: list[int],
 ) -> dict[str, int]:
-    project_query = RegistryProject.query
-    repository_query = RegistryRepository.query.join(RegistryProject)
-    artifact_query = RegistryArtifact.query.join(RegistryRepository).join(RegistryProject)
-    tag_query = RegistryTag.query.join(RegistryArtifact).join(RegistryRepository).join(RegistryProject)
-    if selected_provider is not None:
-        project_query = project_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
-        repository_query = repository_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
-        artifact_query = artifact_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
-        tag_query = tag_query.filter(RegistryProject.integration_instance_id == selected_provider.id)
+    """Count committed inventory only for eligible active Registry providers."""
+    if not committed_provider_ids:
+        return {'projects': 0, 'repositories': 0, 'artifacts': 0, 'tags': 0}
+
+    project_query = RegistryProject.query.filter(RegistryProject.integration_instance_id.in_(committed_provider_ids))
+    repository_query = RegistryRepository.query.join(RegistryProject).filter(
+        RegistryProject.integration_instance_id.in_(committed_provider_ids)
+    )
+    artifact_query = (
+        RegistryArtifact.query.join(RegistryRepository)
+        .join(RegistryProject)
+        .filter(RegistryProject.integration_instance_id.in_(committed_provider_ids))
+    )
+    tag_query = (
+        RegistryTag.query.join(RegistryArtifact)
+        .join(RegistryRepository)
+        .join(RegistryProject)
+        .filter(RegistryProject.integration_instance_id.in_(committed_provider_ids))
+    )
     return {
         'projects': project_query.count(),
         'repositories': repository_query.count(),
@@ -573,17 +734,36 @@ def _overview_kpi_values(
 def _latest_registry_analytics(
     scoped_providers: list[IntegrationInstance],
 ) -> dict[int, RegistryAnalyticsSnapshot | None]:
-    snapshots: dict[int, RegistryAnalyticsSnapshot | None] = {}
-    for provider in scoped_providers:
-        snapshots[int(provider.id)] = (
-            RegistryAnalyticsSnapshot.query.filter_by(
-                integration_instance_id=provider.id,
-                status='ready',
+    """Select each provider's latest ready generation in one scoped SQL read."""
+    provider_ids = [int(provider.id) for provider in scoped_providers]
+    snapshots: dict[int, RegistryAnalyticsSnapshot | None] = {key: None for key in provider_ids}
+    if not provider_ids:
+        return snapshots
+    ranked = (
+        db.session.query(
+            RegistryAnalyticsSnapshot.id.label('snapshot_id'),
+            func.row_number()
+            .over(
+                partition_by=RegistryAnalyticsSnapshot.integration_instance_id,
+                order_by=(
+                    RegistryAnalyticsSnapshot.generated_at.desc(),
+                    RegistryAnalyticsSnapshot.id.desc(),
+                ),
             )
-            .order_by(
-                RegistryAnalyticsSnapshot.generated_at.desc(),
-                RegistryAnalyticsSnapshot.id.desc(),
-            )
-            .first()
+            .label('ordinal'),
         )
+        .filter(
+            RegistryAnalyticsSnapshot.integration_instance_id.in_(provider_ids),
+            RegistryAnalyticsSnapshot.time_range == 'current',
+            RegistryAnalyticsSnapshot.status == 'ready',
+        )
+        .subquery()
+    )
+    rows = (
+        RegistryAnalyticsSnapshot.query.join(ranked, RegistryAnalyticsSnapshot.id == ranked.c.snapshot_id)
+        .filter(ranked.c.ordinal == 1)
+        .all()
+    )
+    for snapshot in rows:
+        snapshots[int(snapshot.integration_instance_id)] = snapshot
     return snapshots

@@ -1,0 +1,265 @@
+# Capsule Tenant Release & Re-Adopt — Minimum Secure Acceptance Baseline
+
+**Decision:** Scope frozen for #991 / #1227–#1231 on 2026-10-11. This is a
+**source-only acceptance contract**, NOT authorization to execute CI/CD, SQL
+migration, Kubernetes API operations, provider handoff, Release or Re-Adopt.
+Current integration target: `kaori/review/staging-uat`.
+
+## End states (non-negotiable)
+
+- **Provider-preserving Release:** an externally adopted, Ready Capsule
+  Tenant moves to canonical `Released` **only after** independently accepted,
+  fully verified handoff. Capsule Tenant CR, Namespace, workloads, Capsule
+  spec (including quota, limits, rules), GlobalResourceQuota, provider/foreign
+  ownership, RBAC and Kubernetes object identities are preserved. KAORI stops
+  actively governing the released generation and releases only its own logical
+  reservations **after** the canonical Released commit. Release is NOT
+  Decommission, deletion, provider quota cloning or a database-only flag.
+- **Explicit Re-Adopt:** fresh Discovery of the **same approved physical
+  Capsule Tenant and Namespace identities** after verified Release, fresh
+  provider authority and handback/lineage checks, new independent
+  operator-approved Adoption, **new Tenant/Namespace governance generations**
+  and immutable links to the Released predecessor. Historical Released rows
+  stay terminal. Never auto-reconcile/re-attach, silently reparent, or create
+  two live KAORI governance generations for one provider resource.
+
+## Fixed binary gates (GO only when every required gate is PASS)
+
+| Gate | Owner issue | Required PASS evidence | FAIL / blocked condition |
+| --- | --- | --- | --- |
+| **G0 — Eligible and dependency-free** | #991 / #1227 | Exactly one Ready, adopted Capsule Tenant; authoritative Capsule v1beta2 Tenant CR, bounded canonical entire spec, scoped Namespace/quotas/limits/RBAC/GlobalResourceQuota; source UID/RV and SHA fingerprint; zero active Access Grants/credentials/memberships, controlled allocations, integrations/exposure and other canonical Release dependencies | Managed/foreign identity ambiguous, unsupported quota/RBAC, active dependency, drift or incomplete LIST |
+| **G1 — Human authority and successor** | #1228 | Current plan SHA/fingerprint, independent reviewer and explicit accepted Platform Admin successor; fresh registered X.509/TLS identity with exact SSR/SAR scope, actor separation, anti-replay consent and evidence of authority for each proposed KAORI-owned transfer | Claims based only on labels, managedFields, caller MAC or uncommitted IdP data; missing/stale/foreign consent |
+| **G2 — Safe exact-scope provider handoff** | #1229 | Full per-object preservation/transfer decisions; KAORI-owned metadata-only conditional patch where strictly necessary; **server dryRun=All** then separately confirmed execution with fresh UID/RV/spec and foreign ownership guards; provider-owned resources and spec untouched | Any unapproved spec/quota/limits/subjects/roleRef/finalizer/owner change; UID/RV mismatch; unknown controller origin; no authorized dry-run |
+| **G3 — Irreversible audit and definitive read-back** | #1229 | Installed and verified write-once attempt/batch/consent protection; START committed before first provider mutation; exact per-resource read-back of UID/RV, identity, spec, preserved resources, metadata and RBAC; no pending/partial/ambiguous outcome | Missing durable evidence, changed provider source, timeout/unknown outcome, residual KAORI control or automatic retry; manual recovery required |
+| **G4 — Atomic Released finalizer** | #1230 | Fresh G0–G3 evidence and dependency zero-state rechecked under lock; single governed transaction commits Tenant+Namespace `Released`, capacity/accounting release, immutable lineage/audit; stop KAORI reconciliation and hide released generations from active governance | DB-only Released flag, existing partial evidence, provider drift, double capacity subtraction, recreation or destructive cleanup |
+| **G5 — Safe fresh Re-Adopt** | #991 / #1230 / #1231 | Released predecessor and provider identity cross-checked; current Capsule/Namespace UID and RV read from fresh Discovery, exact original handoff or verified correction lineage, separate human Adoption authorization; new generation and back-link, no active duplicate | Missing/replayed handback, foreign owner, changed UID, stale RV, unresolved metadata residue, reused generation, automatic adoption |
+| **G6 — Security/UAT acceptance** | #1231 | Authorized tests/CI/CD + controlled-cluster UAT for Release→Discovery→Re-Adopt, lost commit, partial PATCH/recovery, concurrent operations, bad X.509/SAR/TLS, reused/replaced UID/RV, changing Capsule spec, mixed ownership, idempotence and preserved workloads; explicit human sign-off | Any required negative test fails or is unrun, unknown provider aftermath, missing QA/evidence, unapproved promotion |
+
+**Gates are conjunctive.** A source PR merged to review branch does not
+satisfy any runtime PASS condition. #1227/#1228 source is integrated but
+human/operator/runtime validation remains separate. Keep #1229 OPEN until
+the executor can actually complete admitted dry-run, guarded operation,
+partial recovery and definitive provider read-back. #1230 and #1231 stay
+blocked by that evidence.
+
+## Source implementation checkpoint — 2026-10-12
+
+The review branch contains the real `capsule_handoff_executor.py`,
+`capsule_release_finalizer.py`, `capsule_successor_handback.py`,
+their guarded POST routes and Violet/HTMX Tenant workspace controls.
+The G2 executor uses the existing write-once PostgreSQL handoff ledger
+and server-side preview; G4 separately verifies source inventory, ledger
+and fresh Kubernetes read-back before a canonical transactional Release;
+G5 removes only exact successor metadata before fresh human-approved
+Discovery/Re-Adopt. The #1229 final read-back also now verifies **full
+foreign Namespace spec/annotations/owners/finalizers preservation**,
+not merely UID/RV/labels (PR #1359).
+
+This is **implementation presence**, not authorization, quality-gate
+result, installed PostgreSQL proof, live K8s mutation or end-to-end PASS.
+#1229/#1230/#1231 remain open under the same runtime HOLD. G5 has an explicit, now source-guarded START-persistence admission requirement (below).
+Do not turn the route presence into `release_execution_available=true`
+or represent `kaori-demo` as Released without fresh provider evidence,
+passing tests/UAT and human acceptance.
+
+## Guarded Capsule G4 canonical Released finalizer source — #1230
+
+`capsule_release_finalizer.py` and the existing Release wizard now expose
+a separately confirmed G4 route only when the committed G3 execution
+claims exact complete provider handoff. The UI claim is informational;
+the service **must** independently pass every guard before writing
+canonical governance. The finalizer does **not PATCH/DELETE/create**
+Kubernetes objects.
+
+Under locked, adopted, Ready Tenant/Namespace generations it verifies:
+independently approved exact Release plan; current successor X.509
+identity and Kubernetes scoped SAR; zero canonical dependencies; original
+SHA-bound complete inventory; installed PostgreSQL write-once
+START/terminal ledger role/trigger/WAL requirements; canonical 2-event
+append-only chain with exact actor/plan/worklist/readback; and exactly
+one fully verified G3 execution outcome. Then it uses fresh typed
+Kubernetes GET across the original Capsule CR, every Namespace, every
+ResourceQuota/LimitRange/RoleBinding, plus full GlobalResourceQuota
+LIST/read-back. Only exact successor-owned metadata-only transfers are
+accepted; original spec/policy, UID, foreign ownership and preservation
+digests are revalidated. A terminal proof row lacking authenticated
+resource-specific consent or controller origin fails closed.
+
+G3→G4 receipt alignment for the minimum safe executor: a RoleBinding
+which is only provider/foreign-owned remains untouched; it does **not**
+require an invented controller-origin attestation. G4 admits the exact
+receipt `controller_origin_verified=false` only when
+`controller_generated_rbac_preserved=true`, every approved RoleBinding
+is classified as **preserve-only**, and all original RBAC resources,
+roles, subjects, UID/RV and metadata are re-read authoritatively before
+Release. If the original worklist contains any KAORI-marked RoleBinding
+candidate, G2 and G4 remain FAIL pending independent origin consent.
+The G4 finalizer also independently hashes the actual committed complete
+receipt list against the immutable terminal readback SHA and verifies the
+executor X.509 username/credential matches the acceptance and fresh
+provider authority. No synthetic controller-origin proof is accepted.
+
+Only upon complete proof does one guarded DB transaction set Tenant
+`lifecycle_status=Released` and each governed Namespace
+`provisioning_status=Released`, record generation-specific immutable
+lineage/audit and preserve original provider objects. Capacity accounting
+uses KAORI's existing `capacity_allocation_state` terminal-lifecycle
+filters: both Released Tenant and Released Namespace stop reserving
+logical headroom **as a consequence of the same DB commit**. No manual
+budget subtraction, historical profile deletion or double release occurs.
+Predecessor IDs and resource profile history remain intact.
+
+**The G2/G3 executor and G4 finalizer are now source-wired but not PASS.**
+The application calls `execute_capsule_handoff_committed`, which checks an
+accepted fresh plan, complete server-side preview and exact visible
+resource worklist, commits a PostgreSQL write-once START under Tenant lock,
+then performs guarded metadata-only `dryRun=All` / conditional PATCH,
+stops on uncertainty and writes a terminal attempt and full provider
+read-back. The independent G4 route calls
+`release_verified_capsule_tenant_committed`; it does not consume a
+preview as proof. The older staged START writer and one-object PATCH
+primitive remain disabled and are **not** the operational path.
+A synthetic `verified=true` flag, absent PostgreSQL guards, mutable
+or incomplete audit evidence or a partial outcome cannot yield a legitimate
+Capsule Released row. No tests, installed-schema proof, provider operation
+or controlled-cluster UAT has occurred under the standing HOLD.
+
+## Capsule Released successor handback source — #1231 (G5, pending G2–G4)
+
+`capsule_successor_handback.py` provides a real, explicitly confirmed
+Platform Admin handback route and Violet/HTMX Released-Tenant workspace
+form. It remains unavailable for ordinary Ready Tenants: it requires an
+already canonical `Released` Capsule generation and complete counted G4
+`release_mode=managed_handoff` and `provider_handoff_verified=true`
+evidence. This source is **not** a bypass around the source-wired but
+runtime-unaccepted G2/G3 executor or #1230 finalizer.
+
+The handler requires the original approved Release plan, current authenticated
+Kubernetes X.509 identity and scoped get/patch SAR, exact CR/Namespace
+UID/resourceVersion, all transferred ResourceQuota/LimitRange/RoleBinding
+targets and provider/foreign resources explicitly preserved. It verifies
+the CR, all preserved Namespace generations, and every preserved related object before any metadata mutation,
+commits an **in-progress** AuditEvent before the first provider
+write, then for every successor marker removal performs JSON Patch
+`test` on UID/resourceVersion/full labels,
+`dryRun=All`, preservation validation, fresh GET, one conditional live
+PATCH and a fresh authoritative GET. Related controls go before Namespace;
+the Capsule CR/spec, foreign quota/RBAC/workloads, ownerReferences, and
+external labels are never patched. After all targets the source rereads
+the CR and preserved resources; any drift fails closed.
+
+An incomplete/unknown provider outcome aborts further PATCH and produces a
+recovery-required receipt; a previously observed handback START blocks
+another attempt (including after process interruption). **Remaining G5
+admission risk:** the handback START currently uses the generic `AuditEvent`
+table, unlike G2's independently guarded PostgreSQL write-once ledger.
+Existence checks alone do not establish tamper-resistant START retention or
+anti-replay after an audit-row deletion. The #1231 source correction now
+provides `20261012_capsule_handback_audit_guard.py` to enforce a **unique
+per-Tenant START** (partial index) and reject any UPDATE/DELETE of handback
+audit rows plus PostgreSQL TRUNCATE of the AuditEvent table. A read-only
+runtime admission check verifies that all three PostgreSQL triggers and
+the START unique index are active, that the handback DB role cannot own
+or truncate the table or bypass triggers, and that fsync, synchronous
+commit and origin replication are admitted. The check runs BEFORE the
+handback START is committed or any provider PATCH occurs, so missing
+migration or unsafe DB role blocks all handback operations.
+
+**Source changes do not install or attest PostgreSQL protections.**
+G5 remains NOT PASS until the migration, restricted non-owner database
+role, WAL/backup durability, tests and live partial/replay/restart UAT
+are verified under separate operator authorization. Do not equate a
+`db.session.commit()` or a synthetic receipt with immutable evidence. Only complete verified
+provider scope and locked existing `Released` Namespace generations may
+write `handback_governance` evidence with precise current CR RV and each
+Namespace's own RV. Capsule GlobalResourceQuota is included in the canonical Released G4
+counted worklist as **preserve-only**; it is never a handback PATCH target.
+The handback checks the complete approved GlobalResourceQuota list
+UID/RV/scope digest before and after mutation and retains externally owned,
+already-preserved Namespaces as no-PATCH resources. Every original Released
+Namespace—transferred or preserved—must receive its own exact provider RV
+in the committed handback lineage, rather than incorrectly requiring all
+Namespaces to have carried KAORI ownership markers.
+
+The released predecessor stays Released and immutable;
+Re-Adopt still requires a **new** Discovery and distinct explicit Adoption
+authorization. The normal GET reads committed handback evidence only.
+
+Source-only implementation and regression tests are authored but **not
+runtime validated**. Actual ability to initiate this route depends on a
+valid previous G2/G3 handoff, G4 finalizer, installed infrastructure,
+CI/CD/security gates, separately authorized UAT and human acceptance.
+It must not be represented as a complete working Release→Re-Adopt result
+until those operations have been executed and verified.
+
+## Re-Adopt live resourceVersion caller wiring (P0 source corrected; runtime HOLD)
+
+The Capsule-specific caller defect identified during baseline freeze has
+been corrected in source: `_adopt_capsule` now supplies the *live*
+Capsule Tenant CR `resourceVersion` to
+`_released_predecessor_evidence`. For namespaced resources,
+`_capsule_namespace_records` now completes its bounded, duplicate-free
+UID/RV inventory scan, then verifies **every** Released Namespace
+predecessor with that Namespace's own live `resource_version` **before
+building any new-generation KAORI governance record**. This follows the
+already-established Native live identity pattern while retaining the
+strict `_require_re_adoption_handback_for_managed_release` guard.
+It neither substitutes old database RV for current provider evidence nor
+accepts UID-only handback. Missing/stale/foreign handback remains FAIL,
+and manual verification of any later provider correction remains required.
+
+Authored-only regressions cover Capsule Tenant and multiple Namespace
+live RV forwarding, no early record allocation for a later invalid
+Namespace, generation/linkage preservation, stale/missing managed
+handback and positive exact handback. **These tests have not been
+executed. G5 remains NOT PASS pending G2–G4, CI/CD, provider-authorized
+UAT and human acceptance.** New generation allocation takeover must
+also be reviewed separately: the Capsule adoption path can establish
+KAORI-managed profiles and is not an implicit provider read-only
+operation.
+
+## Capsule CR versus Namespace handback identity — source correction
+
+`_released_predecessor_evidence` now selects the historical **cluster-scoped
+Capsule Tenant CR handback resourceVersion** directly, instead of wrongly
+resolving it through the Native Tenant's per-Namespace version map. Native
+Tenant identity remains Namespace-scoped, and its existing
+`provider_resource_versions[namespace]` verification is unchanged.
+Released Namespace generation verification continues to use the separately
+stored Namespace-row handback `resource_version`; no UID-only fallback or
+handback guard relaxation is permitted. Focused positive lineage regressions
+are authored but **not run**. This is a G5 source correction, not UAT admission. A Capsule successor
+handback route is now source-wired, but G5 remains unaccepted until
+G2/G3/G4 runtime evidence, immutable attempt/recovery protection,
+fresh Discovery/new-generation Adoption, negative cases and human UAT.
+
+## Scope-freeze and execution rules
+
+**Must keep:** independent human authorization; exact provider
+fingerprints and current UID/RV; resource-by-resource owner authority;
+provider-spec preservation; prior-commit fencing and manual partial
+recovery; atomic Released+capacity accounting; verified
+Released→Discovery→new-generation Re-Adopt; security/UAT gates.
+
+**Not independent blockers by default:** creating additional
+cryptographic envelope formats, duplicate AuditEvent frameworks, more
+proof tables, a bespoke IdP/MFA or Vault/KMS integration **if** the
+existing approved KAORI authentication/audit/immutable storage can meet
+the same concrete evidence and threat-model requirements. Never
+replace authenticated identity, integrity, durability or anti-replay
+with self-declared `verified=true`, a hash or user-supplied key.
+
+**Work order:** (A) audit existing source against G0–G6 and record
+P0 FAILs, (B) close G2/G3 with the minimum reviewable executor/read-back
+vertical slice, (C) close G4 finalizer, (D) fix and verify G5
+Released→Discovery→Re-Adopt lineage, (E) separately authorize and run
+G6 security/UAT. New supporting abstractions need an explicit
+specific gate/negative case they solve, rather than indefinite
+architecture expansion. Native provider Release stays independent.
+
+**Standing operational HOLD:** No pytest, Ruff, Pyright, CI/CD,
+Developer Check, Full Admission, DAST, browser/DevContainer runtime
+QA, Alembic execution, SQL operational writes, Vault/IdP secret
+reads, Kubernetes SSR/SAR/dryRun=All/PATCH/live UAT, Released
+finalization, deployment or staging/main promotion until separately
+authorized by the operator. Demo `kaori-demo` is NOT Released.

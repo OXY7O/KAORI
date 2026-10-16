@@ -9,6 +9,7 @@
     "workspace",
     "db",
     "redis",
+    "db-first-run",
     "inventory-worker",
     "registry-security-worker",
     "maintenance-worker",
@@ -58,6 +59,20 @@
       }
     }
   },
+  "initializeCommand": [
+    "docker",
+    "run",
+    "--rm",
+    "--mount",
+    "type=bind,source=${localWorkspaceFolder},target=/workspace",
+    "--mount",
+    "type=volume,source=kaori-dev_kaori_postgres_data,target=/pgdata,readonly",
+    "-e",
+    "KAORI_DEV_DOCKER_INIT=1",
+    "python:3.12-alpine",
+    "python",
+    "/workspace/.devcontainer/prepare-postgres-env.py"
+  ],
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "postStartCommand": "bash .devcontainer/post-start.sh"
 }

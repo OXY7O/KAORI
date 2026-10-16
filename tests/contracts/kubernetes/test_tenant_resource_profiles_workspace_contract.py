@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -63,6 +64,433 @@ def test_resource_profiles_use_server_owned_kaori_content_tabs_and_snapshot_stat
     assert 'active_resource_profile_view' in page
     assert "active_view not in {'profiles', 'capacity', 'workflow'}" in routes
     assert 'destructive_confirmation_modal.js' in page
+
+
+def test_capacity_decisions_registry_is_compact_and_exposes_read_only_evidence() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
+    model = read('app/models/tenant.py')
+    registry = read('app/templates/components/table_registry.html')
+    primitives = read('app/templates/components/table_primitives.html')
+
+    # Preserve the approved canonical inventory, five-row HTMX, filter and
+    # empty/loading contracts. Detail is bounded to visible paginated records.
+    assert 'Capacity Decisions' in template
+    assert 'registry_ui.filter_form(' in template
+    assert 'registry_ui.clear_filters_link(' in template
+    assert "registry_ui.footer('tenant.namespace_provisioning'" in template
+    assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in template
+    assert 'capacity_decision_pagination.per_page' in template
+    assert "page_param='decision_page'" in template
+    assert "per_page_param='decision_per_page'" in template
+    assert 'decision_search' in template
+    assert 'decision_result' in template
+    for name, width in (
+        ('Target', 24),
+        ('Contract', 27),
+        ('Admission', 22),
+        ('Recorded', 17),
+        ('Details', 10),
+    ):
+        assert f'w-[{width}%]">{name}</th>' in template
+    assert 'colspan="5"' in template
+    assert 'components/states/_empty_state.html' in template
+    assert 'macro footer(' in registry
+
+    # Decision Allow/Block is a distinct authoritative fact from capacity
+    # state, and full profile/namespace identities are available on demand.
+    assert 'decision.decision|title, decision_tone' in template
+    assert 'decision.capacity_state, state_tone' in template
+    assert "decision_tone = 'normal' if decision.decision == 'allow' else 'critical'" in template
+    assert 'title="{{ decision.namespace }}"' in template
+    assert 'title="{{ profile_name }}"' in template
+    assert 'decision.resource_profile_version or row.profile.version' in template
+    assert "decision.operation|replace('_', ' ') |title" in template
+
+    # Reuse native KAORI dialogs with stable decision-ID identities and explicit
+    # text-left reset from the shared Action cell's inherited text-right.
+    assert "dialog_id = 'tenant-capacity-decision-' ~ decision.id" in template
+    assert 'data-kaori-dialog-open' in template
+    assert 'data-dialog-target="{{ dialog_id }}"' in template
+    assert 'data-kaori-native-dialog' in template
+    assert 'aria-labelledby="{{ dialog_id }}-title"' in template
+    assert 'aria-describedby="{{ dialog_id }}-description"' in template
+    assert 'data-kaori-dialog-close' in template
+    assert 'p-0 text-left shadow-2xl' in template
+    assert "{{ 'text-right' if action else 'text-left' }}" in primitives
+
+    # Read-only committed reason/cutoff, capacity snapshot state and correlation
+    # are not live provider diagnostics or newly computed capacity admission.
+    for key in ('reason', 'allocation_scope', 'capacity_source', 'snapshot_id', 'snapshot_state'):
+        assert key in template
+    assert 'decision.evidence_json or {}' in template
+    assert 'evidence.get("reason") or \'No committed explanation recorded.\'' in template
+    assert 'whitespace-pre-line break-words text-sm' in template
+    assert 'row.created_at_label' in template
+    assert 'row.data_cutoff_label' in template
+    assert 'decision.correlation_id' in template
+    assert 'Blocked preflight does not authorize provider allocation mutation.' in template
+    assert '<details class="group border-t border-outline-subtle">' in template
+    assert 'id="{{ dialog_id }}-admission-title"' in template
+    assert 'id="{{ dialog_id }}-contract-title"' in template
+    assert 'id="{{ dialog_id }}-record-title"' in template
+    assert 'aria-labelledby="{{ dialog_id }}-admission-title"' in template
+    assert '{{ target_display }}' in template
+    assert '{{ profile_display }}' in template
+    assert 'hx-post' not in template
+    assert '<form method="post"' not in template
+    assert 'class TenantCapacityDecision(db.Model)' in model
+    assert 'evidence_json: Mapped[dict]' in model
+
+
+def test_capacity_decision_compact_names_preserve_canonical_identity_and_distinctions() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
+    # Exercise the exact display-only Jinja transformations, not a duplicate
+    # Python abbreviation algorithm that could drift from the rendered table.
+    start = source.index("{% set target_parts = decision.namespace.split(':') %}")
+    end = source.index("{% set dialog_id = 'tenant-capacity-decision-' ~ decision.id %}", start)
+    view = Environment(autoescape=True).from_string(source[start:end] + '{{ target_display }}||{{ profile_display }}')
+
+    def names(target: str, profile: str) -> tuple[str, str]:
+        rendered = view.render(decision={'namespace': target}, profile_name=profile)
+        first, second = rendered.split('||')
+        return first.strip(), second.strip()
+
+    assert names('gajah', 'Platform Medium') == ('gajah', 'Platform Medium')
+    assert names('tenant-uat-demo', 'Adopted tenant-uat-demo Baseline · 4') == (
+        'tenant-uat-demo',
+        'tenant-uat-demo Baseline 4',
+    )
+    assert names('tenant-uat-demo', 'Adopted tenant-uat-demo Baseline · 3') == (
+        'tenant-uat-demo',
+        'tenant-uat-demo Baseline 3',
+    )
+    assert names(
+        '@tenant:kaori-demo:resource-quotas',
+        'Adopted kaori-demo Allocation · e36817ba-f3d5-433b-a26e-e8106bf28abb',
+    ) == ('kaori-demo · Resource Quotas', 'kaori-demo Allocation · e36817ba')
+    assert names('@tenant:kaori-demo:other', 'Platform Small')[0] == '@tenant:kaori-demo:other'
+    long_label, long_profile = names('x' * 80, 'Unrecognized contract ' + 'y' * 80)
+    assert len(long_label) <= 34
+    assert len(long_profile) <= 36
+
+    # Full canonical values remain available without any new provider lookup.
+    assert 'title="{{ decision.namespace }}"' in source
+    assert 'title="{{ profile_name }}"' in source
+    assert '{{ decision.namespace }}</h2>' in source
+    assert re.search(r'{{\s*profile_name\s*}}\s*</dd>', source)
+    assert 'decision.resource_profile_version or row.profile.version' in source
+    assert 'data-kaori-native-dialog' in source
+    assert "registry_ui.footer('tenant.namespace_provisioning'" in source
+
+
+def test_capacity_decision_modal_uses_single_evidence_surface_and_quiet_traceability() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_capacity_decisions.html')
+    start = template.index('<dialog id="{{ dialog_id }}"')
+    end = template.index('</dialog>', start)
+    dialog = template[start:end]
+
+    # Keep the native header clear of status/table-cell alignment inheritance.
+    assert 'p-0 text-left shadow-2xl' in dialog
+    assert 'bg-surface-card px-4 py-4 text-left sm:px-6' in dialog
+    assert 'bg-surface-page p-4 text-left sm:p-5' in dialog
+    assert 'Admission Evidence' in dialog
+    assert 'id="{{ dialog_id }}-title"' in dialog
+    assert 'id="{{ dialog_id }}-description"' in dialog
+    assert 'data-kaori-dialog-close' in dialog
+
+    # One bordered reading surface, rather than nested independent cards.
+    assert dialog.count('overflow-hidden rounded-xl border border-outline-subtle bg-surface-card') == 1
+    for heading in ('Admission', 'Target &amp; Contract', 'Committed Evidence'):
+        assert heading in dialog
+    assert (
+        dialog.index('id="{{ dialog_id }}-admission-title"')
+        < dialog.index('id="{{ dialog_id }}-contract-title"')
+        < dialog.index('id="{{ dialog_id }}-record-title"')
+        < dialog.index('>Traceability</span>')
+    )
+    assert dialog.count('border-t border-outline-subtle px-4 py-4 sm:px-5') == 2
+
+    # Keep the decision distinct from state, the full reason (no indentation),
+    # the pinned contract, cutoff and correlation in source-owned evidence.
+    assert 'decision.decision|title, decision_tone' in dialog
+    assert 'decision.capacity_state, state_tone' in dialog
+    assert 'evidence.get("reason") or \'No committed explanation recorded.\'' in dialog
+    assert 'whitespace-pre-line break-words text-sm' in dialog
+    assert 'decision.resource_profile_version or row.profile.version' in dialog
+    assert 'evidence.get("allocation_scope")' in dialog
+    # Full-width canonical Resource Profile is the first row; Operation and
+    # Allocation Scope share the following row, never compressing its width.
+    contract = dialog.split('id="{{ dialog_id }}-contract-title"', 1)[1].split('id="{{ dialog_id }}-record-title"', 1)[
+        0
+    ]
+    assert 'dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3"' in contract
+    assert '<div class="col-span-2 min-w-0">' in contract
+    assert 'sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]' not in contract
+    assert contract.index('Resource Profile</dt>') < contract.index('Operation</dt>')
+    assert contract.index('Resource Profile</dt>') < contract.index('Allocation Scope</dt>')
+    # Keep the full-width, wrapped profile binding without depending on
+    # djLint's placement of the variable on the next source line.
+    assert re.search(
+        r'<dd\s+class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary">\s*'
+        r'\{\{\s*profile_name\s*\}\}\s*</dd>',
+        contract,
+    )
+    assert 'row.created_at_label' in dialog
+    assert 'row.data_cutoff_label' in dialog
+    assert 'capacity_source.get("snapshot_state")' in dialog
+    assert 'decision.correlation_id' in dialog
+    assert "capacity_source.get('snapshot_id')" in dialog
+
+    # Traceability is a native, default-closed keyboard disclosure at the bottom,
+    # not another large inner card, and no modal action mutates providers.
+    assert '<details class="group border-t border-outline-subtle">' in dialog
+    assert (
+        'open>'
+        not in dialog.split('<details class="group border-t border-outline-subtle">', 1)[1].split('<summary', 1)[0]
+    )
+    assert 'group-open:rotate-180' in dialog
+    assert 'px-4 py-3 text-left focus-visible:' in dialog
+    assert 'hx-post' not in dialog
+    assert '<form' not in dialog
+
+
+def test_namespace_registry_uses_compact_rows_and_committed_read_only_detail_dialog() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    model = read('app/models/tenant.py')
+    primitives = read('app/templates/components/table_primitives.html')
+    native = read('app/templates/components/status_detail_dialog.html')
+
+    # The canonical registry contract (filters, default-five pagination, shared
+    # table and empty/loading states) stays in charge of the list surface.
+    assert 'Namespace Provisioning Registry' in template
+    assert 'registry_ui.filter_form(' in template
+    assert 'registry_ui.clear_filters_link(' in template
+    assert "registry_ui.footer('tenant.namespace_provisioning'" in template
+    assert "table_ui.table_classes('min-w-[1080px] !table-fixed')" in template
+    assert 'namespace_pagination.per_page' in template
+    for name in ('namespace_tenant_id', 'namespace_environment', 'namespace_status', 'namespace_search'):
+        assert name in template
+    for title, width in (
+        ('Namespace', 25),
+        ('Tenant / Environment', 18),
+        ('Allocation', 32),
+        ('State', 15),
+        ('Details', 10),
+    ):
+        assert f'w-[{width}%]">{title}</th>' in template
+    assert 'colspan="5"' in template
+    assert 'components/states/_empty_state.html' in template
+
+    # Full profile names and reconciliation messages belong in the modal,
+    # not in a text-clipped status cell or a sixth authority column.
+    assert 'profile_display|truncate(42, True' in template
+    assert 'title="{{ profile_name }}"' in template
+    assert '{{ profile_display }}</p>' in template
+    assert 'Control: {{ control_label }}' in template
+    assert 'title="Control: {{ control_label }}"' in template
+    assert (
+        "table_label.status_label(item.ownership_status|replace('_', ' ') |title, 'normal' if item.ownership_status == 'managed' else 'info')"
+        in template
+    )
+    assert 'Gen {{ item.generation }}' in template
+    assert (
+        "'Snapshot v' ~ item.resource_profile_version if item.resource_profile_version else 'No pinned snapshot'"
+        in template
+    )
+    assert 'No pinned snapshot' in template
+    assert 'item.provisioning_message or' in template
+    assert 'max-w-full truncate" title="{{ item.provisioning_message' not in template
+    assert 'item.ownership_status' in template
+    assert 'item.resource_profile_version' in template
+    assert 'item.environment.tenant.provider_key' in template
+    assert 'item.environment.tenant.reconciliation_authority' in template
+    assert 'provider_mirrored_policy' in template
+    assert 'adopted_observed' in template
+    assert 'KAORI Managed' in template
+
+    # Native-dialog identity is per committed Namespace ID; status detail is
+    # informational only and cannot invoke a provider or a mutation endpoint.
+    assert "dialog_id = 'tenant-namespace-evidence-' ~ item.id" in template
+    assert 'data-kaori-dialog-open' in template
+    assert 'data-dialog-target="{{ dialog_id }}"' in template
+    assert 'aria-haspopup="dialog"' in template
+    assert 'data-kaori-native-dialog' in template
+    assert 'aria-labelledby="{{ dialog_id }}-title"' in template
+    assert 'aria-describedby="{{ dialog_id }}-description"' in template
+    assert 'data-kaori-dialog-close' in template
+    assert 'kaori-native-dialog' in template
+    assert "text-right' if action else 'text-left'" in primitives
+    assert 'p-0 text-left shadow-2xl' in template
+    assert 'bg-surface-page p-4 text-left sm:p-5' in template
+    assert 'data-status-detail-dialog' in native
+    assert 'hx-post' not in template
+    assert '<form method="post"' not in template
+
+    # All six primary ResourceQuota dimensions use committed Namespace
+    # snapshot values, not mutable profiles or Container LimitRange defaults.
+    for label, key in (
+        ('CPU Requests', 'requests.cpu'),
+        ('CPU Limits', 'limits.cpu'),
+        ('Memory Requests', 'requests.memory'),
+        ('Memory Limits', 'limits.memory'),
+        ('Pod Slots', 'pods'),
+        ('Logical Storage', 'requests.storage'),
+    ):
+        assert f"('{label}', quota.get('{key}'))" in template
+    assert 'Frozen Namespace ResourceQuota · Not live utilization' in template
+    assert 'grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3' in template
+    assert "('CPU Limit', (limit_defaults.get('default') or {}).get('cpu'))" in template
+    assert "('Memory Limit', (limit_defaults.get('default') or {}).get('memory'))" in template
+    assert 'item.allocation_quota_json or {}' in template
+    assert 'item.allocation_limit_defaults_json or {}' in template
+    assert 'item.allocation_storage_policy_json or {}' in template
+    assert 'item.allocation_customized' in template
+    assert 'item.provisioning_message' in template
+    assert 'item.last_reconciled_at' in template
+    assert 'Quota &amp; LimitRange Details' in template
+    # Alignment and semantics: indentation in the Jinja source must not
+    # appear as literal leading spaces in provider reconciliation messages.
+    assert 'p-0 text-left shadow-2xl' in template
+    assert 'bg-surface-page p-4 text-left sm:p-5' in template
+    assert (
+        '<p class="whitespace-pre-line break-words text-sm leading-6 text-content-secondary">{{ item.provisioning_message or'
+        in template
+    )
+    assert 'whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary' not in template
+    assert 'aria-label="Namespace identity and authority"' in template
+    assert 'Source Profile</p>' in template
+    assert 'Effective Snapshot</p>' in template
+    assert 'border-l-2 border-kaori-primary/30 pl-3 text-left' in template
+    assert (
+        template.index('Committed Allocation</h3>')
+        < template.index('Reconciliation</h3>')
+        < template.index('Quota &amp; LimitRange Details')
+    )
+    assert 'Not declared' in template
+    assert 'Provider Mirrored' in template
+    assert 'Control Unavailable' in template
+    assert 'allocation_quota_json: Mapped[dict | None]' in model
+    assert 'allocation_limit_defaults_json: Mapped[dict | None]' in model
+    assert 'allocation_storage_policy_json: Mapped[dict | None]' in model
+
+
+def test_namespace_provisioning_rows_separate_identity_allocation_and_state() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    source = template.split('{% for item in namespaces %}', 1)[1].split('<dialog id="{{ dialog_id }}"', 1)[0]
+
+    # Operator scanning: identity + ownership/generation; pinned source/provider;
+    # canonical state + existing control distinction. No clipped provider message.
+    assert source.count('title="{{ item.namespace }}"') == 1
+    assert "item.ownership_status == 'managed'" in source
+    assert 'table_label.status_label(item.ownership_status' in source
+    assert 'Gen {{ item.generation }}' in source
+    assert 'profile_display' in source
+    assert 'title="{{ profile_name }}"' in source
+    assert "item.resource_profile_version else 'No pinned snapshot'" in source
+    assert '{{ provider_name }}' in source
+    assert 'title="Control: {{ control_label }}"' in source
+    assert 'table_label.status_label(item.provisioning_status' in source
+    assert 'provisioning_message' not in source
+
+    # The rest of the modal is still authoritative for full allocation,
+    # reconciliation explanation and provider identity; no new mutation path.
+    assert 'data-kaori-native-dialog' in template
+    assert '{{ profile_name }}</p>' in template
+    assert 'item.provisioning_message or' in template
+    assert 'item.allocation_quota_json or {}' in template
+    assert "registry_ui.footer('tenant.namespace_provisioning'" in template
+    assert 'registry_ui.filter_form(' in template
+    assert 'hx-post' not in template
+
+
+def test_namespace_allocation_dialog_renders_resourcequota_limits_not_container_defaults() -> None:
+    import re
+
+    from jinja2 import Environment
+
+    source = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    marker = '<dl class="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">'
+    begin = source.index(marker)
+    end = source.index('</dl>', begin) + len('</dl>')
+    render = Environment(autoescape=True).from_string(source[begin:end]).render
+
+    observed = render(
+        quota={
+            'limits.cpu': '4',
+            'limits.memory': '8Gi',
+            'pods': '10',
+            'requests.storage': '1Gi',
+        },
+        limit_defaults={'default': {'cpu': '250m', 'memory': '512Mi'}},
+    )
+    expected = (
+        ('CPU Requests', 'Not declared'),
+        ('CPU Limits', '4'),
+        ('Memory Requests', 'Not declared'),
+        ('Memory Limits', '8Gi'),
+        ('Pod Slots', '10'),
+        ('Logical Storage', '1Gi'),
+    )
+    for label, value in expected:
+        pattern = rf'>{re.escape(label)}</dt>\s*<dd[^>]*>\s*{re.escape(value)}\s*</dd>'
+        assert re.search(pattern, observed)
+
+    # Container default LimitRange values must not appear as quota limits.
+    assert '250m' not in observed
+    assert '512Mi' not in observed
+    empty = render(quota={})
+    assert empty.count('Not declared') == 6
+
+
+def test_namespace_registry_uses_existing_compact_profile_naming_rules() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/kubernetes/tenant/partials/_namespace_registry.html')
+    start = source.index("{% set adopted_prefix = profile_name.startswith('Adopted ') %}")
+    end = source.index('{% set quota = item.allocation_quota_json or {} %}', start)
+    snippet = Environment(autoescape=True).from_string(
+        source[start:end] + '{{ profile_display }}||{{ control_label or "None" }}'
+    )
+
+    def display(
+        name: str,
+        *,
+        control: str | None = 'kaori_managed',
+        mirrored: bool = False,
+        observed: bool = False,
+    ) -> tuple[str, str]:
+        rendered = snippet.render(
+            profile_name=name,
+            provider_mirrored=mirrored,
+            adopted_observed=observed,
+            allocation_control=control,
+        )
+        first, second = rendered.split('||')
+        return first.strip(), second.strip()
+
+    assert display('Platform Medium') == ('Platform Medium', 'KAORI Managed')
+    assert display('Adopted tenant-uat-demo Baseline · 4')[0] == 'tenant-uat-demo Baseline 4'
+    assert display('Adopted tenant-uat-demo Baseline · 3')[0] == 'tenant-uat-demo Baseline 3'
+    assert (
+        display('Adopted kaori-demo Allocation · e36817ba-f3d5-433b-a26e-e8106bf28abb')[0]
+        == 'kaori-demo Allocation · e36817ba'
+    )
+    assert display('Adopted kaori-demo/kaori-demo-dev Policy · None', mirrored=True)[1] == ('Provider Mirrored')
+    assert display('Imported Provider Baseline', observed=True, control=None)[1] == ('Awaiting Takeover')
+    assert display('No profile', control=None) == ('No profile', 'None')
+    long_name, _ = display('Unrecognized profile ' + 'x' * 100)
+    assert len(long_name) <= 42
+
+    # Compact name and authority are display-only, never replacing full
+    # committed identity/effective evidence in the read-only modal.
+    assert 'title="{{ profile_name }}"' in source
+    assert '{{ profile_name }}</p>' in source
+    assert 'item.allocation_quota_json or {}' in source
+    assert 'item.provisioning_message or' in source
+    assert 'data-kaori-native-dialog' in source
+    assert "registry_ui.footer('tenant.namespace_provisioning'" in source
 
 
 def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None:
@@ -180,6 +608,60 @@ def test_resource_profile_form_uses_full_width_dense_contract_sections() -> None
     assert 'read-only:shadow-none' in form_field
 
 
+def test_create_profile_resource_sections_are_collapsed_native_disclosures() -> None:
+    form = read('app/templates/kubernetes/tenant/partials/_resource_profile_form.html')
+    controls = read('app/templates/kubernetes/tenant/partials/_resource_profile_advanced_controls.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+
+    # The visible first-open experience is Identity & Lineage; all four core
+    # resource groups begin closed, matching existing native Advanced Controls.
+    assert 'Identity &amp; Lineage' in form
+    assert form.index('resource-profile-identity-heading') < form.index('resource-profile-compute-heading')
+    marker = '<details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card transition"'
+    sections = form.split(marker)[1:]
+    assert len(sections) == 4
+    for section, title, heading in zip(
+        sections,
+        ('Basic Resources', 'Storage Guardrails', 'Object Limits', 'Container Defaults'),
+        (
+            'resource-profile-compute-heading',
+            'resource-profile-storage-heading',
+            'resource-profile-object-heading',
+            'resource-profile-container-heading',
+        ),
+        strict=True,
+    ):
+        opening = section.split('>', 1)[0]
+        assert ' open' not in opening
+        assert 'data-tenant-resource-section' in opening
+        assert f'aria-labelledby="{heading}"' in opening
+        assert '<summary ' in section
+        assert section.index('<summary ') < section.index('Section help')
+        assert f'id="{heading}"' in section
+        assert f'>{title}</h3>' in section
+        assert 'group-open:rotate-180' in section
+        assert 'border-t border-outline-subtle' in section
+        assert '</details>' in section
+
+    # Moving form controls into closed details must not alter submitted intent,
+    # preset switching, or the canonical Managed / Unmanaged ownership mask.
+    assert form.count('data-tenant-resource-field-wrap') == 5
+    assert form.count('data-tenant-resource-field="{{ field }}"') == 5
+    assert form.count('data-tenant-resource-control="{{ field }}"') == 5
+    assert 'name="control_contract_present"' in form
+    assert 'name="advanced_control_contract_present"' in form
+    assert 'name="profile_class"' in form
+    assert 'name="base_preset_class"' in form
+    assert 'data-tenant-resource-profile-form' in form
+    assert "scope.querySelectorAll('[data-tenant-resource-profile-form]').forEach(initProfileForm)" in script
+    assert "form.querySelector('[data-tenant-profile-class]')" in script
+    assert "collectFields(form, 'data-tenant-resource-field')" in script
+    assert "collectFields(form, 'data-tenant-resource-control')" in script
+    assert 'syncManagedState()' in script
+    assert 'data-tenant-advanced-controls' in controls
+    assert '<details ' in controls
+
+
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
     service = tenant_service_source()
@@ -197,7 +679,7 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert 'Allocation' in registry
     assert 'Usage' in registry
     assert '>Action</th>' in registry
-    assert "table_ui.table_classes('min-w-[900px]')" in registry
+    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
     assert 'resource-profile-manage-' in registry
     assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
     assert 'Versioned Controls' in registry
@@ -212,6 +694,127 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert 'def get_resource_profile_registry_context(' in service
     assert 'paginate_query(' in service
     assert "'profile_registry_filters':" in service
+
+
+def test_resource_profile_registry_shows_compact_identity_and_full_detail_in_manage() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
+    dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+    table = read('app/templates/components/table.html')
+
+    # Display-only abbreviations never modify persisted names or descriptions.
+    assert "profile.name.startswith('Adopted ')" in registry
+    assert 'profile.name[8:] if adopted_baseline else profile.name' in registry
+    assert "registry_name.rsplit(' · ', 1)" in registry
+    assert 'name_parts[1][:8]' in registry
+    assert "registry_name|truncate(44, True, '…')" in registry
+    assert "('Adopted baseline' if adopted_baseline else 'Profile') ~ ' · #' ~ profile.id" in registry
+    assert "table_ui.title_cell(registry_name, registry_meta, 'layers-3')" in registry
+    assert 'table_ui.title_cell(profile.name, profile.description' not in registry
+    assert "profile.description or 'Reusable allocation contract'" not in registry
+    assert 'aria-label="Manage Resource Profile {{ profile.name }}"' in registry
+
+    # Shared table geometry, HTMX, default pagination and actual Manage action stay intact.
+    assert "title_cell(name, supporting_text='', icon='', supporting_content=None)" in table
+    assert 'table_primitives.title_cell(name, supporting_text, icon, supporting_content)' in table
+    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
+    assert 'registry_ui.footer' in registry
+    assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
+
+    # Modal is the full authority for both editable Custom and locked KAORI presets.
+    assert 'id="resource-profile-manage-{{ profile.id }}-title"' in dialogs
+    assert 'title="{{ profile.name }}">{{ profile.name }}</h3>' in dialogs
+    assert 'aria-label="Resource Profile description"' in dialogs
+    assert (
+        '<p class="whitespace-pre-wrap break-words text-sm leading-6 text-content-secondary">{{ profile.description }}</p>'
+        in dialogs
+    )
+    assert '<textarea name="profile_description"' in dialogs
+    assert "{{ profile.description or '' }}</textarea>" in dialogs
+    assert 'value="{{ profile.description or \'\' }}"' in dialogs
+    assert 'data-kaori-native-dialog' in dialogs
+
+
+def test_resource_profile_workspace_redesign_preserves_governance_and_modal_workflow() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
+    dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+
+    # One coherent fixed-column contract; no truncated resource evidence.
+    for label, width in [('Profile', 29), ('Contract', 21), ('Allocation', 26), ('Usage', 15), ('Action', 9)]:
+        assert f'w-[{width}%]">{label}' in registry
+    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
+    assert 'grid grid-cols-2 gap-x-3 gap-y-2' in registry
+    assert "('CPU', profile.quota_hard_json.get('requests.cpu') or 'Not Managed')" in registry
+    assert "('Memory', profile.quota_hard_json.get('requests.memory') or 'Not Managed')" in registry
+    assert "('Pods', profile.quota_hard_json.get('pods') or 'Not Managed')" in registry
+    assert "('Storage', profile.quota_hard_json.get('requests.storage') or 'Not Managed')" in registry
+    assert 'registry_ui.footer' in registry
+    assert 'data-kaori-dialog-open' in registry
+
+    # Actual full identity is a managed detail surface, not a repeated header wall.
+    assert "Manage Resource Profile' if editable else 'Resource Profile Details" in dialogs
+    assert 'aria-label="Resource Profile identity"' in dialogs
+    assert 'title="{{ profile.name }}">{{ profile.name }}</h3>' in dialogs
+    assert '<textarea name="profile_description"' in dialogs
+    assert 'sm:col-span-2' in dialogs
+    assert 'Profile Configuration' in dialogs
+    assert 'Namespace References' in dialogs
+    assert 'Capacity Decisions' in dialogs
+
+    # Native progressive disclosures and original form contracts apply to both
+    # editable Custom profiles and fixed built-in presets.
+    assert dialogs.count('Namespace quotas and PVC limits') == 2
+    assert dialogs.count('Services, ConfigMaps and Secrets') == 2
+    assert dialogs.count('LimitRange request and limit defaults') == 2
+    assert dialogs.count('<details class="group overflow-hidden rounded-xl') == 6
+    assert dialogs.count('id="resource-profile-update-form-{{ profile.id }}"') == 2
+    assert dialogs.count('advanced_profile_controls.render(') == 2
+    assert 'name="control_contract_present"' in dialogs
+    assert 'name="advanced_control_contract_present"' in dialogs
+
+    # Rollout remains an explicit, Tenant-scoped POST with separate eligibility.
+    assert 'aria-labelledby="resource-profile-rollout-{{ profile.id }}-heading"' in dialogs
+    assert re.search(r'<select name="tenant_id"\s+required', dialogs)
+    assert "target.provider_key != 'native_kubernetes'" in dialogs
+    assert 'How rollout is applied' in dialogs
+    assert 'One Tenant at a time' in dialogs
+    assert 'form="resource-profile-update-form-{{ profile.id }}"' in dialogs
+    assert "url_for('tenant.rollout_resource_profile_route', profile_id=profile.id)" in dialogs
+
+
+def test_profile_manage_modal_copy_and_grouped_summary_remain_bounded() -> None:
+    dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
+
+    # Status and lineage are rendered through canonical labels, not standalone prose.
+    assert "table_label.status_label('Editable' if editable else 'Versioned Controls'" in dialogs
+    assert (
+        "table_label.metadata_label('Independent Custom · Operator-managed values', 'layers-3', wrap=true)" in dialogs
+    )
+    assert "table_label.metadata_label('Canonical KAORI preset · Fixed values', 'lock-keyhole', wrap=true)" in dialogs
+
+    # Two intentional groups replace unstructured, widely separated figures.
+    summary = dialogs
+    assert 'aria-label="Profile contract and usage summary"' in summary
+    assert 'sm:grid-cols-2 sm:divide-x sm:divide-y-0' in summary
+    assert '<h3 class="text-xs font-semibold text-content-secondary">Contract</h3>' in summary
+    assert '<h3 class="text-xs font-semibold text-content-secondary">Usage</h3>' in summary
+    for metric in ('Class', 'Version', 'Namespace References', 'Capacity Decisions'):
+        assert f'>{metric}</dt>' in summary
+
+    # Legacy descriptions are presentation-shortened, never overwritten in forms.
+    assert "profile.description.startswith('Explicit governance-cutover profile materialized" in dialogs
+    assert 'Adopted baseline profile; no provider value changes requested.' in dialogs
+    assert '<textarea name="profile_description"' in dialogs
+    assert "{{ profile.description or '' }}</textarea>" in dialogs
+    assert 'value="{{ profile.description or \'\' }}"' in dialogs
+
+    # Governance boundary still explicitly covers committed version, admission and read-back.
+    assert (
+        'Existing Namespace allocations stay unchanged; edits affect future allocations until explicitly applied.'
+        in dialogs
+    )
+    assert 'Each Namespace is admitted, applied, and verified separately.' in dialogs
+    assert 'Blocked Namespaces retain their prior committed version.' in dialogs
+    assert "url_for('tenant.rollout_resource_profile_route', profile_id=profile.id)" in dialogs
 
 
 def test_resource_profile_workflow_uses_numbered_contract_stages_without_arrow_flow() -> None:
@@ -252,10 +855,28 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'data-kaori-native-dialog' in capacity
     assert 'class="{{ table_ui.action_classes() }}"' in capacity
     assert 'View More' in capacity
-    assert 'lg:grid-cols-3' in capacity
-    assert "('Budget', 'gauge', item.display.budget" in capacity
-    assert "('Committed', 'layers-3', item.display.committed" in capacity
-    assert "('Headroom', 'chart-no-axes-combined', item.display.headroom" in capacity
+    assert 'aria-label="Resource allocation comparison"' in capacity
+    assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in capacity
+    assert 'sm:grid-cols-[minmax(11rem,1.4fr)_repeat(3,minmax(0,1fr))]' in capacity
+    assert 'col-span-3 min-w-0 sm:col-span-1' in capacity
+    assert 'lg:grid-cols-3' not in capacity
+    assert 'bar.budget' in capacity
+    assert 'bar.committed' in capacity
+    assert 'bar.headroom' in capacity
+    assert '{{ bar.percent }}% used' in capacity
+    assert '{{ bar.free_percent }}% left' in capacity
+    assert 'components/progress_bar.html' in capacity
+    assert 'progress_bar.stacked_bar(bar.percent,' in capacity
+    assert 'bar.free_percent,' in capacity
+    assert 'style="width: {{ bar.percent }}%"' not in capacity
+    assert 'style="width: {{ bar.free_percent }}%"' not in capacity
+    progress = read('app/templates/components/progress_bar.html')
+    assert 'macro stacked_bar(' in progress
+    assert 'role="progressbar"' in progress
+    assert 'aria-valuenow="{{ safe_primary_value }}"' in progress
+    assert 'data-progress="{{ safe_secondary_value }}"' in progress
+    assert 'Percentage unavailable · {{ bar.state }}' in capacity
+    assert 'Over budget by {{ bar.shortfall }}' in capacity
     assert 'No governed namespaces' in capacity
     assert "dialog_id = 'capacity-budget-details-'" in capacity
     assert 'space-y-3 p-4' not in capacity
@@ -274,20 +895,28 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'type="number"' in capacity
     assert 'min="0.01"' in capacity
     assert 'step="0.01"' in capacity
-    assert 'placeholder="2048"' in capacity
+    assert 'placeholder="Enter GiB amount"' in capacity
+    assert 'placeholder="2048"' not in capacity
+    assert 'for="tenant-storage-budget-gib"' in capacity
+    assert 'id="tenant-storage-budget-gib"' in capacity
+    assert 'aria-describedby="tenant-storage-budget-help"' in capacity
+    assert 'Optional. Enter a value and save to govern storage; blank means Not Governed.' in capacity
     assert '2048 GiB = 2 TiB' in capacity
     assert 'Compute evidence required' in capacity
-    assert 'Logical storage policy remains active' in capacity
-    assert "('Storage', values.storage)" in capacity
+    assert 'Logical storage governed' in capacity
+    assert "bar.key == 'storage_bytes'" in capacity
     assert 'Storage is logical admission capacity.' in capacity
-    assert 'Budget, committed allocation, and remaining headroom.' in capacity
+    assert 'Governed request budgets and remaining headroom.' in capacity
     assert capacity.count('Logical budget only.') == 1
     assert 'Physical and usable capacity remain separate Storage Analytics evidence.' in capacity
     assert 'min-h-10 w-full items-center' in capacity
-    assert 'mt-2 grid gap-3 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)] lg:items-center' in capacity
+    assert 'mt-2 grid items-start gap-3 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)]' in capacity
+    assert 'class="{{ form_field.input_classes() }} !mt-0 pr-14"' in capacity
+    assert 'class="flex min-h-10 w-full items-center gap-2' in capacity
+    assert 'name="tenant_storage_budget_gib"' in capacity
     assert "form_field.help('Enter GiB" not in capacity
-    assert 'values.pods' in capacity
-    assert 'values.storage' in capacity
+    assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in capacity
+    assert 'bar.percent' in capacity
     assert "action_button.classes('primary')" in capacity
     assert "action_button.classes('primary', full=true)" not in capacity
     assert 'components/info_tip.html' in capacity
@@ -310,12 +939,75 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'paginate_sequence' in routes
     assert "context['capacity_pagination']" in routes
     assert "context['capacity_filters']" in routes
+    assert "context['capacity_budget_bars'] = {" in routes
+    assert "str(item['cluster'].id): build_tenant_allocation_bars(item)" in routes
+
+
+def test_allocation_budget_registry_separates_snapshot_freshness_and_compute_budget() -> None:
+    capacity = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    docs = read('docs/architecture/kubernetes-tenant-capacity-governance.md')
+    table = read('app/templates/components/table.html')
+
+    # Separate snapshot state from committed computed budget availability.
+    assert "item.snapshot_state in ['current', 'fresh']" in capacity
+    assert (
+        "'Compute budget available' if item.budget else ('Capacity policy required' if not item.policy else 'Compute evidence required')"
+        in capacity
+    )
+    assert 'Capacity policy required' in capacity
+    assert "item.snapshot_state == 'current' else 'Compute evidence required'" not in capacity
+    assert "'Compute budget available' if item.snapshot_state" not in capacity
+    assert 'Logical storage governed' in capacity
+    for column, percent in [('Cluster', 28), ('Evidence', 39), ('State', 17), ('Details', 16)]:
+        assert f'w-[{percent}%]">{column}</th>' in capacity
+    assert "table_ui.table_classes('min-w-[980px] !table-fixed')" in capacity
+    assert 'table_ui.action_classes()' in capacity
+    assert 'data-kaori-native-dialog' in capacity
+    assert 'data-kaori-dialog-open' in capacity
+    # Action cells are deliberately text-right for the registry button, but the
+    # nested native dialog must explicitly break text-align inheritance.
+    primitives = read('app/templates/components/table_primitives.html')
+    assert "{{ 'text-right' if action else 'text-left' }}" in primitives
+    modal = capacity.split('<dialog id="{{ dialog_id }}"', 1)[1].split('</dialog>', 1)[0]
+    assert 'p-0 text-left shadow-2xl' in modal
+    assert 'bg-surface-card px-4 py-4 text-left sm:gap-4' in modal
+    assert 'bg-surface-page p-4 text-left sm:p-5' in modal
+    assert 'registry_ui.footer' in capacity
+    assert 'macro cluster_identity(' in table  # Reuse the existing identity primitive.
+
+    # Canonical committed budget percentages are supplied by existing presentation bars,
+    # never recomputed or inferred from formatted display strings in the template.
+    dialog = capacity.split('aria-label="Resource allocation comparison"', 1)[1].split('</section>', 1)[0]
+    assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in dialog
+    assert 'grid grid-cols-3 gap-x-4 gap-y-3' in dialog
+    assert 'col-span-3 min-w-0 sm:col-span-1' in dialog
+    assert 'sm:sr-only' in dialog
+    assert 'bar.label' in dialog
+    assert 'bar.budget' in dialog
+    assert 'bar.committed' in dialog
+    assert 'bar.headroom' in dialog
+    assert '{{ bar.percent }}% used' in dialog
+    assert '{{ bar.free_percent }}% left' in dialog
+    assert 'progress_bar.stacked_bar(bar.percent,' in dialog
+    assert "label=bar.label ~ ': ' ~ bar.percent ~ ' percent committed, '" in dialog
+    assert "bar.free_percent ~ ' percent remaining'" in dialog
+    progress = read('app/templates/components/progress_bar.html')
+    assert 'role="progressbar"' in progress
+    assert 'aria-label="{{ label }}"' in progress
+    assert 'Percentage unavailable · {{ bar.state }}' in dialog
+    assert 'Over budget by {{ bar.shortfall }}' in dialog
+    assert 'overflow-x-auto' not in dialog
+    assert 'data-kaori-dialog-close' in capacity
+    assert 'Storage is logical admission capacity.' in capacity
+    assert 'Allocation Budget registry and detail visual hierarchy' in docs
 
 
 def test_capacity_commitment_excludes_deprovisioned_history_and_preserves_unknowns() -> None:
     governance = capacity_governance_source()
 
-    assert 'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in governance
+    assert 'TenantNamespace.provisioning_status.notin_(' in governance
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in governance
+    assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in governance
     assert 'def _committed_evidence_reason(' in governance
     assert 'unbounded_namespaces: list[str] | None = None' in governance
     assert 'Unbounded or missing governed' in governance
@@ -383,7 +1075,8 @@ def test_resource_profile_management_dialogs_support_versioned_builtin_governanc
     assert 'Save New Version' in dialogs
     assert 'Attached Namespace Rollout' in dialogs
     assert "url_for('tenant.rollout_resource_profile_route', profile_id=profile.id)" in dialogs
-    assert 'Each Namespace runs its own capacity admission, provider mutation, and read-back.' in dialogs
+    assert 'Each Namespace is admitted, applied, and verified separately.' in dialogs
+    assert 'Blocked Namespaces retain their prior committed version.' in dialogs
     assert 'Capsule workflow' in dialogs
 
     assert (
@@ -574,18 +1267,18 @@ def test_resource_profile_copy_is_compact_and_version_intent_remains_clear() -> 
     dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
     adoption = read('app/templates/kubernetes/tenant/partials/_tenant_adoption_preflight.html')
 
-    assert (
-        'Preset sizing stays fixed. Control changes create a new version; Namespace snapshots stay pinned until rollout.'
-        in dialogs
-    )
+    assert 'Update reusable intent; Namespace snapshots stay pinned.' in dialogs
     assert 'sizing stays canonical.' in dialogs
     assert (
         'Control changes create v{{ (profile.version or 1) + 1 }}; Namespace snapshots stay pinned until rollout.'
         in dialogs
     )
     assert 'Managed takeover where authority exists; provider-owned constraints stay mirrored.' not in adoption
-    assert 'Adopt managed authority; keep provider constraints mirrored.' in adoption
-    assert 'Result: Adopted / Observed.' in adoption
+    assert 'Adopt with governed provider cutover and equivalent allocation values.' in adoption
+    assert 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' in adoption
+    assert 'Adopted / Managed.' in adoption
+    assert 'Namespace Attached · Managed Allocation.' in adoption
+    assert 'Adopted / Provider Mirrored' in adoption
 
 
 def test_namespace_allocation_preview_is_snapshot_not_fake_form() -> None:
@@ -599,3 +1292,536 @@ def test_namespace_allocation_preview_is_snapshot_not_fake_form() -> None:
     assert 'data-tenant-namespace-advanced-preview' in namespace_form
     assert "if ('value' in target)" in script
     assert "target.textContent = value || '—'" in script
+
+
+def test_capacity_governance_exposes_read_only_tenant_allocation_overview() -> None:
+    page = read('app/templates/kubernetes/tenant/resource_profiles.html')
+    parent = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
+    routes = read('app/kubernetes/tenant/routes.py')
+    projection = read('app/kubernetes/tenant/allocation_overview.py')
+    capacity = read('app/kubernetes/tenant/capacity_governance.py')
+    capacity_scope = read('app/kubernetes/tenant/capacity_allocation_state.py')
+
+    assert 'kubernetes/tenant/partials/_tenant_allocation_overview.html' in parent
+    assert parent.index('kubernetes/tenant/partials/_tenant_allocation_overview.html') < parent.index(
+        '<section id="{{ capacity_registry_id }}"'
+    )
+    assert 'Tenant Allocation Overview' in overview
+    assert 'allocation_cluster_id' in overview
+    assert 'hx-target="#{{ overview_id }}"' in overview
+    assert 'hx-select="#{{ overview_id }}"' in overview
+    assert 'aria-label="Tenant Contributions evidence footer"' in overview
+    assert 'Read-only committed allocation evidence' in overview
+    assert 'Scroll to view all' in overview
+    assert 'registry_ui.footer' not in overview
+    assert 'allocation_tenant_pagination' not in overview
+    assert 'row.namespaces' in overview
+    assert 'selected.snapshot_state' in overview
+    assert 'selected.state' in overview
+    assert 'bar.shortfall' in overview
+    assert 'bar.known' in overview
+    assert "url_for('analytics.capacity')" in overview
+    assert "current_user.has_permission('analytics.view')" in overview
+    assert 'not actual workload utilization or physical reservations' in overview
+    assert 'Operator-governed requests.storage ceiling; not backend physical free space.' in overview
+
+    assert 'build_tenant_allocation_bars(selected)' in routes
+    assert "build_tenant_contribution_rows(str(selected['cluster'].id))" in routes
+    assert "context['allocation_tenant_total'] = len(tenant_rows)" in routes
+    assert 'filter_tenant_contribution_rows(tenant_rows, allocation_search)' in routes
+    assert "context['allocation_tenant_matches'] = len(tenant_rows)" in routes
+    assert "'allocation_page'" not in routes
+    assert "'allocation_per_page'" not in routes
+    assert "if active_view == 'capacity' and selected is not None:" in routes
+    assert 'get_resource_profile_workspace_context()' in routes
+    assert 'build_capacity_governance_summaries' in capacity
+
+    # Reuse #654's exact shared-quota selection, committed aggregation, and
+    # committed-state read path. Do not introduce provider calls on navigation.
+    assert '_canonical_shared_allocation_quota(cluster_id)' in projection
+    assert '_aggregate_committed_allocation(' in projection
+    # Allocation visibility uses the same committed scope as admission. Both
+    # released and deprovisioned histories are excluded, never live-read.
+    assert '_active_namespace_allocation_query()' in projection
+    assert '_TERMINAL_NAMESPACE_ALLOCATION_STATUSES' in projection
+    assert 'TenantNamespace.provisioning_status.notin_(_TERMINAL_NAMESPACE_ALLOCATION_STATUSES)' in capacity_scope
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in capacity_scope
+    assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in capacity_scope
+    assert 'allocation_quota_json' not in overview
+    assert 'build_client(' not in projection
+    assert 'read_namespace(' not in projection
+    assert 'requests.get(' not in projection
+    assert "('capacity', 'Capacity Governance', 'gauge'" in page
+
+
+def test_tenant_operations_empty_registries_keep_canonical_pagination_without_horizontal_scroll() -> None:
+    from jinja2 import Environment
+
+    # The #959 footer must survive zero results; no phantom wide table headers,
+    # redundant "No Data" badge or minimum-width horizontal scrollbar at zero.
+    registry_specs = (
+        ('_operations_evidence_registry.html', 'operations_evidence_rows'),
+        ('_capsule_tenant_quota_drift.html', 'capsule_tenant_quota_drifted'),
+        ('_capsule_shared_allocation_drift.html', 'capsule_shared_drift_intents'),
+        ('_operations_drift_registry.html', 'operations_drift_rows'),
+        ('_operations_access_reconciliation_registry.html', 'operations_access_rows'),
+        ('_operations_provider_registry.html', 'operations_provider_rows'),
+    )
+    for filename, rows in registry_specs:
+        template = read('app/templates/kubernetes/tenant/partials/' + filename)
+        Environment().parse(template)
+        assert f"if {rows} else '!table-fixed'" in template
+        assert f'{{% if {rows} %}}' in template
+        assert template.index(f'{{% if {rows} %}}') < template.index('<thead')
+        # Quote style is formatter-owned; the empty state configuration,
+        # zero-result geometry and canonical pagination must stay unchanged.
+        normalized_empty_state = template.replace('"', "'")
+        assert "{% set empty_state_label = '' %}" in normalized_empty_state
+        assert "{% set empty_state_min_height = 'min-h-[128px]' %}" in normalized_empty_state
+        assert "{% set empty_state_container_class = '!py-5' %}" in normalized_empty_state
+        assert 'components/states/_empty_state.html' in template
+        assert "registry_ui.footer('tenant.operations'" in template
+        assert 'table_ui.table_classes(' in template
+        assert 'overflow-x-auto' in template
+
+    # Data-empty must not globally disable the canonical shared table/footer.
+    table = read('app/templates/components/table.html')
+    footer = read('app/templates/components/table_registry.html')
+    assert 'macro table_classes' in table
+    assert 'macro footer(' in footer
+    assert 'data-kaori-canonical-registry-rows' in footer
+
+
+def test_tenant_operations_provider_authority_remains_optional_without_nested_card() -> None:
+    from jinja2 import Environment
+
+    page = read('app/templates/kubernetes/tenant/operations.html')
+    provider = read('app/templates/kubernetes/tenant/partials/_operations_provider_registry.html')
+    access = read('app/templates/kubernetes/tenant/partials/_operations_access_reconciliation_registry.html')
+
+    for src in (page, provider, access):
+        Environment().parse(src)
+
+    # #960 owns one Operations primary tab row, and keeps authority as an
+    # optional, explanatory reference rather than another visible drift queue.
+    assert 'data-tenant-provider-authority-disclosure' in page
+    assert 'Provider Authority Reference' in page
+    assert 'Reference only—not a drift finding.' in page
+    assert 'View Records' in page
+    assert '{% set provider_authority_embedded = true %}' in page
+    assert '_operations_provider_registry.html" %}' in page
+    assert 'View Provider Authority' not in page
+    assert 'open>' not in page.split('data-tenant-provider-authority-disclosure', 1)[1].split('<summary', 1)[0]
+    assert 'group-open:rotate-180' in page
+
+    # The existing authoritative per-Tenant registry is still present and
+    # filterable. Embedded mode removes only its duplicate shell/header; no
+    # endpoint, query scope, pagination or provider metadata is discarded.
+    assert 'provider_authority_embedded|default(false)' in provider
+    assert 'if provider_authority_embedded' in provider
+    assert '{% else %}' in provider
+    assert "table_ui.inventory_block_header('shield-check'" in provider
+    assert "href=\"{{ url_for('tenant.tenants', section='registry') }}\"" in provider
+    assert 'registry_ui.filter_form(' in provider
+    assert "registry_ui.footer('tenant.operations'" in provider
+    assert 'operations_provider_pagination' in provider
+    assert 'operations_provider_rows' in provider
+    assert 'min-w-[980px] !table-fixed' in provider
+    assert 'w-[23%]">Tenant</th>' in provider
+    assert 'w-[28%]">Cluster / Environment</th>' in provider
+    assert 'w-[31%]">Provider / Authority</th>' in provider
+    assert 'w-[18%]">Lifecycle</th>' in provider
+    assert 'colspan="4"' in provider
+    assert 'tenant.provider_state' in provider
+    assert 'tenant.reconciliation_authority' in provider
+    assert 'tenant.provider_key' in provider
+    assert 'tenant.lifecycle_status' in provider
+    assert 'data-kaori-canonical-registry-rows' in read('app/templates/components/table_registry.html')
+
+    # Similar Tenant name/slug pairs are shown once; distinct identifiers
+    # remain visible, so this is display-only.
+    assert 'grant.tenant.slug|lower != grant.tenant.name|lower' in access
+    assert 'title="{{ grant.tenant.slug }}"' in access
+    assert 'grant.tenant.name' in access
+    assert 'grant.reconciliation_status' in access
+    assert "registry_ui.footer('tenant.operations'" in access
+
+
+def test_allocation_change_all_title_info_tips_are_adjacent_not_corner_actions() -> None:
+    """#1179: mirror the canonical Allocation Change heading grammar."""
+    templates = (
+        ('_allocation_change.html', 'Allocation Change', 'namespace-allocation-change-tip'),
+        ('_allocation_cutover.html', 'Adopted Native Governance Cutover', 'allocation-cutover-tip'),
+        ('_capsule_tenant_quota_cutover.html', 'Capsule Tenant Quota Governance', 'capsule-tenant-quota-tip'),
+        (
+            '_capsule_shared_allocation_cutover.html',
+            'Capsule Shared Allocation Governance',
+            'capsule-shared-cutover-tip',
+        ),
+    )
+    for filename, title, tip_id in templates:
+        template = read('app/templates/kubernetes/tenant/partials/' + filename)
+        header = template.split('<header', 1)[1].split('</header>', 1)[0]
+        assert 'info_tip.render(' in header, filename
+        assert header.count('info_tip.render(') == 1, filename
+        assert header.count(tip_id) == 1, filename
+        assert 'inline-flex' in header, filename
+        assert "placement='right'" in header, filename
+        assert header.index(title) < header.index('info_tip.render('), filename
+        # The header tip must be inside the title's adjacent wrapper, before any badge.
+        assert 'items-center gap-1.5' in header, filename
+        if filename != '_allocation_change.html':
+            assert header.index('info_tip.render(') < header.index('table_label.special_label'), filename
+            assert 'items-start justify-between gap-4' not in header, filename
+        assert template.count('name="csrf_token"') >= 1, filename
+        assert template.count('type="submit"') >= 1, filename
+
+
+def test_adopted_native_cutover_reuses_committed_allocation_comparison() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_cutover.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    Environment(autoescape=True).parse(template)
+
+    assert 'Adopted Native Governance Cutover' in template
+    assert 'Adopted Baseline · Observed' in template
+    assert 'KAORI Managed · Only after verified cutover' in template
+    assert 'Managed Contract Comparison' in template
+    assert 'Change Highlights' in template
+    assert "('current', 'Observed Baseline', 'Adopted · Provider evidence')" in template
+    assert "('proposed', 'Proposed Governed Contract', 'Pending · Explicit cutover')" in template
+    for key in ('requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory', 'pods', 'requests.storage'):
+        assert f"'{key}'" in template
+    assert "('Min PVC Size', 'min')" in template
+    assert "('Max PVC Size', 'max')" in template
+    assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
+    assert re.search(r'data-tenant-allocation-highlight-count\s+aria-live="polite"', template)
+    assert 'data-tenant-allocation-highlight-item' in template
+    assert 'data-tenant-allocation-change-namespace' in template
+    assert 'data-tenant-allocation-change-profile' in template
+    assert "url_for('tenant.cutover_namespace_allocation_route')" in template
+    assert 'namespace_cutover_state.get(item.id|string)' in template
+    assert 'not can_manage or not namespace_cutover_supported or not profiles' in template
+    assert 'name="csrf_token"' in template
+    assert 'Cut Over Governance' in template
+    assert 'renderContractPreview(current, proposed)' in script
+    assert 'renderAdvancedComparison(current, proposed' in script
+
+
+def test_allocation_comparison_uses_calm_dual_panels_without_metric_card_stacks() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+
+    Environment(autoescape=True).parse(template)
+    assert 'Managed Contract Comparison' in template
+    assert "('current', 'Current Contract', 'Active · Frozen evidence')" in template
+    assert "('proposed', 'Proposed Contract', 'Pending · Profile intent')" in template
+    assert 'data-tenant-allocation-profile="{{ side }}"' in template
+    assert '[data-tenant-allocation-profile="current"]' in script
+    assert '[data-tenant-allocation-profile="proposed"]' in script
+    assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
+    assert 'data-tenant-allocation-metric-source="{{ source }}"' in template
+    assert 'data-tenant-allocation-metric-key="{{ key }}"' in template
+    assert 'border-b border-outline-subtle py-3' in template
+    assert re.search(r'data-tenant-allocation-highlight-count\s+aria-live="polite"', template)
+    assert re.search(r'data-tenant-allocation-highlight-item\s+hidden', template)
+    assert re.search(r'data-tenant-allocation-highlight-more\s+hidden', template)
+    assert 'data-tenant-allocation-change-summary' not in template
+    assert 'data-tenant-allocation-diff-panel' not in template
+    assert 'view_more_content.render(' not in template
+    assert "form.querySelectorAll('[data-tenant-allocation-metric-side]')" in script
+    assert "if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'" in script
+    assert 'renderContractPreview(current, proposed)' in script
+
+    # Mutating form, permissions and all three original gates remain untouched.
+    assert "url_for('tenant.change_namespace_allocation_route')" in template
+    assert 'name="csrf_token"' in template
+    assert 'data-tenant-allocation-change-namespace' in template
+    assert 'data-tenant-allocation-change-profile' in template
+    assert 'Preflight &amp; Apply' in template
+    assert 'Governance Gates' in template
+    assert 'Capacity Admission' in template
+    assert 'Provider Reconcile' in template
+    assert 'Read-back & Commit' in template
+    assert 'not can_manage or not namespace_allocation_options or not profiles' in template
+
+
+def test_allocation_comparison_preserves_all_sixteen_frozen_and_proposed_dimensions() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    registry = read('app/kubernetes/tenant/registry_context.py')
+
+    headline_dimensions = (
+        ('CPU Requests', 'quota', 'requests.cpu'),
+        ('CPU Limits', 'quota', 'limits.cpu'),
+        ('Memory Requests', 'quota', 'requests.memory'),
+        ('Memory Limits', 'quota', 'limits.memory'),
+        ('Pods', 'quota', 'pods'),
+        ('Total Storage', 'quota', 'requests.storage'),
+    )
+    for label, source, key in headline_dimensions:
+        assert f"('{label}', '{source}', '{key}')" in template
+    assert "('Min PVC Size', 'min')" in template
+    assert "('Max PVC Size', 'max')" in template
+    object_dimensions = (
+        ('PVCs', 'quota', 'persistentvolumeclaims'),
+        ('Services', 'quota', 'services'),
+        ('ConfigMaps', 'quota', 'configmaps'),
+        ('Secrets', 'quota', 'secrets'),
+    )
+    default_dimensions = (
+        ('CPU Request', 'limits', 'default_request.cpu'),
+        ('CPU Limit', 'limits', 'default.cpu'),
+        ('Memory Request', 'limits', 'default_request.memory'),
+        ('Memory Limit', 'limits', 'default.memory'),
+    )
+    for label, source, key in object_dimensions + default_dimensions:
+        assert f"('{label}', '{source}', '{key}')" in template
+
+    assert 'data-tenant-allocation-tech-current="{{ source }}.{{ resource }}"' in template
+    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
+    assert 'const current = namespaces[namespaceSelect?.value] || null' in script
+    assert "profileSelect?.value === 'adopted_baseline' ? current" in script
+    assert 'const after = contractValue(proposed, source, key)' in script
+    assert "return key.split('.').reduce((value, part) => value?.[part], contract.limits)" in script
+    assert 'return contract[source]?.[key] ?? null' in script
+    assert "if (source === 'limits')" in script
+    assert 'boundedQuotaKeys.includes(key)' in script
+    assert "return source === 'storage_policy'" in script
+    assert "'quota': record.allocation_quota_json or {}" in registry
+    assert "'limits': record.allocation_limit_defaults_json or {}" in registry
+    assert "'storage_policy': record.allocation_storage_policy_json or {}" in registry
+    assert "'quota': profile.quota_hard_json or {}" in registry
+    assert "'limits': profile.limit_defaults_json or {}" in registry
+    assert "'storage_policy': getattr(profile, 'storage_policy_json', {}) or {}" in registry
+
+
+def test_allocation_technical_details_are_one_accessible_switch_not_expandables() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+
+    Environment(autoescape=True).parse(template)
+    shared_tabs = read('app/templates/components/technical_category_tabs.html')
+    assert 'Technical Details' in template
+    assert '{% call technical_category_tabs.tablist() %}' in template
+    assert 'role="tablist"' not in template
+    assert 'role="tablist"' in shared_tabs
+    assert 'aria-label="{{ aria_label }}"' in shared_tabs
+    assert 'data-kaori-tab-variant="technical-category-vertical"' in shared_tabs
+    assert 'role="tabpanel"' in template
+    assert 'data-tenant-allocation-detail-tab="{{ key }}"' in template
+    assert 'data-tenant-allocation-detail-panel="{{ key }}"' in template
+    assert 'data-tenant-allocation-detail-panel="advanced"' in template
+    assert "('objects', 'Object Limits', 'boxes', 'ResourceQuota counts')" in template
+    assert "('defaults', 'Container Defaults', 'container', 'LimitRange defaults')" in template
+    assert "('advanced', 'Advanced Controls', 'shield-check', 'Capability evidence')" in template
+    assert 'aria-controls="allocation-detail-panel-{{ key }}"' in template
+    assert "selectDetail('objects')" in script
+    assert "button.setAttribute('aria-selected', String(selected))" in script
+    assert 'button.tabIndex = selected ? 0 : -1' in script
+    assert "button.classList.toggle('border-kaori-primary', selected)" in script
+    assert "button.classList.toggle('bg-kaori-soft', selected)" in script
+    assert "button.classList.toggle('text-kaori-primary', selected)" in script
+    assert "button.classList.toggle('border-transparent', !selected)" in script
+    assert "['ArrowRight', 'ArrowDown'].includes(event.key)" in script
+    assert "['ArrowLeft', 'ArrowUp'].includes(event.key)" in script
+    assert "event.key === 'Home'" in script
+    assert "event.key === 'End'" in script
+    assert 'details class=' not in template
+    assert 'data-tenant-allocation-advanced-empty' in template
+    assert 'No configured Advanced Controls in either contract.' in template
+    assert 'max-w-5xl' not in template
+    assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in template
+    assert 'lg:border-l lg:border-outline-subtle lg:pl-6' in template
+    assert 'aria-orientation="vertical"' in shared_tabs
+    assert 'border-kaori-primary bg-kaori-soft text-kaori-primary' in template
+    assert 'table-fixed text-left text-sm' in template
+    assert 'Current · Frozen' in template
+    assert 'Proposed · Profile' in template
+    assert (
+        "aria-label=\"{{ 'Object Limits' if key == 'objects' else 'Container Defaults' }} current and proposed comparison\""
+        in template
+    )
+    assert 'data-tenant-allocation-tech-row' in template
+    assert 'const differs = !!current && !!proposed && classifyChange(beforeValue, afterValue) !== null' in script
+    assert "cell.classList.toggle('text-kaori-primary', differs)" in script
+    assert "cell.classList.toggle('text-content-primary', !differs)" in script
+    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
+    assert 'This preview never approves or applies changes.' in template
+
+
+def test_allocation_comparison_keeps_advanced_execution_evidence_boundaries() -> None:
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    registry = read('app/kubernetes/tenant/registry_context.py')
+    page = read('app/templates/kubernetes/tenant/namespace_provisioning.html')
+    service = read('app/kubernetes/tenant/service.py')
+
+    assert 'Capability evaluation is not proof of provider execution or read-back.' in template
+    assert 'This preview never approves or applies changes.' in template
+    assert "recorded.get('source_profile_id') != record.resource_profile.public_id" in registry
+    assert "recorded.get('source_profile_version') != record.resource_profile_version" in registry
+    assert "'resource_profile_advanced_controls': RESOURCE_PROFILE_ADVANCED_CONTROLS" in registry
+    assert "'namespace_allocation_advanced_preflight':" in registry
+    assert 'tenant-namespace-allocation-advanced-preflight' in page
+    assert 'advancedPreflight[namespaceId]?.[profileId]' in script
+    assert 'Supported · Preflight' in script
+    assert 'Unavailable · Preflight' in script
+    assert 'Not recorded' in script
+    assert 'Same as current · Not verified' in script
+    assert 'if (list) list.hidden = visible === 0' in script
+    assert 'attachment_controls = _validate_resource_profile_attachment_controls(' in service
+
+
+def test_allocation_highlights_are_bounded_conservative_and_selection_sensitive() -> None:
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+
+    assert 'const parsedQuantity = (raw) => {' in script
+    assert 'const classifyChange = (before, after) => {' in script
+    assert "return 'Now defined'" in script
+    assert "return 'No longer defined'" in script
+    assert "return right > left ? 'Increased' : 'Reduced'" in script
+    assert "return prior === next ? null : 'Changed'" in script
+    assert 'return Number.isFinite(value) ? value : null' in script
+    assert 'const highlightDimensions = [' in script
+    assert "['CPU Limits', 'quota', 'limits.cpu']" in script
+    assert "['Memory Limits', 'quota', 'limits.memory']" in script
+    assert "['Total Storage', 'quota', 'requests.storage']" in script
+    assert re.search(r'const changed =\s*current && proposed\s*\? highlightDimensions\.flatMap', script)
+    assert "form.querySelectorAll('[data-tenant-allocation-highlight-item]')" in script
+    assert 'row.hidden = !diff' in script
+    assert 'const extra = Math.max(0, changed.length - rows.length)' in script
+    assert 'renderContractPreview(current, proposed)' in script
+    assert 'renderAdvancedComparison(current, proposed' in script
+    assert "namespaceSelect?.addEventListener('change'," in script
+    assert "profileSelect?.addEventListener('change', () => renderAllocationChange())" in script
+
+
+def test_allocation_full_width_technical_workspace_and_readable_comparison() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    Environment(autoescape=True).parse(template)
+
+    assert 'lg:grid-cols-[14rem_minmax(0,1fr)]' in template
+    shared_tabs = read('app/templates/components/technical_category_tabs.html')
+    assert 'mx-auto max-w-5xl' not in template
+    assert '{% call technical_category_tabs.tablist() %}' in template
+    assert 'role="tablist"' in shared_tabs
+    assert 'aria-orientation="vertical"' in shared_tabs
+    assert 'data-kaori-technical-category-tabs' in shared_tabs
+    assert 'aria-controls="allocation-detail-panel-{{ key }}"' in template
+    assert 'role="tabpanel"' in template
+    assert 'lg:border-l lg:border-outline-subtle lg:pl-6' in template
+    assert 'w-full min-w-[26rem] table-fixed text-left text-sm' in template
+    assert "('objects', 'Object Limits', 'boxes', 'ResourceQuota counts')" in template
+    assert "('defaults', 'Container Defaults', 'container', 'LimitRange defaults')" in template
+    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
+    assert 'data-tenant-allocation-advanced-row="{{ control_key }}"' in template
+    assert re.search(r'data-tenant-allocation-highlight-item\s+hidden', template)
+    assert 'border-l-2 border-kaori-primary/20 pl-3' in template
+    assert 'data-tenant-allocation-change-namespace' in template
+    assert 'data-tenant-allocation-change-profile' in template
+    assert "['ArrowRight', 'ArrowDown'].includes(event.key)" in script
+    assert "['ArrowLeft', 'ArrowUp'].includes(event.key)" in script
+    assert 'renderContractPreview(current, proposed)' in script
+    assert "cell.classList.toggle('text-kaori-primary', differs)" in script
+    assert 'This preview never approves or applies changes.' in template
+
+
+def test_allocation_change_section_heading_icons_follow_kaori_hierarchy() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/kubernetes/tenant/partials/_allocation_change.html')
+    Environment(autoescape=True).parse(template)
+
+    # Every major section uses the existing 9x9 KAORI Violet soft icon
+    # surface; nested Change Highlights uses an 8x8 icon surface.
+    major_sections = (
+        ('allocation-change-target-heading', 'crosshair'),
+        ('allocation-comparison-heading', 'git-compare-arrows'),
+        ('allocation-change-gates-heading', 'shield-check'),
+    )
+    for heading_id, icon in major_sections:
+        section = template.split(f'aria-labelledby="{heading_id}"', 1)[1]
+        next_heading = section.split('</section>', 1)[0]
+        assert f'data-lucide="{icon}"' in next_heading
+        assert 'h-9 w-9 shrink-0' in next_heading
+        assert 'bg-kaori-soft text-kaori-primary' in next_heading
+        assert 'aria-hidden="true"' in next_heading
+        assert f'id="{heading_id}"' in next_heading
+
+    highlight = template.split('aria-labelledby="allocation-change-highlights-heading"', 1)[1]
+    assert 'data-lucide="chart-no-axes-column-increasing"' in highlight
+    assert 'h-8 w-8 shrink-0' in highlight
+    assert 'id="allocation-change-highlights-heading"' in highlight
+
+    detail = template.split('>Technical Details</h4>', 1)[0].rsplit('<div class="border-t border-outline-subtle', 1)[1]
+    assert 'data-lucide="sliders-horizontal"' in detail
+    assert 'h-9 w-9 shrink-0' in detail
+
+    # Icons convey navigation hierarchy only; the governed contract is still
+    # read from the same frozen and versioned quota bindings.
+    assert 'data-tenant-allocation-metric-side="{{ side }}"' in template
+    assert 'data-tenant-allocation-tech-proposed="{{ source }}.{{ resource }}"' in template
+    assert "url_for('tenant.change_namespace_allocation_route')" in template
+    assert 'name="csrf_token"' in template
+    assert 'Preflight &amp; Apply' in template
+    assert 'grid gap-4 p-4 sm:p-5 lg:grid-cols-2' in template
+    assert '<p class="mt-3 text-sm font-semibold text-content-primary">{{ title }}</p>' in template
+
+
+def test_capacity_operator_limit_exposure_remains_separate_from_request_commitment() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
+    script = read('app/static/js/tenant_resource_profile_presets.js')
+    backend = read('app/kubernetes/tenant/capacity_governance.py')
+    policy = read('app/kubernetes/tenant/capacity_governance_support.py')
+    model = read('app/models/tenant.py')
+    migration = read('migrations/versions/20261013_limit_exposure.py')
+
+    Environment(autoescape=True).parse(form)
+    Environment(autoescape=True).parse(overview)
+
+    for key, default in (
+        ('limit_exposure_mode', 'observe'),
+        ('cpu_limit_ratio', '1.50'),
+        ('memory_limit_ratio', '1.00'),
+    ):
+        assert f'name="{key}"' in form
+        assert f'data-capacity-policy-field="{key}"' in form
+        assert f'data-default-value="{default}"' in form
+        assert f"'{key}':" in policy
+        assert key in model
+        assert key in migration
+
+    assert '<option value="observe">Observe · Planning only</option>' in form
+    assert '<option value="enforce">Enforce · Additional admission gate</option>' in form
+    assert 'tenant-limit-exposure-policy-tip' in form
+    assert 'data-capacity-policy-cluster' in form
+    assert 'name="csrf_token"' in form
+    assert "url_for('tenant.update_capacity_policy_route')" in form
+    assert "const policies = readJson('tenant-capacity-policy-state')" in script
+    assert 'input.value = policy?.[name] ?? fallback' in script
+    assert 'CPU &amp; Memory Limit Exposure' in overview
+    assert 'Maximum declared ResourceQuota limits' in overview
+    assert 'selected.limit_exposure' in overview
+    assert "exposure.display[field ~ '_committed']" in overview
+    assert "exposure.display[field ~ '_threshold']" in overview
+    assert "exposure.mode == 'enforce'" in overview
+    assert "exposure.state == 'Overcommitted'" in overview
+    assert 'Request Commitment above remains the admission baseline.' in overview
+    assert "limit_mode == 'enforce'" in backend
+    assert 'replace_namespace=request.replacement_namespace' in backend
+    assert 'quota_vector_factory=quota_limit_vector' in backend
+    assert 'def _operator_limit_ratio(' in backend
+    assert "down_revision = '20261012_capsule_handback_guard'" in migration

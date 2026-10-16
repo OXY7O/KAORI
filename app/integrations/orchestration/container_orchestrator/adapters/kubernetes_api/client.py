@@ -6,6 +6,7 @@ from tempfile import NamedTemporaryFile
 from kubernetes import client, config
 from kubernetes.client import (
     AppsV1Api,
+    AuthenticationV1Api,
     AuthorizationV1Api,
     CoreV1Api,
     CustomObjectsApi,
@@ -15,6 +16,8 @@ from kubernetes.client import (
     VersionApi,
 )
 
+from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import configure_weak_tls
+
 
 class KubernetesClient:
     def __init__(
@@ -22,9 +25,11 @@ class KubernetesClient:
         kubeconfig_content: str,
         *,
         verify_ssl: bool = True,
+        allow_weak_tls: bool = False,
     ) -> None:
         self.kubeconfig_content = kubeconfig_content
         self.verify_ssl = verify_ssl
+        self.allow_weak_tls = allow_weak_tls
 
     def _load_configuration(
         self,
@@ -64,9 +69,13 @@ class KubernetesClient:
     ) -> client.ApiClient:
         configuration = self._load_configuration()
 
-        return client.ApiClient(
-            configuration=configuration,
+        api_client = client.ApiClient(configuration=configuration)
+        configure_weak_tls(
+            api_client,
+            enabled=self.allow_weak_tls,
+            verify_ssl=self.verify_ssl,
         )
+        return api_client
 
     def core_api(
         self,
@@ -108,6 +117,9 @@ class KubernetesClient:
 
     def version_api(self) -> VersionApi:
         return VersionApi(self._api_client())
+
+    def authentication_api(self) -> AuthenticationV1Api:
+        return AuthenticationV1Api(self._api_client())
 
     def authorization_api(self) -> AuthorizationV1Api:
         return AuthorizationV1Api(self._api_client())

@@ -104,7 +104,25 @@
     </div>
     <div data-alert-intelligence-active-section="{{ payload.tab }}"
          class="bg-surface-card">
-        {% if payload.tab == 'active' %}
+        {% if payload.scope_invalid %}
+            <div class="p-5">
+                {% set blocked_state_icon = "shield-alert" %}
+                {% set blocked_state_label = "Registry Scope Unavailable" %}
+                {% set blocked_state_title = "Select an Active Registry Provider" %}
+                {% set blocked_state_description = "The requested Registry provider is unavailable, disabled, or no longer active. Select a valid provider to view its AlertCases; KAORI will not widen this scope." %}
+                {% set blocked_state_tone = "warning" %}
+                {% include 'components/states/_blocked_state.html' %}
+            </div>
+        {% elif payload.domain == 'registry' and payload.tab == 'routing' %}
+            <div class="p-5">
+                {% set blocked_state_icon = "route-off" %}
+                {% set blocked_state_label = "Routing Not Enabled" %}
+                {% set blocked_state_title = "Registry Notification Routing Is Not Enabled" %}
+                {% set blocked_state_description = "Registry AlertCases can be reviewed here. Notification routing policy and delivery for Registry require separate governed approval; use Kubernetes or Object Storage to manage existing routing policies." %}
+                {% set blocked_state_tone = "warning" %}
+                {% include 'components/states/_blocked_state.html' %}
+            </div>
+        {% elif payload.tab == 'active' %}
             {% include 'intelligence/partials/_alert_ops_active.html' %}
         {% elif payload.tab == 'routing' %}
             {% include 'intelligence/partials/_alert_ops_routing.html' %}

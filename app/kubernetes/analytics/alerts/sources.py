@@ -51,6 +51,54 @@ def build_empty_source_status(
     }
 
 
+def _validated_alertmanager_items(result: object) -> list[dict]:
+    """Only a complete Alertmanager list can prove an observed zero-alert state."""
+    if not isinstance(result, dict):
+        raise ValueError('Alertmanager returned an invalid alert response.')
+    if not result.get('connected'):
+        return []
+    if result.get('error'):
+        raise ValueError('Alertmanager returned inconsistent alert source evidence.')
+    items = result.get('alerts')
+    if not isinstance(items, list):
+        raise ValueError('Alertmanager did not return an alerts list.')
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError('Alertmanager returned a malformed alert record.')
+        labels = item.get('labels', {})
+        if (
+            not isinstance(labels, dict)
+            or not str(item.get('alertname') or item.get('name') or labels.get('alertname') or '').strip()
+        ):
+            raise ValueError('Alertmanager returned an alert without valid identity.')
+    return items
+
+
+def _validated_metrics_source_items(result: object) -> list[dict]:
+    """Reject partial Prometheus responses rather than fabricating no alerts."""
+    if not isinstance(result, dict) or result.get('error') or result.get('status', 'success') != 'success':
+        raise ValueError('Metrics Source returned an invalid alert query response.')
+    data = result.get('data')
+    if not isinstance(data, dict) or data.get('resultType', 'vector') != 'vector':
+        raise ValueError('Metrics Source did not return vector alert evidence.')
+    items = data.get('result')
+    if not isinstance(items, list):
+        raise ValueError('Metrics Source did not return an alert result list.')
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError('Metrics Source returned a malformed alert series.')
+        metric = item.get('metric')
+        value = item.get('value')
+        if (
+            not isinstance(metric, dict)
+            or not str(metric.get('alertname') or '').strip()
+            or not isinstance(value, (list, tuple))
+            or len(value) < 2
+        ):
+            raise ValueError('Metrics Source returned incomplete alert series evidence.')
+    return items
+
+
 def load_alertmanager_alerts(
     *,
     cluster: Cluster,
@@ -64,9 +112,8 @@ def load_alertmanager_alerts(
 
         elapsed_ms = int((perf_counter() - started_at) * 1000)
 
-        alerts = deduplicate_alerts(
-            normalize_alertmanager_item(item) for item in result.get('alerts', []) if isinstance(item, dict)
-        )
+        items = _validated_alertmanager_items(result)
+        alerts = deduplicate_alerts(normalize_alertmanager_item(item) for item in items)
 
         status = get_alertmanager_status(
             cluster_id=cluster.id,
@@ -153,13 +200,8 @@ def load_metrics_source_alerts(
         result = service.instant_query(ACTIVE_ALERT_STATE_QUERY)
         elapsed_ms = max(int((perf_counter() - started_at) * 1000), 0)
 
-        raw_items = result.get('data', {}).get('result', [])
-        if not isinstance(raw_items, list):
-            raw_items = []
-
-        alerts = deduplicate_alerts(
-            normalize_metrics_source_alert(item) for item in raw_items if isinstance(item, dict)
-        )
+        raw_items = _validated_metrics_source_items(result)
+        alerts = deduplicate_alerts(normalize_metrics_source_alert(item) for item in raw_items)
 
         return alerts, {
             'source': 'metrics_source',

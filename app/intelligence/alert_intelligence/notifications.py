@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlencode
 
 from flask import current_app
+from sqlalchemy import and_, exists, literal, or_
 
 from app.extensions.db import db
 from app.integrations.delivery.notification_channels.contracts import NotificationEvent, NotificationMessage
@@ -37,19 +39,60 @@ def dispatch_case_notifications() -> dict[str, int]:
     """Dispatch recommendation-origin firing/repeat/resolved notifications from durable alert cases."""
 
     stats = {'cases': 0, 'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 0}
-    cases = AlertCase.query.filter_by(source_type='recommendation').order_by(AlertCase.id.asc()).all()
-    for case in cases:
-        stats['cases'] += 1
-        if case.source_state == 'firing' and case.workflow_state != 'closed':
-            result = _dispatch_firing(case)
-        elif case.source_state == 'resolved' and case.workflow_state == 'closed':
-            result = _dispatch_resolved(case)
-        else:
-            continue
-        stats['firing'] += result['firing']
-        stats['resolved'] += result['resolved']
-        stats['failed'] += result['failed']
-        stats['skipped'] += result['skipped']
+    # Only active firing cases and unresolved closing deliveries are dispatch
+    # candidates. Keyset pages prevent years of closed cases being hydrated.
+    event_key = literal('alert-case:') + AlertCase.public_id + literal(':resolved:final')
+    failed_resolved = exists().where(
+        and_(
+            NotificationDelivery.event_key == event_key,
+            NotificationDelivery.event_type == 'alert_ops.resolved',
+            NotificationDelivery.status.in_(('failed', 'queued')),
+        )
+    )
+    # A closed case without any successfully delivered firing event has no
+    # eligible resolved destination, so it must not be scanned forever.
+    firing_prefix = literal('alert-case:') + AlertCase.public_id + literal(':firing:%')
+    had_successful_firing = exists().where(
+        and_(
+            NotificationDelivery.event_key.like(firing_prefix),
+            NotificationDelivery.event_type == 'alert_ops.firing',
+            NotificationDelivery.status == 'sent',
+        )
+    )
+    last_id = 0
+    while True:
+        cases = (
+            AlertCase.query.filter(
+                AlertCase.id > last_id,
+                AlertCase.source_type == 'recommendation',
+                or_(
+                    and_(AlertCase.source_state == 'firing', AlertCase.workflow_state != 'closed'),
+                    and_(
+                        AlertCase.source_state == 'resolved',
+                        AlertCase.workflow_state == 'closed',
+                        AlertCase.domain != 'registry',
+                        had_successful_firing,
+                        or_(AlertCase.last_resolved_notified_at.is_(None), failed_resolved),
+                    ),
+                ),
+            )
+            .order_by(AlertCase.id.asc())
+            .limit(200)
+            .all()
+        )
+        if not cases:
+            break
+        for case in cases:
+            stats['cases'] += 1
+            if case.source_state == 'firing':
+                result = _dispatch_firing(case)
+            else:
+                result = _dispatch_resolved(case)
+            stats['firing'] += result['firing']
+            stats['resolved'] += result['resolved']
+            stats['failed'] += result['failed']
+            stats['skipped'] += result['skipped']
+        last_id = int(cases[-1].id)
     return stats
 
 
@@ -155,29 +198,65 @@ def _severity_escalation_due(case: AlertCase) -> bool:
     return last is None or _aware(last) < _aware(case.severity_changed_at)
 
 
+def _pending_resolved_channel_ids(
+    firing_channels: dict[int, bool],
+    delivered_channel_ids: set[int],
+) -> list[int]:
+    """Per-channel idempotency. One sent destination must not strand retries."""
+    return sorted(
+        channel_id
+        for channel_id, send_resolved in firing_channels.items()
+        if send_resolved and channel_id not in delivered_channel_ids
+    )
+
+
 def _dispatch_resolved(case: AlertCase) -> dict[str, int]:
     stats = {'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 0}
-    if case.last_resolved_notified_at is not None:
+    if case.domain == 'registry':
         stats['skipped'] += 1
         return stats
     firing_channels = _successful_firing_channels(case)
     if not firing_channels:
         stats['skipped'] += 1
         return stats
-    successful = 0
-    for channel_id, route_allows_resolved in firing_channels.items():
-        if not route_allows_resolved:
-            continue
-        result = _deliver_case_event(case, channel_id=channel_id, event_state='resolved', sequence='final')
-        successful += int(result['successful'])
+    delivered = _successful_resolved_channels(case)
+    pending = _pending_resolved_channel_ids(firing_channels, delivered)
+    for channel_id in pending:
+        result = _deliver_case_event(
+            case,
+            channel_id=channel_id,
+            event_state='resolved',
+            sequence='final',
+        )
+        stats['resolved'] += int(result['successful'])
         stats['failed'] += int(result['failed'])
         stats['skipped'] += int(result['skipped'])
-    if successful:
-        case.last_resolved_notified_at = datetime.now(UTC)
-        _timeline(case, 'resolved_notified', f'Resolved notification delivered to {successful} channel(s).')
-        db.session.commit()
-        stats['resolved'] += successful
+
+    expected = {key for key, enabled in firing_channels.items() if enabled}
+    # The case-level marker means all *eligible* destinations have succeeded,
+    # never merely that one destination returned sent.
+    if expected and expected.issubset(delivered | _successful_resolved_channels(case)):
+        if case.last_resolved_notified_at is None:
+            case.last_resolved_notified_at = datetime.now(UTC)
+            _timeline(case, 'resolved_notified', f'Resolved notification delivered to {len(expected)} channel(s).')
+            db.session.commit()
+    elif not pending:
+        stats['skipped'] += 1
     return stats
+
+
+def _successful_resolved_channels(case: AlertCase) -> set[int]:
+    event_key = f'alert-case:{case.public_id}:resolved:final'
+    rows = (
+        NotificationDelivery.query.filter(
+            NotificationDelivery.event_key == event_key,
+            NotificationDelivery.event_type == 'alert_ops.resolved',
+            NotificationDelivery.status == 'sent',
+        )
+        .with_entities(NotificationDelivery.channel_id)
+        .all()
+    )
+    return {int(row[0]) for row in rows}
 
 
 def _deliver_case_event(
@@ -192,7 +271,9 @@ def _deliver_case_event(
     if channel is None:
         return {'successful': 0, 'failed': 0, 'skipped': 1}
     action_tab = 'resolved' if event_state == 'resolved' else 'active'
-    action_path = f'/intelligence/alert-intelligence?tab={action_tab}&case={case.public_id}'
+    action_path = '/intelligence/alert-intelligence?' + urlencode(
+        {'tab': action_tab, 'domain': case.domain, 'asset': case.asset_key, 'case': case.public_id}
+    )
     action_url = _notification_action_url(action_path)
     title, body, content_format = render_case_message(
         case,

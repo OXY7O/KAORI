@@ -5,7 +5,7 @@ from typing import Any, cast
 from celery.exceptions import CeleryError
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import load_only
 
 from app.common.analytics.metrics.contracts import MetricPoint
 from app.common.analytics.params import get_allowed_time_ranges, get_selected_time_range
@@ -84,10 +84,16 @@ FORECAST_HISTORY_WINDOWS = (
 
 
 def _systems() -> list[ObjectStorageSystem]:
+    # Scope selector identity only; worker-owned bucket evidence stays in committed
+    # Analytics snapshots and must not be eager-loaded for every page/HTMX GET.
     return list(
         ObjectStorageSystem.query.options(
-            selectinload(ObjectStorageSystem.buckets),
-        ).order_by(ObjectStorageSystem.name.asc())
+            load_only(
+                ObjectStorageSystem.id,
+                ObjectStorageSystem.name,
+                ObjectStorageSystem.inventory_observed_at,
+            )
+        ).order_by(ObjectStorageSystem.name.asc(), ObjectStorageSystem.id.asc())
     )
 
 
@@ -622,10 +628,16 @@ def _attach_committed_analytics_snapshot(
     *,
     system: ObjectStorageSystem,
     time_range: str,
+    committed_snapshot: tuple[dict[str, Any] | None, dict[str, Any]] | None = None,
 ) -> dict[str, Any] | None:
-    payload, state = read_analytics_snapshot(system_id=system.id, time_range=time_range)
+    # Reports pin a single snapshot across sections and never enqueue a refresh.
+    payload, state = (
+        committed_snapshot
+        if committed_snapshot is not None
+        else read_analytics_snapshot(system_id=system.id, time_range=time_range)
+    )
     state = {**state, 'dispatch_error': None, 'refresh_dispatched': False}
-    if payload is None or state.get('stale'):
+    if committed_snapshot is None and (payload is None or state.get('stale')):
         dispatched, dispatch_error = _queue_analytics_snapshot_refresh(system=system, time_range=time_range)
         state['refresh_dispatched'] = dispatched
         state['dispatch_error'] = dispatch_error
@@ -677,7 +689,12 @@ def _apply_alert_snapshot_context(
     context['alerts_degraded'] = not (bool(alert_stream.get('connected')) and metrics_operational)
 
 
-def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict[str, Any]:
+def get_object_storage_analytics_context(
+    page_key: str,
+    query_args: Any,
+    *,
+    committed_snapshot: tuple[dict[str, Any] | None, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     context, system, time_range = _base_context(page_key, query_args)
     if system is None:
         context['dependency_blocker'] = system_required_blocker()
@@ -686,7 +703,9 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         context['dependency_blocker'] = inventory_required_blocker(system)
         return context
 
-    payload = _attach_committed_analytics_snapshot(context, system=system, time_range=time_range)
+    payload = _attach_committed_analytics_snapshot(
+        context, system=system, time_range=time_range, committed_snapshot=committed_snapshot
+    )
     if payload is None:
         return context
 
@@ -706,7 +725,7 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
             detail=f'Committed analytics snapshot does not contain the {page_key} dataset.',
         )
         return context
-    context['metrics'] = metrics
+    context['metrics'] = dict(metrics)
 
     if page_key == 'overview':
         context['overview_alerts'] = build_overview_alert_summary(

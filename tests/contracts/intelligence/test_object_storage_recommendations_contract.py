@@ -14,7 +14,10 @@ def test_recommendations_support_object_storage_without_minio_specific_workspace
     assert "{'value': 'object_storage', 'label': 'Object Storage'}" in presentation
     assert "{'value': 'object_storage_bucket', 'label': 'Object Storage Bucket'}" in presentation
     assert "{'value': 'object_storage_inventory', 'label': 'Object Storage Inventory'}" in presentation
-    assert 'build_object_storage_recommendation_findings(rules)' in service
+    assert "if any(key.startswith('object_storage.') for key in rules):" in service
+    assert "collect('Object Storage', build_object_storage_recommendation_findings)" in service
+    assert 'findings.extend(evaluator(rules))' in service
+    assert 'except SQLAlchemyError:' in service
     assert 'ObjectStorageSystem.query.options(' in evaluator
     assert 'ObjectStorageForecastSnapshot.query.filter_by(' in evaluator
     assert "provider_key != 'minio'" in evaluator

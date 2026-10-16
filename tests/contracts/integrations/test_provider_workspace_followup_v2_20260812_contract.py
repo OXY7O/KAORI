@@ -88,8 +88,16 @@ def test_validation_operational_gate_copy_is_compact_for_every_provider() -> Non
     combined = '\n'.join(providers)
 
     assert 'Resolve required API or RBAC gaps.' in combined
-    assert 'Full Validation owns API and RBAC evidence; Runtime Refresh owns live API health.' in combined
-    assert 'Revalidate after Kubernetes upgrades, served-API changes, or RBAC policy changes.' in combined
+    assert 'Full Validation provides API and RBAC evidence;' in providers[0]
+    assert 'Runtime Refresh monitors live Kubernetes API health' in providers[0]
+    for provider in providers[1:3]:
+        assert 'Full Validation owns core APIs' in provider
+        assert 'bindings own consumer evidence' in provider
+        assert 'Runtime Refresh owns live health.' in provider
+    assert 'Full Validation owns S3 capabilities;' in providers[3]
+    assert 'Inventory Sync owns assets; bindings own consumer evidence.' in providers[3]
+    assert 'Revalidate the connection after Kubernetes version upgrades' in providers[0]
+    assert 'served-API changes, or updates to cluster RBAC policies.' in providers[0]
     assert 'Core Metrics Source APIs are usable.' in combined
     assert 'Core Alertmanager APIs are usable.' in combined
     assert 'Required MinIO S3 contracts are usable.' in combined

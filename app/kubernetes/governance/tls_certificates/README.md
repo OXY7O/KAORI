@@ -108,3 +108,20 @@ The final Governance release boundary is reviewed through the KAORI L0–L7 stra
 - **L7 End-to-End Smoke:** real Flask/session/layout TLS Governance smoke with external infrastructure isolated.
 
 Kubernetes/provider semantics remain worker/integration concerns; deterministic E2E smoke does not require a live Kubernetes cluster.
+
+
+## TLS worker collection safety (#1325)
+
+TLS Secret and Ingress inventory enumeration uses complete, bounded Kubernetes
+LIST continuation pages (100 objects per page, 10-second per-request timeout,
+100-page cap). A malformed page, repeated continuation token, or exhausted page
+budget is a collection failure, never a successfully collected empty snapshot.
+Secret failure preserves the previous committed certificate inventory.
+Ingress failure is recorded independently as unavailable coverage mapping.
+
+Only `tls.crt` is decoded for certificate metadata. The worker scrubs `data`
+and `string_data` on every returned Secret object, including unrelated Secret
+types, in a `finally` block before fetching the next page. Raw Secret objects
+are not retained in normalized results or audit/job metadata. The provider
+still transmits Secret payloads for LIST; metadata-only discovery requires a
+separate feasibility and permission review.

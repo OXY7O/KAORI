@@ -21,7 +21,7 @@ def record_automatic_job_event(
     metadata: dict[str, Any] | None = None,
     commit: bool = True,
 ) -> None:
-    """Write an automatic job event to Activity Audit without creating notifications."""
+    """Record scheduled-job administrative AuditEvent; no Activity Audit Notification is created."""
     if not is_automatic_execution(job):
         return
     event = AuditEvent()

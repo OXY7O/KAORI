@@ -171,6 +171,9 @@ KUBERNETES_ANALYTICS_HEROES = (
 )
 OBJECT_STORAGE_ANALYTICS_HERO = TEMPLATES / 'storage' / 'object_storage' / 'analytics' / 'partials' / '_hero.html'
 OBJECT_STORAGE_ANALYTICS_PAGES = ROOT / 'app' / 'storage' / 'object_storage' / 'analytics' / 'pages.py'
+REGISTRY_ANALYTICS_HERO = TEMPLATES / 'artifact_registry' / 'analytics.html'
+REGISTRY_ANALYTICS_PAGES = ROOT / 'app' / 'artifact_registry' / 'presentation_analytics.py'
+REGISTRY_ANALYTICS_PAGE_KEYS = {'overview', 'growth', 'capacity', 'usage', 'risk', 'governance', 'alerts', 'insights'}
 OBJECT_STORAGE_ANALYTICS_PAGE_KEYS = {'overview', 'capacity', 'performance', 'forecast', 'top_consumers', 'alerts'}
 SETTINGS_GENERAL_HERO = TEMPLATES / 'settings' / 'general' / 'partials' / '_hero.html'
 SETTINGS_ACCOUNT_HERO = TEMPLATES / 'settings' / 'account' / 'partials' / '_hero.html'
@@ -490,6 +493,8 @@ def _has_registered_dynamic_expression_resolver(path: Path, body: str) -> bool:
         and normalized == '{{ payload.page_subtitle }}'
         or path == OBJECT_STORAGE_ANALYTICS_HERO
         and normalized == '{{ page.description }}'
+        or path == REGISTRY_ANALYTICS_HERO
+        and normalized == '{{ analytics.page_description }}'
     )
 
 
@@ -764,6 +769,33 @@ def _object_storage_analytics_descriptions() -> dict[str, str]:
     return descriptions
 
 
+def _registry_analytics_descriptions() -> dict[str, str]:
+    """Audit every committed Registry Analytics Hero description from its source catalog."""
+    tree = ast.parse(_read(REGISTRY_ANALYTICS_PAGES), filename=str(REGISTRY_ANALYTICS_PAGES))
+    descriptions: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(
+            isinstance(target, ast.Name) and target.id == '_REGISTRY_ANALYTICS_PAGE_DETAILS' for target in node.targets
+        ):
+            continue
+        if not isinstance(node.value, ast.Dict):
+            raise AssertionError('Registry Analytics page details must remain a static dictionary')
+        for key_node, detail in zip(node.value.keys, node.value.values, strict=True):
+            if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+                raise AssertionError('Registry Analytics page keys must remain static strings')
+            key = key_node.value
+            if key not in REGISTRY_ANALYTICS_PAGE_KEYS or key in descriptions:
+                raise AssertionError(f'Registry Analytics unexpected or duplicate page key: {key}')
+            if not isinstance(detail, ast.Tuple) or len(detail.elts) != 3:
+                raise AssertionError(f'Registry Analytics {key}: static title, description, icon required')
+            descriptions[key] = _static_string(detail.elts[1], owner=f'Registry Analytics {key}')
+    if set(descriptions) != REGISTRY_ANALYTICS_PAGE_KEYS:
+        raise AssertionError('Registry Analytics description catalog must cover all eight pages')
+    return {f'Registry Analytics {key}': value for key, value in descriptions.items()}
+
+
 def _materialization_route_descriptions() -> dict[str, str]:
     descriptions: dict[str, str] = {}
     for path in sorted(KUBERNETES_ANALYTICS_ROUTES.rglob('routes.py')):
@@ -842,6 +874,7 @@ def _verify_description_budgets(primitive_shells: list[Path], profile_templates:
     descriptions.update(_reports_unavailable_descriptions())
     descriptions.update(_reports_page_subtitle_descriptions())
     descriptions.update(_object_storage_analytics_descriptions())
+    descriptions.update(_registry_analytics_descriptions())
     descriptions.update(_materialization_route_descriptions())
     descriptions.update(_cluster_required_descriptions())
     failures: list[str] = []
@@ -995,6 +1028,65 @@ def _verify_dashboard_profile() -> None:
                 raise AssertionError(f'{relative}: dashboard profile must not assemble {local}')
 
 
+def _verify_registry_blocked_hero_actions() -> None:
+    """Keep Registry prerequisite remediation in the below-Hero blocker."""
+
+    hero = _read(HERO)
+    for token in (
+        'blocked=false, blocked_info=',
+        '{% if blocked %}',
+        'blocked_context_body(eyebrow_label,',
+        '{% else %}',
+        'context_card_body(eyebrow_label,',
+    ):
+        if token not in hero:
+            raise AssertionError(f'Shared Hero context-card blocked contract missing: {token}')
+
+    registry_contexts = {
+        'artifact_registry/partials/_inventory_overview.html': ('inventory.setup.is_blocked', 1),
+        'artifact_registry/partials/_inventory_workspace.html': ('inventory.setup.is_blocked', 1),
+        'artifact_registry/partials/_security_workspace.html': (
+            'security.setup_blocked or security.inventory_required',
+            2,
+        ),
+        'artifact_registry/partials/_runtime_workspace.html': ('runtime.setup.is_blocked', 1),
+        'artifact_registry/partials/_governance_workspace.html': ('governance.setup.is_blocked', 1),
+        'artifact_registry/analytics.html': ('analytics.setup.is_blocked', 1),
+    }
+    for relative, (predicate, expected_count) in registry_contexts.items():
+        source = _read(TEMPLATES / relative)
+        calls = re.findall(r'page_hero\.context_card\((.*?)\)\s*}}', source, re.DOTALL)
+        if len(calls) != expected_count:
+            raise AssertionError(f'{relative}: expected {expected_count} Hero context-card calls, got {len(calls)}')
+        for call in calls:
+            if f'blocked={predicate}' not in call or 'blocked_info=' not in call:
+                raise AssertionError(
+                    f'{relative}: each Hero context must delegate blocked state to the shared renderer'
+                )
+
+    # Ensure an added Registry consumer cannot bypass this verifier.
+    for path in (TEMPLATES / 'artifact_registry').rglob('*.html'):
+        source = _read(path)
+        if (
+            'page_hero.context_card(' in source
+            and 'artifact_registry/components/_setup_blocker.html' in source
+            and str(path.relative_to(TEMPLATES)) not in registry_contexts
+        ):
+            raise AssertionError(f'{path.relative_to(ROOT)}: unregistered blocked Hero context')
+
+    blocker = _read(TEMPLATES / 'artifact_registry/components/_setup_blocker.html')
+    if 'components/provider_prerequisite/_setup_blocker.html' not in blocker:
+        raise AssertionError('Registry setup blocker must reuse canonical provider prerequisite')
+
+    overview = _read(TEMPLATES / 'artifact_registry/partials/_overview_hero.html')
+    if "dashboard_state = 'blocked' if overview.setup.is_blocked else 'normal'" not in overview:
+        raise AssertionError('Registry Overview blocked Dashboard reference must remain unchanged')
+
+    standard = _read(ROOT / 'docs/design/components/PROVIDER_PREREQUISITE.md')
+    if 'set `blocked=true`' not in standard:
+        raise AssertionError('Provider prerequisite standard must lock blocked Hero CTA suppression')
+
+
 def verify() -> None:
     hero = _read(HERO)
     standard = _read(STANDARD)
@@ -1114,6 +1206,7 @@ def verify() -> None:
     _verify_dynamic_hero_identity_authorities()
     _verify_dashboard_profile()
     _verify_blocked_context_ownership()
+    _verify_registry_blocked_hero_actions()
     _verify_analytics_metadata_ownership()
     _verify_operational_metadata_state_contract()
 

@@ -47,6 +47,7 @@ provider_implementation = IntegrationImplementation(
     adapter_key='kubernetes_api',
     adapter=runtime_adapter,
     instance_loader=model_loader(KubernetesConnection),
+    record_model=KubernetesConnection,
     canonical_record_loader=canonical_model_loader(KubernetesConnection),
     module_path='app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api',
     detail_url_builder=_detail_url,

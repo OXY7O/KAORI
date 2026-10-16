@@ -79,14 +79,14 @@ def test_factual_field_typography_remains_one_body_scale() -> None:
 
 def test_unified_inventory_sections_explain_their_evidence_scope() -> None:
     descriptions = {
-        'overview': 'Cluster registration, version, and connectivity context.',
-        'namespaces': 'Canonical namespace identity, cluster ownership, lifecycle, and collection context.',
-        'workloads': 'Workload identity, namespace ownership, controller type, age, and snapshot collection context.',
-        'pods': 'Pod identity, namespace ownership, controller resolution, age, and collection timestamps.',
-        'services': 'Service identity, namespace ownership, type, lifecycle age, and collection context.',
-        'ingresses': 'Ingress identity, namespace ownership, class, lifecycle age, and collection context.',
-        'storage': 'Storage resource identity, type, scope, lifecycle age, and committed collection context.',
-        'configuration': 'Configuration object identity, namespace ownership, type, age, and collection context.',
+        'overview': 'Cluster name, version, connection.',
+        'namespaces': 'Identity, lifecycle, snapshot.',
+        'workloads': 'Ownership, type, snapshot.',
+        'pods': 'Pod identity and snapshot.',
+        'services': 'Service type and snapshot.',
+        'ingresses': 'Ingress identity and class.',
+        'storage': 'Storage identity and scope.',
+        'configuration': 'Object identity and snapshot.',
     }
 
     overview = read('app/templates/kubernetes/inventory/overview/partials/_cluster_detail_content.html')
@@ -94,9 +94,7 @@ def test_unified_inventory_sections_explain_their_evidence_scope() -> None:
     for resource, filename in DETAILS.items():
         if resource == 'nodes':
             node = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
-            assert (
-                'Canonical node identity, cluster placement, lifecycle age, and committed collection context.' in node
-            )
+            assert "detail.inspector_section('Identity & Snapshot', 'badge-info', 'Node identity and snapshot.'" in node
             continue
         detail = read(f'app/templates/kubernetes/inventory/{resource}/partials/{filename}')
         assert descriptions[resource] in detail, resource

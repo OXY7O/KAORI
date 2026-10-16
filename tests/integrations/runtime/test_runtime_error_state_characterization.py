@@ -165,8 +165,14 @@ def test_runtime_audit_records_retry_transition_semantics(monkeypatch) -> None:
         error_message=None,
     )
 
+    locked_tasks: list[str] = []
+
+    def locked_job(task_id: str):
+        locked_tasks.append(task_id)
+        return job
+
     monkeypatch.setattr(job_service, '_now', lambda: fixed_now)
-    monkeypatch.setattr(job_service, 'get_job_by_task_id', lambda _task_id: job)
+    monkeypatch.setattr(job_service, '_lock_job_by_task_id', locked_job)
     monkeypatch.setattr(job_service.db, 'session', SimpleNamespace(commit=lambda: commits.append(True)))
 
     result = job_service.mark_job_retrying(
@@ -183,4 +189,5 @@ def test_runtime_audit_records_retry_transition_semantics(monkeypatch) -> None:
     assert job.error_message == 'provider timeout'
     assert job.payload_json['_progress']['stage'] == 'Retrying'
     assert job.payload_json['_progress']['updated_at'] == fixed_now.isoformat()
+    assert locked_tasks == ['task-retry']
     assert commits == [True]

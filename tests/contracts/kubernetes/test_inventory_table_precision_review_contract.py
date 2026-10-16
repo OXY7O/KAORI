@@ -1,0 +1,227 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+TEMPLATES = ROOT / 'app/templates/kubernetes/inventory'
+
+
+def read(relative: str) -> str:
+    return (TEMPLATES / relative).read_text(encoding='utf-8')
+
+
+def test_kubernetes_inventory_tables_keep_bounded_columns() -> None:
+    for family in (
+        'storage',
+        'ingresses',
+        'configuration',
+        'pods',
+        'services',
+        'nodes',
+        'namespaces',
+        'workloads',
+    ):
+        content = read(f'{family}/partials/_table_content.html')
+        assert '!table-fixed' in content, family
+        assert 'overflow-x-auto' in content, family
+        assert 'table_ui.title_cell(' in content or 'table_ui.namespace_identity(' in content, family
+
+
+def test_node_identity_columns_are_prioritized_over_short_signal_columns() -> None:
+    node = read('nodes/partials/_table_content.html')
+    expected_percent = {
+        'Node': 26,
+        'Cluster': 22,
+        'Readiness': 11,
+        'Role': 10,
+        'Capacity': 12,
+        'Network': 9,
+        'Details': 10,
+    }
+    assert sum(expected_percent.values()) == 100
+    assert expected_percent['Node'] > expected_percent['Readiness']
+    assert expected_percent['Cluster'] > expected_percent['Capacity']
+    for heading, width in expected_percent.items():
+        assert f'w-[{width}%]' in node.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+
+    assert "table_ui.table_classes('min-w-[74rem] !table-fixed')" in node
+    assert 'overflow-x-auto overscroll-x-contain' in node
+    assert "table_ui.cluster_identity(node.cluster_name, node.cluster_environment, 'w-full min-w-0')" in node
+    assert "table_ui.title_cell(node.node_name, node.identity_supporting, 'server')" in node
+
+
+def test_namespace_widths_prioritize_names_and_preserve_control_pairs() -> None:
+    table = read('namespaces/partials/_table_content.html')
+    distribution = {
+        'Namespace': 24,
+        'Cluster': 21,
+        'Lifecycle': 8,
+        'Resource Controls': 18,
+        'Security Context': 19,
+        'Details': 10,
+    }
+    assert sum(distribution.values()) == 100
+    assert distribution['Namespace'] > distribution['Security Context']
+    assert distribution['Cluster'] > distribution['Resource Controls']
+    for heading, percent in distribution.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{percent}%]' in header
+
+    assert "table_ui.table_classes('min-w-[78rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert table.count('grid-cols-[6rem_minmax(0,1fr)]') == 2
+    assert "table_ui.namespace_identity(namespace.namespace, 'w-full min-w-0')" in table
+    assert "table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment, 'w-full min-w-0')" in table
+
+
+def test_workload_column_widths_prioritize_long_names_and_scope() -> None:
+    table = read('workloads/partials/_table_content.html')
+    widths = {
+        'Workload': 26,
+        'Scope': 23,
+        'Operational State': 14,
+        'Managed Pods': 12,
+        'Update Strategy': 15,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    assert widths['Workload'] > widths['Update Strategy']
+    assert widths['Scope'] > widths['Operational State']
+    for heading, percent in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{percent}%]' in header
+    assert "table_ui.table_classes('min-w-[78rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert 'table_ui.title_cell(workload.name, workload.identity_supporting' in table
+    assert 'table_ui.namespaced_scope_identity(workload.cluster_name' in table
+
+
+def test_storage_and_ingress_keep_full_identity_available_in_title() -> None:
+    storage = read('storage/partials/_table_content.html')
+    ingress = read('ingresses/partials/_table_content.html')
+    assert 'title="{{ item.capacity_secondary }}"' in storage
+    assert 'title="{{ item.binding_secondary }}"' in storage
+    assert 'title="{{ ingress.host }}"' in ingress
+    assert 'title="{{ ingress.address }}"' in ingress
+    assert 'status_indicator_label(ingress.publication_label' in ingress
+
+
+def test_ingress_publication_uses_proportional_space_and_two_level_evidence() -> None:
+    ingress = read('ingresses/partials/_table_content.html')
+    proportions = {'Ingress': 24, 'Scope': 22, 'Publication': 25, 'TLS References': 10, 'Routing': 9, 'Details': 10}
+    assert sum(proportions.values()) == 100
+    assert proportions['Publication'] > proportions['Ingress'] > proportions['Scope']
+    assert min(proportions['Ingress'], proportions['Scope'], proportions['Publication']) > max(
+        proportions['TLS References'], proportions['Routing'], proportions['Details']
+    )
+    for heading, width in (
+        ('Ingress', '24%'),
+        ('Scope', '22%'),
+        ('Publication', '25%'),
+        ('TLS References', '10%'),
+        ('Routing', '9%'),
+        ('Details', '10%'),
+    ):
+        assert f'w-[{width}]">{heading}' in ingress
+
+    assert 'class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1"' in ingress
+    assert 'class="min-w-0 max-w-full truncate text-sm font-semibold text-content-primary"' in ingress
+    assert 'justify-between gap-x-3' not in ingress
+    assert 'title="{{ ingress.host }}"' in ingress
+    assert 'title="{{ ingress.host_supporting }}"' in ingress
+    assert 'title="{{ ingress.address }}"' in ingress
+    assert 'status_indicator_label(ingress.publication_label, ingress.publication_tone)' in ingress
+    assert '{{ ingress.address or "Not Reported" }}' in ingress
+    assert "table_ui.table_classes('min-w-[72rem] !table-fixed')" in ingress
+    assert 'resource_detail_modal.detail_button(ingress.id' in ingress
+
+
+def test_pod_references_use_shared_full_width_evidence_bands() -> None:
+    detail = read('pods/partials/_pod_detail_content.html')
+    assert 'aria-label="Pod Configuration and Storage References"' in detail
+    assert "configuration references exist.', embedded=true)" in detail
+    assert "storage references exist.', embedded=true)" in detail
+    assert 'grid gap-4 border-t border-outline-subtle p-4 lg:grid-cols-2' not in detail
+
+
+def test_pod_columns_prioritize_identity_scope_and_placement() -> None:
+    table = read('pods/partials/_table_content.html')
+    widths = {
+        'Pod': 24,
+        'Scope': 21,
+        'Runtime State': 13,
+        'Placement': 19,
+        'Owner & Restarts': 13,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    assert widths['Pod'] > widths['Placement'] > widths['Runtime State']
+    assert widths['Scope'] > widths['Owner & Restarts']
+    for heading, percent in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{percent}%]' in header
+
+    assert "table_ui.table_classes('min-w-[72rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert 'table_ui.title_cell(pod.name, pod.identity_supporting' in table
+    assert 'table_ui.namespaced_scope_identity(pod.cluster_name' in table
+    assert 'technical_value.render(pod.placement_secondary)' in table
+    assert 'table_label.metadata_label(pod.owner_kind_label)' in table
+    assert 'resource_detail_modal.detail_button(pod.id' in table
+
+
+def test_service_columns_prioritize_long_identity_and_scope() -> None:
+    table = read('services/partials/_table_content.html')
+    widths = {
+        'Service': 27,
+        'Scope': 24,
+        'Access Model': 14,
+        'Port Mapping': 14,
+        'Backend Registration': 11,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    assert widths['Service'] > widths['Scope'] > widths['Access Model']
+    assert widths['Scope'] > widths['Port Mapping'] > widths['Backend Registration']
+    for heading, percent in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{percent}%]' in header
+
+    assert "table_ui.table_classes('min-w-[72rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert 'table_ui.title_cell(service.service_name, service.service_type' in table
+    assert 'table_ui.namespaced_scope_identity(service.cluster_name' in table
+    assert 'technical_value.render(service.access_address)' in table
+    assert 'table_label.status_indicator_label(service.backend.label' in table
+    assert 'resource_detail_modal.detail_button(service.id' in table
+
+
+def test_configuration_columns_prioritize_object_and_scope_with_precise_compact_evidence() -> None:
+    table = read('configuration/partials/_table_content.html')
+    widths = {
+        'Configuration Object': 27,
+        'Scope': 23,
+        'Object Type': 11,
+        'Key Index & Mutation': 15,
+        'Current Pod References': 14,
+        'Details': 10,
+    }
+    assert sum(widths.values()) == 100
+    assert widths['Configuration Object'] > widths['Scope'] > widths['Key Index & Mutation']
+    for heading, width in widths.items():
+        header = table.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+        assert f'w-[{width}%]' in header
+
+    assert "table_ui.table_classes('min-w-[72rem] !table-fixed')" in table
+    assert 'overflow-x-auto overscroll-x-contain' in table
+    assert 'table_ui.title_cell(item.name, item.identity_supporting' in table
+    assert 'table_ui.namespaced_scope_identity(item.cluster_name' in table
+    assert "item.type_supporting if item.type == 'Secret' else 'Values not stored'" in table
+    assert 'title="{{ item.type_supporting }}"' in table
+    assert 'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1' in table
+    assert 'table_label.status_indicator_label(item.mutation_label, item.mutation_tone)' in table
+    assert '{% if item.reference_count is none %}' in table
+    assert "{{ item.reference_count }} {{ 'Pod' if item.reference_count == 1 else 'Pods' }}" in table
+    assert 'In committed snapshot' in table
+    assert 'title="{{ item.reference_label }}"' in table
+    assert 'title="{{ item.reference_supporting }}"' in table
+    assert 'resource_detail_modal.detail_button(item.id' in table
+    assert 'hx-target="#configuration-table-content"' in table

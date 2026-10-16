@@ -25,6 +25,35 @@ def register_blueprints(app: Flask) -> None:
     from app.kubernetes.governance.routes import governance_bp
     from app.kubernetes.inventory.routes import inventory_bp
     from app.kubernetes.operations.routes import kubernetes_operations_bp
+    from app.kubernetes.tenant.approval_inbox import get_tenant_release_work_inbox
+    from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
+    from app.kubernetes.tenant.capsule_rbac_bootstrap import (
+        bootstrap_missing_capsule_roles,
+        check_capsule_role_bootstrap,
+        latest_capsule_role_bootstrap_evidence,
+    )
+    from app.kubernetes.tenant.native_handoff_dry_run import _read_resource
+    from app.kubernetes.tenant.native_handoff_executor import (
+        latest_native_handoff_execution,
+        native_handoff_execution_history,
+    )
+    from app.kubernetes.tenant.native_handoff_readback import (
+        _latest_native_dry_run,
+        native_handoff_readback_history,
+        verify_external_native_component,
+    )
+    from app.kubernetes.tenant.native_handoff_recovery import readback_proves_handoff_not_started
+    from app.kubernetes.tenant.native_no_transfer_recovery import (
+        _source_history,
+        _verify_original_provider_state,
+        require_authorized_no_transfer_restart,
+    )
+    from app.kubernetes.tenant.native_successor_acceptance import latest_native_successor_acceptance
+    from app.kubernetes.tenant.release_handoff_approval import (
+        _plan_hash,
+        latest_release_handoff_approval,
+        latest_release_handoff_plan,
+    )
     from app.kubernetes.tenant.routes import tenant_bp
     from app.platform_operations import bp as platform_operations_bp
     from app.platform_operations.health import health_bp
@@ -35,6 +64,38 @@ def register_blueprints(app: Flask) -> None:
     from app.storage.object_storage.dashboard.routes import object_storage_dashboard_bp
     from app.storage.object_storage.inventory.routes import object_storage_inventory_bp
     from app.welcome.routes import welcome_bp
+
+    # Compose the Tenant-owned committed approval projection into the shared
+    # Notification Work Inbox once per Flask app; no global mutable registry.
+    app.extensions['kaori_tenant_approval_work_inbox'] = get_tenant_release_work_inbox
+    # Integration presentation invokes Tenant-owned cluster RBAC operations.
+    # Keep this wiring application-scoped to prevent reverse domain imports.
+    app.extensions['kaori_tenant_capsule_rbac_bootstrap'] = {
+        'bootstrap_missing_capsule_roles': bootstrap_missing_capsule_roles,
+        'check_capsule_role_bootstrap': check_capsule_role_bootstrap,
+        'latest_capsule_role_bootstrap_evidence': latest_capsule_role_bootstrap_evidence,
+    }
+
+    # Compose canonical Tenant handoff evidence producers once per Flask app.
+    # Approval and preflight consume them without circular imports or implicit
+    # provider actions; unchanged Tenant services enforce the same safeguards.
+    app.extensions['kaori_tenant_handoff_operations'] = {
+        'build_capsule_handoff_worklist': build_capsule_handoff_worklist,
+        'native_handoff_execution_history': native_handoff_execution_history,
+        'native_handoff_readback_history': native_handoff_readback_history,
+        'readback_proves_handoff_not_started': readback_proves_handoff_not_started,
+        '_source_history': _source_history,
+        '_verify_original_provider_state': _verify_original_provider_state,
+        'require_authorized_no_transfer_restart': require_authorized_no_transfer_restart,
+        '_read_resource': _read_resource,
+        'latest_native_handoff_execution': latest_native_handoff_execution,
+        '_latest_native_dry_run': _latest_native_dry_run,
+        'verify_external_native_component': verify_external_native_component,
+        'latest_native_successor_acceptance': latest_native_successor_acceptance,
+        '_plan_hash': _plan_hash,
+        'latest_release_handoff_approval': latest_release_handoff_approval,
+        'latest_release_handoff_plan': latest_release_handoff_plan,
+    }
 
     for blueprint in (
         auth_bp,

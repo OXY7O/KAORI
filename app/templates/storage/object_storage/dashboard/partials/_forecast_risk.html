@@ -1,4 +1,5 @@
 {% import "components/forecast_projection_chart.html" as forecast_projection_chart %}
+{% import "components/resource_series_legend.html" as resource_series_legend %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/table_label.html" as table_label %}
 {% call operational_section_card.render(
@@ -72,18 +73,41 @@
                                 aria_label='Historical and projected Object Storage utilization') }}
             </div>
             <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {% for label, value, helper in [
-                    ('Current Usage', dashboard.forecast.current_display, dashboard.forecast.current_percent_display ~ ' utilized'),
-                    ('Growth / Day', dashboard.forecast.growth_per_day_display, 'Historical linear growth'),
-                    ('Projected 30d', dashboard.forecast.projected_30d_display, dashboard.forecast.projected_percent_display ~ ' utilized'),
-                    ('Capacity ETA', dashboard.forecast.days_to_capacity_display, dashboard.forecast.sample_count ~ ' history samples')
-                    ] %}
-                    <article class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                        <p class="text-xs text-content-muted">{{ label }}</p>
-                        <p class="mt-1 text-base font-semibold text-content-primary">{{ value }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
-                    </article>
-                {% endfor %}
+                <article class="flex min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-card p-3 sm:col-span-2">
+                    <div class="flex min-w-0 items-center gap-2">
+                        {{ resource_series_legend.swatch("storage") }}
+                        <p class="min-w-0 text-sm font-semibold text-content-primary">Storage</p>
+                    </div>
+                    <div class="mt-1 flex min-w-0 items-center justify-between gap-2">
+                        <p class="min-w-0 text-xs text-content-muted">{{ dashboard.forecast.chart_items[0].trend if dashboard.forecast.chart_items else 'Trend Unavailable' }}</p>
+                        <div class="shrink-0">{{ table_label.status_label(dashboard.forecast.posture.label, dashboard.forecast.posture.tone) }}</div>
+                    </div>
+                    <div class="mt-auto grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 pt-3">
+                        <div class="min-w-0">
+                            <p class="text-xs text-content-muted">Current</p>
+                            <p class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ dashboard.forecast.current_percent_display }}</p>
+                            <p class="mt-1 break-words text-xs text-content-muted">{{ dashboard.forecast.current_display }}</p>
+                        </div>
+                        <i data-lucide="arrow-right"
+                           class="h-4 w-4 shrink-0 self-center text-content-disabled"
+                           aria-hidden="true"></i>
+                        <div class="min-w-0 text-right">
+                            <p class="text-xs text-content-muted">Projected</p>
+                            <p class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ dashboard.forecast.projected_percent_display }}</p>
+                            <p class="mt-1 break-words text-xs text-content-muted">{{ dashboard.forecast.projected_30d_display }}</p>
+                        </div>
+                    </div>
+                </article>
+                <article class="flex min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-card p-3">
+                    <p class="text-xs text-content-muted">Growth / Day</p>
+                    <p class="mt-1 break-words text-base font-semibold tabular-nums text-content-primary">{{ dashboard.forecast.growth_per_day_display }}</p>
+                    <p class="mt-auto pt-2 text-xs leading-5 text-content-muted">Historical linear growth</p>
+                </article>
+                <article class="flex min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-card p-3">
+                    <p class="text-xs text-content-muted">Capacity ETA</p>
+                    <p class="mt-1 break-words text-base font-semibold tabular-nums text-content-primary">{{ dashboard.forecast.days_to_capacity_display }}</p>
+                    <p class="mt-auto pt-2 text-xs leading-5 text-content-muted">{{ dashboard.forecast.sample_count }} history samples</p>
+                </article>
             </div>
         </div>
         <div class="mt-4 flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-4">

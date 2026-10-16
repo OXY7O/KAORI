@@ -83,7 +83,8 @@ def test_analytics_templates_do_not_duplicate_brand_icon_geometry() -> None:
         if template in {SURFACE, ANALYTICS_ROOT / 'components/_record_detail_modal.html'}:
             continue
         source = read(template)
-        if 'bg-kaori-soft text-kaori-primary' in source:
+        # Match a complete brand icon class, not the distinct active-tab text-kaori-primary-dark token.
+        if re.search(r'bg-kaori-soft text-kaori-primary(?![-a-zA-Z0-9])', source):
             violations.append(str(template))
     assert violations == []
 

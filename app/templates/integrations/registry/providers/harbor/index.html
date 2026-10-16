@@ -3,12 +3,12 @@
 {% import "integrations/components/_provider_frontpage.html" as provider_front %}
 {% block title %}Harbor Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
-    {% set posture_status = "Healthy" if stats.total and not stats.attention else ("Attention" if stats.total else "Not Configured") %}
+    {% set posture_status = "Healthy" if stats.active and not stats.attention else ("Attention" if stats.active else ("Inactive" if stats.total else "Not Configured")) %}
     {% set overview_metrics = [
             {"label": "Registered Connections", "value": stats.total, "description": "Reusable Harbor Registry endpoints", "icon": "server-cog"},
-            {"label": "Validated Connections", "value": stats.ready, "description": "Full Validation ready", "icon": "badge-check"},
+            {"label": "Active Ready Connections", "value": stats.ready, "description": "Enabled, active and Full Validation ready", "icon": "badge-check"},
             {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
-            {"label": "Coverage Gaps", "value": stats.uncovered, "description": "Registry instances with partial evidence coverage", "icon": "unlink"}
+            {"label": "Coverage Gaps", "value": stats.uncovered, "description": "Active Registry instances without full operational coverage", "icon": "unlink"}
         ] %}
     <div class="kaori-integration-semantic space-y-6">
         {{ provider_front.hero("package",
@@ -23,14 +23,14 @@
         register_label="Register Connection") }}
         {{ provider_front.overview("package-search",
                 "Harbor Integration Overview",
-                "Register Harbor once; committed Registry inventory, Metrics Source bindings, webhook readiness, and provider validation remain independent.",
+                "Full Coverage combines four independent dimensions: provider API, committed Inventory, Metrics Source, and Webhook. Core readiness is separate.",
                 overview_metrics,
                 "Harbor API v2.0",
                 "Endpoint identity, authentication, compatibility, and required Registry capabilities are validated before operational use.",
                 "Committed Evidence and Consumer Resolution",
-                "KAORI reads committed Registry inventory and resolves Registry operational metrics through validated Metrics Source bindings.",
+                "KAORI uses committed Registry inventory and validated Metrics Source bindings for operational metrics.",
                 "Harbor Remains Authoritative",
-                "Harbor owns repositories, artifacts, native policies, and Registry runtime state; KAORI governs validation, normalization, correlation, and committed evidence.") }}
+                "Harbor owns repositories, artifacts, policies, and runtime; KAORI validates, normalizes, correlates, and commits evidence.") }}
         {% call(tab_name) integration_tabs.render("harbor", active_tab, stats.total, stats.total) %}
             {% if tab_name == "coverage" %}
                 {% include "integrations/registry/providers/harbor/partials/_coverage.html" %}

@@ -148,9 +148,22 @@ def _network_scope(node: NodeInventory) -> str:
     return 'Address Not Reported'
 
 
+def _node_os_family(node: NodeInventory) -> str:
+    """Display only the OS family reported in committed Kubernetes node evidence."""
+    labels = node.labels or {}
+    raw = str(node.operating_system or labels.get('kubernetes.io/os') or '').strip()
+    known_families = {
+        'linux': 'Linux',
+        'windows': 'Windows',
+        'freebsd': 'FreeBSD',
+        'openbsd': 'OpenBSD',
+        'netbsd': 'NetBSD',
+        'darwin': 'Darwin',
+    }
+    return known_families.get(raw.casefold(), raw or 'Not Reported')
+
+
 def _node_table_row(node: NodeInventory, cluster_name: str, cluster_environment: str | None) -> dict[str, Any]:
-    runtime = node.container_runtime or ''
-    runtime_display = runtime.split('://')[0] if '://' in runtime else runtime
     node_status = node.status or 'Unknown'
     memory_display = format_kubernetes_size(node.memory)
     ephemeral_display = format_kubernetes_size(node.ephemeral_storage)
@@ -177,8 +190,7 @@ def _node_table_row(node: NodeInventory, cluster_name: str, cluster_environment:
         'capacity_secondary': (
             f'{ephemeral_display} Ephemeral' if ephemeral_display != '-' else 'Ephemeral storage not reported'
         ),
-        'identity_supporting': ' · '.join(value for value in (node.os_image, runtime_display) if value)
-        or 'Platform details not reported',
+        'identity_supporting': _node_os_family(node),
     }
 
 
@@ -399,12 +411,8 @@ def _capacity_detail(node: NodeInventory) -> dict[str, str]:
 
 def _platform_detail(node: NodeInventory) -> dict[str, str]:
     labels = node.labels or {}
-    operating_system = node.operating_system or labels.get('kubernetes.io/os') or 'Unknown'
-    operating_system_display = (
-        operating_system.title() if operating_system.lower() in {'linux', 'windows'} else operating_system
-    )
     return {
-        'operating_system_display': operating_system_display,
+        'operating_system_display': _node_os_family(node),
         'architecture': node.architecture or labels.get('kubernetes.io/arch') or 'Not Reported',
     }
 

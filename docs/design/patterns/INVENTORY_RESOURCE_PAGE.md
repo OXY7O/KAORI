@@ -94,6 +94,7 @@ All resource template registry entries are rooted at `inventory/kubernetes/<reso
 ## Table and pagination contract
 
 - Use shared `components/table.html` primitives and the Inventory block header.
+- When the server-projected filtered total exists, pass it as `result_count=pagination.total_items` to `inventory_block_header` and render the compact `list-filter` Violet **0 Results / 1 Result / N Results** metadata indicator immediately beside the table title and one existing Info Tip. The badge is informational, not an action or operational-health status. Missing totals render no badge. Counts must follow the current committed scope, active filters, and HTMX workspace refresh, not just the displayed page. This standard also applies to Object Storage and Artifact Registry Inventory via the same shared UI helper.
 - Default page size is **5**; allowed values are **5 / 10 / 25 / 50**.
 - Resource services use SQL pagination through `app.common.pagination.paginate_query`; routes must not materialize all rows and slice them in Python.
 - Namespaced resources use the shared Namespace identity macro.
@@ -116,7 +117,7 @@ The leading resource icon, title, metadata, and primary lifecycle/readiness/coll
 
 The four-column summary strip is a flush, full-width modal band immediately below the resource identity header; it must not use inset outer gutters, rounded card framing, or a detached outer border. The modal summary host owns the band boundary so scrolling evidence does not expose offset vertical framing. Its content remains the alignment reference for the evidence sheet below it. At `xl`, the descriptive rail uses the first quarter of the sheet and the evidence body uses the remaining three quarters. `detail.inventory_band_grid_classes()` owns this geometry and must also be reused by embedded metadata and related-resource collections; page-local fixed rail widths are not permitted.
 
-Technical identifiers that operators frequently transfer into operational tooling may expose the shared icon-only copy control. Kubernetes UID/UID, System UUID, and concrete IP addresses are approved examples. The action must have an accessible name, use the global Clipboard behavior, and disappear for unavailable values.
+Inventory View Details technical values are **read-only and selectable**, including UID, System UUID and concrete IP addresses. Do not render copy buttons, copy icons or clipboard data hooks anywhere in the Kubernetes Inventory modal. The shared `inventory_technical_row`, `inspector_technical_row` and `inventory_fact_grid` renderers ignore legacy `copyable` hints for backward-compatible callers; technical values and explicit unavailable evidence remain visible. The global Clipboard component and copy interactions outside Inventory modals are not modified. Keep Namespace Identity, Access & Security, Object Composition and Resource Controls descriptions compact without adding replacement utility actions.
 
 Dense resource filters use the canonical `Search` field label with a concise domain-specific placeholder. Ingress DNS host actions may open only a concrete declared host using `http` or `https` derived from committed TLS declaration. Wildcard host declarations remain reference-only, and a direct-open action never implies DNS resolution, reachability, or service health.
 
@@ -145,6 +146,12 @@ Topology reads API Server identity from the canonical `Cluster.kubernetes_connec
 - Topology conditionally loads resource families according to scope/depth and applies its graph/cache/output safeguards. Cluster connection metadata is eager-loaded to avoid resolver/N+1 behavior.
 - Missing or unavailable committed evidence renders a neutral unavailable/unknown state; it does not trigger a live-provider fallback.
 - Synchronization is asynchronous and owns its own retry/failure feedback boundary. Read pages remain available against the last committed generation when collection is not running.
+
+## Inventory table contextual explanations (KAORI shared Info Tip)
+
+When an Inventory table contains terms whose meaning may not be clear at a glance, place exactly **one read-only `components/info_tip.html::render` control beside the table BLOCK TITLE** (e.g., `Node Inventory`, `Namespace Inventory`, or `Artifact Inventory`), not beside any table column heading or row value. Group concise column definitions in the existing Info Tip `items` list. The Namespace Inventory title guide includes **PSA Enforce = Pod Security Admission**, its policy levels and interpretation; the PSA row label remains plain text. The shared Info Tip already supports pointer hover, keyboard focus, click/touch and Escape, and portals its popover outside scrollable tables/HTMX fragments. No parallel JavaScript or page-local hover CSS is allowed.
+
+Apply this across Kubernetes Inventory Overview, Topology Resource List, Nodes, Namespaces, Workloads, Pods, Services, Ingresses, Storage and Configuration plus the Kubernetes TLS Certificate Registry; Object Storage Systems and Buckets & Containers; and Artifact Registry Projects, Repositories and Artifacts. Use existing table block `title_extra`, operational section `header_badge`, or an adjacent heading control for the Topology Resource List; keep header `<th>` and in-cell labels free of help icons. Preserve column count, keyboard focus, one unique tooltip ID per rendered table title, responsive Violet design tokens and default 5-row pagination. Explain the **meaning and evidence boundary** of reported values (for example PSA = Pod Security Admission, quota vs LimitRange, Service endpoints, PV/PVC binding, TLS secret references, Registry pull counts, bucket protection), not presumed health, compliance, or provider state. Missing values remain unknown, never a fabricated zero. Detailed data and source authority stay in the existing on-demand detail modal and committed Inventory snapshots.
 
 ## Accessibility, typography, and visual consistency
 
@@ -199,3 +206,13 @@ L7 End-to-End Smoke
 ```
 
 The final-lock verifier protects AuthZ ordering, committed-snapshot/provider boundaries, canonical Hero/table/modal/pagination composition, Topology database ownership, retired residual helpers/files, documentation ownership, and permanent test evidence.
+
+
+## Effective Cluster Scope (2026-10-11)
+
+Inventory views use one normalized effective Cluster ID for both the resource
+query and the Snapshot Context Bar. An invalid/stale `cluster_id` selects the
+fleet rather than displaying a false empty Snapshot scope. Topology uses the
+normalized graph filter scope for the shared snapshot. A fleet with one member
+remains labeled as fleet scope unless the operator explicitly selects that cluster.
+Page/HTMX interactions preserve existing authorization-before-blocker order.

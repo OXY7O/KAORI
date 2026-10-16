@@ -4,9 +4,11 @@
 
 `components/info_tip.html` is the canonical compact guidance pattern for dense forms and operational controls where permanent helper copy would make the interface unnecessarily tall.
 
-The default trigger is the compact icon-only affordance. In canonical registries, shared status/lifecycle guidance belongs **inline beside the registry title**; do not add separate text actions such as **Status Guide**, **Membership Guide**, or **Group Guide**.
+The default trigger remains compact **icon-only** for field-level and dense inline context. For table/card/section **title-level** guidance, the approved standard is an explicit compact Violet **info + Guide** label immediately beside the title, using `info_tip.render(..., variant='guide')`. This is not a separate header action: reuse the same non-modal popover, content, and event controller. Do not add independent **Status Guide**, **Membership Guide**, or **Group Guide** action buttons.
 
-Text-trigger Info Tips remain an exception for surfaces where an icon-only trigger would be genuinely ambiguous and must reuse the owning surface's existing button primitive rather than introducing page-local styling.
+The Guide trigger follows compact label geometry (`rounded-md`, not a full pill), with a subtle Violet surface, 12px text, a small info glyph and restrained hover/focus treatment. Both Info Tip variants share a restrained `rounded-lg` popover with soft border/elevation, a clear icon-and-title header, 14px readable description and separated supporting rows. Desktop target widths are 384px for icon help and 416px for Guide help; `max-w-[calc(100vw-2rem)]` shrinks either variant inside narrow viewports, and existing max-height/vertical scrolling keeps longer glossaries usable. The shared portal/controller remains authoritative for viewport positioning and dismissal. Reuse KAORI semantic tokens for dark mode; never introduce page-local help styles.
+
+Legacy `button_text` Info Tips remain available for genuinely exceptional use cases. Changing the default `icon` trigger globally is not allowed because field and inline help have different density constraints.
 
 ## Use
 
@@ -25,15 +27,22 @@ Do **not** hide validation errors, destructive confirmation, security incidents,
 
 For genuinely field-specific guidance, the icon trigger may sit inline beside the field label. When two or more controls share the same source, ownership, naming, lifecycle, or selection semantics, prefer **one consolidated Info Tip in the owning form/card/section header** instead of repeating a trigger on each control.
 
+The Namespace Provisioning Allocation Change workspace applies this same
+title-adjacent Info Tip pattern to its Native Allocation Change, Native
+Governance Cutover, Capsule Tenant Quota Governance, and Capsule Shared
+Allocation Governance sections. Capsule status/authority badges remain
+independent of the help trigger; do not position title-level contextual guidance in the
+far-right header action corner.
+
 For a form/card section, place the trigger **immediately beside the section title** so the same visual grammar is used across Tenant, Operations, Governance, Integrations, and future domains. The owning surface must permit visible overflow for the desktop hover preview; do not trap the preview inside an `overflow-hidden` card. Rounded visual containment should be preserved by the card/header geometry rather than by clipping the Info Tip.
 
-For a canonical registry with shared status or lifecycle vocabulary, place one icon Info Tip **beside the registry title** through the shared table-header `title_extra` slot. The registry card opts into visible overflow while the table itself stays inside its dedicated `overflow-x-auto` container. Header actions remain reserved for operational actions such as Clear Filters, Add, Create, or navigation.
+For a canonical registry with shared status or lifecycle vocabulary, place one **Guide label** Info Tip **beside the registry title** through the shared table-header `title_extra` slot. The registry card opts into visible overflow while the table itself stays inside its dedicated `overflow-x-auto` container. Header actions remain reserved for operational actions such as Clear Filters, Add, Create, or navigation.
 
 ## Interaction and responsive behavior
 
 Info Tip uses **one non-modal anchored popover** for every input method.
 
-- **desktop hover** opens the shared popover;
+- **desktop hover** opens the shared popover from the icon or Guide pill;
 - **keyboard focus** opens the same popover;
 - **click/touch** toggles the same popover;
 - **Escape**, outside click, HTMX replacement, resize, or scroll closes it.
@@ -46,7 +55,7 @@ Inactive guidance must not reserve document or table layout space.
 
 ## Content
 
-Use one short title, one concise explanation, and only a few supporting points. Avoid oversized triggers, heavy blue treatment, or floating icons disconnected from context.
+Use one short title, one concise explanation, and only a few supporting points. Render the explanation and supporting points with a consistent readable text hierarchy, soft row separators, wrapping for long values and enough whitespace to scan a glossary without treating each line as a new card. The item content remains domain-owned plain text (no inferred status severity or HTML interpretation). Avoid oversized triggers, heavy blue treatment, or floating icons disconnected from context.
 
 ## Accessibility
 
@@ -66,7 +75,8 @@ The trigger is a real button with `aria-expanded`, `aria-controls`, and `aria-de
             'Ready — Tenant governance is active.',
             'Blocked — the Tenant stays valid while an action fails closed.'
         ],
-        placement='right'
+        placement='right',
+        variant='guide'
     ) }}
 {% endset %}
 
@@ -81,6 +91,10 @@ The trigger is a real button with `aria-expanded`, `aria-controls`, and `aria-de
     title_extra=title_info
 ) }}
 ```
+
+## Rollout boundary
+
+Apply the Guide variant to **title-level** Inventory and registry help (Kubernetes, Object Storage, Artifact Registry, Tenant) without changing field-level triggers or replacing semantic state badges. The tooltip contents are existing domain-owned guidance: the UI component must not invent help instructions, alter provider evidence, or change access policy. Reuse one controller for hover, focus and touch; no new JavaScript dialog or duplicate event listeners.
 
 ## Dense registry boundary
 

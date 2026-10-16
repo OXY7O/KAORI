@@ -30,6 +30,21 @@ class TopologyGraphBuilder:
             self.state.edges,
             self.max_nodes,
         )
+        if self.records.source_totals:
+            # The shallow SQL window is a *candidate* bound. Count omitted
+            # resource types against the exact committed SQL totals, including
+            # nodes whose parent Namespace did not fit the graph window.
+            displayed = {
+                kind: sum(node['data']['type'] == kind for node in nodes) for kind in self.records.source_totals
+            }
+            omitted_by_type = dict(omitted_by_type)
+            for kind, total in self.records.source_totals.items():
+                skipped = max(int(total) - displayed[kind], 0)
+                if skipped:
+                    omitted_by_type[kind] = skipped
+                else:
+                    omitted_by_type.pop(kind, None)
+            omitted_nodes = sum(omitted_by_type.values())
         return self._payload(
             nodes=nodes,
             edges=edges,

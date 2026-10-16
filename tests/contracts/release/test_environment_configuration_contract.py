@@ -74,7 +74,7 @@ def test_environment_contract_uses_canonical_storage_and_public_url_names() -> N
     production = read(APP_ENV)
     assert 'REPORT_STORAGE_BACKEND=s3' in production
     assert 'REPORT_S3_BUCKET=kaori-production' in production
-    assert 'KAORI_PUBLIC_BASE_URL=https://kaori.cloud' in production
+    assert 'KAORI_PUBLIC_BASE_URL=https://change-me.example.com' in production
 
 
 def test_split_environment_contract_verifier_passes() -> None:
@@ -88,6 +88,22 @@ def test_split_environment_contract_verifier_passes() -> None:
 
     assert result.returncode == 0, f'{result.stdout}\n{result.stderr}'
     assert 'PASS — KAORI Environment Contract' in result.stdout
+
+
+def test_devcontainer_tailwind_watcher_starts_only_after_frontend_bootstrap() -> None:
+    import json
+
+    tasks = json.loads(read('.vscode/tasks.json'))['tasks']
+    watchers = [task for task in tasks if task.get('label') == 'KAORI: Watch Tailwind CSS']
+    assert len(watchers) == 1
+
+    watcher = watchers[0]
+    assert watcher['command'] == 'npm run watch-css'
+    assert watcher['isBackground'] is True
+    assert watcher['runOptions']['instanceLimit'] == 1
+    # A folderOpen watcher races npm ci when the named node_modules volume is fresh.
+    assert 'runOn' not in watcher['runOptions']
+    assert 'does **not** run automatically on folder open' in read('docs/RUNNING.md')
 
 
 def test_environment_contract_verifier_is_a_release_gate() -> None:

@@ -1,3 +1,4 @@
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_registry.html" as registry %}
 {% import "components/inventory_asset_card.html" as inventory_asset_card %}
@@ -33,7 +34,9 @@
             ],
             'Open Registry Integrations',
             url_for('integrations.registry'),
-            action_icon='settings-2'
+            action_icon='settings-2',
+            blocked=inventory.setup.is_blocked,
+            blocked_info='Register and validate a Registry provider to collect inventory evidence.'
             ) }}
         </div>
     </section>
@@ -74,11 +77,6 @@
                         'Search the selected committed asset catalog with provider provenance preserved.',
                         'registry-inventory-records-heading',
                         supporting='Current view · ' ~ inventory.resource_label) }}
-            {% set result_badge %}
-                {{ table_label.metadata_label(inventory.total ~ (' Result' if inventory.total == 1 else ' Results') ,
-                icon='list-filter'
-                ) }}
-            {% endset %}
             {% set inventory_header_actions = none %}
             {% if inventory.has_filters %}
                 {% set inventory_header_actions %}
@@ -97,6 +95,28 @@
             {% endif %}
             <section id="artifact-registry-inventory-table"
                      class="{{ table_ui.block_classes() }}">
+                {% set registry_title_tip %}
+                    {% if inventory.resource == 'projects' %}
+                        {{ info_tip.render('registry-inventory-projects-title', 'Projects Inventory Guide', 'Definitions of fields shown in the committed Registry inventory.', items=[
+                                                'Project Visibility: Public projects may be readable without project membership; Private projects require provider-side access. The value is observed provider metadata, not a KAORI access decision.',
+                                                'Project Repositories: Number of repositories observed inside this Registry project in the committed snapshot; not a live provider count.',
+                                                'Project Last Observed: Latest committed inventory observation for this project. A timestamp does not establish current provider health.'
+                                                ], placement='right', variant='guide') }}
+                    {% elif inventory.resource == 'repositories' %}
+                        {{ info_tip.render('registry-inventory-repositories-title', 'Repositories Inventory Guide', 'Definitions of fields shown in the committed Registry inventory.', items=[
+                                                'Repository Artifacts: Count of artifact identities observed for this repository in committed Registry inventory.',
+                                                'Repository Pulls: Provider-reported pull count when available; Not Collected is different from zero downloads.',
+                                                'Repository Last Observed: Latest committed repository observation, not an on-demand Registry request.'
+                                                ], placement='right', variant='guide') }}
+                    {% else %}
+                        {{ info_tip.render('registry-inventory-artifacts-title', 'Artifacts Inventory Guide', 'Definitions of fields shown in the committed Registry inventory.', items=[
+                                                'Artifact Digest: Content-addressed artifact identifier such as sha256. Tags may change, but digest identifies a specific manifest.',
+                                                'Artifact Tags: Human-readable artifact references reported by the Registry provider; an artifact may have multiple tags or none.',
+                                                'Artifact Type: Provider-reported artifact/package format or media type, not a security or compliance classification.',
+                                                'Artifact Last Observed: Latest committed observation of this artifact. It is not proof the artifact is currently present or scanned.'
+                                                ], placement='right', variant='guide') }}
+                    {% endif %}
+                {% endset %}
                 {{ table_ui.inventory_block_header(inventory.resource_icon,
                                 inventory.resource_label ~ ' Inventory',
                                 inventory.resource_description,
@@ -105,7 +125,8 @@
                                 none,
                                 none,
                                 header_actions=inventory_header_actions,
-                                title_extra=result_badge) }}
+                                title_extra=registry_title_tip,
+                                result_count=inventory.total) }}
                 <div id="artifact-registry-inventory-content">
                     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
                         {% call registry.filter_form(

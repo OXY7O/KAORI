@@ -25,13 +25,14 @@
         {% endif %}
     {% endset %}
     {{ table_ui.inventory_block_header('folder-tree',
-        'Namespace Registry',
-        'Committed Namespace ownership, effective Resource Profile snapshot, provider authority, and reconciliation state.',
+        'Namespace Provisioning Registry',
+        'Committed Namespace allocation, ownership, and reconciliation state.',
         loading_id,
         'Refreshing Namespace Registry',
         none,
         none,
-        header_actions=header_actions) }}
+        header_actions=header_actions,
+        result_count=namespace_pagination.total_items) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% call registry_ui.filter_form(
             'tenant.namespace_provisioning',
@@ -87,62 +88,275 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
-            <caption class="sr-only">Committed Tenant Namespace registry.</caption>
+        <table class="{{ table_ui.table_classes('min-w-[1080px] !table-fixed') }}">
+            <caption class="sr-only">Committed Tenant Namespace registry with read-only allocation details.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Tenant / Environment</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Resource Profile</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider</th>
-                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">State</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Namespace</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Tenant / Environment</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[32%]">Allocation</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[15%]">State</th>
+                    <th scope="col"
+                        class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for item in namespaces %}
                     {% set state_tone = 'normal' if item.provisioning_status == 'ready' else ('critical' if item.provisioning_status == 'failed' else 'warning') %}
+                    {% set allocation_evidence = (item.provisioning_evidence_json or {}).get('allocation') or {} %}
+                    {% set allocation_control = (item.provisioning_evidence_json or {}).get('allocation_control_state') or allocation_evidence.get('control_state') %}
+                    {% set provider_mirrored = allocation_control == 'provider_mirrored_policy' %}
+                    {% set adopted_observed = item.ownership_status == 'adopted' and allocation_evidence.get('provenance') == 'adopted_observed' and not provider_mirrored %}
+                    {% set provider_name = item.environment.tenant.provider_key|replace('_', ' ')|title %}
+                    {% set authority_name = item.environment.tenant.reconciliation_authority|replace('_', ' ')|title %}
+                    {% set profile_name = 'Imported Provider Baseline' if adopted_observed else (item.resource_profile.name if item.resource_profile else ('Imported Provider Policy' if provider_mirrored else 'No profile')) %}
+                    {# Match the already-approved Resource Profile Registry display identity;
+                       never change the complete committed name in the detail modal. #}
+                    {% set adopted_prefix = profile_name.startswith('Adopted ') %}
+                    {% set profile_display = profile_name[8:] if adopted_prefix else profile_name %}
+                    {% set profile_display = profile_display|replace(' Baseline · ', ' Baseline ') %}
+                    {% set name_parts = profile_display.rsplit(' · ', 1) %}
+                    {% if name_parts|length == 2 and name_parts[1]|length == 36 and name_parts[1].count('-') == 4 %}
+                        {% set profile_display = name_parts[0] ~ ' · ' ~ name_parts[1][:8] %}
+                    {% endif %}
+                    {% set profile_display = profile_display|truncate(42, True, '…') %}
+                    {% if provider_mirrored %}
+                        {% set control_label = "Provider Mirrored" %}
+                    {% elif adopted_observed and allocation_control != 'control_unavailable' %}
+                        {% set control_label = "Awaiting Takeover" %}
+                    {% elif allocation_control == 'control_unavailable' %}
+                        {% set control_label = "Control Unavailable" %}
+                    {% elif allocation_control == 'kaori_managed' %}
+                        {% set control_label = "KAORI Managed" %}
+                    {% elif allocation_control %}
+                        {% set control_label = allocation_control|replace('_', ' ')|title %}
+                    {% elif adopted_observed %}
+                        {% set control_label = "Observed · Not managed" %}
+                    {% else %}
+                        {% set control_label = none %}
+                    {% endif %}
+                    {% set quota = item.allocation_quota_json or {} %}
+                    {% set limit_defaults = item.allocation_limit_defaults_json or {} %}
+                    {% set storage_policy = item.allocation_storage_policy_json or {} %}
+                    {% set dialog_id = 'tenant-namespace-evidence-' ~ item.id %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_ui.title_cell(item.namespace, item.ownership_status|replace('_', ' ') |title ~ ' ownership', 'folder-tree') }}
+                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
+                            <div class="flex min-w-0 items-center gap-2.5">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="folder-tree" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ item.namespace }}">{{ item.namespace }}</p>
+                                    <div class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                        {{ table_label.status_label(item.ownership_status|replace('_', ' ') |title, 'normal' if item.ownership_status == 'managed' else 'info') }}
+                                        <span class="text-xs tabular-nums text-content-muted">Gen {{ item.generation }}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.name }}</p>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
+                            <p class="min-w-0 truncate text-sm font-semibold text-content-primary"
+                               title="{{ item.environment.tenant.name }}">{{ item.environment.tenant.name }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ item.environment.environment|title }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            {% set allocation_evidence = (item.provisioning_evidence_json or {}).get('allocation') or {} %}
-                            {% set allocation_control = (item.provisioning_evidence_json or {}).get('allocation_control_state') or allocation_evidence.get('control_state') %}
-                            {% set provider_mirrored = allocation_control == 'provider_mirrored_policy' %}
-                            {% set adopted_observed = item.ownership_status == 'adopted' and allocation_evidence.get('provenance') == 'adopted_observed' and not provider_mirrored %}
-                            {% if provider_mirrored %}
-                                <p class="text-sm font-semibold text-content-primary">{{ item.resource_profile.name if item.resource_profile else 'Imported Provider Policy' }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Snapshot v{{ item.resource_profile_version or '—' }} · Capsule generated policy</p>
-                                <div class="mt-2">{{ table_label.special_label('Provider Mirrored', 'info', 'refresh-cw') }}</div>
-                            {% elif adopted_observed %}
-                                <p class="text-sm font-semibold text-content-primary">Imported Provider Baseline</p>
-                                <p class="mt-1 text-xs text-content-muted">
-                                    {{ (allocation_evidence.get("profile_lineage") or {}).get('label') or 'Observed provider allocation' }}
-                                </p>
-                                {% if allocation_control == 'control_unavailable' %}
-                                    <div class="mt-2">{{ table_label.special_label('Control Unavailable', 'warning', 'shield-alert') }}</div>
-                                {% else %}
-                                    <div class="mt-2">{{ table_label.special_label('Awaiting Managed Takeover', 'info', 'clock-3') }}</div>
-                                {% endif %}
-                            {% else %}
-                                <p class="text-sm font-semibold text-content-primary">{{ item.resource_profile.name if item.resource_profile else 'No profile' }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Snapshot v{{ item.resource_profile_version or '—' }}</p>
-                                {% if allocation_control == 'kaori_managed' %}
-                                    <div class="mt-2">{{ table_label.special_label('KAORI Managed', 'normal', 'shield-check') }}</div>
-                                {% endif %}
+                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
+                            <p class="min-w-0 truncate text-sm font-semibold {{ 'text-content-secondary' if profile_name == 'No profile' else 'text-content-primary' }}"
+                               title="{{ profile_name }}">{{ profile_display }}</p>
+                            <p class="mt-1 min-w-0 truncate text-xs text-content-muted"
+                               title="{{ 'Snapshot v' ~ item.resource_profile_version if item.resource_profile_version else 'No pinned snapshot' }} · {{ provider_name }} · {{ authority_name }} authority">
+                                {{ 'Snapshot v' ~ item.resource_profile_version if item.resource_profile_version else 'No pinned snapshot' }}
+                                · {{ provider_name }}
+                            </p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }} min-w-0 align-middle">
+                            {{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}
+                            {% if control_label %}
+                                <p class="mt-1 max-w-full truncate text-xs text-content-muted"
+                                   title="Control: {{ control_label }}">Control: {{ control_label }}</p>
                             {% endif %}
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ item.environment.tenant.provider_key|replace('_', ' ') |title }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ item.environment.tenant.reconciliation_authority|replace('_', ' ') |title }} authority</p>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}
-                            <p class="mt-1 max-w-[280px] text-xs leading-5 text-content-muted">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
+                        <td class="{{ table_ui.cell_classes(action=true) }} align-middle">
+                            <button type="button"
+                                    data-kaori-dialog-open
+                                    data-dialog-target="{{ dialog_id }}"
+                                    aria-haspopup="dialog"
+                                    aria-controls="{{ dialog_id }}"
+                                    aria-label="View Namespace details for {{ item.namespace }} in {{ item.environment.tenant.name }}"
+                                    class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="eye" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                View More
+                            </button>
+                            <dialog id="{{ dialog_id }}"
+                                    data-kaori-native-dialog
+                                    aria-labelledby="{{ dialog_id }}-title"
+                                    aria-describedby="{{ dialog_id }}-description"
+                                    class="kaori-native-dialog m-auto w-[calc(100vw-1.5rem)] max-w-3xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 text-left shadow-2xl sm:w-[calc(100vw-3rem)]">
+                                <section class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col overflow-hidden text-left"
+                                         role="document">
+                                    <header class="flex shrink-0 items-start justify-between gap-4 border-b border-outline-subtle bg-surface-card px-4 py-4 text-left sm:px-6">
+                                        <div class="flex min-w-0 items-start gap-3">
+                                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                                  aria-hidden="true"><i data-lucide="folder-tree" class="h-5 w-5"></i></span>
+                                            <div class="min-w-0">
+                                                <p class="text-xs font-semibold text-kaori-primary">Committed Namespace Evidence</p>
+                                                <h2 id="{{ dialog_id }}-title"
+                                                    class="mt-1 break-words text-lg font-semibold leading-6 text-content-primary">{{ item.namespace }}</h2>
+                                                <p id="{{ dialog_id }}-description"
+                                                   class="mt-1 text-xs leading-5 text-content-muted">
+                                                    {{ item.environment.tenant.name }} · {{ item.environment.environment|title }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button type="button"
+                                                data-kaori-dialog-close
+                                                class="{{ table_ui.action_classes() }} shrink-0"
+                                                aria-label="Close Namespace details">
+                                            <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                                        </button>
+                                    </header>
+                                    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto bg-surface-page p-4 text-left sm:p-5">
+                                        <section aria-label="Namespace identity and authority">
+                                            <dl class="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3 sm:grid-cols-4">
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">State</dt>
+                                                    <dd class="mt-1">
+                                                        {{ table_label.status_label(item.provisioning_status|replace('_', ' ') |title, state_tone) }}
+                                                    </dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Ownership</dt>
+                                                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                                        {{ item.ownership_status|replace('_', ' ') |title }}
+                                                    </dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Provider</dt>
+                                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                                        {{ provider_name }}
+                                                    </dd>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <dt class="text-xs text-content-muted">Authority</dt>
+                                                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">
+                                                        {{ authority_name }}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                        </section>
+                                        <section aria-labelledby="{{ dialog_id }}-allocation-title">
+                                            <h3 id="{{ dialog_id }}-allocation-title"
+                                                class="text-sm font-semibold text-content-primary">Committed Allocation</h3>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">Frozen Namespace ResourceQuota · Not live utilization</p>
+                                            <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-card px-4 py-3">
+                                                <dl class="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+                                                    {% for label, value in [
+                                                        ('CPU Requests', quota.get('requests.cpu')),
+                                                        ('CPU Limits', quota.get('limits.cpu')),
+                                                        ('Memory Requests', quota.get('requests.memory')),
+                                                        ('Memory Limits', quota.get('limits.memory')),
+                                                        ('Pod Slots', quota.get('pods')),
+                                                        ('Logical Storage', quota.get('requests.storage'))
+                                                        ] %}
+                                                        <div class="min-w-0">
+                                                            <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                                            <dd class="mt-1 break-words text-sm font-semibold tabular-nums text-content-primary">
+                                                                {{ value if value is not none else 'Not declared' }}
+                                                            </dd>
+                                                        </div>
+                                                    {% endfor %}
+                                                </dl>
+                                                <div class="mt-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-t border-outline-subtle pt-3">
+                                                    <div class="min-w-0 flex-1">
+                                                        <p class="text-xs text-content-muted">Source Profile</p>
+                                                        <p class="mt-1 break-words text-sm font-medium leading-5 text-content-primary">{{ profile_name }}</p>
+                                                    </div>
+                                                    <div class="min-w-0 sm:text-right">
+                                                        <p class="text-xs text-content-muted">Effective Snapshot</p>
+                                                        <p class="mt-1 text-sm font-semibold text-content-primary">
+                                                            v{{ item.resource_profile_version or '—' }}
+                                                            {% if item.allocation_customized %}· Customized{% endif %}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {% if allocation_control %}
+                                                    <p class="mt-2 break-words text-xs leading-5 text-content-secondary">
+                                                        Control: {{ allocation_control|replace('_', ' ') |title }}
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        </section>
+                                        <section aria-labelledby="{{ dialog_id }}-reconciliation-title">
+                                            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                                                <h3 id="{{ dialog_id }}-reconciliation-title"
+                                                    class="text-sm font-semibold text-content-primary">Reconciliation</h3>
+                                                {% if item.last_reconciled_at %}
+                                                    <p class="text-xs text-content-muted">Last reconciled: {{ item.last_reconciled_at }}</p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="mt-3 border-l-2 border-kaori-primary/30 pl-3 text-left">
+                                                <p class="whitespace-pre-line break-words text-sm leading-6 text-content-secondary">{{ item.provisioning_message or 'Awaiting reconciliation evidence.' }}</p>
+                                                {% if adopted_observed %}
+                                                    <p class="mt-2 text-xs leading-5 text-content-muted">Observed allocation requires an explicit managed takeover.</p>
+                                                {% elif provider_mirrored %}
+                                                    <p class="mt-2 text-xs leading-5 text-content-muted">Capsule policy remains provider-owned and mirrored by KAORI.</p>
+                                                {% endif %}
+                                            </div>
+                                        </section>
+                                        {% if limit_defaults or storage_policy %}
+                                            <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                                                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+                                                    <span class="min-w-0">
+                                                        <span class="block text-sm font-semibold text-content-primary">Quota &amp; LimitRange Details</span>
+                                                        <span class="mt-1 block text-xs text-content-muted">Additional committed storage and container defaults</span>
+                                                    </span>
+                                                    <i data-lucide="chevron-down"
+                                                       class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
+                                                       aria-hidden="true"></i>
+                                                </summary>
+                                                <div class="space-y-4 border-t border-outline-subtle px-4 py-4">
+                                                    {% if storage_policy %}
+                                                        <div>
+                                                            <p class="text-xs font-semibold text-content-secondary">PVC Storage Bounds</p>
+                                                            <dl class="mt-2 grid grid-cols-2 gap-3">
+                                                                {% for label, value in [('Minimum', storage_policy.get('min')), ('Maximum', storage_policy.get('max'))] %}
+                                                                    <div>
+                                                                        <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                                                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                                                            {{ value if value is not none else 'Not declared' }}
+                                                                        </dd>
+                                                                    </div>
+                                                                {% endfor %}
+                                                            </dl>
+                                                        </div>
+                                                    {% endif %}
+                                                    {% if limit_defaults %}
+                                                        <div>
+                                                            <p class="text-xs font-semibold text-content-secondary">Container Defaults</p>
+                                                            <dl class="mt-2 grid grid-cols-2 gap-3">
+                                                                {% for label, value in [
+                                                                    ('CPU Request', (limit_defaults.get('default_request') or {}).get('cpu')),
+                                                                    ('Memory Request', (limit_defaults.get('default_request') or {}).get('memory')),
+                                                                    ('CPU Limit', (limit_defaults.get('default') or {}).get('cpu')),
+                                                                    ('Memory Limit', (limit_defaults.get('default') or {}).get('memory'))
+                                                                    ] %}
+                                                                    <div>
+                                                                        <dt class="text-xs text-content-muted">{{ label }}</dt>
+                                                                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                                                            {{ value if value is not none else 'Not declared' }}
+                                                                        </dd>
+                                                                    </div>
+                                                                {% endfor %}
+                                                            </dl>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </details>
+                                        {% endif %}
+                                    </div>
+                                </section>
+                            </dialog>
                         </td>
                     </tr>
                 {% else %}
@@ -158,15 +372,13 @@
             </tbody>
         </table>
     </div>
-    {% if namespace_pagination.total_items > 0 %}
-        {{ registry_ui.footer('tenant.namespace_provisioning',
-                registry_id,
-                loading_id,
-                namespace_pagination,
-                query_params,
-                namespace_pagination.allowed_per_page,
-                resource_label='Namespaces',
-                rows_aria_label='Namespace rows per page',
-                control_name='tenant-namespace') }}
-    {% endif %}
+    {{ registry_ui.footer('tenant.namespace_provisioning',
+        registry_id,
+        loading_id,
+        namespace_pagination,
+        query_params,
+        namespace_pagination.allowed_per_page,
+        resource_label='Namespaces',
+        rows_aria_label='Namespace rows per page',
+        control_name='tenant-namespace') }}
 </section>

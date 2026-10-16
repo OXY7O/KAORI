@@ -136,6 +136,8 @@ def main() -> int:
         'data-kaori-setup-workspace="release-v4"',
         'data-kaori-setup-readiness-strip',
         'data-kaori-setup-console',
+        'data-kaori-setup-primary-action',
+        'data-kaori-setup-security',
         'data-kaori-setup-flow',
         'Initialization Path',
         'Advanced Setup',
@@ -157,10 +159,71 @@ def main() -> int:
 
     require(
         'class="text-lg font-semibold leading-6 text-content-primary"' in setup,
-        'Setup Required compact title contract drifted',
+        'Setup Required command-first title hierarchy drifted',
         errors,
     )
-    require('lg:grid-cols-3' in setup and 'lg:col-span-2' in setup, 'Setup Required console split drifted', errors)
+    require(
+        'data-kaori-setup-design="command-first"' in setup
+        and 'data-kaori-setup-primary-action' in setup
+        and "variant='inline'" in setup,
+        'Setup Required command-first action/inline-flow hierarchy drifted',
+        errors,
+    )
+    require(
+        'class="px-4 py-4 sm:px-5">' in setup
+        and 'border-l-4 border-kaori-primary' not in setup
+        and 'text-xs font-semibold text-content-secondary">Primary action' in setup
+        and 'class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">' in setup,
+        'Setup Required bootstrap wrappers must have complete HTML start tags',
+        errors,
+    )
+
+    require(
+        'data-kaori-setup-outer-frame' not in setup and 'lg:col-span-2' not in setup,
+        'Setup Required must not reintroduce the rejected nested-frame/sidebar design',
+        errors,
+    )
+    require(
+        'data-kaori-setup-canvas="light"' in setup
+        and 'max-w-4xl rounded-xl border border-outline-subtle bg-surface-card' in setup,
+        'Setup Required compact 100-percent-zoom canvas drifted',
+        errors,
+    )
+    require(
+        'PostgreSQL is ready. Run setup to enable sign-in and background jobs.' in setup
+        and 'Preserve INTEGRATION_CREDENTIAL_KEY.' in setup,
+        'Setup Required concise operator copy drifted',
+        errors,
+    )
+    require(
+        'bg-surface-page px-3 py-3 sm:px-4 sm:py-4' in setup
+        and 'max-w-4xl' in setup
+        and "copy_label='Copy Command', compact=true" in setup
+        and 'mt-4" data-kaori-setup-advanced' in setup,
+        'Setup Required compact spacing/terminal density drifted',
+        errors,
+    )
+    require(
+        '<div class="space-y-5">' in setup and 'lg:grid-cols-2' not in setup and "label='Manual Bootstrap'" in setup,
+        'Setup Required manual bootstrap must use full-width advanced content',
+        errors,
+    )
+    require(
+        'bash scripts/init_db.sh --bootstrap-admin' not in setup
+        and 'flask --app run:app db upgrade' not in setup
+        and 'flask --app run:app seed-rbac' not in setup,
+        'Production setup must not render obsolete direct migration commands',
+        errors,
+    )
+    require(
+        'data-kaori-setup-production-guidance' in setup
+        and 'Complete Authorized Database Initialization' in setup
+        and 'Database Connection Unavailable' in setup
+        and 'if devcontainer_setup' in setup
+        and 'else' in setup,
+        'Production setup must provide safe, read-only administrator guidance',
+        errors,
+    )
     require('Readiness Summary' not in setup, 'Setup Required must not duplicate readiness in a summary panel', errors)
     require(
         'components/info_flow.html' not in setup,
@@ -168,8 +231,10 @@ def main() -> int:
         errors,
     )
     require(
-        'components/operational_section_card.html' not in setup,
-        'Setup Required must not return to the giant outer operational card',
+        'components/operational_section_card.html' in setup
+        and setup.count('operational_section_card.shell_classes(') == setup.count('data-kaori-setup-console')
+        and 'data-kaori-setup-outer-frame' not in setup,
+        'Setup Required must keep shared action cards local to the console, never the outer workspace',
         errors,
     )
 

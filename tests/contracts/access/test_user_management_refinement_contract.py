@@ -69,17 +69,23 @@ def test_user_management_posture_matches_permission_registry_overview_structure(
 
 def test_user_directory_uses_shared_kaori_loading_filters_labels_and_expand_details() -> None:
     content = read('app/templates/access/users/partials/_content.html')
+    directory = read('app/templates/access/users/partials/_directory.html')
     filters = read('app/templates/access/users/partials/_filters.html')
     table = read('app/templates/access/users/partials/_table.html')
     detail = read('app/templates/access/users/partials/_user_detail.html')
-    assert '{% import "components/loading_bar.html" as loading_bar %}' in content
-    assert "loading_bar.render('users-refresh-indicator'" in content
+    assert '{% include "access/users/partials/_directory.html" %}' in content
+    assert '{% import "components/loading_bar.html" as loading_bar %}' in directory
+    assert "loading_bar.render('users-refresh-indicator'" in directory
+    assert "registry_ui.clear_filters_link('users.index'" in directory
     assert '{% import "components/table.html" as table_ui %}' in filters
     assert 'table_ui.filter_select_classes()' in filters
     assert 'Clear Filters' not in filters
     assert 'Local Database' in filters
     assert '· Inactive' in filters
-    assert 'table_ui.filter_layout_classes()' in filters
+    assert 'registry_ui.filter_form(' in filters
+    shared_registry = read('app/templates/components/table_registry.html')
+    assert 'table_primitives.filter_layout_classes()' in shared_registry
+    assert 'data-kaori-canonical-registry-filter' in shared_registry
     assert 'lg:grid-cols-' not in filters
     assert '{% import "components/details/_expandable_row.html" as expandable %}' in table
     assert 'expandable.toggle_button' in table
@@ -88,21 +94,37 @@ def test_user_directory_uses_shared_kaori_loading_filters_labels_and_expand_deta
     assert 'Last Authentication' in table
     assert 'Emergency Access' in table
     assert 'Administrative Actions' in detail
-    assert 'No Administrative Action' in detail
+    # The approved fallback is shown only when none of the five governed
+    # administrative actions is authorized for the viewed account.
+    assert 'No Additional Actions' in detail
+    assert "not actions.get('can_reset_password') and not actions.get('can_restore')" in detail
+    assert "and not actions.get('can_activate') and not actions.get('can_deactivate')" in detail
+    assert "and not actions.get('can_delete') %}" in detail
 
 
 def test_user_directory_pagination_uses_current_kaori_rows_and_previous_next_contract() -> None:
     table = read('app/templates/access/users/partials/_table.html')
-    assert (
-        "Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} {{ pagination_ui.resource_name('Users', pagination.total_items) }}"
-        in table
-    )
-    assert '>Rows</span>' in table
-    assert 'aria-label="Rows Per Page"' in table
-    assert 'Previous' in table
-    assert 'Next' in table
-    assert 'pagination_ui.numeric_pages(' in table
-    assert "hx_target='#users-page-content'" in table
+    footer = read('app/templates/components/table_registry.html')
+    assert "registry_ui.footer('users.index'" in table
+    for required in (
+        "'user-directory'",
+        "'users-refresh-indicator'",
+        "resource_label='Users'",
+        "rows_aria_label='Rows Per Page'",
+        "control_name='user-directory'",
+    ):
+        assert required in table
+    for required in (
+        'Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }}',
+        '<span>Rows</span>',
+        'aria-label="{{ rows_aria_label }}"',
+        'Previous',
+        'Next',
+        'pagination_ui.numeric_pages(',
+        'hx-indicator="#{{ loading_id }}"',
+        'data-kaori-canonical-registry-pagination',
+    ):
+        assert required in footer
 
 
 def test_user_delete_uses_shared_destructive_confirmation_component() -> None:

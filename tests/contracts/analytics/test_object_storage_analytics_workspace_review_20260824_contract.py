@@ -108,3 +108,41 @@ def test_object_storage_analytics_charts_have_accessible_names() -> None:
     assert 'aria-label="{{ ' in trend
     assert 'data-object-storage-bucket-forecast-chart\n                            role="img"' in forecasts
     assert 'aria-label="Current and projected Object Storage bucket usage chart"' in forecasts
+
+
+def test_object_storage_evidence_copy_stays_compact_and_factual() -> None:
+    system_detail = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
+    system_posture = read('app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html')
+    overview_alerts = read('app/templates/storage/object_storage/analytics/partials/_overview_alerts_snapshot.html')
+    performance = read('app/templates/storage/object_storage/analytics/partials/_performance_analysis.html')
+    trend = read('app/templates/storage/object_storage/analytics/partials/_trend.html')
+    buckets = read('app/templates/storage/object_storage/analytics/partials/_bucket_table.html')
+    alert_summary = read('app/templates/storage/object_storage/analytics/partials/_alerts_summary.html')
+    alert_records = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
+    evidence = read('app/templates/storage/object_storage/analytics/partials/_evidence_boundary.html')
+    alert_projection = read('app/storage/object_storage/analytics/alert_sources.py')
+
+    assert 'Committed inventory; provider configuration and live health remain integration-owned.' in system_detail
+    assert 'Active alerts committed from the selected provider source.' in overview_alerts
+    assert 'Inflight requests indicate work, not pressure without a concurrency limit.' in performance
+    assert 'Waiting requests and offline nodes determine posture.' in performance
+    assert '{{ metrics_source.provider_label }} range for {{ selected_time_range }}.' in trend
+    assert 'Requests and errors remain separate; traffic alone is not unhealthy.' in trend
+    assert 'Request metrics never fall back to Inventory;' in buckets
+    assert 'missing series, unscraped metrics, and query failure.' in buckets
+    assert 'Inventory fallback is per field and only where supported.' in buckets
+    assert 'Alertmanager/Metrics Source ALERTS report provider alerts;' in alert_summary
+    assert 'If either evidence family is unavailable, posture stays Unknown' in alert_summary
+    assert 'Metrics Source ALERTS provides narrower rule-state evidence.' in alert_records
+
+    assert 'provider conditions requiring review.' in system_posture
+    assert 'committed inventory evidence before choosing remediation.' in system_posture
+    assert 'worker query succeeded but found no samples' in evidence
+    assert 'missing samples are not zero usage.' in evidence
+    assert 'currently reports no active alerts for this Object Storage system.' in alert_projection
+    assert 'not proof of overall system health.' in alert_projection
+
+    # Neither message rewrites provider-state logic or collapses absence into zero.
+    assert "if not stream.get('connected'):" in alert_projection
+    assert "status, tone = 'Unknown', 'unknown'" in alert_projection
+    assert "status, tone = 'No Active Alerts', 'normal'" in alert_projection

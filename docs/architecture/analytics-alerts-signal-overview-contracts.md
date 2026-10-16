@@ -156,3 +156,20 @@ docs/architecture/analytics-alerts-typed-contracts.md
 docs/architecture/analytics-alerts-ownership-readiness-contracts.md
 docs/architecture/analytics-alerts-signal-overview-contracts.md
 ```
+
+
+## UI review composition (#1019, October 2026)
+
+The selected-cluster presentation now has an operator-first hierarchy:
+decision and evidence boundary → signal volume → lifecycle and severity →
+investigation focus. This changes **presentation only**; the earlier typed
+contract and preservation claims above describe their original refactor
+baseline and remain authoritative for counting and provider behavior.
+
+The view continues to read `selected_cluster_signal_overview` from committed
+KAORI evidence. Alertmanager/Metrics Source remain authoritative for collection,
+and a fallback reason is shown only when fallback is actually used. No live
+provider query or new scoring is introduced by this UI increment.
+
+Validation is pending local devcontainer visual review on
+`kaori/review/staging-uat`; no staging CI/CD admission is implied.

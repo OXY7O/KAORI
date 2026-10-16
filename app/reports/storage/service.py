@@ -5,9 +5,10 @@ from tempfile import NamedTemporaryFile
 from threading import Lock
 from time import monotonic
 from typing import Any
+from uuid import uuid4
 
 from flask import current_app, g
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.artifact_storage.base import ArtifactStorageBackend, StoredArtifact
 from app.extensions.db import db
@@ -26,6 +27,7 @@ from app.reports.storage.state import (
     format_storage_check_age,
     format_storage_check_source,
     get_shared_report_storage_status,
+    get_storage_config_fingerprint,
     publish_shared_report_storage_status,
 )
 
@@ -85,6 +87,13 @@ def build_storage_operations_posture(
             'Connectivity has recovered, but write readiness is still guarded. Use Verify Storage to '
             'confirm the write, existence, and cleanup path before retrying generation.'
         )
+    elif backend_status.get('state') == 'unsupported':
+        status_label = 'Needs Review'
+        status_tone = 'warning'
+        title = 'Unsupported Artifact Storage Backend'
+        description = 'The configured artifact backend is unsupported. All new artifact writes remain paused.'
+        tip_title = 'Correct Storage Configuration'
+        tip_text = 'Use the supported local or s3 backend and verify readiness before generating artifacts.'
     elif reachable:
         status_label = 'Needs Review'
         status_tone = 'warning'
@@ -159,6 +168,35 @@ def build_storage_integrity_presentation(result: dict[str, Any]) -> dict[str, An
             }
         )
     presented['review_samples'] = samples
+    checked = int(presented.get('checked_count') or 0)
+    available = int(presented.get('available_count') or 0)
+    missing = int(presented.get('missing_count') or 0)
+    errors = int(presented.get('error_count') or 0)
+    total = int(presented.get('total_reference_count') or 0)
+    limited = total > checked
+    if errors:
+        status, tone = 'Errors Detected', 'critical'
+    elif missing:
+        status, tone = 'Missing Artifacts', 'critical'
+    elif limited:
+        status, tone = 'Partial Coverage', 'warning'
+    elif checked == 0:
+        status, tone = 'No References', 'unknown'
+    else:
+        status, tone = 'Verified Sample', 'normal'
+    presented.update(
+        {
+            'checked': checked,
+            'available': available,
+            'missing': missing,
+            'errors': errors,
+            'status': status,
+            'tone': tone,
+            'total_reference_count': total,
+            'is_limited': limited,
+            'coverage_label': f'{checked} of {total} retained references checked',
+        }
+    )
     return presented
 
 
@@ -189,20 +227,12 @@ def _get_storage_status_cache_ttl_seconds() -> int:
 
 
 def _get_process_storage_status_cache_key(backend_name: str) -> tuple[object, ...]:
-    app_identity = id(current_app.config)
-    if backend_name == 's3':
-        return (
-            app_identity,
-            backend_name,
-            str(current_app.config.get('REPORT_S3_BUCKET', '') or ''),
-            str(current_app.config.get('REPORT_S3_ENDPOINT_URL', '') or ''),
-            str(current_app.config.get('REPORT_S3_REGION', '') or ''),
-            str(current_app.config.get('REPORT_S3_PREFIX', '') or ''),
-        )
+    # Use the same non-reversible config identity as Redis. Credentials, bucket,
+    # addressing style and local root rotations all invalidate process readiness.
     return (
-        app_identity,
+        id(current_app.config),
         backend_name,
-        str(current_app.config.get('REPORT_LOCAL_STORAGE_DIR', '') or ''),
+        get_storage_config_fingerprint(backend_name),
     )
 
 
@@ -325,7 +355,7 @@ def get_report_storage_backend_status(
 
     previous_shared_status = storage_check.get_stale_shared_storage_status(normalized_backend)
     if normalized_backend == 'local':
-        health = build_local_storage_health()
+        health = build_local_storage_health(include_artifact_inventory=False)
         readable = bool(health.get('root_exists', False))
         writable = bool(health.get('root_writable', False))
         available = readable and writable
@@ -596,10 +626,11 @@ def get_configured_storage_backend_name() -> str:
 
     if backend_name not in SUPPORTED_REPORT_STORAGE_BACKENDS:
         current_app.logger.warning(
-            'Unsupported REPORT_STORAGE_BACKEND=%s. Falling back to local.',
+            'Unsupported REPORT_STORAGE_BACKEND=%s. Artifact writes disabled.',
             backend_name,
         )
-        return 'local'
+        # Do not silently route S3-intended writes onto local filesystem.
+        return backend_name
 
     return backend_name
 
@@ -738,7 +769,15 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
         readiness_monitor=readiness_monitor,
     )
 
+    integrity_execution = storage_check.get_report_storage_integrity_scan_presentation(backend_name)
+    integrity_result = (
+        build_storage_integrity_presentation(integrity_execution['last_result'])
+        if integrity_execution['last_result'] is not None
+        else None
+    )
     return {
+        'integrity_result': integrity_result,
+        'integrity_execution': integrity_execution,
         'page_title': 'Reports Storage',
         'page_subtitle': ('Review report storage readiness, integrity, and artifact lifecycle.'),
         'active_backend': backend_name,
@@ -747,7 +786,7 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
         'integrity_actions_enabled': bool(backend_status.get('read_available', False)),
         'readiness_monitor': readiness_monitor,
         'storage_posture': storage_posture,
-        'local': build_local_storage_health() if backend_name == 'local' else None,
+        'local': build_local_storage_health(include_artifact_inventory=False) if backend_name == 'local' else None,
         's3': build_s3_storage_health() if backend_name == 's3' else None,
         'artifact_summary': artifact_summary,
         'retention_policy': retention_policy,
@@ -773,39 +812,34 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
 
 
 def verify_active_report_storage() -> dict[str, Any]:
+    """Worker-owned write, confirm and delete probe with a unique object key."""
     backend = get_active_report_storage_backend()
     backend_name = get_configured_storage_backend_name()
-    test_key = 'reports/storage-verification/kaori-report-storage-check.txt'
+    test_key = f'reports/storage-verification/{uuid4().hex}.txt'
 
-    with NamedTemporaryFile(
-        mode='w',
-        encoding='utf-8',
-        suffix='.txt',
-        delete=False,
-    ) as temp_file:
+    with NamedTemporaryFile(mode='w', encoding='utf-8', suffix='.txt', delete=False) as temp_file:
         temp_file.write('kaori report storage verification\n')
         temp_path = Path(temp_file.name)
 
+    stored_file: StoredArtifact | None = None
+    cleanup_confirmed = False
     try:
         if backend_name == 's3' and hasattr(backend, 'test_connection'):
             backend.test_connection()  # type: ignore[attr-defined]
 
-        stored_file = backend.save_file(
-            source_path=temp_path,
-            object_key=test_key,
-        )
-        exists = backend.exists(stored_file.object_key)
-        backend.delete(stored_file.object_key)
+        stored_file = backend.save_file(source_path=temp_path, object_key=test_key)
+        try:
+            exists = bool(backend.exists(stored_file.object_key))
+        finally:
+            # Cleanup must run even when the existence probe fails.
+            backend.delete(stored_file.object_key)
+            cleanup_confirmed = not bool(backend.exists(stored_file.object_key))
+
+        verified = exists and cleanup_confirmed
         readiness = (
-            refresh_report_storage_readiness(
-                backend_name,
-                source='manual_verification',
-            )
-            if exists
-            else mark_report_storage_backend_unavailable(
-                backend_name,
-                source='manual_verification_failure',
-            )
+            refresh_report_storage_readiness(backend_name, source='manual_verification')
+            if verified
+            else mark_report_storage_backend_unavailable(backend_name, source='manual_verification_failure')
         )
         return {
             'backend': backend_name,
@@ -813,33 +847,34 @@ def verify_active_report_storage() -> dict[str, Any]:
             'object_key': stored_file.object_key,
             'size_bytes': stored_file.size_bytes,
             'exists_after_upload': exists,
-            'verified': exists,
+            'cleanup_confirmed': cleanup_confirmed,
+            'verified': verified,
             'readiness': readiness,
         }
     except Exception:
-        mark_report_storage_backend_unavailable(
-            backend_name,
-            source='manual_verification_failure',
-        )
+        mark_report_storage_backend_unavailable(backend_name, source='manual_verification_failure')
         raise
     finally:
+        if stored_file is not None and not cleanup_confirmed:
+            try:
+                backend.delete(stored_file.object_key)
+            except Exception:
+                current_app.logger.warning('Report verification temporary object cleanup retry failed.', exc_info=True)
         temp_path.unlink(missing_ok=True)
 
 
 def scan_report_storage_integrity(
     max_items: int = 500,
 ) -> dict[str, Any]:
+    max_items = max(1, min(int(max_items), 500))
+    reference_filter = (Report.file_path.is_not(None), Report.file_path != '')
+    total_reference_count = int(db.session.scalar(select(func.count(Report.id)).where(*reference_filter)) or 0)
     checked_reports = (
         db.session.execute(
             select(
                 Report,
             )
-            .where(
-                Report.file_path.is_not(
-                    None,
-                ),
-                Report.file_path != '',
-            )
+            .where(*reference_filter)
             .order_by(
                 Report.updated_at.desc(),
                 Report.id.desc(),
@@ -944,6 +979,10 @@ def scan_report_storage_integrity(
         'missing_samples': missing_samples,
         'error_samples': error_samples,
         'max_items': max_items,
-        'is_limited': checked_count >= max_items,
-        'is_healthy': missing_count == 0 and error_count == 0,
+        'total_reference_count': total_reference_count,
+        'is_limited': checked_count < total_reference_count,
+        'is_healthy': checked_count > 0
+        and checked_count == total_reference_count
+        and missing_count == 0
+        and error_count == 0,
     }

@@ -30,9 +30,11 @@ def test_runtime_summary_uses_filtered_scope_and_runtime_health_is_not_inferred(
     service = read('app/integrations/service.py')
     workspace = read('app/integrations/overview_workspace.py')
 
-    assert "'runtime_global_stats': _runtime_stats(runtime_rows)" in workspace
-    assert "'runtime_stats': _runtime_stats(filtered_runtime_rows)" in workspace
-    assert "'runtime_scope_label': runtime_scope_label" in workspace
+    assert "'runtime_global_stats': global_stats" in workspace
+    assert "'runtime_stats': filtered_stats" in workspace
+    assert 'global_stats = runtime_stats(fleet)' in workspace
+    assert 'filtered_stats = runtime_stats(selected)' in workspace
+    assert "'runtime_scope_label': _runtime_scope_label(" in workspace
     assert "else ('healthy' if cluster.status == 'connected' else 'not_observed')" not in service
     assert "'health_status': observation.health_status if observation else 'not_observed'" in service
     assert "'observed_at': observation.observed_at if observation else None" in service
@@ -231,5 +233,12 @@ def test_overview_generic_instance_loader_does_not_drop_object_storage() -> None
     )
     assert "'object_storage'" not in extensions.split('SPECIALIZED_OVERVIEW_TYPES =', 1)[1].split('\n\n', 1)[0]
     assert 'IntegrationInstance.integration_type.in_(integration_types)' in extensions
-    assert 'extension_instances = load_extension_integration_instances()' in workspace
-    assert 'extension_instances=extension_instances' in workspace
+    portfolio = read('app/integrations/overview_sql.py')
+    runtime = read('app/integrations/overview_runtime_sql.py')
+    minio = read('app/integrations/storage/object_storage/providers/minio/__init__.py')
+    assert 'provider_counts, stats = overview_portfolio_counts()' in workspace
+    assert 'identity.integration_type.in_([module.integration_type for module in modules])' in portfolio
+    assert '~identity.integration_type.in_(specialized)' in portfolio
+    assert 'for implementation in registry.implementations_for_type(module.integration_type):' in runtime
+    assert 'implementation.runtime_overview_builder is None' in runtime
+    assert 'runtime_overview_builder=build_runtime_overview_rows' in minio

@@ -130,6 +130,67 @@ authority. Concurrent source tasks publish monotonic aggregate progress through 
 metadata. A slow or failed source cannot consume the inventory worker and does not invalidate committed
 inventory or another source's committed security evidence.
 
+### Analytics instance scope, alerts, and explicit governance gaps (#1466)
+
+Analytics shell, sections, active alert filters, and background materialization
+resolution reject invalid or disabled explicit `provider_id` rather than
+silently falling back to All Registries. Alert tables reuse canonical KAORI
+table geometry and user-local timestamps. Committed-empty and filtered-zero
+alert states are distinct from no Analytics snapshot; no provider query occurs
+during these UI reads. Governance `Not Configured` is counted only when the
+provider actually reported `not_configured`, not by subtracting configured
+projects from the full Inventory denominator. Shared Violet navigation,
+HTMX loading, responsive layout, and five-row pagination remain intact.
+
+### Bounded Analytics and committed input generations (#1465)
+
+Registry Analytics materialization uses SQL counts and bounded scalar artifact
+iteration (`yield_per(250)`), rather than hydrating entire ORM project,
+repository, artifact and workload trees into worker memory. Runtime evidence
+uses an authoritative scoped binding query and deduplicated artifact membership;
+Security findings count only successful normalized scans. Governance configured
+and explicitly `not_configured` are independent from unsupported/unavailable/
+not-collected projects.
+
+The worker records committed Inventory and Governance generations,
+latest Security scan-completion timestamp, Registry-runtime binding
+observation timestamp, and the canonical Registry/Kubernetes
+`runtime_input_signature` in each snapshot's `evidence` payload. It rejects
+Inventory/Governance/Kubernetes generation changes and provider deactivation
+during a collection attempt. Read-model freshness compares those committed inputs to
+current KAORI state using scoped SQL aggregations and presents `Inputs Changed`
+or `Partial Evidence`, not clean Current. Historical or missing generation
+markers are *not* proof of readiness. The external provider remains
+authoritative and normal page loads do not query provider APIs.
+
+### Measured Registry historical Analytics datasets (#1108)
+
+The registered `artifact_registry.analytics.materialize` job accepts a validated
+`snapshot_window`. Scheduled jobs retain legacy `current` instant semantics;
+on-demand historical views collect bounded `MetricsConsumer.query_range`
+evidence per Registry integration instance and selected interval. The seven
+shared windows (`1h, 6h, 12h, 24h, 7d, 30d, 60d`) are measured source
+ranges, not age filters over one `current` snapshot. Workers cap each query
+to 250 series and 240 samples/series, fail closed on malformed payloads,
+missing range coverage, unsupported capabilities, and insufficient retention,
+and record per-query capability gaps. Range datasets are keyed by
+`RegistryAnalyticsSnapshot.time_range`; Operational Dashboard continues
+to use `current` only. Normal user requests read committed datasets; source
+queries remain worker-only. Provider retention/time-series and UAT remain
+explicit acceptance requirements.
+
+### Analytics snapshot and worker-failure semantics (#1464)
+
+Registry Analytics uses the canonical committed snapshot validity contract: a ready
+status alone is insufficient without a dictionary payload and valid generation and
+expiry timestamps. Stale committed snapshots remain readable but must never be
+reported as Current or Evidence Ready. A failed latest refresh is disclosed even
+if older committed evidence remains. A worker execution that committed zero
+provider snapshots is failed, not a partially successful fleet materialization;
+partial success requires at least one committed provider dataset. Metrics Source
+instant-vector transport success is validated structurally, and per-query errors
+are recorded as partial or unavailable metrics evidence, never silently ready.
+
 ## Governance Contract
 
 Registry governance collection is read-only and independent from inventory. It may collect retention,
@@ -138,6 +199,384 @@ uses the same validated Registry read-contract eligibility as inventory and neve
 
 The default governance schedule is less frequent than inventory because policy state changes materially less
 often than artifact inventory.
+
+### Partial Governance evidence and non-destructive refresh (#1451)
+
+Governance Sync distinguishes successful provider-observed empty policy lists from unavailable collection. A failed replication API must **retain** prior committed replication records, not replace them with zero policies. Project-detail read failures are `Unavailable`, never inferred `Not Configured`; dimensions with unavailable fresh evidence retain previously committed project policy values where present, with their earlier conservative observation timestamp.
+
+A provider whose available dimensions were committed but one or more capabilities were unavailable commits a `partial` governance state with explicit capability error evidence. The fleet job reports partial success/warning rather than successful complete collection. Unsupported provider capability and valid observed-empty records are distinct from failure. This does not invoke Registry policy mutation, independent Inventory Sync, Security Sync or live UI provider reads.
+
+### Governance Evidence Operations: Security Sync UX parity (#950)
+
+The Governance workspace follows the **same canonical sync interaction** as
+Artifact Registry Security, while retaining a separate authoritative job:
+`artifact_registry.governance.sync`. The existing Governance JobExecution
+collector, read-only provider policy/replication evidence, progress adapter,
+polling endpoint and schedule policy remain unchanged. **Governance Sync does
+not trigger Security Sync, Inventory Sync, provider-side scans or provider
+policy mutations.**
+
+- `governance.html` provides the full-page layout and includes the
+  refreshable `partials/_governance_workspace.html`; HTMX GET returns that
+  partial so active Policies/Replication workspace views remain independently
+  navigable using canonical server-owned content tabs and five-row pagination.
+- The sync form submits its CSRF-authenticated request to the **existing**
+  `artifact_registry.governance_sync` endpoint through HTMX, targets the
+  Governance workspace, prevents a second submit while the canonical
+  JobExecution is active, and preserves the selected tab/page/page size.
+- HTMX manual sync dispatch renders current committed Governance context and
+  an out-of-band operational toast. Standard non-HTMX POST/redirect remains
+  available. Active JobExecution progress still polls the existing
+  `governance_sync_status` endpoint; on terminal completion it emits
+  `artifactRegistryGovernanceSyncFinished` to refresh the workspace using
+  committed evidence and notify the existing notification system.
+- The **Governance Evidence Operations** panel now groups just the canonical
+  sync state, two actions (Sync Governance / Configure Sync) and three
+  scheduling facts: Automatic Sync, Last Successful and Next Scheduled.
+  The four separate policy/retention/immutability/replication coverage cards
+  remain unchanged in meaning but move to their own responsive grid, as in
+  Security's separately owned findings/coverage summary.
+
+This is an existing KAORI HTMX/JobExecution pattern, not a new job, registry
+provider, UI component, governance calculation or policy interpretation.
+DevContainer human Visual QA must cover active/error/completed sync, toast,
+no duplicate manual dispatch, tab/page preservation, partial-only HTMX
+responses, light/dark mode and mobile widths. Full Admission, CI/CD,
+staging/UAT deployment and main promotion remain **HOLD** until explicit
+authorization.
+
+### Registry UI Consistency Audit — active workspace family (#1087)
+
+**Scope:** Artifact Registry Overview, Inventory, Security, Runtime Usage,
+Governance, and Analytics as present on the current
+`kaori/review/staging-uat` implementation. This audit applies the already
+approved KAORI Design System v2, `section_intro`, the shared
+`operational_metric_card`, `section_card`, tab, table and pagination
+components. It does **not** introduce a new page archetype or prescribe the
+same nested-card geometry for every domain.
+
+| Workspace | Hero / evidence authority | Summary / section-intro treatment | Navigation / table pattern | Audit decision |
+| --- | --- | --- | --- | --- |
+| Overview | Operational Dashboard Hero and committed operational signals | Four independent `operational_metric_card` KPI cards inside the existing Operational Signal Overview shell; canonical padded body and scoped evidence footer. `All Registry Providers` uses the warning `Select a Registry Provider for Detailed Signals` status rather than green `Ready`; `Updated` uses committed snapshot **relative age**, matching Kubernetes/Object Storage | Dashboard four operational workspace views | **Align** to Kubernetes/Object Storage dashboard KPI card family under #1087; preserve #911/#923 shell and committed inventory scope |
+| Inventory | Shared Hero / committed snapshot context | Overview **Fleet Inventory Posture** external intro + grouped three-metric estate shell; **Inventory Assets** intro + Kubernetes-style **Registry Asset Catalog** panel; resource pages retain Operational Posture intro + grouped resource metrics | Shared Projects/Repositories/Artifacts navigation cards; bounded resource inventory tables, HTMX filters and 5-row pagination | **Align** #946 follow-up to the accepted grouped Registry summary and Kubernetes catalog family without provider/data changes |
+| Security | Shared Hero / Security Sync / committed scan evidence | External **Security Snapshot** intro + shared grouped four-metric posture grid, independently scoped for Vulnerabilities / Supply Chain | Small content-tabs family for Supply Chain; shared vulnerability/evidence registry and 5-row footer | **Align** summary composition under #1087; preserve #948 scanner semantics |
+| Runtime Usage | Shared Hero / committed correlation snapshot | External **Runtime Correlation** intro + four-cell grouped committed correlation grid | Runtime Bindings section intro and bounded table; committed correlation, 5-row footer | **Align** summary composition under #1087, retain #897 correlation semantics |
+| Governance | Shared Hero / Governance Sync / committed policy evidence | External **Governance Coverage** intro with one grouped operational estate shell and four evidence metrics; original Committed/Observed status badges retained | External Governance Evidence intro; standard URL/HTMX content tabs for Policies/Replication; 5-row footer | **Align** to Kubernetes Tenant Estate's shared posture-grid archetype under #950 |
+| Analytics | Shared Hero / committed analytical materialization | Overview owns **Registry Analytical Posture** four-cell grouped summary with Review/Unavailable/Ready labels; detail views own focused evidence | Eight page-level Integrated Workspace Tabs (Overview + seven dedicated domains); existing bounded HTMX summary/section fragments | **Align** #1097 with Kubernetes Analytics level-3 navigation under #747/#748, preserve #899/#952 committed authority |
+
+#### Component and composition rules applied in this audit
+
+- **Operational Dashboard Data Freshness authority:** the `Metrics Source` evidence card reports validated Registry Metrics Source binding readiness, not committed numeric metrics-snapshot evidence. Both selected-provider and fleet scopes retain this label; fleet coverage is `x / y providers`, while Inventory, Security and Analytics remain committed snapshot evidence cards. No live provider query is introduced by freshness rendering.
+- **Current Artifact Registry metric summary standard:** Inventory, Security,
+  Runtime Usage, Governance and Analytics use the shared `resource_posture_grid`
+  grouped metrics with thin dividers inside the appropriate section shell.
+  **The Artifact Registry Operational Dashboard is intentionally different**:
+  its existing `operational_signal_overview` section uses four independent
+  `operational_metric_card` KPI cards, canonical padding, responsive 1/2/4
+  columns, and source/`Active Scope` footers, matching Kubernetes and Object
+  Storage Operational Dashboards. This is KPI-level dashboard family parity,
+  not a new Registry-specific card component or a change to the other five
+  Registry workspace summaries. Governance/Analytics retain their committed
+  status labels; no extra card borders are added to grouped metric cells.
+  Inventory Overview Fleet posture retains the grouped grid for three metrics
+  and resource-detail posture retains its grouped four-metric presentation.
+  The Overview KPI read-path uses active provider identities with committed
+  inventory snapshots only, returning `Not Collected` for missing evidence and
+  `Partial Inventory (x/y)` when fleet collection coverage is incomplete.
+  Historical inventory belonging to inactive providers is not counted in
+  operational fleet summaries; selected-provider scope does not imply readiness
+  of metrics, analytics or alert evidence.
+- The **Inventory Operational Posture** on resource pages and **Fleet Inventory
+  Posture** on the Inventory Overview are coordinated evidence panels using the
+  approved `operational_section_card` and `posture_grid`, retaining provider,
+  snapshot exception, and visibility semantics. The Inventory Overview catalog
+  follows the Kubernetes asset navigation shell with a section intro,
+  `Registry Asset Catalog` header/badge, and shared destination cards. This
+  intentionally revises #946's earlier flat-catalog rule after explicit human
+  visual feedback; do not change Object Storage or introduce new wrappers in
+  unrelated Registry pages. The Overview dashboard continues using the
+  canonical Operational Dashboard composition.
+- **Navigation follows interaction scope**, not cosmetic uniformity. The
+  two-view Governance and closely related Supply Chain content use
+  `content_tabs.render_links`. Artifact Registry Analytics now follows
+  Kubernetes Analytics' server-owned **page-level Integrated Workspace Tabs**
+  with Overview plus seven analytical domains (#1097), removing its previous
+  in-card `framed_workspace_tabs` and retaining individual lazy bounded HTMX
+  analytics projections. These are distinct from subordinate content tabs and
+  preserve capability-level sidebar and keyboard/navigation semantics.
+- Use shared Hero, loading/empty/error, filters, tables, labels and default
+  five-row paginated footer in each owning workspace; never replace provider
+  semantics with generic optimistic states. Icons and badges convey meaning,
+  not decorative visual repetition. Avoid creating new page-local CSS/JS,
+  tokens, wrappers or one-off card families.
+
+**Implementation separation:** #950 owns Governance Coverage composition;
+#1087 owns the follow-up **entire Registry** grouped-summary consistency
+implementation (Overview, Security, Runtime and Analytics), its verifier and
+cross-page audit. Inventory's existing grouped composition remains unchanged. Existing #911, #931, #948, #897 and
+#899 remain authoritative for their specific capability data or backend
+behaviors. Work is grouped only for fast DevContainer review at
+`kaori/review/staging-uat`; no CI/CD Full Admission, deployment, staging
+promotion or main promotion occurs without explicit approval.
+
+**Developer / human Visual QA:** verify independent KPI cards on Operational
+Dashboard Overview and shared grouped metric cells on the other five Registry
+workspaces, original Overview shell and Inventory posture header, no double
+borders, responsive 1/2/4-column grids,
+Violet light/dark contrasts, meaningful per-metric badges, Security
+Vulnerabilities/Supply Chain view switching, Policies/Replication HTMX,
+Analytics framed seven-domain URL transitions, 5-row pagination, and zero/
+nonzero committed evidence. A static Jinja source review is **not** browser
+Visual QA or human acceptance.
+
+### Governance Coverage and Evidence layout (#950 DevContainer follow-up)
+
+The Governance evidence area now follows the established Security/Supply
+Chain section hierarchy. Two **plain section-intro headings outside their
+card shells** provide operator context:
+
+- **Governance Coverage** — following further human feedback and the existing
+  Kubernetes Tenant Governance Scope reference, one shared
+  `operational_section_card` encloses a `resource_posture_grid` of four
+  coherent estate-level evidence metrics. Icons summarize category/tone;
+  the optional original Committed/Observed/Partial/Not Collected label is
+  retained using the existing status-indicator component. The section intro
+  stays **outside** the grouped shell. There are no nested independent cards;
+  all values, evidence statuses and provider-authoritative meanings remain
+  unchanged. This grouped archetype is purpose-specific, not a global rule
+  for Registry Security, Runtime or Analytics.
+- **Governance Evidence** — Policies/Replication remain in one canonical
+  section card with `content_tabs.render_links` (embedded, server/URL-owned
+  mode), matching Security Supply Chain. Tab labels remain **without counts**.
+  Following explicit human clarification, each tab owns the **complete canonical
+  KAORI table workspace**, not an isolated bare table: shared
+  `table_ui.inventory_block_header` with Policy/Replication title, evidence
+  description, count metadata badge, Clear Filters action and a shared
+  loading bar; `registry.filter_form` with Search/Provider and tab-specific
+  Retention+Immutability or Replication State; then the full-width shared
+  `components/table.html` table, semantic status labels, canonical
+  `states/_empty_state.html` fallback and `registry.footer` pagination.
+  The previous redundant freeform Policy Evidence / Resilience Evidence
+  headers do not return. Search and filters operate against committed
+  provider-neutral rows in SQL before canonical query pagination; Policy/Retention/
+  Immutability/Replication Coverage remains SQL-aggregated over the active, unfiltered
+  Registry instance scope. The current tab and active filters round-trip through GET,
+  HTMX updates, page size changes, Governance Sync and terminal refresh.
+  Switching tabs intentionally opens that tab's unfiltered page 1.
+  HTMX targets/selects only `#artifact-registry-governance-registry` and
+  canonical pagination remains 5/10/25/50 (default 5), without new live
+  provider requests or policy mutation.
+
+This replaces Governance's previous framed tab treatment without introducing
+another UI pattern, altering provider authority, changing content-tab semantics
+or making live Registry API requests. Default pagination remains 5.
+DevContainer Visual QA should verify external headings, grouped-grid dividers,
+status badges and icon tones, active/inactive tab contrast, light/dark and mobile
+layouts, Policies/
+Replication transitions, back/forward navigation, sync completion refresh,
+and the shared pagination footer. CI/CD, Full Admission, staging/UAT and
+promotion remain **HOLD**.
+
+### Governance SQL identity and inventory-generation authority (#1452)
+
+The Governance Policies and Replication tables now use `paginate_query` over
+the scoped SQLAlchemy query, not in-memory whole-estate `paginate_sequence`.
+Provider selection is keyed by the canonical `IntegrationInstance.id`,
+displaying instance name and provider type together, so multiple Harbor
+instances remain independently filterable. The table counts, four evidence
+coverage measures, capability/exception aggregation, and latest committed
+timestamp all exclude inactive/disabled Registry sources. No live provider
+request is introduced on normal GET.
+
+Each successful Governance collector commit records the corresponding
+`RegistryCollectionState.last_committed_at` in Governance committed metadata.
+If inventory generation changes, or legacy committed governance evidence has
+no generation proof, the snapshot displays `Inputs Changed` until Governance
+Sync rematerializes evidence. Committed previous evidence remains visible.
+Partial capability statuses and missing capability proof are never presented
+as unqualified Current/No Exceptions. These evidence states do not dispatch
+an Inventory Sync automatically; Governance remains an independent job.
+
+### Capability-aware empty evidence and view-only job polling (#1453)
+
+Policies/Replication remain committed evidence tables under the existing
+`#artifact-registry-governance-registry` HTMX swap target. On the Replication
+tab, an observed-empty committed policy list is labeled `No Replication Policies
+Configured`; fully unsupported, unavailable, partially observed, and never
+collected states have separate truthful empty-state language. Filtered zero
+results still use the canonical clear-filter guidance. JobExecution terminal
+`partially_succeeded` is presented as `Partial Evidence`, not `Ready`.
+A failed latest Governance JobExecution overrides optimistic snapshot status with
+`Refresh Failed` or `Collection Failed` while retaining last committed evidence.
+This is an execution exception, not deletion of provider evidence.
+
+The existing Governance Sync POST retains `artifact_registry.sync`.
+Its GET progress endpoint uses `artifact_registry.view` because polling is
+read-only, and viewers must not gain dispatch permissions. Shared progress,
+CSRF, operational toasts, URL/HTMX owned tabs, and five-row tables remain
+unchanged. Human DevContainer Visual QA must check view-only polling,
+partial/failed/successful sync and each replication empty-state case.
+
+### Registry grouped summary adoption (#1087, superseded for Dashboard Overview)
+
+The 2026-10-10 human feedback adopted the Kubernetes Tenant Estate grouped
+metric-grid pattern across the six Registry workspace summaries. **The later
+2026-10-11 human review explicitly supersedes that decision for Operational
+Dashboard Overview KPI cards only**: this slot must instead match the
+independent `operational_metric_card` layout of Kubernetes and Object Storage
+Operational Dashboards. Inventory, Security, Runtime Usage, Governance and
+Analytics continue using grouped `resource_posture_grid` summaries; page
+navigation, provider scope, evidence authority and loading boundaries do not
+change.
+
+- **Overview:** reuse `operational_signal_overview.render` with its default
+  `body_classes='p-5'` and four independent `operational_metric_card` KPI
+  cards; no extra `operational_section_card` or grouped posture grid inside
+  this shell. Preserve `Committed Inventory` source and `Active Scope`
+  footers, four dashboard tabs, provider scope, freshness/status context,
+  four-card lazy skeleton and the original bounded HTMX KPI endpoint.
+- **Inventory:** the existing `operational_section_card` +
+  `resource_posture_grid` meets the reference and remains unchanged.
+- **Security:** both Vulnerabilities and Supply Chain summary scopes now
+  populate four grouped metric cells in `operational_section_card`. Display
+  values retain original committed source and descriptions; category tones are
+  warnings for observed findings/coverage gaps, **neutral/informational for
+  zero** so absent scans are never inferred clean. Native Security Snapshot,
+  filtered evidence and scanning rules remain authoritative.
+- **Runtime:** four grouped metric cells retain digest-vs-tag confidence;
+  Tag Matched is warning when present, Security Exposed is critical when
+  present. Zero/unknown correlation is not an inferred clean runtime posture.
+  Committed correlation/read-only links and identity evidence are unchanged.
+- **Governance:** uses #950's prior grouped four-metric posture shell with
+  original Committed/Observed/Partial/Not Collected status labels.
+- **Analytics:** the four existing analytical values and the original
+  Review/Unavailable/Ready status labels are projected into the shared
+  `resource_posture_grid` **only on Analytics Overview**. Detail pages use
+  focused lazy HTMX sections under canonical eight-view page-level navigation
+  (#1097), without a second framed tab bar.
+
+All six areas reuse **existing** presentation primitives; the Operational
+Dashboard Overview follows independent KPI card geometry while the other five
+Registry summaries preserve their approved grouped icon/tone/divider geometry.
+The shared shell's backward-compatible optional body-padding argument remains
+available but requires no Registry-specific override.
+No new provider request, authentication, database change, job dispatch,
+scanner, backend metric computation or inventory/analytics authoritative
+source is involved. Tests follow the existing contract and Operational
+Dashboard verifier; local browser Visual QA must verify responsive
+one/two/four-cell layout, light/dark mode, long labels, loading-to-evidence
+updates, status tone semantics, tabs and 5-row Registry tables. CI/CD
+admission, staging/UAT and main promotion remain HOLD.
+
+### Governance Coverage grouped posture implementation (#950 latest human feedback)
+
+The Kubernetes Tenant Governance Scope screenshot is the approved reference
+for **one estate-level grouped evidence summary**: a plain outer section
+heading, a standard `operational_section_card` with an icon-accented
+header, and a `resource_posture_grid` body with thin dividers between
+metric cells. Registry Governance Coverage now reuses these exact shared
+components rather than introducing a new metric-card CSS pattern.
+
+The existing Governance presenter still provides exactly four committed
+posture records in Policy/Retention/Immutability/Replication order. All
+`label`, `value`, `detail`, `tone`, and `status_label` fields remain
+authoritative. An optional `status_labels=none` argument extends the
+existing posture-grid component so this Registry view can display the same
+canonical Committed/Observed badges without changing the default five-metric
+Tenant Estate rendering. Badge semantics and warning/unknown tone are never
+inferred from metric counts by the UI. No collector, provider, data contract,
+JobExecution, HTMX, pagination or Registry tab behavior changes.
+
+The shared grouped grid is responsive: one cell per row on narrow widths,
+two from `sm`, four at `xl` for Governance; values and supporting descriptions
+wrap within their cells. Human Visual QA must verify the four-status matrix,
+dark/light contrast, viewport width, no extra nested card border, long
+provider details, and Policies/Replication navigation. CI/CD and deployments
+remain HOLD.
+
+## Vulnerability Findings Registry: compact list and committed detail (#948)
+
+The Vulnerability Findings workspace presents its committed Security Evidence
+interpretation inline beside the existing `section_intro` heading, not as a
+full-width severity-colored callout. It uses the canonical
+`table_label.status_label` and accessible, pointer/keyboard/touch-enabled
+`info_tip` to retain the current collection, scan-coverage and refresh-state
+explanations without consuming a separate panel. A fully collected finding
+set is labeled informational **Committed Evidence** regardless of
+whether it contains Critical/High CVEs: security severity remains visible in
+the snapshot metrics and per-finding rows, not inferred from evidence
+provenance. Not-collected, failed-refresh, missing-scan and partial-coverage
+states retain their distinct semantic labels and tones. A filtered or
+zero-result view never proves the Registry estate is fully scanned. The
+bounded HTMX Vulnerability Registry retains canonical 5-row pagination,
+filters and source/permission scope.
+
+For operator scanability the table uses six aligned columns:
+**Finding (19%) / Artifact (21%) / Package & Fix (23%) /
+Runtime Exposure (14%) / Evidence (13%) / Details (10%)**.
+Finding contains one CVE identifier and one severity badge, not redundant
+severity prose and duplicate severity badges. Following human DevContainer
+feedback, **Finding, Artifact, and Evidence restore the established KAORI
+icon-bearing `table_ui.title_cell` component** (`shield-alert`,
+`package-search`, and `blocks`). The icons are navigational reading cues,
+not additional severity or scan-state claims. Artifact displays repository and
+project without a truncated raw digest. Package shows its name, installed
+version and provider-observed fix availability; full fixed-version evidence
+moves to the detail. Evidence shows Registry source and freshness; timestamp,
+provider and immutable digest remain available in the read-only modal.
+
+Each committed `RegistryVulnerability.id` generates one native **View More**
+modal for that page of findings. The modal reuses the existing KAORI Registry
+security shell and exposes the full CVE/severity, package and installed/fixed
+versions, project/repository/digest, provider/source, scan timestamp,
+freshness, and correlation count. A per-artifact **Open Runtime Usage** link
+appears only when committed `RegistryWorkloadBinding` evidence exists and
+is routed by immutable artifact ID. **Not Observed** has neutral/unknown
+presentation, not a success/healthy implication: no committed workload
+binding does **not** mean remediated, no vulnerability, or no exposure outside
+the materialized correlation scope. Neither the table nor the dialog requests
+a live scanner/provider report, triggers provider scans or mutates findings.
+Harbor remains provider-authoritative; KAORI normalizes and correlates.
+
+### Vulnerability View More: Supply Chain evidence hierarchy (#948 follow-up)
+
+After DevContainer visual feedback, the native Vulnerability detail modal reuses
+the **existing Supply Chain evidence-card hierarchy** rather than presenting one
+large generic information card. The shared KAORI security `shell` remains
+authoritative for the hero/header, accessible close/focus, scrollable body,
+responsive width and evidence footer. Within it, three focused cards present:
+
+1. **Finding & Remediation:** heading icon, canonical severity and runtime
+   binding state, full-width affected package, then side-by-side installed and
+   fixed version on wider screens, followed by the provider-observed fix note.
+2. **Affected Artifact:** project/repository plus a full-width, immutable
+   digest band with fingerprint icon.
+3. **Runtime & Scan Evidence:** committed binding count, freshness, provider,
+   source and observed timestamp, ending with either a link to Runtime Usage
+   or an explicit neutral statement about missing committed correlations.
+
+All variable-width values are inside `min-w-0` content slots with
+`[overflow-wrap:anywhere]`; opaque versions and digests additionally use
+`break-all`. Responsive definition-list grids start as a single column
+and only switch to two columns at `sm`, with package, digest and timestamp
+available across a complete row. Long package names, unbroken repository
+identifiers, versions and digest strings **must never overlap other columns,
+modal controls or the footer**. Values are not truncated in the detail view.
+The existing canonical scanner evidence, provider authority, runtime
+interpretation, conditional Runtime Usage navigation and read-only behavior
+are unchanged. No new design-system component or provider request was added.
+
+Visual QA must explicitly test one-character-wide/no-space long strings,
+short and long digests, long fixed-version labels, mobile and desktop widths,
+modal scroll, light/dark colors, keyboard focus and both runtime-binding
+states. CI/CD, Full Admission, UAT and promotion remain HOLD.
+
+Developer Check and local Visual QA should confirm long CVE IDs, package
+versions, repository names, digest wrapping, current/stale scan evidence,
+Critical/High severity, both runtime binding paths, 5/50-page navigation,
+responsive light/dark layouts and keyboard dialog focus. CI/CD,
+Full Admission, staging UAT/deployment and promotion remain **HOLD** pending
+explicit human acceptance.
 
 ## Runtime Correlation Contract
 
@@ -201,6 +640,73 @@ capability evidence are recorded.
 Alert-source failure is an observability dependency only. It does not invalidate committed Registry
 inventory, security, runtime, or governance truth.
 
+## Analytics Controls & Data Readiness (#1099)
+
+The Registry Analytics Overview and all seven focused analytics pages use the
+approved Kubernetes Analytics **Controls & Data Readiness** composition.
+Overview uses the canonical **Analytics Overview** eyebrow, while focused
+domain pages use their own page title. The Registry source card uses the
+same semantic status-dot/title/badge hierarchy as the K8s Metrics Source
+Status card without claiming that Registry source eligibility proves live
+Metrics Source query readiness.
+Their authoritative read-only source/commit readiness comes from
+`build_registry_analytics_readiness`, which reads eligible Registry providers,
+the latest ready materialized snapshot per eligible provider, snapshot expiry,
+existing JobPolicy (without creating it in GET), and canonical JobExecution.
+Committed-data readiness, eligibility, active collection, last failed attempt,
+and scheduled collection are separate states; a failed newer worker run does
+not discard previous committed evidence.
+
+Following human review, Registry and Kubernetes Analytics **share the
+exact same** `analytics/components/_controls_readiness.html` frame and
+snapshot-card macros: one header/eyebrow/description, header loading bar,
+two-column scope controls, two-column source/snapshot readiness, and
+contextual warnings. The existing K8s capacity `controls_readiness` macro
+delegates to this shared shell without changing its public signature,
+cluster/time-range controls, Metrics Source-specific card, or snapshot
+interpretation. Registry renders the shared source card with its own genuine
+provider/snapshot evidence and genuine dropdown controls:
+**Registry** (all active Registry integrations or one named provider) and
+**Time Range**, matching K8s Overview wording and order: Last 1 Hour,
+Last 6 Hours, Last 12 Hours, Last 24 Hours, Last 7 Days, Last 30 Days,
+and Last 60 Days. The default is **Last 24 Hours** like K8s; an additional
+**Latest Snapshot (Any Age)** choice retains explicit compatibility with
+legacy `snapshot_window=current` bookmarks. The existing HTMX filter and
+loading convention applies to all committed analytical summaries and
+domain sections before aggregation/pagination. K8s time ranges describe
+materialized provider metrics, but Registry currently keeps only the most
+recent materialized snapshot per provider: here Time Range filters its
+`generated_at` timestamp, **not historical provider telemetry**. No
+unsupported historical trend is invented. When snapshots exist outside the selected lookback,
+readiness reports **No Snapshots in Window** rather than incorrectly claiming
+Registry analytics were never collected. Alerts source and record filters
+preserve the selected provider/window through pagination and browser history.
+Neither domain introduces a false Metrics Source readiness claim for Registry.
+
+The Registry panel **does not contain manual Collect/Configure buttons**.
+As in K8s Analytics, a bounded HTMX GET to
+`/artifact-registry/analytics/materialization/resolve` checks the committed
+snapshot freshness and dispatches the existing registered
+`artifact_registry.analytics.materialize` job only when eligible evidence is
+missing/expired, no active job exists, and the latest attempt is outside a
+five-minute retry cooldown. This routes to the existing `analytics-batch`
+worker through `dispatch_registered_job(trigger_type='on_demand')` with
+canonical JobExecution deduplication and a registered-worker preflight.
+The top-level page GET stays a fast committed-state shell; the background
+request may schedule work but never performs synchronous live provider queries.
+JobPolicy scheduling continues independently, with no write-on-page-read
+policy creation. UI loading and scoped JobExecution progress now appear in the **shared
+Controls & Data Readiness header** using its original loading bar and
+an optional header-content slot (Kubernetes does not change behavior).
+Previously duplicated worker progress below the source/snapshot cards is
+removed. Resolver requests retain the selected Registry provider/window,
+but canonical on-demand dispatch assesses **global fleet readiness** because
+the existing worker collects fleet-wide. Terminal page refresh reads the
+committed scoped snapshots; a later failed job retains old evidence.
+Queue/preflight errors are displayed as warnings, never as successful refresh.
+Manual execution remains available through existing Platform Operations Jobs
+rather than a second domain-specific collection button.
+
 ## Analytics Fast-Shell Contract
 
 Artifact Registry Analytics uses the same bounded delivery principle as the canonical operational dashboard:
@@ -212,8 +718,58 @@ GET /artifact-registry/analytics
   → lazy active workspace section
 ```
 
-Inactive Analytics tabs are not rendered before first paint. Growth, Capacity, Usage, Risk, Governance,
-Alerts, and Insights remain separate analytical projections over committed materialization.
+Overview is the canonical `/artifact-registry/analytics` landing route and
+presents the existing lazy materialized analytical summary, followed by seven
+bounded navigation destinations. Page-level Integrated Workspace Tabs use the
+existing `artifact_registry_analytics` capability-view catalog and same layout
+owner as Kubernetes Analytics. Each of Growth, Capacity, Usage, Risk, Governance,
+Alerts & Anomalies and Insights has a dedicated canonical
+`/artifact-registry/analytics/<domain>` route. Each deep route shares the fast
+shell and lazy loads only its active committed analytical section; it does not
+repeat the Overview estate summary. The legacy `?tab=<domain>` bookmark shape
+redirects to the corresponding route and preserves bounded Alerts search,
+severity, state, source and pagination query parameters. Alerts HTMX table
+updates push its canonical page URL. No additional materialization models,
+provider read paths, RBAC definitions, alert collection or central Intelligence
+recommendation lifecycle are introduced.
+
+## Registry Analytics reusable presentation ownership (#1122)
+
+Registry Analytics now uses `analytics/components/_controls_readiness.html`
+for the header, provider/time-range selector fields, their responsive grid,
+and paired source/snapshot card geometry. It no longer imports
+`kubernetes/analytics/components/_analysis_workspace.html` for styling.
+Normal selectable ranges are projected from
+`app/common/analytics/params.py::get_allowed_time_ranges()`; the
+`snapshot_window=current` legacy URL explicitly renders its own special
+option only while selected. **Range selection still filters the age of
+the latest committed Registry snapshot until #1108 delivers qualified
+Metrics Source history**; sharing UI does not change this authority.
+Provider adapters must supply normalized evidence while future Registry
+instances reuse the same controls without forking markup.
+
+## Shared Analytics Section Loading (#1106)
+
+Artifact Registry Overview and its seven dedicated analytical routes reuse
+the exact K8s `analytics/components/_section_load_tracker.html` geometry and
+the shared `js/analytics/section_load_tracker.js` runtime. Overview tracks
+its actual lazy committed Summary fragment; a focused route tracks only its
+active evidence fragment. Each fragment owns its loaded/failed state across
+outerHTML swaps. The tracker is shown after Hero and counts **requested
+HTMX sections**, not invisible routes or Celery work items. The shared
+controls header continues to show the independent filter loading bar and
+JobExecution collection progress. A materialization-status refresh may
+reload the page once the worker commits its evidence; the next section
+request is counted afresh. The old K8s handler remains available as a
+compatibility hook.
+
+For a new Analytics domain, add `data-analytics-section-tracker-root` on
+the page wrapper, invoke the shared macro once after Hero, mark only actual
+lazy request nodes with `data-analytics-lazy-section="true"`, and include
+the shared controller asset once. Mark a full-fragment replacement with
+`data-analytics-load-state="loaded"` and preserve its stable element ID
+so the tracker can resolve the completed element after HTMX outerHTML
+swaps. Do not create a new tracker JavaScript controller per domain.
 
 ## Operational UI Contract
 
@@ -223,3 +779,177 @@ in normal page rendering.
 Every asynchronous operation uses the canonical Job Execution lifecycle, shared progress contract,
 worker-registration preflight, audit trail, and scheduler policy. Provider-specific collectors remain behind
 provider-neutral Artifact Registry contracts.
+
+### Operational Overview active scope (#1403)
+
+`Artifact Registry → Overview` includes only enabled Registry `IntegrationInstance` records with active lifecycle in its operational selector, fleet evidence denominators and selected-provider scope. Disabled and retired providers retain their committed historical Registry records but are **not** part of active operational health. A bookmark with an unknown/disabled/retired `provider_id` fails closed with HTTP 404 instead of silently widening to `All Registry Providers`. The worker's independent inventory-contract eligibility remains authoritative for collection; no user-facing GET triggers a provider query.
+
+### Overview analytics snapshot freshness (#1402)
+
+Provider-scoped and fleet Analytics Snapshot freshness now use the same committed evidence validity check: `status=ready`, a materialized dict payload, valid generated/expiry timestamps and unexpired `expires_at`. A retained expired snapshot remains **Stale** evidence, not fleet `Ready`. Mixed current and missing/stale fleet rows produce `Partial`, an all-stale fleet produces `Stale`, and no usable or stale evidence produces `Required`. The latest generated timestamp remains visible as evidence age; no GET path fetches live Registry metrics or reruns a worker. Metrics Source *binding readiness* is independent.
+
+### Provider Health evidence qualification (#1401)
+
+A green `Healthy` Registry provider requires ready provider registration, fresh committed Inventory, and — for a nonempty artifact inventory — successful vulnerability scan evidence covering each committed artifact. Zero artifacts after a successful Inventory collection legitimately has `Security N/A`. Missing or partial scan coverage, high-severity findings, degraded/unvalidated provider readiness and failed/stale committed inventory are explicit `Warning` or `Critical`, never a quiet green success. Vulnerability totals exclude summaries attached to unscanned or failed scan statuses. The shared Provider Health table shows `Partial Scans` with assessed/total coverage and Security Snapshot freshness uses `Partial` for incomplete scans. Metrics Source binding readiness remains independent and is not a mandatory condition for provider availability.
+
+### Bounded Registry Overview section reads (#934)
+
+The Overview Fast Shell and lazy tabs remain separate. Registry Provider Health now **paginates the active provider list before** resolving provider-specific Metrics Source readiness or executing grouped Project/Repository/Artifact/Security queries. Only the 5/10/25/50 visible providers are projected into table rows; page navigation must not multiply source resolution by the size of the entire Registry fleet. Whole-fleet successful scan coverage is counted independently in committed SQL, not calculated from just the visible health page. Overall Metrics Source binding readiness is batched using the existing canonical Metrics Source candidate evaluator (validated selector, technical capability and instance readiness), while selected Provider Health details still use the domain's existing resolver. The latest ready Registry Analytics snapshot for each active provider is selected by a single scoped SQL window-ranked query, preserving generated-at/ID ordering. There are **no request-time Harbor calls** or changes to provider authority. DB statement-count/high-cardinality performance and page-equivalence fixtures remain required for DevContainer UAT.
+
+
+### Fail-closed Registry Inventory collection (#1412)
+
+The Harbor adapter must reject malformed list member envelopes and projects without names, repositories without identities, artifacts without digests and malformed tag lists. Silent filtering of incomplete discovery is unsafe because provider-scoped committed reconciliation removes stale child identities and their dependent evidence. Provider-native optional metadata remains optional, and a genuine valid empty response remains representable. An invalid observation raises a provider-qualified error before reconciliation and preserves previous committed rows; the existing zero-project protection is unchanged. Source negative-path tests do not substitute for PostgreSQL transactional and real worker UAT.
+
+
+### Committed Inventory Overview asset counts (#1408)
+
+Registry Inventory Hero, Fleet, and Project/Repository/Artifact Asset Catalog counts must use the same explicit list of enabled active providers with committed RegistryCollectionState evidence as the Overview operational read model. A missing provider, never-collected provider or disabled/retired historical record does not contribute to these active-scope totals. The safe `_overview_kpi_values([])` zero result is preserved; passing `None` is not a request to count all inventory. A valid observed-empty inventory is a different evidence state from never collected.
+
+
+### Registry Inventory fleet membership (#1410)
+
+The operational Registry Inventory fleet uses the same enabled/active provider identities and committed RegistryCollectionState membership as Overview. Project visibility numerators, project/repository/artifact resource tables, source/environment selectors, and resource posture are filtered to those committed provider IDs; disabled/retired or never-observed historical rows stay stored but do not silently inflate the operational fleet. An observed-empty provider remains in coverage with zero assets. This does not implement a historical inventory browser or delete data.
+
+
+### Bounded Registry Inventory list reads (#1409)
+
+Projects, Repositories and Artifacts query only enabled/active committed Registry provider identities. Source/environment/visibility/search predicates execute in SQL **before** canonical `paginate_query` applies 5/10/25/50 limits. Artifact tag search uses a correlated relationship `EXISTS` rather than joining tags and duplicating artifact rows; related tag collections are loaded only after the artifact page is selected. SQL aggregates provide whole-scope resource posture and distinct small provider/environment selectors, independently of the visible page. Optional missing provider-reported project/repository child counts use bounded per-visible-row database counts instead of loading child collections. No live Harbor calls and no new pagination framework. Real PostgreSQL explain/statement-count, fulltext equivalence and HTMX pagination UAT remain required.
+
+
+### Bounded Registry Inventory detail sheets (#1411)
+
+The Full Workspace Modal and Unified Resource Sheet use separate SQL row counts and stable 25-item LIMIT previews instead of ORM hydration of all project repositories, repository artifacts or artifact tags. Repository artifact preview batches tag counts and selects only the first three tags per previewed artifact through a per-artifact window-rank query. Artifact details fetch up to 25 tag rows with an independent count. Project details never load every nested artifact simply to display repository counts. The modal remains provider-neutral, read-only and committed; longer collections belong in the dedicated Inventory resource pages.
+
+
+### Governed confirmed-empty Registry reconciliation (#1413)
+
+Ordinary/manual fleet and scheduled Registry Inventory Sync preserve the last-good committed project snapshot when previously nonempty discovery unexpectedly returns zero. The only exceptional path is a separate **manual Job Execution** form under Registry Inventory Sync, restricted by existing `jobs.execute` and `artifact_registry.sync` plus CSRF. An authorized operator chooses a single eligible active provider and explicitly types `CONFIRM EMPTY`; dispatch records operator ID, prior nonzero committed project count, and committed timestamp into JobExecution parameters/payload. The worker verifies target, actor, scope, latest committed timestamp and previous count while holding the existing `RegistryCollectionState` row lock, then performs two independent **complete empty** collector requests. Any mismatch, malformed discovery, retained project, provider eligibility failure or concurrent generation change fails closed without deleting the prior snapshot. Only two confirmed empty project lists can authorize an atomic transition to observed empty; success records `empty_reconciliation_evidence` in committed state and canonical JobExecution/notification evidence. The action never mutates Harbor and does not merge Security/Governance/Runtime back into inventory collection.
+
+**Operations/UAT boundary:** This is a review-branch implementation only; no confirmation has been submitted, no data deleted, no CI/CD or deployment performed. Before Human Acceptance, exercise genuine provider zero, malformed/partial responses, concurrent refresh and cancellation, worker retry, permissions and independent two-read evidence in controlled DevContainer.
+
+Direct Project, Repository and Artifact Inventory detail URLs apply the same enabled/active and committed Registry provider boundary as their owning resource list. Unavailable historical-provider detail returns 404 rather than mixing archived records into operational Inventory. Database history is preserved.
+
+Harbor coverage guard: when provider-reported `repo_count` or `artifact_count` is available, an actual discovered child list shorter than that reported count is treated as incomplete and cannot become destructive absence evidence. Explicit tag inventory is required when the Harbor client requested tags; a missing tag field is not silently normalized into an empty set. Counts unavailable from the provider stay unknown, not fabricated. Count drift may arise during provider mutation; it fails closed for operator review rather than guessing that committed children are gone.
+
+
+### Registry vulnerability-report completeness (#1423)
+
+A provider scan-overview status of `completed` is **not** proof that KAORI successfully collected vulnerability report detail. On a failed, malformed or contradictorily empty report, the collector does **not** create a newer empty `RegistryScanSnapshot`, does not advance its committed scan identity, retains the previous findings and scan summary for the existing digest, and records a source-scoped report warning in canonical Security JobExecution evidence. Next refresh retries the changed scan. An explicitly well-formed empty vulnerability report with no positive overview findings remains a legitimate observed zero. No Harbor scan trigger or provider mutation is added.
+
+
+### Registry Security operational source scope (#1422)
+
+Security Vulnerabilities, Supply Chain, source choices and evidence aggregation use only enabled/active Registry integrations with committed Inventory identity. The existence of configured active integrations without committed inventory still drives the Inventory Required setup posture, rather than leaking disabled/retired or unobserved artifacts. Empty eligible membership produces an explicitly empty SQL predicate, never unrestricted fleet evidence. Explicit unavailable or malformed `source_id` on GET and Sync POST fails closed; an omitted ID intentionally means the eligible fleet. The Security Sync dispatch remains a separate fleet JobExecution, not a provider mutation.
+
+
+### Scoped Registry Security evidence age (#1424)
+
+Security evidence freshness comes from the latest successful committed `RegistryScanSnapshot.observed_at` for the selected enabled/committed providers, **not** a fleet JobExecution finish timestamp. Current usable scan coverage requires a successful latest artifact scan generation and evidence within the freshness window. A mixed-age fleet is Partial; old evidence is Stale; unsupported/unverified ages are not silently Ready. Fleet Security Sync attempt progress/failure lives in its dedicated JobExecution state, independently from committed provider evidence. Supply Chain Artifact Evidence rows show their own committed per-artifact scan age, or `Age Unverified` when presence-only metadata lacks dated security observation; no shared fleet timestamp is assigned to every row.
+
+
+### Provider-neutral Security capability meanings (#1425)
+
+Capability Matrix `Observed` requires usable committed evidence of the corresponding capability: a completed scan with committed scan report history, a reported signed signature, or an available SBOM. A failed/not-scanned scan and `not_observed` signature/SBOM do not become green by virtue of non-null status. Each capability's attempted/unavailable state is evaluated independently, and numeric qualifying evidence/total artifact coverage is shown alongside the state. Unsupported provider capabilities are N/A and are excluded from fixable Supply Chain coverage-gap totals. Signature presence is not cryptographic trust-policy evaluation; unsigned/unknown remains explicit.
+
+
+### Bounded Registry Security Capability Matrix (#1426)
+
+Capability Matrix projects provider capabilities only for the active Supply Chain → Capabilities section. Active source filters/search are applied before canonical 5/10/25/50 provider pagination; one SQL `GROUP BY RegistryProject.integration_instance_id` computes qualifying scan/signature/SBOM numerator and attempted/total denominators for the visible source page. Vulnerabilities and Supply Chain Evidence no longer perform an N-provider capability projection on every GET. Vulnerability/Artifact Evidence lists retain SQL pagination and use escaped literal LIKE search with deterministic ID tie-break ordering, without provider GETs or cache forks. High-cardinality query-count, provider/filter parity and light/dark/mobile/HTMX UAT still require execution.
+
+Security workspace Sync Security Evidence is a fleet-wide canonical JobExecution for **all eligible committed Registry sources**; displayed Provider/Source filters are read-only evidence selectors and do not silently change the dispatch target. The operator action explicitly states this scope (#948). CSRF, permissions, deduplication and selected-view restoration remain unchanged.
+
+A Registry provider with a successfully committed **empty Inventory** is presented as neutral `No Artifacts` rather than `Inventory Required`; a configured but uncommitted provider retains the Inventory prerequisite warning. Security JobExecution last-success visibility queries the latest real completed success directly without relying on a 50-row recent-attempt window. Current/fresh scan evidence remains separate from worker attempt state (#1424).
+
+Registry Security fleet base KPIs (artifact count, observed security metadata, signed artifacts, available SBOMs, capability-qualified gaps) use one provider-scoped SQL aggregate rather than separate per-metric COUNT requests. Vulnerability severity, latest generation and runtime exposure remain separate scoped queries because they have distinct multiplicity/authority; profile them with PostgreSQL UAT rather than falsely asserting constant runtime latency (#1426).
+
+
+### Runtime correlation source and container identity (#1441)
+
+Runtime binding materialization correlates explicit Registry image authority with the
+committed Registry source host. Missing/implicit image hosts or missing provider
+host evidence cannot establish a positive match; digest equality alone does not
+make the Registry source authoritative. Ambiguous matches across independently
+registered Registry instances are omitted rather than duplicated as certain
+usage. Harbor provider inventory preserves non-default endpoint ports.
+
+A canonical RegistryWorkloadBinding still represents one unique
+artifact/Pod/image-reference correlation. Its `details.containers` evidence
+retains all observed ordinary/init container usages (name or positional fallback,
+kind and index) even when several containers share the same image. Legacy
+bindings without this evidence remain readable using the existing single
+container projection. The derived binding schema/identity is unchanged.
+
+
+### Runtime committed input generation and active scope (#1442)
+
+Correlation materialization captures a compact signature of the *active/enabled*
+Registry instance identities and their committed inventory timestamps together
+with Kubernetes cluster inventory generation timestamps. The worker rechecks
+the signature before transaction completion; a mid-run input change aborts
+atomic binding replacement, leaving the prior committed set readable.
+
+The canonical JobExecution success summary retains the input signature. Runtime
+Usage compares the last successful signature with the current committed source
+generations; superseded or legacy unverified snapshots are presented as
+`Inputs Changed`, not Ready. A failed refresh retains its own warning state,
+and missing collection prerequisites do not discard previous bindings.
+
+Normal Runtime Usage queries, filter options, prerequisites and direct binding
+detail access use active/enabled Registry source identity. Disabled/retired
+source evidence may remain stored for audit but does not contribute to active
+operational counts. Malformed/disabled bookmarked source filters return 404
+rather than silently expanding scope.
+
+
+### Bounded Runtime Usage materialization and read projection (#1443)
+
+The correlation worker streams committed Registry artifact ORM rows through
+`yield_per` / `selectinload` in bounded batches and retains compact scalar
+digest/tag candidates (artifact ID, repository, digest, host, observation time)
+rather than all hydrated artifact ORM entities. Source-host state is looked up
+once per Registry instance. Binding replacement uses an SQL-scoped artifact-ID
+subquery under the existing single materialization transaction; it does not
+materialize an unbounded artifact-ID list.
+
+The normal Runtime Usage view projects scan status/vulnerability summary only
+for active Registry artifacts that have committed runtime bindings, iterating
+projected columns in batches. Evidence filters and aggregate counters still
+derive from the committed binding set. The `Security Exposed` number counts
+**runtime bindings** associated with Critical/High artifact evidence, not a
+distinct number of artifact records; its explanatory copy makes that explicit.
+The canonical grouped Registry summary, filter controls, View More modal and
+default five-row pagination remain unchanged.
+
+### Registry runtime evidence continuity and source-qualified Intelligence (#1678, #1679, #1502)
+
+Kubernetes Pod Inventory refresh updates retained Pod identities in place
+(cluster + namespace + Pod name), keeping their database primary keys and
+existing Registry workload bindings. Only Pods absent from a successfully
+committed snapshot are pruned; those Pods' derived bindings are removed through
+the existing foreign-key cascade. The Registry source/digest/tag authority
+remains external and separate; no Kubernetes Inventory Sync implicitly dispatches
+a Registry Runtime Correlation job.
+
+Any changed Registry/Kubernetes committed generation invalidates the
+**freshness** of the prior Runtime Correlation result until the registered
+correlation job is rerun. Registry Signals & Actions and central Intelligence
+Recommendations show an explicit read-only correlation evidence warning and
+a Runtime Usage review link. A zero binding count after an input change
+is **not** proof of vulnerability remediation; Harbor scan/CVE evidence and
+historical JobExecution evidence remain distinct. AlertCase source resolution
+requires qualified source-evaluation evidence, not simple disappearance.
+
+Registry tag-only recommendation keys use a deterministic fingerprint of
+Registry instance, immutable artifact digest, cluster, namespace, Pod name,
+and image reference. They do not use the transient correlation binding row ID.
+Keys are stable across rebuilds for the same resource identity, but a changed
+image/digest/Pod legitimately produces a different key. Legacy deep links using
+an old numeric binding ID are not automatically rewritten; historical AlertCase
+records remain auditable and any required migration is separately governed.
+
+Operational runbook: first inspect committed Registry Security evidence,
+current Kubernetes Pod generation, Runtime Correlation input signature and job
+history; then run **Artifact Registry Runtime Correlation** via canonical
+Jobs & Executions. Do not run provider scans, edit binding tables or infer
+remediation from the absence of an unrefreshed runtime finding.

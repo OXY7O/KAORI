@@ -78,6 +78,10 @@ Cluster compatibility routes may exist only as redirect or migration boundaries.
 - `app/integrations/observability/alert_source/providers/alertmanager/application/routes.py`
 
 
+## Local-only browser feedback
+
+User-triggered, non-persisted browser observations (such as **Settings → Time Zone → Detect Again**) may show this same Operational Toast without creating a server activity event, Notification Deck item, or fake audit receipt. The server renders inert instances of `components/operational_toast.html`; the client passes a cloned canonical toast element to `window.showOperationalToast(toast)`, which attaches it to the standard toast stack and invokes the existing lifecycle. Use `textContent` for browser-supplied message values. Automatic/background browser observation remains silent. An actual saved preference remains governed by the separate server-side `AUDIT_ONLY` event contract.
+
 ## Toast lifecycle
 
 - The payload contains a unique `feedback_id` and `auto_dismiss_ms`.

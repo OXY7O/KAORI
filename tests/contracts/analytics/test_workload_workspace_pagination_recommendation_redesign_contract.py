@@ -188,7 +188,10 @@ def test_recommendation_titles_and_workspace_labels_are_title_case() -> None:
 
     assert "page_hero.intro('brain-circuit', 'Intelligence', 'sparkles')" in template
     assert '<h1 class="{{ page_hero.title_classes() }}">Recommendations</h1>' in template
-    assert 'Intelligence Posture' in template
+    assert "{% include 'intelligence/partials/_recommendation_hero_posture.html' %}" in template
+    hero_posture = read('app/templates/intelligence/partials/_recommendation_hero_posture.html')
+    assert "page_hero.context_card('Recommendation posture'," in hero_posture
+    assert "'Intelligence Posture'," in hero_posture
     records = read('app/templates/intelligence/partials/_recommendation_records.html')
     assert 'Recommendation Workspace' in template
     assert 'Affected Scope' in records

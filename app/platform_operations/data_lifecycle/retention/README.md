@@ -9,6 +9,10 @@ This package provides the shared archive-first lifecycle used by **Platform Oper
 - `runtime_observation`: append-only Recent Runtime Observations for Kubernetes, MinIO Object Storage, Metrics Source, Alertmanager, and future providers using the shared `IntegrationRuntimeObservation` model.
 - `analytics_snapshot`: reusable Analytics/Forecast materialization rows from `analytics_snapshots`; pending or still-serveable snapshots remain protected until stale grace and hot retention have both elapsed.
 - `generated_report`: terminal Generated Reports metadata from `reports`; Ready and Archived rows archive their binary PDF/XLSX/CSV evidence with SHA-256 verification before source cleanup, while active generation remains protected.
+- `alert_incident`: closed Alert Operations case evidence (timeline, notification delivery, postmortem) with compacted hot case index preserved for History.
+- `tenant_audit_evidence`: committed normalized Tenant/Kubernetes audit correlation evidence; the Kubernetes API audit provider remains authoritative for raw event logs.
+
+The registered adapter catalog currently contains **seven** managed domains. The Data Lifecycle Final Lock v1.3 documents the four-domain historical admission baseline; later registered adapters follow the same approved archive-first engine and do not rewrite that historical lock. Adapter registration alone does not enable unattended execution: persisted policy and scheduler domain configuration still govern automation.
 
 Future domains such as Intelligence execution evidence should be added as adapters rather than separate retention subsystems.
 
@@ -22,6 +26,16 @@ Future domains such as Intelligence execution evidence should be added as adapte
 6. Registry rows preserve a non-secret storage locator snapshot after the active Local/S3 profile changes.
 7. Cleanup is batched; partial completion is recorded as `cleanup_partial` and never removes the verified archive.
 8. Active source records are protected by each domain adapter. The Job Execution adapter archives only terminal jobs and never follows `result_reference` into analytics, forecast, report, or dataset storage.
+
+## Re-verification and recovery of archive evidence
+
+Archive History **Verify** re-reads the data, manifest and any supplementary artifacts from the original storage locator and compares size and SHA-256 evidence. If any object is missing, inaccessible or mismatched, the archive moves to `failed`, its previous verification timestamp is invalidated, and Data/Manifest download is blocked until a successful re-verification. Re-verification is an integrity check, not a hot-data restore or a cleanup retry.
+
+On successful re-verification of a previously failed archive, `archive_and_cleanup` records with `cleanup_deleted_count < record_count` remain `cleanup_partial` even if zero source rows were deleted. The operator must review the original failed execution and remaining hot records before starting a separate governed lifecycle run. Archive-only or fully completed cleanup may return to `ready` after integrity checks pass. `purge_failed`/`expired` artifacts cannot be silently reset by the Verify action; their own purge/recovery contract remains authoritative.
+
+## Atomic policy mutation
+
+Saving a previously absent lifecycle policy stages the fallback row and submitted operator values in **one database transaction**. It never commits default enablement or schedule values before the requested policy state is committed. A failed save rolls back the whole first-save operation; ordinary GET/Preview requests do not create policy rows. Existing seeded policies continue to be updated through the same authoritative persisted-policy service.
 
 ## Scale and scheduling
 

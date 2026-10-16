@@ -4,14 +4,16 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, or_
-from sqlalchemy.orm import joinedload
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import Session, joinedload
 
+from app.artifact_registry.correlation import runtime_input_signature
 from app.artifact_registry.correlation_sync_jobs import correlation_prerequisites
 from app.artifact_registry.presentation_common import FRESHNESS_HOURS, _aware_datetime, _providers
 from app.artifact_registry.presentation_inventory import _inventory_detail_provider_context
 from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.common.pagination import paginate_query
+from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.job import JobExecution
 from app.models.registry import (
@@ -63,16 +65,28 @@ def _runtime_security_state(
     }
 
 
-def _runtime_security_index() -> tuple[dict[int, dict[str, Any]], set[int], set[int], set[int]]:
+def _runtime_security_index(*, source_ids: list[int]) -> tuple[dict[int, dict[str, Any]], set[int], set[int], set[int]]:
     security_by_artifact: dict[int, dict[str, Any]] = {}
     critical_ids: set[int] = set()
     high_ids: set[int] = set()
     scanned_ids: set[int] = set()
-    rows = RegistryArtifact.query.with_entities(
-        RegistryArtifact.id,
-        RegistryArtifact.scan_status,
-        RegistryArtifact.vulnerability_summary,
-    ).all()
+    # Project only the committed security evidence used by current runtime
+    # bindings. Unused Registry artifacts must not enter normal page hydration.
+    bound_artifact_ids = select(RegistryWorkloadBinding.artifact_id).distinct()
+    rows = (
+        RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(
+            RegistryProject.integration_instance_id.in_(source_ids),
+            RegistryArtifact.id.in_(bound_artifact_ids),
+        )
+        .with_entities(
+            RegistryArtifact.id,
+            RegistryArtifact.scan_status,
+            RegistryArtifact.vulnerability_summary,
+        )
+        .yield_per(250)
+    )
     for artifact_id, scan_status, vulnerability_summary in rows:
         state = _runtime_security_state(scan_status, vulnerability_summary)
         normalized_id = int(artifact_id)
@@ -241,6 +255,7 @@ def _runtime_filtered_query(
         'match': str(request.match_type or '').strip().lower(),
         'exposure': str(request.exposure or '').strip().lower(),
     }
+    active_source_ids = [int(source.id) for source in sources]
     query = (
         RegistryWorkloadBinding.query.join(
             RegistryArtifact,
@@ -261,8 +276,14 @@ def _runtime_filtered_query(
             .joinedload(RegistryRepository.project)
         )
     )
+    # Filter active/enabled source identity at the SQL boundary even for
+    # bookmarked artifact IDs, empty fleets and forged filters.
+    query = query.filter(RegistryProject.integration_instance_id.in_(active_source_ids))
     if request.source_id is not None:
-        query = query.filter(RegistryProject.integration_instance_id == int(request.source_id))
+        if int(request.source_id) not in active_source_ids:
+            query = query.filter(RegistryWorkloadBinding.id == -1)
+        else:
+            query = query.filter(RegistryProject.integration_instance_id == int(request.source_id))
     if filters['cluster']:
         query = query.filter(RegistryWorkloadBinding.cluster_id == filters['cluster'])
     if filters['namespace']:
@@ -352,6 +373,9 @@ def _runtime_usage_rows(
         project = repository.project
         source = source_by_id.get(int(project.integration_instance_id))
         cluster = cluster_by_id.get(str(binding.cluster_id))
+        binding_details = binding.details if isinstance(binding.details, dict) else {}
+        container_usages = binding_details.get('containers')
+        container_count = len(container_usages) if isinstance(container_usages, list) and container_usages else 1
         security = security_by_artifact.get(
             int(artifact.id),
             _runtime_security_state(artifact.scan_status, artifact.vulnerability_summary),
@@ -377,6 +401,7 @@ def _runtime_usage_rows(
                 'workload_name': binding.workload_name or 'Not Resolved',
                 'pod_name': binding.pod_name,
                 'container_name': binding.container_name or 'Container',
+                'container_count': container_count,
                 'image_reference': binding.image_reference,
                 'match': _runtime_match_state(binding.match_type, binding.confidence),
                 'match_type': binding.match_type,
@@ -411,6 +436,17 @@ def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
         else latest_binding_at
     )
     latest_correlated_at = _aware_datetime(latest_correlated_at)
+    with Session(db.engine) as signature_session:
+        current_signature = runtime_input_signature(signature_session)
+    committed_summary = (
+        latest_success.result_summary_json
+        if latest_success is not None and isinstance(latest_success.result_summary_json, dict)
+        else {}
+    )
+    committed_signature = committed_summary.get('input_signature')
+    inputs_changed = bool(
+        latest_correlated_at is not None and (not committed_signature or committed_signature != current_signature)
+    )
     setup = _runtime_prerequisite_guidance(
         prerequisites,
         has_committed_snapshot=latest_correlated_at is not None,
@@ -437,6 +473,9 @@ def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
     elif refresh_failed:
         status, tone = 'Refresh Failed', 'warning'
         description = 'The latest rebuild failed; the previous committed correlation remains readable.'
+    elif inputs_changed:
+        status, tone = 'Inputs Changed', 'warning'
+        description = 'Inputs changed or correlation lacks generation proof; rebuild.'
     elif stale:
         status, tone = 'Stale', 'warning'
         description = 'Committed runtime correlation is older than the current freshness window.'
@@ -446,6 +485,7 @@ def _runtime_snapshot_state(prerequisites: dict[str, Any]) -> dict[str, Any]:
     return {
         'setup': setup,
         'latest_correlated_at': latest_correlated_at,
+        'inputs_changed': inputs_changed,
         'status': status,
         'tone': tone,
         'description': description,
@@ -561,11 +601,18 @@ def _runtime_empty_state(
     )
 
 
-def _runtime_namespace_options() -> list[str]:
+def _runtime_namespace_options(*, source_ids: list[int]) -> list[str]:
     return [
         value
         for (value,) in (
-            RegistryWorkloadBinding.query.with_entities(RegistryWorkloadBinding.namespace)
+            RegistryWorkloadBinding.query.join(
+                RegistryArtifact,
+                RegistryWorkloadBinding.artifact_id == RegistryArtifact.id,
+            )
+            .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+            .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+            .filter(RegistryProject.integration_instance_id.in_(source_ids))
+            .with_entities(RegistryWorkloadBinding.namespace)
             .distinct()
             .order_by(RegistryWorkloadBinding.namespace.asc())
             .all()
@@ -580,7 +627,7 @@ def _build_runtime_usage(request: RuntimeUsageRequest) -> dict[str, Any]:
     clusters = Cluster.query.order_by(Cluster.name.asc()).all()
     cluster_by_id = {str(item.id): item for item in clusters}
     prerequisites = correlation_prerequisites()
-    security_by_artifact, critical_ids, high_ids, scanned_ids = _runtime_security_index()
+    security_by_artifact, critical_ids, high_ids, scanned_ids = _runtime_security_index(source_ids=list(source_by_id))
     query, filters = _runtime_filtered_query(
         request,
         sources=sources,
@@ -653,7 +700,7 @@ def _build_runtime_usage(request: RuntimeUsageRequest) -> dict[str, Any]:
         },
         'source_options': sources,
         'cluster_options': clusters,
-        'namespace_options': _runtime_namespace_options(),
+        'namespace_options': _runtime_namespace_options(source_ids=list(source_by_id)),
         'match_options': [
             {'value': 'digest', 'label': 'Digest Match'},
             {'value': 'tag', 'label': 'Tag Match'},
@@ -710,6 +757,8 @@ def build_runtime_binding_detail(binding_id: int) -> dict[str, Any] | None:
     artifact = binding.artifact
     repository = artifact.repository
     project = repository.project
+    if int(project.integration_instance_id) not in {int(item.id) for item in _providers()}:
+        return None
     source = _inventory_detail_provider_context(project.integration_instance_id)
     cluster = Cluster.query.filter(Cluster.id == str(binding.cluster_id)).first()
     match = _runtime_match_state(binding.match_type, binding.confidence)
@@ -739,6 +788,15 @@ def build_runtime_binding_detail(binding_id: int) -> dict[str, Any] | None:
         'pod_name': binding.pod_name,
         'container_name': binding.container_name or 'Container',
         'source_kind': str(details.get('source_kind') or 'container').replace('_', ' ').title(),
+        'containers': [
+            {
+                'name': str(entry.get('name') or 'Container'),
+                'kind': str(entry.get('source_kind') or 'container').replace('_', ' ').title(),
+                'index': int(entry.get('index') or 0),
+            }
+            for entry in (details.get('containers') or [])
+            if isinstance(entry, dict)
+        ],
         'registry_host': details.get('registry_host') or 'Not Collected',
         'registry_observed_at': _runtime_parse_observed_at(details.get('registry_observed_at')) or artifact.observed_at,
         'kubernetes_observed_at': _runtime_parse_observed_at(details.get('pod_collected_at')),

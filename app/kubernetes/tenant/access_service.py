@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+import yaml
 from kubernetes.client.rest import ApiException
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -11,10 +12,11 @@ from app.kubernetes.tenant.access import (
     ACCESS_PROFILE_CATALOG,
     LATEST_ACCESS_PROFILE_VERSION,
     TenantAccessScope,
+    capsule_cluster_role_manifest,
     get_access_profile,
     validate_grant_scope,
 )
-from app.kubernetes.tenant.access_reconciliation import inspect_native_access_grant, reconcile_native_access_grant
+from app.kubernetes.tenant.access_provider import inspect_provider_access_grant, reconcile_provider_access_grant
 from app.kubernetes.tenant.credential_service import revoke_credentials_for_access_grant
 from app.models import AuditEvent, User
 from app.models.tenant import (
@@ -218,13 +220,19 @@ def create_access_grant_committed(
 
     try:
         db.session.flush()
-        reconcile_native_access_grant(grant)
+        reconcile_provider_access_grant(grant)
         _record_grant_event(
             actor=actor,
             grant=grant,
             action='tenant_access_grant.created',
-            summary='Tenant Access Grant was committed and reconciled.',
-            outcome='success',
+            summary=(
+                'Tenant Access Grant was committed and verified.'
+                if grant.reconciliation_status == TenantAccessReconciliationStatus.READY.value
+                else 'Tenant Access Grant was committed; effective provider reconciliation is still pending.'
+            ),
+            outcome='success'
+            if grant.reconciliation_status == TenantAccessReconciliationStatus.READY.value
+            else 'warning',
         )
         db.session.commit()
         return grant
@@ -257,13 +265,19 @@ def revoke_access_grant_committed(*, grant_id: int, actor: User | None = None) -
     grant.status = TenantAccessGrantStatus.REVOKED.value
     try:
         revoke_credentials_for_access_grant(grant, actor=actor)
-        reconcile_native_access_grant(grant)
+        reconcile_provider_access_grant(grant)
         _record_grant_event(
             actor=actor,
             grant=grant,
             action='tenant_access_grant.revoked',
-            summary='Tenant Access Grant and dependent credential access were removed from Kubernetes.',
-            outcome='success',
+            summary=(
+                'Tenant Access Grant and dependent credential access were removed from Kubernetes.'
+                if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value
+                else 'Tenant Access Grant is revoked in KAORI, but effective cleanup remains unverified.'
+            ),
+            outcome='success'
+            if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value
+            else 'warning',
         )
         db.session.commit()
         return grant
@@ -683,7 +697,7 @@ def revoke_membership_committed(*, membership_id: int, actor: User | None = None
             continue
         grant.status = TenantAccessGrantStatus.REVOKED.value
         try:
-            reconcile_native_access_grant(grant)
+            reconcile_provider_access_grant(grant)
         except (ApiException, ValueError) as exc:
             errors.append(str(exc))
             _record_grant_event(
@@ -694,12 +708,18 @@ def revoke_membership_committed(*, membership_id: int, actor: User | None = None
                 outcome='failed',
             )
         else:
+            if grant.reconciliation_status != TenantAccessReconciliationStatus.REVOKED.value:
+                errors.append(f'Grant {grant.public_id}: effective provider cleanup is unverified.')
             _record_grant_event(
                 actor=actor,
                 grant=grant,
                 action='tenant_access_grant.membership_revoked',
                 summary='Tenant Access Grant was revoked because its membership was revoked.',
-                outcome='success',
+                outcome=(
+                    'success'
+                    if grant.reconciliation_status == TenantAccessReconciliationStatus.REVOKED.value
+                    else 'warning'
+                ),
             )
 
     _record_membership_event(
@@ -776,7 +796,10 @@ def reconcile_access_grants_for_namespace_committed(
     """
 
     tenant = namespace.environment.tenant
-    if tenant.provider_key != 'native_kubernetes' or tenant.reconciliation_authority != 'native_kubernetes':
+    if tenant.provider_key != tenant.reconciliation_authority or tenant.provider_key not in {
+        'native_kubernetes',
+        'capsule',
+    }:
         return {'matched': 0, 'reconciled': 0, 'failed': 0}
 
     grants = (
@@ -799,7 +822,7 @@ def reconcile_access_grants_for_namespace_committed(
     failed = 0
     for grant in grants:
         try:
-            reconcile_native_access_grant(grant)
+            reconcile_provider_access_grant(grant)
             _record_grant_event(
                 actor=actor,
                 grant=grant,
@@ -837,7 +860,7 @@ def inspect_access_grant_committed(*, grant_id: int, actor: User | None = None) 
     if grant is None:
         raise ValueError('Selected Tenant Access Grant no longer exists.')
     try:
-        inspect_native_access_grant(grant)
+        inspect_provider_access_grant(grant)
         _record_grant_event(
             actor=actor,
             grant=grant,
@@ -858,13 +881,13 @@ def reconcile_access_grant_committed(*, grant_id: int, actor: User | None = None
         raise ValueError('Selected Tenant Access Grant no longer exists.')
     _require_ready_tenant(grant.tenant)
     try:
-        reconcile_native_access_grant(grant)
+        reconcile_provider_access_grant(grant)
         _record_grant_event(
             actor=actor,
             grant=grant,
             action='tenant_access_grant.reconciled',
-            summary='Tenant Access Grant was reconciled to effective Kubernetes RBAC.',
-            outcome='success',
+            summary='Tenant Access Grant provider reconciliation was attempted; effective state was read back.',
+            outcome='success' if grant.reconciliation_status in {'ready', 'revoked'} else 'warning',
         )
         db.session.commit()
         return grant
@@ -932,6 +955,28 @@ def get_tenant_access_context() -> dict[str, object]:
         for key in profile_order
         if key in LATEST_ACCESS_PROFILE_VERSION
     ]
+    capsule_role_documents = [capsule_cluster_role_manifest(profile) for profile in profiles]
+    capsule_role_manifests = [
+        {
+            'label': profile.label,
+            'version': profile.version,
+            'name': document['metadata']['name'],
+            'yaml': yaml.safe_dump(document, sort_keys=False, explicit_start=True),
+        }
+        for profile, document in zip(profiles, capsule_role_documents, strict=True)
+    ]
+    recent_access_remediation = (
+        AuditEvent.query.filter_by(target_type='kubernetes_tenant_access_remediation_plan')
+        .order_by(AuditEvent.id.desc())
+        .limit(30)
+        .all()
+    )
+    capsule_remediation = [
+        row for row in recent_access_remediation if (row.metadata_json or {}).get('provider', 'capsule') == 'capsule'
+    ][:5]
+    native_remediation = [
+        row for row in recent_access_remediation if (row.metadata_json or {}).get('provider') == 'native_kubernetes'
+    ][:5]
     return {
         'access_tenant_options': tenant_options,
         'access_user_options': user_options,
@@ -940,9 +985,57 @@ def get_tenant_access_context() -> dict[str, object]:
         'access_environment_options': environment_options,
         'access_namespace_options': namespace_options,
         'access_profiles': profiles,
+        'access_capsule_role_manifests': capsule_role_manifests,
+        'access_capsule_role_bundle_yaml': yaml.safe_dump_all(
+            capsule_role_documents, sort_keys=False, explicit_start=True
+        ),
         'recent_tenant_groups': TenantGroup.query.order_by(TenantGroup.created_at.desc()).limit(5).all(),
         'recent_tenant_memberships': TenantMembership.query.order_by(TenantMembership.created_at.desc()).limit(5).all(),
         'recent_access_grants': TenantAccessGrant.query.order_by(TenantAccessGrant.created_at.desc()).limit(5).all(),
+        'external_capsule_tenants': [
+            tenant
+            for tenant in tenant_options
+            if tenant.provider_key == 'capsule' and tenant.provider_state == 'capsule'
+        ],
+        'external_native_tenants': [
+            tenant
+            for tenant in tenant_options
+            if tenant.provider_key == 'native_kubernetes'
+            and tenant.provider_state == 'native'
+            and tenant.reconciliation_authority == 'native_kubernetes'
+        ],
+        'recent_external_access_profile_reviews': (
+            AuditEvent.query.filter_by(target_type='kubernetes_tenant_external_role_profile_review')
+            .order_by(AuditEvent.id.desc())
+            .limit(5)
+            .all()
+        ),
+        'recent_external_native_access': (
+            AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_external_access_inventory')
+            .order_by(AuditEvent.id.desc())
+            .limit(5)
+            .all()
+        ),
+        'recent_external_capsule_access': (
+            AuditEvent.query.filter_by(target_type='kubernetes_tenant_external_access_inventory')
+            .order_by(AuditEvent.id.desc())
+            .limit(5)
+            .all()
+        ),
+        'recent_capsule_access_drift': (
+            AuditEvent.query.filter_by(target_type='kubernetes_tenant_access_drift_evidence')
+            .order_by(AuditEvent.id.desc())
+            .limit(5)
+            .all()
+        ),
+        'recent_native_access_drift': (
+            AuditEvent.query.filter_by(target_type='kubernetes_tenant_native_access_drift_evidence')
+            .order_by(AuditEvent.id.desc())
+            .limit(5)
+            .all()
+        ),
+        'recent_capsule_access_remediation': capsule_remediation,
+        'recent_native_access_remediation': native_remediation,
     }
 
 

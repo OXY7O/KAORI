@@ -9,7 +9,7 @@
             ('history', 'Archive History', 'history', url_for('platform_operations.data_lifecycle.index', tab='history')),
             ('storage', 'Archive Storage', 'hard-drive', url_for('platform_operations.data_lifecycle.index', tab='storage'))
         ] %}
-    <div class="space-y-6">
+    <div id="data-lifecycle-page" class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -54,11 +54,13 @@
                          x-data="{ activeDomain: '{{ lifecycle.selected_domain }}', domainSearch: '' }">
                         <aside class="space-y-3 xl:col-span-4">
                             <div class="rounded-xl border border-outline-default bg-surface-card p-3">
-                                <label class="text-xs font-semibold text-content-secondary">Search Data Domains</label>
+                                <label for="data-lifecycle-domain-search"
+                                       class="text-xs font-semibold text-content-secondary">Search Data Domains</label>
                                 <div class="relative mt-2">
                                     <i data-lucide="search"
                                        class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-content-muted"></i>
-                                    <input type="search"
+                                    <input id="data-lifecycle-domain-search"
+                                           type="search"
                                            x-model.debounce.200ms="domainSearch"
                                            class="h-9 w-full rounded-md border border-outline-default bg-surface-card pl-9 pr-3 text-xs text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-accent/30"
                                            placeholder="Audit, jobs, runtime…">

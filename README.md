@@ -40,14 +40,34 @@ The root view intentionally stays product-level. Runtime boundaries, data author
 
 ## Quick Start
 
-The supported development path is the VS Code Dev Container described in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+The supported development path is the VS Code Dev Container described in
+[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md). Open the project
+normally in **VS Code Windows**, ensure Docker Desktop is running Linux
+containers, and select **Dev Containers: Rebuild and Reopen in Container**.
+The first-run initializer executes Python inside a disposable Docker
+container, **not on your Windows host or WSL**.
 
 ```bash
-cp .env.example .env
-bash scripts/init_db.sh --bootstrap-admin
-npm run watch-css
-flask --app run:app run --host=0.0.0.0 --port=5000 --debug
+# Optional before first open: cp .env.example .env
+# The Docker-based initializer creates .env when missing and generates
+# runtime kaori_runtime DATABASE_URL and application development keys.
+# postgres and migrator passwords are generated in ignored local files:
+# secrets/devcontainer/postgres-bootstrap.env
+# secrets/devcontainer/postgres-migrate.env
+# See committed safe examples under .devcontainer/examples/.
+# Reopen in Container starts PostgreSQL, Redis, workspace and workers/Beat.
+# Press F5: an empty database shows Database Setup Required.
+# Run the copied command from Windows PowerShell on the host:
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap
+# Refresh /auth/login and use the private .env ADMIN_* application account.
 ```
+
+The shared app `.env` uses **only** `kaori_runtime` for PostgreSQL
+`DATABASE_URL`. It does not contain `POSTGRES_PASSWORD` or a
+`kaori_migrator` login. Configure `ADMIN_EMAIL` before first
+operator bootstrap; no DBA password is required from the application.
+See [exact environment-file ownership](docs/deployment/ENVIRONMENT_CONFIGURATION.md)
+and [DevContainer first-run instructions](docs/operations/devcontainer-postgres-first-run.md).
 
 For a laptop that should run a governed staging/RC image **without a Dev Container**, use [`example/kaori`](example/kaori/README.md). The example consumes an explicit admitted image reference rather than a mutable `staging` tag.
 

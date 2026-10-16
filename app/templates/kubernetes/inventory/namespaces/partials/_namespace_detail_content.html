@@ -25,15 +25,15 @@
         <div class="min-w-0 space-y-4 p-4 sm:p-5 lg:p-6">
             <div data-kaori-unified-resource-sheet
                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Namespace Identity', 'badge-info', namespace.age, badge_size='detail', stretch=false, density='compact', description='Canonical namespace identity, cluster ownership, lifecycle, and collection context.') %}
+                {% call detail.inventory_section('Namespace Identity', 'badge-info', namespace.age, badge_size='detail', stretch=false, density='compact', description='Identity, lifecycle, snapshot.') %}
                     {{ detail.inventory_status_row('Lifecycle', namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
                     {{ detail.inventory_row('Age', namespace.age) }}
-                    {{ detail.inventory_technical_row('UID', namespace.uid, copyable=true) }}
+                    {{ detail.inventory_technical_row('UID', namespace.uid) }}
                     {{ detail.inventory_row('Created', namespace.created_at|user_datetime if namespace.created_at else '-') }}
                     {{ detail.inventory_row('Collected', namespace.collected_at|user_datetime) }}
                     {{ detail.inventory_row('Cluster', namespace.cluster_name) }}
                 {% endcall %}
-                {% call detail.inventory_section('Access & Security', 'shield-check', namespace.pod_security_enforce_display, badge_size='detail', stretch=false, density='compact', description='Pod Security admission posture and access-related metadata reported for this namespace.') %}
+                {% call detail.inventory_section('Access & Security', 'shield-check', namespace.pod_security_enforce_display, badge_size='detail', stretch=false, density='compact', description='Pod security and access.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'NetworkPolicies', 'value': namespace.network_policy_count if namespace.network_policy_count is not none else 'Not Reported', 'icon': 'network'},
                                         {'label': 'ServiceAccounts', 'value': namespace.service_account_count if namespace.service_account_count is not none else 'Not Reported', 'icon': 'users'},
@@ -44,7 +44,7 @@
                     ], columns=2) }}
                     <div class="mt-3">
                         {{ operational_callout.render('Control Interpretation',
-                                                'Unset namespace controls remain neutral until evaluated against an explicit governance policy. KAORI does not infer cluster-level Pod Security Admission defaults from missing labels. Default ServiceAccount presence is reported separately as access-baseline evidence.',
+                                                'Unset controls remain neutral pending policy review; PSA defaults are not inferred, and ServiceAccount presence is separate evidence.',
                                                 'shield-check',
                                                 'info') }}
                     </div>
@@ -52,7 +52,7 @@
             </div>
             <div data-kaori-unified-resource-sheet
                  class="min-w-0 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
-                {% call detail.inventory_section('Object Composition', 'boxes', namespace.object_counts.evidence_display, badge_size='detail', stretch=false, density='compact', description='Committed workload, Pod, Service, Ingress, and configuration composition within this namespace.') %}
+                {% call detail.inventory_section('Object Composition', 'boxes', namespace.object_counts.evidence_display, badge_size='detail', stretch=false, density='compact', description='Workloads, network, config.') %}
                     {{ detail.inventory_fact_grid([
                                         ('Workloads', namespace.object_counts.workloads, '') ,
                     ('Pods', namespace.object_counts.pods, ''),
@@ -83,7 +83,7 @@
                         {{ detail.empty_evidence('No Workload Objects Collected', 'No controller or batch workload was present in the committed snapshot.', 'layout-grid') }}
                     {% endif %}
                 {% endcall %}
-                {% call detail.inventory_section('Resource Controls', 'sliders-horizontal', namespace.control_evidence_display, badge_size='detail', stretch=false, density='compact', description='Quota and LimitRange evidence that constrains resource consumption in this namespace.') %}
+                {% call detail.inventory_section('Resource Controls', 'sliders-horizontal', namespace.control_evidence_display, badge_size='detail', stretch=false, density='compact', description='Quota and limit controls.') %}
                     {{ detail.inventory_fact_grid([
                                         {'label': 'ResourceQuota', 'value': namespace.quota_display, 'icon': 'sliders-horizontal'},
                                         {'label': 'LimitRange', 'value': namespace.limit_range_display, 'icon': 'gauge'},

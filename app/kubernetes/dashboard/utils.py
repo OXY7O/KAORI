@@ -144,7 +144,10 @@ def forecast_insight(payload: dict[str, Any]) -> str:
     percent = summary.get('highest_projected_percent', 0)
     horizon_days = safe_optional_int(payload.get('horizon_days')) or 90
     try:
-        return f'{label} has the highest {horizon_days}-day projection at {float(percent):.0f}%.'
+        return (
+            f'{label} has the highest {horizon_days}-day utilization projection at {float(percent):.0f}%. '
+            'Review projected demand against worker capacity and available headroom.'
+        )
     except (TypeError, ValueError):
         return 'Forecast snapshot loaded from analytics forecast service.'
 

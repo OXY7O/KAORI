@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from urllib.parse import urlsplit
 
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, IntegerField, PasswordField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
 from app.integrations.registry.providers.harbor.application.contracts import HarborRegistrationInput
+from app.integrations.registry.providers.harbor.transport_policy import validate_harbor_endpoint
 from app.kubernetes.cluster.constants import ENVIRONMENTS
 
 if TYPE_CHECKING:
@@ -68,15 +68,17 @@ class HarborInstanceForm(FlaskForm):
     enabled = BooleanField('Allow KAORI to Use This Connection', default=True)
 
     def validate_endpoint(self, field: StringField) -> None:
-        endpoint = str(field.data or '').strip().rstrip('/')
-        parsed = urlsplit(endpoint)
-        if parsed.scheme not in {'http', 'https'} or not parsed.hostname:
-            raise ValidationError('Endpoint must be a valid HTTP or HTTPS URL.')
-        if parsed.username or parsed.password:
-            raise ValidationError('Do not embed credentials in the Harbor endpoint URL.')
-        if parsed.query or parsed.fragment:
-            raise ValidationError('Endpoint must not include query parameters or a fragment.')
-        field.data = endpoint
+        try:
+            field.data = validate_harbor_endpoint(
+                str(field.data or '').strip(),
+                verify_ssl=bool(self.verify_ssl.data),
+            )
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+
+    def validate_verify_ssl(self, field: BooleanField) -> None:
+        if not field.data:
+            raise ValidationError('Harbor TLS verification cannot be disabled.')
 
     def validate_username(self, field: StringField) -> None:
         if self.auth_type.data == 'basic' and not str(field.data or '').strip():

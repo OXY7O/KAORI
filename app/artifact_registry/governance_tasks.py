@@ -28,10 +28,20 @@ def _governance_sync_result(
     project_count: int,
     replication_policy_count: int,
     failures: list[dict[str, str]],
+    partial_sources: int,
     requested_by_user_id: int | None,
     started: float,
 ) -> dict[str, Any]:
-    status = 'error' if failures and not synced else ('warning' if failures else 'success')
+    status = 'error' if failures and not synced else ('warning' if failures or partial_sources else 'success')
+    if failures:
+        detail = 'Failed providers retained their previous committed governance evidence.'
+    elif partial_sources:
+        detail = 'Unavailable capability evidence was retained from prior committed snapshots where available.'
+    else:
+        detail = (
+            f'{project_count} project governance record(s) and '
+            f'{replication_policy_count} replication policy record(s) were refreshed.'
+        )
     return {
         'status': status,
         'title': (
@@ -39,18 +49,12 @@ def _governance_sync_result(
             if status != 'error'
             else 'Artifact Registry Governance Sync Failed'
         ),
-        'message': f'{synced} Registry provider(s) synchronized; {len(failures)} failed.',
-        'detail': (
-            'Failed providers retained their previous committed governance evidence.'
-            if failures
-            else (
-                f'{project_count} project governance record(s) and '
-                f'{replication_policy_count} replication policy record(s) were refreshed.'
-            )
-        ),
+        'message': (f'{synced} Registry provider(s) synchronized; {len(failures)} failed; {partial_sources} partial.'),
+        'detail': detail,
         'total_count': total,
         'synced_count': synced,
         'failed_count': len(failures),
+        'partial_count': partial_sources,
         'project_count': project_count,
         'replication_policy_count': replication_policy_count,
         'failure_evidence': failures,
@@ -78,7 +82,7 @@ def sync_all_registry_governance_task(
     started = perf_counter()
     targets = list(targets or [])
     total = len(targets)
-    synced = 0
+    synced = partial_sources = 0
     project_count = replication_policy_count = 0
     failures: list[dict[str, str]] = []
     context.start(
@@ -155,6 +159,7 @@ def sync_all_registry_governance_task(
                     progress_callback=report_governance_progress,
                 )
                 synced += 1
+                partial_sources += int(result.get('status') == 'partial')
                 project_count += int(result.get('projects') or 0)
                 replication_policy_count += int(result.get('replication_policies') or 0)
             except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
@@ -185,6 +190,7 @@ def sync_all_registry_governance_task(
             project_count=project_count,
             replication_policy_count=replication_policy_count,
             failures=failures,
+            partial_sources=partial_sources,
             requested_by_user_id=requested_by_user_id,
             started=started,
         )
@@ -217,7 +223,7 @@ def sync_all_registry_governance_task(
             context.succeed(
                 result_summary=result,
                 result_type='artifact_registry_governance_sync',
-                partial=bool(failures),
+                partial=bool(failures or partial_sources),
             )
         return result
     except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:

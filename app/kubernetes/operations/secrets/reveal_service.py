@@ -13,11 +13,8 @@ from sqlalchemy import or_, text
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload
+from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, paginate_query, pagination_payload
 from app.extensions.db import db
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
-    tls_policy_for_cluster,
-)
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.kubernetes.operations.secrets.live_service import (
     LiveSecretSnapshot,
     best_effort_inventory_id,
@@ -326,88 +323,50 @@ def get_reveal_page_context(
     my_page: int = 1,
     my_per_page: int = 5,
     pending_page: int = 1,
-    pending_per_page: int = 3,
+    pending_per_page: int = 5,
 ) -> dict[str, Any]:
     _expire_stale_requests()
 
-    allowed_page_sizes = (5, 10, 25)
-    try:
-        normalized_per_page = int(my_per_page)
-    except (TypeError, ValueError):
-        normalized_per_page = 5
-    if normalized_per_page not in allowed_page_sizes:
-        normalized_per_page = 5
-
-    try:
-        normalized_page = max(int(my_page), 1)
-    except (TypeError, ValueError):
-        normalized_page = 1
-
     my_query = SecretRevealRequest.query.filter_by(
         requester_user_id=user_id,
-    ).order_by(SecretRevealRequest.requested_at.desc())
-    my_total = my_query.count()
-    my_pages = max((my_total + normalized_per_page - 1) // normalized_per_page, 1)
-    normalized_page = min(normalized_page, my_pages)
-    my_requests = my_query.offset((normalized_page - 1) * normalized_per_page).limit(normalized_per_page).all()
+    ).order_by(SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc())
+    my_requests, my_window = paginate_query(my_query, page=my_page, per_page=my_per_page)
+    # Preserve the existing Reveal template keys without keeping a separate
+    # page-size policy or a second hand-written pagination algorithm.
     my_pagination = {
-        'page': normalized_page,
-        'per_page': normalized_per_page,
-        'total': my_total,
-        'pages': my_pages,
-        'has_prev': normalized_page > 1,
-        'has_next': normalized_page < my_pages,
-        'prev_page': normalized_page - 1,
-        'next_page': normalized_page + 1,
-        'start': ((normalized_page - 1) * normalized_per_page + 1) if my_total else 0,
-        'end': min(normalized_page * normalized_per_page, my_total),
-        'page_sizes': allowed_page_sizes,
+        **my_window,
+        'total': my_window['total_items'],
+        'pages': my_window['total_pages'],
+        'start': my_window['start_item'],
+        'end': my_window['end_item'],
+        'page_sizes': PER_PAGE_OPTIONS,
     }
 
-    pending_page_sizes = (3, 5, 10)
-    try:
-        normalized_pending_per_page = int(pending_per_page)
-    except (TypeError, ValueError):
-        normalized_pending_per_page = 3
-    if normalized_pending_per_page not in pending_page_sizes:
-        normalized_pending_per_page = 3
-
-    try:
-        normalized_pending_page = max(int(pending_page), 1)
-    except (TypeError, ValueError):
-        normalized_pending_page = 1
-
     pending_requests: list[SecretRevealRequest] = []
-    pending_total = 0
-    pending_pages = 1
     if can_approve:
         pending_query = SecretRevealRequest.query.filter_by(status='pending').order_by(
-            SecretRevealRequest.requested_at.asc()
+            SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc()
         )
-        pending_total = pending_query.count()
-        pending_pages = max(
-            (pending_total + normalized_pending_per_page - 1) // normalized_pending_per_page,
-            1,
+        pending_requests, pending_window = paginate_query(
+            pending_query,
+            page=pending_page,
+            per_page=pending_per_page,
         )
-        normalized_pending_page = min(normalized_pending_page, pending_pages)
-        pending_requests = (
-            pending_query.offset((normalized_pending_page - 1) * normalized_pending_per_page)
-            .limit(normalized_pending_per_page)
-            .all()
+    else:
+        pending_window = pagination_payload(
+            build_pagination_window(
+                total_items=0,
+                page=pending_page,
+                per_page=pending_per_page,
+            )
         )
-
     pending_pagination = {
-        'page': normalized_pending_page,
-        'per_page': normalized_pending_per_page,
-        'total': pending_total,
-        'pages': pending_pages,
-        'has_prev': normalized_pending_page > 1,
-        'has_next': normalized_pending_page < pending_pages,
-        'prev_page': normalized_pending_page - 1,
-        'next_page': normalized_pending_page + 1,
-        'start': ((normalized_pending_page - 1) * normalized_pending_per_page + 1 if pending_total else 0),
-        'end': min(normalized_pending_page * normalized_pending_per_page, pending_total),
-        'page_sizes': pending_page_sizes,
+        **pending_window,
+        'total': pending_window['total_items'],
+        'pages': pending_window['total_pages'],
+        'start': pending_window['start_item'],
+        'end': pending_window['end_item'],
+        'page_sizes': PER_PAGE_OPTIONS,
     }
     configured_reveal_namespace_count = SecretRevealNamespacePolicy.query.filter(
         SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))
@@ -452,6 +411,10 @@ def create_reveal_request(
     namespace_policy = get_namespace_policy(cluster.id, target.namespace)
     if namespace_policy not in {'step_up', 'approval_required'}:
         raise ValueError('Protected Secret Reveal is disabled for the selected namespace.')
+
+    secret_uid = str(target.uid or '').strip()
+    if not secret_uid:
+        raise ValueError('Kubernetes did not return a Secret UID. Reload the live target before requesting access.')
 
     key_name = _required(form.get('key_name'), 'Secret key', max_length=255)
     if key_name not in _allowed_keys(target):
@@ -513,6 +476,7 @@ def create_reveal_request(
     record.namespace = target.namespace
     record.secret_name = target.name
     record.secret_type = target.secret_type or 'Opaque'
+    record.secret_uid = secret_uid
     record.key_name = key_name
     record.policy = namespace_policy
     record.reason = reason
@@ -557,15 +521,40 @@ def decide_reveal_request(
     decision_note: str | None,
 ) -> SecretRevealRequest:
     _expire_stale_requests()
-    record = SecretRevealRequest.query.filter_by(id=request_id).first()
+    # Lock only the request table; joined eager relations can trigger an
+    # invalid FOR UPDATE on nullable outer joins in PostgreSQL.
+    record = (
+        SecretRevealRequest.query.filter_by(id=request_id)
+        .enable_eagerloads(False)
+        .with_for_update(of=SecretRevealRequest)
+        .first()
+    )
     if record is None:
         raise ValueError('Secret reveal request was not found.')
     if record.status != 'pending':
         raise ValueError('Only pending reveal requests can be approved or denied.')
     if record.requester_user_id == approver_user_id:
         raise ValueError('Requestors cannot approve or deny their own Secret reveal requests.')
+    if (expires_at := _as_aware(record.expires_at)) is None or expires_at <= _now():
+        raise ValueError('This Secret reveal request has expired.')
 
     if approve:
+        # Approval belongs to the exact live Kubernetes object, not merely
+        # the namespace/name tuple. Fail closed for pre-migration requests.
+        approved_uid = str(record.secret_uid or '').strip()
+        if not approved_uid:
+            raise ValueError('This request lacks approved Secret identity evidence. Submit a new request.')
+        live_target = read_live_secret(
+            record.cluster_id,
+            record.namespace,
+            record.secret_name,
+            supported_types=set(SUPPORTED_REVEAL_TYPES),
+            blocked_types=BLOCKED_SECRET_TYPES,
+        )
+        if str(live_target.uid or '').strip() != approved_uid or live_target.secret_type != record.secret_type:
+            raise ValueError('The live Secret identity changed. Submit a new reveal request.')
+        if record.key_name not in _allowed_keys(live_target):
+            raise ValueError('The approved Secret key is no longer available. Submit a new request.')
         cluster = Cluster.query.filter_by(id=record.cluster_id).first()
         current_policy = get_namespace_policy(record.cluster_id, record.namespace)
         if (
@@ -580,18 +569,32 @@ def decide_reveal_request(
             )
 
     now = _now()
-    record.approver_user_id = approver_user_id
-    record.decided_at = now
-    record.decision_note = (decision_note or '').strip()[:500] or None
-    if approve:
-        record.status = 'approved'
-        record.expires_at = now + timedelta(
-            minutes=int(current_app.config.get('KUBERNETES_SECRET_REVEAL_APPROVAL_TTL_MINUTES', 10))
-        )
-    else:
-        record.status = 'denied'
-        record.expires_at = now
+    next_expiry = (
+        now + timedelta(minutes=int(current_app.config.get('KUBERNETES_SECRET_REVEAL_APPROVAL_TTL_MINUTES', 10)))
+        if approve
+        else now
+    )
+    # Compare-and-set additionally protects engines that ignore FOR UPDATE,
+    # and makes duplicate POST submissions fail closed rather than notify twice.
+    changed = SecretRevealRequest.query.filter(
+        SecretRevealRequest.id == record.id,
+        SecretRevealRequest.status == 'pending',
+        SecretRevealRequest.expires_at > now,
+    ).update(
+        {
+            SecretRevealRequest.status: 'approved' if approve else 'denied',
+            SecretRevealRequest.approver_user_id: approver_user_id,
+            SecretRevealRequest.decided_at: now,
+            SecretRevealRequest.decision_note: (decision_note or '').strip()[:500] or None,
+            SecretRevealRequest.expires_at: next_expiry,
+        },
+        synchronize_session=False,
+    )
+    if changed != 1:
+        db.session.rollback()
+        raise ValueError('This reveal request was already decided or expired. Refresh the approval list.')
     db.session.commit()
+    db.session.refresh(record)
     return record
 
 
@@ -681,13 +684,19 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     secret_object = None
     secret_data: dict[str, str] = {}
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            secret_object = core_api(cluster).read_namespaced_secret(
-                name=record.secret_name,
-                namespace=record.namespace,
-                _request_timeout=10,
-            )
+        secret_object = core_api(cluster).read_namespaced_secret(
+            name=record.secret_name,
+            namespace=record.namespace,
+            _request_timeout=10,
+        )
+        live_metadata = getattr(secret_object, 'metadata', None)
+        live_uid = str(getattr(live_metadata, 'uid', None) or '').strip()
+        approved_uid = str(record.secret_uid or '').strip()
+        if not approved_uid or live_uid != approved_uid:
+            raise ValueError('The approved Secret object was replaced or its identity cannot be verified.')
         live_secret_type = str(getattr(secret_object, 'type', None) or 'Opaque')
+        if live_secret_type != record.secret_type:
+            raise ValueError('The approved Secret type changed. Submit a new reveal request.')
         if live_secret_type not in SUPPORTED_REVEAL_TYPES or live_secret_type in BLOCKED_SECRET_TYPES:
             raise ValueError('The live Secret type is no longer revealable. Submit a new request after review.')
         if record.key_name in BLOCKED_KEY_NAMES:

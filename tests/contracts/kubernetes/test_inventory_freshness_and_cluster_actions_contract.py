@@ -96,7 +96,7 @@ def test_inventory_freshness_uses_committed_cluster_inventory_snapshots() -> Non
     assert '1 of 1 snapshots' not in overview  # Built dynamically from committed scope counts.
     assert "'exception_label': exception_label" in overview
     assert '@inventory_bp.context_processor' in routes
-    assert 'get_inventory_freshness_context(cluster_id=cluster_id)' in routes
+    assert 'get_inventory_freshness_context(cluster_id=effective_cluster_id)' in routes
 
 
 def test_network_and_storage_inventory_offer_open_cluster_integrations() -> None:

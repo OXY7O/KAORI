@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func
+from flask import url_for
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 
 from app.common.pagination import paginate_query
@@ -18,6 +19,8 @@ from app.integrations.delivery.notification_channels.catalog import (
 )
 from app.integrations.delivery.notification_channels.config import (
     notification_delivery_max_attempts,
+    notification_delivery_recovery_enabled,
+    notification_delivery_retry_delay_seconds,
     notification_delivery_timeout_seconds,
 )
 from app.integrations.delivery.notification_channels.contracts import (
@@ -33,9 +36,12 @@ from app.integrations.delivery.notification_channels.providers import (
     provider_labels,
 )
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
+from app.models.report import Report
+from app.security.credentials import CredentialEncryptionError, decrypt_credential, encrypt_credential
 
 _PROVIDER_LABELS = provider_labels()
 _SEVERITY_RANK = {'info': 1, 'warning': 2, 'critical': 3}
+_REPLAY_KEY = '_encrypted_transport_snapshot'
 
 
 def list_channels() -> list[dict[str, Any]]:
@@ -134,16 +140,23 @@ def notification_channel_summary() -> dict[str, Any]:
     operational = [channel for channel in eligible if channel.last_delivery_status == 'success']
     delivery_failed = [channel for channel in eligible if channel.last_delivery_status == 'failed']
     validation_failed = [channel for channel in enabled if channel.test_status == 'failed']
+    validation_required = [
+        channel for channel in enabled if not channel.configured or channel.test_status not in {'success', 'failed'}
+    ]
+    # The aggregate must not hide an unhealthy enabled destination behind
+    # another channel's successful historical delivery.
     if delivery_failed:
         label, tone = 'Degraded', 'warning'
+    elif validation_failed:
+        label, tone = 'Validation Failed', 'warning'
+    elif validation_required:
+        label, tone = 'Validation Required', 'warning'
     elif operational:
         label, tone = 'Operational', 'normal'
     elif eligible:
         label, tone = 'Ready', 'info'
-    elif validation_failed:
-        label, tone = 'Validation Failed', 'warning'
-    elif enabled:
-        label, tone = 'Validation Required', 'warning'
+    elif channels:
+        label, tone = 'Disabled', 'unknown'
     else:
         label, tone = 'Not Configured', 'unknown'
     return {
@@ -164,9 +177,17 @@ def get_notification_channels_payload(
     channel_per_page: int = 5,
     delivery_page: int = 1,
     delivery_per_page: int = 5,
+    delivery_event_key: str = '',
+    can_view_reports: bool = False,
 ) -> dict[str, Any]:
     channel_rows, channel_pagination = _channel_registry_page(page=channel_page, per_page=channel_per_page)
-    delivery_rows, delivery_pagination = _delivery_registry_page(page=delivery_page, per_page=delivery_per_page)
+    normalized_delivery_key = str(delivery_event_key or '').strip()[:255]
+    delivery_rows, delivery_pagination = _delivery_registry_page(
+        page=delivery_page,
+        per_page=delivery_per_page,
+        event_key=normalized_delivery_key,
+        can_view_reports=can_view_reports,
+    )
     summary = notification_channel_summary()
     provider_counts = {
         str(provider_key): int(count)
@@ -192,6 +213,7 @@ def get_notification_channels_payload(
         'channel_pagination': channel_pagination,
         'deliveries': delivery_rows,
         'delivery_pagination': delivery_pagination,
+        'delivery_filter': normalized_delivery_key,
         'providers': providers,
         'domain_options': domain_options(),
         'event_type_options': event_type_options(),
@@ -207,7 +229,10 @@ def get_notification_channels_payload(
         ],
         'delivery_contract': {
             'events': f'{len(event_type_options())} governed event types',
-            'retry': f'Up to {notification_delivery_max_attempts()} attempts',
+            'retry': (
+                f'Up to {notification_delivery_max_attempts()} attempts; '
+                + ('recovery worker enabled' if notification_delivery_recovery_enabled() else 'recovery worker off')
+            ),
             'deduplication': 'Per channel and emitted event identity',
             'ownership': 'Consumers emit governed events; Notification Channels owns provider delivery.',
         },
@@ -221,10 +246,49 @@ def _channel_registry_page(*, page: int, per_page: int) -> tuple[list[dict[str, 
     return [_channel_view(channel, usage=usage_map.get(channel.id)) for channel in rows], pagination
 
 
-def _delivery_registry_page(*, page: int, per_page: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    query = NotificationDelivery.query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
+def _delivery_registry_page(
+    *, page: int, per_page: int, event_key: str = '', can_view_reports: bool = False
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    query = NotificationDelivery.query
+    if event_key:
+        query = query.filter(NotificationDelivery.event_key == event_key)
+    query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
     rows, pagination = paginate_query(query, page=page, per_page=per_page)
-    return [_delivery_view(row) for row in rows], pagination
+    # An exact, permissioned page-local read: no per-delivery report query.
+    report_ids = (
+        {report_id for row in rows if (report_id := _report_id_for_delivery(row)) is not None}
+        if can_view_reports
+        else set()
+    )
+    report_lookup = (
+        {report.id: report for report in Report.query.filter(Report.id.in_(report_ids)).all()} if report_ids else {}
+    )
+    return [
+        {
+            **_delivery_view(row),
+            'report_source_url': _report_source_url(row, report_lookup) if can_view_reports else None,
+        }
+        for row in rows
+    ], pagination
+
+
+def _report_id_for_delivery(delivery: NotificationDelivery) -> int | None:
+    """Trust only the exact source-owned report identity from a committed delivery."""
+    if delivery.event_type != 'report.generated' or delivery.asset_type != 'report':
+        return None
+    report_id = str(delivery.asset_key or '')
+    if not report_id.isascii() or not report_id.isdecimal() or len(report_id) > 18:
+        return None
+    if delivery.event_key != f'report.generated:{report_id}':
+        return None
+    return int(report_id)
+
+
+def _report_source_url(delivery: NotificationDelivery, report_lookup: dict[int, Report]) -> str | None:
+    report_id = _report_id_for_delivery(delivery)
+    if report_id is None or report_id not in report_lookup:
+        return None
+    return url_for('reports.generated_report_detail', report_id=report_id)
 
 
 def _reset_channel_validation(channel: NotificationChannel) -> None:
@@ -267,7 +331,11 @@ def dispatch_alert_notification(
             stats['skipped'] += 1
             continue
         stats['eligible'] += 1
-        delivery = NotificationDelivery.query.filter_by(channel_id=channel.id, event_key=event_key).first()
+        delivery = (
+            NotificationDelivery.query.filter_by(channel_id=channel.id, event_key=event_key)
+            .with_for_update(skip_locked=True)
+            .first()
+        )
         if delivery is not None:
             if delivery.status == 'sent':
                 stats['duplicate'] += 1
@@ -275,9 +343,6 @@ def dispatch_alert_notification(
             if delivery.status != 'failed' or delivery.attempt_count >= max_attempts:
                 stats['skipped'] += 1
                 continue
-            delivery.status = 'queued'
-            delivery.error_message = None
-            stats['retried'] += 1
         else:
             delivery = NotificationDelivery()
             delivery.channel_id = channel.id
@@ -310,24 +375,22 @@ def dispatch_alert_notification(
             recommendations=recommendations or [],
             base_url=base_url,
         )
+        if delivery.attempt_count and _REPLAY_KEY in (delivery.payload_json or {}):
+            original = _replay_message(delivery, channel)
+            if original is None:
+                stats['skipped'] += 1
+                db.session.rollback()
+                continue
+            message = original
+        if delivery.attempt_count:
+            stats['retried'] += 1
+        _begin_delivery_attempt(delivery, channel, message)
         result = _deliver(channel, message)
-        delivery.attempt_count += 1
-        attempted_at = datetime.now(UTC)
-        channel.last_delivery_attempt_at = attempted_at
-        channel.last_delivery_message = result.message[:500]
+        _record_delivery_outcome(delivery, channel, result)
         if result.success:
-            delivery.status = 'sent'
-            delivery.sent_at = attempted_at
-            delivery.provider_message_id = result.provider_message_id
-            channel.last_delivery_status = 'success'
-            channel.last_delivery_at = attempted_at
             stats['sent'] += 1
         else:
-            delivery.status = 'failed'
-            delivery.error_message = result.message[:1000]
-            channel.last_delivery_status = 'failed'
             stats['failed'] += 1
-        db.session.commit()
     return stats
 
 
@@ -434,7 +497,11 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
                 }
             )
             continue
-        delivery = NotificationDelivery.query.filter_by(channel_id=channel.id, event_key=event.event_key).first()
+        delivery = (
+            NotificationDelivery.query.filter_by(channel_id=channel.id, event_key=event.event_key)
+            .with_for_update(skip_locked=True)
+            .first()
+        )
         if delivery is not None:
             if delivery.status == 'sent':
                 stats['duplicate'] += 1
@@ -461,8 +528,6 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
                     }
                 )
                 continue
-            delivery.status = 'queued'
-            delivery.error_message = None
         else:
             delivery = NotificationDelivery()
             delivery.channel_id = channel.id
@@ -482,25 +547,31 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
                 stats['duplicate'] += 1
                 stats['skipped'] += 1
                 continue
-        result = _deliver(channel, event.message)
-        attempted_at = datetime.now(UTC)
-        delivery.attempt_count += 1
-        channel.last_delivery_attempt_at = attempted_at
-        channel.last_delivery_message = result.message[:500]
+        message = event.message
+        if delivery.attempt_count and _REPLAY_KEY in (delivery.payload_json or {}):
+            original = _replay_message(delivery, channel)
+            if original is None:
+                db.session.rollback()
+                stats['skipped'] += 1
+                stats['results'].append(
+                    {
+                        'channel_id': channel.id,
+                        'channel': channel.name,
+                        'provider': _provider_label(channel.provider_key),
+                        'status': 'skipped',
+                        'message': 'Committed delivery cannot replay after channel transport changes.',
+                    }
+                )
+                continue
+            message = original
+        _begin_delivery_attempt(delivery, channel, message)
+        result = _deliver(channel, message)
+        _record_delivery_outcome(delivery, channel, result)
         result_status = 'success' if result.success else 'failed'
         if result.success:
-            delivery.status = 'sent'
-            delivery.sent_at = attempted_at
-            delivery.provider_message_id = result.provider_message_id
-            channel.last_delivery_status = 'success'
-            channel.last_delivery_at = attempted_at
             stats['successful'] += 1
         else:
-            delivery.status = 'failed'
-            delivery.error_message = result.message[:1000]
-            channel.last_delivery_status = 'failed'
             stats['failed'] += 1
-        db.session.commit()
         stats['results'].append(
             {
                 'channel_id': channel.id,
@@ -511,6 +582,153 @@ def dispatch_notification_event(*, channel_ids: list[int], event: NotificationEv
             }
         )
     return stats
+
+
+def _transport_snapshot(channel: NotificationChannel, message: NotificationMessage) -> str:
+    """Commit an encrypted, immutable replay envelope without exporting provider secrets."""
+    return (
+        encrypt_credential(
+            json.dumps(
+                {
+                    'channel': {
+                        'provider_key': channel.provider_key,
+                        'destination': channel.destination,
+                        'provider_config': channel.provider_config,
+                        'credential_payload': channel.credential_payload,
+                    },
+                    'message': {
+                        'title': message.title,
+                        'body': message.body,
+                        'severity': message.severity,
+                        'action_url': message.action_url,
+                        'action_label': message.action_label,
+                        'content_format': message.content_format,
+                    },
+                },
+                sort_keys=True,
+                separators=(',', ':'),
+            )
+        )
+        or ''
+    )
+
+
+def _replay_message(delivery: NotificationDelivery, channel: NotificationChannel) -> NotificationMessage | None:
+    """Reject legacy/invalid snapshots and destinations changed since original emission."""
+    token = (delivery.payload_json or {}).get(_REPLAY_KEY)
+    if not isinstance(token, str) or not token:
+        return None
+    try:
+        raw = json.loads(decrypt_credential(token) or '')
+        if not isinstance(raw, dict):
+            return None
+        current = {
+            'provider_key': channel.provider_key,
+            'destination': channel.destination,
+            'provider_config': channel.provider_config,
+            'credential_payload': channel.credential_payload,
+        }
+        if raw.get('channel') != current or not isinstance(raw.get('message'), dict):
+            return None
+        snapshot = raw['message']
+        return NotificationMessage(
+            title=str(snapshot['title']),
+            body=str(snapshot['body']),
+            severity=str(snapshot['severity']),
+            action_url=snapshot.get('action_url'),
+            action_label=snapshot.get('action_label'),
+            content_format=str(snapshot.get('content_format') or 'plain_text'),
+        )
+    except (CredentialEncryptionError, ValueError, KeyError, TypeError):
+        return None
+
+
+def _begin_delivery_attempt(
+    delivery: NotificationDelivery, channel: NotificationChannel, message: NotificationMessage
+) -> None:
+    """Durably claim an attempt before any external transport call."""
+    payload = dict(delivery.payload_json or {})
+    if delivery.attempt_count == 0 or _REPLAY_KEY not in payload:
+        payload[_REPLAY_KEY] = _transport_snapshot(channel, message)
+        delivery.payload_json = payload
+    delivery.status = 'queued'
+    delivery.error_message = None
+    delivery.attempt_count += 1
+    delivery.updated_at = datetime.now(UTC)
+    db.session.commit()
+
+
+def _record_delivery_outcome(
+    delivery: NotificationDelivery, channel: NotificationChannel, result: DeliveryResult
+) -> None:
+    attempted_at = datetime.now(UTC)
+    channel.last_delivery_attempt_at = attempted_at
+    channel.last_delivery_message = result.message[:500]
+    delivery.updated_at = attempted_at
+    if result.success:
+        delivery.status = 'sent'
+        delivery.sent_at = attempted_at
+        delivery.provider_message_id = result.provider_message_id
+        channel.last_delivery_status = 'success'
+        channel.last_delivery_at = attempted_at
+    else:
+        delivery.status = 'failed'
+        delivery.error_message = result.message[:1000]
+        channel.last_delivery_status = 'failed'
+    db.session.commit()
+
+
+def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
+    """Retry due committed attempts with one PostgreSQL skip-locked claim at a time.
+
+    At-least-once: a crash after provider acceptance but before outcome commit
+    can cause a duplicate. Never advertise exactly-once provider delivery.
+    """
+    cutoff = datetime.now(UTC) - timedelta(seconds=notification_delivery_retry_delay_seconds())
+    max_attempts = notification_delivery_max_attempts()
+    totals = {'claimed': 0, 'sent': 0, 'failed': 0, 'skipped': 0}
+    for _ in range(min(max(int(limit), 1), 50)):
+        delivery = (
+            NotificationDelivery.query.filter(
+                NotificationDelivery.status.in_(('failed', 'queued')),
+                NotificationDelivery.updated_at <= cutoff,
+                or_(
+                    NotificationDelivery.attempt_count < max_attempts,
+                    NotificationDelivery.status == 'queued',
+                ),
+            )
+            .order_by(NotificationDelivery.updated_at.asc(), NotificationDelivery.id.asc())
+            .with_for_update(skip_locked=True)
+            .first()
+        )
+        if delivery is None:
+            break
+        channel = delivery.channel
+        if delivery.attempt_count >= max_attempts:
+            delivery.status = 'failed'
+            delivery.error_message = 'Delivery attempts exhausted; last provider outcome may be unknown.'
+            delivery.updated_at = datetime.now(UTC)
+            db.session.commit()
+            totals['skipped'] += 1
+            continue
+        message = _replay_message(delivery, channel)
+        if message is None or not _channel_matches_event(
+            channel, domain=delivery.domain, event_type=delivery.event_type, severity=delivery.severity
+        ):
+            delivery.status = 'skipped'
+            delivery.error_message = (
+                'Replay unavailable: source snapshot missing, invalid, or channel policy/transport changed.'
+            )
+            delivery.updated_at = datetime.now(UTC)
+            db.session.commit()
+            totals['skipped'] += 1
+            continue
+        _begin_delivery_attempt(delivery, channel, message)
+        totals['claimed'] += 1
+        result = _deliver(channel, message)
+        _record_delivery_outcome(delivery, channel, result)
+        totals['sent' if result.success else 'failed'] += 1
+    return totals
 
 
 def _channel_matches_event(

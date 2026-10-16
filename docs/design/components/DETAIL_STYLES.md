@@ -65,6 +65,22 @@ Supporting copy      text-xs / regular / muted
 
 Technical identifiers use the same `text-sm / medium` body value scale through `technical_value.render(..., size='body')`. Inventory field labels and factual values intentionally share the same 14px body scale; hierarchy comes from tone and weight, not arbitrary font-size jumps. Supporting copy alone steps down to `text-xs`. Do not create smaller monospace or arbitrary-size value typography inside Inventory details. Metadata pair collections follow the same regular-secondary-label / medium-primary-value hierarchy.
 
+**Inventory modal values are read-only and selectable.** The shared Inventory-specific technical and fact-grid renderers do not display copy buttons/icons or clipboard hooks, even when legacy data carries `copyable` hints. This applies to UID, UUID, IP, and other technical facts inside the V10 modal. Do not disable or redesign global Clipboard behavior on other KAORI surfaces.
+
+### Compact Inventory detail-rail captions
+
+At the standard V10 desktop 1:3 evidence-band layout, the left rail displays a short section title, one factual supporting line when space permits, and an optional committed-data/status badge. Captions describe the evidence category instead of repeating every field or restating the committed-snapshot boundary. Aim for concise, recognizable domain terms (such as `Node identity and snapshot.`, `Endpoints and Pod selectors.`, and `Binding and lifecycle state.`). Preserve natural wrapping at mobile/narrow widths; never force a one-line constraint with `whitespace-nowrap`, arbitrary font shrinking, truncation, or component-local sizing.
+
+The shared `technical_metadata_collection.html` uses `Committed metadata entries.` for Labels/Annotations and `Key names only; no values.` for indexed key evidence; absence of persisted sensitive values remains an explicit protected-data boundary in the owning Configuration detail.
+
+Structured JSON strings already present in committed metadata values (for example, the Kubernetes `kubectl.kubernetes.io/last-applied-configuration` annotation) render as escaped, 2-space-indented multiline JSON in the existing metadata key/value row. This is display-only via the registered `pretty_structured_json` presentation filter: objects/arrays are formatted without modifying persisted evidence or key ordering; malformed JSON, JSON scalars and ordinary strings remain unchanged. Preserve the shared 14px typography, wrapping and single modal scrolling context; do not introduce a nested JSON editor, copy button, syntax-highlighting dependency or live provider read. The same renderer handles embedded Resource Sheet and standard metadata collection variants. Existing `related_resource_collection.inventory_render` accepts similarly short, resource-specific evidence captions. Do not infer a collection/health posture from a mere reference count.
+
+### Compact operational guidance and evidence notes
+
+Operational Context peer callouts, short inventory hints, and relationship descriptions use one concise, complete evidence-qualified sentence when practical at desktop width. Preserve policy-neutral states, historical versus live runtime status, missing versus empty evidence, sensitive-value boundaries, and the distinction between committed references and actual health/reachability/certificate verification. Shorten source-owned display wording rather than hiding evidence or adding presentation-only status logic. Allow wrapping on narrow viewports; do not force `whitespace-nowrap`, truncate, reduce the approved font size, or alter common callout/related-resource component geometry.
+
+Section badges stay source-grounded. Node's Identity & Snapshot, Capacity, and Runtime & Platform now use existing committed Node age, reported CPU capacity, and Kubelet version as metadata labels; Network and Scheduling keep their existing semantic status badges. Other Kubernetes Inventory sections preserve current sourced badge semantics and data values. No new provider reads or alternate shared component variants are permitted.
+
 ### Content order
 
 ```text

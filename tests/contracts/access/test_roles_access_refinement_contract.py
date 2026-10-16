@@ -10,6 +10,7 @@ def read(relative: str) -> str:
 def test_roles_access_registry_uses_kaori_workspace_table_loading_and_modal_standard() -> None:
     index = read('app/templates/access/roles/index.html')
     registry = read('app/templates/access/roles/partials/_registry.html')
+    shared_registry = read('app/templates/components/table_registry.html')
 
     for required in (
         'Role Registry Overview',
@@ -27,21 +28,30 @@ def test_roles_access_registry_uses_kaori_workspace_table_loading_and_modal_stan
         'components/table.html',
         'components/table_label.html',
         'components/loading_bar.html',
-        'components/pagination.html',
+        'components/table_registry.html',
         'components/resource_detail_modal.html',
         'Search Role',
         'Role Type',
         'Role State',
         'Refreshing Role Registry',
         'role-registry-loading',
-        'hx-indicator="#role-registry-loading"',
         'Rows',
-        'Previous',
-        'Next',
         'View Details',
         'resource_detail_modal.detail_button',
     ):
         assert required in registry
+
+    assert 'registry_ui.footer(' in registry
+    for required in (
+        'components/pagination.html',
+        'hx-indicator="#{{ loading_id }}"',
+        '<span>Rows</span>',
+        'Previous',
+        'Next',
+        'pagination_ui.page_size_classes()',
+        'data-kaori-canonical-registry-pagination',
+    ):
+        assert required in shared_registry
 
     # The loading bar must live under a full-width header row instead of inside
     # table_ui.block_header_classes(), whose responsive flex layout can compress it.
@@ -65,7 +75,7 @@ def test_roles_access_detail_modal_exposes_role_specific_coverage_and_boundaries
         'Assignment Impact',
         'Provider Defaults',
         'Permission Coverage',
-        'Cross-role comparison remains owned by Permission Catalog.',
+        'Cross-role comparison remains in Permission Catalog.',
         'Administrative Boundary',
         'Protected defaults are code-owned',
         'data-destructive-modal-open',
@@ -130,8 +140,11 @@ def test_obsolete_role_access_tab_script_is_removed() -> None:
 
 def test_role_registry_uses_canonical_pagination_page_size_macro() -> None:
     template = read('app/templates/access/roles/partials/_registry.html')
-    assert 'pagination_ui.page_size_classes()' in template
-    assert 'pagination_ui.select_classes()' not in template
+    shared_registry = read('app/templates/components/table_registry.html')
+    assert 'registry_ui.footer(' in template
+    assert 'pagination_ui.page_size_classes()' in shared_registry
+    assert 'pagination_ui.select_classes()' not in shared_registry
+    assert 'pagination_ui.page_size_classes()' not in template
 
 
 def test_resource_detail_modal_supports_access_context_without_breaking_inventory_default() -> None:

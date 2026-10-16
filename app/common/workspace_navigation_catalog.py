@@ -84,7 +84,7 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 'operations',
                 'Operations',
                 'wrench',
-                'kubernetes_operations.secret_management',
+                'kubernetes_operations.overview',
                 _KUBERNETES_OPERATION_PERMISSIONS,
             ),
             WorkspaceCapabilityDefinition(
@@ -156,9 +156,9 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
             ),
             WorkspaceCapabilityDefinition(
                 'runtime',
-                'Runtime Usage',
-                'boxes',
-                'artifact_registry.runtime',
+                'Runtime',
+                'waypoints',
+                'artifact_registry.runtime_overview',
                 ('artifact_registry.view',),
             ),
             WorkspaceCapabilityDefinition(
@@ -396,6 +396,15 @@ _CAPABILITY_CONTEXT_KEYS: dict[str, tuple[str, ...]] = {
     'object_storage_inventory': ('system_id',),
     'object_storage_analytics': ('system_id', 'time_range'),
     'artifact_registry_security': ('source_id',),
+    'artifact_registry_runtime': (
+        'source_id',
+        'cluster_id',
+        'namespace',
+        'match_type',
+        'exposure',
+        'artifact_id',
+        'q',
+    ),
 }
 
 
@@ -415,6 +424,13 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
         ),
     ),
     'kubernetes_operations': (
+        CapabilityViewDefinition(
+            'overview',
+            'Overview',
+            'layout-dashboard',
+            'kubernetes_operations.overview',
+            _KUBERNETES_OPERATION_PERMISSIONS,
+        ),
         CapabilityViewDefinition(
             'configmaps',
             'ConfigMaps',
@@ -523,6 +539,51 @@ _CAPABILITY_VIEWS: dict[str, tuple[CapabilityViewDefinition, ...]] = {
             'fingerprint',
             'artifact_registry.inventory_artifacts',
             ('artifact_registry.view',),
+        ),
+    ),
+    'artifact_registry_runtime': (
+        CapabilityViewDefinition(
+            'overview',
+            'Overview',
+            'layout-dashboard',
+            'artifact_registry.runtime_overview',
+            ('artifact_registry.view',),
+        ),
+        CapabilityViewDefinition(
+            'usage', 'Runtime Usage', 'list', 'artifact_registry.runtime', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'topology', 'Topology', 'waypoints', 'artifact_registry.runtime_topology', ('artifact_registry.view',)
+        ),
+    ),
+    'artifact_registry_analytics': (
+        CapabilityViewDefinition(
+            'overview', 'Overview', 'layout-dashboard', 'artifact_registry.analytics', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'growth', 'Growth', 'trending-up', 'artifact_registry.analytics_growth', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'capacity', 'Capacity', 'gauge', 'artifact_registry.analytics_capacity', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'usage', 'Usage', 'activity', 'artifact_registry.analytics_usage', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'risk', 'Risk', 'shield-alert', 'artifact_registry.analytics_risk', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'governance', 'Governance', 'scale', 'artifact_registry.analytics_governance', ('artifact_registry.view',)
+        ),
+        CapabilityViewDefinition(
+            'alerts',
+            'Alerts & Anomalies',
+            'triangle-alert',
+            'artifact_registry.analytics_alerts',
+            ('artifact_registry.view',),
+        ),
+        CapabilityViewDefinition(
+            'insights', 'Insights', 'sparkles', 'artifact_registry.analytics_insights', ('artifact_registry.view',)
         ),
     ),
     'artifact_registry_security': (

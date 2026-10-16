@@ -4,13 +4,14 @@ from typing import Any, cast
 
 from flask import (
     Blueprint,
+    current_app,
     redirect,
     render_template,
     request,
     url_for,
 )
 from flask_login import current_user
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
 from app.access.users.directory import (
@@ -35,10 +36,14 @@ from app.access.users.service import (
     delete_user_account,
     get_user,
     lock_active_super_admin_boundary,
+    lock_user_for_mutation,
     persist_created_user,
     persist_updated_user,
     reset_user_password,
     restore_user_account,
+    rollback_user_edit_transaction,
+    user_version_matches,
+    user_version_token,
 )
 from app.models import User
 
@@ -83,8 +88,13 @@ def reject(title: str, message: str, *, status: str = 'warning', target: User | 
 def index():
     filters = normalize_user_filters(request.args.to_dict())
     payload = build_users_payload(filters, actor=cast(User, current_user))
-    template = 'access/users/partials/_content.html' if request.headers.get('HX-Request') else 'access/users/index.html'
-    return render_template(template, **payload)
+    if request.headers.get('HX-Request') == 'true' and request.headers.get('HX-History-Restore-Request') != 'true':
+        # Registry interactions own only the directory fragment. Lifecycle
+        # mutations continue to refresh the entire users-page-content + OOB Hero.
+        if request.headers.get('HX-Target') == 'user-directory':
+            return render_template('access/users/partials/_directory.html', **payload)
+        return render_template('access/users/partials/_content.html', **payload)
+    return render_template('access/users/index.html', **payload)
 
 
 @bp.route('/new', methods=['GET', 'POST'])
@@ -134,6 +144,12 @@ def create():
                 return finish(feedback)
             except IntegrityError:
                 form.username.errors = [*form.username.errors, 'Username or email already exists.']
+            except SQLAlchemyError:
+                current_app.logger.exception('User creation transaction failed.')
+                form.username.errors = [
+                    *form.username.errors,
+                    'The user could not be created due to a database error. Please retry.',
+                ]
 
     return render_template(
         'access/users/form.html',
@@ -159,6 +175,7 @@ def edit(user_id: int):
         requested_role_id=user.role_id,
         requested_is_active=user.account_is_active,
         requested_is_super_admin=user.is_super_admin if user.auth_source == 'database' else False,
+        validate_new_role=False,
     )
     if not allowed:
         return reject('User update blocked', message or 'This account cannot be edited.', target=user)
@@ -172,6 +189,7 @@ def edit(user_id: int):
         form.role_id.data = user.role_id or (user.role_record.id if user.role_record else 0)
         form.is_active.data = user.account_is_active
         form.is_super_admin.data = user.is_super_admin
+        form.user_version.data = user_version_token(user)
 
     if form.validate_on_submit():
         removes_active_super_admin_authority = bool(
@@ -182,29 +200,51 @@ def edit(user_id: int):
         if removes_active_super_admin_authority:
             lock_active_super_admin_boundary(user)
 
-        allowed, message = can_edit_user(
-            actor,
-            user,
-            requested_role_id=form.role_id.data,
-            requested_is_active=bool(form.is_active.data),
-            requested_is_super_admin=bool(form.is_super_admin.data),
-        )
-        if not allowed:
-            return reject('User update blocked', message or 'This account cannot be modified.', target=user)
-        try:
-            create_or_update_user(form, user)
-            persist_updated_user(actor=actor, user=user)
-            feedback = user_management_feedback(
-                actor=actor,
-                event_type='user_updated',
-                status='success',
-                title='User updated',
-                message=f'{user.username} administrative profile was updated.',
-                target=user,
+        # Serialized read + persisted version comparison prevents stale
+        # administrative forms from overwriting newer profile or access state.
+        locked_user = lock_user_for_mutation(user_id)
+        if locked_user is None:
+            return reject('User unavailable', 'The requested user record was not found.', status='error')
+        user = locked_user
+        if not user_version_matches(user, form.user_version.data):
+            rollback_user_edit_transaction()
+            user = get_user(user_id)
+            if user is None:
+                return reject('User unavailable', 'The requested user record was not found.', status='error')
+            form.user_version.errors = [
+                *form.user_version.errors,
+                'This user changed after the page was opened. Reload the latest user state before saving.',
+            ]
+        else:
+            allowed, message = can_edit_user(
+                actor,
+                user,
+                requested_role_id=form.role_id.data,
+                requested_is_active=bool(form.is_active.data),
+                requested_is_super_admin=bool(form.is_super_admin.data),
             )
-            return finish(feedback)
-        except IntegrityError:
-            form.username.errors = [*form.username.errors, 'Username or email already exists.']
+            if not allowed:
+                return reject('User update blocked', message or 'This account cannot be modified.', target=user)
+            try:
+                create_or_update_user(form, user)
+                persist_updated_user(actor=actor, user=user)
+                feedback = user_management_feedback(
+                    actor=actor,
+                    event_type='user_updated',
+                    status='success',
+                    title='User updated',
+                    message=f'{user.username} administrative profile was updated.',
+                    target=user,
+                )
+                return finish(feedback)
+            except IntegrityError:
+                form.username.errors = [*form.username.errors, 'Username or email already exists.']
+            except SQLAlchemyError:
+                current_app.logger.exception('User edit transaction failed.')
+                form.username.errors = [
+                    *form.username.errors,
+                    'The user changes could not be saved due to a database error. Please retry.',
+                ]
 
     return render_template(
         'access/users/form.html',
@@ -230,7 +270,16 @@ def activate(user_id: int):
     allowed, message = can_activate_user(actor, user)
     if not allowed:
         return reject('Activation blocked', message or 'This account cannot be activated.', target=user)
-    activate_user_account(actor=actor, user=user)
+    try:
+        activate_user_account(actor=actor, user=user)
+    except SQLAlchemyError:
+        current_app.logger.exception('User activation transaction failed for user id %s.', user.id)
+        return reject(
+            'Activation failed',
+            'This account could not be activated. No change was saved.',
+            status='error',
+            target=user,
+        )
     return finish(
         user_management_feedback(
             actor=actor,
@@ -254,7 +303,16 @@ def deactivate(user_id: int):
     allowed, message = can_deactivate_user(actor, user)
     if not allowed:
         return reject('Deactivation blocked', message or 'This account cannot be deactivated.', target=user)
-    deactivate_user_account(actor=actor, user=user)
+    try:
+        deactivate_user_account(actor=actor, user=user)
+    except SQLAlchemyError:
+        current_app.logger.exception('User deactivation transaction failed for user id %s.', user.id)
+        return reject(
+            'Deactivation failed',
+            'This account could not be deactivated. No change was saved.',
+            status='error',
+            target=user,
+        )
     return finish(
         user_management_feedback(
             actor=actor,
@@ -281,17 +339,25 @@ def reset_password(user_id: int):
         )
     form = ResetPasswordForm()
     if form.validate_on_submit():
-        reset_user_password(actor=actor, user=user, password=form.password.data or '')
-        return finish(
-            user_management_feedback(
-                actor=actor,
-                event_type='user_password_reset',
-                status='success',
-                title='Password reset completed',
-                message=f'A new Local Database password was set for {user.username}; existing sessions were revoked.',
-                target=user,
+        try:
+            reset_user_password(actor=actor, user=user, password=form.password.data or '')
+        except SQLAlchemyError:
+            current_app.logger.exception('User password-reset transaction failed for user id %s.', user.id)
+            form.password.errors = [
+                *form.password.errors,
+                'The password could not be reset. No change was saved; please retry.',
+            ]
+        else:
+            return finish(
+                user_management_feedback(
+                    actor=actor,
+                    event_type='user_password_reset',
+                    status='success',
+                    title='Password reset completed',
+                    message=f'A new Local Database password was set for {user.username}; existing sessions were revoked.',
+                    target=user,
+                )
             )
-        )
     return render_template('access/users/reset_password.html', form=form, user=user)
 
 
@@ -305,7 +371,16 @@ def restore(user_id: int):
     allowed, message = can_restore_user(actor, user)
     if not allowed:
         return reject('Restore blocked', message or 'This account cannot be restored.', target=user)
-    restore_user_account(actor=actor, user=user)
+    try:
+        restore_user_account(actor=actor, user=user)
+    except SQLAlchemyError:
+        current_app.logger.exception('User restoration transaction failed for user id %s.', user.id)
+        return reject(
+            'Restoration failed',
+            'This account could not be restored. No change was saved.',
+            status='error',
+            target=user,
+        )
     return finish(
         user_management_feedback(
             actor=actor,
@@ -329,7 +404,13 @@ def delete(user_id: int):
     allowed, message = can_delete_user(actor, user)
     if not allowed:
         return reject('Deletion blocked', message or 'This account cannot be deleted.', target=user)
-    delete_user_account(actor=actor, user=user)
+    try:
+        delete_user_account(actor=actor, user=user)
+    except SQLAlchemyError:
+        current_app.logger.exception('User soft deletion transaction failed for user id %s.', user.id)
+        return reject(
+            'Deletion failed', 'This account could not be deleted. No change was saved.', status='error', target=user
+        )
     return finish(
         user_management_feedback(
             actor=actor,

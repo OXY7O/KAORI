@@ -1,15 +1,19 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
-{% macro registry_header(title, description, icon, loading_id, title_id=None, tone='brand', action_html='') -%}
+{% macro registry_header(title, description, icon, loading_id, title_id=None, tone='brand', action_html='', result_count=none) -%}
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 {{ integration_ui.palette_icon(icon, tone, size='lg', rounded='xl') }}
                 <div class="min-w-0">
-                    <h2 {% if title_id %}id="{{ title_id }}"{% endif %}
-                        class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 {% if title_id %}id="{{ title_id }}"{% endif %}
+                            class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                        {% if result_count is not none %}{{ table_label.result_count(result_count) }}{% endif %}
+                    </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>
                 </div>
             </div>

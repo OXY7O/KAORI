@@ -15,7 +15,7 @@
             ('decisions', 'Capacity Decisions', 'shield-check', url_for('tenant.namespace_provisioning', view='decisions'))
         ] %}
     {% set namespace_metrics = [
-            ('folder-tree', 'Namespace Records', namespace_total, 'Committed managed and adopted Namespace records retained by KAORI', 'info'),
+            ('folder-tree', 'Namespace Records', namespace_total, 'Committed managed/adopted Namespace records in KAORI', 'info'),
             ('circle-check', 'Ready', namespace_ready, 'Provider reconciliation currently verified', 'normal'),
             ('triangle-alert', 'Drifted', namespace_drifted, 'Committed intent differs from provider observation', 'warning' if namespace_drifted else 'normal'),
             ('activity', 'Needs Attention', namespace_attention, 'Pending, drifted, failed, or teardown states', 'warning' if namespace_attention else 'normal')
@@ -119,6 +119,8 @@
             <script type="application/json"
                     id="tenant-environment-advanced-control-state">{{ tenant_environment_advanced_control_state|tojson }}</script>
             <script type="application/json" id="tenant-namespace-allocation-state">{{ namespace_allocation_state|tojson }}</script>
+            <script type="application/json"
+                    id="tenant-namespace-allocation-advanced-preflight">{{ namespace_allocation_advanced_preflight|tojson }}</script>
             <script type="application/json" id="tenant-capsule-shared-allocation-state">{{ capsule_shared_cutover_state|tojson }}</script>
             <script type="application/json" id="tenant-capsule-tenant-quota-state">{{ capsule_tenant_quota_cutover_state|tojson }}</script>
             <script type="application/json" id="tenant-capsule-tenant-quota-governance">{{ capsule_tenant_quota_governance|tojson }}</script>

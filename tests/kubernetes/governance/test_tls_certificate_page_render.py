@@ -151,3 +151,62 @@ def test_numeric_pagination_rerenders_after_outer_html_swaps() -> None:
     assert "document.addEventListener('htmx:afterSettle', renderAfterHtmxSwap)" in script
     assert 'target && target.isConnected' in script
     assert 'renderAll(document)' in script
+
+
+def test_tls_registry_compact_copy_distinguishes_observed_zero_and_unreported() -> None:
+    environment = Environment(
+        loader=FileSystemLoader(ROOT / 'app' / 'templates'),
+        autoescape=select_autoescape(['html', 'xml']),
+    )
+    environment.filters['user_date'] = lambda value, *args: '24 Dec 2026'
+    environment.filters['environment_name'] = lambda value, empty='Environment not specified': value or empty
+
+    def url_for(endpoint: str, **values: object) -> str:
+        query = urlencode(values)
+        return f'/{endpoint}' + (f'?{query}' if query else '')
+
+    environment.globals['url_for'] = url_for
+    environment.globals['request'] = SimpleNamespace(view_args={})
+
+    def record(record_id: int, *, reported: bool) -> SimpleNamespace:
+        return SimpleNamespace(
+            id=record_id,
+            cluster=None,
+            cluster_id='cluster-1',
+            namespace='capsule-system',
+            secret_name=f'capsule-tls-{record_id}',
+            common_name=None,
+            not_after='2026-12-24',
+            status='healthy',
+            days_remaining=74,
+            parse_error=None,
+            declared_host_count=0,
+            covered_host_count=0,
+            uncovered_hosts=[],
+            presentation={
+                'status_label': 'Valid',
+                'status_tone': 'normal',
+                'validity_days_remaining': 74,
+                'validity_status': 'healthy',
+                'coverage_label': 'No Declared Hosts' if reported else 'Not Reported',
+                'coverage_tone': 'info' if reported else 'unknown',
+                'coverage_reported': reported,
+                'ingress_mapping_reported': reported,
+                'ingress_consumer_count': 0 if reported else None,
+                'declared_host_count': 0 if reported else None,
+            },
+        )
+
+    payload = _payload()
+    payload.records = (record(1, reported=True), record(2, reported=False))
+    rendered = environment.get_template('kubernetes/governance/tls_certificates/partials/_table.html').render(
+        payload=payload
+    )
+
+    assert rendered.count('No Declared Hosts') == 1
+    assert 'Coverage evidence unavailable' in rendered
+    assert 'Ingress mapping unavailable' in rendered
+    assert '0 Ingresses' in rendered
+    assert '74 days left' in rendered
+    assert '0 Declared Hosts' not in rendered
+    assert '24 Dec 2026' in rendered

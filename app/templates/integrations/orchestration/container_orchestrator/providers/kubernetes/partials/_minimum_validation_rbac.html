@@ -22,11 +22,11 @@
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2">
         <div class="bg-surface-card px-4 py-3">
             <p class="text-xs font-semibold text-content-primary">Baseline Validation Reader</p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">Cluster-wide read-only access for discovery, inventory evidence, and SelfSubjectAccessReview. Secrets are intentionally excluded.</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Cluster-wide read-only permissions support discovery, committed inventory evidence, and SelfSubjectAccessReview; Secret access remains deliberately excluded.</p>
         </div>
         <div class="bg-surface-card px-4 py-3">
             <p class="text-xs font-semibold text-content-primary">Optional Governance Secret Reader</p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">Separate namespace-scoped permission only when an approved governance workflow requires Secret metadata or data access.</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Grant separate namespace-scoped permissions only for approved governance workflows that explicitly require Secret metadata or Secret data access.</p>
         </div>
     </div>
     <template x-teleport="body">

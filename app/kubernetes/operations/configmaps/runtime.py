@@ -10,9 +10,7 @@ from urllib3.exceptions import HTTPError as Urllib3HTTPError
 from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     connection_for_cluster,
-    tls_policy_for_cluster,
 )
-from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.tls import weak_tls_context
 from app.models.cluster import Cluster
 
 
@@ -33,8 +31,7 @@ def authorization_api(cluster: Cluster) -> AuthorizationV1Api:
 
 def _call(cluster: Cluster, operation: str, factory: Any, callback: Any) -> Any:
     try:
-        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            return callback(factory(cluster))
+        return callback(factory(cluster))
     except ApiException:
         raise
     except ConfigException as exc:

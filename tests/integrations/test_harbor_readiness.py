@@ -244,3 +244,30 @@ def test_inventory_status_keeps_not_collected_after_validation_until_inventory_s
     assert status['status'] == 'unknown'
     assert status['label'] == 'No Committed Inventory'
     assert 'Artifact Registry inventory synchronization' in status['detail']
+
+
+def test_harbor_disabled_posture_preserves_historical_validation_without_ready_label() -> None:
+    disabled = SimpleNamespace(
+        readiness_status='ready',
+        integration_instance=SimpleNamespace(enabled=False, lifecycle_status='active'),
+    )
+    status = presentation._provider_status(disabled)
+    assert status['status'] == 'disabled'
+    assert status['label'] == 'Disabled'
+    assert 'historical' in status['detail']
+
+
+def test_harbor_inactive_posture_does_not_look_ready() -> None:
+    inactive = SimpleNamespace(
+        readiness_status='ready',
+        integration_instance=SimpleNamespace(enabled=True, lifecycle_status='retired'),
+    )
+    assert presentation._provider_status(inactive)['status'] == 'inactive'
+
+
+def test_harbor_active_ready_posture_still_uses_full_validation_evidence() -> None:
+    ready = SimpleNamespace(
+        readiness_status='ready',
+        integration_instance=SimpleNamespace(enabled=True, lifecycle_status='active'),
+    )
+    assert presentation._provider_status(ready)['status'] == 'ready'

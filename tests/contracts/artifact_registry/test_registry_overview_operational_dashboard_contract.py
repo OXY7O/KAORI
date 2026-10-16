@@ -34,7 +34,15 @@ def test_artifact_registry_overview_consumes_operational_dashboard_family() -> N
     assert "section='kpi_cards'" in signal
     assert 'hx-trigger="load"' in signal
     assert 'components/operational_metric_card.html' in kpis
+    assert 'operational_metric_card.render(' in kpis
+    assert 'for kpi in overview.kpis' in kpis
+    assert 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4' in kpis
+    assert 'source_label=overview.kpi_source_label' in kpis
     assert "scope_label='Active Scope'" in kpis
+    assert "body_classes='p-0'" not in signal
+    assert 'grouped=true' not in signal
+    assert 'components/operational_signal_overview.html' in signal
+    assert 'hx-trigger="load"' in signal
     assert 'hx-push-url="true"' in signal
     assert 'hx-include="#artifact-registry-dashboard-active-tab"' in signal
     assert 'All Registry Providers' in signal
@@ -49,7 +57,11 @@ def test_artifact_registry_overview_scope_is_committed_and_provider_neutral() ->
     )
     operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
 
-    assert "request.args.get('provider_id', type=int)" in routes
+    # Explicit malformed provider selection must not silently expand to all providers.
+    assert "raw = request.args.get('provider_id')" in routes
+    assert 'def _overview_provider_id() -> int | None:' in routes
+    assert 'provider_id=_overview_provider_id()' in routes
+    assert 'abort(404)' in routes
     assert "request.args.get('tab', 'overview', type=str)" in routes
     assert "request.args.get('provider_health_page', 1)" in routes
     assert 'normalize_dashboard_page_size' in routes
@@ -161,13 +173,16 @@ def test_artifact_registry_operations_overview_matches_reference_dashboard_gramm
         assert label in presentation
     for label in (
         "'Inventory Snapshot'",
-        "'Metrics Snapshot'",
+        "'Metrics Source'",
         "'Security Snapshot'",
         "'Analytics Snapshot'",
     ):
         assert label in presentation
     assert 'overview.posture.label' in signal
     assert 'overview.posture.tone' in signal
+    assert 'scope_status' in signal
+    assert 'scope_tone' in signal
+    assert 'Select a Registry Provider for Detailed Signals' in signal
 
 
 def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> None:
@@ -189,7 +204,7 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
 
     for label in (
         "'Inventory Snapshot'",
-        "'Metrics Snapshot'",
+        "'Metrics Source'",
         "'Security Snapshot'",
         "'Analytics Snapshot'",
     ):
@@ -220,6 +235,12 @@ def test_artifact_registry_overview_keeps_reference_information_hierarchy() -> N
     assert '_registry_reporting(' not in build_overview
     assert "'failed_refresh_count': failed_refresh_count" in presentation
     assert "'capacity': capacity" in presentation
+    signals_projection = presentation.split("if section == 'signals':", 1)[1].split("if section == 'reporting':", 1)[0]
+    assert 'if selected_provider is None:' in signals_projection
+    assert signals_projection.index('return context') < signals_projection.index('_registry_alerts(selected_provider)')
+    assert signals_projection.index('return context') < signals_projection.index(
+        '_registry_recommended_actions(selected_provider)'
+    )
     assert "'alerts': _registry_alerts(selected_provider)" in presentation
     assert "'recommended_actions': _registry_recommended_actions(selected_provider)" in presentation
     assert "'reporting': _registry_reporting(selected_provider)" in presentation
@@ -245,6 +266,86 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
 
     assert 'overview.capacity.items' not in capacity_snapshot
     assert 'overview.capacity.metrics' in capacity_snapshot
+    assert 'components/operational_metric_card.html' not in forecast
+    assert 'operational_metric_card.render(' not in forecast
+    for token in (
+        'grid gap-3 sm:grid-cols-3',
+        'overview.forecast.size_growth_per_day',
+        'overview.forecast.artifact_growth_per_day',
+        'overview.forecast.nearest_quota_days',
+        'Forecast Basis',
+        'Registry Analytics',
+        'No historical daily series is available for a trend chart.',
+        'Scope: {{ overview.scope_label }}',
+        'Forecast Conclusion',
+        'overview.forecast.risk',
+        'overview.capacity.risk_detail',
+        'overview.forecast.detail',
+        "action_label='Review Forecast'",
+    ):
+        assert token in forecast
+    assert 'forecast_projection_chart' not in forecast
+    assert 'components/operational_callout.html' not in capacity_snapshot
+    assert 'Data Scope:</span> committed inventory for footprint' in capacity_snapshot
+    assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in capacity_snapshot
+    assert 'grid gap-3 lg:grid-cols-3' in capacity_snapshot
+    assert 'components/progress_bar.html' in capacity_snapshot
+    assert 'progress_bar.bar(item.progress_percent,' in capacity_snapshot
+    assert 'item.progress_label' in capacity_snapshot
+    assert 'item.progress_percent is not none' in capacity_snapshot
+    assert 'percentage not applicable' in capacity_snapshot
+    assert 'Refresh evidence; verify headroom' in capacity_snapshot
+    assert 'Registry project quota balance chart' in capacity_snapshot
+    assert 'Project Quota Balance' in capacity_snapshot
+    assert 'overview.capacity.metrics[1].progress_percent' in capacity_snapshot
+    assert 'overview.capacity.metrics[2].progress_percent' in capacity_snapshot
+    assert 'progress_bar.bar(quota_used_percent,' in capacity_snapshot
+    assert 'progress_bar.bar(quota_free_percent,' in capacity_snapshot
+    assert 'Quota balance unavailable' in capacity_snapshot
+    assert 'Capacity Decision Notes' not in capacity_snapshot
+    assert "'label': 'Quota Left'" in presentation
+    assert "'Project quota forecasts remain outside warning thresholds, with sufficient headroom.'" in presentation
+    assert 'Committed analytics snapshots' in forecast
+    assert 'Projects with quota ETA' in forecast
+    assert "'progress_label': 'Used'" in presentation
+    assert "'progress_label': 'Free'" in presentation
+    assert "'progress_label': 'Inventory'" in presentation
+    assert '100 - quota_utilization if quota_utilization is not None else None' in presentation
+    assert 'committed project quota.' not in presentation
+    assert 'Registry growth uses committed inventory changes and Metrics Source quota evidence.' in presentation
+    assert 'Artifact change per day.' in forecast
+    assert 'Quota ETA with positive growth.' in forecast
+    for token in (
+        'Daily Utilization Trend Not Available',
+        'Historical Series Unavailable',
+        'min-h-[200px]',
+        'overview.forecast.analytics_count',
+        'overview.consumer_insights.project_count',
+        'overview.consumer_insights.horizon_count',
+    ):
+        assert token in forecast
+    for token in (
+        'macro consumer_panel(',
+        'grid gap-5 lg:grid-cols-2',
+        "consumer_panel('Storage Usage'",
+        "consumer_panel('Nearest Quota'",
+        'overview.top_consumers',
+        'overview.quota_watch',
+        'items[:3]',
+        'loop.index',
+        'progress_bar.bar(',
+        'item.utilization_percent is not none',
+        'Quota utilization N/A',
+        'Consumer Insights',
+        'overview.consumer_insights.high_utilization_count',
+        'No Numerical Quota Horizon',
+    ):
+        assert token in consumers
+    assert 'xl:grid-cols-5' not in consumers
+    assert '_registry_quota_watch(project_forecasts)' in presentation
+    assert '_registry_consumer_insights(project_forecasts)' in presentation
+    assert "'quota_watch': quota_watch" in presentation
+    assert "'consumer_insights': consumer_insights" in presentation
     assert "'metrics': [" in presentation
     assert "'source_ready': metrics_ready_count > 0" in presentation
     assert "'security_not_applicable': security_not_applicable" in presentation
@@ -264,7 +365,8 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
     assert 'components/operational_alert_summary.html' in alerts
     assert 'data-kaori-alert-insight="stacked"' in shared_alerts
     assert 'KAORI Alert Cases Available' in alerts
-    assert "empty_label='Healthy'" in alerts
+    assert "empty_label='No Active Cases'" in alerts
+    assert 'No active recommendation-origin AlertCases' in alerts
     assert 'source_available=overview.alerts.available' in alerts
     assert 'scope_required=true' in alerts
     assert 'scope_selected=overview.selected_provider_id' in alerts
@@ -279,11 +381,16 @@ def test_artifact_registry_dashboard_state_semantics_and_jinja_mapping_safety() 
 
     assert 'row.security_not_applicable' in health
     assert 'No Artifacts' in health
-    assert 'No Registry Providers Available' in health
+    # An empty scoped provider-health table does not imply an unregistered fleet.
+    assert 'No Registry Provider Health Data' in health
+    assert 'components/states/_empty_state.html' in health
 
     assert 'components/operational_signal_overview.html' in signal
     assert 'overview.posture.label' in signal
     assert 'overview.posture.tone' in signal
+    assert 'scope_status' in signal
+    assert 'scope_tone' in signal
+    assert 'Select a Registry Provider for Detailed Signals' in signal
     assert 'signal_updated' in signal
     assert 'status_indicator_label(status_label, status_tone' in shared_signal
 
@@ -393,7 +500,7 @@ def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() 
         'source_available=overview.alerts.available',
         'scope_required=true',
         'scope_selected=overview.selected_provider_id',
-        "empty_label='Healthy'",
+        "empty_label='No Active Cases'",
         "status_available_label='KAORI Alert Cases Available'",
         "source_label='KAORI Alert Intelligence'",
     ):
@@ -403,7 +510,7 @@ def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() 
         'source_available=dashboard.alerts.available',
         'scope_required=true',
         'scope_selected=dashboard.selected_system_id',
-        "empty_label='Healthy'",
+        "empty_label='No Active Cases'",
         "status_available_label='KAORI Alert Cases Available'",
     ):
         assert token in object_alerts
@@ -424,3 +531,137 @@ def test_artifact_registry_signals_match_object_storage_scope_and_alert_logic() 
     assert "'available': False" in presentation
     assert "'available': True" in presentation
     assert "'alerts': _registry_alerts(selected_provider)" in presentation
+
+
+def test_artifact_registry_overview_kpi_cards_match_reference_dashboard_family() -> None:
+    from jinja2 import Environment
+
+    registry = read('app/templates/artifact_registry/partials/_overview_kpi_cards.html')
+    signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    shell = read('app/templates/components/operational_signal_overview.html')
+    card = read('app/templates/components/operational_metric_card.html')
+    skeleton = read('app/templates/components/operational_section_loading.html')
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_kpi_cards.html')
+    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_kpi_cards.html')
+    for template in (registry, signal, shell, card, skeleton, kubernetes, object_storage):
+        Environment().parse(template)
+
+    for template in (registry, kubernetes, object_storage):
+        assert 'components/operational_metric_card.html' in template
+        assert 'operational_metric_card.render(' in template
+        assert 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4' in template
+        assert "scope_label='Active Scope'" in template
+    assert 'source_label=overview.kpi_source_label' in registry
+    for field in ('kpi.icon', 'kpi.label', 'kpi.value', 'kpi.description'):
+        assert field in registry
+    assert "body_classes='p-5'" in shell
+    assert '<div class="{{ body_classes }}">{{ signal_content|safe }}</div>' in shell
+    assert "body_classes='p-0'" not in signal
+    assert 'grouped=true' not in signal
+    assert 'section_loading.kpis(item_count=4,' in signal
+    assert 'macro kpis(' in skeleton and 'grouped=false' in skeleton
+    assert 'h-28 animate-pulse rounded-lg bg-surface-hover' in skeleton
+    assert 'resource_posture_grid.html' not in registry
+    assert 'data-kaori-artifact-registry-operational-kpis' in registry
+    assert 'hx-trigger="load"' in signal
+
+
+def test_registry_dashboard_kpi_projection_respects_active_committed_scope_and_evidence() -> None:
+    common = read('app/artifact_registry/presentation_common.py')
+    projection = read('app/artifact_registry/presentation_overview.py')
+    signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    card = read('app/templates/artifact_registry/partials/_overview_kpi_cards.html')
+
+    scope = common.split('def _overview_scope_context(', 1)[1].split('def _overview_inventory_kpi_evidence(', 1)[0]
+    assert 'scoped_provider_ids = [int(provider.id) for provider in scoped_providers]' in scope
+    assert 'RegistryCollectionState.integration_instance_id.in_(scoped_provider_ids)' in scope
+
+    evidence = common.split('def _overview_inventory_kpi_evidence(', 1)[1].split('def _overview_kpi_values(', 1)[0]
+    for token in (
+        'eligible_ids',
+        'last_committed_at is not None',
+        'Not Collected',
+        'Partial Inventory (',
+        'Committed Inventory',
+    ):
+        assert token in evidence
+    counter = common.split('def _overview_kpi_values(', 1)[1].split('def _latest_registry_analytics(', 1)[0]
+    assert counter.count('RegistryProject.integration_instance_id.in_(committed_provider_ids)') == 4
+    assert 'if not committed_provider_ids:' in counter
+
+    section = projection.split("if section == 'kpi_cards':", 1)[1].split("if section == 'provider_health':", 1)[0]
+    assert '_overview_inventory_kpi_evidence(scoped_providers, states)' in section
+    assert "'kpi_source_label': source_label" in section
+    assert section.count("if committed_count else 'Not Collected'") == 4
+    assert 'source_label=overview.kpi_source_label' in card
+
+    ops = projection.split('def _overview_operations_projection(', 1)[1].split('def _overview_capacity_projection(', 1)[
+        0
+    ]
+    assert '_overview_inventory_kpi_evidence(scoped_providers, states)' in ops
+    assert '_overview_inventory_evidence(committed_provider_ids)' in ops
+    assert '_fleet_successfully_scanned_artifacts(committed_provider_ids)' in ops
+    assert 'registry_metrics_ready_provider_ids(scoped_providers)' in ops
+    assert 'scanned_count = sum(' not in ops
+    inventory = projection.split('def _overview_inventory_evidence(', 1)[1].split('def _overview_inventory_items(', 1)[
+        0
+    ]
+    assert inventory.count('RegistryProject.integration_instance_id.in_(committed_provider_ids)') == 3
+    assert 'scope_status = overview.posture.label if overview.selected_provider' in signal
+    assert "'Select a Registry Provider for Detailed Signals'" in signal
+    assert "scope_tone = overview.posture.tone if overview.selected_provider else 'warning'" in signal
+    assert '    scope_status,' in signal
+    assert '    scope_tone,' in signal
+
+
+def test_registry_operations_inventory_snapshot_500_regression_and_relative_updated() -> None:
+    registry = read('app/artifact_registry/presentation_overview.py')
+    common = read('app/artifact_registry/presentation_common.py')
+    signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    object_signal = read('app/templates/storage/object_storage/dashboard/partials/_signal_overview.html')
+    kubernetes_signal = read('app/templates/kubernetes/dashboard/partials/_signal_overview.html')
+
+    inventory = registry.split('def _overview_inventory_items(', 1)[1].split('def _security_freshness_status(', 1)[0]
+    assert 'has_committed_inventory: bool' in inventory
+    assert 'if not has_committed_inventory:' in inventory
+    assert "item['value'] = 'Not Collected'" in inventory
+    assert 'committed_count' not in inventory
+
+    operations = registry.split('def _overview_operations_projection(', 1)[1].split(
+        'def _overview_capacity_projection(', 1
+    )[0]
+    assert 'has_committed_inventory=bool(committed_provider_ids)' in operations
+
+    assert "'last_updated': _human_time(latest)" in common
+    assert 'overview.last_updated' in signal
+    assert 'overview.latest_committed_at|user_datetime' not in signal
+    assert "'Updated ' ~ overview.last_updated" in signal
+    assert "'Updated ' ~ dashboard.last_updated" in object_signal
+    assert "'Updated ' ~ dashboard.last_updated" in kubernetes_signal
+    assert "else 'Not Collected'" in signal
+
+
+def test_registry_provider_health_limits_per_provider_source_reads_to_visible_page() -> None:
+    projection = read('app/artifact_registry/presentation_overview.py')
+    health = projection.split('def _provider_health_projection(', 1)[1].split(
+        'def _fleet_successfully_scanned_artifacts(', 1
+    )[0]
+    assert 'visible_providers, pagination = paginate_sequence(' in health
+    assert 'scoped_provider_ids = [int(provider.id) for provider in visible_providers]' in health
+    assert 'for provider in visible_providers' in health
+    assert 'for provider in scoped_providers' not in health
+    assert 'return provider_rows, pagination, metrics_by_provider, security_counts' in health
+    assert 'func.lower(RegistryArtifact.scan_status).in_(SUCCESSFUL_REGISTRY_SCAN_STATUSES)' in health
+    batch = read('app/integrations/registry/observability.py')
+    assert 'def registry_metrics_ready_provider_ids(' in batch
+    assert '_evaluate_binding(' in batch
+    assert "required_technical_capabilities=('instant_query',)" in batch
+    common = read('app/artifact_registry/presentation_common.py')
+    latest = common.split('def _latest_registry_analytics(', 1)[1]
+    assert 'func.row_number()' in latest
+    assert '.over(' in latest
+    assert 'partition_by=RegistryAnalyticsSnapshot.integration_instance_id' in latest
+    assert 'ranked.c.ordinal == 1' in latest
+    assert 'RegistryAnalyticsSnapshot.integration_instance_id.in_(provider_ids)' in latest
+    assert 'for provider in scoped_providers:' not in latest
+    assert 'snapshot.integration_instance_id' in latest

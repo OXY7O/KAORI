@@ -19,9 +19,9 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
         ),
         row_source='inventory_assets',
         identity_columns=('registry', 'environment', 'project', 'repository', 'digest'),
-        record_label='artifacts',
+        record_label='registry inventory records',
         overview_metrics=(
-            InventoryOverviewMetric('Artifacts', 'row_count'),
+            InventoryOverviewMetric('Artifacts', 'count', key='entity_type', match_values=('artifact',)),
             InventoryOverviewMetric('Total Size MiB', 'sum', key='size_mib', number_format='#,##0.00', unit='MiB'),
             InventoryOverviewMetric(
                 'Scanned',
@@ -45,6 +45,7 @@ INFRASTRUCTURE_INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] 
             column('project', 'Project', 'Committed Registry project or namespace.', width=28),
             column('repository', 'Repository', 'Committed Registry repository identity.', width=38),
             column('digest', 'Digest', 'Immutable OCI artifact digest.', width=54),
+            column('entity_type', 'Record Type', 'Project, repository, or real artifact identity.', width=18),
             column('tags', 'Tags', 'Committed mutable tag aliases associated with the digest.', width=34),
             column('artifact_type', 'Artifact Type', 'Provider-neutral artifact type when supplied.', width=22),
             column('media_type', 'Media Type', 'OCI media type when supplied.', width=38),

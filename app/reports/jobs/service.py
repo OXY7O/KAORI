@@ -12,6 +12,20 @@ JOB_TYPE = 'report_generation'
 OPERATION = 'generate_report_artifact'
 
 
+def get_report_job_integration_dimensions(scope_asset_type: str, scope_asset_id: str) -> tuple[str | None, int | None]:
+    """Keep JobExecution dimensions aligned with canonical asset ownership."""
+    integration_types = {
+        'kubernetes_cluster': 'kubernetes',
+        'object_storage_system': 'object_storage',
+        'registry_integration': 'registry',
+    }
+    integration_type = integration_types.get(scope_asset_type)
+    if scope_asset_type == 'registry_integration':
+        # The registry integration identity is an IntegrationInstance primary key.
+        return integration_type, int(scope_asset_id)
+    return integration_type, None
+
+
 class ReportJobEnqueueError(RuntimeError):
     """Raised when KAORI cannot register or dispatch a report job."""
 
@@ -33,6 +47,9 @@ def enqueue_report_generation(
         )
         payload = parameters.to_payload()
         resource_group = f'report:{report.id}'
+        integration_type, integration_instance_id = get_report_job_integration_dimensions(
+            parameters.scope_asset_type, parameters.scope_asset_id
+        )
         job, created = enqueue_canonical_job(
             task=generate_report_job,
             task_kwargs={
@@ -44,9 +61,8 @@ def enqueue_report_generation(
             queue_name=get_reports_queue_name(),
             workload_class='heavy' if parameters.report_family == 'analytics' else 'standard',
             requested_by_user_id=requested_by_user_id,
-            integration_type='object_storage'
-            if parameters.scope_asset_type == 'object_storage_system'
-            else 'kubernetes',
+            integration_type=integration_type,
+            integration_instance_id=integration_instance_id,
             scope_type=parameters.scope_asset_type,
             scope_key=parameters.scope_asset_id,
             resource_group=resource_group,

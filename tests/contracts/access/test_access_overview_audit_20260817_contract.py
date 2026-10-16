@@ -12,8 +12,8 @@ def test_access_overview_is_a_domain_summary_composer_not_a_persistence_owner() 
     for required in (
         'build_user_access_summary()',
         'build_identity_provider_summary()',
-        "build_roles_index_context(can_manage_roles=False)['summary']",
-        "build_permission_registry_snapshot()['summary']",
+        'build_roles_overview_summary()',
+        'build_permission_registry_summary()',
         'get_activity_audit_summary()',
     ):
         assert required in presentation

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.platform_operations.data_lifecycle.presentation import build_data_lifecycle_overview_summary
+from app.platform_operations.jobs.configuration import build_job_configuration_attention_summary
 from app.platform_operations.jobs.presentation import build_job_execution_status_context
 from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
 
@@ -39,8 +40,9 @@ def build_platform_operations_overview_context(
         job_context = build_job_execution_status_context()
         job_stats = job_context['job_stats']
         attention = _count_value(job_stats.get('attention', 0))
+        policy_attention = build_job_configuration_attention_summary()
         active = _count_value(job_stats.get('active', 0))
-        if attention:
+        if attention or policy_attention:
             status_label, status_tone = 'Needs Attention', 'warning'
         elif active:
             status_label, status_tone = 'Active', 'info'
@@ -56,11 +58,13 @@ def build_platform_operations_overview_context(
                 'status_tone': status_tone,
                 'metrics': (
                     ('activity', 'Active', active),
-                    ('triangle-alert', 'Attention', attention),
+                    ('triangle-alert', 'Execution / Policy Alerts', f'{attention} / {policy_attention}'),
                     ('circle-check', 'Completed · 24H', _count_value(job_stats.get('completed_24h', 0))),
                 ),
-                'action_endpoint': 'jobs.executions',
-                'action_label': 'Open Jobs & Executions',
+                'action_endpoint': ('jobs.configuration' if policy_attention and not attention else 'jobs.executions'),
+                'action_label': (
+                    'Review Job Configuration' if policy_attention and not attention else 'Open Jobs & Executions'
+                ),
                 'boundary_label': 'Canonical execution evidence',
                 'boundary_title': 'Execution Evidence',
                 'boundary_description': (
@@ -93,7 +97,11 @@ def build_platform_operations_overview_context(
                         'Policies Enabled',
                         f'{lifecycle["enabled_domain_count"]} / {lifecycle["managed_domain_count"]}',
                     ),
-                    ('archive', 'Active Archives', lifecycle['active_archive_total']),
+                    (
+                        'archive',
+                        'Active Archives / Jobs',
+                        f'{lifecycle["active_archive_total"]} / {lifecycle["active_job_total"]}',
+                    ),
                     ('circle-x', 'Failed · 24H', lifecycle['failed_archive_24h']),
                 ),
                 'action_endpoint': 'platform_operations.data_lifecycle.index',
@@ -112,14 +120,10 @@ def build_platform_operations_overview_context(
         ready_count = _count_value(kubernetes.get('ready_cluster_count', 0))
         protected_namespaces = _count_value(kubernetes.get('enabled_namespace_count', 0))
         global_enabled = bool(kubernetes['global_reveal_enabled'])
-        if cluster_count == 0:
-            status_label, status_tone = 'No Clusters', 'unknown'
-        elif not global_enabled:
-            status_label, status_tone = 'Global Gate Disabled', 'warning'
-        elif ready_count < cluster_count:
-            status_label, status_tone = 'Readiness Review', 'warning'
-        else:
-            status_label, status_tone = 'Ready', 'normal'
+        # Kubernetes Administration is authoritative for protected-reveal
+        # prerequisites. Do not infer Ready from cluster counts alone.
+        status_label = str(kubernetes['administration_status_label'])
+        status_tone = str(kubernetes['administration_status_tone'])
         workspaces.append(
             {
                 'key': 'kubernetes',

@@ -149,7 +149,7 @@ def build_forecast_view(payload: dict[str, Any] | None, state: dict[str, Any]) -
         'insight': (
             f'{attention_count} bucket forecast(s) are inside the 90-day attention boundary.'
             if attention_count
-            else 'No bucket forecast is currently inside the 90-day attention boundary.'
+            else 'Current committed bucket forecasts show no capacity pressure within the 90-day attention window. Continue monitoring growth and utilization.'
         ),
     }
 

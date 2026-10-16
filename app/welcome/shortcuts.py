@@ -166,7 +166,6 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'group': 'operations',
         'targets': (
             ('jobs.view', 'platform_operations.overview.index'),
-            ('jobs.configure', 'platform_operations.overview.index'),
             ('platform_operations.view_data_lifecycle', 'platform_operations.overview.index'),
             ('kubernetes_secrets.manage_reveal', 'platform_operations.overview.index'),
         ),

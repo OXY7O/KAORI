@@ -51,8 +51,9 @@ def test_schedule_registry_and_run_lifecycle_use_framed_canonical_workspaces() -
     assert 'xl:grid-cols-6' not in template
     assert 'xl:grid-cols-5' not in template
 
-    assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence' in service
-    assert 'paginate_sequence(' in service
+    assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_select' in service
+    assert 'paginate_sequence(' not in service
+    assert '_filter_schedule_statement(selected_filters, _get_delivery_channel_options()).order_by(' in service
     assert 'paginate_select(' in service
     assert "query_args.get('run_page', 1)" in service
     assert "query_args.get('run_per_page', PER_PAGE_OPTIONS[0])" in service
@@ -61,6 +62,7 @@ def test_schedule_registry_and_run_lifecycle_use_framed_canonical_workspaces() -
 def test_schedule_automation_posture_is_state_aware_for_storage_and_worker() -> None:
     template = read(TEMPLATE)
     service = read(SERVICE)
+    readiness = read(ROOT / 'app/reports/schedules/readiness.py')
 
     assert 'data-schedule-posture="automation-v2"' in template
     assert 'data-schedule-control-boundary="true"' in template
@@ -71,14 +73,15 @@ def test_schedule_automation_posture_is_state_aware_for_storage_and_worker() -> 
     assert 'Artifact Storage Needs Review' in template
     assert "url_for('reports.storage')" in template
     assert "'automation_posture': get_automation_posture(storage_context, worker_context)" in service
-    assert 'def get_automation_posture(' in service
+    assert 'from app.reports.schedules.readiness import get_automation_posture' in service
+    assert 'def get_automation_posture(' in read(ROOT / 'app/reports/schedules/readiness.py')
     for label in [
         'Automation Ready',
         'Ready for Unattended Execution',
         'Artifact Execution Paused',
         'Dispatcher Needs Attention',
     ]:
-        assert label in service
+        assert label in readiness
 
 
 def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
@@ -258,11 +261,13 @@ def test_schedule_create_modal_uses_cluster_bound_namespace_dropdown() -> None:
     assert 'data-schedule-namespace' in template
     assert '<input type="text"\n                               name="namespace"' not in template
     assert 'All Namespaces' in template
-    assert "'namespace_options_by_cluster': _get_namespace_options_by_cluster()" in service
+    # Only the selected cluster may trigger Namespace inventory reads.
+    assert "'namespace_options_by_cluster': _get_namespace_options_by_cluster(selected_cluster_id)" in service
     assert 'get_namespace_options_by_cluster as _get_namespace_options_by_cluster' in service
-    assert 'def get_namespace_options_by_cluster()' in support
-    assert 'return get_report_namespace_options_by_cluster()' in support
-    assert 'def get_report_namespace_options_by_cluster()' in scope
+    assert 'def get_namespace_options_by_cluster(cluster_id: str | None = None)' in support
+    assert 'return get_report_namespace_options_by_cluster(cluster_id) if cluster_id else {}' in support
+    assert 'def get_report_namespace_options_by_cluster(cluster_id: str | None = None)' in scope
+    assert 'query.filter(NamespaceInventory.cluster_id == cluster_id)' in scope
     assert 'NamespaceInventory.namespace' in scope
     assert 'filter_current_generation(' in scope
     assert 'scheduleNamespacesByCluster' in script

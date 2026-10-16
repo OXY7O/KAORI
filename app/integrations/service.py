@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from app.common.presentation import present_key_label, present_user_datetime
 from app.extensions.db import db
 from app.integrations.asset_owner_sources import build_bound_observability_source_rows
-from app.integrations.contracts import IntegrationNotRegistered
+from app.integrations.contracts import IntegrationInstanceNotFound, IntegrationNotRegistered
 from app.integrations.coverage import (
     bound_source_for_scope,
     build_provider_coverage,
@@ -27,6 +27,7 @@ from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_a
 )
 from app.integrations.overview_extensions import (
     build_provider_portfolio_counts,
+    effective_runtime_readiness,
     portfolio_posture,
     sort_runtime_rows,
 )
@@ -461,13 +462,17 @@ def _coverage(
     metrics_sources: list[MetricsSource],
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
+    provider_counts_override: dict[str, dict[str, int]] | None = None,
 ) -> list[dict[str, Any]]:
-    provider_counts = build_provider_portfolio_counts(
-        kubernetes_connections=kubernetes_connections,
-        metrics_sources=metrics_sources,
-        alertmanager_instances=alertmanager_instances,
-        extension_instances=extension_instances,
-    )
+    if provider_counts_override is None:
+        provider_counts = build_provider_portfolio_counts(
+            kubernetes_connections=kubernetes_connections,
+            metrics_sources=metrics_sources,
+            alertmanager_instances=alertmanager_instances,
+            extension_instances=extension_instances,
+        )
+    else:
+        provider_counts = provider_counts_override
     modules = registry.all()
     rows: list[dict[str, Any]] = []
     for domain in ordered_domain_definitions():
@@ -542,13 +547,17 @@ def _catalog(
     metrics_sources: list[MetricsSource],
     alertmanager_instances: list[AlertmanagerInstance],
     extension_instances: list[IntegrationInstance],
+    provider_counts_override: dict[str, dict[str, int]] | None = None,
 ) -> list[dict[str, Any]]:
-    provider_counts = build_provider_portfolio_counts(
-        kubernetes_connections=kubernetes_connections,
-        metrics_sources=metrics_sources,
-        alertmanager_instances=alertmanager_instances,
-        extension_instances=extension_instances,
-    )
+    if provider_counts_override is None:
+        provider_counts = build_provider_portfolio_counts(
+            kubernetes_connections=kubernetes_connections,
+            metrics_sources=metrics_sources,
+            alertmanager_instances=alertmanager_instances,
+            extension_instances=extension_instances,
+        )
+    else:
+        provider_counts = provider_counts_override
     rows: list[dict[str, Any]] = []
     for module in registry.all():
         counts = provider_counts.get(module.integration_type, {})
@@ -712,7 +721,7 @@ def _kubernetes_runtime_row(
     cluster = connection.cluster
     canonical = connection.integration_instance
     observation = latest.get(('container_orchestrator', str(connection.id)))
-    readiness = connection.readiness_status or 'validation_required'
+    readiness = effective_runtime_readiness(connection, kubernetes=True)
     capability_attention = 0 if readiness == 'ready' else 1
     provider = provider_kind('container_orchestrator', canonical.provider_key)
     return {
@@ -761,7 +770,7 @@ def _metrics_source_runtime_row(
         'query_language': instance.query_language,
         'connection_status': instance.last_status or 'not_observed',
         **_runtime_observation_fields(observation),
-        'readiness': instance.readiness_status or 'validation_required',
+        'readiness': effective_runtime_readiness(instance),
         'validation_at_display': present_user_datetime(
             instance.last_checked_at or instance.last_validated_at,
             empty='Not validated',
@@ -795,7 +804,7 @@ def _alertmanager_runtime_row(
         'endpoint_product': 'Alertmanager',
         'connection_status': instance.last_status or 'not_observed',
         **_runtime_observation_fields(observation),
-        'readiness': instance.readiness_status or 'validation_required',
+        'readiness': effective_runtime_readiness(instance),
         'validation_at_display': present_user_datetime(
             instance.last_checked_at or instance.last_validated_at,
             empty='Not validated',
@@ -851,7 +860,17 @@ def build_integration_runtime_detail(integration_type: str, instance_id: str) ->
             module = get_integration(integration_type)
         except IntegrationNotRegistered:
             return None
-        observation = _latest_runtime_observation(integration_type, str(target_id))
-        latest = {(integration_type, str(target_id)): observation} if observation is not None else {}
+        # Detail URLs for generic providers identify the canonical integration.
+        # Runtime observations still identify the provider-owned record; never
+        # assume those independent primary-key sequences are identical.
+        try:
+            record = module.get_record_for_canonical(target_id)
+        except (IntegrationInstanceNotFound, IntegrationNotRegistered):
+            return None
+        if record is None:
+            return None
+        provider_record_id = str(record.id)
+        observation = _latest_runtime_observation(integration_type, provider_record_id)
+        latest = {(integration_type, provider_record_id): observation} if observation is not None else {}
         rows = module.build_runtime_overview_rows(latest, target_id)
     return rows[0] if rows else None

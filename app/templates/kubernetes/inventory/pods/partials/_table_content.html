@@ -4,21 +4,20 @@
 {% import "components/technical_value.html" as technical_value %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto overscroll-x-contain">
-    <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
+    <table class="{{ table_ui.table_classes('min-w-[72rem] !table-fixed') }}">
         <caption class="sr-only">Kubernetes Pod inventory for the active committed-snapshot scope.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Pod</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[24%] min-w-[17rem]">Pod</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[21%] min-w-[14rem]">Scope</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Runtime State</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Runtime State</th>
+                    class="{{ table_ui.header_cell_classes() }} w-[19%] min-w-[13rem]">Placement</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Owner & Restarts</th>
                 <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Placement</th>
-                <th scope="col"
-                    class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Ownership & Activity</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                    class="{{ table_ui.header_cell_classes(action=true) }} w-[10%]">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -37,8 +36,17 @@
                         <div class="mt-1">{{ technical_value.render(pod.placement_secondary) }}</div>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="text-sm font-semibold text-content-primary">{{ pod.owner_display }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ pod.activity_secondary }}</p>
+                        <div class="flex min-w-0 flex-col items-start gap-1">
+                            {% if pod.owner_kind_label == 'Owner Not Reported' %}
+                                {{ table_label.status_label(pod.owner_kind_label, 'unknown') }}
+                            {% else %}
+                                {{ table_label.metadata_label(pod.owner_kind_label) }}
+                            {% endif %}
+                            <p class="inline-flex items-center gap-1.5 text-xs leading-5 text-content-muted tabular-nums">
+                                <i data-lucide="rotate-ccw" class="h-3 w-3 shrink-0" aria-hidden="true"></i>
+                                <span>{{ pod.restart_summary }}</span>
+                            </p>
+                        </div>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
                         {{ resource_detail_modal.detail_button(pod.id, url_for('inventory.pod_details', pod_id=pod.id) , pod.name, 'Pod') }}

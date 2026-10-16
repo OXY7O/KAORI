@@ -29,9 +29,19 @@ from app.models.user import User
 from app.reports.catalog import REPORT_TYPE_SPECS
 from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.generate.service import REPORT_TYPE_OPTIONS
+from app.reports.generated.presentation_formatters import (
+    _format_datetime,
+    _format_period,
+    _format_report_domain,
+    _format_source_badge,
+    _format_source_kind,
+    _safe_int,
+)
 from app.reports.scope import (
+    ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE,
     KUBERNETES_CLUSTER_ASSET_TYPE,
     OBJECT_STORAGE_SYSTEM_ASSET_TYPE,
+    get_active_registry_options,
     resolve_report_scope,
 )
 from app.reports.storage.service import (
@@ -98,6 +108,9 @@ ARCHIVABLE_STATUSES = (
     'ready',
 )
 
+# Mirror JobExecution.is_active for indexed, batched SQL guards.
+ACTIVE_GENERATION_JOB_STATUSES = ('queued', 'running', 'retrying', 'cancel_requested')
+
 
 def get_generated_reports_payload(
     query_args: Mapping[str, str] | None = None,
@@ -158,6 +171,26 @@ def get_generated_reports_payload(
     }
 
 
+def _get_active_report_generation_ids(reports: Sequence[Report]) -> set[int]:
+    """Use committed canonical job evidence instead of report lifecycle status alone."""
+    ids = {int(report.id) for report in reports}
+    if not ids:
+        return set()
+    groups = {f'report:{report_id}' for report_id in ids}
+    rows = db.session.scalars(
+        select(JobExecution.resource_group).where(
+            JobExecution.job_type == 'report_generation',
+            JobExecution.resource_group.in_(groups),
+            JobExecution.status.in_(ACTIVE_GENERATION_JOB_STATUSES),
+        )
+    ).all()
+    return {
+        int(resource_group.removeprefix('report:'))
+        for resource_group in rows
+        if resource_group and resource_group.startswith('report:')
+    }
+
+
 def get_report_detail_payload(
     report_id: int,
 ) -> dict[str, Any]:
@@ -186,6 +219,7 @@ def get_report_detail_payload(
         report,
         cluster_map,
         user_map,
+        active_generation_report_ids=_get_active_report_generation_ids([report]),
     )
     artifact_access = report_detail['artifact_access']
     job = db.session.get(JobExecution, report.job_execution_id) if report.job_execution_id else None
@@ -454,6 +488,7 @@ def get_reports(
         report_items,
     )
 
+    active_generation_ids = _get_active_report_generation_ids(report_items)
     return [
         _serialize_report(
             report,
@@ -461,6 +496,7 @@ def get_reports(
             user_map,
             verify_artifact=False,
             active_backend_status=backend_status,
+            active_generation_report_ids=active_generation_ids,
         )
         for report in report_items
     ], total_items
@@ -494,40 +530,37 @@ def get_pagination(
     }
 
 
-def bulk_archive_report_records(
-    report_ids: Sequence[int],
-) -> tuple[bool, str]:
-    normalized_ids = [int(report_id) for report_id in report_ids if str(report_id).isdigit()]
-
+def bulk_archive_report_records(report_ids: Sequence[int]) -> tuple[bool, str]:
+    """Archive all selected records or none; serialize with worker state transitions."""
+    normalized_ids = sorted({int(report_id) for report_id in report_ids if str(report_id).isdigit()})
     if not normalized_ids:
         return False, 'Select at least one report to archive.'
 
-    reports = (
-        db.session.execute(
-            select(
-                Report,
-            ).where(
-                Report.id.in_(normalized_ids),
-                Report.status.in_(ARCHIVABLE_STATUSES),
-            )
+    reports = db.session.scalars(
+        select(Report)
+        .where(Report.id.in_(normalized_ids))
+        .order_by(Report.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    ).all()
+    if len(reports) != len(normalized_ids):
+        db.session.rollback()
+        return False, f'No reports archived: {len(normalized_ids) - len(reports)} selected record(s) were not found.'
+
+    ineligible = [report for report in reports if report.status not in ARCHIVABLE_STATUSES]
+    active_ids = _get_active_report_generation_ids(reports)
+    if ineligible or active_ids:
+        db.session.rollback()
+        return False, (
+            f'No reports archived: {len(ineligible)} ineligible and {len(active_ids)} '
+            'with active generation jobs. Review and retry eligible reports.'
         )
-        .scalars()
-        .all()
-    )
 
-    if not reports:
-        return False, 'No selected reports can be archived.'
-
-    now = datetime.now(
-        UTC,
-    )
-
+    now = datetime.now(UTC)
     for report in reports:
         report.status = 'archived'
         report.updated_at = now
-
     db.session.commit()
-
     return True, f'Archived {len(reports)} report(s).'
 
 
@@ -655,6 +688,15 @@ def _get_period_start_date(
     return None
 
 
+def get_generated_scope_labels(asset_type: str, namespace: str | None) -> tuple[str, str]:
+    """Reuse domain-first scope identities without Kubernetes fallback for Registry."""
+    if asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE:
+        return 'Artifact Registry', 'Integration Scope'
+    if asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE:
+        return 'Object Storage System', 'System Scope'
+    return 'Kubernetes Cluster', namespace or 'All Namespaces'
+
+
 def _serialize_report(
     report: Report,
     cluster_map: dict[str, str],
@@ -662,6 +704,7 @@ def _serialize_report(
     *,
     verify_artifact: bool = True,
     active_backend_status: Mapping[str, Any] | None = None,
+    active_generation_report_ids: set[int] | None = None,
 ) -> dict[str, Any]:
     status_meta = _get_status_meta(
         report.status,
@@ -689,21 +732,30 @@ def _serialize_report(
     can_generate_artifact = report.status in ['requested', 'failed', 'ready'] and bool(
         active_backend_status.get('write_available', False)
     )
-    can_download_artifact = report.status in ['ready', 'archived'] and bool(report.file_path) and file_exists
-    scope = resolve_report_scope(report)
+    # Registry metadata is not an existence probe. A reachable reference may be opened,
+    # but only the detail/download path can claim that the artifact was verified.
+    can_download_artifact = (
+        report.status in ['ready', 'archived']
+        and bool(report.file_path)
+        and bool(artifact_access.get('reachable', False))
+        and (
+            file_exists
+            if bool(artifact_access.get('verified', verify_artifact))
+            else artifact_access.get('state') == 'referenced'
+        )
+    )
     scope_asset_type = str(getattr(report, 'scope_asset_type', '') or '')
-    scope_label = (
-        'Object Storage System' if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE else 'Kubernetes Cluster'
-    )
+    # Registry reports carry a committed label snapshot: avoid a per-row IntegrationInstance lookup.
+    scope = resolve_report_scope(report) if scope_asset_type != ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE else None
+    scope_label, secondary_scope = get_generated_scope_labels(scope_asset_type, report.namespace)
     scope_value = (
-        scope.label
-        if scope is not None
-        else (getattr(report, 'scope_asset_label_snapshot', None) or 'Asset Selection Missing')
-    )
-    secondary_scope = (
-        'System Scope'
-        if scope_asset_type == OBJECT_STORAGE_SYSTEM_ASSET_TYPE
-        else (report.namespace or 'All Namespaces')
+        str(getattr(report, 'scope_asset_label_snapshot', '') or '').strip()
+        or (scope.label if scope is not None else '')
+        or (
+            f'Registry Integration {getattr(report, "scope_asset_id", "")}'
+            if scope_asset_type == ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE
+            else 'Asset Selection Missing'
+        )
     )
 
     return {
@@ -780,7 +832,8 @@ def _serialize_report(
         'generate_artifact_label': (
             f'Regenerate {artifact_format.label}' if report.status == 'ready' else f'Generate {artifact_format.label}'
         ),
-        'can_archive_report': report.status in ARCHIVABLE_STATUSES,
+        'can_archive_report': report.status in ARCHIVABLE_STATUSES
+        and report.id not in (active_generation_report_ids or set()),
         'can_restore_report': report.status == 'archived' and bool(artifact_access['reachable']) and file_exists,
         'can_download_artifact': can_download_artifact,
     }
@@ -828,9 +881,9 @@ def _summarize_report_file_reference(
 
     reachable = bool(backend_status.get('reachable', False))
     return {
-        # For the registry, a retained URI is enough to expose the download action.
-        # The download route performs the authoritative existence probe.
-        'exists': bool(file_path and reachable),
+        # Storage reachability does not prove that this specific object exists.
+        # Download remains a guarded handoff; only detail/download probes existence.
+        'exists': False,
         'reachable': reachable,
         'backend': backend_name,
         'backend_label': (storage_location.get('backend_label') or _format_storage_backend_label(backend_name)),
@@ -858,11 +911,14 @@ def _serialize_report_detail(
     report: Report,
     cluster_map: dict[str, str],
     user_map: dict[int, dict[str, Any]],
+    *,
+    active_generation_report_ids: set[int] | None = None,
 ) -> dict[str, Any]:
     report_item = _serialize_report(
         report,
         cluster_map,
         user_map,
+        active_generation_report_ids=active_generation_report_ids,
     )
 
     file_exists = bool(
@@ -898,7 +954,7 @@ def _serialize_report_detail(
             report.updated_at,
         ),
         'can_generate_artifact': report_item['can_generate_artifact'],
-        'can_archive_report': report.status in ARCHIVABLE_STATUSES,
+        'can_archive_report': report_item['can_archive_report'],
         'can_restore_report': report_item['can_restore_report'],
         'can_download_artifact': report_item['can_download_artifact'],
     }
@@ -907,19 +963,21 @@ def _serialize_report_detail(
 def archive_report_record(
     report_id: int,
 ) -> tuple[bool, str]:
-    report = db.session.get(
-        Report,
-        report_id,
+    report = db.session.scalar(
+        select(Report).where(Report.id == report_id).with_for_update().execution_options(populate_existing=True)
     )
-
     if report is None:
+        db.session.rollback()
         return False, 'Report not found.'
-
     if report.status == 'archived':
+        db.session.rollback()
         return True, 'Report is already archived.'
-
     if report.status not in ARCHIVABLE_STATUSES:
+        db.session.rollback()
         return False, f'{STATUS_LABELS.get(report.status, report.status.title())} reports cannot be archived.'
+    if report.id in _get_active_report_generation_ids([report]):
+        db.session.rollback()
+        return False, 'Report generation is active. Archive after the latest job reaches a terminal state.'
 
     report.status = 'archived'
     db.session.commit()
@@ -1308,6 +1366,20 @@ def _get_file_state(
             'icon': 'cloud-off',
         }
 
+    if (
+        report.status in {'ready', 'archived'}
+        and report.file_path
+        and storage_reachable
+        and artifact_access.get('verified') is False
+        and artifact_access.get('state') == 'referenced'
+    ):
+        return {
+            'label': 'Artifact Referenced' if report.status == 'ready' else 'Archived Reference',
+            'description': 'Stored metadata is retained; exact artifact existence is not verified in the registry.',
+            'tone': 'gray',
+            'icon': 'file-check-2',
+        }
+
     if report.status == 'ready' and report.file_path and file_exists:
         return {
             'label': 'Available',
@@ -1424,6 +1496,14 @@ def _get_scope_options() -> list[dict[str, str]]:
             {
                 'value': f'{OBJECT_STORAGE_SYSTEM_ASSET_TYPE}:{system.id}',
                 'label': f'Object Storage · {system.name}',
+            }
+        )
+
+    for instance in get_active_registry_options():
+        options.append(
+            {
+                'value': f'{ARTIFACT_REGISTRY_INSTANCE_ASSET_TYPE}:{instance["value"]}',
+                'label': f'Artifact Registry · {instance["label"]}',
             }
         )
 
@@ -1573,93 +1653,3 @@ def _get_report_status_counts() -> dict[str, int]:
         ).group_by(Report.status)
     ).all()
     return {str(status): int(count or 0) for status, count in rows}
-
-
-def _format_report_domain(
-    report_domain: str | None,
-) -> str:
-    labels = {
-        'kubernetes': 'KAORI Kubernetes Reports',
-        'server': 'KAORI Server Reports',
-        'hci': 'KAORI HCI Reports',
-    }
-    normalized = str(report_domain or 'kubernetes').strip().lower()
-    return labels.get(normalized, normalized.replace('_', ' ').title())
-
-
-def _format_source_badge(
-    report_domain: str | None,
-    source_kind: str | None,
-) -> str:
-    normalized_domain = str(report_domain or 'kubernetes').strip().lower()
-    if normalized_domain == 'server':
-        return 'Server'
-    if normalized_domain == 'hci':
-        return 'HCI'
-
-    if (source_kind or 'kubernetes') == 'kubernetes':
-        return 'Kubernetes'
-
-    return _format_source_kind(source_kind)
-
-
-def _format_source_kind(
-    source_kind: str | None,
-) -> str:
-    labels = {
-        'kubernetes': 'Kubernetes',
-        'server': 'Server',
-        'vm': 'VM',
-        'hci': 'HCI',
-    }
-
-    return labels.get(
-        source_kind or 'kubernetes',
-        (source_kind or 'kubernetes')
-        .replace(
-            '_',
-            ' ',
-        )
-        .title(),
-    )
-
-
-def _format_period(
-    value: str,
-) -> str:
-    labels = {
-        'snapshot': 'Current Inventory Snapshot',
-        '24h': 'Last 24 Hours',
-        '7d': 'Last 7 Days',
-        '30d': 'Last 30 Days',
-        '90d': 'Last 90 Days',
-        'month': 'This Month',
-    }
-
-    return labels.get(
-        value,
-        value,
-    )
-
-
-def _format_datetime(
-    value: datetime | None,
-) -> str:
-    if value is None:
-        return '-'
-
-    return value.strftime(
-        '%d %b %Y %H:%M',
-    )
-
-
-def _safe_int(
-    value: str,
-    default: int,
-) -> int:
-    try:
-        return int(
-            value,
-        )
-    except ValueError:
-        return default

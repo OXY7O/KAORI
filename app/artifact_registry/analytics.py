@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from sqlalchemy import func, select
+
+from app.artifact_registry.analytics_history import (
+    REGISTRY_HISTORY_WINDOWS,
+    collect_registry_metric_history,
+)
+from app.artifact_registry.correlation import runtime_input_signature
 from app.artifact_registry.security.contracts import registry_scan_evidence_ready
 from app.extensions.db import db
 from app.integrations.observability.alert_source.providers.alertmanager.application.consumer import (
@@ -21,6 +27,8 @@ from app.models.integration import IntegrationInstance
 from app.models.registry import (
     RegistryAnalyticsSnapshot,
     RegistryArtifact,
+    RegistryCollectionState,
+    RegistryGovernanceState,
     RegistryProject,
     RegistryProjectGovernance,
     RegistryRepository,
@@ -31,7 +39,19 @@ from app.models.registry import (
 def _vector(payload: dict[str, Any]) -> list[dict[str, Any]]:
     data = payload.get('data') if isinstance(payload, dict) else None
     result = data.get('result') if isinstance(data, dict) else None
-    return [item for item in (result or []) if isinstance(item, dict)]
+    return [item for item in result if isinstance(item, dict)] if isinstance(result, list) else []
+
+
+def _valid_instant_vector(payload: Any) -> bool:
+    if not isinstance(payload, dict) or payload.get('status') != 'success':
+        return False
+    data = payload.get('data')
+    return (
+        isinstance(data, dict)
+        and data.get('resultType') == 'vector'
+        and isinstance(data.get('result'), list)
+        and all(isinstance(item, dict) for item in data['result'])
+    )
 
 
 def _sample_value(item: dict[str, Any]) -> float | None:
@@ -69,7 +89,10 @@ def _metric_payload(
     key: str,
 ) -> tuple[dict[str, Any] | None, str | None]:
     try:
-        return consumer.query(get_registry_query_expression(key)), None
+        result = consumer.query(get_registry_query_expression(key))
+        if not _valid_instant_vector(result):
+            return None, 'Invalid or unsupported Metrics Source instant-vector result.'
+        return result, None
     except MetricsSourceError as exc:
         return None, str(exc)
 
@@ -124,8 +147,9 @@ def _metrics_evidence(identity: IntegrationInstance) -> dict[str, Any]:
         if error:
             gaps[key] = error
 
+    observed = len(project_queries) + len(scalar_queries) - len(gaps)
     return {
-        'status': 'ready',
+        'status': 'unavailable' if not observed else ('partial' if gaps else 'ready'),
         'metrics_source': consumer.config.name,
         'binding_id': consumer.binding.id,
         'capability_gaps': gaps,
@@ -269,6 +293,17 @@ def _alert_evidence(identity: IntegrationInstance) -> dict[str, Any]:
     )
 
     if alertmanager.get('connected'):
+        raw_alerts = alertmanager.get('alerts')
+        if not isinstance(raw_alerts, list) or any(not isinstance(item, dict) for item in raw_alerts):
+            return {
+                'status': 'unavailable',
+                'resolved_source': 'alertmanager',
+                'source_label': 'Unavailable',
+                'fallback_used': False,
+                'detail': 'Alertmanager returned malformed successful alert evidence.',
+                'rows': [],
+                'source_errors': ['Malformed Alertmanager alert record list.'],
+            }
         return {
             'status': 'ready',
             'resolved_source': 'alertmanager',
@@ -298,6 +333,17 @@ def _alert_evidence(identity: IntegrationInstance) -> dict[str, Any]:
             'source_errors': [alertmanager_error, str(exc)],
         }
 
+    if not _valid_instant_vector(metrics_payload):
+        return {
+            'status': 'unavailable',
+            'resolved_source': 'metrics_source',
+            'source_label': 'Unavailable',
+            'fallback_used': True,
+            'detail': 'Metrics Source fallback returned malformed active-alert evidence.',
+            'rows': [],
+            'source_errors': [alertmanager_error, 'Invalid active-alert Metrics Source response.'],
+        }
+
     return {
         'status': 'ready',
         'resolved_source': 'metrics_source',
@@ -316,6 +362,7 @@ def _previous_snapshot(identity_id: int) -> RegistryAnalyticsSnapshot | None:
     return (
         RegistryAnalyticsSnapshot.query.filter_by(
             integration_instance_id=identity_id,
+            time_range='current',
             status='ready',
         )
         .order_by(RegistryAnalyticsSnapshot.generated_at.desc(), RegistryAnalyticsSnapshot.id.desc())
@@ -349,57 +396,153 @@ def _days_between(previous: RegistryAnalyticsSnapshot | None, now: datetime) -> 
     return seconds / 86400.0 if seconds >= 300 else None
 
 
-def _registry_committed_state(
-    identity_id: int,
-) -> tuple[
-    list[RegistryProject],
-    list[RegistryRepository],
-    list[RegistryArtifact],
-    list[RegistryWorkloadBinding],
-    list[RegistryProjectGovernance],
-]:
-    projects = RegistryProject.query.filter_by(integration_instance_id=identity_id).all()
-    project_ids = [project.id for project in projects]
-    repositories = (
-        RegistryRepository.query.filter(RegistryRepository.project_id.in_(project_ids)).all() if project_ids else []
-    )
-    repository_ids = [repo.id for repo in repositories]
+def _registry_bounded_state(identity_id: int, generated_at: datetime) -> dict[str, Any]:
+    """Bounded SQL projection of one committed Registry source without ORM estate hydration."""
+    project_count = RegistryProject.query.filter_by(integration_instance_id=identity_id).count()
+    repositories = RegistryRepository.query.join(
+        RegistryProject, RegistryRepository.project_id == RegistryProject.id
+    ).filter(RegistryProject.integration_instance_id == identity_id)
+    repository_count = repositories.count()
     artifacts = (
-        RegistryArtifact.query.filter(RegistryArtifact.repository_id.in_(repository_ids)).all()
-        if repository_ids
-        else []
+        RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(RegistryProject.integration_instance_id == identity_id)
     )
-    artifact_ids = [artifact.id for artifact in artifacts]
+
     bindings = (
-        RegistryWorkloadBinding.query.filter(RegistryWorkloadBinding.artifact_id.in_(artifact_ids)).all()
-        if artifact_ids
-        else []
+        RegistryWorkloadBinding.query.join(RegistryArtifact, RegistryWorkloadBinding.artifact_id == RegistryArtifact.id)
+        .join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
+        .join(RegistryProject, RegistryRepository.project_id == RegistryProject.id)
+        .filter(RegistryProject.integration_instance_id == identity_id)
     )
-    governance_rows = (
-        RegistryProjectGovernance.query.filter(RegistryProjectGovernance.project_id.in_(project_ids)).all()
-        if project_ids
-        else []
+    binding_count = bindings.count()
+    tag_only_count = bindings.filter(RegistryWorkloadBinding.match_type == 'tag').count()
+    running_count = int(
+        bindings.with_entities(func.count(func.distinct(RegistryWorkloadBinding.artifact_id))).scalar() or 0
     )
-    return projects, repositories, artifacts, bindings, governance_rows
+    runtime_ids = bindings.with_entities(RegistryWorkloadBinding.artifact_id).distinct().subquery()
+    rows = artifacts.with_entities(
+        RegistryArtifact.id,
+        RegistryArtifact.size_bytes,
+        RegistryArtifact.scan_status,
+        RegistryArtifact.vulnerability_summary,
+        RegistryArtifact.signature_status,
+        RegistryArtifact.sbom_status,
+        RegistryArtifact.pull_time,
+        RegistryArtifact.push_time,
+        RegistryArtifact.id.in_(select(runtime_ids.c.artifact_id)).label('used_at_runtime'),
+    ).yield_per(250)
 
+    counts = {
+        'artifacts': 0,
+        'total_size_bytes': 0,
+        'stale_candidate_count': 0,
+        'scanned_artifacts': 0,
+        'critical_findings': 0,
+        'high_findings': 0,
+        'signed_artifacts': 0,
+        'sbom_artifacts': 0,
+        'critical_runtime_artifacts': 0,
+        'runtime_scan_gaps': 0,
+        'unsigned_runtime_artifacts': 0,
+    }
+    stale_cutoff = generated_at - timedelta(days=90)
+    for artifact_id, size, scan, findings, signature, sbom, pull_at, push_at, running in rows:
+        del artifact_id
+        counts['artifacts'] += 1
+        counts['total_size_bytes'] += int(size or 0)
+        scan_ready = bool(registry_scan_evidence_ready(scan))
+        counts['scanned_artifacts'] += int(scan_ready)
+        counts['signed_artifacts'] += int(signature == 'signed')
+        counts['sbom_artifacts'] += int(sbom == 'available')
+        summary = findings if isinstance(findings, dict) and scan_ready else {}
+        critical = int(summary.get('critical') or 0)
+        high = int(summary.get('high') or 0)
+        counts['critical_findings'] += critical
+        counts['high_findings'] += high
+        counts['critical_runtime_artifacts'] += int(bool(running) and critical > 0)
+        counts['runtime_scan_gaps'] += int(bool(running) and not scan_ready)
+        counts['unsigned_runtime_artifacts'] += int(bool(running) and signature == 'unsigned')
+        last_use = pull_at or push_at
+        if last_use is not None:
+            observed = last_use if last_use.tzinfo else last_use.replace(tzinfo=UTC)
+            counts['stale_candidate_count'] += int(not running and observed < stale_cutoff)
 
-def _stale_candidate_count(
-    artifacts: list[RegistryArtifact],
-    runtime_artifact_ids: set[int],
-    generated_at: datetime,
-) -> int:
-    inactive_cutoff = generated_at - timedelta(days=90)
-    stale_candidates = 0
-    for artifact in artifacts:
-        if artifact.id in runtime_artifact_ids:
-            continue
-        reference_time = artifact.pull_time or artifact.push_time
-        if reference_time is None:
-            continue
-        if reference_time.tzinfo is None:
-            reference_time = reference_time.replace(tzinfo=UTC)
-        stale_candidates += int(reference_time < inactive_cutoff)
-    return stale_candidates
+    assessed = RegistryProjectGovernance.query.join(
+        RegistryProject, RegistryProjectGovernance.project_id == RegistryProject.id
+    ).filter(RegistryProject.integration_instance_id == identity_id)
+    governance_counts = {
+        'projects_assessed': assessed.count(),
+        'retention_configured': assessed.filter(RegistryProjectGovernance.retention_status == 'configured').count(),
+        'immutability_configured': assessed.filter(
+            RegistryProjectGovernance.immutability_status == 'configured'
+        ).count(),
+        'retention_not_configured': assessed.filter(
+            RegistryProjectGovernance.retention_status == 'not_configured'
+        ).count(),
+        'immutability_not_configured': assessed.filter(
+            RegistryProjectGovernance.immutability_status == 'not_configured'
+        ).count(),
+    }
+    inventory = {
+        'projects': project_count,
+        'repositories': repository_count,
+        **{key: counts[key] for key in ('artifacts', 'total_size_bytes', 'stale_candidate_count')},
+    }
+    security = {
+        'scanned_artifacts': counts['scanned_artifacts'],
+        'scan_coverage_percent': round(100 * counts['scanned_artifacts'] / counts['artifacts'], 1)
+        if counts['artifacts']
+        else None,
+        'critical_findings': counts['critical_findings'],
+        'high_findings': counts['high_findings'],
+        'signed_artifacts': counts['signed_artifacts'],
+        'signature_coverage_percent': round(100 * counts['signed_artifacts'] / counts['artifacts'], 1)
+        if counts['artifacts']
+        else None,
+        'sbom_artifacts': counts['sbom_artifacts'],
+        'sbom_coverage_percent': round(100 * counts['sbom_artifacts'] / counts['artifacts'], 1)
+        if counts['artifacts']
+        else None,
+    }
+    runtime = {
+        'bindings': binding_count,
+        'running_artifacts': running_count,
+        'critical_runtime_artifacts': counts['critical_runtime_artifacts'],
+        'tag_only_bindings': tag_only_count,
+        'runtime_scan_gaps': counts['runtime_scan_gaps'],
+        'unsigned_runtime_artifacts': counts['unsigned_runtime_artifacts'],
+    }
+    inventory_state = db.session.get(RegistryCollectionState, identity_id)
+    governance_state = db.session.get(RegistryGovernanceState, identity_id)
+    latest_binding = bindings.with_entities(func.max(RegistryWorkloadBinding.observed_at)).scalar()
+    latest_scan = artifacts.with_entities(func.max(RegistryArtifact.scan_completed_at)).scalar()
+    return {
+        'inventory': inventory,
+        'security': security,
+        'runtime': runtime,
+        'governance': governance_counts,
+        'evidence': {
+            'source': 'committed_registry_state',
+            'metrics_source_optional': True,
+            'provider_queries_on_page_load': False,
+            'inventory_committed_at': (
+                inventory_state.last_committed_at.isoformat()
+                if inventory_state and inventory_state.last_committed_at
+                else None
+            ),
+            'governance_committed_at': (
+                governance_state.last_committed_at.isoformat()
+                if governance_state and governance_state.last_committed_at
+                else None
+            ),
+            'governance_status': governance_state.status if governance_state else 'not_collected',
+            'runtime_observed_at': latest_binding.isoformat() if latest_binding else None,
+            'correlation_input_signature': runtime_input_signature(db.session()),
+            'security_latest_scan_at': latest_scan.isoformat() if latest_scan else None,
+            'security_assessed_count': counts['scanned_artifacts'],
+        },
+    }
 
 
 def _growth_payload(
@@ -413,8 +556,10 @@ def _growth_payload(
         previous.payload_json.get('inventory') if previous and isinstance(previous.payload_json, dict) else {}
     )
     elapsed_days = _days_between(previous, generated_at)
-    artifact_delta = artifact_count - int((previous_inventory or {}).get('artifacts') or artifact_count)
-    size_delta = total_size - int((previous_inventory or {}).get('total_size_bytes') or total_size)
+    old_artifacts = (previous_inventory or {}).get('artifacts')
+    old_size = (previous_inventory or {}).get('total_size_bytes')
+    artifact_delta = artifact_count - int(old_artifacts) if old_artifacts is not None else 0
+    size_delta = total_size - int(old_size) if old_size is not None else 0
     return (
         {
             'elapsed_days': elapsed_days,
@@ -465,161 +610,86 @@ def _project_forecasts(
     return forecasts
 
 
-@dataclass(frozen=True, slots=True)
-class _AnalyticsDomainState:
-    projects: list[RegistryProject]
-    repositories: list[RegistryRepository]
-    artifacts: list[RegistryArtifact]
-    bindings: list[RegistryWorkloadBinding]
-    governance_rows: list[RegistryProjectGovernance]
-    generated_at: datetime
-    growth: dict[str, Any]
-    project_forecasts: list[dict[str, Any]]
-    metrics: dict[str, Any]
-    alerts: dict[str, Any]
-
-
-def _analytics_inventory_payload(
-    state: _AnalyticsDomainState,
-    runtime_artifact_ids: set[int],
-) -> dict[str, Any]:
-    return {
-        'projects': len(state.projects),
-        'repositories': len(state.repositories),
-        'artifacts': len(state.artifacts),
-        'total_size_bytes': sum(int(artifact.size_bytes or 0) for artifact in state.artifacts),
-        'stale_candidate_count': _stale_candidate_count(
-            state.artifacts,
-            runtime_artifact_ids,
-            state.generated_at,
-        ),
-    }
-
-
-def _analytics_security_payload(artifacts: list[RegistryArtifact]) -> dict[str, Any]:
-    scanned = sum(registry_scan_evidence_ready(artifact.scan_status) for artifact in artifacts)
-    signed = sum(str(artifact.signature_status or '') == 'signed' for artifact in artifacts)
-    sbom = sum(str(artifact.sbom_status or '') == 'available' for artifact in artifacts)
-    critical_findings = sum(
-        int((artifact.vulnerability_summary or {}).get('critical') or 0)
-        for artifact in artifacts
-        if isinstance(artifact.vulnerability_summary, dict)
-    )
-    high_findings = sum(
-        int((artifact.vulnerability_summary or {}).get('high') or 0)
-        for artifact in artifacts
-        if isinstance(artifact.vulnerability_summary, dict)
-    )
-    total = len(artifacts)
-    return {
-        'scanned_artifacts': scanned,
-        'scan_coverage_percent': round((scanned / total) * 100, 1) if total else 0.0,
-        'critical_findings': critical_findings,
-        'high_findings': high_findings,
-        'signed_artifacts': signed,
-        'signature_coverage_percent': round((signed / total) * 100, 1) if total else 0.0,
-        'sbom_artifacts': sbom,
-        'sbom_coverage_percent': round((sbom / total) * 100, 1) if total else 0.0,
-    }
-
-
-def _analytics_runtime_payload(
-    artifacts: list[RegistryArtifact],
-    bindings: list[RegistryWorkloadBinding],
-) -> tuple[dict[str, Any], set[int]]:
-    runtime_artifact_ids = {binding.artifact_id for binding in bindings}
-    critical_runtime = sum(
-        artifact.id in runtime_artifact_ids and int((artifact.vulnerability_summary or {}).get('critical') or 0) > 0
-        for artifact in artifacts
-        if isinstance(artifact.vulnerability_summary, dict)
-    )
-    payload = {
-        'bindings': len(bindings),
-        'running_artifacts': len(runtime_artifact_ids),
-        'critical_runtime_artifacts': critical_runtime,
-        'tag_only_bindings': sum(binding.match_type == 'tag' for binding in bindings),
-        'runtime_scan_gaps': sum(
-            artifact.id in runtime_artifact_ids and not registry_scan_evidence_ready(artifact.scan_status)
-            for artifact in artifacts
-        ),
-        'unsigned_runtime_artifacts': sum(
-            artifact.id in runtime_artifact_ids and str(artifact.signature_status or '') == 'unsigned'
-            for artifact in artifacts
-        ),
-    }
-    return payload, runtime_artifact_ids
-
-
-def _analytics_governance_payload(rows: list[RegistryProjectGovernance]) -> dict[str, Any]:
-    return {
-        'projects_assessed': len(rows),
-        'retention_configured': sum(row.retention_status == 'configured' for row in rows),
-        'immutability_configured': sum(row.immutability_status == 'configured' for row in rows),
-    }
-
-
-def _analytics_domain_payload(state: _AnalyticsDomainState) -> dict[str, Any]:
-    runtime_payload, runtime_artifact_ids = _analytics_runtime_payload(state.artifacts, state.bindings)
-    return {
-        'inventory': _analytics_inventory_payload(state, runtime_artifact_ids),
-        'security': _analytics_security_payload(state.artifacts),
-        'runtime': runtime_payload,
-        'governance': _analytics_governance_payload(state.governance_rows),
-        'growth': state.growth,
-        'capacity': {'project_forecasts': state.project_forecasts},
-        'metrics': state.metrics,
-        'alerts': state.alerts,
-        'evidence': {
-            'source': 'committed_registry_state',
-            'metrics_source_optional': True,
-            'provider_queries_on_page_load': False,
-        },
-    }
-
-
 def materialize_registry_analytics(
     identity: IntegrationInstance,
     *,
     job_execution_id: int | None = None,
+    time_range: str = 'current',
     freshness_minutes: int = 15,
     stale_grace_minutes: int = 1440,
 ) -> RegistryAnalyticsSnapshot:
     """Materialize Registry analytics from committed domain state plus bound Metrics Source."""
 
-    if identity.integration_type != 'registry':
-        raise ValueError('Registry analytics requires a Registry integration identity.')
+    if identity.integration_type != 'registry' or not identity.enabled or identity.lifecycle_status != 'active':
+        raise ValueError('Registry analytics requires an active and enabled Registry source.')
 
+    if time_range != 'current' and time_range not in REGISTRY_HISTORY_WINDOWS:
+        raise ValueError('Unrecognized Registry history interval.')
     generated_at = datetime.now(UTC)
     previous = _previous_snapshot(identity.id)
-    projects, repositories, artifacts, bindings, governance_rows = _registry_committed_state(identity.id)
-    total_size = sum(int(artifact.size_bytes or 0) for artifact in artifacts)
+    domain = _registry_bounded_state(identity.id, generated_at)
+    inventory = domain['inventory']
+    total_size = int(inventory['total_size_bytes'])
     growth, elapsed_days = _growth_payload(
         previous,
         generated_at=generated_at,
-        artifact_count=len(artifacts),
+        artifact_count=int(inventory['artifacts']),
         total_size=total_size,
     )
-    metrics = _metrics_evidence(identity)
+    if time_range == 'current':
+        metrics = _metrics_evidence(identity)
+        history: dict[str, Any] | None = None
+        prior_usage = _previous_project_usage(previous)
+    else:
+        history, metrics, measured_growth = collect_registry_metric_history(identity, time_range, now=generated_at)
+        growth = measured_growth
+        elapsed_days = measured_growth['elapsed_days']
+        prior_usage = {
+            project: point['first']
+            for project, point in history.get('series', {}).get('project_usage_bytes', {}).items()
+        }
     alerts = _alert_evidence(identity)
-    project_forecasts = _project_forecasts(metrics, _previous_project_usage(previous), elapsed_days)
-    payload = _analytics_domain_payload(
-        _AnalyticsDomainState(
-            projects=projects,
-            repositories=repositories,
-            artifacts=artifacts,
-            bindings=bindings,
-            governance_rows=governance_rows,
-            generated_at=generated_at,
-            growth=growth,
-            project_forecasts=project_forecasts,
-            metrics=metrics,
-            alerts=alerts,
-        )
+    project_forecasts = _project_forecasts(metrics, prior_usage, elapsed_days)
+    payload = {
+        **domain,
+        'growth': growth,
+        'capacity': {'project_forecasts': project_forecasts},
+        'metrics': metrics,
+        'alerts': alerts,
+    }
+    if history is not None:
+        payload['history'] = history
+    # An Inventory refresh racing with materialization must not bless the
+    # earlier generation as current. Preserve the previously committed snapshot.
+    inventory_state = db.session.get(RegistryCollectionState, int(identity.id))
+    if inventory_state is not None:
+        db.session.refresh(inventory_state)
+    current_generation = (
+        inventory_state.last_committed_at.isoformat() if inventory_state and inventory_state.last_committed_at else None
     )
+    if current_generation != domain['evidence']['inventory_committed_at']:
+        raise RuntimeError('Registry inventory generation changed during Analytics materialization.')
+    if current_generation is None:
+        raise RuntimeError('Registry Inventory has no usable committed generation for Analytics.')
+    db.session.refresh(identity, attribute_names=['enabled', 'lifecycle_status'])
+    if not identity.enabled or identity.lifecycle_status != 'active':
+        raise RuntimeError('Registry source was disabled during Analytics materialization.')
+    current_governance = db.session.get(RegistryGovernanceState, int(identity.id))
+    if current_governance is not None:
+        db.session.refresh(current_governance, attribute_names=['last_committed_at'])
+    governance_generation = (
+        current_governance.last_committed_at.isoformat()
+        if current_governance and current_governance.last_committed_at
+        else None
+    )
+    if governance_generation != domain['evidence']['governance_committed_at']:
+        raise RuntimeError('Registry Governance changed during Analytics materialization.')
+    if runtime_input_signature(db.session()) != domain['evidence']['correlation_input_signature']:
+        raise RuntimeError('Registry or Kubernetes correlation inputs changed during Analytics materialization.')
 
     snapshot = RegistryAnalyticsSnapshot()
     snapshot.integration_instance_id = identity.id
-    snapshot.time_range = 'current'
+    snapshot.time_range = time_range
     snapshot.payload_json = payload
     snapshot.status = 'ready'
     snapshot.generated_at = generated_at

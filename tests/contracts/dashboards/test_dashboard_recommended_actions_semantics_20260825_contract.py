@@ -35,7 +35,7 @@ def test_dashboard_recommended_actions_share_intelligence_copy_and_detail_owner(
         assert 'components/operational_recommendation_cards.html' in source
         assert 'recommendation_cards.render(' in source
 
-    assert 'intelligence.recommendation_details' in shared
+    assert "url_for('intelligence.recommendations', q=action.rule_key, detail=action.rule_key)" in shared
     assert 'action.href' not in shared
     assert 'normalized_priority' in shared
     assert "'Recommended Actions'" in shared

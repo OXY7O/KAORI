@@ -144,13 +144,15 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert 'components/snapshot_context_bar.html' in overview_template
     assert 'components/inventory_asset_card.html' in overview_template
     assert 'components/section_intro.html' in overview_template
-    assert 'components/operational_callout.html' in overview_template
-    assert 'components/operational_section_card.html' not in overview_template
+    assert 'components/operational_callout.html' not in overview_template
+    assert 'components/operational_section_card.html' in overview_template
+    assert 'components/resource_posture_grid.html' in overview_template
+    assert 'components/table_label.html' in overview_template
     assert 'Fleet Inventory Posture' in overview_template
     assert 'Registry Asset Catalog' in overview_template
-    assert 'Inventory Assets' not in overview_template
-    assert 'inventory.fleet_readings' in overview_template
-    assert "variant='neutral'" in overview_template
+    assert 'Inventory Assets' in overview_template
+    assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3)' in overview_template
+    assert 'inventory.fleet_readings' not in overview_template
     assert 'url_for(asset.endpoint)' in overview_template
     assert 'components/snapshot_context_bar.html' in resource_template
     assert 'components/operational_section_card.html' in resource_template
@@ -187,11 +189,13 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert "'artifact_registry.inventory_repositories': 'repositories'" in navigation_service
     assert "'artifact_registry.inventory_artifacts': 'artifacts'" in navigation_service
     assert 'def build_inventory_overview()' in presentation
-    assert 'def _inventory_fleet_readings(overview: dict[str, Any])' in presentation
-    assert "'fleet_readings': _inventory_fleet_readings(overview)" in presentation
+    assert 'def _inventory_fleet_readings(' in presentation
+    assert "'fleet_readings': fleet_readings" in presentation
     assert "'asset_catalog': list(resource_catalog.values())" in presentation
     assert "'resource_endpoint': selected_resource['endpoint']" in presentation
     assert 'def _inventory_resource_posture_metrics(' in presentation
+    assert 'paginate_query(filtered_query, page=page, per_page=per_page)' in presentation
+    assert 'paginate_sequence(filtered,' not in presentation
     assert "'resource_posture_metrics': resource_posture_metrics" in presentation
     assert "'Project Inventory Posture'" in presentation
     assert "'Repository Inventory Posture'" in presentation
@@ -203,6 +207,41 @@ def test_registry_inventory_reuses_canonical_inventory_workspace_primitives() ->
     assert "row['provider_name']" in presentation
 
 
+def test_registry_inventory_catalog_matches_canonical_kubernetes_card_hierarchy() -> None:
+    from jinja2 import Environment
+
+    overview = (ROOT / 'app/templates/artifact_registry/partials/_inventory_overview.html').read_text()
+    kubernetes = (ROOT / 'app/templates/kubernetes/inventory/overview/partials/_kpi_cards.html').read_text()
+    cards = (ROOT / 'app/templates/components/inventory_asset_card.html').read_text()
+    presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
+
+    for source in (overview, kubernetes, cards):
+        Environment().parse(source)
+
+    assert "section_intro.render('Inventory Assets'," in overview
+    assert "id='registry-asset-catalog'" in overview
+    assert 'operational_section_card.render(' in overview
+    assert 'header_badge=asset_badge' in overview
+    assert "table_label.metadata_label(inventory.asset_catalog|length ~ ' Asset Types', icon='layers-3')" in overview
+    assert "body_classes='p-5'" in overview
+    assert 'sm:grid-cols-2 xl:grid-cols-3' in overview
+    assert 'inventory_asset_card.render(asset.title' in overview
+    assert 'url_for(asset.endpoint)' in overview
+    assert 'header_badge=asset_badge' in kubernetes
+    assert 'data-kaori-inventory-identity-icon' in cards
+
+    assert "section_intro.render('Fleet Inventory Posture'," in overview
+    assert "'Registry Fleet Evidence'" in overview
+    assert "body_classes='p-0'" in overview
+    assert 'posture_grid.render(inventory.fleet_posture_metrics, columns=3)' in overview
+    assert 'operational_callout.render(' not in overview
+    assert "'fleet_posture_metrics': [" in presentation
+    for label in ('Committed Providers', 'Snapshot Attention', 'Project Visibility'):
+        assert f"'label': '{label}'" in presentation
+    for state in ('No Registry Providers', 'No Snapshot Attention', 'No Visibility Evidence'):
+        assert state in presentation
+
+
 def test_registry_inventory_overview_restores_asset_counts_from_existing_kpis() -> None:
     presentation = (ROOT / 'app/artifact_registry/presentation_inventory.py').read_text()
 
@@ -210,7 +249,10 @@ def test_registry_inventory_overview_restores_asset_counts_from_existing_kpis() 
         'def build_inventory_overview()',
         1,
     )[0]
-    assert 'counts = _overview_kpi_values(None)' in inventory_base
+    assert 'overview, _providers, _selected, scoped_providers, states = _overview_scope_context()' in inventory_base
+    assert '_overview_inventory_kpi_evidence(scoped_providers, states)' in inventory_base
+    assert 'counts = _overview_kpi_values(committed_provider_ids)' in inventory_base
+    assert '_overview_kpi_values(None)' not in inventory_base
     assert "'project_count': counts['projects']" in inventory_base
     assert "'repository_count': counts['repositories']" in inventory_base
     assert "'artifact_count': counts['artifacts']" in inventory_base
@@ -241,7 +283,7 @@ def test_registry_project_inventory_reuses_canonical_filters_and_detail_modal() 
     assert 'resource_detail_modal.inventory_host' in page
     assert "@artifact_registry_bp.get('/inventory/projects/<int:project_id>/details')" in routes
     assert 'def build_inventory_project_detail(project_id: int)' in presentation
-    assert 'RegistryProject.query.options' in presentation
+    assert 'RegistryProject.query.filter(RegistryProject.id == int(project_id)).first()' in presentation
     assert 'HarborClient' not in presentation
     assert 'components/details/_detail_content.html' in detail
     assert 'Committed Snapshot Boundary' in detail
@@ -260,8 +302,8 @@ def test_registry_repository_and_artifact_inventory_reuse_full_workspace_detail_
     assert 'def build_inventory_repository_detail(repository_id: int)' in presentation
     assert 'def build_inventory_artifact_detail(artifact_id: int)' in presentation
     assert 'build_client' not in presentation
-    assert 'RegistryRepository.query.options(' in presentation
-    assert 'RegistryArtifact.query.options(' in presentation
+    assert 'RegistryRepository.query.filter(RegistryRepository.id == int(repository_id)).first()' in presentation
+    assert 'RegistryArtifact.query.filter(RegistryArtifact.id == int(artifact_id)).first()' in presentation
 
     assert "@artifact_registry_bp.get('/inventory/repositories/<int:repository_id>/details')" in routes
     assert "@artifact_registry_bp.get('/inventory/artifacts/<int:artifact_id>/details')" in routes

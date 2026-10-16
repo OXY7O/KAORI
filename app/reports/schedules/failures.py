@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from app.extensions.db import db
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
@@ -33,9 +33,11 @@ def mark_schedule_dispatch_failed(
         report.error_message = _REPORT_QUEUE_FAILURE_MESSAGE
 
     schedule = db.session.get(ReportSchedule, schedule_id)
-    if schedule is not None:
+    if schedule is not None and schedule.last_report_id == report_id:
         schedule.last_status = 'failed'
         schedule.last_run_at = failed_at
+        if run is not None and run.trigger_source == 'scheduler' and schedule.is_enabled:
+            schedule.next_run_at = failed_at + timedelta(minutes=5)
 
     db.session.commit()
     return report.id if report is not None else None

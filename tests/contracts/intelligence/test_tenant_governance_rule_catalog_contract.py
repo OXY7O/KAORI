@@ -41,7 +41,7 @@ def test_tenant_governance_uses_existing_intelligence_engine_and_exception_autho
     evaluator = (ROOT / 'app/intelligence/tenant_governance_recommendations.py').read_text(encoding='utf-8')
 
     assert 'build_tenant_governance_recommendation_findings' in service
-    assert 'build_tenant_governance_recommendation_findings(rules)' in service
+    assert "collect('Tenant Governance', build_tenant_governance_recommendation_findings)" in service
     assert 'RuleException' not in evaluator
     assert 'runtime_adapter' not in evaluator
     assert 'requests.' not in evaluator

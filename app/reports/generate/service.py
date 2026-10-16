@@ -124,7 +124,12 @@ def get_generate_report_payload(
     cluster_options = _get_cluster_options()
     object_storage_system_options = _get_object_storage_system_options()
     artifact_registry_options = get_active_registry_options()
-    namespace_options_by_cluster = _get_namespace_options_by_cluster()
+    selected_cluster_id = str(form_state.get('cluster_id') or '').strip()
+    namespace_options_by_cluster = (
+        _get_namespace_options_by_cluster(selected_cluster_id)
+        if selected_report_type['scope_asset_type'] == KUBERNETES_CLUSTER_ASSET_TYPE and selected_cluster_id
+        else {}
+    )
     scope_ready = _scope_is_ready(form_state, selected_report_type)
 
     return {
@@ -172,6 +177,7 @@ def create_report_request(
 ) -> tuple[bool, list[str], Report | None]:
     form_state = get_form_state_from_form(
         form,
+        for_submission=True,
     )
 
     errors = validate_form_state(
@@ -444,6 +450,8 @@ def _get_storage_generation_context() -> dict[str, Any]:
 
 def get_form_state_from_form(
     form: MultiDict[str, str] | ImmutableMultiDict[str, str],
+    *,
+    for_submission: bool = False,
 ) -> dict[str, Any]:
     report_type = normalize_report_type(
         form.get(
@@ -452,42 +460,30 @@ def get_form_state_from_form(
         )
     )
 
-    sections = form.getlist(
-        'sections',
-    )
-
-    if not sections:
-        sections = _get_default_sections(
-            report_type,
-        )
-
-    allowed_sections_for_report = _get_allowed_sections_for_report_type(
-        report_type,
-    )
-
-    sections = [section for section in sections if section in allowed_sections_for_report]
-
+    submitted_sections = form.getlist('sections')
     report_context = _get_report_type_context(report_type)
-    if report_context.get('family') == 'inventory':
-        sections = _get_default_sections(report_type)
-    elif not sections:
-        sections = _get_default_sections(
-            report_type,
-        )
+    defaults = _get_default_sections(report_type)
+    allowed_sections = _get_allowed_sections_for_report_type(report_type)
 
-    period = str(
-        form.get(
-            'period',
-            _get_default_period(report_type),
-        )
-        or ''
-    ).strip()
-    if _get_default_period(report_type) == 'snapshot':
-        period = 'snapshot'
-    elif period == 'snapshot':
-        period = '30d'
+    if report_context.get('family') == 'inventory':
+        # Inventory content is contract-locked, never user-selectable.
+        sections = defaults
+    elif for_submission:
+        # Do not discard invalid/empty requested sections before validation.
+        sections = submitted_sections
+    else:
+        sections = [value for value in submitted_sections if value in allowed_sections] or defaults
+
+    period = str(form.get('period', _get_default_period(report_type)) or '').strip()
+    if not for_submission:
+        if _get_default_period(report_type) == 'snapshot':
+            period = 'snapshot'
+        elif period == 'snapshot':
+            period = '30d'
 
     return {
+        '_submitted_sections': submitted_sections if for_submission else None,
+        '_submitted_report_type': str(form.get('report_type') or '').strip(),
         'name': form.get(
             'name',
             '',
@@ -520,14 +516,33 @@ def get_form_state_from_form(
     }
 
 
+MAX_REPORT_NAME_LENGTH = 255  # app.models.report.Report.name (VARCHAR(255))
+
+
+def validate_report_name(value: str | None) -> list[str]:
+    """Reject overlong operator names rather than relying on database errors."""
+    if len(str(value or '').strip()) > MAX_REPORT_NAME_LENGTH:
+        return [f'Report name must be {MAX_REPORT_NAME_LENGTH} characters or fewer.']
+    return []
+
+
 def validate_form_state(
     form_state: dict[str, Any],
 ) -> list[str]:
     errors: list[str] = []
     report_type = form_state['report_type']
 
-    if report_type not in {item['value'] for item in REPORT_TYPE_OPTIONS}:
-        errors.append('Please select a valid report type.')
+    published_types = {item['value'] for item in REPORT_TYPE_OPTIONS}
+    if (
+        report_type not in published_types
+        or form_state.get('_submitted_report_type', report_type) not in published_types
+    ):
+        # Do not validate/persist a different report family after normalization.
+        return ['Please select a valid published report type.']
+
+    name_errors = validate_report_name(form_state.get('name'))
+    if name_errors:
+        return name_errors
 
     report_spec = get_report_type_spec(report_type)
     scope_errors, cluster_exists = _validate_primary_scope(form_state, report_spec)
@@ -594,6 +609,11 @@ def _validate_period_and_format(form_state: dict[str, Any], report_type: str) ->
 
     if form_state['period'] not in allowed_periods:
         errors.append('Please select a valid report period.')
+    elif get_report_type_spec(report_type).period_mode == 'snapshot':
+        if form_state['period'] != 'snapshot':
+            errors.append('Inventory reports require the committed snapshot period.')
+    elif form_state['period'] == 'snapshot':
+        errors.append('Analytics reports require an explicit time range.')
     if form_state['output_format'] not in allowed_output_formats:
         errors.append('Please select a valid output format.')
 
@@ -620,6 +640,13 @@ def _validate_sections(form_state: dict[str, Any], report_type: str) -> list[str
     allowed_sections_for_report = _get_allowed_sections_for_report_type(report_type)
     if any(section not in allowed_sections_for_report for section in selected_sections):
         errors.append('One or more selected sections are not available for this report type.')
+    submitted = form_state.get('_submitted_sections')
+    if (
+        get_report_type_spec(report_type).family == 'inventory'
+        and submitted
+        and submitted != _get_default_sections(report_type)
+    ):
+        errors.append('Inventory report sections are fixed by the published contract.')
     return errors
 
 
@@ -744,8 +771,18 @@ def _scope_is_ready(form_state: dict[str, Any], report_context: dict[str, Any]) 
     return bool(str(form_state.get('cluster_id') or '').strip())
 
 
-def _get_namespace_options_by_cluster() -> dict[str, list[str]]:
-    return get_report_namespace_options_by_cluster()
+def _get_namespace_options_by_cluster(cluster_id: str) -> dict[str, list[str]]:
+    return get_report_namespace_options_by_cluster(cluster_id)
+
+
+def get_generate_namespace_options(cluster_id: str) -> list[str]:
+    """Serve only current committed namespaces for one registered Kubernetes cluster."""
+    selected_cluster_id = str(cluster_id or '').strip()
+    if not selected_cluster_id:
+        return []
+    if db.session.scalar(select(Cluster.id).where(Cluster.id == selected_cluster_id)) is None:
+        return []
+    return _get_namespace_options_by_cluster(selected_cluster_id).get(selected_cluster_id, [])
 
 
 def _parse_cluster_id(

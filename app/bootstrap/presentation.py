@@ -8,6 +8,7 @@ from flask_login import current_user
 from flask_wtf.csrf import generate_csrf
 
 from app.common.navigation import build_navigation_breadcrumb
+from app.common.presentation import pretty_structured_json
 from app.common.timezone import (
     format_user_date,
     format_user_datetime,
@@ -107,6 +108,8 @@ def register_presentation(app: Flask) -> None:
             'capability_navigation': build_capability_navigation(request.endpoint, current_user, request.args),
             'integration_navigation': integration_navigation,
         }
+
+    app.add_template_filter(pretty_structured_json, 'pretty_structured_json')
 
     @app.template_filter('environment_name')
     def environment_name_filter(value: Any, empty: str = 'Not specified') -> str:

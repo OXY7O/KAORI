@@ -161,9 +161,11 @@
                             </div>
                         </div>
                         <div class="grid gap-3 md:grid-cols-2">
-                            {% call operational_toggle.render("Verify TLS Certificate", "Reject untrusted or mismatched Harbor certificates.") %}
-                                {{ form.verify_ssl(class_="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus") }}
-                            {% endcall %}
+                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                <input type="hidden" name="verify_ssl" value="y">
+                                <p class="text-sm font-semibold text-content-primary">TLS Certificate Verification · Required</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Verified HTTPS is required. Configure an approved internal CA if needed.</p>
+                            </div>
                             {% call operational_toggle.render("Allow KAORI to Use This Connection", "Disabled connections remain registered but are not resolved for use.") %}
                                 {{ form.enabled(class_="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus") }}
                             {% endcall %}

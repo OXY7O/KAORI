@@ -187,6 +187,7 @@ def commit_registry_inventory(
     evidence: RegistryInventoryEvidence,
     *,
     observed_at: datetime,
+    confirmed_empty: bool = False,
 ) -> dict[str, int]:
     integration_instance_id = int(identity.id)
     projects: list[ProjectRecord] = evidence.projects
@@ -201,7 +202,7 @@ def commit_registry_inventory(
         .filter_by(integration_instance_id=integration_instance_id)
         .all()
     }
-    if existing_projects and not projects:
+    if existing_projects and not projects and not confirmed_empty:
         raise RuntimeError(
             'Registry project discovery returned zero projects while a previous committed snapshot exists. '
             'KAORI preserved the previous snapshot; verify provider scope and health before retrying.'
@@ -257,6 +258,7 @@ def sync_registry_inventory(
     identity: IntegrationInstance,
     *,
     progress_callback: InventoryProgressCallback | None = None,
+    empty_reconciliation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if identity.integration_type != 'registry':
         raise RuntimeError('Artifact Registry inventory requires a canonical Registry integration identity.')
@@ -270,6 +272,28 @@ def sync_registry_inventory(
     collector = get_registry_collector(identity.provider_key)
     observed_at = datetime.now(UTC)
     state = _lock_collection_state(int(identity.id))
+    reconciliation_evidence: dict[str, Any] | None = None
+    if empty_reconciliation is not None:
+        # The database row lock fences this confirmation against a concurrent
+        # Registry generation; always re-read the committed token under the lock.
+        db.session.refresh(state, attribute_names=['last_committed_at'])
+        prior_count = RegistryProject.query.filter_by(integration_instance_id=identity.id).count()
+        committed = state.last_committed_at
+        if committed is not None and committed.tzinfo is None:
+            committed = committed.replace(tzinfo=UTC)
+        prior_token = committed.isoformat() if committed is not None else None
+        if (
+            int(empty_reconciliation.get('integration_instance_id') or 0) != int(identity.id)
+            or int(empty_reconciliation.get('confirmed_by_user_id') or 0) <= 0
+            or int(empty_reconciliation.get('previous_project_count') or 0) != prior_count
+            or empty_reconciliation.get('previous_committed_at') != prior_token
+            or prior_count <= 0
+            or prior_token is None
+        ):
+            raise RuntimeError(
+                'Committed Registry Inventory changed since confirmed-empty authorization. '
+                'No project identities were deleted. Review the latest snapshot before retrying.'
+            )
     _mark_inventory_collection_started(state, started_at=observed_at)
     db.session.flush()
     try:
@@ -278,7 +302,40 @@ def sync_registry_inventory(
             if collector.collect_with_progress is not None
             else collector.collect(provider_record)
         )
-        counts = commit_registry_inventory(identity, evidence, observed_at=observed_at)
+        if empty_reconciliation is not None:
+            if evidence.projects:
+                raise RuntimeError(
+                    'Confirmed-empty Registry reconciliation found existing projects; '
+                    'previous committed inventory remains unchanged.'
+                )
+            # Two complete independent provider reads are required for the
+            # exceptional transition from a nonempty committed catalog to zero.
+            confirmation = collector.collect(provider_record)
+            if confirmation.projects:
+                raise RuntimeError(
+                    'Independent Registry project discovery did not confirm an empty catalog; '
+                    'previous committed inventory remains unchanged.'
+                )
+            reconciliation_evidence = {
+                'integration_instance_id': int(identity.id),
+                'confirmed_by_user_id': int(empty_reconciliation['confirmed_by_user_id']),
+                'previous_project_count': prior_count,
+                'previous_committed_at': prior_token,
+                'discovery_confirmations': 2,
+                'verified_at': datetime.now(UTC).isoformat(),
+                'result': 'confirmed_empty',
+            }
+        counts = commit_registry_inventory(
+            identity,
+            evidence,
+            observed_at=observed_at,
+            confirmed_empty=reconciliation_evidence is not None,
+        )
+        if reconciliation_evidence is not None:
+            state.metadata_json = {
+                **(state.metadata_json or {}),
+                'empty_reconciliation_evidence': reconciliation_evidence,
+            }
         db.session.commit()
     except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
         db.session.rollback()
@@ -291,10 +348,21 @@ def sync_registry_inventory(
             identity.provider_key,
         )
         raise
-    return {
+    result = {
         'integration_instance_id': int(identity.id),
         'instance_name': identity.name,
         'provider_key': identity.provider_key,
         'observed_at': observed_at.isoformat(),
         **counts,
     }
+    if reconciliation_evidence is not None:
+        result['empty_reconciliation_evidence'] = {
+            **reconciliation_evidence,
+            'removed_project_count': prior_count,
+        }
+        logger.warning(
+            'Authorized empty Registry Inventory reconciliation committed for provider %s by actor %s.',
+            identity.id,
+            reconciliation_evidence['confirmed_by_user_id'],
+        )
+    return result

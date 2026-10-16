@@ -214,3 +214,34 @@ See `docs/design/components/FORM_WITH_CONTEXT_RAIL.md`.
 
 The Form + Right Context pattern stacks the guidance below the primary form below `xl`. This preserves the same semantic order used by existing Kubernetes, Metrics Source, and Alertmanager registration pages. Do not create a provider- or domain-specific breakpoint solely to keep the rail visible.
 
+
+
+## Kubernetes Operations overview (review candidate #1018)
+
+The `/kubernetes-operations/` landing page is a capability-first, permission-scoped navigation surface. It composes the existing page Hero, operational section card, workspace link card, and evidence-boundary components. ConfigMap and Secret workspaces retain their own authorization and cluster prerequisites; future capability families are added as permission-gated entries instead of duplicating a live inventory or mutation engine in this overview.
+
+The shared destructive confirmation modal retains the existing runtime, keyboard/focus trap, exact-target selection and final submit dispatch. The `kubernetes` presentation is limited to Secret and ConfigMap deletion and separates resource/scope, irreversible consequence, and bound preflight explanation. Final operations continue to enforce their server-side validation receipt, resourceVersion and RBAC contracts; the new presentation never exposes Secret values.
+
+This candidate is for `kaori/review/staging-uat` devcontainer visual and functional review; CI/CD admission, staging UAT and promotion require separate authorization.
+
+### Navigation discovery correction (#1018)
+
+The active Sidebar v2.2 menu and integrated Level-3 page tabs are projected from `app/common/workspace_navigation_catalog.py` through `app/common/workspace_navigation.py`, not from the deprecated `components/navigation/kubernetes_operations_menu.html` template. The Operations capability resolves to `kubernetes_operations.overview`; authorized users then select **Overview**, **ConfigMaps**, or **Secrets** in the canonical page-level workspace navigation. The overview is always in the same permission boundary as the operation families, including users with access to only one family. Workflow-specific views preserve the existing explicit permission checks and default to their own active tab; only `kubernetes_operations.overview` selects the Overview tab.
+
+
+### TLS coverage admission (#1306)
+
+The TLS rotation preview and final server mutation require a committed
+**Collected** Ingress-mapping state and complete SAN coverage of mapped
+Ingress hosts. Unavailable mappings show **Not Reported** and block the
+operation; known uncovered hosts also block it. A certificate/key pair
+valid by itself cannot authorize rotation. Bulk rotation checks every
+selected target **before** the first PATCH and aborts the entire batch
+without partial writes if any target is blocked. There is no silent
+override; exceptional rotation requires separately reviewed policy.
+The server repeats the check even if the UI validation trigger was bypassed.
+
+
+Bulk TLS requests must resolve **every** unique selected certificate ID at
+preview and apply time. Missing, duplicated, or malformed identities fail the
+whole group; the provider is never called with an silently narrowed target set.

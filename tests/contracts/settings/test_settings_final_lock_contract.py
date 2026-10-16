@@ -52,6 +52,11 @@ def test_settings_query_tabs_delegate_to_shared_htmx_tab_authority() -> None:
     baseline = json.loads(read('docs/architecture/ui-style-debt-baseline.json'))
 
     assert 'macro render_query_tabs(' in shared
+    assert 'class="border-b border-outline-default bg-surface-hover px-5 pt-4"' in shared
+    assert 'bg-surface-subtle' not in shared
+    styles = read('frontend/styles.css')
+    assert styles.count('--kaori-surface-hover:') == 2
+    assert '--color-surface-hover: var(--kaori-surface-hover);' in styles
     assert 'data-kaori-tab-variant="query-backed-htmx"' in shared
     assert 'class="flex gap-2 overflow-x-auto"' in shared
     assert 'role="tablist"' in shared

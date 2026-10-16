@@ -7,22 +7,24 @@
         {% set ready_card = payload.summary_cards[1] %}
         {% set progress_card = payload.summary_cards[2] %}
         {% set failed_card = payload.summary_cards[3] %}
-        {% set hero_status_label = "Ready" %}
-        {% set hero_status_tone = "normal" %}
+        {% set hero_status_label = payload.reporting_posture.label %}
+        {% set hero_status_tone = payload.reporting_posture.tone %}
         {% set hero_secondary_icon = "loader-circle" %}
         {% set hero_secondary_label = "In Progress" %}
         {% set hero_secondary_value = progress_card.value %}
         {% set hero_secondary_helper = "Queued or generating" %}
-        {% set hero_action_label = "Generate Report" %}
-        {% set hero_action_url = url_for('reports.generate_report') %}
+        {% set hero_action_label = "Generated Reports" %}
+        {% set hero_action_url = url_for('reports.generated_reports') %}
+        {% if not payload.storage_context.degraded and current_user.has_permission('reports.generate') %}
+            {% set hero_action_label = "Generate Report" %}
+            {% set hero_action_url = url_for('reports.generate_report') %}
+        {% endif %}
         {% if payload.storage_context.degraded %}
-            {% set hero_status_label = "Degraded" %}
-            {% set hero_status_tone = "warning" %}
-            {% set hero_action_label = "Open Storage" %}
-            {% set hero_action_url = url_for('reports.storage') %}
+            {% if current_user.has_permission('reports.manage_storage') %}
+                {% set hero_action_label = "Open Storage" %}
+                {% set hero_action_url = url_for('reports.storage') %}
+            {% endif %}
         {% elif failed_card.value|int > 0 %}
-            {% set hero_status_label = "Needs Review" %}
-            {% set hero_status_tone = "warning" %}
             {% set hero_secondary_icon = "triangle-alert" %}
             {% set hero_secondary_label = "Failed" %}
             {% set hero_secondary_value = failed_card.value %}

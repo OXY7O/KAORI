@@ -119,12 +119,12 @@
         {{ caller() }}
     </section>
 {%- endmacro %}
-{% macro inventory_section(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='detail', stretch=false, density='compact', description=None) -%}
+{% macro inventory_section(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='detail', stretch=false, density='compact', description=None, compact_layout=false) -%}
     <section data-kaori-inventory-detail-section
              data-kaori-inventory-section-layout="resource-sheet-band"
              class="min-w-0 border-b border-outline-subtle {{ class_name }}">
         <div class="{{ inventory_band_grid_classes() }}">
-            <header class="flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-6 py-5 sm:px-7 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-8 xl:py-6">
+            <header class="{{ 'flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-4 py-3.5 sm:px-5 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-6 xl:py-4' if compact_layout else 'flex min-w-0 items-start justify-between gap-3 overflow-hidden bg-surface-elevated/35 px-6 py-5 sm:px-7 xl:min-h-full xl:border-r xl:border-outline-subtle xl:px-8 xl:py-6' }}">
                 <div class="flex min-w-0 flex-1 items-start gap-3">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-inset ring-brand-outline/50"
                           aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
@@ -132,7 +132,7 @@
                         <h4 class="min-w-0 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h4>
                         {% if description %}
                             <p data-kaori-inventory-section-description
-                               class="mt-1.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
+                               class="{{ 'mt-1 break-words text-xs leading-4 text-content-muted [overflow-wrap:anywhere]' if compact_layout else 'mt-1.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]' }}">{{ description }}</p>
                         {% endif %}
                         {% if badge %}
                             <div class="mt-3 hidden xl:flex">
@@ -155,7 +155,7 @@
                     </div>
                 {% endif %}
             </header>
-            <div class="min-w-0 px-6 py-5 sm:px-7 xl:px-9 xl:py-6">{{ caller() }}</div>
+            <div class="{{ 'min-w-0 px-4 py-3.5 sm:px-5 xl:px-6 xl:py-4' if compact_layout else 'min-w-0 px-6 py-5 sm:px-7 xl:px-9 xl:py-6' }}">{{ caller() }}</div>
         </div>
     </section>
 {%- endmacro %}
@@ -171,13 +171,12 @@
 {% macro inventory_technical_row(label, value='-', break_all=false, nowrap=false, class_name='', copyable=false) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     {% set technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium' %}
-    {% set can_copy = copyable and display_value not in ['-', 'Not Reported', 'Not Configured', 'Not Applicable'] %}
     <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}"
-         {% if can_copy %}data-kaori-copy-root{% endif %}>
+         {% if copyable %}data-kaori-copy-root{% endif %}>
         <span class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</span>
         <span class="flex min-w-0 items-center gap-2 text-left text-sm font-medium leading-5 text-content-primary">
-            <span class="min-w-0" {% if can_copy %}data-kaori-copy-source{% endif %}>{{ technical_value.render(display_value, align='left', break_all=break_all, class_name=technical_classes, monospace=false, size='body') }}</span>
-            {% if can_copy %}{{ inventory_copy_button(label) }}{% endif %}
+            <span class="min-w-0" {% if copyable %}data-kaori-copy-source{% endif %}>{{ technical_value.render(display_value, align='left', break_all=break_all, class_name=technical_classes, monospace=false, size='body') }}</span>
+            {% if copyable %}{{ inventory_copy_button(label) }}{% endif %}
         </span>
     </div>
 {%- endmacro %}
@@ -214,16 +213,11 @@
             {% set label = row.label if row.label is defined else row[0] %}
             {% set value = row.value if row.value is defined else row[1] %}
             {% set supporting = row.supporting if row.supporting is defined else (row[2] if row|length > 2 else none) %}
-            {% set copyable = row.copyable if row.copyable is defined else false %}
             {% set display_value = value if value not in [None, ''] else '-' %}
-            {% set can_copy = copyable and display_value not in ['-', 'Not Reported', 'Not Configured', 'Not Applicable'] %}
-            <article class="min-w-0 border-b border-outline-subtle py-3"
-                     {% if can_copy %}data-kaori-copy-root{% endif %}>
+            <article class="min-w-0 border-b border-outline-subtle py-3">
                 <p class="text-sm font-normal leading-5 text-content-secondary">{{ label }}</p>
                 <div class="mt-0.5 flex min-w-0 items-center gap-2">
-                    <p class="min-w-0 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]"
-                       {% if can_copy %}data-kaori-copy-source{% endif %}>{{ display_value }}</p>
-                    {% if can_copy %}{{ inventory_copy_button(label) }}{% endif %}
+                    <p class="min-w-0 break-words text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ display_value }}</p>
                 </div>
                 {% if supporting %}
                     <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ supporting }}</p>
@@ -329,13 +323,10 @@
 {% macro inspector_technical_row(label, value='-', nowrap=false, class_name='', copyable=false) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     {% set technical_classes = 'font-medium xl:whitespace-nowrap' if nowrap else 'font-medium' %}
-    {% set can_copy = copyable and display_value not in ['-', 'Not Reported', 'Not Configured', 'Not Applicable'] %}
-    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}"
-         {% if can_copy %}data-kaori-copy-root{% endif %}>
+    <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
         <dt class="min-w-0 break-words text-sm font-normal leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ label }}</dt>
         <dd class="flex min-w-0 items-center gap-2 text-left text-sm font-medium leading-5 text-content-primary">
-            <span class="min-w-0" {% if can_copy %}data-kaori-copy-source{% endif %}>{{ technical_value.render(display_value, align='left', break_all=false, class_name=technical_classes, monospace=false, size='body') }}</span>
-            {% if can_copy %}{{ inventory_copy_button(label) }}{% endif %}
+            <span class="min-w-0">{{ technical_value.render(display_value, align='left', break_all=false, class_name=technical_classes, monospace=false, size='body') }}</span>
         </dd>
     </div>
 {%- endmacro %}
@@ -365,7 +356,9 @@
                   aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
             <div class="min-w-0">
                 <p class="{{ 'whitespace-nowrap' if nowrap else 'break-words' }} text-sm font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</p>
-                {% if supporting %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>{% endif %}
+                {% if supporting %}
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -384,7 +377,9 @@
                 <div class="min-w-0">
                     <p class="text-xs font-medium leading-5 text-content-muted">{{ item.label }}</p>
                     <p class="mt-0.5 break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.value }}</p>
-                    {% if item.supporting %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item.supporting }}</p>{% endif %}
+                    {% if item.supporting %}
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item.supporting }}</p>
+                    {% endif %}
                 </div>
             </article>
         {% endfor %}
@@ -398,15 +393,35 @@
         <p class="mx-auto mt-1 max-w-xl text-xs leading-5 text-content-muted">{{ description }}</p>
     </div>
 {%- endmacro %}
-{% macro summary_strip(metrics, columns=4, compact=false) -%}
-    <div data-resource-detail-summary
+{% macro summary_strip(metrics, columns=4, compact=false, borderless=false, layout='default', pinned=true) -%}
+    {# Opt-in identity layouts; existing Inventory/Access summary geometry stays unchanged. #}
+    {% set target_wide = layout == 'target-wide' and not borderless %}
+    {% set unified = layout == 'unified' and not borderless %}
+    {% set summary_classes = (
+            'grid min-w-0 gap-x-6 gap-y-3 px-5 py-3.5 sm:grid-cols-2 sm:px-6 xl:grid-cols-4'
+            if borderless
+            else (
+            'mt-3 grid min-w-0 gap-x-6 gap-y-3 border-t border-outline-subtle pt-3 sm:grid-cols-2 lg:grid-cols-5'
+            if unified
+            else (
+            'mt-5 grid min-w-0 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:mt-6 xl:grid-cols-5'
+            if target_wide
+            else 'mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:mt-6 xl:grid-cols-4'
+            )
+            )
+        ) %}
+    <div {% if pinned %}data-resource-detail-summary{% endif %}
          data-kaori-inventory-summary-strip
-         class="mt-5 grid overflow-hidden border border-outline-subtle bg-surface-card sm:grid-cols-2 lg:mt-6 xl:grid-cols-4">
+         {% if unified %}data-kaori-summary-layout="unified"{% elif target_wide %}data-kaori-summary-layout="target-wide"{% endif %}
+         {% if borderless %}data-kaori-summary-variant="borderless"{% endif %}
+         class="{{ summary_classes }}">
         {% for label, value, description in metrics %}
-            <article class="min-w-0 border-b border-outline-subtle px-5 py-3.5 sm:border-r xl:border-b-0 xl:last:border-r-0">
+            <article class="{{ 'min-w-0 py-0.5' if borderless else ('min-w-0' if unified else ('min-w-0 bg-surface-card px-4 py-3 sm:px-5 sm:py-3.5' if target_wide else 'min-w-0 border-b border-outline-subtle px-5 py-3.5 sm:border-r xl:border-b-0 xl:last:border-r-0')) }} {{ 'lg:col-span-2' if unified and loop.index0 == 1 else ('xl:col-span-2' if target_wide and loop.index0 == 1 else '') }}">
                 <p class="text-xs font-medium leading-4 text-content-muted">{{ label }}</p>
                 <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                {% if description %}<p class="mt-0.5 text-xs leading-4 text-content-muted">{{ description }}</p>{% endif %}
+                {% if description %}
+                    <p class="mt-0.5 break-words text-xs leading-4 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
+                {% endif %}
             </article>
         {% endfor %}
     </div>

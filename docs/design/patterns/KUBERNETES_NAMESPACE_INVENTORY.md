@@ -41,7 +41,9 @@ Columns:
 Namespace | Cluster | Lifecycle | Resource Controls | Security Context | Details
 ```
 
-Resource controls group ResourceQuota and LimitRange. Security context groups NetworkPolicy and PSA Enforce. Age remains in the detail workspace rather than the compact table. The row detail action uses `View Details`.
+The six existing headers follow the approved Inventory proportional-width design: **Namespace 24%**, **Cluster 21%**, **Lifecycle 8%**, **Resource Controls 18%**, **Security Context 19%**, and **Details 10%**. Namespace and Cluster receive **45% of the table width together**. At narrow viewports, keep the **78rem** minimum-width table inside the existing horizontal scrolling container instead of overlapping content. The shared Namespace and Cluster identity macros retain full names in their accessible `title` attributes and accept `w-full min-w-0` so visual truncation respects the allocated column.
+
+Resource controls group ResourceQuota and LimitRange. Security context groups NetworkPolicy and PSA Enforce using a 6rem label track for readable paired labels and values at the new widths. Age remains in the detail workspace rather than the compact table. The row detail action uses `View Details`. Filter scope, HTMX refresh, evidence authority, detail modal, and default pagination remain unchanged.
 
 ## Detail workspace
 

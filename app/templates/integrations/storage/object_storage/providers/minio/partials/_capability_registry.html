@@ -93,6 +93,8 @@
                     <option value="ready" {% if filters.status == "ready" %}selected{% endif %}>Ready</option>
                     <option value="blocked"
                             {% if filters.status == "blocked" %}selected{% endif %}>Blocked</option>
+                    <option value="not_checked"
+                            {% if filters.status == "not_checked" %}selected{% endif %}>Not Checked</option>
                 </select>
             </label>
         </div>
@@ -117,7 +119,7 @@
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for row in registry.rows %}
-                    {% set icon_tone = "normal" if row.available else ("critical" if row.required else "warning") %}
+                    {% set icon_tone = "normal" if row.available else ("critical" if row.status == "blocked" else "unknown") %}
                     <tr class="{{ table_ui.row_classes() }}" data-kaori-capability-record>
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-w-0 items-start gap-3">
@@ -219,7 +221,7 @@
             row.label,
             row.contract ~ " · " ~ row.requirement_label ~ " capability",
             icon="scan-search",
-            footer_text="Capability details use the latest completed MinIO Full Validation evidence.",
+            footer_text="Only observed provider-core capabilities are Ready; optional configuration reads belong to Inventory Sync.",
             size="standard"
             ) %}
             {{ provider_capability_detail.content(row,

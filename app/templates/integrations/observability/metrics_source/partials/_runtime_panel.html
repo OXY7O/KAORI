@@ -1,3 +1,4 @@
+{% import "integrations/components/_provider_detail_posture.html" as provider_detail_posture %}
 {% import "components/table.html" as table_ui %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/table_label.html" as table_label %}
@@ -38,13 +39,13 @@
 {% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
     {% set runtime_next_action = "Restore metrics-source endpoint reachability, refresh runtime evidence, and rerun Full Validation when the provider compatibility or core API contract changed." %}
 {% elif runtime_state.readiness == 'degraded' %}
-    {% set runtime_next_action = "Source is usable with degraded compatibility. Upgrade or qualify the detected release, then rerun Full Validation." %}
+    {% set runtime_next_action = "Source remains usable with degraded compatibility. Upgrade or qualify its release, then rerun Full Validation." %}
 {% elif runtime_state.readiness != 'ready' %}
     {% set runtime_next_action = "Resolve provider-level Full Validation blockers before using this runtime as a metrics source." %}
 {% elif runtime_attention %}
     {% set runtime_next_action = "Review the active runtime finding, remediate it, then refresh persisted runtime evidence." %}
 {% else %}
-    {% set runtime_next_action = "No immediate remediation is required. Continue scheduled Runtime Refresh after endpoint or infrastructure changes." %}
+    {% set runtime_next_action = "No immediate remediation needed. Continue scheduled Runtime Refresh after endpoint or infrastructure changes." %}
 {% endif %}
 {% set observation_rows = [
     ('Observed', runtime_state.observed_at_display),
@@ -161,4 +162,7 @@
     </div>
 </article>
 {% include "components/operation_feedback_oob.html" %}
-{{ framed_workspace_tabs.badge_oob("metrics-source", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}
+{% if request.headers.get('HX-Request') == 'true' %}
+    {{ framed_workspace_tabs.badge_oob("metrics-source", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}
+{% endif %}
+{{ provider_detail_posture.state_oob('metrics-source', instance.readiness_status, capability_summary.observed|default(0) ) }}

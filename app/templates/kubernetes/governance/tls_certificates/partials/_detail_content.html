@@ -32,7 +32,7 @@
         </header>
         {{ detail.summary_strip([
                 ('Certificate Type', record.secret_type or 'kubernetes.io/tls', record.common_name or 'Common Name not reported') ,
-        ('Expires At', record.not_after|user_datetime('Not Reported'), (record.days_remaining ~ ' Days Remaining') if record.days_remaining is not none else 'Validity unavailable'),
+        ('Expires At', record.not_after|user_datetime('Not Reported'), (presentation.validity_days_remaining ~ ' Days Remaining') if presentation.validity_days_remaining is not none else 'Validity unavailable'),
         ('Host Coverage', presentation.coverage_label or 'Not Reported', ((record.covered_host_count or 0) ~ '/' ~ (record.declared_host_count or 0) ~ ' Declared Hosts') if presentation.coverage_reported else 'Mapping evidence unavailable'),
         ('Ingress Consumers', presentation.ingress_consumer_count if presentation.ingress_mapping_reported else 'Not Reported', 'Committed relationship evidence' if presentation.ingress_mapping_reported else 'Ingress mapping unavailable')
         ], compact=true) }}
@@ -80,7 +80,7 @@
                     </article>
                     <article class="bg-surface-hover px-4 py-3.5">
                         <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Days Remaining</p>
-                        <p class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}</p>
+                        <p class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ presentation.validity_days_remaining if presentation.validity_days_remaining is not none else 'N/A' }}</p>
                     </article>
                 </div>
                 <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]">

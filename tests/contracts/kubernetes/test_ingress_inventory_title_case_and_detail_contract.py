@@ -45,7 +45,10 @@ def test_ingress_detail_uses_adaptive_stacks_and_factual_reference_evidence() ->
     assert 'data-kaori-detail-density="unified-resource-sheet"' in detail
     assert 'detail.expanded_workspace_shell_classes()' in detail
     assert 'TLS Secret References' in detail
-    assert 'does not validate certificate contents, expiry, key matching, or hostname coverage' in detail
+    assert (
+        'Resolved Secret confirms committed presence, not certificate content, expiry, key match or host coverage.'
+        in detail
+    )
     assert 'Reference State' in detail
     assert '<caption class="sr-only">Declared backend routes for Ingress' in detail
     assert detail.count('scope="col"') >= 6

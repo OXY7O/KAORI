@@ -83,7 +83,7 @@ def test_tenant_registry_uses_canonical_server_registry_contract() -> None:
     assert 'registry_ui.filter_form' in registry
     assert 'registry_ui.footer' in registry
     assert 'tenant-registry-loading' in registry
-    assert "table_ui.table_classes('min-w-[1120px]')" in registry
+    assert "table_ui.table_classes('min-w-[1040px] !table-fixed')" in registry
     assert 'tenant-registry-cluster' in registry
     assert 'tenant-registry-environment' in registry
     assert 'tenant-registry-lifecycle' in registry
@@ -193,9 +193,11 @@ def test_access_grants_use_setup_style_form_guidance_and_full_registry() -> None
     assert 'Membership fixes the Tenant boundary.' not in workspace
     assert 'Targets are filtered automatically.' not in workspace
     assert 'Effective RBAC remains provider-verified.' not in workspace
-    assert 'KAORI validates Tenant and scope before commit.' in workspace
+    assert 'KAORI verifies the Tenant, namespace scope, and access boundary before commit.' in workspace
     assert 'Namespace scope needs one target.' in workspace
-    assert 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3' in workspace
+    assert 'grant_footer_classes' in workspace
+    assert 'grid min-h-[4.5rem] grid-cols-1 items-center gap-3' in workspace
+    assert 'sm:grid-cols-[minmax(0,1fr)_auto]' in workspace
     assert 'Start from one active Membership that identifies the principal and fixes its Tenant boundary.' in workspace
     assert (
         'Use the least-privilege profile and narrowest scope that meets the principal’s operational need.' in workspace
@@ -231,12 +233,35 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
 
     assert 'xl:grid-cols-2 xl:items-stretch' in workspace
     assert workspace.count('flex h-full flex-col') >= 2
-    assert 'Issue Human Access' in workspace
-    assert 'Issue CI/CD Deployer' in workspace
+    assert 'Human Access Credential' in workspace
+    assert 'Workload Deployment Credential' in workspace
     assert 'Delivery Contract' not in workspace
     assert 'human-credential-tip' in workspace
     assert 'deployer-credential-tip' in workspace
     assert '_credential_registry.html' in workspace
+    assert 'Access Account Reference' in workspace
+    assert 'Individual access linked to an approved user grant.' in workspace
+    assert 'automated application deployment' in workspace
+    assert 'JumpServer Reference' not in workspace
+    assert 'GitHub Actions and Helm delivery' not in workspace
+    # UI copy is generalized; the authoritative submitted credential contracts are not.
+    assert 'name="jumpserver_reference"' in workspace
+    assert 'name="purpose" value="github-actions-helm"' in workspace
+    assert 'name="access_grant_id"' in workspace
+    assert 'name="tenant_namespace_id"' in workspace
+    assert 'name="owner_user_id"' in workspace
+    assert 'name="application_name"' in workspace
+    assert 'Generate Human Access Token' in registry
+    assert 'Generate Deployment Kubeconfig' in registry
+    assert 'Access Gateway' in registry
+    assert 'Pipeline Kubeconfig' in registry
+    assert 'title="{{ delivery_label }}"' in registry
+    assert 'Manually place the generated token into the approved access account' in registry
+    assert 'JumpServer' not in registry
+    assert 'JumpServer' not in workspace
+    assert 'for secure deployment pipeline delivery' in registry
+    assert 'Reveal JumpServer Token' not in registry
+    assert 'Generate CI/CD Kubeconfig' not in registry
 
     assert "'Credential Lifecycle'" in registry
     assert 'registry_ui.filter_form' in registry
@@ -247,7 +272,35 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
     assert workspace.count('hx-target="#tenant-admin-workspace"') >= 2
     assert "table_ui.table_classes('min-w-[760px] table-fixed lg:min-w-0')" in registry
     assert 'min-w-[1180px]' not in registry
-    assert 'table_ui.action_grid_classes(2)' in registry
+    assert 'table_ui.action_grid_classes(2)' not in registry
+    assert 'flex flex-wrap items-center justify-end gap-1.5' in registry
+    assert 'data-kaori-dialog-open' in registry
+    assert 'data-kaori-native-dialog' in registry
+    assert 'data-dialog-target="credential-more-actions-{{ credential.id }}"' in registry
+    assert 'aria-haspopup="dialog"' in registry
+    assert 'More Actions' in registry
+    assert 'Revoke Access' in registry
+    assert 'Revoke Credential' in registry
+    assert 'Suspend Credential' in registry
+    assert 'Renew Credential' in registry
+    assert 'No actions' in registry
+    assert 'Read-only' in registry
+    assert "credential.status == 'revoked'" in registry
+    assert "credential.status == 'suspended'" in registry
+    assert "credential.status in ['active', 'renewal_due']" in registry
+    assert "credential.reconciliation_status == 'ready'" in registry
+    assert 'and delivery_targets' in registry
+    # More is a shared native dialog outside the scrolling table, not a clipped popover.
+    assert registry.index('data-kaori-native-dialog') > registry.index('registry_ui.footer(')
+    for route in (
+        'renew_credential_route',
+        'resume_credential_route',
+        'suspend_credential_route',
+        'revoke_credential_route',
+    ):
+        assert route in registry
+    assert registry.count('hx-target="#tenant-admin-workspace"') == 5
+    assert 'name="csrf_token"' in registry
     assert 'flex flex-wrap justify-end gap-1.5' not in registry
     assert 'Type / Delivery' in registry
     assert 'Owner / Delivery' not in registry
@@ -255,7 +308,7 @@ def test_credentials_use_symmetric_issuance_and_full_lifecycle_table() -> None:
         assert action in registry
     assert 'components/one_time_secret.html' in registry
     assert 'data-credential-material-open' in registry
-    assert 'Reveal Token' in registry
+    assert 'Generate' in registry
     assert 'Generate Kubeconfig' in registry
     assert 'data-credential-material-namespace' in registry
     assert 'data-credential-material-ttl' in registry
@@ -301,8 +354,8 @@ def test_tenant_card_guidance_is_title_adjacent_and_hover_overflow_is_visible() 
         ('Create Tenant Group', 'membership-group-tip', memberships),
         ('Add Group Membership', 'membership-attach-group-tip', memberships),
         ('Apply Access Grant', 'access-grant-form-tip', grants),
-        ('Issue Human Access', 'human-credential-tip', credentials),
-        ('Issue CI/CD Deployer', 'deployer-credential-tip', credentials),
+        ('Human Access Credential', 'human-credential-tip', credentials),
+        ('Workload Deployment Credential', 'deployer-credential-tip', credentials),
         ('Effective Namespace Access', 'namespace-access-tip', namespace_access),
     ):
         title_index = source.index(title)
@@ -335,7 +388,13 @@ def test_tenant_registry_shortcuts_use_local_anchors_without_page_reload() -> No
 
     assert "'#add-user-membership-form'" in membership_registry
     assert "'#create-tenant-group-form'" in group_registry
-    assert "'#access-grant-form'" in grant_registry
+    grant_shortcut = read('app/static/js/tenant_access_grant_form.js')
+    assert 'data-access-grant-form-shortcut' in grant_registry
+    assert 'aria-controls="access-grant-form"' in grant_registry
+    assert "target?.closest('[data-access-grant-form-shortcut]')" in grant_shortcut
+    assert "document.getElementById('access-grant-form')" in grant_shortcut
+    assert 'navigateToGrantForm()' in grant_shortcut
+    assert 'membership.focus({ preventScroll: true })' in grant_shortcut
     assert "'#credential-issuance'" in credential_registry
 
     for template in (membership_registry, group_registry, grant_registry, credential_registry):
@@ -385,13 +444,14 @@ def test_access_grant_uses_tenant_setup_two_card_composition() -> None:
     assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
     assert 'Provider Authority' in workspace
     assert 'Secret Boundary' in workspace
-    assert 'KAORI validates Tenant and scope before commit.' in workspace
+    assert 'KAORI verifies the Tenant, namespace scope, and access boundary before commit.' in workspace
 
 
 def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None:
     routes = tenant_routes_source()
     service = tenant_service_source()
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
     setup = read('app/templates/kubernetes/tenant/partials/_tenant_setup_workspace.html')
     readme = read('app/kubernetes/tenant/README.md')
 
@@ -409,21 +469,21 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
     assert 'governed namespace deprovisioning must complete' in setup.lower()
     assert 'Immutable' in registry
     assert 'square-pen' not in registry
-    assert 'Decommission' in registry
-    assert 'destructive_confirmation_modal.html' in registry
-    assert 'data-destructive-modal-open' in registry
-    assert 'Freeze Mutations' in registry
-    assert 'Remove Namespaces' in registry
-    assert 'Verify & Retain' in registry
-    assert "presentation='steps'" in registry
-    assert 'Governed teardown. Provider verification is required.' in registry
-    assert 'Block new Tenant changes.' in registry
-    assert 'Disable credentials and grants.' in registry
-    assert 'Delete managed namespaces.' in registry
-    assert 'Commit after verified cleanup.' in registry
-    assert 'Delete managed namespaces and verify absence.' not in registry
-    assert 'Commit Decommissioned after verified cleanup.' not in registry
-    assert 'If deletion is blocked, KAORI keeps the Tenant in Decommissioning for retry.' in registry
+    assert 'Decommission' in detail
+    assert 'destructive_confirmation_modal.html' in detail
+    assert 'data-destructive-modal-open' in detail
+    assert 'Freeze Mutations' in detail
+    assert 'Remove Namespaces' in detail
+    assert 'Verify & Retain' in detail
+    assert "presentation='steps'" in detail
+    assert 'Governed teardown. Provider verification is required.' in detail
+    assert 'Block new Tenant changes.' in detail
+    assert 'Disable credentials and grants.' in detail
+    assert 'Delete managed namespaces.' in detail
+    assert 'Commit after verified cleanup.' in detail
+    assert 'Delete managed namespaces and verify absence.' not in detail
+    assert 'Commit Decommissioned after verified cleanup.' not in detail
+    assert 'If deletion is blocked, KAORI keeps the Tenant in Decommissioning for retry.' in detail
 
     assert 'g.tenant_operational_feedback = feedback' in routes
     assert 'toast_oob=True' in routes
@@ -438,7 +498,7 @@ def test_tenant_identity_is_immutable_and_htmx_feedback_uses_oob_toast() -> None
 def test_cluster_estate_uses_compact_shared_table_geometry() -> None:
     estate = read('app/templates/kubernetes/tenant/partials/_cluster_estate.html')
 
-    assert "table_ui.table_classes('min-w-[900px]')" in estate
+    assert "table_ui.table_classes('min-w-[900px] !table-fixed')" in estate
     assert 'table_ui.cluster_identity_with_status(' in estate
     assert 'row.provider_status|title' in estate
     assert 'row.provider_tone' in estate
@@ -463,6 +523,20 @@ def test_tenant_access_grant_links_namespace_creation_and_keeps_guidance_neutral
     assert 'Tenant uses no target. Environment or Namespace requires exactly one matching target.' in workspace
     assert 'Access Boundaries' in workspace
     assert 'bg-status-info-soft' not in workspace
+
+
+def test_access_grant_and_boundaries_have_one_aligned_responsive_footer_contract() -> None:
+    workspace = read('app/templates/kubernetes/tenant/partials/_tenant_access_grants_workspace.html')
+
+    assert 'grant_footer_classes = "grid min-h-[4.5rem]' in workspace
+    assert 'sm:grid-cols-[minmax(0,1fr)_auto]' in workspace
+    assert workspace.count('<footer class="{{ grant_footer_classes }}">') == 2
+    assert 'Effective access requires successful provider reconciliation.' in workspace
+    assert 'Environment/Tenant may stay Pending until namespaces exist.' in workspace
+    assert "action_button.classes('primary') }} justify-self-end" in workspace
+    assert "action_button.classes('secondary') }} justify-self-end" in workspace
+    assert 'flex justify-end rounded-b-xl' not in workspace
+    assert 'bg-surface-hover px-4 py-3' not in workspace
 
 
 def test_namespace_access_security_boundary_matches_peer_surface() -> None:
@@ -490,9 +564,11 @@ def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> No
     controller = read('app/static/js/info_tips.js')
 
     assert (
-        "macro render(id, title, text='', items=None, placement='left', button_text=None, button_classes=None)"
-        in component
+        "macro render(id, title, text='', items=None, placement='left', button_text=None, "
+        "button_classes=None, variant='icon')" in component
     )
+    assert "variant == 'guide' and not button_text" in component
+    assert 'data-kaori-info-tip-variant' in component
     assert 'data-kaori-info-tip' in component
     assert 'data-kaori-info-tip-trigger' in component
     assert 'data-kaori-info-tip-preview' in component
@@ -624,15 +700,16 @@ def test_governed_tenant_decommission_is_async_provider_verified_and_fail_closed
 def test_tenant_registry_distinguishes_active_namespaces_from_retained_history() -> None:
     registry_context = read('app/kubernetes/tenant/registry_context.py')
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
     assert 'namespace_history_count_map' in registry_context
-    assert (
-        'TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value'
-        in registry_context
-    )
+    assert 'TenantNamespace.provisioning_status.notin_(' in registry_context
+    assert 'TenantNamespaceProvisioningStatus.DEPROVISIONED.value' in registry_context
+    assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in registry_context
     assert "row['namespace_history_count'] = namespace_history_count_map.get(item.id, 0)" in registry_context
-    assert 'historical namespace record' in registry
-    assert 'Active managed namespaces' in registry
+    assert 'historical Namespace record' in detail
+    assert 'row.namespace_count' in registry
+    assert 'row.namespace_history_count - row.namespace_count' in detail
 
 
 def test_destructive_modal_supports_structured_impact_summary() -> None:
@@ -691,34 +768,45 @@ def test_resource_profile_editability_allocation_change_and_capacity_decisions_f
     assert 'Allocation Change' in allocation
     assert 'Change Target' in allocation
     assert 'Managed Contract Comparison' in allocation
-    assert 'Capacity Commitments' in allocation
+    assert 'Capacity admission evaluates CPU, memory, Pod, and logical storage commitments.' in allocation
     assert 'Per-PVC Policy' in allocation
     assert 'Governance Gates' in allocation
     assert 'Capacity Admission' in allocation
     assert 'Provider Reconcile' in allocation
     assert 'Read-back & Commit' in allocation
-    assert 'data-tenant-allocation-current-cpu' in allocation
-    assert 'data-tenant-allocation-current-memory' in allocation
-    assert 'data-tenant-allocation-current-pods' in allocation
-    assert 'data-tenant-allocation-current-storage' in allocation
-    assert 'data-tenant-allocation-current-pvc-min' in allocation
-    assert 'data-tenant-allocation-current-pvc-max' in allocation
-    assert 'data-tenant-allocation-proposed-cpu' in allocation
-    assert 'data-tenant-allocation-proposed-memory' in allocation
-    assert 'data-tenant-allocation-proposed-pods' in allocation
-    assert 'data-tenant-allocation-proposed-storage' in allocation
-    assert 'data-tenant-allocation-proposed-pvc-min' in allocation
-    assert 'data-tenant-allocation-proposed-pvc-max' in allocation
-    assert "const quotaValue = (valueSet, field) => valueSet?.quota?.[field] || 'Unbounded'" in profile_js
-    assert 'currentPods.textContent' in profile_js
-    assert 'proposedStorage.textContent' in profile_js
-
+    # Approved comparison renders Current/Proposed values through a shared
+    # loop + typed metric attributes, not twelve duplicated static IDs.
+    assert "('current', 'Current Contract', 'Active · Frozen evidence')" in allocation
+    assert "('proposed', 'Proposed Contract', 'Pending · Profile intent')" in allocation
+    for attribute in (
+        'data-tenant-allocation-metric-side="{{ side }}"',
+        'data-tenant-allocation-metric-source="{{ source }}"',
+        'data-tenant-allocation-metric-key="{{ key }}"',
+    ):
+        assert attribute in allocation
+    for metric in (
+        'requests.cpu',
+        'limits.cpu',
+        'requests.memory',
+        'limits.memory',
+        'pods',
+        'requests.storage',
+    ):
+        assert metric in allocation
+    assert 'data-tenant-allocation-metric-source="storage_policy"' in allocation
+    assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in allocation
+    assert "form.querySelectorAll('[data-tenant-allocation-metric-side]')" in profile_js
+    assert "cell.dataset.tenantAllocationMetricSide === 'current' ? current : proposed" in profile_js
+    assert 'cell.dataset.tenantAllocationMetricSource' in profile_js
+    assert 'cell.dataset.tenantAllocationMetricKey' in profile_js
+    assert 'cell.textContent = selected ? displayValue(source, key, contractValue(selected, source, key))' in profile_js
     assert 'components/table_registry.html' in decisions
     assert 'table_ui.inventory_block_header' in decisions
     assert 'registry_ui.filter_form' in decisions
     assert 'registry_ui.footer' in decisions
-    assert "table_ui.table_classes('table-fixed')" in decisions
-    assert 'overflow-x-auto' not in decisions
+    assert "table_ui.table_classes('min-w-[1060px] !table-fixed')" in decisions
+    assert 'overflow-x-auto' in decisions
+    assert 'header_cell_classes(action=true)' in decisions
     assert 'min-w-[1180px]' not in decisions
     assert '>Target</th>' in decisions
     assert '>Contract</th>' in decisions
@@ -812,7 +900,7 @@ def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_conn
     assert 'hx-get="{{ url_for(\'tenant.live_provider_connectivity\') }}"' in live_loader
     assert 'hx-trigger="load"' not in live_loader
     assert 'Check Live Connectivity' in live_loader
-    assert 'Routine page load performs no provider request' in live_loader
+    assert 'Page load makes no provider request' in live_loader
     assert 'Committed Tenant state is loaded. Check live reachability only when required.' in live_loader
     assert "title='Live Provider Connectivity'" in live_loader
     assert 'Refresh Live Connectivity' in live_partial
@@ -823,8 +911,20 @@ def test_committed_tenant_snapshot_is_separate_from_on_demand_live_provider_conn
     assert "scope_metric_label='Committed Scope'" in committed_partial
     assert '_collection_snapshot_context.html' in sync_workspace
 
-    assert '_collection_snapshot_context.html' in base
-    assert '_live_connection_loader.html' in base
+    assert 'components/snapshot_context_bar.html' in committed_partial
+    assert 'snapshot_context.render' in committed_partial
+    assert "latest_label='Last Successful'" in committed_partial
+    assert "scope_metric_label='Committed Scope'" in committed_partial
+    assert "coverage_metric_label='Committed Coverage'" in committed_partial
+    assert "exceptions_metric_label='Snapshot Exceptions'" in committed_partial
+    assert 'tenant_collection_snapshot.source_label' in committed_partial
+    assert 'tenant_collection_snapshot.tone' in committed_partial
+
+    assert base.count('_collection_snapshot_context.html') == 1
+    assert '_collection_snapshot_compact.html' not in base
+    assert '_live_connection_loader.html' not in base
+    assert "tenant_page != 'overview'" in base
+    assert 'tenant.live_provider_connectivity' not in base
     assert '{% block tenant_content %}' in base
     assert (
         '{% if not native_available %}\n            {% include "components/cluster/_onboarding_banner.html" %}'
@@ -946,12 +1046,15 @@ def test_tenant_discovery_reads_provider_live_and_adopts_only_after_human_prefli
 
     assert 'Adopt & Manage' in preflight
     assert 'Managed after Adopt' in preflight
-    assert 'Adopt as <span class="font-semibold text-content-primary">Managed</span>' in preflight
+    assert 'Adopt as <span class="font-semibold text-content-primary">Adopted / Managed</span>' in preflight
+    assert 'tenant_adoption_attachment_only' in preflight
+    assert 'Attach Namespace to an <strong class="text-content-primary">existing KAORI Tenant</strong>' in preflight
     assert 'remains execution authority' in preflight
-    assert 'imports current provider values as the initial contract' in preflight
-    assert 'Controls with admitted write authority use equivalent write/read-back' in preflight
-    assert 'controller-owned constraints are mirrored without false drift' in preflight
-    assert 'Adopt managed authority; keep provider constraints mirrored.' in preflight
+    assert 'Current effective values become the initial committed KAORI contract.' in preflight
+    assert 'Managed cutover performs admitted provider writes and verifies equivalent read-back.' in preflight
+    assert 'Capsule-generated values stay provider-mirrored and sync into KAORI without false drift.' in preflight
+    assert 'Adopt with governed provider cutover and equivalent allocation values.' in preflight
+    assert 'Attach to the existing Capsule Tenant; keep provider constraints mirrored.' in preflight
     assert 'Adopt as Observed' not in preflight
     assert 'Observed · Read Only' not in preflight
     assert 'No provider mutation.' not in preflight
@@ -1023,6 +1126,7 @@ def test_live_provider_connectivity_uses_compact_non_snapshot_copy() -> None:
 def test_tenant_status_actions_use_semantic_labels() -> None:
     discovery = read('app/templates/kubernetes/tenant/partials/_tenant_discovery.html')
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
     assert "special_label('Already Managed', 'normal', 'shield-check')" in discovery
     assert 'Review Adoption' in discovery
@@ -1031,12 +1135,12 @@ def test_tenant_status_actions_use_semantic_labels() -> None:
     assert 'tenant-discovery-status-tip' in discovery
     assert 'status_detail_dialog' not in discovery
 
-    assert "special_label('History Retained', 'unknown', 'archive')" in registry
-    assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
+    assert "'Released · Provider Retained'" in detail
+    assert "table_label.status_label('Blocked', 'warning')" in detail
     assert 'tenant-registry-status-tip' in registry
     assert 'Blocked — Tenant stays valid; teardown fails closed until blockers clear.' in registry
     assert 'status_detail_dialog' not in registry
-    assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in registry
+    assert "special_label('Unavailable', 'unknown', 'circle-slash-2')" in detail
 
 
 def test_tenant_setup_explains_capsule_adoption_boundary() -> None:
@@ -1194,7 +1298,13 @@ def test_access_grant_form_filters_targets_and_profiles_from_selected_membership
     assert 'data-provider-key="{{ membership.tenant.provider_key }}"' in workspace
     assert 'data-access-provider-warning' in workspace
     assert 'data-access-submit' in workspace
-    assert 'Capsule Access Grant reconciliation is not admitted yet.' in workspace
+    # Capsule grants are admitted only for explicit matching Capsule provider
+    # authority. Browser filtering is guidance; service revalidates on commit.
+    assert 'Capsule RBAC Prerequisites' in workspace
+    assert "providerKey === 'capsule' && providerState === 'capsule'" in scope_js
+    assert 'providerKey === reconciliationAuthority' in scope_js
+    assert 'tenant.provider_key != tenant.reconciliation_authority' in service
+    assert "'capsule'," in service
     assert (
         "data-principal-types=\"{{ 'service_account' if profile.key.value == 'deployer' else 'user,group' }}\""
         in workspace
@@ -1291,11 +1401,13 @@ def test_governance_flows_use_shared_numbered_sequence_without_arrow_connectors(
 
 def test_tenant_registry_blocked_state_uses_shared_header_guidance() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
 
     assert 'tenant-registry-status-tip' in registry
     assert 'Lifecycle describes committed Tenant state' in registry
     assert 'Blocked — Tenant stays valid; teardown fails closed until blockers clear.' in registry
-    assert "special_label('Blocked', 'critical', 'shield-alert')" in registry
+    assert 'Decommission blockers' in detail
+    assert "table_label.status_label('Blocked', 'warning')" in detail
     assert 'tenant-decommission-blocked-' not in registry
     assert 'Current Snapshot' not in registry
     assert 'Governed Flow' not in registry
@@ -1307,7 +1419,7 @@ def test_tenant_discovery_statuses_use_shared_header_guidance() -> None:
     assert 'tenant-discovery-status-tip' in discovery
     assert 'Discovery is live and read-only' in discovery
     assert 'Live Status — current provider observation.' in discovery
-    assert 'Discovered — candidate for explicit governed Adoption.' in discovery
+    assert 'Discovered — candidate for governed Tenant Adoption or existing-Tenant Namespace Attachment.' in discovery
     assert 'Provider Missing — KAORI ownership exists but the provider object is absent.' in discovery
     assert 'status_detail_dialog' not in discovery
     assert 'data-status-detail-trigger' not in discovery
@@ -1426,11 +1538,12 @@ def test_credential_material_delivery_is_one_time_non_cached_and_not_routine_inv
     assert 'value="{{ csrf_token_value }}"' in component
     assert 'csrf_token()' not in component
     assert 'csrf_token(),' in registry
-    assert 'One-Time Credential Material' in material
-    assert 'JumpServer ServiceAccount Token' in material
+    assert 'Access Material' in material
+    assert 'One-time view — copy before leaving' in material
+    assert 'Human Access Token' in material
     assert 'Namespace-Scoped Kubeconfig' in material
-    assert 'GitHub Actions Secret (Base64)' in material
-    assert 'KAORI does not persist this bearer token or kubeconfig body.' in material
+    assert 'Encoded Kubeconfig (Base64)' in material
+    assert 'KAORI does not persist the token or kubeconfig' in material
 
     assert "@tenant_bp.post('/credentials/<int:credential_id>/material')" in routes
     assert "Cache-Control'] = 'no-store, no-cache, must-revalidate, private'" in routes
@@ -1469,8 +1582,12 @@ def test_managed_adoption_preserves_observed_evidence_and_lifecycle_separation()
     assert 'TenantOwnershipStatus.ADOPTED.value' in adoption
     assert "'allocation_control_state': 'provider_mirrored_policy'" in adoption
 
-    assert "special_label('KAORI Managed', 'normal', 'shield-check')" in namespace_registry
-    assert "special_label('Awaiting Managed Takeover', 'info', 'clock-3')" in namespace_registry
+    assert "{% elif allocation_control == 'kaori_managed' %}" in namespace_registry
+    assert '{% set control_label = "KAORI Managed" %}' in namespace_registry
+    assert "{% elif adopted_observed and allocation_control != 'control_unavailable' %}" in namespace_registry
+    assert '{% set control_label = "Awaiting Takeover" %}' in namespace_registry
+    assert 'title="Control: {{ control_label }}"' in namespace_registry
+    assert 'table_label.status_label(item.ownership_status' in namespace_registry
     assert 'namespace_allocation_options' in allocation_change
     assert '{% for item in namespace_allocation_options %}' in allocation_change
     assert '{% for item in namespace_options %}' not in allocation_change
@@ -1513,7 +1630,9 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'current.profile_id' in script
     assert "profileSelect.value = 'adopted_baseline'" in script
     assert "profileSelect?.value === 'adopted_baseline'" in script
-    assert 'valueSet?.storage_policy?.[field]' in script
+    assert "pvc_min_storage: ['storage_policy', 'min']" in script
+    assert "pvc_max_storage: ['storage_policy', 'max']" in script
+    assert "const value = valueSet ? readPath(valueSet, fieldMap[name]) || '' : ''" in script
 
     assert "@tenant_bp.post('/namespace-allocation/cutover')" in routes
     assert 'cutover_adopted_namespace_allocation_committed' in routes
@@ -1521,7 +1640,7 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert "'namespace_ownership_status': record.ownership_status" in routes
 
     assert '_allocation_cutover.html' in page
-    assert 'Allocation Governance Cutover' in cutover_ui
+    assert 'Adopted Native Governance Cutover' in cutover_ui
     assert 'KAORI Preset · Locked' in cutover_ui
     assert 'Custom · Editable' in cutover_ui
     assert 'Adopted Baseline · Observed' in cutover_ui
@@ -1529,13 +1648,16 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'Cut Over Governance' in cutover_ui
     assert 'Use current provider baseline · Custom' in cutover_ui
     assert (
-        'Provider-equivalent baseline; selecting the same profile keeps current values unchanged during takeover.'
-        in cutover_ui
+        'Allocation stays unchanged until admission, ownership checks, mutation, and read-back succeed.' in cutover_ui
     )
-    assert 'data-tenant-allocation-current-pvc-min' in cutover_ui
-    assert 'data-tenant-allocation-current-pvc-max' in cutover_ui
-    assert 'data-tenant-allocation-proposed-pvc-min' in cutover_ui
-    assert 'data-tenant-allocation-proposed-pvc-max' in cutover_ui
+    # Provider baseline and proposed contract share the canonical typed metric
+    # renderer; both PVC bounds must remain visible on either side.
+    assert "('current', 'Observed Baseline', 'Adopted · Provider evidence')" in cutover_ui
+    assert "('proposed', 'Proposed Governed Contract', 'Pending · Explicit cutover')" in cutover_ui
+    assert 'data-tenant-allocation-metric-side="{{ side }}"' in cutover_ui
+    assert 'data-tenant-allocation-metric-source="storage_policy"' in cutover_ui
+    assert 'data-tenant-allocation-metric-key="{{ key }}"' in cutover_ui
+    assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in cutover_ui
     assert 'Control Unavailable' in cutover_ui
     assert 'Namespace lifecycle ownership stays adopted.' in cutover_ui
 
@@ -1744,7 +1866,9 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
 
     assert 'data-tenant-adoption-load' in discovery_ui
     assert 'Provider Constraints' in adoption_preflight_ui
-    assert 'Adopted Baseline · Observed' in adoption_preflight_ui
+    assert "table_label.status_label('Observed', 'info')" in adoption_preflight_ui
+    assert "table_label.special_label('Managed on Adopt', 'normal', 'shield-check')" in adoption_preflight_ui
+    assert "table_label.special_label('Provider Mirrored', 'info', 'refresh-cw')" in adoption_preflight_ui
     assert 'PVC Storage Constraint' in adoption_preflight_ui
     assert "constraint.constraint_type == 'pvc_storage_limit_range'" in adoption_preflight_ui
     assert (
@@ -1777,14 +1901,14 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
 
 
 def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
-    registry = read('app/templates/kubernetes/tenant/partials/_tenant_registry.html')
+    detail = read('app/templates/kubernetes/tenant/partials/_tenant_management_detail.html')
     modal = read('app/templates/components/destructive_confirmation_modal.html')
 
-    assert "presentation='steps'" in registry
-    assert 'Delete managed namespaces.' in registry
-    assert 'Commit after verified cleanup.' in registry
-    assert 'Delete managed namespaces and verify absence.' not in registry
-    assert 'Commit Decommissioned after verified cleanup.' not in registry
+    assert "presentation='steps'" in detail
+    assert 'Delete managed namespaces.' in detail
+    assert 'Commit after verified cleanup.' in detail
+    assert 'Delete managed namespaces and verify absence.' not in detail
+    assert 'Commit Decommissioned after verified cleanup.' not in detail
 
     assert (
         'grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle md:grid-cols-2 xl:grid-cols-4'

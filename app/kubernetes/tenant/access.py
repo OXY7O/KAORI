@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from app.models.tenant import TenantAccessProfileKey, TenantAccessScope, TenantMembershipPrincipalType
 
@@ -145,6 +145,29 @@ def get_access_profile(key: str, version: int | None = None) -> TenantAccessProf
         raise ValueError('The selected Tenant Access Profile version is unavailable.')
     validate_access_profile(profile)
     return profile
+
+
+def capsule_cluster_role_name(profile: TenantAccessProfile) -> str:
+    """The exact pre-approved ClusterRole name required by the Capsule adapter."""
+    return f'kaori-tenant-{profile.key.value.replace("_", "-")}-v{profile.version}'
+
+
+def capsule_cluster_role_manifest(profile: TenantAccessProfile) -> dict[str, Any]:
+    """Return a read-only ClusterRole manifest derived from the canonical permissions."""
+    validate_access_profile(profile)
+    return {
+        'apiVersion': 'rbac.authorization.k8s.io/v1',
+        'kind': 'ClusterRole',
+        'metadata': {'name': capsule_cluster_role_name(profile)},
+        'rules': [
+            {
+                'apiGroups': list(rule.api_groups),
+                'resources': list(rule.resources),
+                'verbs': list(rule.verbs),
+            }
+            for rule in profile.rules
+        ],
+    }
 
 
 def validate_grant_scope(grant: TenantAccessGrant) -> None:

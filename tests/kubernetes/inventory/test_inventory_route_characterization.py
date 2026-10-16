@@ -109,6 +109,7 @@ def app(monkeypatch: pytest.MonkeyPatch):
     )
     monkeypatch.setattr(bootstrap_presentation, 'pop_operational_feedback', lambda: None)
     monkeypatch.setattr(inventory_routes, 'get_inventory_freshness_context', lambda **_kwargs: _freshness_context())
+    monkeypatch.setattr(inventory_routes, 'get_inventory_clusters', lambda: [])
     return create_app('testing')
 
 

@@ -20,6 +20,8 @@
         const scopeByType = parseConfig(workspace.dataset.scheduleScopeByType)
         const domainByType = parseConfig(workspace.dataset.scheduleDomainByType)
         const scheduleNamespacesByCluster = parseConfig(workspace.dataset.scheduleNamespacesByCluster)
+        const namespaceOptionsUrl = workspace.dataset.scheduleNamespaceOptionsUrl || ''
+        const namespaceRequests = new Set()
 
         workspace.querySelectorAll('[data-schedule-form]').forEach((form) => {
             if (form.dataset.initialized === 'true') return
@@ -38,6 +40,9 @@
             const clusterSelect = form.querySelector('[data-schedule-cluster]')
             const artifactRegistrySelect = form.querySelector('[data-schedule-artifact-registry]')
             const namespaceSelect = form.querySelector('[data-schedule-namespace]')
+            const namespaceError = form.querySelector('[data-schedule-namespace-error]')
+            const initialCluster = clusterSelect?.value || ''
+            const initialNamespace = namespaceSelect?.value || ''
             const objectStorageSelect = form.querySelector('[data-schedule-object-storage-system]')
 
             const syncNamespaceOptions = () => {
@@ -45,14 +50,17 @@
 
                 const selectedCluster = clusterSelect?.value || ''
                 const previousNamespace = namespaceSelect.value || ''
-                const options = Array.isArray(scheduleNamespacesByCluster[selectedCluster])
-                    ? scheduleNamespacesByCluster[selectedCluster]
-                    : []
+                namespaceError?.classList.add('hidden')
+                const loaded = Object.prototype.hasOwnProperty.call(scheduleNamespacesByCluster, selectedCluster)
+                const options =
+                    loaded && Array.isArray(scheduleNamespacesByCluster[selectedCluster])
+                        ? scheduleNamespacesByCluster[selectedCluster]
+                        : []
 
                 namespaceSelect.replaceChildren()
                 const allOption = document.createElement('option')
                 allOption.value = ''
-                allOption.textContent = 'All Namespaces'
+                allOption.textContent = !selectedCluster || loaded ? 'All Namespaces' : 'Loading namespaces…'
                 namespaceSelect.appendChild(allOption)
 
                 options.forEach((namespace) => {
@@ -62,8 +70,46 @@
                     namespaceSelect.appendChild(option)
                 })
 
-                namespaceSelect.value = options.includes(previousNamespace) ? previousNamespace : ''
-                namespaceSelect.disabled = !selectedCluster
+                const staleOriginal = Boolean(
+                    loaded &&
+                    initialNamespace &&
+                    selectedCluster === initialCluster &&
+                    previousNamespace === initialNamespace &&
+                    !options.includes(initialNamespace)
+                )
+                if (staleOriginal) {
+                    const unavailable = document.createElement('option')
+                    unavailable.value = initialNamespace
+                    unavailable.textContent = initialNamespace + ' · unavailable in current inventory'
+                    namespaceSelect.appendChild(unavailable)
+                }
+                namespaceSelect.value = options.includes(previousNamespace) || staleOriginal ? previousNamespace : ''
+                namespaceSelect.disabled = !selectedCluster || !loaded
+                if (!selectedCluster || loaded || !namespaceOptionsUrl || namespaceRequests.has(selectedCluster)) return
+
+                namespaceRequests.add(selectedCluster)
+                fetch(namespaceOptionsUrl + '?cluster_id=' + encodeURIComponent(selectedCluster), {
+                    credentials: 'same-origin',
+                })
+                    .then((response) => {
+                        if (!response.ok) throw new Error('Namespace options unavailable')
+                        return response.json()
+                    })
+                    .then((payload) => {
+                        if (payload.cluster_id !== selectedCluster || !Array.isArray(payload.namespaces)) {
+                            throw new Error('Invalid namespace response')
+                        }
+                        scheduleNamespacesByCluster[selectedCluster] = payload.namespaces
+                        if (clusterSelect?.value === selectedCluster) syncNamespaceOptions()
+                    })
+                    .catch(() => {
+                        if (clusterSelect?.value === selectedCluster) {
+                            namespaceSelect.options[0].textContent = 'Unable to load namespaces'
+                            namespaceSelect.title = 'Select the cluster again to retry namespace loading.'
+                            namespaceError?.classList.remove('hidden')
+                        }
+                    })
+                    .finally(() => namespaceRequests.delete(selectedCluster))
             }
 
             const syncTiming = () => {
@@ -139,6 +185,12 @@
             )
             form.addEventListener('submit', (event) => {
                 syncContract(false)
+                const selectedScope = scopeByType[reportType?.value || ''] || 'kubernetes_cluster'
+                if (selectedScope === 'kubernetes_cluster' && clusterSelect?.value && namespaceSelect?.disabled) {
+                    event.preventDefault()
+                    namespaceError?.classList.remove('hidden')
+                    return
+                }
                 const activeGroup = form.querySelector(`[data-schedule-section-group="${reportType?.value || ''}"]`)
                 if (
                     activeGroup?.dataset.scheduleFamily !== 'inventory' &&

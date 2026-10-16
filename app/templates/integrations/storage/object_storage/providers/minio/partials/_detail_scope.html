@@ -47,11 +47,11 @@
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Snapshot Freshness</p>
-                            <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ bucket_count }} Bucket{{ "" if bucket_count == 1 else "s" }}</p>
+                            <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ "Last Known " if inventory_source_changed else "" }}{{ bucket_count }} Bucket{{ "" if bucket_count == 1 else "s" }}</p>
                         </div>
                         {{ integration_ui.palette_icon("database", "normal" if bucket_count else "unknown", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Committed object-storage inventory from the latest Object Storage Inventory Sync at {{ inventory_observed_at_display }}.</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ "Historical snapshot from the previous connection identity. Run Core Validation and Object Storage Inventory Sync before using it as current evidence." if inventory_source_changed else "Committed object-storage inventory from the latest Object Storage Inventory Sync at " ~ inventory_observed_at_display ~ "." }}</p>
                 </article>
                 <article class="bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
@@ -81,7 +81,7 @@
                         </div>
                         {{ integration_ui.palette_icon("shield-alert" if deletion_guard.blocked else "shield-check", "warning" if deletion_guard.blocked else "normal", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ " blocking condition" ~ ("" if deletion_guard.reasons|length == 1 else "s") if deletion_guard.blocked else "No active KAORI job blocks removal." }}</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ " blocking condition" ~ ("" if deletion_guard.reasons|length == 1 else "s") if deletion_guard.blocked else "No active KAORI jobs currently block this removal." }}</p>
                 </article>
             </div>
             <div class="grid gap-px bg-outline-subtle lg:grid-cols-2"

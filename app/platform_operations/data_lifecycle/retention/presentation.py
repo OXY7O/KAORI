@@ -323,6 +323,7 @@ def _domain_label(name: str) -> str:
         'analytics_snapshot': 'Analytics Snapshots',
         'generated_report': generated_report_ui.GENERATED_REPORT_LABEL,
         'alert_incident': 'Alert Incidents',
+        'tenant_audit_evidence': 'Tenant Audit Evidence',
     }.get(name, name.replace('_', ' ').title())
 
 
@@ -334,6 +335,7 @@ def _domain_icon(name: str) -> str:
         'analytics_snapshot': 'chart-no-axes-combined',
         'generated_report': generated_report_ui.GENERATED_REPORT_ICON,
         'alert_incident': 'siren',
+        'tenant_audit_evidence': 'shield-check',
     }.get(name, 'database')
 
 
@@ -345,6 +347,7 @@ def _domain_description(name: str) -> str:
         'analytics_snapshot': 'Reusable analytics and forecast materialization snapshots.',
         'generated_report': generated_report_ui.GENERATED_REPORT_DESCRIPTION,
         'alert_incident': 'Closed Alert Operations cases, operator evidence, notification delivery, and postmortem records.',
+        'tenant_audit_evidence': 'Normalized Tenant audit correlation and operation evidence.',
     }.get(name, 'KAORI operational data domain.')
 
 
@@ -419,6 +422,18 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
                 'description': 'Required or completed postmortem context and action-item evidence remain part of the case record.',
             },
         ),
+        'tenant_audit_evidence': (
+            {
+                'icon': 'shield-check',
+                'label': 'Tenant Audit Correlation',
+                'description': 'Committed normalized Kubernetes audit observations linked to managed Tenants.',
+            },
+            {
+                'icon': 'fingerprint',
+                'label': 'Identity & Outcome Evidence',
+                'description': 'Principal classification, resource/verb, outcome and correlation references.',
+            },
+        ),
         'analytics_snapshot': (
             {
                 'icon': 'chart-spline',
@@ -447,6 +462,7 @@ def _domain_coverage_note(name: str) -> str | None:
         'analytics_snapshot': 'Cleanup applies only after a snapshot is outside both its stale-serve window and the configured hot-retention boundary.',
         'generated_report': generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE,
         'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',
+        'tenant_audit_evidence': 'Committed Tenant audit correlation; Kubernetes remains authoritative for raw logs.',
     }.get(name)
 
 
@@ -458,6 +474,7 @@ def _domain_exclusion_note(name: str) -> str | None:
         'analytics_snapshot': 'Pending or still-serveable snapshots are protected from archive cleanup.',
         'generated_report': generated_report_ui.GENERATED_REPORT_EXCLUSION_NOTE,
         'alert_incident': 'Open, acknowledged, mitigating, and verification-pending cases are never selected for archive cleanup.',
+        'tenant_audit_evidence': 'Raw Kubernetes audit logs and provider request/response bodies stay external.',
     }.get(name)
 
 

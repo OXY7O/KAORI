@@ -119,7 +119,7 @@ def test_configuration_key_inventory_uses_full_width_grouped_list_instead_of_til
     assert 'data-kaori-inventory-metadata-collection' in metadata
     assert 'data-kaori-metadata-keys-layout="balanced-two-column"' in metadata
     assert (
-        "metadata_description = 'Indexed key names from the committed snapshot; value content remains protected.' if mode == 'keys'"
+        "metadata_description = 'Key names only; no values.' if mode == 'keys' else 'Committed metadata entries.'"
         in metadata
     )
     assert 'entries|length % 2 == 1' in metadata
@@ -136,11 +136,11 @@ def test_inventory_informational_notes_use_icon_note_treatment() -> None:
         in services
     )
     assert (
-        "detail.inventory_note('A resolved Secret reference confirms only that a Secret exists in the same committed namespace snapshot. It does not validate certificate contents, expiry, key matching, or hostname coverage.', 'info')"
+        "detail.inventory_note('Resolved Secret confirms committed presence, not certificate content, expiry, key match or host coverage.', 'info')"
         in ingress
     )
     assert (
-        "detail.inventory_note('Service references are resolved only against the current committed Service Inventory for the selected scope. Resource backends remain declaration-only evidence here and are intentionally not resolved to live backend objects or runtime endpoints.', 'info')"
+        "detail.inventory_note('Service references use committed inventory; resource backends remain declarations, not live endpoints.', 'info')"
         in ingress
     )
     assert (

@@ -122,6 +122,136 @@ def test_generic_summary_explanation_is_retired_from_operational_dashboards() ->
     assert 'What This Summary Means' not in combined(OBJECT_STORAGE)
 
 
+def test_data_freshness_microcopy_and_shared_family_geometry() -> None:
+    kubernetes = read('app/kubernetes/dashboard/sections/freshness.py')
+    storage = read('app/storage/object_storage/dashboard/service.py')
+    kubernetes_ui = read('app/templates/kubernetes/dashboard/partials/_data_freshness.html')
+    storage_ui = read('app/templates/storage/object_storage/dashboard/partials/_overview.html')
+    registry_ui = read('app/templates/artifact_registry/partials/_overview_operations.html')
+    shared = read('app/templates/components/operational_evidence_tile.html')
+
+    for text in (
+        'All Clusters shows committed capacity by cluster.',
+        'Select a cluster for detailed analytics.',
+        'All Clusters shows committed alerts by cluster. Select a cluster for source details.',
+        'def _fleet_coverage(',
+        'Latest Kubernetes object counts from committed inventory.',
+        'Metrics-backed cluster usage and forecasts from committed snapshots.',
+    ):
+        assert text in kubernetes
+    assert "'Committed cluster snapshots'" not in kubernetes
+    assert "'Per Cluster'" not in kubernetes
+    assert 'Committed 24h alerts; Alertmanager primary, Metrics Source fallback.' in storage
+    assert "f' {alert_fallback} system(s) using fallback evidence.'" in storage
+    for retired in (
+        'All Clusters mode summarizes committed capacity snapshots by cluster.',
+        'All Clusters mode summarizes committed alert snapshots by cluster.',
+        'From committed cluster snapshots',
+        'Latest Kubernetes object counts.',
+        'Metrics-backed cluster usage and forecasts.',
+    ):
+        assert retired not in kubernetes
+    assert 'Available alert streams from usable committed 24h analytics snapshots;' not in storage
+
+    for component in (kubernetes_ui, storage_ui, registry_ui):
+        assert "'Data Freshness'" in component
+        assert "body_classes='grid gap-3 p-5 sm:grid-cols-2'" in component
+        assert 'evidence_tile.freshness(' in component
+    assert 'macro freshness(' in shared
+    assert 'status_label(status, tone=tone)' in shared
+    assert kubernetes.count('FreshnessItem(') == 4
+    assert "'label': 'Alert Evidence Fleet'" in storage
+    assert "'label': 'Security Snapshot'" in read('app/artifact_registry/presentation_overview.py')
+
+
+def test_kubernetes_capacity_decision_notes_and_forecast_helpers() -> None:
+    capacity = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
+    forecast = read('app/templates/kubernetes/dashboard/partials/_forecast_risk.html')
+
+    assert 'Worker capacity headroom chart' in capacity
+    assert 'Available Capacity' in capacity
+    assert 'item.headroom_percent if item.headroom_percent is not none else none' in capacity
+    assert 'progress_bar.bar(headroom_percent,' in capacity
+    assert 'headroom unavailable' in capacity
+    assert 'Capacity Decision Notes' not in capacity
+    assert 'Recommended Capacity Action Flow' in capacity
+    for text in (
+        'Peak projected utilization',
+        'Resources nearing forecast limits',
+        'Committed 30-day history',
+    ):
+        assert text in forecast
+    assert forecast.count('mt-1 truncate text-xs text-content-muted') == 3
+
+
+def test_kubernetes_dashboard_forecast_cards_fill_peer_width_without_clipping() -> None:
+    forecast = read('app/templates/kubernetes/dashboard/partials/_forecast_risk.html')
+    capacity = read('app/templates/kubernetes/dashboard/partials/_capacity.html')
+
+    assert "peer_content_grid.column_classes('secondary')" in capacity
+    # Forecast occupies half the desktop dashboard: cards size to the actual panel, not the viewport.
+    assert 'grid-cols-[repeat(auto-fit,minmax(min(100%,11.5rem),1fr))]' in forecast
+    assert 'md:grid-cols-2 xl:grid-cols-4' not in forecast
+    assert 'flex min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-card p-3' in forecast
+    assert 'mt-auto grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2 pt-3 text-xs' in forecast
+    assert 'min-w-0 break-words text-sm font-semibold text-content-primary' in forecast
+    assert 'truncate text-sm font-semibold text-content-primary' not in forecast
+    assert '<div class="shrink-0">{{ table_label.status_label(item.risk, risk_tone) }}</div>' in forecast
+    assert 'resource_series_legend.swatch(item.key)' in forecast
+    assert 'item.latest_daily_average_percent' in forecast
+    assert 'item.projected_percent' in forecast
+
+
+def test_capacity_metric_cards_follow_kubernetes_visual_grammar() -> None:
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_capacity_snapshot.html')
+    storage = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_capacity_snapshot.html')
+
+    for template in (kubernetes, storage, registry):
+        assert 'Data Scope:' in template
+        assert 'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary' in template
+        assert 'grid gap-3 lg:grid-cols-3' in template
+        assert 'components/progress_bar.html' in template
+        assert 'bg-kaori-primary' in template
+        assert 'bg-status-info' in template
+        assert 'bg-status-pending' in template
+        assert 'bg-surface-elevated p-4' in template
+        assert 'Overall Capacity Risk' in template
+        assert 'Recommended Capacity Action Flow' in template
+
+    assert 'progress_bar.bar(percent,' in storage
+    assert 'percentage unavailable' in storage
+    assert 'Capacity Utilization</h3>' not in storage
+    assert 'progress_bar.bar(item.progress_percent,' in registry
+    assert 'item.progress_percent is not none' in registry
+    assert 'percentage not applicable' in registry
+    assert "operational_callout.render('Data Scope'" not in registry
+    assert 'Worker capacity headroom chart' in kubernetes
+    assert 'Object Storage utilization balance chart' in storage
+    assert 'progress_bar.bar(free_percent,' in storage
+    assert 'Registry project quota balance chart' in registry
+    assert 'progress_bar.bar(quota_used_percent,' in registry
+    assert 'progress_bar.bar(quota_free_percent,' in registry
+    assert 'Quota balance unavailable' in registry
+    for template in (kubernetes, storage, registry):
+        assert 'Capacity Decision Notes' not in template
+
+
+def test_alert_case_empty_state_does_not_claim_provider_health() -> None:
+    summaries = (
+        read('app/templates/kubernetes/dashboard/partials/_alerts_summary.html'),
+        read('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html'),
+        read('app/templates/artifact_registry/partials/_overview_alerts_summary.html'),
+    )
+    for summary in summaries:
+        assert "empty_label='No Active Cases'" in summary
+        assert "empty_title='No Active Alert Cases'" in summary
+        assert 'No active recommendation-origin AlertCases' in summary
+        assert 'Intelligence findings are separate.' in summary
+        assert "empty_label='Healthy'" not in summary
+        assert 'components/operational_alert_summary.html' in summary
+
+
 def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     freshness = read('app/kubernetes/dashboard/sections/freshness.py')
     capacity = read('app/kubernetes/dashboard/sections/capacity.py')
@@ -137,6 +267,12 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     object_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
 
     assert 'Committed analytics available' in freshness
+    assert "'Partial', 'warning'" in freshness
+    assert "'Required', 'unknown'" in freshness
+    assert 'fleet_cluster_count: int = 0' in freshness
+    assert 'fleet_metrics_count: int = 0' in freshness
+    assert 'fleet_alerts_count: int = 0' in freshness
+    assert "'Per Cluster'" not in freshness
     assert 'Generated reports are retained artifacts, separate from current Kubernetes health.' in freshness
     assert 'No immediate scaling required.' in capacity
     assert 'Validate requests/limits, growth, and planned deployments against current worker headroom.' in capacity
@@ -158,10 +294,11 @@ def test_dashboard_copy_is_compact_and_snapshot_safe() -> None:
     assert "'Worker Data'" in object_service
     assert "'Worker Data Required'" not in object_service
     assert "'Worker Data Needed'" not in object_service
-    assert (
-        'Capacity uses the committed Object Storage Analytics snapshot; no live provider query is issued.'
-        in object_capacity
+    assert 'Data Scope:</span> committed usage, free space, and usable capacity from Object Storage Analytics.' in (
+        object_capacity
     )
+    assert 'read_analytics_snapshot(' in object_service
+    assert 'MetricsConsumer(' not in object_service
     assert 'Emerging capacity or availability risk.' in object_alert_guidance
     assert 'Low-risk operational signal. Validate relevance, recurrence, and scope.' in object_alert_guidance
     assert 'components/reporting_dashboard_workspace.html' in object_summary
@@ -320,6 +457,34 @@ def test_operational_dashboard_inner_presentation_is_shared_across_three_consume
     object_hero = read('app/templates/storage/object_storage/dashboard/partials/_hero.html')
     assert "operational_callout.render('Capacity Action Flow'" not in kubernetes_capacity
     assert "'Open Object Storage Integrations'" in object_hero
+
+
+def test_operational_signal_kpi_cards_share_independent_geometry_across_three_domains() -> None:
+    registry_cards = read('app/templates/artifact_registry/partials/_overview_kpi_cards.html')
+    registry_signal = read('app/templates/artifact_registry/partials/_overview_signal_overview.html')
+    registry_loading = read('app/templates/components/operational_section_loading.html')
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+
+    for source in (
+        read('app/templates/kubernetes/dashboard/partials/_kpi_cards.html'),
+        read('app/templates/storage/object_storage/dashboard/partials/_kpi_cards.html'),
+        registry_cards,
+    ):
+        assert 'components/operational_metric_card.html' in source
+        assert 'operational_metric_card.render(' in source
+        assert 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4' in source
+        assert "scope_label='Active Scope'" in source
+
+    assert 'source_label=overview.kpi_source_label' in registry_cards
+    assert 'resource_posture_grid.html' not in registry_cards
+    assert 'Select a Registry Provider for Detailed Signals' in registry_signal
+    assert "scope_tone = overview.posture.tone if overview.selected_provider else 'warning'" in registry_signal
+    assert "body_classes='p-0'" not in registry_signal
+    assert 'grouped=true' not in registry_signal
+    assert 'section_loading.kpis(item_count=4,' in registry_signal
+    assert 'h-28 animate-pulse rounded-lg bg-surface-hover' in registry_loading
+    assert 'Operational Signal KPI indicators as **independent cards**' in standard
+    assert 'Inventory, Security, Runtime Usage, Governance, and Analytics summaries' in standard
 
 
 def test_operational_dashboard_standard_is_family_owned() -> None:
@@ -565,3 +730,145 @@ def test_operational_dashboard_loading_presentation_is_shared_across_current_con
     assert 'hx-trigger="revealed"' in standard
     assert 'Projection granularity remains domain-owned' in standard
     assert 'operational_section_loading.html' in dashboard_readme
+
+
+def test_dashboard_unavailable_alert_evidence_does_not_prompt_scope_reselection() -> None:
+    """Once selected, a scope with missing alert evidence must not imply no scope was selected."""
+
+    for path, expected_scope in (
+        ('app/templates/storage/object_storage/dashboard/partials/_alerts_summary.html', 'Object Storage system'),
+        ('app/templates/artifact_registry/partials/_overview_alerts_summary.html', 'Registry provider'),
+    ):
+        source = read(path)
+        assert 'scope_required=true' in source
+        assert "scope_blocked_title='Select " in source
+        assert "unavailable_title='Alert Evidence Unavailable'" in source
+        assert f'Committed Alert Intelligence case evidence is unavailable for this {expected_scope}.' in source
+        assert "unavailable_title='Select " not in source
+        assert "unavailable_description='Select " not in source
+
+
+def test_top_consumer_missing_evidence_uses_snapshot_required_panel_in_reference_dashboards() -> None:
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_top_consumers.html')
+    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_top_consumers.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_top_consumers.html')
+
+    for source in (kubernetes, object_storage):
+        assert 'empty_state_label = "Snapshot Required"' in source
+        assert 'empty_state_variant = "panel"' in source
+        assert 'components/states/_empty_state.html' in source
+
+    assert 'empty_state_label = "Sync Required"' not in kubernetes
+    assert 'empty_state_label = "Source Required"' in registry
+    assert 'empty_state_label = "Sync Required"' in registry
+    assert 'empty_state_label = "No Quota Evidence"' in registry
+
+
+def test_dashboard_health_registries_preserve_zero_result_pagination_and_compact_empty_state() -> None:
+    for path, width, empty_title in (
+        ('app/templates/kubernetes/dashboard/partials/_cluster_health.html', '1040', 'No Cluster Health Data'),
+        (
+            'app/templates/storage/object_storage/dashboard/partials/_system_health.html',
+            '1040',
+            'No Object Storage Health Data',
+        ),
+        (
+            'app/templates/artifact_registry/partials/_overview_provider_health.html',
+            '1120',
+            'No Registry Provider Health Data',
+        ),
+    ):
+        source = read(path)
+        assert "<div class=\"{{ 'overflow-x-auto' if pagination.total_items > 0 else '' }}\">" in source
+        assert f"table_ui.table_classes('min-w-[{width}px]' if pagination.total_items > 0 else '')" in source
+        assert re.search(r'{% if pagination\.total_items > 0 %}\s*<thead', source)
+        assert '</thead>\n            {% endif %}' in source
+        assert 'empty_state_label = "No Data"' in source
+        assert f'empty_state_title = "{empty_title}"' in source
+        assert 'empty_state_min_height = "min-h-[160px]"' in source
+        assert 'components/states/_empty_state.html' in source
+        assert 'pagination_ui.page_size_classes()' in source
+        assert 'for size in pagination.allowed_per_page' in source
+        assert 'pagination_ui.numeric_pages(' in source
+        assert 'pagination_ui.navigation_classes(disabled=true)' in source
+        assert '{% if pagination.total_items > 0 %}\n        <footer' not in source
+        assert '</footer>\n{% endcall %}' in source
+
+
+def test_unselected_dashboard_scope_uses_one_tab_level_prerequisite_for_detailed_sections() -> None:
+    kubernetes_capacity = read('app/templates/kubernetes/dashboard/partials/_capacity.html')
+    kubernetes_signals = read('app/templates/kubernetes/dashboard/partials/_signals.html')
+    object_capacity = read('app/templates/storage/object_storage/dashboard/partials/_capacity.html')
+    object_signals = read('app/templates/storage/object_storage/dashboard/partials/_signals.html')
+    registry_capacity = read('app/templates/artifact_registry/partials/_overview_capacity.html')
+    registry_signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
+    service = read('app/kubernetes/dashboard/service.py')
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+
+    for source in (kubernetes_capacity, kubernetes_signals, object_capacity, object_signals):
+        assert '{% if not dashboard.selected_' in source
+        assert 'components/states/_blocked_state.html' in source
+        assert 'Select ' in source
+        assert source.index('components/states/_blocked_state.html') < source.index('{% else %}')
+        assert source.index('{% else %}') < source.index('peer_content_grid.layout_classes()')
+        assert source.count('components/states/_blocked_state.html') == 1
+
+    for source in (registry_capacity, registry_signals):
+        assert '{% if not overview.selected_provider %}' in source
+        assert 'components/states/_blocked_state.html' in source
+        assert 'Select Registry Provider' in source
+        assert source.count('components/states/_blocked_state.html') == 1
+        assert source.index('components/states/_blocked_state.html') < source.index('{% else %}')
+        assert source.index('{% else %}') < source.index('peer_content_grid.layout_classes()')
+
+    assert 'artifact_registry/partials/_overview_capacity_snapshot.html' in registry_capacity
+    assert 'artifact_registry/partials/_overview_forecast_risk.html' in registry_capacity
+    assert 'artifact_registry/partials/_overview_top_consumers.html' in registry_capacity
+
+    signal_helper = service.split('def _populate_signals(', 1)[1].split('def get_dashboard_overview(', 1)[0]
+    assert 'if selected is None:\n        return' in signal_helper
+    assert signal_helper.index('if selected is None:') < signal_helper.index('build_recommendations(')
+    assert 'one shared prerequisite blocker at tab level' in standard
+    assert 'All Registry Providers' in standard
+
+
+def test_reporting_scope_bound_reflects_all_or_selected_dashboard_scope() -> None:
+    kubernetes = read('app/templates/kubernetes/dashboard/partials/_reporting_guidance.html')
+    object_storage = read('app/templates/storage/object_storage/dashboard/partials/_reporting_guidance.html')
+    registry = read('app/templates/artifact_registry/partials/_overview_reporting.html')
+    object_summary = read('app/templates/storage/object_storage/dashboard/partials/_reporting_summary.html')
+
+    assert "reporting_scope = 'Selected Cluster' if dashboard.selected_cluster_id else 'All Clusters'" in kubernetes
+    assert (
+        "reporting_scope = dashboard.selected_system.name if dashboard.selected_system else 'All Systems'"
+        in object_storage
+    )
+    for source in (kubernetes, object_storage):
+        assert 'reporting_workspace.guidance(reporting_scope,' in source
+    assert 'reporting_workspace.guidance(overview.scope_label,' in registry
+    assert 'current scope.' in object_summary
+    assert 'this system scope.' not in object_summary
+
+
+def test_registry_capacity_requires_selected_provider_before_evidence_projection() -> None:
+    service = read('app/artifact_registry/presentation_overview.py')
+    capacity_tab = read('app/templates/artifact_registry/partials/_overview_capacity.html')
+    registry_signals = read('app/templates/artifact_registry/partials/_overview_signals.html')
+    operations = read('app/templates/artifact_registry/partials/_overview_operations.html')
+    reporting = read('app/templates/artifact_registry/partials/_overview_reporting.html')
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+
+    section = service.split("if section == 'capacity':", 1)[1].split("if section == 'signals':", 1)[0]
+    assert 'if selected_provider is None:\n            return context' in section
+    assert section.index('return context') < section.index('return _overview_capacity_projection(')
+
+    capacity_projection = service.split('def _overview_capacity_projection(', 1)[1].split('def build_overview(', 1)[0]
+    assert 'selected_provider: IntegrationInstance,' in capacity_projection
+    assert '.filter(RegistryProject.integration_instance_id == selected_provider.id)' in capacity_projection
+    assert 'if selected_provider is not None:' not in capacity_projection
+    assert capacity_tab.count('components/states/_blocked_state.html') == 1
+    assert capacity_tab.count('Select Registry Provider') == 1
+    assert 'components/states/_blocked_state.html' in registry_signals
+    assert 'artifact_registry/partials/_overview_provider_health.html' in operations
+    assert 'reporting_workspace.summary(overview.reporting,' in reporting
+    assert 'Registry `All Registry Providers` scope must not trigger aggregate Capacity' in standard

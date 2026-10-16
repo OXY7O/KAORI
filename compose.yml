@@ -16,7 +16,7 @@ services:
       timeout: 5s
       retries: 12
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - kaori_postgres_data:/var/lib/postgresql/data
 
@@ -36,7 +36,7 @@ services:
       timeout: 3s
       retries: 12
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - kaori_redis_data:/data
 

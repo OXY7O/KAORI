@@ -128,6 +128,26 @@ Details
 
 The table directly opens the shared Full Workspace Modal. It does not render an intermediate expanded row. The dedicated detail route remains a direct-link and no-JavaScript fallback.
 
+### DevContainer table-width and evidence-copy refinement (#733)
+
+The six-column fixed registry prioritizes long technical identifiers and declared-host coverage:
+**Certificate 27%, Scope 22%, Validity 12%, Host Coverage 20%, Ingress Usage 9%, Details 10%**.
+Preserve existing responsive behavior without horizontal scroll: Host Coverage is shown at
+`lg` and above, and Ingress Usage at `xl` and above. Keep the shared details
+modal, full hover values, keyboard-accessible headings, filters, and pagination.
+
+Validity keeps the policy-derived status badge and factual expiry date; day text is
+compact (`74 days left` / `3 days expired`) without changing calculations.
+The `No Declared Hosts` badge is not repeated underneath when host declarations
+are factually absent. If coverage collection is unavailable, show `Not Reported`
+and `Coverage evidence unavailable`. If hosts exist, display the covered/declared
+ratio and only show uncovered-count support when nonzero.
+
+Ingress Usage shows the observed Ingress count, adding declared-host counts only when
+nonzero; unavailable Ingress mapping remains `Not Reported` plus `Ingress mapping
+unavailable`, never an invented zero. Full details and evidence distinctions remain
+accessible. Presentation changes do not infer live TLS reachability or trust.
+
 ## Full Workspace Modal
 
 Canonical content:
@@ -275,3 +295,41 @@ No page-local fourth Hero accessory type is permitted.
 ### L0–L7 release evidence
 
 The release boundary requires Static Quality, Contract, Unit, Functional, Integration, Security Regression, Rendering/UI Contract, and End-to-End Smoke evidence. Kubernetes/provider reachability remains an Integration/worker responsibility; the E2E smoke validates Flask/session/templates/application shell deterministically without requiring a live cluster.
+
+
+## Provenance-safe TLS collection freshness (#1327)
+
+`TLSCertificateCollectionState.updated_at` means the latest collection attempt;
+`collected_at` advances only after a complete successful Secret collection.
+Failed attempts may update source status and error detail, but they do not
+refresh the committed certificate evidence clock or delete the old certificate
+snapshot. Ingress mapping remains an independently qualified evidence source.
+
+The TLS Operations `Last Successful` indicator is derived from committed
+certificate-row `collected_at` and collection-state `collected_at` **only
+when the Secret source is Collected**. If the prior successful collection
+contained zero TLS Secrets and a subsequent attempt failed, the bounded
+`JobExecution` history can supply a last-successful timestamp **only for
+that specific target cluster** when a successful or partially successful
+job explicitly lists the cluster and does not list it among failures.
+No fleet-level job success automatically qualifies a failed cluster. Never choose a newer failed attempt's
+`updated_at` or failed collection-state timestamp, nor treat a fleet job's
+partial success as success for each target cluster. A fleet scope is `Current`
+only if **every registered cluster** has a non-stale successful Secret snapshot
+and Collected Ingress mapping. Exceptions take precedence over Current; the
+underlying last-known-good timestamp remains visible and must not imply current
+mapping evidence. The legacy database column's meaning is clarified in-place;
+no new schema or UI taxonomy is introduced.
+
+
+## As-of-now committed certificate validity (#1326)
+
+The committed `not_after`, parse result, certificate identity, and collection
+timestamp remain source facts. Every read derives current validity against the
+same configured critical/renewal windows without writing ORM fields or asking
+Kubernetes. SQL CASE supplies a consistent filter, severity sort, summary and
+pagination classification. Python `classify_certificate_validity` supplies
+matching row/detail/rotation presentation and current days remaining.
+Persisted Invalid/Unknown statuses take precedence over timestamp inference.
+Exact expiry uses `not_after <= evaluated_at`; `collected_at` and posture
+`validity_evaluated_at` are separate so reassessment never implies new data.

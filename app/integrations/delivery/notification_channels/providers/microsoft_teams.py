@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from app.integrations.delivery.notification_channels.contracts import (
     DeliveryResult,
@@ -19,11 +19,29 @@ _TEAMS_TEXT_LIMIT = 12000
 _TEAMS_WORKFLOW_SUFFIXES = ('.environment.api.powerplatform.com', '.logic.azure.com')
 
 
+class _NoWorkflowRedirects(HTTPRedirectHandler):
+    """Never forward a secret-bearing Workflow URL to a redirected endpoint."""
+
+    def redirect_request(self, request: Request, fp: Any, code: int, msg: str, headers: Any, newurl: str) -> None:
+        return None
+
+
 def _is_approved_workflow_url(value: str) -> bool:
-    parsed = urlparse(value)
-    hostname = str(parsed.hostname or '').lower()
+    try:
+        parsed = urlparse(value)
+        hostname = str(parsed.hostname or '').lower()
+        port = parsed.port
+    except ValueError:
+        # Malformed IPv6 brackets, invalid ports and Unicode host validation
+        # must fail closed instead of causing a configuration-page HTTP 500.
+        return False
     return bool(
-        parsed.scheme == 'https' and hostname and any(hostname.endswith(suffix) for suffix in _TEAMS_WORKFLOW_SUFFIXES)
+        parsed.scheme == 'https'
+        and hostname
+        and parsed.username is None
+        and parsed.password is None
+        and port in (None, 443)
+        and any(hostname.endswith(suffix) for suffix in _TEAMS_WORKFLOW_SUFFIXES)
     )
 
 
@@ -49,9 +67,9 @@ def send_microsoft_teams_message(
         method='POST',
     )
     try:
-        with urlopen(  # noqa: S310  # nosec B310
-            request, timeout=max(int(timeout_seconds), 1)
-        ) as response:
+        # urllib's default redirect handler may follow a 30x away from the
+        # approved Workflows host (and a Workflow URL itself is secret).
+        with build_opener(_NoWorkflowRedirects()).open(request, timeout=max(int(timeout_seconds), 1)) as response:
             status = int(getattr(response, 'status', 200) or 200)
     except HTTPError as exc:
         return DeliveryResult(False, f'Microsoft Teams Workflow rejected the request with HTTP {exc.code}.')
@@ -85,12 +103,8 @@ def validate_form(data: NotificationChannelFormInput) -> list[str]:
     if not workflow_url:
         errors.append('Microsoft Teams Workflow webhook URL is required.')
         return errors
-    parsed = urlparse(workflow_url)
-    hostname = str(parsed.hostname or '').lower()
-    if parsed.scheme != 'https' or not hostname:
-        errors.append('Microsoft Teams Workflow webhook URL must use HTTPS.')
-    elif not any(hostname.endswith(suffix) for suffix in _TEAMS_WORKFLOW_SUFFIXES):
-        errors.append('Use a Microsoft Teams Workflows / Power Automate webhook URL, not a legacy connector URL.')
+    if not _is_approved_workflow_url(workflow_url):
+        errors.append('Use an approved HTTPS Microsoft Teams Workflows URL on port 443, without user info.')
     return errors
 
 

@@ -15,19 +15,21 @@
     loading_bar_label='Registry Provider Health Loading',
     body_classes='p-0'
     ) %}
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
-            <thead class="{{ table_ui.head_classes() }}">
-                <tr>
-                    <th class="{{ table_ui.header_cell_classes() }}">Registry Provider</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Overall</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Projects</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Repositories</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Artifacts</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Security Signals</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Snapshot Sources</th>
-                </tr>
-            </thead>
+    <div class="{{ 'overflow-x-auto' if pagination.total_items > 0 else '' }}">
+        <table class="{{ table_ui.table_classes('min-w-[1120px]' if pagination.total_items > 0 else '') }}">
+            {% if pagination.total_items > 0 %}
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th class="{{ table_ui.header_cell_classes() }}">Registry Provider</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Overall</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Projects</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Repositories</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Artifacts</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Security Signals</th>
+                        <th class="{{ table_ui.header_cell_classes(action=true) }}">Snapshot Sources</th>
+                    </tr>
+                </thead>
+            {% endif %}
             <tbody class="{{ table_ui.body_classes() }}">
                 {% if overview.provider_rows %}
                     {% for row in overview.provider_rows %}
@@ -57,11 +59,16 @@
                                 {% if row.security_not_applicable %}
                                     <p class="text-sm font-semibold text-content-disabled">N/A</p>
                                     <p class="mt-1 text-xs text-status-info-text">No Artifacts</p>
-                                {% elif row.security_ready %}
-                                    <p class="text-sm font-semibold {% if row.critical_findings > 0 %}text-status-critical-text{% elif row.high_findings > 0 %}text-status-warning-text{% else %}text-status-normal-text{% endif %}">
+                                {% elif row.security_ready or row.security_partial %}
+                                    <p class="text-sm font-semibold {% if row.critical_findings > 0 %}text-status-critical-text{% elif row.high_findings > 0 or row.security_partial %}text-status-warning-text{% else %}text-status-normal-text{% endif %}">
                                         {{ row.critical_findings }} Critical
                                     </p>
                                     <p class="mt-1 text-xs text-content-muted">{{ row.high_findings }} High</p>
+                                    {% if row.security_partial %}
+                                        <p class="mt-1 text-xs text-status-warning-text">
+                                            Partial Scans · {{ row.scanned_count }} / {{ row.artifact_count }} assessed
+                                        </p>
+                                    {% endif %}
                                 {% else %}
                                     <p class="text-sm font-semibold text-content-disabled">N/A</p>
                                     <p class="mt-1 text-xs text-status-unknown-text">
@@ -92,8 +99,8 @@
                         <td colspan="7" class="px-5 py-4">
                             {% set empty_state_icon = "package-search" %}
                             {% set empty_state_label = "No Data" %}
-                            {% set empty_state_title = "No Registry Providers Available" %}
-                            {% set empty_state_description = "No Registry provider rows are available for the current dashboard scope." %}
+                            {% set empty_state_title = "No Registry Provider Health Data" %}
+                            {% set empty_state_description = "No Registry provider health rows match this scope yet. Check the selected provider and committed inventory evidence." %}
                             {% set empty_state_min_height = "min-h-[160px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
@@ -102,92 +109,90 @@
             </tbody>
         </table>
     </div>
-    {% if pagination.total_items > 0 %}
-        <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <p class="text-xs text-content-muted">
-                    Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} Registry Providers
-                </p>
-                <div class="flex items-center gap-2">
-                    <input id="artifact-registry-provider-health-scope"
-                           type="hidden"
-                           name="provider_id"
-                           value="{{ overview.selected_provider_id or '' }}" />
-                    <input id="artifact-registry-provider-health-page-reset"
-                           type="hidden"
-                           name="provider_health_page"
-                           value="1" />
-                    <label for="artifact-registry-provider-health-per-page"
-                           class="text-xs font-semibold text-content-secondary">Rows</label>
-                    <select id="artifact-registry-provider-health-per-page"
-                            name="provider_health_per_page"
-                            class="{{ pagination_ui.page_size_classes() }}"
-                            hx-get="{{ url_for('artifact_registry.overview_section', section='provider_health') }}"
-                            hx-target="#artifact-registry-provider-health-section"
-                            hx-swap="outerHTML"
-                            hx-include="#artifact-registry-provider-health-scope, #artifact-registry-provider-health-page-reset"
-                            hx-trigger="change"
-                            hx-disabled-elt="this"
-                            hx-indicator="#artifact-registry-provider-health-loading">
-                        {% for size in pagination.allowed_per_page %}
-                            <option value="{{ size }}"
-                                    {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
+    <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <p class="text-xs text-content-muted">
+                Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} Registry Providers
+            </p>
             <div class="flex items-center gap-2">
-                {% set prev_url = url_for('artifact_registry.overview_section', section='provider_health', provider_id=overview.selected_provider_id or '', provider_health_page=pagination.prev_page, provider_health_per_page=pagination.per_page) %}
-                {% set next_url = url_for('artifact_registry.overview_section', section='provider_health', provider_id=overview.selected_provider_id or '', provider_health_page=pagination.next_page, provider_health_per_page=pagination.per_page) %}
-                {% if pagination.has_prev %}
-                    <button type="button"
-                            hx-get="{{ prev_url }}"
-                            hx-target="#artifact-registry-provider-health-section"
-                            hx-swap="outerHTML"
-                            hx-disabled-elt="this"
-                            class="{{ pagination_ui.navigation_classes() }}">
-                        <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-                        Previous
-                    </button>
-                {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
-                          aria-disabled="true">
-                        <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-                        Previous
-                    </span>
-                {% endif %}
-                {{ pagination_ui.numeric_pages(pagination.page,
-                                pagination.total_pages,
-                                'provider_health_page',
-                                '#artifact-registry-provider-health-section',
-                                '#artifact-registry-provider-health-loading',
-                                'artifact_registry.overview_section',
-                                {
-                                'section': 'provider_health',
-                                'provider_id': overview.selected_provider_id or '',
-                                'provider_health_per_page': pagination.per_page,
-                                'tab': 'overview'
-                                },
-                                'outerHTML',
-                                'artifact_registry.overview') }}
-                {% if pagination.has_next %}
-                    <button type="button"
-                            hx-get="{{ next_url }}"
-                            hx-target="#artifact-registry-provider-health-section"
-                            hx-swap="outerHTML"
-                            hx-disabled-elt="this"
-                            class="{{ pagination_ui.navigation_classes() }}">
-                        Next
-                        <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-                    </button>
-                {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
-                          aria-disabled="true">
-                        Next
-                        <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-                    </span>
-                {% endif %}
+                <input id="artifact-registry-provider-health-scope"
+                       type="hidden"
+                       name="provider_id"
+                       value="{{ overview.selected_provider_id or '' }}" />
+                <input id="artifact-registry-provider-health-page-reset"
+                       type="hidden"
+                       name="provider_health_page"
+                       value="1" />
+                <label for="artifact-registry-provider-health-per-page"
+                       class="text-xs font-semibold text-content-secondary">Rows</label>
+                <select id="artifact-registry-provider-health-per-page"
+                        name="provider_health_per_page"
+                        class="{{ pagination_ui.page_size_classes() }}"
+                        hx-get="{{ url_for('artifact_registry.overview_section', section='provider_health') }}"
+                        hx-target="#artifact-registry-provider-health-section"
+                        hx-swap="outerHTML"
+                        hx-include="#artifact-registry-provider-health-scope, #artifact-registry-provider-health-page-reset"
+                        hx-trigger="change"
+                        hx-disabled-elt="this"
+                        hx-indicator="#artifact-registry-provider-health-loading">
+                    {% for size in pagination.allowed_per_page %}
+                        <option value="{{ size }}"
+                                {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
+                    {% endfor %}
+                </select>
             </div>
-        </footer>
-    {% endif %}
+        </div>
+        <div class="flex items-center gap-2">
+            {% set prev_url = url_for('artifact_registry.overview_section', section='provider_health', provider_id=overview.selected_provider_id or '', provider_health_page=pagination.prev_page, provider_health_per_page=pagination.per_page) %}
+            {% set next_url = url_for('artifact_registry.overview_section', section='provider_health', provider_id=overview.selected_provider_id or '', provider_health_page=pagination.next_page, provider_health_per_page=pagination.per_page) %}
+            {% if pagination.has_prev %}
+                <button type="button"
+                        hx-get="{{ prev_url }}"
+                        hx-target="#artifact-registry-provider-health-section"
+                        hx-swap="outerHTML"
+                        hx-disabled-elt="this"
+                        class="{{ pagination_ui.navigation_classes() }}">
+                    <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                    Previous
+                </button>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                      aria-disabled="true">
+                    <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                    Previous
+                </span>
+            {% endif %}
+            {{ pagination_ui.numeric_pages(pagination.page,
+                        pagination.total_pages,
+                        'provider_health_page',
+                        '#artifact-registry-provider-health-section',
+                        '#artifact-registry-provider-health-loading',
+                        'artifact_registry.overview_section',
+                        {
+                        'section': 'provider_health',
+                        'provider_id': overview.selected_provider_id or '',
+                        'provider_health_per_page': pagination.per_page,
+                        'tab': 'overview'
+                        },
+                        'outerHTML',
+                        'artifact_registry.overview') }}
+            {% if pagination.has_next %}
+                <button type="button"
+                        hx-get="{{ next_url }}"
+                        hx-target="#artifact-registry-provider-health-section"
+                        hx-swap="outerHTML"
+                        hx-disabled-elt="this"
+                        class="{{ pagination_ui.navigation_classes() }}">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                </button>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                      aria-disabled="true">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                </span>
+            {% endif %}
+        </div>
+    </footer>
 {% endcall %}

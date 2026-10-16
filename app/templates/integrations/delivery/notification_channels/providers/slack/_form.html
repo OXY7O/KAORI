@@ -1,0 +1,21 @@
+<div class="grid gap-4 sm:grid-cols-2">
+    <div>
+        <label for="slack-destination" class="{{ table_ui.filter_label_classes() }}">Destination Label</label>
+        <input id="slack-destination"
+               name="slack_destination"
+               value="{{ form_channel.slack_destination if form_channel else '' }}"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="Platform / Alerts">
+        <p class="mt-1 text-xs leading-5 text-content-muted">Reference only; the webhook URL owns the Slack channel binding.</p>
+    </div>
+    <div>
+        <label for="slack-webhook-url" class="{{ table_ui.filter_label_classes() }}">Incoming Webhook URL</label>
+        <input id="slack-webhook-url"
+               name="slack_webhook_url"
+               type="password"
+               autocomplete="new-password"
+               class="{{ table_ui.filter_input_classes() }}"
+               placeholder="{{ 'Leave blank to keep current URL' if form_channel and form_channel.credential_configured else 'https://hooks.slack.com/services/...' }}">
+        <p class="mt-1 text-xs leading-5 text-content-muted">Encrypted secret. Channel-bound official Slack URL; never rendered back.</p>
+    </div>
+</div>

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from math import ceil
 from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 from werkzeug.datastructures import MultiDict
 
+from app.common.registry_runtime_evidence import runtime_correlation_evidence_readiness
+from app.extensions.db import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
 from app.intelligence.finding_presentation import (
     build_affected_assets,
@@ -53,11 +57,11 @@ from app.intelligence.rule_presentation import (
     domain_label,
     matches,
     normalize_rule,
-    provider_keys,
     provider_label,
     to_int,
 )
 from app.intelligence.tenant_governance_recommendations import build_tenant_governance_recommendation_findings
+from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
 
 
 def _is_active_filter_value(value: str | None) -> bool:
@@ -105,7 +109,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         'provider': clean(args.get('provider')),
         'category': clean(args.get('category')),
         'severity': clean(args.get('severity')),
-        'status': clean(args.get('status')),
+        'status': clean(args.get('status')) if page_mode == 'catalog' else '',
         'source_kind': clean(args.get('source_kind')),
         'logic_type': clean(args.get('logic_type')),
         'signal_source': clean(args.get('signal_source')),
@@ -120,8 +124,16 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
     page = max(to_int(args.get('page'), 1), 1)
 
     catalog = decorate_catalog_rules([normalize_rule(rule) for rule in INTELLIGENCE_CATALOG])
+    evaluation_issues: list[str] = []
     source_items = (
-        catalog if page_mode == 'catalog' else decorate_recommendation_findings(get_active_recommendation_findings())
+        catalog
+        if page_mode == 'catalog'
+        else decorate_recommendation_findings(
+            get_active_recommendation_findings(
+                domain=filters['domain'] or None,
+                evidence_issues=evaluation_issues,
+            )
+        )
     )
     filtered = [
         rule
@@ -158,6 +170,8 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         'active_filters': active_filter_count,
         'kubernetes_items': sum(1 for item in filtered if item.get('domain') == 'kubernetes'),
         'object_storage_items': sum(1 for item in filtered if item.get('domain') == 'object_storage'),
+        'registry_items': sum(1 for item in filtered if item.get('domain') == 'registry'),
+        'matched_domains': len({str(item.get('domain')) for item in filtered if item.get('domain')}),
         'critical_items': sum(1 for item in filtered if item.get('severity') == 'critical'),
         'warning_items': sum(1 for item in filtered if item.get('severity') == 'warning'),
     }
@@ -172,6 +186,8 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
 
     return {
         'page_mode': page_mode,
+        'evaluation_issues': evaluation_issues,
+        'matching_findings': filtered if page_mode != 'catalog' else [],
         'active_filter_count': active_filter_count,
         'filters': filters,
         'filter_options': {
@@ -189,6 +205,10 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
                 {'value': 'automatic_eligible', 'label': 'Auto Eligible'},
                 {'value': 'escalated', 'label': 'Alert Open'},
                 {'value': 'resolved', 'label': 'Resolved Alert'},
+                {'value': 'resolved_pending', 'label': 'Resolved · Verify'},
+                {'value': 'source_unknown', 'label': 'Source Unknown'},
+                {'value': 'withdrawn', 'label': 'Alert Withdrawn'},
+                {'value': 'retired', 'label': 'Source Decommissioned'},
                 {'value': 'accepted_risk', 'label': 'Accepted Risk'},
                 {'value': 'recommendation_only', 'label': 'Recommendation Only'},
             ],
@@ -239,7 +259,11 @@ def _finalize_recommendation_findings(findings: list[dict[str, Any]]) -> list[di
     return normalized
 
 
-def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _build_recommendation_findings(
+    catalog: list[dict[str, Any]],
+    *,
+    evidence_issues: list[str] | None = None,
+) -> list[dict[str, Any]]:
     """Evaluate currently available catalog rules into actionable findings.
 
     Catalog remains the rule registry. Recommendations should only show findings
@@ -250,15 +274,31 @@ def _build_recommendation_findings(catalog: list[dict[str, Any]]) -> list[dict[s
     rules = {str(rule.get('rule_key')): rule for rule in catalog}
     findings: list[dict[str, Any]] = []
 
-    findings.extend(_build_namespace_quota_findings(rules))
-    findings.extend(_build_workload_resource_governance_findings(rules))
-    findings.extend(_build_latest_image_findings(rules))
-    findings.extend(build_kubernetes_runtime_recommendation_findings(rules))
-    findings.extend(_build_storage_binding_findings(rules))
-    findings.extend(_build_tls_certificate_findings(rules))
-    findings.extend(build_object_storage_recommendation_findings(rules))
-    findings.extend(build_registry_recommendation_findings(rules))
-    findings.extend(build_tenant_governance_recommendation_findings(rules))
+    def collect(label: str, evaluator: Any) -> None:
+        try:
+            findings.extend(evaluator(rules))
+        except SQLAlchemyError:
+            if evidence_issues is None:
+                raise  # Worker/reconciliation must never treat failed reads as no findings.
+            # A read-only request can recover its database session to project
+            # other committed evidence as partial rather than a false empty state.
+            db.session.rollback()
+            evidence_issues.append(label)
+
+    # Domain selection narrows evaluator execution before loading committed data.
+    if any(key.startswith('kubernetes.') for key in rules):
+        collect('Kubernetes Namespace', _build_namespace_quota_findings)
+        collect('Kubernetes Workload Governance', _build_workload_resource_governance_findings)
+        collect('Kubernetes Image', _build_latest_image_findings)
+        collect('Kubernetes Runtime', build_kubernetes_runtime_recommendation_findings)
+        collect('Kubernetes Storage Binding', _build_storage_binding_findings)
+        collect('Kubernetes TLS', _build_tls_certificate_findings)
+        if any(key.startswith('kubernetes.tenant.') for key in rules):
+            collect('Tenant Governance', build_tenant_governance_recommendation_findings)
+    if any(key.startswith('object_storage.') for key in rules):
+        collect('Object Storage', build_object_storage_recommendation_findings)
+    if any(key.startswith('registry.') for key in rules):
+        collect('Artifact Registry', build_registry_recommendation_findings)
 
     return _finalize_recommendation_findings(findings)
 
@@ -279,6 +319,8 @@ def get_active_recommendation_findings(
     domain: str | None = None,
     asset_key: str | None = None,
     limit: int | None = None,
+    rule_keys: set[str] | None = None,
+    evidence_issues: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Return active catalog-backed findings for reusable product surfaces.
 
@@ -291,8 +333,10 @@ def get_active_recommendation_findings(
     selected_domain = clean(domain)
     if selected_domain:
         catalog = [rule for rule in catalog if clean(str(rule.get('domain'))) == selected_domain]
+    if rule_keys is not None:
+        catalog = [rule for rule in catalog if str(rule.get('rule_key')) in rule_keys]
 
-    findings = _build_recommendation_findings(catalog)
+    findings = _build_recommendation_findings(catalog, evidence_issues=evidence_issues)
 
     selected_asset = clean(asset_key)
     if selected_asset:
@@ -342,16 +386,24 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
         return []
 
     try:
-        from app.models import TLSCertificateInventory
+        from app.models import TLSCertificateCollectionState, TLSCertificateInventory
 
     except ImportError:
         return []
 
     try:
+        cutoff = datetime.now(UTC) - timedelta(hours=24)
         rows = (
-            TLSCertificateInventory.query.filter(
-                TLSCertificateInventory.status.in_(['expired', 'critical', 'warning', 'invalid'])
+            TLSCertificateInventory.query.join(
+                TLSCertificateCollectionState,
+                TLSCertificateCollectionState.cluster_id == TLSCertificateInventory.cluster_id,
             )
+            .filter(
+                TLSCertificateInventory.collected_at >= cutoff,
+                TLSCertificateCollectionState.collected_at >= cutoff,
+                TLSCertificateCollectionState.secret_collection_status == TLS_COLLECTION_COLLECTED,
+            )
+            .filter(TLSCertificateInventory.status.in_(['expired', 'critical', 'warning', 'invalid']))
             .order_by(
                 TLSCertificateInventory.cluster_id.asc(),
                 TLSCertificateInventory.namespace.asc(),
@@ -361,7 +413,7 @@ def _build_tls_certificate_findings(rules: dict[str, dict[str, Any]]) -> list[di
             .all()
         )
     except SQLAlchemyError:
-        return []
+        raise
 
     cluster_names = _cluster_name_map({str(row.cluster_id) for row in rows})
     findings: list[dict[str, Any]] = []
@@ -464,7 +516,7 @@ def _severity_rank(value: str) -> int:
     }.get(value.lower(), 9)
 
 
-def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
+def get_catalog_rule(rule_key: str, *, include_owner_options: bool = False) -> dict[str, Any] | None:
     """Return one normalized catalog definition by its canonical rule key."""
 
     resolved_key = clean(rule_key)
@@ -478,10 +530,18 @@ def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
             raw_exception_policy = rule.get('risk_exception')
             exception_policy = raw_exception_policy if isinstance(raw_exception_policy, dict) else {}
             if bool(exception_policy.get('enabled')):
+                evidence_issues: list[str] = []
+                scoped_findings = get_active_recommendation_findings(
+                    domain=str(rule['domain']),
+                    rule_keys={resolved_key},
+                    evidence_issues=evidence_issues,
+                )
                 exception_view = build_rule_exception_view(
                     resolved_key,
-                    get_active_recommendation_findings(),
+                    scoped_findings,
+                    include_owner_options=include_owner_options and not evidence_issues,
                 )
+                exception_view['evaluation_issues'] = evidence_issues
                 exception_view['policy'] = dict(exception_policy)
                 rule['rule_exceptions'] = exception_view
             else:
@@ -497,7 +557,8 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
     if not resolved_key:
         return None
 
-    for finding in get_active_recommendation_findings():
+    base_key = resolved_key.split(':', 1)[0]
+    for finding in get_active_recommendation_findings(rule_keys={base_key}):
         if clean(str(finding.get('rule_key'))) != resolved_key:
             continue
 
@@ -523,66 +584,84 @@ def _catalog_scope_label(filters: dict[str, str]) -> str:
     return ' · '.join(scope_parts) if scope_parts else 'Multi-Domain'
 
 
-def _apply_catalog_payload(
-    payload: dict[str, Any],
-    catalog: list[dict[str, Any]],
-    *,
-    available: int,
-    reserved: int,
-    imported: int,
-) -> None:
-    catalog_domains = {str(rule.get('domain') or '') for rule in catalog if rule.get('domain')}
-    minio_coverage = sum(1 for rule in catalog if 'minio' in provider_keys(rule))
-    object_storage_rules = sum(1 for rule in catalog if rule.get('domain') == 'object_storage')
+def _apply_catalog_payload(payload: dict[str, Any]) -> None:
+    """Project the *matching* definitions, not global inventory, onto the filtered workspace."""
+    context = payload['result_context']
+    available = int(context['available_items'])
+    reserved = int(context['reserved_items'])
+    imported = int(context['imported_items'])
+    matching = int(context['matching_items'])
+    if not matching:
+        label, tone = 'No Matching Rules', 'unknown'
+    elif available:
+        label, tone = 'Definitions Available', 'normal'
+    elif reserved and not imported:
+        label, tone = 'Reserved Plan', 'unknown'
+    elif imported and not reserved:
+        label, tone = 'Imported Signal', 'info'
+    else:
+        label, tone = 'Catalog Only', 'unknown'
+
+    scope_label = _catalog_scope_label(payload['filters'])
+    if payload['active_filter_count']:
+        scope_label = f'Filtered · {scope_label}'
     payload.update(
         {
             'page_title': 'Rule Catalog',
-            'scope_label': _catalog_scope_label(payload['filters']),
+            'scope_label': scope_label,
             'summary': {
                 'available': available,
                 'reserved': reserved,
                 'imported': imported,
-                'domains': len(catalog_domains),
-                'object_storage': object_storage_rules,
-                'minio': minio_coverage,
+                'domains': int(context['matched_domains']),
+                'matching': matching,
             },
             'posture': {
                 'title': 'Catalog Posture',
-                'label': 'Active Coverage' if available else 'Reserved Plan',
-                'tone': 'normal' if available else 'unknown',
+                'label': label,
+                'tone': tone,
             },
         }
     )
 
 
 def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[str, Any]]) -> None:
-    critical = sum(1 for item in findings if item.get('severity') == 'critical')
-    warning = sum(1 for item in findings if item.get('severity') == 'warning')
+    scoped_findings = payload['matching_findings']
+    critical = sum(1 for item in scoped_findings if item.get('severity') == 'critical')
+    warning = sum(1 for item in scoped_findings if item.get('severity') == 'warning')
     selected_domain = clean(payload['filters'].get('domain'))
-    scope_label = domain_label(selected_domain) if selected_domain else 'Multi-Domain'
-    posture_tone = 'critical' if critical else ('warning' if warning else 'normal')
+    scope_label = _catalog_scope_label(payload['filters'])
+    if payload['active_filter_count'] and not selected_domain:
+        scope_label = f'Filtered · {scope_label}'
+    readiness = payload.get('evidence_readiness') or {}
+    uncertain = readiness.get('status') in {'partial', 'unavailable', 'not_collected'}
+    posture_tone = 'critical' if critical else ('warning' if warning or uncertain else 'info')
     if critical:
         posture_label = 'Critical'
     elif warning:
         posture_label = 'Review'
-    elif findings:
+    elif uncertain:
+        posture_label = 'Evidence Review Required'
+    elif scoped_findings:
         posture_label = 'Active'
     else:
         posture_label = 'No Active Findings'
-    active_domains = {str(item.get('domain') or '') for item in findings if item.get('domain')}
+    active_domains = {str(item.get('domain') or '') for item in scoped_findings if item.get('domain')}
     payload.update(
         {
             'page_title': 'Recommendations',
             'scope_label': scope_label,
             'summary': {
-                'actionable': len(findings),
+                'actionable': len(scoped_findings),
                 'critical': critical,
                 'warning': warning,
                 'domains': len(active_domains),
-                'object_storage': sum(1 for item in findings if item.get('domain') == 'object_storage'),
-                'alert_eligible': sum(1 for item in findings if (item.get('alert_handling') or {}).get('eligible')),
+                'object_storage': sum(1 for item in scoped_findings if item.get('domain') == 'object_storage'),
+                'alert_eligible': sum(
+                    1 for item in scoped_findings if (item.get('alert_handling') or {}).get('eligible')
+                ),
                 'alert_open': sum(
-                    1 for item in findings if (item.get('alert_handling') or {}).get('status') == 'escalated'
+                    1 for item in scoped_findings if (item.get('alert_handling') or {}).get('status') == 'escalated'
                 ),
             },
             'posture': {
@@ -594,19 +673,76 @@ def _apply_recommendation_payload(payload: dict[str, Any], findings: list[dict[s
     )
 
 
+def classify_recommendation_readiness(
+    *,
+    total: int,
+    recent: int,
+    issues: list[str],
+    has_findings: bool,
+) -> str:
+    """Missing observations or evaluator failure never imply a healthy empty set."""
+    if issues:
+        return 'partial' if has_findings else 'unavailable'
+    if total == 0:
+        return 'not_collected'
+    if recent < total:
+        return 'partial'
+    return 'baseline_recent'
+
+
 def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = 'recommendations') -> dict[str, Any]:
     payload = _base_payload(args, page_mode=page_mode)
-    catalog = payload['catalog']
     findings = payload['recommendation_findings'] if page_mode != 'catalog' else []
 
     if page_mode == 'catalog':
-        _apply_catalog_payload(
-            payload,
-            catalog,
-            available=sum(1 for rule in catalog if rule.get('status') == 'available'),
-            reserved=sum(1 for rule in catalog if rule.get('status') == 'reserved'),
-            imported=sum(1 for rule in catalog if rule.get('status') == 'imported_signal'),
-        )
+        _apply_catalog_payload(payload)
     else:
+        # The existing Intelligence Overview provides a conservative committed
+        # 24-hour Inventory baseline, *not* evaluator/scan completeness.
+        # Use the same committed coverage authority as Overview without a reciprocal import.
+        from app.intelligence.committed_inventory_coverage import _evidence_coverage
+
+        inventory = _evidence_coverage()
+        domain = clean(payload['filters'].get('domain'))
+        scopes = (
+            (domain,)
+            if domain in ('kubernetes', 'object_storage', 'registry')
+            else (
+                'kubernetes',
+                'object_storage',
+                'registry',
+            )
+            if not domain
+            else ()
+        )
+        total = sum(inventory[key]['total'] for key in scopes)
+        recent = sum(inventory[key]['recent'] for key in scopes)
+        issues = payload['evaluation_issues']
+        if domain in ('', 'registry'):
+            try:
+                with Session(db.engine) as evidence_session:
+                    runtime_evidence = runtime_correlation_evidence_readiness(evidence_session)
+            except SQLAlchemyError:
+                runtime_evidence = {
+                    'status': 'unavailable',
+                    'title': 'Registry Runtime Evidence Unavailable',
+                    'description': 'The committed correlation readiness check failed; do not infer remediation.',
+                }
+            payload['registry_runtime_evidence'] = runtime_evidence
+            if runtime_evidence['status'] != 'ready':
+                issues.append('Registry Runtime: ' + runtime_evidence['title'])
+        state = classify_recommendation_readiness(
+            total=total,
+            recent=recent,
+            issues=issues,
+            has_findings=bool(findings),
+        )
+        payload['evidence_readiness'] = {
+            'status': state,
+            'total_sources': total,
+            'recent_sources': recent,
+            'issues': issues,
+            'basis': '24-hour committed Inventory baseline; evaluator and scan coverage remain source-qualified',
+        }
         _apply_recommendation_payload(payload, findings)
     return payload

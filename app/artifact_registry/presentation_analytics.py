@@ -1,19 +1,66 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import func
+from werkzeug.exceptions import NotFound
 
+from app.artifact_registry.analytics_job_adapter import (
+    analytics_snapshot_matches_window,
+    build_registry_analytics_readiness,
+    normalize_registry_analytics_window,
+)
 from app.artifact_registry.presentation_common import _fmt_bytes, _providers
 from app.artifact_registry.presentation_overview import build_overview
+from app.common.analytics.params import get_allowed_time_ranges
 from app.common.pagination import paginate_sequence
+from app.common.presentation import present_user_datetime
 from app.models.registry import RegistryAnalyticsSnapshot
+
+_REGISTRY_ANALYTICS_PAGE_DETAILS = {
+    'overview': (
+        'Analytics Overview',
+        'Review Registry growth, security, usage, governance, and alerts.',
+        'layout-dashboard',
+    ),
+    'growth': ('Growth Analytics', 'Review artifact growth, inventory deltas, and storage expansion.', 'trending-up'),
+    'capacity': ('Capacity Analytics', 'Review quotas, headroom, and materialized capacity forecasts.', 'gauge'),
+    'usage': ('Usage Analytics', 'Review pull activity, runtime artifacts, and demand concentration.', 'activity'),
+    'risk': (
+        'Risk Analytics',
+        'Review security findings against Kubernetes runtime exposure.',
+        'shield-alert',
+    ),
+    'governance': ('Governance Analytics', 'Analyze retention, immutability, and replication coverage gaps.', 'scale'),
+    'alerts': (
+        'Alerts & Anomalies',
+        'Review committed Registry alerts and source/fallback evidence.',
+        'triangle-alert',
+    ),
+    'insights': (
+        'Derived Insights',
+        'Review derived analytical signals and Intelligence recommendations.',
+        'sparkles',
+    ),
+}
+
+
+def _registry_analytics_scope(
+    provider_id: int | None,
+    identities: list[Any],
+) -> int | None:
+    if provider_id is None:
+        return None
+    if not any(int(row.id) == provider_id for row in identities):
+        raise NotFound('The selected Registry instance is not active or is unavailable.')
+    return provider_id
 
 
 def build_analytics_shell(
     *,
-    active_tab: str = 'growth',
+    active_tab: str = 'overview',
+    provider_id: int | None = None,
+    snapshot_window: str = '24h',
     alert_search: str = '',
     alert_severity: str = 'all',
     alert_state: str = 'all',
@@ -22,40 +69,26 @@ def build_analytics_shell(
     alert_per_page: int = 5,
 ) -> dict[str, Any]:
     overview = build_overview()
-    normalized_tab = (
-        active_tab
-        if active_tab
-        in {
-            'growth',
-            'capacity',
-            'usage',
-            'risk',
-            'governance',
-            'alerts',
-            'insights',
-        }
-        else 'growth'
-    )
-    provider_count = int(overview['provider_count'])
-    snapshot_count = (
-        RegistryAnalyticsSnapshot.query.with_entities(
-            func.count(func.distinct(RegistryAnalyticsSnapshot.integration_instance_id))
-        )
-        .filter(RegistryAnalyticsSnapshot.status == 'ready')
-        .scalar()
-        or 0
-    )
-    latest_generated_at = (
-        RegistryAnalyticsSnapshot.query.with_entities(func.max(RegistryAnalyticsSnapshot.generated_at))
-        .filter(RegistryAnalyticsSnapshot.status == 'ready')
-        .scalar()
-    )
+    normalized_tab = active_tab if active_tab in _REGISTRY_ANALYTICS_PAGE_DETAILS else 'overview'
+    page_title, page_description, page_icon = _REGISTRY_ANALYTICS_PAGE_DETAILS[normalized_tab]
+    provider_options = _providers()
+    selected_provider_id = _registry_analytics_scope(provider_id, provider_options)
+    selected_window = normalize_registry_analytics_window(snapshot_window)
+    readiness = build_registry_analytics_readiness(provider_id=selected_provider_id, snapshot_window=selected_window)
     return {
         'setup': overview['setup'],
-        'provider_count': provider_count,
-        'snapshot_count': int(snapshot_count),
-        'latest_generated_at': latest_generated_at,
+        'provider_count': readiness['registered_count'],
+        'snapshot_count': readiness['covered_count'],
+        'latest_generated_at': readiness['latest_generated_at'],
+        'provider_options': provider_options,
+        'time_range_options': get_allowed_time_ranges(),
+        'selected_provider_id': selected_provider_id,
+        'snapshot_window': selected_window,
         'active_tab': normalized_tab,
+        'page_title': page_title,
+        'page_description': page_description,
+        'page_icon': page_icon,
+        'data_readiness': readiness,
         'alert_filters': {
             'search': alert_search,
             'severity': alert_severity,
@@ -88,6 +121,8 @@ def _analytics_aggregate() -> dict[str, Any]:
         'governance_projects_assessed': 0,
         'retention_configured': 0,
         'immutability_configured': 0,
+        'retention_not_configured': 0,
+        'immutability_not_configured': 0,
         'metrics_ready': 0,
         'healthy_providers': 0,
         'component_up_providers': 0,
@@ -137,6 +172,8 @@ def _accumulate_domain_counts(aggregate: dict[str, Any], sections: dict[str, dic
         'governance_projects_assessed': (governance, 'projects_assessed'),
         'retention_configured': (governance, 'retention_configured'),
         'immutability_configured': (governance, 'immutability_configured'),
+        'retention_not_configured': (governance, 'retention_not_configured'),
+        'immutability_not_configured': (governance, 'immutability_not_configured'),
     }
     for aggregate_key, (source, source_key) in mappings.items():
         aggregate[aggregate_key] += int(source.get(source_key) or 0)
@@ -225,42 +262,30 @@ def _accumulate_alerts(
 
 
 def _analytics_snapshot_view(identity: Any, snapshot: RegistryAnalyticsSnapshot | None) -> dict[str, Any]:
+    from app.artifact_registry.presentation_common import _analytics_snapshot_view as classify_snapshot
+
+    classification = classify_snapshot(snapshot)
     if snapshot is None or not isinstance(snapshot.payload_json, dict):
+        sections = _analytics_sections({})
         return {
             'identity': identity,
             'snapshot': None,
             'status_label': 'Not Materialized',
             'tone': 'unknown',
-            'inventory': {},
-            'security': {},
-            'runtime': {},
-            'governance': {},
-            'metrics': {},
-            'alerts': {},
-            'growth': {},
+            **sections,
         }
     sections = _analytics_sections(snapshot.payload_json)
-    expires_at = snapshot.expires_at
-    is_stale = False
-    if expires_at is not None:
-        compare_expiry = expires_at if expires_at.tzinfo is not None else expires_at.replace(tzinfo=UTC)
-        is_stale = datetime.now(UTC) > compare_expiry
     return {
         'identity': identity,
         'snapshot': snapshot,
-        'status_label': 'Stale Snapshot' if is_stale else 'Current Snapshot',
-        'tone': 'warning' if is_stale else 'normal',
-        'inventory': sections['inventory'],
-        'security': sections['security'],
-        'runtime': sections['runtime'],
-        'governance': sections['governance'],
-        'metrics': sections['metrics'],
-        'alerts': sections['alerts'],
-        'growth': sections['growth'],
+        'status_label': classification['label'],
+        'tone': classification['tone'],
+        'is_current': classification['is_current'],
+        **sections,
     }
 
 
-def _collect_analytics_rows(identities: list[Any]) -> dict[str, Any]:
+def _collect_analytics_rows(identities: list[Any], *, snapshot_window: str = '24h') -> dict[str, Any]:
     bundle: dict[str, Any] = {
         'aggregate': _analytics_aggregate(),
         'latest_rows': [],
@@ -274,6 +299,7 @@ def _collect_analytics_rows(identities: list[Any]) -> dict[str, Any]:
         snapshot = (
             RegistryAnalyticsSnapshot.query.filter_by(
                 integration_instance_id=identity.id,
+                time_range=normalize_registry_analytics_window(snapshot_window),
                 status='ready',
             )
             .order_by(
@@ -282,10 +308,14 @@ def _collect_analytics_rows(identities: list[Any]) -> dict[str, Any]:
             )
             .first()
         )
+        if snapshot is not None and not analytics_snapshot_matches_window(snapshot, snapshot_window):
+            snapshot = None
         view = _analytics_snapshot_view(identity, snapshot)
         bundle['latest_rows'].append(view)
         if snapshot is None or not isinstance(snapshot.payload_json, dict):
             continue
+        # Stale snapshots remain readable, but their classification is
+        # surfaced in posture and cannot produce a clean Evidence Ready.
         sections = _analytics_sections(snapshot.payload_json)
         _accumulate_domain_counts(bundle['aggregate'], sections)
         _accumulate_metrics(
@@ -388,6 +418,8 @@ def _analytics_signal_summary(
         posture = {'label': 'Materialization Required', 'tone': 'warning'}
     elif aggregate['critical_runtime_artifacts']:
         posture = {'label': 'Critical Runtime Exposure', 'tone': 'critical'}
+    elif any(not row.get('is_current') for row in latest_rows):
+        posture = {'label': 'Snapshot Attention', 'tone': 'warning'}
     elif active_signal_count:
         posture = {'label': 'Review Required', 'tone': 'warning'}
     else:
@@ -399,20 +431,20 @@ def _analytics_growth_summary(
     aggregate: dict[str, Any],
     growth_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    size_per_day = sum(
+    size_values = [
         float(row['size_growth_bytes_per_day'])
         for row in growth_rows
         if isinstance(row.get('size_growth_bytes_per_day'), (int, float))
-    )
-    artifacts_per_day = sum(
+    ]
+    artifact_values = [
         float(row['artifact_growth_per_day'])
         for row in growth_rows
         if isinstance(row.get('artifact_growth_per_day'), (int, float))
-    )
+    ]
     artifact_total = max(int(aggregate['artifacts']), 0)
     return {
-        'size_per_day': size_per_day,
-        'artifacts_per_day': artifacts_per_day,
+        'size_per_day': sum(size_values) if size_values else None,
+        'artifacts_per_day': sum(artifact_values) if artifact_values else None,
         'runtime_usage_percent': (
             float(aggregate['running_artifacts']) / artifact_total * 100.0 if artifact_total else None
         ),
@@ -450,8 +482,10 @@ def _analytics_capacity_outlook(
     return {
         'nearest_quota_days': nearest_quota_days,
         'highest_utilization': highest_utilization,
-        'growth_bytes_per_day': growth['size_per_day'] if growth_rows else None,
-        'growth_display': (f'{_fmt_bytes(round(growth["size_per_day"]))}/day' if growth_rows else 'N/A'),
+        'growth_bytes_per_day': growth['size_per_day'],
+        'growth_display': (
+            f'{_fmt_bytes(round(growth["size_per_day"]))}/day' if growth['size_per_day'] is not None else 'N/A'
+        ),
         'quota_headroom_bytes': quota_headroom,
         'quota_headroom_display': _fmt_bytes(round(quota_headroom)) if quota_headroom is not None else 'N/A',
     }
@@ -471,17 +505,17 @@ def _analytics_summary_cards(
             'value': _fmt_bytes(int(aggregate['total_size_bytes'])),
             'detail': (
                 f'{_fmt_bytes(round(growth["size_per_day"]))}/day materialized growth'
-                if growth_rows
-                else 'Growth requires another analytics materialization'
+                if growth['size_per_day'] is not None
+                else 'Historical storage-growth evidence is unavailable'
             ),
             'tone': 'brand',
         },
         {
             'icon': 'chart-no-axes-combined',
             'label': 'Artifact Growth',
-            'value': f'{growth["artifacts_per_day"]:+.1f}/day' if growth_rows else 'N/A',
+            'value': f'{growth["artifacts_per_day"]:+.1f}/day' if growth['artifacts_per_day'] is not None else 'N/A',
             'detail': f'{aggregate["artifacts"]} committed artifacts',
-            'tone': 'info' if growth_rows else 'unknown',
+            'tone': 'info' if growth['artifacts_per_day'] is not None else 'unknown',
         },
         {
             'icon': 'boxes',
@@ -513,13 +547,13 @@ def _analytics_insights(
     insights: list[dict[str, str]] = []
     candidates = (
         (
-            bool(growth_rows),
+            growth['artifacts_per_day'] is not None and growth['size_per_day'] is not None,
             {
                 'icon': 'trending-up',
                 'title': 'Registry growth is materialized',
                 'detail': (
-                    f'{growth["artifacts_per_day"]:+.1f} artifacts/day and '
-                    f'{_fmt_bytes(round(growth["size_per_day"]))}/day across current providers.'
+                    f'{float(growth["artifacts_per_day"] or 0):+.1f} artifacts/day and '
+                    f'{_fmt_bytes(round(float(growth["size_per_day"] or 0)))}/day across current providers.'
                 ),
                 'tone': 'info',
             },
@@ -632,7 +666,24 @@ def _analytics_alert_page(
             ).casefold()
             if search_value not in haystack:
                 continue
-        filtered_rows.append({**row, 'effective_state': effective_state})
+        raw_start = row.get('starts_at')
+        try:
+            started = (
+                datetime.fromisoformat(raw_start.replace('Z', '+00:00'))
+                if isinstance(raw_start, str)
+                else raw_start
+                if isinstance(raw_start, datetime)
+                else None
+            )
+        except ValueError:
+            started = None
+        filtered_rows.append(
+            {
+                **row,
+                'effective_state': effective_state,
+                'starts_at_display': present_user_datetime(started, empty='Not Observed'),
+            }
+        )
     page_rows, pagination = paginate_sequence(
         filtered_rows,
         page=page,
@@ -653,6 +704,8 @@ def _analytics_alert_page(
 def build_analytics(
     *,
     active_tab: str = 'growth',
+    provider_id: int | None = None,
+    snapshot_window: str = '24h',
     alert_search: str = '',
     alert_severity: str = 'all',
     alert_state: str = 'all',
@@ -662,7 +715,11 @@ def build_analytics(
 ) -> dict[str, Any]:
     overview = build_overview()
     identities = _providers()
-    bundle = _collect_analytics_rows(identities)
+    selected_provider_id = _registry_analytics_scope(provider_id, identities)
+    selected_window = normalize_registry_analytics_window(snapshot_window)
+    if selected_provider_id is not None:
+        identities = [row for row in identities if row.id == selected_provider_id]
+    bundle = _collect_analytics_rows(identities, snapshot_window=selected_window)
     aggregate = bundle['aggregate']
     growth_rows = bundle['growth_rows']
     forecast_rows = bundle['forecast_rows']
@@ -692,6 +749,8 @@ def build_analytics(
         'setup': overview['setup'],
         'provider_count': len(identities),
         'snapshot_count': sum(bool(row.get('snapshot')) for row in bundle['latest_rows']),
+        'selected_provider_id': selected_provider_id,
+        'snapshot_window': selected_window,
         'aggregate': aggregate,
         'latest_rows': bundle['latest_rows'],
         'active_tab': normalized_tab,

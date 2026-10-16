@@ -47,8 +47,8 @@ def test_permission_catalog_exposes_delegation_impact_and_transitive_dependencie
         assert 'Access Administration' in template
         assert 'Standard Capability' in template
     assert 'Effective Requirements' in detail
-    assert 'Active Users' in detail
-    assert 'JIT Paths' in detail
+    assert "'Active Usage', 'In Use' if permission.active_user_count else 'No Effective Users'" in detail
+    assert "'JIT Projection', 'Configured' if permission.jit_provider_count else 'Not Configured'" in detail
     assert 'Local Database Super Admin' in detail
 
 

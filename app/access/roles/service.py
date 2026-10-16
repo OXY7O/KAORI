@@ -7,6 +7,7 @@ from app.access.rbac.policy import (
     is_local_break_glass,
     permission_keys_are_delegable_by_actor,
     role_is_delegable_by_actor,
+    role_is_manageable_by_actor,
     role_is_mutation_protected,
     role_slug_is_reserved,
 )
@@ -129,6 +130,15 @@ def ensure_role_within_delegation_boundary(*, actor: User, role: Role) -> None:
     )
 
 
+def ensure_role_within_management_boundary(*, actor: User, role: Role) -> None:
+    if role_is_manageable_by_actor(actor, role):
+        return
+    raise RoleDelegationError(
+        'This role is outside your management boundary. Access-administration roles require a Local Database '
+        'Super Admin; other roles require an equal or narrower effective permission ceiling.'
+    )
+
+
 def validate_custom_role_slug(slug: str, *, exclude_role_id: int | None = None) -> None:
     if len(slug) < 2:
         raise RoleInputError('Role slug must contain at least two letters or numbers.')
@@ -197,7 +207,7 @@ def update_custom_role(
 ) -> set[int]:
     if role_is_mutation_protected(role):
         raise RoleInputError('Source-controlled or system-owned roles cannot be edited from the Access workspace.')
-    ensure_role_within_delegation_boundary(actor=actor, role=role)
+    ensure_role_within_management_boundary(actor=actor, role=role)
 
     slug = normalize_role_slug(name)
     validate_custom_role_slug(slug, exclude_role_id=role.id)

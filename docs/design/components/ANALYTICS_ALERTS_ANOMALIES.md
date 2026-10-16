@@ -139,3 +139,45 @@ The legacy `/analytics/alerts-anomalies` route is not part of the canonical cont
 - No six-column Cluster Signal Overview metric wall. Use Signal Posture + Alert Severity Profile + Investigation Focus + Operator Decision/Evidence Boundary.
 - No six-column Incident Readiness metric wall. Use Readiness Posture + Response Control Readiness + Signal Pressure + Incident Decision/Escalation Gate.
 - No alert/anomaly modal that merely moves the inline detail block into an oversized dialog; modal information architecture must be purpose-built for triage.
+
+
+## Incident Readiness Developer Review Composition (#1029, October 2026)
+
+The Incident Readiness tab is an operational decision surface composed with the
+existing Analytics shell and role-aware evidence/interpretation primitives. It is
+not a new scoring engine or a new dashboard design-system variant.
+
+The approved review target replaces the previous sparse two-column score/check
+layout with:
+
+1. **Readiness Posture:** the existing readiness score in a neutral Violet progress
+   ring, source and ownership factual score bars, routing state, and a compact
+   five-factor **Control Evidence Snapshot**. These factors are visual summaries
+   of committed fields and **do not** imply percentage weights.
+2. **Signal Pressure:** three compact, semantically labeled tiles for critical,
+   warning, and anomaly signals. No invented timeframe selector is displayed.
+3. **Readiness Checks:** the existing eight status/description records in a
+   bounded, responsive table. Warning and failure states remain visually
+   distinguishable. Missing checks use the shared empty state.
+4. **Incident Decision / Escalation Gate:** the provider-normalized recommended
+   action, distinct silence and inhibition risks, three derived control counts,
+   and a dynamic attention list of existing failed/watch checks. If checks are
+   missing, N/A/Unknown replaces apparent healthy zero values.
+
+A readiness score **>=80** may correspond to *Incident Ready* while an individual
+control (for example Ownership Readiness) still fails. Decision wording therefore
+must distinguish **current signal escalation posture** from **handoff readiness**:
+no current escalation recommendation does not erase a failed control. Do not add
+an invented "all controls healthy" message.
+
+The progress ring and source/ownership bars use neutral/Violet geometry; only
+the canonical semantic status labels and role icons convey Warning/Critical.
+The displayed ring value, control statuses, risk counts, and recommended action
+come strictly from `incident_readiness` committed evidence. There are no new
+provider calls, hard-coded example measurements, refresh-time claims, fictitious
+factor weights, or dashboard-local JavaScript controllers. Alerts source, routing,
+silence, inhibition, and ownership contracts remain authoritative.
+
+Review branch: `kaori/review/staging-uat`. UI targeted validation and
+responsive/light/dark visual acceptance remain part of Developer Check; CI/CD,
+staging UAT, promotion, and deployment are explicitly on hold.

@@ -90,6 +90,10 @@ A definition may require an additional domain permission. Inventory Sync require
 
 Celery Beat runs `app.platform_operations.jobs.tasks.dispatch_scheduled_jobs` every minute on the maintenance queue. The task claims due `job_policies` rows with `FOR UPDATE SKIP LOCKED`, advances the next due time, and dispatches through the registry. Policy changes do not require a Beat restart.
 
+A pre-dispatch failure marks the claimed policy failed and makes it eligible for a **bounded five-minute retry**, but only if no concurrent policy edit replaced the original claim. This does not bypass the canonical active-job deduplication guard or the definition's source-owned freshness contract. When the job has already been dispatched, the automatic queued AuditEvent and JobPolicy outcome are persisted in one transaction. If evidence persistence fails, Jobs records a best-effort `evidence_failed`/ **Dispatch Evidence Incomplete** attention state without automatically dispatching a duplicate; operators should review the committed JobExecution before further action.
+
+Cancellation and recovery use the same committed job state. If Celery cannot accept a revoke, KAORI retains a pending cancellation and its deduplication slot; reconciliation continues with other jobs and retries the pending cancellation later. A late worker progress callback cannot mutate terminal or cancel-requested JobExecution evidence.
+
 ## Analytics Definitions
 
 The registry includes `analytics.materialize`, `analytics.forecast.materialize`, `object_storage.analytics.materialize`, and `object_storage.forecast.materialize`. These definitions use database-backed `JobPolicy`, canonical `JobExecution`, worker-specific queues, shared deduplication, and Activity Audit records for automatic runs. Kubernetes and Object Storage operational analytics use the `analytics-batch` queue, while both forecast definitions use the dedicated `forecasting` queue and retain separate domain artifacts and eligibility contracts. Scheduled jobs have no user subscriber and therefore do not produce notification-center items or toasts.
@@ -127,6 +131,7 @@ Jobs & Executions is intentionally server-backed and demand-loaded. The page mus
 
 - The parent **Executions** and **Job Configuration** workspaces use server-owned navigation; only the selected workspace is built on a request.
 - Execution **Active Work**, **Registry**, and **Queues** are demand-loaded. Registry pagination never triggers Celery topology inspection, and queue inspection runs only when the Queues view is opened.
+- **Queues** lists registered JobDefinition queue names together with committed JobExecution queue history. A registered queue appears even before its first job so unavailable/unverified workers are visible; zero history does not prove a healthy worker. Live topology is inspected only on the Queues view.
 - Global execution counters come from one conditional aggregate query. Queue activity comes from one grouped aggregate query plus one short-lived shared Celery topology snapshot.
 - Active Work polls every 15 seconds and carries the overview counters in the same response. Registry and Queues use one compact overview heartbeat every 30 seconds.
 - Job Configuration has no idle polling; active execution status refreshes every 10 seconds.

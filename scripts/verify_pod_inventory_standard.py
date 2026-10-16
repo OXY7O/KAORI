@@ -153,6 +153,41 @@ def main() -> int:
         'Pod table must expose six scoped columns.',
         errors,
     )
+    pod_column_widths = {
+        'Pod': 24,
+        'Scope': 21,
+        'Runtime State': 13,
+        'Placement': 19,
+        'Owner & Restarts': 13,
+        'Details': 10,
+    }
+    require(
+        sum(pod_column_widths.values()) == 100
+        and all(
+            f'w-[{width}%]' in table_content.split(f'>{heading}</th>', 1)[0].rsplit('<th', 1)[-1]
+            for heading, width in pod_column_widths.items()
+        ),
+        'Pod column widths must prioritize identity, scope, and placement while keeping compact signals and actions.',
+        errors,
+    )
+    require(
+        '>Owner & Restarts</th>' in table_content
+        and 'table_label.metadata_label(pod.owner_kind_label)' in table_content
+        and 'pod.restart_summary' in table_content
+        and 'pod.owner_name_display' not in table_content
+        and 'pod.owner_display' not in table_content
+        and "table_ui.table_classes('min-w-[72rem] !table-fixed')" in table_content,
+        'Pod owner and restart table must remain two-level and omit long owner names.',
+        errors,
+    )
+    require(
+        "'owner_kind_label': owner_kind_label" in backend
+        and "'owner_name_display': owner_name_display" in backend
+        and "'restart_summary':" in backend
+        and "'kubernetes.io/config.mirror'" in backend,
+        'Pod owner kind and static-Pod classification must use committed evidence.',
+        errors,
+    )
     require(
         'inventory.total_pods == 0' in summary,
         'Empty Pod posture must use Unknown rather than healthy tones.',

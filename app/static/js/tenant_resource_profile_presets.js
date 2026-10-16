@@ -254,27 +254,249 @@
 
         const profiles = readJson('tenant-namespace-allocation-profiles')
         const namespaces = readJson('tenant-namespace-allocation-state')
+        const advancedPreflight = readJson('tenant-namespace-allocation-advanced-preflight')
         const namespaceSelect = form.querySelector('[data-tenant-allocation-change-namespace]')
         const profileSelect = form.querySelector('[data-tenant-allocation-change-profile]')
 
-        const currentProfile = form.querySelector('[data-tenant-allocation-current-profile]')
-        const currentCpu = form.querySelector('[data-tenant-allocation-current-cpu]')
-        const currentMemory = form.querySelector('[data-tenant-allocation-current-memory]')
-        const currentPods = form.querySelector('[data-tenant-allocation-current-pods]')
-        const currentStorage = form.querySelector('[data-tenant-allocation-current-storage]')
-        const currentPvcMin = form.querySelector('[data-tenant-allocation-current-pvc-min]')
-        const currentPvcMax = form.querySelector('[data-tenant-allocation-current-pvc-max]')
-        const proposedProfile = form.querySelector('[data-tenant-allocation-proposed-profile]')
-        const proposedCpu = form.querySelector('[data-tenant-allocation-proposed-cpu]')
-        const proposedMemory = form.querySelector('[data-tenant-allocation-proposed-memory]')
-        const proposedPods = form.querySelector('[data-tenant-allocation-proposed-pods]')
-        const proposedStorage = form.querySelector('[data-tenant-allocation-proposed-storage]')
-        const proposedPvcMin = form.querySelector('[data-tenant-allocation-proposed-pvc-min]')
-        const proposedPvcMax = form.querySelector('[data-tenant-allocation-proposed-pvc-max]')
+        const currentProfile = form.querySelector('[data-tenant-allocation-profile="current"]')
+        const proposedProfile = form.querySelector('[data-tenant-allocation-profile="proposed"]')
+        const detailTabs = Array.from(form.querySelectorAll('[data-tenant-allocation-detail-tab]'))
+        const detailPanels = Array.from(form.querySelectorAll('[data-tenant-allocation-detail-panel]'))
 
-        const requestValue = (valueSet, resource) => valueSet?.quota?.[`requests.${resource}`] || 'Unbounded'
-        const quotaValue = (valueSet, field) => valueSet?.quota?.[field] || 'Unbounded'
-        const storageValue = (valueSet, field) => valueSet?.storage_policy?.[field] || 'Unbounded'
+        const selectDetail = (name, focus = false) => {
+            detailTabs.forEach((button) => {
+                const selected = button.dataset.tenantAllocationDetailTab === name
+                button.setAttribute('aria-selected', String(selected))
+                button.tabIndex = selected ? 0 : -1
+                button.classList.toggle('border-kaori-primary', selected)
+                button.classList.toggle('bg-kaori-soft', selected)
+                button.classList.toggle('text-kaori-primary', selected)
+                button.classList.toggle('border-transparent', !selected)
+                button.classList.toggle('text-content-muted', !selected)
+                if (selected && focus) button.focus()
+            })
+            detailPanels.forEach((panel) => {
+                panel.hidden = panel.dataset.tenantAllocationDetailPanel !== name
+            })
+        }
+        detailTabs.forEach((button, index) => {
+            button.addEventListener('click', () => selectDetail(button.dataset.tenantAllocationDetailTab))
+            button.addEventListener('keydown', (event) => {
+                const move = ['ArrowRight', 'ArrowDown'].includes(event.key)
+                    ? 1
+                    : ['ArrowLeft', 'ArrowUp'].includes(event.key)
+                      ? -1
+                      : 0
+                if (!move && event.key !== 'Home' && event.key !== 'End') return
+                event.preventDefault()
+                const next =
+                    event.key === 'Home'
+                        ? 0
+                        : event.key === 'End'
+                          ? detailTabs.length - 1
+                          : (index + move + detailTabs.length) % detailTabs.length
+                selectDetail(detailTabs[next].dataset.tenantAllocationDetailTab, true)
+            })
+        })
+        selectDetail('objects')
+
+        const contractValue = (contract, source, key) => {
+            if (!contract) return null
+            if (source === 'limits') {
+                return key.split('.').reduce((value, part) => value?.[part], contract.limits) ?? null
+            }
+            return contract[source]?.[key] ?? null
+        }
+
+        const displayValue = (source, key, value) => {
+            if (value === null || value === undefined || value === '') {
+                const boundedQuotaKeys = [
+                    'requests.cpu',
+                    'limits.cpu',
+                    'requests.memory',
+                    'limits.memory',
+                    'pods',
+                    'requests.storage',
+                ]
+                return source === 'storage_policy' || (source === 'quota' && boundedQuotaKeys.includes(key))
+                    ? 'Unbounded'
+                    : 'Not declared'
+            }
+            return String(value)
+        }
+
+        const renderAdvancedComparison = (current, profile, namespaceId, profileId) => {
+            const recorded = current?.advanced_evidence
+            const recordedControls = recorded?.recorded ? recorded.controls || {} : {}
+            const proposedControls =
+                profileId === 'adopted_baseline' ? recordedControls : profile?.advanced_controls || {}
+            const evaluated = advancedPreflight[namespaceId]?.[profileId] || {}
+            let visible = 0
+
+            form.querySelectorAll('[data-tenant-allocation-advanced-row]').forEach((row) => {
+                const key = row.dataset.tenantAllocationAdvancedRow
+                const currentControl = recordedControls[key]
+                const proposedControl = evaluated[key]
+                const requested = proposedControl?.requested || proposedControls[key]?.enabled === true
+                const show = currentControl?.requested || requested
+                row.hidden = !show
+                if (!show) return
+                visible += 1
+                const currentCell = row.querySelector('[data-tenant-allocation-advanced-current]')
+                const proposedCell = row.querySelector('[data-tenant-allocation-advanced-proposed]')
+                const currentStatus = !recorded?.recorded
+                    ? 'Not recorded'
+                    : !currentControl?.requested
+                      ? 'Not configured'
+                      : currentControl.state === 'enabled'
+                        ? 'Supported · Recorded'
+                        : currentControl.state === 'unsupported'
+                          ? 'Unavailable · Recorded'
+                          : 'Configured · Recorded'
+                const proposedStatus =
+                    profileId === 'adopted_baseline'
+                        ? 'Same as current · Not verified'
+                        : !requested
+                          ? 'Not configured'
+                          : proposedControl?.state === 'enabled'
+                            ? 'Supported · Preflight'
+                            : proposedControl?.state === 'unsupported'
+                              ? 'Unavailable · Preflight'
+                              : 'Configured · Preflight pending'
+                if (currentCell) {
+                    currentCell.textContent = currentStatus
+                    currentCell.title = currentControl?.reason || 'No verified provider execution evidence.'
+                }
+                if (proposedCell) {
+                    proposedCell.textContent = proposedStatus
+                    proposedCell.title = proposedControl?.reason || 'Provider execution not verified.'
+                }
+            })
+            const empty = form.querySelector('[data-tenant-allocation-advanced-empty]')
+            const list = form.querySelector('[data-tenant-allocation-advanced-list]')
+            if (empty) empty.hidden = visible > 0
+            if (list) list.hidden = visible === 0
+        }
+
+        // Classify only parseable Kubernetes quantities. Missing or unknown
+        // quantities must not masquerade as capacity gains or approvals.
+        const parsedQuantity = (raw) => {
+            const match = /^(\d+(?:\.\d+)?)(m|Ki|Mi|Gi|Ti|Pi|Ei|k|K|M|G|T|P|E)?$/.exec(String(raw).trim())
+            if (!match) return null
+            const multipliers = {
+                m: 0.001,
+                k: 1e3,
+                K: 1e3,
+                M: 1e6,
+                G: 1e9,
+                T: 1e12,
+                P: 1e15,
+                E: 1e18,
+                Ki: 2 ** 10,
+                Mi: 2 ** 20,
+                Gi: 2 ** 30,
+                Ti: 2 ** 40,
+                Pi: 2 ** 50,
+                Ei: 2 ** 60,
+            }
+            const value = Number(match[1]) * (multipliers[match[2]] ?? 1)
+            return Number.isFinite(value) ? value : null
+        }
+
+        const classifyChange = (before, after) => {
+            const prior = before == null || before === '' ? null : String(before)
+            const next = after == null || after === '' ? null : String(after)
+            if (prior == null && next == null) return null
+            if (prior == null) return 'Now defined'
+            if (next == null) return 'No longer defined'
+            const left = parsedQuantity(prior)
+            const right = parsedQuantity(next)
+            if (left != null && right != null) {
+                if (left === right) return null
+                return right > left ? 'Increased' : 'Reduced'
+            }
+            return prior === next ? null : 'Changed'
+        }
+
+        const highlightDimensions = [
+            ['CPU Limits', 'quota', 'limits.cpu'],
+            ['Memory Limits', 'quota', 'limits.memory'],
+            ['Total Storage', 'quota', 'requests.storage'],
+            ['CPU Requests', 'quota', 'requests.cpu'],
+            ['Memory Requests', 'quota', 'requests.memory'],
+            ['Pods', 'quota', 'pods'],
+            ['Min PVC Size', 'storage_policy', 'min'],
+            ['Max PVC Size', 'storage_policy', 'max'],
+            ['PVCs', 'quota', 'persistentvolumeclaims'],
+            ['Services', 'quota', 'services'],
+            ['ConfigMaps', 'quota', 'configmaps'],
+            ['Secrets', 'quota', 'secrets'],
+            ['Default CPU Request', 'limits', 'default_request.cpu'],
+            ['Default CPU Limit', 'limits', 'default.cpu'],
+            ['Default Memory Request', 'limits', 'default_request.memory'],
+            ['Default Memory Limit', 'limits', 'default.memory'],
+        ]
+
+        const renderContractPreview = (current, proposed) => {
+            form.querySelectorAll('[data-tenant-allocation-metric-side]').forEach((cell) => {
+                const selected = cell.dataset.tenantAllocationMetricSide === 'current' ? current : proposed
+                const source = cell.dataset.tenantAllocationMetricSource
+                const key = cell.dataset.tenantAllocationMetricKey
+                cell.textContent = selected ? displayValue(source, key, contractValue(selected, source, key)) : '—'
+            })
+            form.querySelectorAll('[data-tenant-allocation-tech-current]').forEach((cell) => {
+                const [source, ...parts] = cell.dataset.tenantAllocationTechCurrent.split('.')
+                const key = parts.join('.')
+                cell.textContent = current ? displayValue(source, key, contractValue(current, source, key)) : '—'
+            })
+            form.querySelectorAll('[data-tenant-allocation-tech-proposed]').forEach((cell) => {
+                const [source, ...parts] = cell.dataset.tenantAllocationTechProposed.split('.')
+                const key = parts.join('.')
+                const beforeValue = contractValue(current, source, key)
+                const afterValue = contractValue(proposed, source, key)
+                const differs = !!current && !!proposed && classifyChange(beforeValue, afterValue) !== null
+                cell.textContent = proposed ? displayValue(source, key, afterValue) : '—'
+                cell.classList.toggle('text-kaori-primary', differs)
+                cell.classList.toggle('text-content-primary', !differs)
+            })
+
+            const changed =
+                current && proposed
+                    ? highlightDimensions.flatMap(([label, source, key]) => {
+                          const before = contractValue(current, source, key)
+                          const after = contractValue(proposed, source, key)
+                          return classifyChange(before, after) ? [{ label, source, key, before, after }] : []
+                      })
+                    : []
+
+            const count = form.querySelector('[data-tenant-allocation-highlight-count]')
+            if (count)
+                count.textContent =
+                    !current || !proposed
+                        ? 'Choose contracts'
+                        : changed.length === 0
+                          ? 'No changes'
+                          : `${changed.length} changes`
+
+            const rows = Array.from(form.querySelectorAll('[data-tenant-allocation-highlight-item]'))
+            rows.forEach((row, index) => {
+                const diff = changed[index]
+                row.hidden = !diff
+                if (!diff) return
+                const label = row.querySelector('[data-tenant-allocation-highlight-label]')
+                const from = row.querySelector('[data-tenant-allocation-highlight-from]')
+                const to = row.querySelector('[data-tenant-allocation-highlight-to]')
+                if (label) label.textContent = diff.label
+                if (from) from.textContent = displayValue(diff.source, diff.key, diff.before)
+                if (to) to.textContent = displayValue(diff.source, diff.key, diff.after)
+            })
+            const more = form.querySelector('[data-tenant-allocation-highlight-more]')
+            if (more) {
+                const extra = Math.max(0, changed.length - rows.length)
+                more.hidden = extra === 0
+                more.textContent = extra ? `+ ${extra} additional changes in the selected contract` : ''
+            }
+        }
 
         const renderAllocationChange = ({ preferCurrentProfile = false } = {}) => {
             const current = namespaces[namespaceSelect?.value] || null
@@ -296,24 +518,47 @@
                     ? `${current.profile_name} · v${current.profile_version || '—'}`
                     : '—'
             }
-            if (currentCpu) currentCpu.textContent = current ? requestValue(current, 'cpu') : '—'
-            if (currentMemory) currentMemory.textContent = current ? requestValue(current, 'memory') : '—'
-            if (currentPods) currentPods.textContent = current ? quotaValue(current, 'pods') : '—'
-            if (currentStorage) currentStorage.textContent = current ? requestValue(current, 'storage') : '—'
-            if (currentPvcMin) currentPvcMin.textContent = current ? storageValue(current, 'min') : '—'
-            if (currentPvcMax) currentPvcMax.textContent = current ? storageValue(current, 'max') : '—'
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
-            if (proposedCpu) proposedCpu.textContent = proposed ? requestValue(proposed, 'cpu') : '—'
-            if (proposedMemory) proposedMemory.textContent = proposed ? requestValue(proposed, 'memory') : '—'
-            if (proposedPods) proposedPods.textContent = proposed ? quotaValue(proposed, 'pods') : '—'
-            if (proposedStorage) proposedStorage.textContent = proposed ? requestValue(proposed, 'storage') : '—'
-            if (proposedPvcMin) proposedPvcMin.textContent = proposed ? storageValue(proposed, 'min') : '—'
-            if (proposedPvcMax) proposedPvcMax.textContent = proposed ? storageValue(proposed, 'max') : '—'
+            renderContractPreview(current, proposed)
+            renderAdvancedComparison(current, proposed, namespaceSelect?.value, profileSelect?.value)
         }
 
         namespaceSelect?.addEventListener('change', () => renderAllocationChange({ preferCurrentProfile: true }))
         profileSelect?.addEventListener('change', () => renderAllocationChange())
         renderAllocationChange({ preferCurrentProfile: true })
+    }
+
+    // Present Capsule authoritative quota evidence; do not infer eligibility,
+    // capacity approval or Native ResourceQuota ownership from this diff.
+    const renderCapsuleQuotaPreview = (form, current, proposed) => {
+        const dimensions = [
+            'requests.cpu',
+            'limits.cpu',
+            'requests.memory',
+            'limits.memory',
+            'pods',
+            'requests.storage',
+        ]
+        const value = (quota, key) => quota?.[key] ?? null
+        const formatted = (quota, key) => {
+            if (!quota) return 'Unbounded'
+            const raw = value(quota, key)
+            return raw === null || raw === '' ? 'Unbounded' : String(raw)
+        }
+        form.querySelectorAll('[data-tenant-quota-metric-side]').forEach((cell) => {
+            const source = cell.dataset.tenantQuotaMetricSide === 'current' ? current : proposed
+            const present = cell.dataset.tenantQuotaMetricSide === 'current' ? current !== null : proposed !== null
+            cell.textContent = present ? formatted(source, cell.dataset.tenantQuotaMetricKey) : '—'
+        })
+        const summary = form.querySelector('[data-tenant-quota-change-summary]')
+        if (!summary) return
+        if (current === null || proposed === null) {
+            summary.textContent = 'Choose contracts'
+            return
+        }
+        const changed = dimensions.filter((key) => formatted(current, key) !== formatted(proposed, key)).length
+        summary.textContent =
+            changed === 0 ? 'No quota differences' : `${changed} of 6 quota dimensions differ · Read only`
     }
 
     const initSharedAllocationForm = (form) => {
@@ -350,6 +595,11 @@
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
             if (proposedCpu) proposedCpu.textContent = proposed ? requestValue(proposed.quota, 'cpu') : '—'
             if (proposedMemory) proposedMemory.textContent = proposed ? requestValue(proposed.quota, 'memory') : '—'
+            renderCapsuleQuotaPreview(
+                form,
+                current ? current.current_quota || {} : null,
+                proposed ? proposed.quota || {} : null
+            )
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -402,6 +652,11 @@
             }
             if (proposedProfile) proposedProfile.textContent = proposed ? proposedLabel : '—'
             if (proposedSummary) proposedSummary.textContent = proposed ? quotaSummary(proposed.quota) : '—'
+            renderCapsuleQuotaPreview(
+                form,
+                current ? current.current_quota || {} : null,
+                proposed ? proposed.quota || {} : null
+            )
         }
 
         tenantSelect?.addEventListener('change', render)
@@ -419,6 +674,7 @@
         const profileSelect = form.querySelector('[data-tenant-quota-managed-profile]')
         const current = form.querySelector('[data-tenant-quota-managed-current]')
         const summary = form.querySelector('[data-tenant-quota-managed-summary]')
+        const proposedSummary = form.querySelector('[data-tenant-quota-managed-proposed-summary]')
 
         const render = () => {
             const state = governance[tenantSelect?.value] || null
@@ -429,13 +685,15 @@
                     ? `${state.scope || 'Tenant'} · ${state.provenance || 'kaori_managed'}`
                     : '—'
             }
-            if (summary) {
-                const currentSummary = state ? quotaSummary(state.desired_quota) : '—'
-                const nextSummary = proposed ? quotaSummary(proposed.quota) : '—'
-                summary.textContent = proposed
-                    ? `Current: ${currentSummary} → Proposed: ${proposedLabel} · ${nextSummary}`
-                    : `Current: ${currentSummary}`
-            }
+            const nextProfile = form.querySelector('[data-tenant-quota-managed-proposed-profile]')
+            if (nextProfile) nextProfile.textContent = proposed ? proposedLabel : '—'
+            if (summary) summary.textContent = state ? quotaSummary(state.desired_quota) : '—'
+            if (proposedSummary) proposedSummary.textContent = proposed ? quotaSummary(proposed.quota) : '—'
+            renderCapsuleQuotaPreview(
+                form,
+                state ? state.desired_quota || {} : null,
+                proposed ? proposed.quota || {} : null
+            )
         }
 
         tenantSelect?.addEventListener('change', render)

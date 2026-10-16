@@ -11,6 +11,7 @@ from app.common.pagination import paginate_query
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.models.job import JobExecution
+from app.platform_operations.jobs.registry import list_job_definitions
 from app.platform_operations.jobs.service import job_can_cancel
 
 ALLOWED_PER_PAGE = (5, 10, 25, 50)
@@ -164,13 +165,18 @@ def _queue_activity(cutoff: datetime) -> list[dict[str, Any]]:
         .order_by(JobExecution.queue_name.asc())
         .all()
     )
-    topology = inspect_celery_topology() if aggregates else None
+    # Include registered queues before their first execution so readiness can
+    # reveal missing workers even when canonical JobExecution history is empty.
+    aggregates_by_queue = {str(item.queue_name): item for item in aggregates}
+    queue_names = set(aggregates_by_queue)
+    queue_names.update(definition.queue_name for definition in list_job_definitions())
+    topology = inspect_celery_topology() if queue_names else None
     rows: list[dict[str, Any]] = []
-    for aggregate in aggregates:
-        queue_name = str(aggregate.queue_name)
-        active = int(aggregate.active or 0)
-        active_attention = int(aggregate.active_attention or 0)
-        recent_attention = int(aggregate.recent_attention_24h or 0)
+    for queue_name in sorted(queue_names):
+        aggregate = aggregates_by_queue.get(queue_name)
+        active = int(getattr(aggregate, 'active', 0) or 0)
+        active_attention = int(getattr(aggregate, 'active_attention', 0) or 0)
+        recent_attention = int(getattr(aggregate, 'recent_attention_24h', 0) or 0)
         attention = active_attention + recent_attention
         readiness = get_queue_readiness(queue_name, topology=topology)
         readiness_tone = str(readiness.get('tone') or 'unknown')
@@ -191,14 +197,16 @@ def _queue_activity(cutoff: datetime) -> list[dict[str, Any]]:
                 'posture_label': posture_label,
                 'posture_tone': posture_tone,
                 'active': active,
-                'queued': int(aggregate.queued or 0),
-                'running': int(aggregate.running or 0),
+                'queued': int(getattr(aggregate, 'queued', 0) or 0),
+                'running': int(getattr(aggregate, 'running', 0) or 0),
                 'active_attention': active_attention,
                 'recent_attention_24h': recent_attention,
                 'attention': attention,
-                'completed_24h': int(aggregate.completed_24h or 0),
-                'failed_24h': int(aggregate.failed_24h or 0),
-                'latest_activity': present_user_datetime(aggregate.latest_activity, empty='No activity'),
+                'completed_24h': int(getattr(aggregate, 'completed_24h', 0) or 0),
+                'failed_24h': int(getattr(aggregate, 'failed_24h', 0) or 0),
+                'latest_activity': present_user_datetime(
+                    getattr(aggregate, 'latest_activity', None), empty='No activity'
+                ),
                 'worker_readiness': readiness,
             }
         )

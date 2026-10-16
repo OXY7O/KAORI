@@ -25,6 +25,7 @@ def materialize_registry_analytics_task(
     self,
     *,
     integration_instance_ids: list[int],
+    time_range: str = 'current',
     requested_by_user_id: int | None = None,
     job_execution_id: int | None = None,
 ) -> dict[str, Any]:
@@ -39,11 +40,17 @@ def materialize_registry_analytics_task(
         target='Artifact Registry',
     )
     completed = 0
+    partial_sources = 0
     failures: list[dict[str, str]] = []
     snapshot_ids: list[int] = []
     for index, identity_id in enumerate(ids, start=1):
         identity = db.session.get(IntegrationInstance, identity_id)
-        if identity is None or identity.integration_type != 'registry':
+        if (
+            identity is None
+            or identity.integration_type != 'registry'
+            or not identity.enabled
+            or identity.lifecycle_status != 'active'
+        ):
             failures.append({'integration_instance_id': str(identity_id), 'message': 'Registry instance not found.'})
             continue
         context.checkpoint(
@@ -58,6 +65,7 @@ def materialize_registry_analytics_task(
             snapshot = materialize_registry_analytics(
                 identity,
                 job_execution_id=job_execution_id,
+                time_range=time_range,
             )
         except (LookupError, RuntimeError, ValueError, SQLAlchemyError) as exc:
             db.session.rollback()
@@ -73,19 +81,34 @@ def materialize_registry_analytics_task(
         else:
             completed += 1
             snapshot_ids.append(snapshot.id)
+            payload = snapshot.payload_json if isinstance(snapshot.payload_json, dict) else {}
+            raw_metrics = payload.get('metrics')
+            raw_history = payload.get('history')
+            metrics = raw_metrics if isinstance(raw_metrics, dict) else {}
+            historical = raw_history if isinstance(raw_history, dict) else {}
+            partial_sources += int(
+                metrics.get('status') != 'ready' or bool(historical) and historical.get('status') != 'ready'
+            )
 
     result = {
-        'status': 'error' if failures and not completed else ('warning' if failures else 'success'),
+        'status': ('error' if not completed else 'warning' if failures or partial_sources else 'success'),
         'total_count': len(ids),
         'completed_count': completed,
         'failed_count': len(failures),
+        'partial_count': partial_sources,
         'failure_evidence': failures,
         'snapshot_ids': snapshot_ids,
+        'time_range': time_range,
         'finished_at': datetime.now(UTC).isoformat(),
     }
-    context.succeed(
-        result_summary=result,
-        result_type='artifact_registry_analytics_materialization',
-        partial=bool(failures),
-    )
+    if not completed:
+        # A zero-commit fleet attempt is a failed JobExecution, not a
+        # partially succeeded collection. Preserve previous snapshots.
+        context.fail('No Registry Analytics provider produced a committed snapshot.')
+    else:
+        context.succeed(
+            result_summary=result,
+            result_type='artifact_registry_analytics_materialization',
+            partial=bool(failures or partial_sources),
+        )
     return result

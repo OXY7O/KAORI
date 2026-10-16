@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -31,6 +32,11 @@ INHERITED_OPTIONAL_KEYS = {
     'ARCHIVE_S3_FORCE_PATH_STYLE',
 }
 COMPOSE_COMPAT_KEYS = {'KAORI_ENV_FILE', 'KAORI_BIND_ADDRESS', 'KAORI_PORT', 'KAORI_RELEASE_ENV_FILE'}
+# The root Compose default has POSTGRES_PASSWORD for non-DevContainer uses.
+# In the DevContainer this value comes exclusively from the host-only
+# postgres-bootstrap.env and MUST NOT be documented or active in the
+# application .env template forwarded to Flask/Celery/Beat.
+DEVCONTAINER_BOOTSTRAP_SECRET_KEYS = {'POSTGRES_PASSWORD'}
 
 RC_REQUIRED_KEYS = {
     'KAORI_IMAGE',
@@ -207,7 +213,15 @@ def verify() -> None:
         assert_no_duplicates(relative)
 
     development_keys = documented_env_keys('.env.example')
-    missing_development = sorted((common_keys | development_compose_keys) - development_keys)
+    leaking_bootstrap = sorted(DEVCONTAINER_BOOTSTRAP_SECRET_KEYS & development_keys)
+    if leaking_bootstrap:
+        raise AssertionError(
+            'PostgreSQL bootstrap-only secrets must not appear in application .env.example: '
+            + ', '.join(leaking_bootstrap)
+        )
+    missing_development = sorted(
+        ((common_keys | development_compose_keys) - DEVCONTAINER_BOOTSTRAP_SECRET_KEYS) - development_keys
+    )
     if missing_development:
         raise AssertionError('.env.example is missing environment contract keys: ' + ', '.join(missing_development))
 
@@ -313,6 +327,57 @@ def verify() -> None:
     ):
         if token not in operational:
             raise AssertionError(f'{APP_TEMPLATE} is missing required operational setting {token[:-1]}')
+
+    # Runtime-mode drift guard: a local standalone RC is neither a Dev
+    # Container nor a shortcut around the split governed-server overlay.
+    local_standalone = read('example/kaori/compose.yml')
+    dev_compose = read('compose.yml')
+    devcontainer_compose = read('.devcontainer/compose.devcontainer.yml')
+    for path, source, marker in (
+        ('compose.yml', dev_compose, '127.0.0.1:${POSTGRES_PORT:-5432}:5432'),
+        ('compose.yml', dev_compose, '127.0.0.1:${REDIS_PORT:-6379}:6379'),
+        ('.devcontainer/compose.devcontainer.yml', devcontainer_compose, '127.0.0.1:5000:5000'),
+        ('example/kaori/compose.yml', local_standalone, '127.0.0.1:${KAORI_PORT:-5000}:5000'),
+        ('example/kaori/compose.yml', local_standalone, '--queues=inventory,registry-security,'),
+    ):
+        if marker not in source:
+            raise AssertionError(f'{path} is missing local-mode runtime safeguard: {marker}')
+
+    tasks = json.loads(read('.vscode/tasks.json'))['tasks']
+    watcher = [task for task in tasks if task.get('label') == 'KAORI: Watch Tailwind CSS']
+    if (
+        len(watcher) != 1
+        or watcher[0].get('command') != 'npm run watch-css'
+        or 'runOn' in watcher[0].get('runOptions', {})
+        or watcher[0].get('runOptions', {}).get('instanceLimit') != 1
+        or watcher[0].get('isBackground') is not True
+    ):
+        raise AssertionError('Dev Container Tailwind watcher must be manually started after frontend bootstrap')
+
+    for document in (
+        'docs/RUNNING.md',
+        'docs/DEPLOYMENT.md',
+        'docs/deployment/RELEASE_GOVERNANCE.md',
+    ):
+        source = read(document)
+        for stale in (
+            'cp .env.production.example .env.production',
+            '/etc/kaori/.env.production',
+            'docker compose -f compose.production.yml up -d',
+        ):
+            if stale in source:
+                raise AssertionError(f'{document} still instructs obsolete production deployment: {stale}')
+
+    runtime_guide = read('docs/RUNNING.md')
+    for mode_marker in (
+        'Mode 1',
+        'Mode 2',
+        'Mode 3',
+        'deploy/server/compose.server.yml',
+        'example/kaori/compose.yml',
+    ):
+        if mode_marker not in runtime_guide:
+            raise AssertionError(f'docs/RUNNING.md does not describe the supported {mode_marker} runtime')
 
     print(
         'PASS — KAORI Environment Contract · '

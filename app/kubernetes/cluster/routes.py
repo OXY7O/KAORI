@@ -359,7 +359,7 @@ def add_cluster() -> ResponseReturnValue:
                             status='success',
                             title='Cluster added',
                             message=f'{cluster.name} is now registered in KAORI.',
-                            detail='The tested Kubernetes connection is ready for worker validation, inventory synchronization, and observability source binding.',
+                            detail='Connection test passed. Kubernetes is ready for worker validation, inventory sync, and observability source bindings.',
                             action_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id),
                             action_label='Open Kubernetes integration',
                             action_icon='server-cog',

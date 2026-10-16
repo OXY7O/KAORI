@@ -12,9 +12,8 @@
         return dialog instanceof HTMLDialogElement ? dialog : null
     }
 
-    const openDialog = (control) => {
-        const dialog = resolveDialog(control)
-        if (!dialog || dialog.open) return
+    const showDialog = (dialog) => {
+        if (!(dialog instanceof HTMLDialogElement) || dialog.open) return
         try {
             if (typeof dialog.showModal === 'function') dialog.showModal()
             else dialog.setAttribute('open', '')
@@ -31,6 +30,54 @@
         })
     }
 
+    const openDialog = (control) => showDialog(resolveDialog(control))
+
+    // Workspace HTMX writes refresh committed evidence and append an OOB toast.
+    // Only dialogs that opt into persistence are reopened after their owning
+    // workspace is swapped; an explicit Close, Escape, or non-HTMX navigation
+    // still dismisses them normally.
+    let pendingDialogId = null
+    document.addEventListener('htmx:beforeSwap', (event) => {
+        const workspace = event.detail?.target || event.target
+        if (!(workspace instanceof HTMLElement) || workspace.id !== 'tenant-admin-workspace') return
+        const opened = workspace.querySelector(
+            'dialog[data-kaori-native-dialog][data-kaori-dialog-preserve-on-swap][open]'
+        )
+        pendingDialogId = opened?.id || null
+    })
+
+    document.addEventListener('htmx:afterSwap', (event) => {
+        const workspace = event.detail?.target || event.target
+        if (!(workspace instanceof HTMLElement) || workspace.id !== 'tenant-admin-workspace') return
+        const targetId = pendingDialogId
+        pendingDialogId = null
+        if (!targetId) return
+        const nextDialog = document.getElementById(targetId)
+        if (nextDialog instanceof HTMLDialogElement && nextDialog.matches('[data-kaori-dialog-preserve-on-swap]'))
+            showDialog(nextDialog)
+    })
+
+    document.addEventListener('htmx:responseError', () => {
+        pendingDialogId = null
+    })
+
+    // An Inbox link leads to the same authorized Registry GET with a selected
+    // Tenant. Never auto-open an arbitrary ID: the server emits this marker
+    // only when the Tenant is present on the authorized registry page.
+    const openSelectedDialog = (root = document) => {
+        const dialog = root.querySelector?.('dialog[data-kaori-native-dialog][data-kaori-dialog-auto-open]')
+        if (dialog instanceof HTMLDialogElement) showDialog(dialog)
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => openSelectedDialog(), { once: true })
+    } else {
+        openSelectedDialog()
+    }
+    document.addEventListener('htmx:afterSwap', (event) => {
+        const workspace = event.detail?.target || event.target
+        if (workspace instanceof HTMLElement && workspace.id === 'tenant-admin-workspace') openSelectedDialog(workspace)
+    })
+
     const closeDialog = (control) => {
         if (!(control instanceof HTMLElement)) return
         const dialog = control.closest('dialog')
@@ -44,6 +91,15 @@
         const opener = target.closest(openSelector)
         if (opener) {
             event.preventDefault()
+            // Opt-in native dialog transition keeps only one top-layer dialog
+            // active while the browser owns focus containment and restoration.
+            const current = opener.closest(dialogSelector)
+            if (
+                opener.matches('[data-kaori-dialog-transition]') &&
+                current instanceof HTMLDialogElement &&
+                current.open
+            )
+                current.close()
             openDialog(opener)
             return
         }

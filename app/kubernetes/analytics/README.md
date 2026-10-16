@@ -135,7 +135,7 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 - Materialized snapshot decode is read-only and ORM-free: canonical cluster references carry id/name/environment/status in the committed payload; old payload shapes are refreshed rather than repaired through a database fallback.
 - Forecast reprojection returns a freshly built canonical resource payload and does not preserve/remove obsolete derived keys from historical payloads.
 - Capacity is the analytics snapshot-style baseline. Analytics Overview tabs and domain workspaces use the shared snapshot shell, header, metric strip, evidence surface, and interpretation primitives from `analytics/components/_analysis_surfaces.html`. Domain layouts may differ, but they must not fork the geometry or visual-role contract.
-- Every requested Overview section declares its tracked load state. The compact progress strip counts only sections actually requested; composite OOB targets are marked loaded by the Health Summary response. The tracker runtime lives in `app/static/js/kubernetes/analytics/overview.js`, not an inline script.
+- Every requested Overview section declares its tracked load state. The compact section progress strip counts only requested HTMX fragments; composite OOB targets are marked loaded by the Health Summary response. Shared presentation lives in `app/templates/analytics/components/_section_load_tracker.html` and the single section controller in `app/static/js/analytics/section_load_tracker.js` (Kubernetes Overview and Registry). The `kaoriInitializeOverviewLoadTracker` compatibility hook remains in that controller. The separate `app/static/js/analytics/controls.js` still owns Analytics tabs and the generic page-level load tracker; section progress is never JobExecution progress.
 - Snapshot section headers, actions, metric labels, status text, and empty-state titles use Title Case. Descriptive sentences and technical identifiers retain their natural casing.
 - Resource utilization progress bars must receive resolved class strings, clamp width to 0–100%, and update from the committed snapshot percentage. Do not pass nested Jinja expressions inside a quoted macro argument.
 - Top Consumers and Alerts & Anomalies Snapshot are always visible on the Overview page. They must not use `details`, chevrons, or expand/collapse state.
@@ -523,3 +523,17 @@ Resource Forecast follows `docs/design/components/ANALYTICS_RESOURCE_FORECAST.md
 CPU, memory, and active-Pod demand are scoped to Ready worker nodes and exclude `control-plane|master`. Duplicate container, Pod, node, and PVC series are normalized before aggregation. Storage compares PVC usage with observed mounted-volume capacity. Resource status uses the highest projected point inside the selected horizon; threshold ETA walks projected points from the latest observation and is bounded by that horizon. Low signal quality is Limited Evidence, never Healthy.
 
 Forecast ownership is split across `contracts.py`, `calculation.py`, `resource.py`, `service.py`, `presentation.py`, and `routes.py`. `/analytics/forecast` is the only workspace route; the unused `/forecast/section` compatibility surface is removed. The chart aligns all resources to one timestamp axis and preserves missing observations as null.
+
+
+### Alert-source payload completeness (#1348)
+
+An observed empty Alerts result is authoritative **only** when the owning
+Alertmanager or Metrics Source query returns a valid, complete list response.
+The Analytics worker rejects missing or malformed Alertmanager `alerts` and
+Metrics Source `data.result` vectors, mixed invalid records, and inconsistent
+success/error evidence. Such results are classified as unavailable, not as
+zero live alerts or Healthy; the existing `source=auto` fallback remains in
+control and independent restart/readiness anomaly evidence remains separate.
+Provider transport details stay server-side; committed status contains only
+sanitized operational source errors. Normal UI reads committed snapshots and
+never queries Alertmanager or Metrics Source synchronously.

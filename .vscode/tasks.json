@@ -4,7 +4,7 @@
     {
       "label": "KAORI: Database Upgrade",
       "type": "shell",
-      "command": "flask --app run:app db upgrade",
+      "command": "echo 'ABORT: Migration requires kaori_migrator. From the WSL host run: docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only' >&2; exit 1",
       "problemMatcher": []
     },
     {
@@ -69,6 +69,10 @@
         "panel": "dedicated",
         "clear": false,
         "showReuseMessage": false
+      },
+      "runOptions": {
+        "instanceLimit": 1,
+        "instancePolicy": "silent"
       }
     },
     {

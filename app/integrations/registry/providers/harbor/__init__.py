@@ -17,6 +17,7 @@ from app.integrations.registry.providers.harbor.capabilities import (
 )
 from app.integrations.registry.providers.harbor.governance import collector as governance_collector
 from app.integrations.registry.providers.harbor.inventory import collector as inventory_collector
+from app.integrations.registry.providers.harbor.runtime_overview import build_runtime_overview_rows
 from app.integrations.registry.providers.harbor.security import collector as security_collector
 from app.integrations.registry.security_collectors import register_registry_security_collector
 from app.models.harbor import HarborInstance
@@ -81,10 +82,12 @@ provider_implementation = IntegrationImplementation(
     adapter_key='harbor_api_v2',
     adapter=runtime_adapter,
     instance_loader=model_loader(HarborInstance),
+    record_model=HarborInstance,
     canonical_record_loader=canonical_model_loader(HarborInstance),
     module_path='app.integrations.registry.providers.harbor',
     detail_url_builder=_detail_url,
     failure_recorder=_record_failure,
+    runtime_overview_builder=build_runtime_overview_rows,
 )
 
 registry.register(integration_module)

@@ -3,11 +3,20 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from celery.exceptions import CeleryError
 from flask import Blueprint, abort, jsonify, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from kombu.exceptions import OperationalError as KombuOperationalError
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
+from app.artifact_registry.analytics_job_adapter import (
+    build_registry_analytics_readiness,
+    get_registry_analytics_job,
+    rollback_registry_analytics_materialization_dispatch,
+    should_request_registry_analytics_materialization,
+)
 from app.artifact_registry.governance_job_adapter import (
     build_registry_governance_sync_state,
     get_registry_governance_sync_job,
@@ -26,10 +35,13 @@ from app.artifact_registry.presentation import (
     build_runtime_binding_detail,
     build_runtime_usage,
 )
+from app.artifact_registry.presentation_common import _providers as _active_registry_sources
+from app.artifact_registry.presentation_topology import build_dependency_topology
 from app.artifact_registry.security.job_adapter import (
     build_registry_security_sync_state,
     get_registry_security_sync_job,
 )
+from app.artifact_registry.security.presentation import _providers as _eligible_security_sources
 from app.artifact_registry.security.presentation import build_security
 from app.artifact_registry.sync_jobs import NoEligibleRegistryTargets, enqueue_all_registry_inventory_sync
 from app.artifact_registry.webhooks import RegistryWebhookAuthError, ingest_webhook
@@ -40,6 +52,7 @@ from app.dashboards.common.operational import (
 )
 from app.extensions import limiter
 from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable, dispatch_registered_job
+from app.platform_operations.jobs.service import JobQuotaExceeded
 from app.platform_operations.notifications.service import record_operational_activity
 
 artifact_registry_bp = Blueprint('artifact_registry', __name__, url_prefix='/artifact-registry')
@@ -54,11 +67,25 @@ OVERVIEW_SECTION_TEMPLATES = {
 }
 
 
+def _overview_provider_id() -> int | None:
+    """Treat malformed explicit scope IDs as unavailable, not All Providers."""
+    raw = request.args.get('provider_id')
+    if raw is None or not raw.strip():
+        return None
+    try:
+        provider_id = int(raw)
+    except (TypeError, ValueError):
+        abort(404)
+    if provider_id < 1:
+        abort(404)
+    return provider_id
+
+
 @artifact_registry_bp.get('/')
 @permission_required('artifact_registry.view')
 def overview() -> ResponseReturnValue:
     context = build_overview(
-        provider_id=request.args.get('provider_id', type=int),
+        provider_id=_overview_provider_id(),
         active_tab=normalize_operational_tab(request.args.get('tab', 'overview', type=str)),
         provider_health_page=request.args.get('provider_health_page', 1),
         provider_health_per_page=normalize_dashboard_page_size(request.args.get('provider_health_per_page')),
@@ -79,7 +106,7 @@ def overview_section(section: str) -> ResponseReturnValue:
         abort(404)
     context = build_overview_section(
         section,
-        provider_id=request.args.get('provider_id', type=int),
+        provider_id=_overview_provider_id(),
         provider_health_page=request.args.get('provider_health_page', 1),
         provider_health_per_page=normalize_dashboard_page_size(request.args.get('provider_health_per_page')),
     )
@@ -95,11 +122,25 @@ def inventory() -> ResponseReturnValue:
     )
 
 
+def _inventory_source_id() -> int | None:
+    """An invalid explicit Registry source filter must not expand to all providers."""
+    raw = request.args.get('source_id')
+    if raw is None or not raw.strip():
+        return None
+    try:
+        source_id = int(raw)
+    except (TypeError, ValueError):
+        abort(404)
+    if source_id < 1:
+        abort(404)
+    return source_id
+
+
 def _inventory_resource_response(resource: str) -> ResponseReturnValue:
     context = build_inventory(
         resource=resource,
         search=request.args.get('q', '', type=str),
-        source_id=request.args.get('source_id', type=int),
+        source_id=_inventory_source_id(),
         environment=request.args.get('environment', '', type=str),
         visibility=request.args.get('visibility', '', type=str),
         page=request.args.get('page', 1, type=int) or 1,
@@ -167,6 +208,24 @@ def inventory_artifact_details(artifact_id: int) -> ResponseReturnValue:
     )
 
 
+def _security_source_id(*, from_form: bool = False) -> int | None:
+    """Explicit malformed source filters must never widen Security to the fleet."""
+    values = request.form if from_form else request.args
+    raw = values.get('source_id')
+    if raw is None or not str(raw).strip():
+        return None
+    try:
+        source_id = int(raw)
+    except (TypeError, ValueError):
+        abort(404)
+    if source_id < 1:
+        abort(404)
+    if from_form and not any(int(item.id) == source_id for item in _eligible_security_sources()):
+        # Reject unavailable selected-view context *before* dispatching a fleet job.
+        abort(404)
+    return source_id
+
+
 def _security_response(kind: str) -> ResponseReturnValue:
     context = build_security(
         kind=kind,
@@ -174,7 +233,7 @@ def _security_response(kind: str) -> ResponseReturnValue:
         search=request.args.get('q', '', type=str),
         severity=request.args.get('severity', '', type=str),
         provider=request.args.get('provider', '', type=str),
-        source_id=request.args.get('source_id', type=int),
+        source_id=_security_source_id(),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
@@ -205,7 +264,7 @@ def _security_sync_context(kind: str) -> dict[str, object]:
         search=request.form.get('q', '', type=str),
         severity=request.form.get('severity', '', type=str),
         provider=request.form.get('provider', '', type=str),
-        source_id=request.form.get('source_id', type=int),
+        source_id=_security_source_id(from_form=True),
         page=request.form.get('page', 1, type=int) or 1,
         per_page=request.form.get('per_page', 5, type=int) or 5,
     )
@@ -214,6 +273,8 @@ def _security_sync_context(kind: str) -> dict[str, object]:
 @artifact_registry_bp.post('/security/sync')
 @permission_required('artifact_registry.sync')
 def security_sync() -> ResponseReturnValue:
+    # Validate the posted view scope before dispatching the fleet job.
+    _security_source_id(from_form=True)
     is_htmx = request.headers.get('HX-Request') == 'true'
     kind = 'supply_chain' if request.form.get('view') == 'supply_chain' else 'vulnerabilities'
     outcome = None
@@ -312,17 +373,42 @@ def security_sync_status(public_id: str) -> ResponseReturnValue:
     return response
 
 
+def _runtime_scope_id(name: str) -> int | None:
+    raw = request.args.get(name)
+    if raw is None or not raw.strip():
+        return None
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        abort(404)
+    if value < 1:
+        abort(404)
+    if name == 'source_id' and not any(int(source.id) == value for source in _active_registry_sources()):
+        abort(404)
+    return value
+
+
+@artifact_registry_bp.get('/runtime/overview')
+@permission_required('artifact_registry.view')
+def runtime_overview() -> ResponseReturnValue:
+    """Runtime capability landing page backed by existing committed evidence."""
+    return render_template(
+        'artifact_registry/runtime_overview.html',
+        runtime=build_runtime_usage(**_runtime_topology_filters()),
+    )
+
+
 @artifact_registry_bp.get('/runtime')
 @permission_required('artifact_registry.view')
 def runtime() -> ResponseReturnValue:
     context = build_runtime_usage(
         search=request.args.get('q', '', type=str),
-        source_id=request.args.get('source_id', type=int),
+        source_id=_runtime_scope_id('source_id'),
         cluster_id=request.args.get('cluster_id', '', type=str),
         namespace=request.args.get('namespace', '', type=str),
         match_type=request.args.get('match_type', '', type=str),
         exposure=request.args.get('exposure', '', type=str),
-        artifact_id=request.args.get('artifact_id', type=int),
+        artifact_id=_runtime_scope_id('artifact_id'),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
@@ -332,6 +418,34 @@ def runtime() -> ResponseReturnValue:
         else 'artifact_registry/runtime.html'
     )
     return render_template(template, runtime=context)
+
+
+def _runtime_topology_filters() -> dict[str, Any]:
+    return {
+        'search': request.args.get('q', '', type=str),
+        'source_id': _runtime_scope_id('source_id'),
+        'cluster_id': request.args.get('cluster_id', '', type=str),
+        'namespace': request.args.get('namespace', '', type=str),
+        'match_type': request.args.get('match_type', '', type=str),
+        'exposure': request.args.get('exposure', '', type=str),
+        'artifact_id': _runtime_scope_id('artifact_id'),
+    }
+
+
+@artifact_registry_bp.get('/runtime/topology')
+@permission_required('artifact_registry.view')
+def runtime_topology() -> ResponseReturnValue:
+    filters = _runtime_topology_filters()
+    return render_template(
+        'artifact_registry/topology.html',
+        runtime=build_runtime_usage(**filters),
+    )
+
+
+@artifact_registry_bp.get('/runtime/topology/data')
+@permission_required('artifact_registry.view')
+def runtime_topology_data() -> ResponseReturnValue:
+    return jsonify(build_dependency_topology(**_runtime_topology_filters()))
 
 
 @artifact_registry_bp.get('/runtime/<int:binding_id>/details')
@@ -346,13 +460,36 @@ def runtime_binding_details(binding_id: int) -> ResponseReturnValue:
     )
 
 
-@artifact_registry_bp.get('/analytics')
-@permission_required('artifact_registry.view')
-def analytics() -> ResponseReturnValue:
+_REGISTRY_ANALYTICS_DETAIL_ROUTES = {
+    'growth': 'artifact_registry.analytics_growth',
+    'capacity': 'artifact_registry.analytics_capacity',
+    'usage': 'artifact_registry.analytics_usage',
+    'risk': 'artifact_registry.analytics_risk',
+    'governance': 'artifact_registry.analytics_governance',
+    'alerts': 'artifact_registry.analytics_alerts',
+    'insights': 'artifact_registry.analytics_insights',
+}
+
+
+def _analytics_provider_id() -> int | None:
+    """Explicit scope is fail-closed; invalid IDs must not expand to the fleet."""
+    value = request.args.get('provider_id')
+    if value is None or value == '':
+        return None
+    if not value.isascii() or not value.isdecimal() or len(value) > 18:
+        abort(404)
+    if int(value) <= 0:
+        abort(404)
+    return int(value)
+
+
+def _render_registry_analytics_page(section: str) -> ResponseReturnValue:
     return render_template(
         'artifact_registry/analytics.html',
         analytics=build_analytics_shell(
-            active_tab=request.args.get('tab', 'growth', type=str),
+            active_tab=section,
+            provider_id=_analytics_provider_id(),
+            snapshot_window=request.args.get('snapshot_window', '24h', type=str),
             alert_search=request.args.get('alert_q', '', type=str),
             alert_severity=request.args.get('alert_severity', 'all', type=str),
             alert_state=request.args.get('alert_state', 'all', type=str),
@@ -363,6 +500,163 @@ def analytics() -> ResponseReturnValue:
     )
 
 
+@artifact_registry_bp.get('/analytics')
+@permission_required('artifact_registry.view')
+def analytics() -> ResponseReturnValue:
+    legacy_tab = request.args.get('tab', '', type=str)
+    if legacy_tab in _REGISTRY_ANALYTICS_DETAIL_ROUTES:
+        alert_args: dict[str, Any] = {
+            key: value
+            for key in (
+                'provider_id',
+                'snapshot_window',
+                'alert_q',
+                'alert_severity',
+                'alert_state',
+                'alert_source',
+                'alert_page',
+                'alert_per_page',
+            )
+            if (value := request.args.get(key))
+        }
+        return redirect(url_for(_REGISTRY_ANALYTICS_DETAIL_ROUTES[legacy_tab], **alert_args))
+    return _render_registry_analytics_page('overview')
+
+
+@artifact_registry_bp.get('/analytics/growth')
+@permission_required('artifact_registry.view')
+def analytics_growth() -> ResponseReturnValue:
+    return _render_registry_analytics_page('growth')
+
+
+@artifact_registry_bp.get('/analytics/capacity')
+@permission_required('artifact_registry.view')
+def analytics_capacity() -> ResponseReturnValue:
+    return _render_registry_analytics_page('capacity')
+
+
+@artifact_registry_bp.get('/analytics/usage')
+@permission_required('artifact_registry.view')
+def analytics_usage() -> ResponseReturnValue:
+    return _render_registry_analytics_page('usage')
+
+
+@artifact_registry_bp.get('/analytics/risk')
+@permission_required('artifact_registry.view')
+def analytics_risk() -> ResponseReturnValue:
+    return _render_registry_analytics_page('risk')
+
+
+@artifact_registry_bp.get('/analytics/governance')
+@permission_required('artifact_registry.view')
+def analytics_governance() -> ResponseReturnValue:
+    return _render_registry_analytics_page('governance')
+
+
+@artifact_registry_bp.get('/analytics/alerts')
+@permission_required('artifact_registry.view')
+def analytics_alerts() -> ResponseReturnValue:
+    return _render_registry_analytics_page('alerts')
+
+
+@artifact_registry_bp.get('/analytics/insights')
+@permission_required('artifact_registry.view')
+def analytics_insights() -> ResponseReturnValue:
+    return _render_registry_analytics_page('insights')
+
+
+@artifact_registry_bp.get('/analytics/materialization/resolve')
+@permission_required('artifact_registry.view')
+def analytics_materialization_resolve() -> ResponseReturnValue:
+    """K8s-style on-demand preparation: only the worker collects provider evidence."""
+    section = request.args.get('section', 'overview', type=str)
+    if section not in _REGISTRY_ANALYTICS_DETAIL_ROUTES:
+        section = 'overview'
+    provider_id = _analytics_provider_id()
+    window = request.args.get('snapshot_window', '24h', type=str)
+    alert_params = {
+        'alert_search': request.args.get('alert_q', '', type=str),
+        'alert_severity': request.args.get('alert_severity', 'all', type=str),
+        'alert_state': request.args.get('alert_state', 'all', type=str),
+        'alert_source': request.args.get('alert_source', 'all', type=str),
+        'alert_page': request.args.get('alert_page', 1, type=int) or 1,
+        'alert_per_page': request.args.get('alert_per_page', 5, type=int) or 5,
+    }
+    analytics = build_analytics_shell(
+        active_tab=section, provider_id=provider_id, snapshot_window=window, **alert_params
+    )
+    # Collect the selected source-history interval in the canonical worker;
+    # the request handler never calls Prometheus/Thanos or Harbor directly.
+    if should_request_registry_analytics_materialization(
+        build_registry_analytics_readiness(provider_id=provider_id, snapshot_window=window)
+    ):
+        try:
+            result = dispatch_registered_job(
+                job_key='artifact_registry.analytics.materialize',
+                trigger_type='on_demand',
+                requested_by_user_id=None,
+                parameters={'snapshot_window': window},
+            )
+        except (
+            JobWorkerUnavailable,
+            JobQuotaExceeded,
+            CeleryError,
+            KombuOperationalError,
+            LookupError,
+            OSError,
+            RuntimeError,
+            SQLAlchemyError,
+            ValueError,
+        ) as exc:
+            rollback_registry_analytics_materialization_dispatch()
+            analytics['data_readiness']['collection_warning'] = (
+                'The analytics worker could not be started. Check the registered '
+                f'analytics-batch worker and JobExecution diagnostics ({type(exc).__name__}).'
+            )
+        else:
+            if not result.accepted:
+                analytics['data_readiness']['collection_warning'] = result.message
+            else:
+                analytics = build_analytics_shell(
+                    active_tab=section,
+                    provider_id=provider_id,
+                    snapshot_window=window,
+                    **alert_params,
+                )
+    response = make_response(
+        render_template(
+            'artifact_registry/partials/_analytics_controls_readiness.html',
+            analytics=analytics,
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
+
+
+@artifact_registry_bp.get('/analytics/collect/status/<string:public_id>')
+@permission_required('artifact_registry.view')
+def analytics_collect_status(public_id: str) -> ResponseReturnValue:
+    job = get_registry_analytics_job(public_id)
+    if job is None:
+        abort(404)
+    response = make_response(
+        render_template(
+            'artifact_registry/partials/_analytics_collect_live_state.html',
+            analytics_readiness=build_registry_analytics_readiness(),
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    if not job.is_active:
+        response.headers['HX-Trigger-After-Swap'] = json.dumps(
+            {
+                'artifactRegistryAnalyticsMaterializationFinished': True,
+                'kaori:notifications-changed': True,
+            }
+        )
+    return response
+
+
 @artifact_registry_bp.get('/analytics/section/<string:section>')
 @permission_required('artifact_registry.view')
 def analytics_section(section: str) -> ResponseReturnValue:
@@ -371,6 +665,8 @@ def analytics_section(section: str) -> ResponseReturnValue:
         abort(404)
     context = build_analytics(
         active_tab='growth' if section == 'summary' else section,
+        provider_id=_analytics_provider_id(),
+        snapshot_window=request.args.get('snapshot_window', '24h', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
         alert_severity=request.args.get('alert_severity', 'all', type=str),
         alert_state=request.args.get('alert_state', 'all', type=str),
@@ -392,10 +688,12 @@ def analytics_alerts_table() -> ResponseReturnValue:
     query_args: dict[str, Any] = request.args.to_dict(flat=True)
     query_args.pop('tab', None)
     if not is_htmx_request(request.headers):
-        return redirect(url_for('artifact_registry.analytics', tab='alerts', **query_args))
+        return redirect(url_for('artifact_registry.analytics_alerts', **query_args))
 
     context = build_analytics(
         active_tab='alerts',
+        provider_id=_analytics_provider_id(),
+        snapshot_window=request.args.get('snapshot_window', '24h', type=str),
         alert_search=request.args.get('alert_q', '', type=str),
         alert_severity=request.args.get('alert_severity', 'all', type=str),
         alert_state=request.args.get('alert_state', 'all', type=str),
@@ -410,8 +708,7 @@ def analytics_alerts_table() -> ResponseReturnValue:
         )
     )
     response.headers['HX-Push-Url'] = url_for(
-        'artifact_registry.analytics',
-        tab='alerts',
+        'artifact_registry.analytics_alerts',
         **query_args,
     )
     response.headers['Cache-Control'] = 'no-store, max-age=0'
@@ -422,12 +719,22 @@ def analytics_alerts_table() -> ResponseReturnValue:
 @artifact_registry_bp.get('/governance')
 @permission_required('artifact_registry.view')
 def governance() -> ResponseReturnValue:
+    template = (
+        'artifact_registry/partials/_governance_workspace.html'
+        if is_htmx_request(request.headers)
+        else 'artifact_registry/governance.html'
+    )
     return render_template(
-        'artifact_registry/governance.html',
+        template,
         governance=build_governance(
             active_tab=request.args.get('tab', 'policies', type=str),
             page=request.args.get('page', 1, type=int) or 1,
             per_page=normalize_dashboard_page_size(request.args.get('per_page')),
+            search=request.args.get('q', '', type=str),
+            provider=request.args.get('provider', '', type=str),
+            retention=request.args.get('retention', '', type=str),
+            immutability=request.args.get('immutability', '', type=str),
+            state=request.args.get('state', '', type=str),
         ),
     )
 
@@ -435,6 +742,7 @@ def governance() -> ResponseReturnValue:
 @artifact_registry_bp.post('/governance/sync')
 @permission_required('artifact_registry.sync')
 def governance_sync() -> ResponseReturnValue:
+    is_htmx = is_htmx_request(request.headers)
     try:
         outcome = dispatch_registered_job(
             job_key='artifact_registry.governance.sync',
@@ -464,7 +772,7 @@ def governance_sync() -> ResponseReturnValue:
             message = outcome.message
             detail = 'Committed Registry inventory and an eligible governance collector are required.'
 
-    record_operational_activity(
+    feedback = record_operational_activity(
         user_id=int(current_user.id),
         event_type='artifact_registry_governance_sync',
         status=status,
@@ -480,13 +788,62 @@ def governance_sync() -> ResponseReturnValue:
             'created': created,
             'accepted': accepted,
         },
-        queue_feedback=True,
+        queue_feedback=not is_htmx,
     )
-    return redirect(url_for('artifact_registry.governance'))
+
+    active_tab = request.form.get('tab', 'policies', type=str)
+    page = request.form.get('page', 1, type=int) or 1
+    per_page = normalize_dashboard_page_size(request.form.get('per_page'))
+    search = request.form.get('q', '', type=str)
+    provider = request.form.get('provider', '', type=str)
+    retention = request.form.get('retention', '', type=str)
+    immutability = request.form.get('immutability', '', type=str)
+    state = request.form.get('state', '', type=str)
+    if is_htmx:
+        rendered = ''.join(
+            (
+                render_template(
+                    'artifact_registry/partials/_governance_workspace.html',
+                    governance=build_governance(
+                        active_tab=active_tab,
+                        page=page,
+                        per_page=per_page,
+                        search=search,
+                        provider=provider,
+                        retention=retention,
+                        immutability=immutability,
+                        state=state,
+                    ),
+                ),
+                render_template(
+                    'components/operational_toast.html',
+                    **feedback,
+                    toast_oob=True,
+                ),
+            )
+        )
+        response = make_response(rendered, 202 if accepted else (409 if status == 'warning' else 503))
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
+
+    return redirect(
+        url_for(
+            'artifact_registry.governance',
+            tab=active_tab,
+            page=page,
+            per_page=per_page,
+            q=search or None,
+            provider=provider or None,
+            retention=retention or None,
+            immutability=immutability or None,
+            state=state or None,
+        )
+    )
 
 
 @artifact_registry_bp.get('/governance/sync/status/<string:public_id>')
-@permission_required('artifact_registry.sync')
+@permission_required('artifact_registry.view')
 def governance_sync_status(public_id: str) -> ResponseReturnValue:
     job = get_registry_governance_sync_job(public_id)
     if job is None:

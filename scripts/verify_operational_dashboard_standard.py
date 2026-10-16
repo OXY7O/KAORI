@@ -35,6 +35,11 @@ ARTIFACT_SIGNAL_OVERVIEW = (
 ARTIFACT_KPI_CARDS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_kpi_cards.html'
 ARTIFACT_REPORTING = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_reporting.html'
 ARTIFACT_CAPACITY = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity.html'
+ARTIFACT_FORECAST = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_forecast_risk.html'
+ARTIFACT_CAPACITY_SNAPSHOT = (
+    ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_capacity_snapshot.html'
+)
+ARTIFACT_CONSUMERS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_top_consumers.html'
 ARTIFACT_SIGNALS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_signals.html'
 ARTIFACT_OPERATIONS = ROOT / 'app' / 'templates' / 'artifact_registry' / 'partials' / '_overview_operations.html'
 ARTIFACT_PROVIDER_HEALTH = (
@@ -328,13 +333,47 @@ def _verify_artifact_registry_dashboard(
         'Artifact Registry scope and signal overview',
     )
     _require(
+        signal_overview,
+        (
+            'Select a Registry Provider for Detailed Signals',
+            "scope_tone = overview.posture.tone if overview.selected_provider else 'warning'",
+            '    scope_status,',
+            '    scope_tone,',
+        ),
+        'Registry unselected scope matches canonical dashboard warning status',
+    )
+    _require(
+        signal_overview,
+        (
+            'overview.last_updated',
+            "'Updated ' ~ overview.last_updated",
+        ),
+        'Registry relative committed inventory Updated label',
+    )
+    if 'latest_committed_at|user_datetime' in signal_overview:
+        raise AssertionError('Registry Signal Overview must use relative, not absolute, Updated time')
+    _require(
         kpi_cards,
         (
             'components/operational_metric_card.html',
+            'operational_metric_card.render(',
+            'for kpi in overview.kpis',
+            'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4',
+            'source_label=overview.kpi_source_label',
             "scope_label='Active Scope'",
             'data-kaori-artifact-registry-operational-kpis',
         ),
-        'Artifact Registry bounded KPI projection',
+        'Artifact Registry independent Operational Signal KPI cards',
+    )
+    for forbidden in ("body_classes='p-0'", 'grouped=true'):
+        if forbidden in signal_overview:
+            raise AssertionError(f'Artifact Registry Signal Overview retains grouped-KPI exception: {forbidden}')
+    if 'resource_posture_grid.html' in kpi_cards:
+        raise AssertionError('Registry Operational Signal KPIs must use independent dashboard metric cards')
+    _require(
+        signal_overview,
+        ('section_loading.kpis(item_count=4,',),
+        'Artifact Registry canonical independent KPI loading skeleton',
     )
     _require(
         operations,
@@ -379,6 +418,113 @@ def _verify_artifact_registry_dashboard(
         ),
         'Artifact Registry capacity peer dashboard grammar',
     )
+    registry_capacity_snapshot = _read(ARTIFACT_CAPACITY_SNAPSHOT)
+    _require(
+        registry_capacity_snapshot,
+        (
+            'Data Scope:</span> committed inventory for footprint',
+            'bg-kaori-soft p-3 text-xs leading-5 text-content-secondary',
+            'grid gap-3 lg:grid-cols-3',
+            'progress_bar.bar(item.progress_percent,',
+            'item.progress_label',
+            'percentage not applicable',
+            'Refresh evidence; verify headroom',
+            'Registry project quota balance chart',
+            'overview.capacity.metrics[1].progress_percent',
+            'overview.capacity.metrics[2].progress_percent',
+            'progress_bar.bar(quota_used_percent,',
+            'progress_bar.bar(quota_free_percent,',
+            'Quota balance unavailable',
+        ),
+        'Registry Capacity Snapshot K8s visual grammar and evidence-qualified progress',
+    )
+    if "operational_callout.render('Data Scope'" in registry_capacity_snapshot:
+        raise AssertionError('Registry Capacity must use the compact Kubernetes Data Scope strip')
+    _require(
+        presentation,
+        (
+            "'progress_label': 'Used'",
+            "'progress_label': 'Free'",
+            "'label': 'Quota Left'",
+            'Project quota forecasts remain outside warning thresholds, with sufficient headroom.',
+            "'progress_label': 'Inventory'",
+            '100 - quota_utilization if quota_utilization is not None else None',
+            'Registry growth uses committed inventory changes and Metrics Source quota evidence.',
+        ),
+        'Registry committed quota progress semantics and compact evidence microcopy',
+    )
+    registry_consumers = _read(ARTIFACT_CONSUMERS)
+    _require(
+        registry_consumers,
+        (
+            'macro consumer_panel(',
+            'grid gap-5 lg:grid-cols-2',
+            "consumer_panel('Storage Usage'",
+            "consumer_panel('Nearest Quota'",
+            'overview.quota_watch',
+            'items[:3]',
+            'progress_bar.bar(',
+            'item.utilization_percent is not none',
+            'Consumer Insights',
+            'overview.consumer_insights.high_utilization_count',
+            'No Numerical Quota Horizon',
+        ),
+        'Registry Top Consumers independently ranked K8s-style peer panels',
+    )
+    if 'xl:grid-cols-5' in registry_consumers:
+        raise AssertionError('Registry Top Consumers still uses obsolete standalone card grid')
+    registry_forecast = _read(ARTIFACT_FORECAST)
+    _require(
+        registry_forecast,
+        (
+            'grid gap-3 sm:grid-cols-3',
+            'overview.forecast.size_growth_per_day',
+            'overview.forecast.artifact_growth_per_day',
+            'overview.forecast.nearest_quota_days',
+            'Artifact change per day.',
+            'Committed analytics snapshots',
+            'Projects with quota ETA',
+            'Quota ETA with positive growth.',
+            'Forecast Basis',
+            'Registry Analytics',
+            'No historical daily series is available for a trend chart.',
+            'Daily Utilization Trend Not Available',
+            'overview.forecast.analytics_count',
+            'overview.consumer_insights.horizon_count',
+            'Forecast Conclusion',
+            'overview.capacity.risk_detail',
+            'overview.forecast.detail',
+            "action_label='Review Forecast'",
+        ),
+        'Registry snapshot-delta forecast and conclusion use peer dashboard grammar',
+    )
+    _require(
+        presentation,
+        (
+            '_registry_quota_watch(project_forecasts)',
+            '_registry_consumer_insights(project_forecasts)',
+            "'quota_watch': quota_watch",
+            "'consumer_insights': consumer_insights",
+        ),
+        'Registry committed project quota evidence includes independent numeric horizon ranking',
+    )
+    for forbidden in ('operational_metric_card.render(', 'forecast_projection_chart'):
+        if forbidden in registry_forecast:
+            raise AssertionError(f'Registry Forecast must not invent KPI repetition or chart series: {forbidden}')
+    _require(
+        capacity,
+        (
+            '{% if not overview.selected_provider %}',
+            'components/states/_blocked_state.html',
+            'Select Registry Provider',
+            '{% else %}',
+        ),
+        'Artifact Registry selected-provider Capacity prerequisite',
+    )
+    if capacity.index('components/states/_blocked_state.html') >= capacity.index('{% else %}'):
+        raise AssertionError('Registry Capacity scope blocker must precede selected-provider content')
+    if capacity.count('components/states/_blocked_state.html') != 1:
+        raise AssertionError('Registry Capacity must render exactly one scope blocker')
     _require(
         signals,
         (
@@ -407,7 +553,13 @@ def _verify_artifact_registry_dashboard(
         routes,
         (
             "@permission_required('artifact_registry.view')",
-            "request.args.get('provider_id', type=int)",
+            'def _overview_provider_id() -> int | None:',
+            "request.args.get('provider_id')",
+            'if raw is None or not raw.strip():',
+            'except (TypeError, ValueError):',
+            'if provider_id < 1:',
+            'abort(404)',
+            'provider_id=_overview_provider_id(),',
             "request.args.get('tab', 'overview', type=str)",
             "'overview': 'artifact_registry/partials/_overview_operations.html'",
             "'capacity': 'artifact_registry/partials/_overview_capacity.html'",
@@ -417,6 +569,8 @@ def _verify_artifact_registry_dashboard(
         ),
         'Artifact Registry dashboard route boundary',
     )
+    if routes.count('provider_id=_overview_provider_id(),') < 2:
+        raise AssertionError('Registry overview and section must share fail-closed provider scope validation')
     _require(
         presentation,
         (
@@ -439,7 +593,7 @@ def _verify_artifact_registry_dashboard(
             "'recommended_actions': _registry_recommended_actions(selected_provider)",
             "'reporting': _registry_reporting(selected_provider)",
             "'label': 'Inventory Snapshot'",
-            "'label': 'Metrics Snapshot'",
+            "'label': 'Metrics Source'",
             "'label': 'Security Snapshot'",
             "'label': 'Analytics Snapshot'",
             "'kpis': [",
@@ -447,6 +601,76 @@ def _verify_artifact_registry_dashboard(
             'func.sum(RegistryArtifact.size_bytes)',
         ),
         'Artifact Registry committed bounded dashboard projection',
+    )
+    _require(
+        presentation,
+        (
+            "'label': 'Metrics Source'",
+            "'value': f'{metrics_ready_count} / {provider_count} providers'",
+            'Validated Metrics Source binding readiness; not a committed metrics snapshot.',
+            'Validated Registry Metrics Source bindings; not committed metrics snapshots.',
+        ),
+        'Registry Metrics Source validation is not a numeric committed snapshot',
+    )
+    if "'label': 'Metrics Snapshot'" in presentation:
+        raise AssertionError('Registry Data Freshness must not present binding readiness as Metrics Snapshot')
+    _require(
+        presentation,
+        (
+            'def _overview_inventory_kpi_evidence(',
+            'RegistryCollectionState.integration_instance_id.in_(scoped_provider_ids)',
+            'RegistryProject.integration_instance_id.in_(committed_provider_ids)',
+            "'kpi_source_label': source_label",
+            "if committed_count else 'Not Collected'",
+            "'Partial Inventory (",
+            '_overview_inventory_evidence(committed_provider_ids)',
+        ),
+        'Registry active-provider committed KPI evidence and source coverage',
+    )
+    _require(
+        presentation,
+        (
+            "'last_updated': _human_time(latest)",
+            'has_committed_inventory=bool(committed_provider_ids)',
+        ),
+        'Registry Fast Shell relative freshness and bounded Inventory Snapshot evidence',
+    )
+    inventory_items = presentation.split('def _overview_inventory_items(', 1)[1].split(
+        'def _security_freshness_status(', 1
+    )[0]
+    _require(
+        inventory_items,
+        (
+            'has_committed_inventory: bool',
+            'if not has_committed_inventory:',
+            "item['value'] = 'Not Collected'",
+        ),
+        'Registry Inventory Snapshot runtime regression guard',
+    )
+    if 'committed_count' in inventory_items:
+        raise AssertionError('Registry Inventory Snapshot cannot reference KPI-local committed_count')
+    capacity_section = presentation.split("if section == 'capacity':", 1)[1].split("if section == 'signals':", 1)[0]
+    _require(
+        capacity_section,
+        (
+            'if selected_provider is None:',
+            'return context',
+            'return _overview_capacity_projection(',
+        ),
+        'Registry Capacity lazy section selected-provider guard',
+    )
+    if capacity_section.index('return context') >= capacity_section.index('return _overview_capacity_projection('):
+        raise AssertionError('Registry Capacity must bypass evidence projection when no provider is selected')
+    capacity_projection = presentation.split('def _overview_capacity_projection(', 1)[1].split(
+        'def build_overview(', 1
+    )[0]
+    _require(
+        capacity_projection,
+        (
+            'selected_provider: IntegrationInstance,',
+            'RegistryProject.integration_instance_id == selected_provider.id',
+        ),
+        'Registry selected-provider Capacity query boundary',
     )
     shell_projection = presentation.split('def build_overview(', 1)[1].split('def build_overview_section(', 1)[0]
     for forbidden in (
@@ -491,6 +715,7 @@ def verify() -> None:
     object_reporting_guidance = _read(OBJECT_REPORTING_GUIDANCE)
     object_reporting_summary = _read(OBJECT_REPORTING_SUMMARY)
     object_dashboard_service = _read(OBJECT_DASHBOARD_SERVICE)
+    object_system_health = _read(OBJECT_DASHBOARD_DIR / 'partials' / '_system_health.html')
     artifact_overview = _read(ARTIFACT_OVERVIEW)
     artifact_content = _read(ARTIFACT_CONTENT)
     artifact_hero = _read(ARTIFACT_HERO)
@@ -577,6 +802,49 @@ def verify() -> None:
         artifact_provider_health,
         artifact_routes,
         artifact_presentation,
+    )
+    _require(
+        object_dashboard_service,
+        (
+            "'alerts_connected': alerts_connected",
+            "'alerts_fallback': alerts_fallback",
+            "'alert_source_label': alert_source_label",
+            '_alert_view(payload)',
+            "alerts_connected = analytics_usable and bool(alert_stream.get('connected'))",
+            "alerts_fallback = alerts_connected and bool(alert_stream.get('fallback_used'))",
+        ),
+        'Object Storage committed alert source health projection',
+    )
+    _require(
+        object_system_health,
+        (
+            'row.inventory_ready',
+            'row.snapshot_ready',
+            'row.alerts_connected',
+            'row.alerts_fallback',
+            'row.alert_source_label',
+            'bg-status-normal',
+            'bg-status-warning',
+            'bg-status-unknown',
+        ),
+        'Object Storage Snapshot Sources row/view evidence parity',
+    )
+    _require(
+        cluster_health_builder,
+        (
+            "alerts_status = 'Snapshot'",
+            'alerts_status=alerts_status',
+        ),
+        'Kubernetes Snapshot Sources alert schema ownership',
+    )
+    _require(
+        artifact_presentation,
+        (
+            "'inventory_ready': inventory_ready",
+            "'metrics_ready': metrics.get('status') == 'ready'",
+            "'security_ready': security_ready",
+        ),
+        'Artifact Registry Snapshot Sources schema ownership',
     )
     _require(
         content,
@@ -803,7 +1071,8 @@ def verify() -> None:
     _require(
         object_signal_overview,
         (
-            'System Signals Available',
+            '4 Indicators',
+            'System Selected · Review Evidence',
             'Select a System for Detailed Signals',
             'hx-push-url="true"',
         ),
@@ -930,10 +1199,24 @@ def verify() -> None:
                 'components/operational_alert_summary.html',
                 'alert_summary.render(',
                 'up to five recent',
+                "empty_label='No Active Cases'",
+                "empty_title='No Active Alert Cases'",
+                'No active recommendation-origin AlertCases',
+                'Intelligence findings are separate.',
                 row_token,
             ),
             owner,
         )
+    signals_projection = artifact_presentation.split("if section == 'signals':", 1)[1].split(
+        "if section == 'reporting':", 1
+    )[0]
+    if (
+        'if selected_provider is None:' not in signals_projection
+        or signals_projection.index('return context') >= signals_projection.index('_registry_alerts(selected_provider)')
+        or signals_projection.index('return context')
+        >= signals_projection.index('_registry_recommended_actions(selected_provider)')
+    ):
+        raise AssertionError('Registry unselected Signals must not evaluate cross-provider Intelligence findings')
     _require(
         alerts_builder,
         ('for item in raw_items[:5]',),
@@ -1041,6 +1324,69 @@ def verify() -> None:
         ('Artifact Registry Operations Overview', artifact_operations),
     ):
         _require(source, ('components/operational_evidence_tile.html', 'evidence_tile.'), owner)
+    for owner, source in (
+        ('Kubernetes Data Freshness', kubernetes_freshness),
+        ('Object Storage Data Freshness', object_overview),
+        ('Artifact Registry Data Freshness', artifact_operations),
+    ):
+        _require(
+            source,
+            (
+                "'Data Freshness'",
+                "body_classes='grid gap-3 p-5 sm:grid-cols-2'",
+                'evidence_tile.freshness(',
+            ),
+            f'{owner} shared four-card presentation',
+        )
+    _require(
+        freshness,
+        (
+            'All Clusters shows committed capacity by cluster.',
+            'All Clusters shows committed alerts by cluster.',
+            'def _fleet_coverage(',
+            'Latest Kubernetes object counts from committed inventory.',
+            'Metrics-backed cluster usage and forecasts from committed snapshots.',
+        ),
+        'Kubernetes refreshed Data Freshness copy',
+    )
+    _require(
+        freshness,
+        (
+            'def _fleet_coverage(',
+            'fleet_cluster_count: int = 0',
+            'fleet_metrics_count: int = 0',
+            'fleet_alerts_count: int = 0',
+        ),
+        'Kubernetes committed fleet evidence coverage',
+    )
+    if "'Per Cluster'" in freshness:
+        raise AssertionError('Kubernetes fleet freshness must report evidence readiness, not a scope hint')
+    _require(
+        service,
+        (
+            'read_snapshots(',
+            'fleet_metrics_count = sum(result.available',
+            'fleet_alerts_count = sum(result.available',
+        ),
+        'Kubernetes bounded committed fleet snapshot source',
+    )
+    _require(
+        object_dashboard_service,
+        ('Committed 24h alerts; Alertmanager primary, Metrics Source fallback.',),
+        'Object Storage refreshed Alert Evidence Fleet copy',
+    )
+    _require(
+        object_dashboard_service,
+        (
+            'inventory_ready = len(observed)',
+            "'value': f'{inventory_ready} / {system_count} systems'",
+            "'Partial' if inventory_ready else 'Not Collected'",
+            "alert_fallback = alert_connected and bool(stream.get('fallback_used'))",
+            "'status': 'Fallback' if alert_fallback",
+            "'tone': 'warning' if alert_fallback",
+        ),
+        'Object Storage truthful fleet and selected alert evidence',
+    )
     _require(
         dashboard_empty_state,
         (
@@ -1090,7 +1436,8 @@ def verify() -> None:
         (
             'macro render(',
             "'Recommended Actions'",
-            'intelligence.recommendation_details',
+            "intelligence.recommendations', q=action.rule_key, detail=action.rule_key",
+            "intelligence.recommendations')",
             'normalized_priority',
             'No Active Recommendations',
         ),
