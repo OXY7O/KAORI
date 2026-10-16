@@ -327,25 +327,29 @@ def fresh_bundled_bootstrap(runtime_url: str, migration_url: str) -> None:
                 """,
             ):
                 fail('Unexpected application schema: database is not virgin')
-            if scalar(
-                cursor,
-                """
+            if (
+                scalar(
+                    cursor,
+                    """
                 SELECT COUNT(*) FROM pg_class c
                  JOIN pg_namespace n ON n.oid = c.relnamespace
                  WHERE n.nspname = 'public'
                 """,
-            ) or scalar(
-                cursor,
-                """
+                )
+                or scalar(
+                    cursor,
+                    """
                 SELECT COUNT(*) FROM pg_proc p
                  WHERE p.pronamespace = 'public'::regnamespace
                 """,
-            ) or scalar(
-                cursor,
-                """
+                )
+                or scalar(
+                    cursor,
+                    """
                 SELECT COUNT(*) FROM pg_extension
                  WHERE extname <> 'plpgsql'
                 """,
+                )
             ):
                 fail('Existing schema object or extension: refusing first-run provisioning')
             # Active/idle clients (including web or workers) would race DDL.
@@ -357,15 +361,11 @@ def fresh_bundled_bootstrap(runtime_url: str, migration_url: str) -> None:
                 """,
             ):
                 fail('Other PostgreSQL sessions remain; stop application services before bootstrap')
-            cursor.execute(
-                "SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = current_database()"
-            )
+            cursor.execute('SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = current_database()')
             db_owner = cursor.fetchone()[0]
             if db_owner not in {admin_user, 'kaori_migrator'}:
                 fail('Unexpected database owner: cannot infer a safe cutover')
-            cursor.execute(
-                "SELECT rolname FROM pg_roles WHERE rolname IN ('kaori_migrator', 'kaori_runtime')"
-            )
+            cursor.execute("SELECT rolname FROM pg_roles WHERE rolname IN ('kaori_migrator', 'kaori_runtime')")
             roles = {row[0] for row in cursor.fetchall()}
             if roles:
                 if roles != {'kaori_migrator', 'kaori_runtime'} or db_owner != 'kaori_migrator':
@@ -409,7 +409,6 @@ def fresh_bundled_bootstrap(runtime_url: str, migration_url: str) -> None:
     print('PASS: virgin bundled database provisioned with migrator and runtime roles')
 
 
-
 def existing_bundled_cutover(runtime_url: str, migration_url: str) -> None:
     """Single-transaction transfer of only audited public KAORI objects.
 
@@ -426,8 +425,12 @@ def existing_bundled_cutover(runtime_url: str, migration_url: str) -> None:
         fail('Existing-schema cutover requires bundled postgres DNS target')
     with closing(
         psycopg2.connect(
-            host='postgres', port=5432, dbname='kaori',
-            user=admin_user, password=admin_password, connect_timeout=5,
+            host='postgres',
+            port=5432,
+            dbname='kaori',
+            user=admin_user,
+            password=admin_password,
+            connect_timeout=5,
         )
     ) as conn:
         with conn.cursor() as cursor:
@@ -558,21 +561,15 @@ def existing_bundled_cutover(runtime_url: str, migration_url: str) -> None:
             for name, kind, _ in objects:
                 if kind == 'r':
                     cursor.execute(
-                        sql.SQL('ALTER TABLE public.{} OWNER TO kaori_migrator').format(
-                            sql.Identifier(name)
-                        )
+                        sql.SQL('ALTER TABLE public.{} OWNER TO kaori_migrator').format(sql.Identifier(name))
                     )
                 elif kind == 'S':
                     cursor.execute(
-                        sql.SQL('ALTER SEQUENCE public.{} OWNER TO kaori_migrator').format(
-                            sql.Identifier(name)
-                        )
+                        sql.SQL('ALTER SEQUENCE public.{} OWNER TO kaori_migrator').format(sql.Identifier(name))
                     )
             for name in sorted(_CAPSULE_TRIGGER_FUNCTIONS):
                 cursor.execute(
-                    sql.SQL('ALTER FUNCTION public.{}() OWNER TO kaori_migrator').format(
-                        sql.Identifier(name)
-                    )
+                    sql.SQL('ALTER FUNCTION public.{}() OWNER TO kaori_migrator').format(sql.Identifier(name))
                 )
             cursor.execute('ALTER DATABASE kaori OWNER TO kaori_migrator')
             cursor.execute('ALTER SCHEMA public OWNER TO kaori_migrator')
@@ -609,7 +606,6 @@ def existing_bundled_cutover(runtime_url: str, migration_url: str) -> None:
                 fail('Runtime inherited privileges are too broad; transaction rolled back')
             conn.commit()
     print('PASS: existing KAORI schema transferred without deleting application data')
-
 
 
 GRANT_SQL = """
