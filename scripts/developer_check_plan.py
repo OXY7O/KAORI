@@ -189,7 +189,6 @@ def _select_early_visual_regression(plan: ValidationPlan, path: str) -> None:
         plan.add_test_node(_WELCOME_VISUAL_MODULE, _WELCOME_VISUAL_NODE)
 
 
-
 def _route_template(plan: ValidationPlan, path: str) -> None:
     if not path.startswith('app/templates/'):
         plan.broad_templates = True
