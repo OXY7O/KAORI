@@ -53,5 +53,8 @@ def test_login_smoke_fails_closed_to_database_setup_surface(app, monkeypatch: py
     assert 'Contact your deployment administrator.' in html
     assert 'bash scripts/init_db.sh --bootstrap-admin' not in html
     assert 'docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml' not in html
-    assert 'users' in html
-    assert 'roles' in html
+    # Anonymous production setup must not enumerate schema objects; the
+    # development-only detailed diagnostic remains gated from this page.
+    assert 'data-kaori-setup-production-guidance' in html
+    assert 'Missing Schema Objects' not in html
+    assert 'data-kaori-setup-advanced' not in html
