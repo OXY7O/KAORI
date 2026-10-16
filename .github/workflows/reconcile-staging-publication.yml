@@ -100,6 +100,41 @@ jobs:
             exit 1
           }
 
+          # Hostname authority is the deployed KAORI application configuration,
+          # not a hardcoded edge/domain value. Never print other app.env entries.
+          app_hostname="$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          app_env = Path('/etc/kaori/app.env')
+          if not app_env.is_file() or app_env.is_symlink():
+              raise SystemExit('KAORI application environment file is missing or unsafe')
+
+          settings = {}
+          for raw in app_env.read_text(encoding='utf-8').splitlines():
+              line = raw.strip()
+              if not line or line.startswith('#') or '=' not in line:
+                  continue
+              key, value = line.split('=', 1)
+              if key in {'KAORI_PUBLIC_BASE_URL', 'TRUSTED_HOSTS'}:
+                  if key in settings:
+                      raise SystemExit('Duplicate KAORI hostname configuration')
+                  settings[key] = value.strip().strip('"\'')
+
+          parsed = urlsplit(settings.get('KAORI_PUBLIC_BASE_URL', ''))
+          host = parsed.hostname or ''
+          if (parsed.scheme != 'https' or parsed.netloc != host
+                  or parsed.path or parsed.query or parsed.fragment
+                  or not re.fullmatch(r'[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?)+', host)):
+              raise SystemExit('Invalid canonical KAORI HTTPS hostname')
+          trusted = {item.strip() for item in settings.get('TRUSTED_HOSTS', '').split(',')}
+          if host not in trusted or 'localhost' not in trusted:
+              raise SystemExit('Public hostname / internal readiness Trusted Hosts mismatch')
+          print(host)
+          PY
+          )"
+
           KAORI_WEB="$(docker ps -q \
             --filter label=com.docker.compose.project=kaori-production \
             --filter label=com.docker.compose.service=web | head -n1)"
@@ -119,7 +154,7 @@ jobs:
           cd "$edge_runtime"
           bash "$edge_publish" \
             --site-id kaori \
-            --domain kaori.cloud \
+            --domain "$app_hostname" \
             --container "$KAORI_WEB" \
             --alias kaori-web \
             --port 5000 \
