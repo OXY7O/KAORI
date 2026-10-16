@@ -17,7 +17,9 @@ permissions:
   statuses: write
 
 concurrency:
-  group: kaori-developer-check-${{ github.event.pull_request.number }}
+  # Queue generation 2 (#2058): retire the wedged PR concurrency key without relaxing gates.
+  # Keep one active run per PR and cancel superseded validation runs on new exact-head SHAs.
+  group: kaori-developer-check-v2-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 env:
@@ -38,6 +40,7 @@ jobs:
       reports: ${{ steps.route.outputs.reports }}
       wide: ${{ steps.route.outputs.wide }}
       test_paths: ${{ steps.route.outputs.test_paths }}
+      template_paths: ${{ steps.route.outputs.template_paths }}
       summary: ${{ steps.route.outputs.summary }}
     steps:
       - name: Checkout Work Branch
@@ -62,7 +65,8 @@ jobs:
   toolchain:
     name: Prepare Toolchain
     needs: route
-    if: ${{ needs.route.result == 'success' }}
+    # Pure documentation/copy outside validation authority does not need a CI image.
+    if: ${{ needs.route.result == 'success' && (needs.route.outputs.python == 'true' || needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true' || needs.route.outputs.test_paths != '') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 10
     outputs:
@@ -158,8 +162,10 @@ jobs:
 
   validation-check:
     name: Frontend & Focused Validation
-    needs: [route, toolchain]
-    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
+    # Both kaori-ci runner services share host 'kaori': serialize memory-intensive
+    # Pyright and focused pytest; still run frontend-only routes if Python is skipped.
+    needs: [route, toolchain, python-check]
+    if: ${{ !cancelled() && needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.python-check.result == 'success' || needs.python-check.result == 'skipped') && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 20
     steps:
@@ -169,11 +175,33 @@ jobs:
           ref: ${{ env.KAORI_SOURCE_SHA }}
           persist-credentials: false
 
+      - name: Prepare Isolated Focused Test Runtime
+        id: focused-runtime
+        if: ${{ needs.route.outputs.test_paths != '' || needs.route.outputs.contracts == 'true' }}
+        shell: bash
+        env:
+          TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
+        run: |
+          set -Eeuo pipefail
+          export KAORI_CI_TOOLCHAIN_IMAGE="$TOOLCHAIN_IMAGE"
+          CI_UID="$(id -u)"
+          CI_GID="$(id -g)"
+          export CI_UID CI_GID
+          export COMPOSE_PROJECT_NAME="kaori-devcheck-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-focused"
+          {
+            echo "KAORI_CI_TOOLCHAIN_IMAGE=$KAORI_CI_TOOLCHAIN_IMAGE"
+            echo "CI_UID=$CI_UID"
+            echo "CI_GID=$CI_GID"
+            echo "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME"
+          } >> "$GITHUB_ENV"
+          docker compose --file .github/ci/compose.yml up --detach --wait postgres redis
+
       - name: Run Frontend & Focused Validation
         shell: bash
         env:
           CI_TOOLCHAIN_IMAGE: ${{ needs.toolchain.outputs.image }}
           CHECK_TEMPLATES: ${{ needs.route.outputs.templates }}
+          TEMPLATE_PATHS: ${{ needs.route.outputs.template_paths }}
           CHECK_FRONTEND: ${{ needs.route.outputs.frontend }}
           CHECK_CONTRACTS: ${{ needs.route.outputs.contracts }}
           TEST_PATHS: ${{ needs.route.outputs.test_paths }}
@@ -199,7 +227,15 @@ jobs:
           }
 
           if [[ "$CHECK_TEMPLATES" == "true" ]]; then
-            run_toolchain 'DjLint' python -m djlint app/templates --check
+            if [[ -n "$TEMPLATE_PATHS" ]]; then
+              # The canonical planner only outputs existing, safe, owned leaf HTML paths.
+              # Shell arrays preserve argument boundaries; no eval or dynamic shell commands.
+              read -r -a changed_templates <<< "$TEMPLATE_PATHS"
+              run_toolchain 'DjLint Changed Templates' python -m djlint "${changed_templates[@]}" --check
+            else
+              # Shared, removed, unknown, or wide validation-authority changes widen.
+              run_toolchain 'DjLint Full Templates' python -m djlint app/templates --check
+            fi
           fi
 
           if [[ "$CHECK_FRONTEND" == "true" ]]; then
@@ -216,11 +252,21 @@ jobs:
             printf '⏳ Focused Tests — %s\n' "$paths"
             # TEST_PATHS is assembled only from the static whitelist above.
             # shellcheck disable=SC2086
-            run_toolchain 'Focused Tests' bash -lc "pytest -q --tb=short $paths"
+            # Reuse the Full Admission test service: exact-run isolated PostgreSQL/Redis.
+            test_started="$(date +%s)"
+            docker compose --file .github/ci/compose.yml run --rm --no-deps ci \
+              bash -lc "pytest -q --tb=short $paths"
+            test_elapsed=$(( $(date +%s) - test_started ))
+            printf '✅ Focused Tests · ⏱ %dm %02ds\n' $((test_elapsed / 60)) $((test_elapsed % 60))
           fi
 
           elapsed=$(( $(date +%s) - started ))
           printf '✅ Frontend & Focused Validation PASS · ⏱ %dm %02ds\n' $((elapsed / 60)) $((elapsed % 60))
+
+      - name: Stop Isolated Focused Test Runtime
+        if: ${{ always() && steps.focused-runtime.outcome != 'skipped' }}
+        shell: bash
+        run: docker compose --file .github/ci/compose.yml down --volumes --remove-orphans
 
       - name: Upload Browser Diagnostics
         if: ${{ failure() }}
@@ -262,12 +308,16 @@ jobs:
           set -Eeuo pipefail
           python_required=false
           validation_required=false
+          toolchain_required=false
 
           if [[ "$CHECK_PYTHON" == "true" || "$CHECK_MIGRATIONS" == "true" || "$CHECK_REPORTS" == "true" || "$CHECK_WIDE" == "true" ]]; then
             python_required=true
           fi
           if [[ "$CHECK_TEMPLATES" == "true" || "$CHECK_FRONTEND" == "true" || "$CHECK_CONTRACTS" == "true" || -n "$TEST_PATHS" ]]; then
             validation_required=true
+          fi
+          if [[ "$python_required" == "true" || "$validation_required" == "true" ]]; then
+            toolchain_required=true
           fi
 
           assert_lane() {
@@ -287,10 +337,7 @@ jobs:
             fi
           }
 
-          [[ "$TOOLCHAIN_RESULT" == "success" ]] || {
-            printf '❌ Prepare Toolchain — %s\n' "$TOOLCHAIN_RESULT"
-            exit 1
-          }
+          assert_lane 'Prepare Toolchain' "$toolchain_required" "$TOOLCHAIN_RESULT"
 
           assert_lane 'Python & Governance' "$python_required" "$PYTHON_RESULT"
           assert_lane 'Frontend & Focused Validation' "$validation_required" "$VALIDATION_RESULT"

@@ -9,6 +9,7 @@ same decision can be consumed by Dev Container and GitHub Actions.
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -27,10 +28,22 @@ class ValidationPlan:
     wide: bool = False
     test_paths: set[str] = field(default_factory=set)
     capabilities: set[str] = field(default_factory=set)
+    template_paths: set[str] = field(default_factory=set)
+    broad_templates: bool = False
+
+    def normalized_template_paths(self) -> list[str]:
+        if self.wide or self.broad_templates:
+            return []
+        return sorted(self.template_paths)
 
     def add_test_path(self, path: str) -> None:
         if (ROOT / path).exists():
             self.test_paths.add(path)
+
+    def add_test_node(self, module: str, node: str) -> None:
+        """Select an existing pytest test by its static trusted node identity."""
+        if (ROOT / module).is_file():
+            self.test_paths.add(f'{module}::{node}')
 
     def add_test_glob(self, pattern: str) -> None:
         for path in sorted(ROOT.glob(pattern)):
@@ -41,11 +54,17 @@ class ValidationPlan:
         paths = set(self.test_paths)
         if 'tests/contracts' in paths:
             paths = {path for path in paths if path == 'tests/contracts' or not path.startswith('tests/contracts/')}
+        # A selected directory already executes every nested module and pytest
+        # node. Do not run those same tests twice via a more specific selector.
+        directories = sorted(path for path in paths if (ROOT / path).is_dir())
+        for parent in directories:
+            paths = {path for path in paths if path == parent or not path.startswith(f'{parent}/')}
         return sorted(paths)
 
     def summary(self) -> str:
         tests = ' '.join(self.normalized_test_paths()) or 'none'
         capabilities = ','.join(sorted(self.capabilities)) or 'shared'
+        template_scope = 'changed' if self.normalized_template_paths() else 'full' if self.templates else 'none'
         return (
             f'python={str(self.python).lower()} '
             f'templates={str(self.templates).lower()} '
@@ -54,6 +73,7 @@ class ValidationPlan:
             f'contracts={str(self.contracts).lower()} '
             f'reports={str(self.reports).lower()} '
             f'wide={str(self.wide).lower()} '
+            f'template_scope={template_scope} '
             f'capabilities={capabilities} tests={tests}'
         )
 
@@ -74,9 +94,18 @@ def _is_wide_authority(path: str) -> bool:
         'scripts/verify_code_health_baseline_integrity.py',
         'docs/architecture/code-health-debt-baseline.json',
         'docs/engineering/KAORI_DELIVERY_WORKFLOW.md',
+        'docs/setup/GITHUB_ACTIONS_CI_CD.md',
+        'docs/deployment/RELEASE_GOVERNANCE.md',
+        'docs/deployment/CI_CD_RECOVERY_CONTRACT.md',
+        'docs/standards/KAORI_ENGINEERING_STANDARD_V1.md',
+        'docs/TESTING.md',
     }
     return (
-        path.startswith(prefixes) or path in exact or path.startswith('Dockerfile') or path.startswith('docker-compose')
+        path.startswith(prefixes)
+        or path.startswith('scripts/verify_')
+        or path in exact
+        or path.startswith('Dockerfile')
+        or path.startswith('docker-compose')
     )
 
 
@@ -84,6 +113,7 @@ def _select_contract_family(plan: ValidationPlan, path: str) -> bool:
     families = (
         'access',
         'analytics',
+        'artifact_registry',
         'architecture',
         'dashboards',
         'definitions',
@@ -115,12 +145,105 @@ def _select_contract_family(plan: ValidationPlan, path: str) -> bool:
     return False
 
 
+# Scoped djLint is safe for known leaf templates: it validates only changed
+# files; shared layouts, macros, removed files and unknown ownership widen.
+_LEAF_TEMPLATE_PREFIXES = (
+    'app/templates/access/',
+    'app/templates/artifact_registry/',
+    'app/templates/integrations/',
+    'app/templates/intelligence/',
+    'app/templates/kubernetes/tenant/',
+    'app/templates/platform_operations/',
+    'app/templates/reports/',
+    'app/templates/settings/',
+    'app/templates/storage/object_storage/',
+    'app/templates/welcome/',
+)
+# Ordinary workspace templates have explicit owning behavior and contract suites.
+# Shared template families (components/layouts/dashboards) remain wide.
+_TEMPLATE_DOMAIN_TESTS = {
+    'access': ('tests/access', 'tests/contracts/access'),
+    'integrations': ('tests/integrations', 'tests/contracts/integrations'),
+    'intelligence': ('tests/intelligence', 'tests/contracts/intelligence'),
+    'platform_operations': ('tests/platform_operations', 'tests/contracts/platform_operations'),
+    'reports': ('tests/reports', 'tests/contracts/reports'),
+    'settings': ('tests/settings', 'tests/contracts/settings'),
+    'welcome': ('tests/welcome', 'tests/contracts/welcome'),
+}
+_SAFE_TEMPLATE_PATH = re.compile(r'^app/templates/[A-Za-z0-9_./-]+\.html$')
+_WELCOME_VISUAL_MODULE = 'tests/ui/test_representative_interactions.py'
+_WELCOME_VISUAL_NODE = 'test_welcome_visual_qa_light_and_dark'
+
+
+def _select_early_visual_regression(plan: ValidationPlan, path: str) -> None:
+    """Run affected Welcome visual regression during Draft instead of late admission."""
+    if path.startswith(
+        (
+            'app/welcome/',
+            'app/templates/welcome/',
+            'app/templates/layouts/',
+            'app/templates/components/',
+            'app/static/css/',
+        )
+    ) or path in {
+        'app/static/js/application_shell.js',
+        'tests/ui/baselines/authenticated-visual.json',
+        'tests/ui/visual_audit.py',
+    }:
+        plan.capabilities.add('ui/welcome-visual')
+        plan.add_test_node(_WELCOME_VISUAL_MODULE, _WELCOME_VISUAL_NODE)
+
+
+def _route_template(plan: ValidationPlan, path: str) -> None:
+    if not path.startswith('app/templates/'):
+        plan.broad_templates = True
+        plan.add_test_path('tests/contracts')
+        return
+    if (
+        not path.startswith(_LEAF_TEMPLATE_PREFIXES)
+        or not _SAFE_TEMPLATE_PATH.fullmatch(path)
+        or not (ROOT / path).is_file()
+        or (ROOT / path).is_symlink()
+        or '/partials/' in path
+        or '/components/' in path
+        or Path(path).name.startswith('_')
+        or Path(path).name in {'base.html', 'layout.html', 'macros.html', 'components.html'}
+        or '..' in Path(path).parts
+    ):
+        plan.broad_templates = True
+        plan.add_test_path('tests/contracts')
+        return
+    plan.template_paths.add(path)
+    for domain, test_paths in _TEMPLATE_DOMAIN_TESTS.items():
+        if path.startswith(f'app/templates/{domain}/'):
+            plan.capabilities.add(domain)
+            for test_path in test_paths:
+                plan.add_test_path(test_path)
+            if domain == 'reports':
+                plan.reports = True
+            break
+    if path.startswith('app/templates/integrations/registry/'):
+        plan.capabilities.add('artifact_registry')
+        plan.add_test_path('tests/contracts/artifact_registry')
+        plan.add_test_path('tests/unit/artifact_registry')
+    if path.startswith('app/templates/integrations/storage/object_storage/'):
+        plan.capabilities.add('storage/object_storage')
+        plan.add_test_path('tests/storage/object_storage')
+        plan.add_test_path('tests/contracts/storage/object_storage')
+    if path.startswith('app/templates/kubernetes/tenant/'):
+        plan.capabilities.add('kubernetes/tenant')
+        plan.add_test_path('tests/kubernetes/tenant')
+        plan.add_test_glob('tests/contracts/kubernetes/test_tenant_*.py')
+
+
 def build_plan(changed_paths: list[str]) -> ValidationPlan:
     plan = ValidationPlan()
 
     for path in changed_paths:
         if not path:
             continue
+
+        _select_early_visual_regression(plan, path)
 
         if _is_wide_authority(path):
             plan.wide = True
@@ -134,6 +257,7 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
             plan.python = True
         if path.startswith('app/templates/') or (path.startswith('app/') and '/templates/' in path):
             plan.templates = True
+            _route_template(plan, path)
         if (
             path.startswith('app/static/')
             or path.startswith('frontend/')
@@ -153,6 +277,17 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
         elif path.startswith(('app/integrations/', 'tests/integrations/')):
             plan.capabilities.add('integrations')
             plan.add_test_path('tests/integrations')
+            # Provider contracts remain integration-owned; cross-domain consumers
+            # receive their existing focused regression evidence as well.
+            if path.startswith('app/integrations/registry/'):
+                plan.capabilities.add('artifact_registry')
+                plan.add_test_path('tests/contracts/artifact_registry')
+                plan.add_test_path('tests/artifact_registry')
+                plan.add_test_path('tests/unit/artifact_registry')
+            if path.startswith('app/integrations/storage/object_storage/'):
+                plan.capabilities.add('storage/object_storage')
+                plan.add_test_path('tests/contracts/storage/object_storage')
+                plan.add_test_path('tests/storage/object_storage')
         elif path.startswith(('app/kubernetes/tenant/', 'tests/kubernetes/tenant/')):
             plan.capabilities.add('kubernetes/tenant')
             plan.add_test_path('tests/kubernetes/tenant')
@@ -162,15 +297,45 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
             plan.add_test_path('tests/kubernetes')
         elif path.startswith(
             (
+                'app/artifact_registry/',
+                'app/templates/artifact_registry/',
+                'app/static/js/artifact_registry/',
+                'tests/artifact_registry/',
+                'tests/unit/artifact_registry/',
+            )
+        ):
+            plan.capabilities.add('artifact_registry')
+            plan.add_test_path('tests/artifact_registry')
+            plan.add_test_path('tests/unit/artifact_registry')
+            plan.add_test_path('tests/contracts/artifact_registry')
+        elif path.startswith(
+            (
                 'app/storage/',
                 'app/object_storage/',
+                'app/templates/storage/object_storage/',
+                'app/static/js/storage/object_storage/',
                 'tests/storage/',
                 'tests/object_storage/',
             )
         ):
             plan.capabilities.add('storage')
-            plan.add_test_path('tests/storage')
-            plan.add_test_path('tests/object_storage')
+            if path.startswith('app/templates/storage/object_storage/'):
+                plan.add_test_path('tests/storage/object_storage')
+            else:
+                plan.add_test_path('tests/storage')
+                plan.add_test_path('tests/object_storage')
+            if path.startswith(
+                (
+                    'app/storage/object_storage/',
+                    'app/object_storage/',
+                    'app/templates/storage/object_storage/',
+                    'app/static/js/storage/object_storage/',
+                    'tests/storage/object_storage/',
+                    'tests/object_storage/',
+                )
+            ):
+                plan.capabilities.add('storage/object_storage')
+                plan.add_test_path('tests/contracts/storage/object_storage')
         elif path.startswith(('app/platform_operations/', 'tests/platform_operations/')):
             plan.capabilities.add('platform_operations')
             plan.contracts = True
@@ -200,7 +365,7 @@ def build_plan(changed_paths: list[str]) -> ValidationPlan:
         if _select_contract_family(plan, path):
             continue
 
-        if path.startswith('app/'):
+        if path.startswith('app/') and not path.endswith(('.md', '.rst')):
             plan.contracts = True
         elif path.startswith('tests/contracts/'):
             plan.contracts = True
@@ -234,10 +399,12 @@ def write_github_output(path: Path, plan: ValidationPlan) -> None:
         'wide': plan.wide,
     }
     test_paths = ' '.join(plan.normalized_test_paths())
+    template_paths = ' '.join(plan.normalized_template_paths())
     with path.open('a', encoding='utf-8') as handle:
         for key, value in values.items():
             handle.write(f'{key}={str(value).lower()}\n')
         handle.write(f'test_paths={test_paths}\n')
+        handle.write(f'template_paths={template_paths}\n')
         handle.write(f'summary={plan.summary()}\n')
 
 

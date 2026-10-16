@@ -21,7 +21,33 @@ python scripts/developer_check_plan.py --base kaori/staging --head HEAD
 
 The planner is the path/test-selection authority for both Local-First Dev Container work and GitHub Developer Check. It classifies direct capability impact, preserves existing shared/contract widening, and returns deterministic focused pytest paths. Unknown or shared impact widens rather than silently omitting coverage.
 
-Current capability-aware pilot: `app/kubernetes/tenant/**` selects Tenant behavior tests and existing Tenant-owned Kubernetes contracts instead of automatically selecting the entire Kubernetes behavior suite. Full Admission remains comprehensive at the frozen-candidate boundary.
+Capability-aware routing includes `app/kubernetes/tenant/**` (Tenant behavior and Tenant-owned Kubernetes contracts), `app/artifact_registry/**` and `app/templates/artifact_registry/**` (Artifact Registry behavior/UI and owning `tests/unit/artifact_registry` plus `tests/contracts/artifact_registry`), and `app/storage/object_storage/**`, `app/templates/storage/object_storage/**`, and domain-owned frontend assets (Object Storage behavior/UI and `tests/contracts/storage/object_storage`). Changes to Registry/Harbor and Object Storage integration adapters retain Integration tests **and** select their affected operational-domain contracts. Direct `tests/contracts/artifact_registry/**` changes are part of the canonical contract-family routing, not generic release-only fallback.
+
+These are **focused Developer Check** selections; they do not replace canonical source-wide static/domain verifiers or the complete Full Admission suite at the frozen-candidate boundary. When a path has shared or unknown blast radius, retain existing widening/fail-closed behavior. The release-surface verifier checks that every declared contract evidence path contains executable `test_*.py` modules; successful Static & Governance logs enumerate the release surfaces and their test-module counts.
+
+### Incremental Draft validation (issue #1801)
+
+The canonical Developer Check planner emits `template_paths` and a `template_scope` decision. **Only existing leaf HTML templates** in recognized Artifact Registry, Object Storage, or Kubernetes Tenant workspaces may use file-scoped `djlint --check`. The planner still selects domain behavior and contract regression tests. The Object Storage leaf UI path selects `tests/storage/object_storage` and owning contracts rather than unrelated Storage test folders.
+
+Changes to shared template/layout components, unrecognized ownership, removed templates, CI/test authority, or conflicting mixed paths widen to full `app/templates` lint and applicable broad contract tests. A non-authority Markdown-only diff (such as `README.md`) skips CI image/toolchain preparation and heavy validation jobs: the cheap `Route Checks` plus fail-closed `Developer Check` aggregate still execute. CI/security/release/engineering authority docs are deliberately treated as wide changes, not ordinary documentation.
+
+Known leaf-template owners now include Access, Integrations, Intelligence, Platform Operations, Reports, Settings, Welcome, Artifact Registry, Object Storage and Kubernetes Tenant. Domains without proven template ownership continue to use broad lint and contract coverage; the planner does not infer ownership from arbitrary filenames.
+
+For fast local troubleshooting on a **large, already-reviewed candidate**, inspect the latest repair delta without changing the canonical PR-base validation authority:
+
+```bash
+python scripts/developer_check_plan.py --base HEAD~1 --head HEAD
+```
+
+Run only the selected pytest paths during the repair loop. This command is **diagnostic local feedback only**: PR Developer Check against the actual staging base and frozen-candidate Full Admission remain mandatory. Never use a last-commit delta as final admission evidence.
+
+### Early Visual QA impact route
+
+Welcome content, the shared Hero/layout, global CSS, and application-shell theme changes may invalidate deterministic visual baselines. The planner now selects **only the existing Welcome visual test** at `tests/ui/test_representative_interactions.py::test_welcome_visual_qa_light_and_dark` on those changed-path families and when its baseline manifest or visual-audit helper changes. This runs the existing canonical six-viewport light/dark test under Draft focused pytest rather than discovering a hash mismatch after lengthy Full Admission functional tests. It does not rebaseline, omit any device/theme, or replace the comprehensive browser tests. Changes unrelated to those visual surfaces do not select this focused Playwright check.
+
+Exact-head Full Admission #38798164894 demonstrated the failure mode: 3,106 other functional cases PASS but `welcome-light-mobile` visual hash FAIL after 14m43s of functional test execution. Incident investigation and human-reviewed baseline authority remain tracked under #2196; an actual hash difference is not proof of an acceptable visual change.
+
+This is a **Draft and Pre-Ready cost optimization**; the frozen Ready candidate still undergoes the existing exact-head Developer Check and complete Full Admission. Existing source-wide evidence reuse is restricted to identical source-tree and validation-authority fingerprints with validated lineage. No cross-source-tree or per-domain admission evidence reuse is enabled. The tracked measurement and feasibility issues are #1796 and #2194. An unexecuted plan is not test PASS.
 
 ### Targeted regression
 
@@ -65,6 +91,14 @@ python scripts/verify_final_release.py --all --runtime
 ```
 
 The runtime-aware gate additionally requires endpoint-registry evidence and a running Reports worker with the expected queue. Run it only against an environment where those runtime prerequisites are intentionally available.
+
+## Reviewed visual fingerprint and raster stability
+
+The Playwright Visual QA gate remains strict on viewport geometry and the committed `tests/ui/baselines/authenticated-visual.json` manifest. Normal captures compare the existing 128px blurred/24-unit quantized screenshot digest exactly. The proposed #2196 stabilization recognizes **only a one-channel, one-thumbnail-pixel flip at the 8-bit near-white 251/252 quantization boundary**, when correcting that exact channel reproduces the **existing reviewed SHA256**. It emits a warning so the exception remains auditable; two changed channels, non-white changes, geometry mismatches, and missing/changed manifests remain FAIL. There is no baseline regeneration, test skip or change to acceptance authority.
+
+This limited guard is motivated by official runs #38792762830 (baseline PASS) and #38798164894 (same visual source and runner, baseline FAIL): the raw screenshots have identical 390×844 geometry, only 108 of 329,160 pixels differ by at most 2 RGB units, and the quantized thumbnail differs at exactly one channel (240→255) when 251 rounds to 240 versus 252 rounds to 255. The actual and expected images were reviewed against their official retained artifacts. Negative regression cases must prove that meaningful visual changes remain blocked.
+
+**Status:** the guard is a proposed visual QA policy adjustment under #2196 until source/CI validation and explicit human review. Do not interpret a Draft PR or a local pixel comparison as Full Admission PASS.
 
 ## Failure policy
 

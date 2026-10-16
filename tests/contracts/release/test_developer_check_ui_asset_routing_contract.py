@@ -16,8 +16,9 @@ def test_ui_browser_changes_prepare_frontend_assets_before_tests() -> None:
 
     dependencies = workflow.index("run_toolchain 'Frontend Dependencies'")
     assets = workflow.index("run_toolchain 'Frontend Test Assets'")
-    focused = workflow.index("run_toolchain 'Focused Tests'")
+    focused = workflow.index("printf '⏳ Focused Tests")
 
-    assert dependencies < assets < focused, (
+    pytest_invocation = workflow.index('bash -lc "pytest -q --tb=short $paths"')
+    assert dependencies < assets < focused < pytest_invocation, (
         'Developer Check must prepare frontend assets before running routed browser tests.'
     )

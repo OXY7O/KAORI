@@ -34,7 +34,7 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert jobs['developer-check']['name'] == 'Developer Check'
     assert jobs['developer-check']['if'].startswith('${{ always()')
     assert set(jobs['python-check']['needs']) == {'route', 'toolchain'}
-    assert set(jobs['validation-check']['needs']) == {'route', 'toolchain'}
+    assert set(jobs['validation-check']['needs']) == {'route', 'toolchain', 'python-check'}
     assert set(jobs['developer-check']['needs']) == {
         'route',
         'toolchain',
@@ -63,7 +63,7 @@ def test_developer_check_normalizes_parent_child_test_paths() -> None:
     assert 'return sorted(paths)' in source
 
 
-def test_developer_check_parallel_lanes_fail_closed_into_one_aggregate() -> None:
+def test_developer_check_sequenced_lanes_fail_closed_into_one_aggregate() -> None:
     source = read(DEVELOPER_WORKFLOW)
 
     for token in (
@@ -76,11 +76,38 @@ def test_developer_check_parallel_lanes_fail_closed_into_one_aggregate() -> None
         'TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}',
         'PYTHON_RESULT: ${{ needs.python-check.result }}',
         'VALIDATION_RESULT: ${{ needs.validation-check.result }}',
-        '[[ "$TOOLCHAIN_RESULT" == "success" ]]',
+        'assert_lane \'Prepare Toolchain\' "$toolchain_required" "$TOOLCHAIN_RESULT"',
         "assert_lane 'Python & Governance'",
         "assert_lane 'Frontend & Focused Validation'",
     ):
         assert token in source
+
+
+def test_focused_validation_short_circuits_on_governance_failure() -> None:
+    workflow = yaml.safe_load(read(DEVELOPER_WORKFLOW))
+    jobs = workflow['jobs']
+    validation = jobs['validation-check']
+    condition = validation['if']
+
+    assert set(validation['needs']) == {'route', 'toolchain', 'python-check'}
+    assert '!cancelled()' in condition
+    assert "needs.route.result == 'success'" in condition
+    assert "needs.toolchain.result == 'success'" in condition
+    assert "needs.python-check.result == 'success'" in condition
+    assert "needs.python-check.result == 'skipped'" in condition
+    assert "needs.python-check.result == 'failure'" not in condition
+    assert "needs.python-check.result == 'cancelled'" not in condition
+    assert jobs['developer-check']['if'].startswith('${{ always()')
+    assert set(jobs['developer-check']['needs']) == {
+        'route',
+        'toolchain',
+        'python-check',
+        'validation-check',
+    }
+    assert "assert_lane 'Python & Governance'" in read(DEVELOPER_WORKFLOW)
+    assert "assert_lane 'Frontend & Focused Validation'" in read(DEVELOPER_WORKFLOW)
+    assert jobs['full-admission']['needs'] == 'developer-check'
+    assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
 
 
 def test_ready_full_admission_is_strictly_downstream_of_developer_check() -> None:
