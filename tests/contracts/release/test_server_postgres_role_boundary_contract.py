@@ -1,4 +1,5 @@
 """Source-level regression for bundled server PostgreSQL role separation (#1439)."""
+
 from __future__ import annotations
 
 import re
@@ -13,9 +14,9 @@ def source(path: str) -> str:
 
 def service_block(compose: str, name: str) -> str:
     start = compose.index(f'  {name}:\n')
-    remaining = compose[start + len(f'  {name}:\n'):]
+    remaining = compose[start + len(f'  {name}:\n') :]
     next_service = re.search(r'(?m)^  [a-z][a-z0-9_-]*:$', remaining)
-    return remaining if next_service is None else remaining[:next_service.start()]
+    return remaining if next_service is None else remaining[: next_service.start()]
 
 
 def test_runtime_secrets_never_include_postgres_admin_or_migrator() -> None:
@@ -33,10 +34,18 @@ def test_runtime_secrets_never_include_postgres_admin_or_migrator() -> None:
     assert 'POSTGRES_PASSWORD=' not in source('deploy/env/secrets.env.example')
     assert 'DATABASE_URL=postgresql://kaori_runtime:' in source('deploy/env/secrets.env.example')
     for service in (
-        'web', 'worker', 'registry-security-worker', 'maintenance-worker',
-        'runtime-worker', 'validation-worker', 'analytics-worker', 'reports-worker',
-        'forecasting-worker', 'resolver-execution-worker',
-        'resolver-maintenance-worker', 'beat',
+        'web',
+        'worker',
+        'registry-security-worker',
+        'maintenance-worker',
+        'runtime-worker',
+        'validation-worker',
+        'analytics-worker',
+        'reports-worker',
+        'forecasting-worker',
+        'resolver-execution-worker',
+        'resolver-maintenance-worker',
+        'beat',
     ):
         block = service_block(compose, service)
         assert 'KAORI_SECRETS_ENV_FILE' in block, service
@@ -120,8 +129,12 @@ def test_existing_schema_cutover_is_bounded_and_requires_proven_backup() -> None
     assert 'backup_path.schema.sql' in deploy
     assert 'server_database_boundary.py cutover' in deploy
     assert 'stop "${application_services[@]}"' in deploy
-    assert deploy.index('stop "${application_services[@]}"') < deploy.index('backup_path="$(bash "$SCRIPT_DIR/backup.sh")"')
-    assert deploy.index('backup_path="$(bash "$SCRIPT_DIR/backup.sh")"') < deploy.index("server_database_boundary.py cutover")
+    assert deploy.index('stop "${application_services[@]}"') < deploy.index(
+        'backup_path="$(bash "$SCRIPT_DIR/backup.sh")"'
+    )
+    assert deploy.index('backup_path="$(bash "$SCRIPT_DIR/backup.sh")"') < deploy.index(
+        'server_database_boundary.py cutover'
+    )
     assert 'pg_dumpall' in backup
     assert '--globals-only' in backup
     assert 'ALTER TABLE public.{} OWNER TO kaori_migrator' in guard
