@@ -352,6 +352,23 @@ If app deployment succeeded but publication failed, let any active operator
 dry-run finish, then rerun **only** the failed Publication Reconciliation job,
 preserving the same admitted immutable RC and separate application evidence.
 
+## HTTP redirect parser portability — #2214
+
+`verify.sh` parses the public HTTP response status and `Location` header via
+POSIX-compatible `awk`. It must support HTTP/1.1 and HTTP/2 status lines,
+case-insensitive `Location` header names and CRLF wire formatting while
+continuing to require **exact** HTTP 301/308 redirects to the same
+`https://$domain$health_path` URL. Other redirect targets remain FAIL.
+
+After installing a reviewed standalone edge verifier, run
+`bash ./verify.sh --wait-seconds 360 --renewal-dry-run` against all active
+sites. If an `awk` syntax error occurs, do not retry the same broken
+verifier or downgrade TLS requirements: check file parity against the
+accepted immutable Git commit and apply the issue-scoped corrected verifier
+through the existing backup, atomic install, and verification procedure.
+This is an edge-only maintenance failure; it does not imply KAORI application
+runtime must be redeployed.
+
 ## GitHub recovery rule
 
 When deployment already succeeded and only post-deploy publication failed:
