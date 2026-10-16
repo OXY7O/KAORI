@@ -292,6 +292,66 @@ sudo rm -f /opt/shared-edge/state/acme-webroot/.well-known/acme-challenge/kaori-
 
 Do not disable renewal dry-run merely to make publication green.
 
+## New TLS site discovery and Certbot lock recovery — #2212
+
+The standalone edge's **installed** runtime under `/opt/shared-edge/runtime` is
+a separate operating authority from the reviewed example in the KAORI repo.
+Do not assume an application RC deploy copies example scripts to that host.
+
+### Host-runtime parity (before adding a new TLS site)
+
+From a **reviewed, immutable checkout of the accepted shared-edge source**
+available to the edge operator, compare the installed Certbot entrypoint:
+
+```bash
+REVIEWED_EDGE=/path/to/reviewed/KAORI/example/shared-edge
+diff -u "$REVIEWED_EDGE/certbot-entrypoint.sh" \
+  /opt/shared-edge/runtime/certbot-entrypoint.sh
+diff -u "$REVIEWED_EDGE/verify.sh" \
+  /opt/shared-edge/runtime/verify.sh
+```
+
+The current Certbot entrypoint rescans all TLS site registrations every
+`EDGE_CERTBOT_ISSUE_RETRY_SECONDS` (30s default). The independent
+`EDGE_CERTBOT_RENEW_INTERVAL_SECONDS` (43200s default) limits full renewal
+checks and **must not** postpone new hostname discovery.
+
+A previous installed host runtime used `sleep "$renew_interval"` after a
+successful scan. On 2026-10-16 it skipped a new `app.kaori.cloud` registration
+until the operator restarted only Certbot, causing temporary fail-closed HTTP
+503 while the certificate was absent. This is an **installed runtime drift**
+finding; the current source already uses the shorter site-discovery interval.
+
+If there is a mismatch, **hold any new domain publication** and perform a
+separately approved standalone-edge maintenance operation: back up the installed
+script(s), check the reviewed checkout's accepted SHA and file diff, install
+only the reviewed files with preserved owner/mode and atomic replacement, then
+restart only the affected standalone edge service when necessary. The existing
+Certbot process does not reload its entrypoint from the bind mount while it
+is running. Never copy `edge.env`, active site registrations, Let's Encrypt
+state, or ACME webroot from a checkout, and never restart unrelated KAORI/n8n
+services to perform this maintenance. Verify three domains afterward.
+
+### Concurrent Certbot renewal dry-run
+
+A manual `verify.sh --renewal-dry-run` and a GitHub publication job can overlap
+an automatic or manually started Certbot invocation. The existing shared-edge
+verifier retries **only** the exact Certbot exclusive-lock diagnostic
+`Another instance of Certbot is already running.`, up to 12 attempts with
+15 seconds between attempts; the verifier still requires a successful real
+`certbot renew --dry-run` run to PASS.
+
+Other Certbot errors (ACME validation, authorization, rate limits,
+configuration, storage) fail immediately. Persistent locking fails after
+the bounded retries and must not be bypassed or converted into a warning.
+Avoid running the manual verifier concurrently with GitHub publication.
+Do not delete lock files, disable TLS checks, or restart the application to
+avoid the collision.
+
+If app deployment succeeded but publication failed, let any active operator
+dry-run finish, then rerun **only** the failed Publication Reconciliation job,
+preserving the same admitted immutable RC and separate application evidence.
+
 ## GitHub recovery rule
 
 When deployment already succeeded and only post-deploy publication failed:
