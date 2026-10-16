@@ -60,9 +60,9 @@ def _current_migration_heads(database_url: str) -> frozenset[str]:
 
 
 def _runtime_database_admitted(database_url: str) -> bool:
-    """Fail closed until DevContainer app identity and immutable ledger ACLs are ready."""
-    if os.getenv('APP_ENV') != 'development':
-        return True  # server deployment has separate guarded admission authority
+    """Fail closed for both DevContainer and governed server runtime sessions."""
+    if os.getenv('APP_ENV') not in {'development', 'production'}:
+        return True
     with psycopg2.connect(database_url, connect_timeout=5) as connection:
         with connection.cursor() as cursor:
             cursor.execute("""

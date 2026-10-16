@@ -97,6 +97,15 @@ for service in worker registry-security-worker maintenance-worker runtime-worker
   active_queues "$service" >/dev/null || fail "$service did not report active_queues"
 done
 printf '✅ Worker queues and Beat PASS\n'
+# Verify actual database sessions and environment of each running service;
+# Compose parity alone is insufficient to establish runtime least privilege.
+for service in "${application_services[@]}"; do
+  cid="$("${compose[@]}" ps -q "$service")"
+  docker exec "$cid" python scripts/server_database_boundary.py runtime >/dev/null ||
+    fail "$service failed PostgreSQL runtime identity/immutable-ledger admission"
+done
+printf '🔒 Every application service has restricted PostgreSQL access PASS\n'
+
 
 "${compose[@]}" exec -T web python -c \
   "import urllib.request; request = urllib.request.Request('http://127.0.0.1:5000/health/ready', headers={'Host': 'localhost'}); urllib.request.urlopen(request, timeout=10).read()" \

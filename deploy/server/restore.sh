@@ -47,12 +47,18 @@ esac
 compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -f "$SERVER_COMPOSE")
 application_services=(
   web worker registry-security-worker maintenance-worker runtime-worker validation-worker analytics-worker
-  reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker beat nginx certbot
+  reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker beat
 )
 
 "${compose[@]}" stop "${application_services[@]}"
 "${compose[@]}" exec -T postgres sh -ec \
-  'exec pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner --exit-on-error' \
+  'exec pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --role=kaori_migrator --clean --if-exists --no-owner --no-acl --exit-on-error' \
   < "$backup_file"
+
+# Restore does not start runtime services. Enforce the ACL and immutable
+# ledger admission on restored state before any subsequent governed redeploy.
+"${compose[@]}" run --rm --pull never migrate sh -ec \
+  'python scripts/server_database_boundary.py grant'
+"${compose[@]}" run --rm --pull never db-verify
 
 printf 'Restore completed from %s\n' "$backup_file"
