@@ -59,7 +59,13 @@ def test_other_owned_workspace_templates_use_domain_regressions() -> None:
         assert plan.normalized_template_paths() == [path], path
         assert domain in plan.capabilities, path
         assert f'tests/contracts/{domain}' in plan.normalized_test_paths(), path
-        assert f'tests/{domain}' in plan.normalized_test_paths(), path
+        # Some capability families are contract-only: never invent missing
+        # behavior-suite paths or silently drop their owning contracts.
+        behavior = ROOT / 'tests' / domain
+        if behavior.is_dir():
+            assert f'tests/{domain}' in plan.normalized_test_paths(), path
+        else:
+            assert f'tests/{domain}' not in plan.normalized_test_paths(), path
         assert 'tests/contracts/release' not in plan.normalized_test_paths(), path
 
 
@@ -168,7 +174,9 @@ def test_shared_shell_and_css_changes_select_visual_contract() -> None:
 
 
 def test_wide_scope_deduplicates_visual_node_already_under_ui_directory() -> None:
-    plan = build_plan(['scripts/quality_gate.sh', 'app/templates/welcome/index.html'])
+    plan = build_plan(
+        ['scripts/quality_gate.sh', 'app/templates/welcome/index.html', 'tests/ui/test_visual_regression.py']
+    )
     tests = plan.normalized_test_paths()
 
     assert plan.wide
@@ -179,11 +187,13 @@ def test_wide_scope_deduplicates_visual_node_already_under_ui_directory() -> Non
 
 def test_visual_baseline_authority_change_selects_visual_regression() -> None:
     plan = build_plan(['tests/ui/baselines/authenticated-visual.json'])
+    tests = plan.normalized_test_paths()
+
     assert 'ui/welcome-visual' in plan.capabilities
-    assert (
-        'tests/ui/test_representative_interactions.py::test_welcome_visual_qa_light_and_dark'
-        in plan.normalized_test_paths()
-    )
+    # Any direct tests/ui change already selects the complete browser suite.
+    # The focused Welcome node must not cause duplicate execution.
+    assert 'tests/ui' in tests
+    assert not any(path.startswith('tests/ui/') for path in tests)
 
 
 def test_unrelated_backend_change_does_not_select_browser_visual_check() -> None:
