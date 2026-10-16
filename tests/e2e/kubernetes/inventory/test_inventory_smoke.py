@@ -105,6 +105,13 @@ def app(monkeypatch: pytest.MonkeyPatch):
         lambda **_kwargs: _empty_navigation_context(),
     )
     monkeypatch.setattr(bootstrap_presentation, 'pop_operational_feedback', lambda: None)
+    # Inventory's blueprint context processor also resolves fleet scope during
+    # page rendering; keep the isolated smoke independent of an installed DB.
+    monkeypatch.setattr(
+        inventory_routes,
+        'get_inventory_clusters',
+        lambda: [SimpleNamespace(id='inventory-smoke-cluster', name='Inventory Smoke Cluster')],
+    )
     monkeypatch.setattr(inventory_routes, 'get_inventory_overview', _overview_context)
     monkeypatch.setattr(inventory_routes, 'get_inventory_freshness_context', lambda **_kwargs: _freshness_context())
     return create_app('testing')
