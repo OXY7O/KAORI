@@ -167,6 +167,16 @@ def test_shared_shell_and_css_changes_select_visual_contract() -> None:
         ), path
 
 
+def test_wide_scope_deduplicates_visual_node_already_under_ui_directory() -> None:
+    plan = build_plan(['scripts/quality_gate.sh', 'app/templates/welcome/index.html'])
+    tests = plan.normalized_test_paths()
+
+    assert plan.wide
+    assert 'tests/ui' in tests
+    assert 'tests/contracts' in tests
+    assert not any(path.startswith('tests/ui/') for path in tests)
+
+
 def test_visual_baseline_authority_change_selects_visual_regression() -> None:
     plan = build_plan(['tests/ui/baselines/authenticated-visual.json'])
     assert 'ui/welcome-visual' in plan.capabilities
