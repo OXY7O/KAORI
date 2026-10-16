@@ -216,7 +216,7 @@ def test_certbot_renewal_retries_only_transient_exclusive_lock() -> None:
     verifier = _read(EDGE_VERIFY)
 
     assert 'verify_renewal_with_lock_retry()' in verifier
-    assert "Another instance of Certbot is already running." in verifier
+    assert 'Another instance of Certbot is already running.' in verifier
     assert 'local max_attempts=12' in verifier
     assert 'sleep 15' in verifier
     assert "fail 'Certbot renewal dry-run failed; investigate ACME error'" in verifier
