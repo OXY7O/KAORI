@@ -4,7 +4,9 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **74 navigation links** across the authenticated application shell and **30 registered blueprints**. A new menu link, workspace capability, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **73 navigation links** across the authenticated application shell and **30 registered blueprints**. A new menu link, workspace capability, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+
+Each declared release-evidence directory must contain at least one executable `test_*.py` module, not only a placeholder directory or `__init__.py`. `scripts/verify_release_surface_coverage.py` enforces this rule using the existing release-surface registry. Successful **Static & Governance → Release Surface Coverage** output enumerates the registered surfaces and their contract-module counts, making Artifact Registry, Object Storage Inventory, provider integrations, and other domains observable in CI logs. Counts prove that executable test modules are registered; **they do not prove behavioral correctness or UAT PASS**. Functional execution remains under the existing Contract & Migration Safety / Functional / Security / Runtime & DAST admission lanes.
 
 ## Navigation and Surface Matrix
 
