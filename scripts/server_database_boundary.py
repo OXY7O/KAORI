@@ -20,6 +20,16 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 
 
+# The four PostgreSQL trigger functions introduced by the admitted Capsule
+# migrations at 20261013_limit_exposure. Never transfer unrelated functions.
+_CAPSULE_TRIGGER_FUNCTIONS = frozenset({
+    'kaori_capsule_handoff_ledger_insert_guard',
+    'kaori_capsule_handoff_ledger_deny_change',
+    'kaori_capsule_proof_deny_change',
+    'kaori_capsule_handback_audit_deny_change',
+})
+
+
 def fail(message: str) -> None:
     raise RuntimeError(message)
 
@@ -167,7 +177,11 @@ def runtime_guard(cursor) -> None:
         """,
     ):
         fail('Runtime retains database CREATE or TEMPORARY privilege')
-    for table in ('alembic_version', 'audit_events', 'capsule_handoff_ledger_events', 'users'):
+    for table in (
+        'alembic_version', 'audit_events', 'capsule_handoff_ledger_events',
+        'capsule_handoff_audit_batches', 'capsule_handoff_resource_consent_records',
+        'users',
+    ):
         cursor.execute('SELECT to_regclass(%s)', (f'public.{table}',))
         if cursor.fetchone()[0] is None:
             fail(f'Required migrated object missing: {table}')
@@ -185,6 +199,14 @@ def runtime_guard(cursor) -> None:
            AND NOT has_table_privilege(current_user, 'public.alembic_version', 'DELETE')
            AND NOT has_table_privilege(current_user, 'public.alembic_version', 'TRUNCATE')
            AND NOT has_table_privilege(current_user, 'public.audit_events', 'TRUNCATE')
+           AND has_table_privilege(current_user, 'public.capsule_handoff_audit_batches', 'INSERT')
+           AND NOT has_table_privilege(current_user, 'public.capsule_handoff_audit_batches', 'UPDATE')
+           AND NOT has_table_privilege(current_user, 'public.capsule_handoff_audit_batches', 'DELETE')
+           AND NOT has_table_privilege(current_user, 'public.capsule_handoff_audit_batches', 'TRUNCATE')
+           AND has_table_privilege(current_user, 'public.capsule_handoff_resource_consent_records', 'INSERT')
+           AND NOT has_table_privilege(current_user, 'public.capsule_handoff_resource_consent_records', 'UPDATE')
+           AND NOT has_table_privilege(current_user, 'public.capsule_handoff_resource_consent_records', 'DELETE')
+           AND NOT has_table_privilege(current_user, 'public.capsule_handoff_resource_consent_records', 'TRUNCATE')
         """,
     ):
         fail('Runtime effective table privileges violate immutable evidence contract')
@@ -448,14 +470,29 @@ def existing_bundled_cutover(runtime_url: str, migration_url: str) -> None:
                 """,
             ):
                 fail('Extension-owned objects require a separate reviewed plan')
-            if scalar(
-                cursor,
+            # These four 0-arg trigger functions were installed by the
+            # already-deployed Capsule migrations. Reject every other function
+            # and any unsafe owner/signature before transferring ownership.
+            cursor.execute(
                 """
-                SELECT count(*) FROM pg_proc
-                WHERE pronamespace = 'public'::regnamespace
-                """,
+                SELECT p.proname, pg_get_function_identity_arguments(p.oid),
+                       pg_get_userbyid(p.proowner), p.prokind,
+                       p.prorettype = 'pg_catalog.trigger'::regtype
+                FROM pg_proc p
+                WHERE p.pronamespace = 'public'::regnamespace
+                ORDER BY p.oid
+                """
+            )
+            functions = cursor.fetchall()
+            if (
+                {name for name, *_ in functions} != _CAPSULE_TRIGGER_FUNCTIONS
+                or len(functions) != len(_CAPSULE_TRIGGER_FUNCTIONS)
+                or any(
+                    args or owner != 'kaori' or kind != 'f' or not is_trigger
+                    for _, args, owner, kind, is_trigger in functions
+                )
             ):
-                fail('Existing application functions require a separate reviewed plan')
+                fail('Unexpected public function identity or owner; no automatic function transfer')
             cursor.execute(
                 """
                 SELECT c.relname, c.relkind, pg_get_userbyid(c.relowner)
@@ -518,6 +555,12 @@ def existing_bundled_cutover(runtime_url: str, migration_url: str) -> None:
                             sql.Identifier(name)
                         )
                     )
+            for name in sorted(_CAPSULE_TRIGGER_FUNCTIONS):
+                cursor.execute(
+                    sql.SQL('ALTER FUNCTION public.{}() OWNER TO kaori_migrator').format(
+                        sql.Identifier(name)
+                    )
+                )
             cursor.execute('ALTER DATABASE kaori OWNER TO kaori_migrator')
             cursor.execute('ALTER SCHEMA public OWNER TO kaori_migrator')
             cursor.execute('REVOKE ALL ON DATABASE kaori FROM PUBLIC')
@@ -533,6 +576,15 @@ def existing_bundled_cutover(runtime_url: str, migration_url: str) -> None:
                 """,
             ):
                 fail('Objects retain legacy ownership; transaction will roll back')
+            if scalar(
+                cursor,
+                """
+                SELECT count(*) FROM pg_proc p
+                 WHERE p.pronamespace = 'public'::regnamespace
+                   AND pg_get_userbyid(p.proowner) <> 'kaori_migrator'
+                """,
+            ):
+                fail('Capsule trigger functions retain legacy ownership; transaction will roll back')
             if scalar(
                 cursor,
                 """
@@ -556,6 +608,10 @@ REVOKE ALL PRIVILEGES ON TABLE public.alembic_version FROM kaori_runtime;
 GRANT SELECT ON TABLE public.alembic_version TO kaori_runtime;
 REVOKE ALL PRIVILEGES ON TABLE public.capsule_handoff_ledger_events FROM kaori_runtime;
 GRANT SELECT, INSERT ON TABLE public.capsule_handoff_ledger_events TO kaori_runtime;
+REVOKE ALL PRIVILEGES ON TABLE public.capsule_handoff_audit_batches FROM kaori_runtime;
+GRANT SELECT, INSERT ON TABLE public.capsule_handoff_audit_batches TO kaori_runtime;
+REVOKE ALL PRIVILEGES ON TABLE public.capsule_handoff_resource_consent_records FROM kaori_runtime;
+GRANT SELECT, INSERT ON TABLE public.capsule_handoff_resource_consent_records TO kaori_runtime;
 """
 
 
@@ -597,6 +653,12 @@ def main() -> None:
                         OR has_table_privilege('kaori_runtime', 'public.capsule_handoff_ledger_events', 'DELETE')
                         OR has_table_privilege('kaori_runtime', 'public.capsule_handoff_ledger_events', 'TRUNCATE')
                         OR has_table_privilege('kaori_runtime', 'public.alembic_version', 'UPDATE')
+                        OR has_table_privilege('kaori_runtime', 'public.capsule_handoff_audit_batches', 'UPDATE')
+                        OR has_table_privilege('kaori_runtime', 'public.capsule_handoff_audit_batches', 'DELETE')
+                        OR has_table_privilege('kaori_runtime', 'public.capsule_handoff_audit_batches', 'TRUNCATE')
+                        OR has_table_privilege('kaori_runtime', 'public.capsule_handoff_resource_consent_records', 'UPDATE')
+                        OR has_table_privilege('kaori_runtime', 'public.capsule_handoff_resource_consent_records', 'DELETE')
+                        OR has_table_privilege('kaori_runtime', 'public.capsule_handoff_resource_consent_records', 'TRUNCATE')
                         OR has_table_privilege('kaori_runtime', 'public.alembic_version', 'DELETE')
                     """
                 )
