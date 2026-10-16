@@ -40,6 +40,23 @@ compose=(docker compose --env-file "$KAORI_DEPLOY_ENV_FILE" -f "$BASE_COMPOSE" -
   > "$backup_file"
 
 [[ -s "$backup_file" ]] || fail 'pg_dump produced an empty backup'
+
+# Ownership/schema evidence is retained separately from the no-owner restore
+# archive, with the same restricted filesystem protections.
+"${compose[@]}" exec -T postgres sh -ec \
+  'exec pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --schema-only' \
+  > "$backup_file.schema.sql"
+[[ -s "$backup_file.schema.sql" ]] || fail 'schema ownership evidence is empty'
+# Cluster role inventory is sensitive (password verifiers) and needed to
+# document post-cutover role recovery. Never print or apply it automatically.
+"${compose[@]}" exec -T postgres sh -ec \
+  'exec pg_dumpall -U "$POSTGRES_USER" --globals-only' \
+  > "$backup_file.roles.sql"
+[[ -s "$backup_file.roles.sql" ]] || fail 'global PostgreSQL roles evidence is empty'
+sha256sum "$backup_file.roles.sql" > "$backup_file.roles.sql.sha256"
+chmod 0600 "$backup_file.roles.sql" "$backup_file.roles.sql.sha256"
+sha256sum "$backup_file.schema.sql" > "$backup_file.schema.sql.sha256"
+chmod 0600 "$backup_file.schema.sql" "$backup_file.schema.sql.sha256"
 sha256sum "$backup_file" > "$backup_file.sha256"
 chmod 0600 "$backup_file" "$backup_file.sha256"
 printf '%s\n' "$backup_file"

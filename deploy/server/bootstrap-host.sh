@@ -11,9 +11,13 @@ ssh_public_key_file=''
 ssh_port='22'
 app_env_template="${ROOT_DIR:+$ROOT_DIR/deploy/env/app.env.example}"
 secrets_env_template="${ROOT_DIR:+$ROOT_DIR/deploy/env/secrets.env.example}"
+postgres_admin_env_template="${ROOT_DIR:+$ROOT_DIR/deploy/env/postgres-admin.env.example}"
+postgres_migration_env_template="${ROOT_DIR:+$ROOT_DIR/deploy/env/postgres-migrate.env.example}"
 deploy_env_template="${ROOT_DIR:+$ROOT_DIR/deploy/env/deploy.env.example}"
 app_env_file='/etc/kaori/app.env'
 secrets_env_file='/etc/kaori/secrets.env'
+postgres_admin_env_file='/etc/kaori/postgres-admin.env'
+postgres_migration_env_file='/etc/kaori/postgres-migrate.env'
 deploy_env_file='/etc/kaori/deploy.env'
 state_dir='/var/lib/kaori/deploy-state'
 backup_dir='/var/lib/kaori/backups'
@@ -154,6 +158,8 @@ prepare_paths_and_environment() {
   install -d -m 0700 -o "$deploy_user" -g "$deploy_group" "$state_dir" "$backup_dir"
   install_env_if_missing "$app_env_template" "$app_env_file" 0640
   install_env_if_missing "$secrets_env_template" "$secrets_env_file" 0600
+  install_env_if_missing "$postgres_admin_env_template" "$postgres_admin_env_file" 0600
+  install_env_if_missing "$postgres_migration_env_template" "$postgres_migration_env_file" 0600
   install_env_if_missing "$deploy_env_template" "$deploy_env_file" 0640
 }
 
@@ -178,6 +184,8 @@ Deploy user : $deploy_user
 Deploy root : $deploy_root
 App env     : $app_env_file
 Secrets env : $secrets_env_file
+PG admin     : $postgres_admin_env_file (PostgreSQL only)
+PG migrate   : $postgres_migration_env_file (one-shot migrator only)
 Deploy env  : $deploy_env_file
 Release env : $state_dir/release.env (generated after governed deploy)
 SSH port    : $ssh_port

@@ -124,7 +124,6 @@ SENSITIVE_KEYS = {
     'SECRET_KEY',
     'INTEGRATION_CREDENTIAL_KEY',
     'INTEGRATION_CREDENTIAL_PREVIOUS_KEYS',
-    'POSTGRES_PASSWORD',
     'REDIS_PASSWORD',
     'DATABASE_URL',
     'REDIS_URL',
@@ -145,6 +144,10 @@ SENSITIVE_KEYS = {
 DEPLOYMENT_KEYS = {
     'KAORI_APP_ENV_FILE',
     'KAORI_SECRETS_ENV_FILE',
+    'KAORI_POSTGRES_ADMIN_ENV_FILE',
+    'KAORI_POSTGRES_MIGRATION_ENV_FILE',
+    'KAORI_BUNDLED_FRESH_BOOTSTRAP',
+    'KAORI_BUNDLED_SCHEMA_CUTOVER',
     'KAORI_ACTIVE_RELEASE_ENV_FILE',
     'POSTGRES_DB',
     'POSTGRES_USER',
@@ -278,6 +281,17 @@ def verify() -> None:
     leaked_sensitive = sorted(SENSITIVE_KEYS & (app_keys | deploy_keys))
     if leaked_sensitive:
         raise AssertionError('Sensitive keys leaked outside secrets.env.example: ' + ', '.join(leaked_sensitive))
+    # Server-only PostgreSQL credentials are independent of app.env/secrets.env.
+    # Legacy co-location would leak superuser or DDL authority to all workers.
+    admin_keys = documented_env_keys('deploy/env/postgres-admin.env.example')
+    migration_keys = documented_env_keys('deploy/env/postgres-migrate.env.example')
+    if admin_keys != {'POSTGRES_PASSWORD'} or migration_keys != {'KAORI_DB_MIGRATION_URL'}:
+        raise AssertionError('Server-only PostgreSQL credential examples have drifted')
+    if (admin_keys | migration_keys) & persistent_union:
+        raise AssertionError('PostgreSQL privileged credentials must not appear in runtime env files')
+    if 'DATABASE_URL=postgresql://kaori_runtime:' not in read(SECRETS_TEMPLATE):
+        raise AssertionError('Bundled production runtime must use restricted PostgreSQL role')
+
     missing_deployment = sorted(DEPLOYMENT_KEYS - deploy_keys)
     if missing_deployment:
         raise AssertionError('deploy.env.example is missing adapter keys: ' + ', '.join(missing_deployment))

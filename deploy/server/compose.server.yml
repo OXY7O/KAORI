@@ -2,8 +2,9 @@ services:
   postgres:
     image: ${KAORI_POSTGRES_IMAGE:?Set KAORI_POSTGRES_IMAGE in /etc/kaori/deploy.env}
     restart: unless-stopped
+    # PostgreSQL administrator credentials must not enter web/worker/Beat.
     env_file:
-      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_POSTGRES_ADMIN_ENV_FILE:-/etc/kaori/postgres-admin.env}
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in /etc/kaori/deploy.env}
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in /etc/kaori/deploy.env}
@@ -56,13 +57,87 @@ services:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_POSTGRES_MIGRATION_ENV_FILE:-/etc/kaori/postgres-migrate.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    command: ["sh", "scripts/server_migrate_db.sh"]
+
+  # One-shot, schema-empty-only PostgreSQL identity bootstrap.
+  # Privileged credentials exist ONLY in this short-lived provisioning process.
+  db-provision:
+    profiles: [operator-bootstrap]
+    image: ${KAORI_IMAGE:?Use the immutable governed KAORI image}
+    env_file:
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_POSTGRES_ADMIN_ENV_FILE:-/etc/kaori/postgres-admin.env}
+      - ${KAORI_POSTGRES_MIGRATION_ENV_FILE:-/etc/kaori/postgres-migrate.env}
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "false"
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in deploy.env}
+      KAORI_BUNDLED_FRESH_BOOTSTRAP: ${KAORI_BUNDLED_FRESH_BOOTSTRAP:-false}
+      KAORI_BUNDLED_SCHEMA_CUTOVER: ${KAORI_BUNDLED_SCHEMA_CUTOVER:-false}
+    command: ["python", "scripts/server_database_boundary.py", "bootstrap"]
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - kaori_production
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  db-verify:
+    image: ${KAORI_IMAGE:?Use the immutable governed KAORI image}
+    env_file:
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "true"
+    command: ["python", "scripts/server_database_boundary.py", "runtime"]
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    networks:
+      - kaori_production
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # Explicit, operator-only first-admin initialization on a virgin bundled DB.
+  # Never use a migration or administrator credential for the app-level seed.
+  db-bootstrap-admin:
+    profiles: [operator-bootstrap]
+    image: ${KAORI_IMAGE:?Use the immutable governed KAORI image}
+    env_file:
+      - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
+      - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
+      - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "true"
+    command: ["flask", "--app", "run:app", "bootstrap-admin"]
+    restart: "no"
+    networks:
+      - kaori_production
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   web:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
     ports: !reset []
     expose:
       - "5000"
@@ -72,66 +147,88 @@ services:
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
   registry-security-worker:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
   maintenance-worker:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
   runtime-worker:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
   validation-worker:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
   analytics-worker:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
   reports-worker:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
   forecasting-worker:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
   resolver-execution-worker:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
   resolver-maintenance-worker:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
   beat:
     env_file: !override
       - ${KAORI_APP_ENV_FILE:-/etc/kaori/app.env}
       - ${KAORI_SECRETS_ENV_FILE:-/etc/kaori/secrets.env}
       - ${KAORI_RELEASE_ENV_FILE:-/var/lib/kaori/deploy-state/release.env}
+    environment:
+      WAIT_FOR_SCHEMA: "true"
 
 
 volumes:

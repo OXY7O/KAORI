@@ -124,6 +124,8 @@ COPY --chown=kaori:kaori run.py celery_worker.py gunicorn.conf.py /app/
 COPY --chown=kaori:kaori \
     scripts/wait_for_db.py \
     scripts/validate_production_env.py \
+    scripts/server_database_boundary.py \
+    scripts/server_migrate_db.sh \
     /app/scripts/
 COPY --from=frontend-build --chown=kaori:kaori \
     /build/app/static/css/output.css \
