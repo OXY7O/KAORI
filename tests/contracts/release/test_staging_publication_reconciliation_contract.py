@@ -72,6 +72,23 @@ def test_reconciliation_reuses_existing_shared_edge_authorities() -> None:
     assert 'certbot' not in source.lower()
 
 
+def test_reconciliation_uses_portable_application_hostname_authority() -> None:
+    source = _read(WORKFLOW)
+
+    assert "/etc/kaori/app.env" in source
+    assert "KAORI_PUBLIC_BASE_URL" in source
+    assert "TRUSTED_HOSTS" in source
+    assert "parsed.scheme != 'https'" in source
+    assert "'localhost' not in trusted" in source
+    assert '--domain "$app_hostname"' in source
+    assert '--domain kaori.cloud' not in source
+
+    # Neither application release state nor the standalone edge infrastructure
+    # becomes owned by this publication-only stage.
+    assert '/opt/shared-edge/runtime/publish-container.sh' in source
+    assert '/opt/shared-edge/runtime/apply.sh' in source
+
+
 def test_reconciliation_requires_current_healthy_frontend_only() -> None:
     source = _read(WORKFLOW)
 
