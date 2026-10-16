@@ -216,15 +216,9 @@ def test_runtime_environment_contract_is_split_by_authority():
         assert 'SECRET_KEY=' not in privileged_example
         assert 'REDIS_PASSWORD=' not in privileged_example
     assert 'KAORI_POSTGRES_ADMIN_ENV_FILE' in _service_block(server_compose, 'postgres', 'redis')
-    assert 'KAORI_POSTGRES_ADMIN_ENV_FILE' in _service_block(
-        server_compose, 'db-provision', 'db-verify'
-    )
-    assert 'KAORI_POSTGRES_MIGRATION_ENV_FILE' in _service_block(
-        server_compose, 'migrate', 'db-provision'
-    )
-    assert 'KAORI_POSTGRES_ADMIN_ENV_FILE' not in _service_block(
-        server_compose, 'web', 'worker'
-    )
+    assert 'KAORI_POSTGRES_ADMIN_ENV_FILE' in _service_block(server_compose, 'db-provision', 'db-verify')
+    assert 'KAORI_POSTGRES_MIGRATION_ENV_FILE' in _service_block(server_compose, 'migrate', 'db-provision')
+    assert 'KAORI_POSTGRES_ADMIN_ENV_FILE' not in _service_block(server_compose, 'web', 'worker')
 
     for key in ('KAORI_POSTGRES_IMAGE=', 'KAORI_REDIS_IMAGE='):
         assert key in deploy
