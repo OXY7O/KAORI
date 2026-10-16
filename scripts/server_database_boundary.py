@@ -15,9 +15,9 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 import psycopg2
-from psycopg2 import sql
 from alembic.config import Config
 from alembic.script import ScriptDirectory
+from psycopg2 import sql
 
 
 # The four PostgreSQL trigger functions introduced by the admitted Capsule
