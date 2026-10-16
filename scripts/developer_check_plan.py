@@ -54,6 +54,11 @@ class ValidationPlan:
         paths = set(self.test_paths)
         if 'tests/contracts' in paths:
             paths = {path for path in paths if path == 'tests/contracts' or not path.startswith('tests/contracts/')}
+        # A selected directory already executes every nested module and pytest
+        # node. Do not run those same tests twice via a more specific selector.
+        directories = sorted(path for path in paths if (ROOT / path).is_dir())
+        for parent in directories:
+            paths = {path for path in paths if path == parent or not path.startswith(f'{parent}/')}
         return sorted(paths)
 
     def summary(self) -> str:
