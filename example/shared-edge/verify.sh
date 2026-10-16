@@ -102,8 +102,8 @@ verify_http_redirect() {
   while (( $(date +%s) < deadline )); do
     headers=''
     if headers="$(curl --silent --max-time 10 --dump-header - --output /dev/null "http://$domain$health_path" 2>/dev/null)"; then
-      status_code="$(printf '%s\n' "$headers" | awk 'toupper($1) ~ /^HTTP\\// {code=$2} END {print code}')"
-      location="$(printf '%s\n' "$headers" | awk 'BEGIN {IGNORECASE=1} /^Location:/ {sub(/^[^:]+:[[:space:]]*/, ""); sub(/\\r$/, ""); print; exit}')"
+      status_code="$(printf '%s\n' "$headers" | awk 'index(toupper($1), "HTTP/") == 1 {code=$2} END {print code}')"
+      location="$(printf '%s\n' "$headers" | awk 'tolower($1) == "location:" {sub(/^[^:]+:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit}')"
       last_observation="status=${status_code:-missing} location=${location:-missing}"
 
       if [[ "$status_code" == '301' || "$status_code" == '308' ]] &&
