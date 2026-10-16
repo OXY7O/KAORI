@@ -1,6 +1,6 @@
 # Bundled PostgreSQL role cutover — server/Staging UAT (#1439)
 
-Status: implementation candidate, NOT a live database execution record.
+Status: implementation candidate, NOT a live database role cutover record.
 This runbook applies to the existing `deploy/server` Compose adapter and its
 persistent `kaori-vps-postgres-data` volume. PostgreSQL is not replaced.
 External DBA-managed PostgreSQL is tracked separately by #1440.
@@ -56,6 +56,17 @@ to force the fast path to run.
 
 ## Observed staging host — 2026-10-16 (existing schema, not first-run)
 
+**Later deployment evidence supersedes the original schema baseline:** UAT
+[v0.3.0-rc.7](https://github.com/OXY7O/KAORI/releases/tag/v0.3.0-rc.7)
+completed [Staging Deploy #38873241959](https://github.com/OXY7O/KAORI/actions/runs/38873241959)
+with pre-migration backup `/var/lib/kaori/backups/kaori-postgres-20261016T082308Z.dump`
+and all six Alembic upgrades **PASS** through `20261013_limit_exposure`.
+Internal readiness and HTTPS publication also PASS. This was performed using
+the legacy database role, **not** the #1439 split; no live role cutover is
+claimed. The earlier schema/object counts below are historical observations,
+not a current post-migration inventory. A new read-only inventory is required
+before the ownership cutover.
+
 Read-only inventory from the authorized staging operator:
 
 - Bundled container `kaori-production-postgres-1` healthy; database `kaori`.
@@ -71,7 +82,8 @@ Read-only inventory from the authorized staging operator:
   admission is required before activation.
 - PostgreSQL estimated about 34,704 rows in
   ten nonempty tables (statistical estimate, not an exact count).
-- Neither `kaori_migrator` nor `kaori_runtime` role exists.
+- At the historical pre-RC.7 checkpoint, neither `kaori_migrator` nor
+  `kaori_runtime` role existed; reconfirm actual role inventory before DDL.
 - Admin/migrator/runtime host secret files are mode 0600, owner kaori-deploy;
   their contents have not been validated remotely.
 
@@ -83,10 +95,11 @@ existing-schema maintenance run. Keep `KAORI_BUNDLED_FRESH_BOOTSTRAP=false`.
 
 **Schema-pin requirement:** for the role-only cutover, the candidate's exact
 Alembic head set must equal the already-applied staging `alembic_version`
-set. If different (currently the case: staging `20261004_registry_analytics`
-versus newer files through `20261013_limit_exposure`), the deployment
-fails **before stopping application services, dumping data or issuing DDL**.
-New feature-schema migrations require independent admission first.
+set. The earlier mismatch (`20261004_registry_analytics` versus
+`20261013_limit_exposure`) was resolved by the separately accepted RC.7
+schema deployment. **Reconfirm** the current heads against the exact cutover
+candidate image; any mismatch fails **before stopping writers, dumping data
+or issuing DDL**. New feature-schema migrations require separate admission.
 
 After the candidate passes source/DB/restore test gates and maintenance is
 approved, set `KAORI_BUNDLED_SCHEMA_CUTOVER=true` for ONE governed deployment.
@@ -96,8 +109,15 @@ database dump, independent schema dump and global-role recovery dump,
 verify checksums and the custom dump manifest, and then invoke the protected
 `db-provision` one-shot service with `cutover` argument.
 
-That operation refuses unexpected roles, schema kinds, extensions, functions,
-object owners, concurrent connections and database administrators. It creates
+That operation refuses unexpected roles, schema kinds, extensions, **unknown
+functions or trigger signatures**, object owners, concurrent connections and
+database administrators. Exactly four zero-argument, PostgreSQL
+`trigger`-returning Capsule guard functions from the RC.7 schema may be
+transferred: `kaori_capsule_handoff_ledger_insert_guard`,
+`kaori_capsule_handoff_ledger_deny_change`,
+`kaori_capsule_proof_deny_change` and
+`kaori_capsule_handback_audit_deny_change`. Any other function or owner
+fails closed; no wildcard function transfer. It creates
 the separate restricted principals, transfers the audited existing public
 application tables/sequences and their dependent indexes to the migrator,
 updates database/schema owners and revokes public authority in a transaction.
@@ -185,21 +205,20 @@ Do not execute those SQL files or issue manual `CREATE ROLE`, `ALTER OWNER`,
 
 Follow this exact order, each stage requiring evidence:
 
-1. **Keep the deployed legacy release healthy.** While `v0.3.0-rc.6` is
-   active, `/etc/kaori/secrets.env` must retain a working `DATABASE_URL`
-   for the existing `kaori` role and `POSTGRES_PASSWORD` for the legacy
-   deployment adapter. The operator has verified that legacy database login
-   works and restored the URL on disk without restarting containers.
+1. **Keep the deployed legacy release healthy.** UAT currently runs
+   `v0.3.0-rc.7` (Staging Deploy #38873241959). Before cutover, independently
+   confirm `/etc/kaori/secrets.env` still uses the working legacy `kaori`
+   URL and password. Protected future-role files must be present with mode
+   0600; don't infer their current contents from a deployment log.
    Keep both `KAORI_BUNDLED_FRESH_BOOTSTRAP=false` and
    `KAORI_BUNDLED_SCHEMA_CUTOVER=false`.
-2. **Admit the reviewed feature schema first, separately from role ownership.**
-   Existing Alembic `20261004_registry_analytics` and candidate migration
-   heads through `20261013_limit_exposure` are NOT equivalent. Under issue
-   #1710, first fix admission (#2203), verify all source-only or
-   review-required migrations, rehearse the schema upgrade/restore on an
-   isolated copy, and release/deploy the approved feature schema under
-   the **legacy adapter**. Never run a source-only/DO-NOT-EXECUTE migration
-   merely to align version numbers. Preserve immutable release identity.
+2. **Keep feature-schema admission separate from role cutover.**
+   Legacy-role deployment RC.7 executed all six schema upgrades through
+   `20261013_limit_exposure` PASS and produced a pre-migration backup under
+   #2206. Clone-backed schema rehearsal was **not executed** under an
+   explicitly accepted disposable-UAT exception; do not call it PASS or
+   apply that exception to ownership cutover rehearsal. Capsule provider
+   mutation remains separately HOLD. Preserve release identity.
 3. **Prove matching Alembic heads before preparing the role-only release.**
    With an authorized read-only SQL session:
    `SELECT version_num FROM public.alembic_version;` must match the
@@ -257,7 +276,8 @@ in owner; database/schema CREATE or TEMPORARY privilege; immutable Capsule
 ledger UPDATE/DELETE/TRUNCATE rejection; read-only Alembic revision;
 four enabled ledger triggers; WAL fsync/synchronous commit; first administrator;
 healthy web and every worker/Beat actual DB session. Validate CRUD/audit,
-Capsule START append-only, reports, rollback and tested restoration.
+Capsule START append-only, both proof/consent tables' immutable
+UPDATE/DELETE/TRUNCATE denial, reports, rollback and tested restoration.
 
 A failed grant refresh, unexpected role, incomplete migrations or missing
 administrator blocks admission. Do not force a success, stamp a revision, or
