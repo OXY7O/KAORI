@@ -163,57 +163,87 @@ nonpublic schemas or multiple overlapping application principals: **HOLD**.
 Do not run a cluster-wide `REASSIGN OWNED`: it can also affect shared objects
 and is not a reviewed per-object ownership migration.
 
-## One-time provisioning / cutover (explicit operator action)
+## Existing-schema activation: one governed path, no manual role DDL
 
-1. Apply the explicitly reviewed `deploy/server/provision-postgres-roles.sql`
-   through `psql -X -v ON_ERROR_STOP=1` as the trusted bundled admin, after
-   verifying the inventory. It creates missing restricted roles as **NOLOGIN**
-   only and refuses existing elevated roles. Set independent strong passwords
-   using trusted interactive `psql` `\\password kaori_migrator` and
-   `\\password kaori_runtime`, then enable `LOGIN` only after both secret
-   files are prepared. Do not grant runtime membership in the owner, or vice
-   versa. Never put plaintext passwords into SQL, Git, shell history or logs.
-2. Inspect candidate SQL from read-only `deploy/server/plan-postgres-ownership.sql`.
-   Under the reviewed maintenance window, transfer ownership of **only the
-   audited KAORI database/schema and owned application tables, sequences,
-   views and functions** to `kaori_migrator`. Review extension ownership and
-   dependent objects independently. Do not rename/drop the legacy superuser
-   or use `DROP DATABASE`, `DROP ROLE`, `down -v`, `TRUNCATE` or
-   `flask db stamp`. The no-owner cutover is a separate reviewed SQL change
-   requiring a tested rollback path, not something the release script infers.
-3. As the authorized DB owner/admin, revoke unsafe inherited privileges:
-   `REVOKE CREATE, TEMPORARY ON DATABASE kaori FROM PUBLIC;`
-   and `REVOKE CREATE ON SCHEMA public FROM PUBLIC;`. Review pre-existing
-   role memberships/grants and `PUBLIC` ACLs before revoking anything else.
-   Grant `CONNECT` and schema `USAGE` to the runtime role.
-4. Create the two protected server-only files from
-   `deploy/env/postgres-admin.env.example` and
-   `deploy/env/postgres-migrate.env.example`. Preserve the PostgreSQL
-   bootstrap password originally used on the existing database. Put
-   `KAORI_DB_MIGRATION_URL=postgresql://kaori_migrator:<encoded-password>@postgres:5432/kaori`
-   **only** in the migration file. Put the restricted
-   `DATABASE_URL=postgresql://kaori_runtime:<encoded-password>@postgres:5432/kaori`
-   only in `secrets.env`. Remove the old `POSTGRES_PASSWORD` assignment
-   from `secrets.env` after the admin-only file is confirmed. Keep all
-   protected files regular, non-symlink, mode 0600 and readable solely
-   by the trusted deployment identity.
-5. Render the merged Compose configuration with `docker compose config
-   --quiet` (never print full Compose configuration with real secrets).
-   Test the migrator and runtime connections independently from their
-   respective one-shot/service-scoped contexts. The new
-   `scripts/server_database_boundary.py migrator` refuses any legacy
-   database/object ownership mismatch before Alembic executes.
-6. Run the governed deployment with the immutable RC. Its order is:
-   PostgreSQL/Redis healthy → pre-migration dump + schema evidence →
-   environment validation → migrator owner/ACL preflight → Alembic →
-   transactionally refreshed runtime DML privileges → one-shot runtime
-   verification → application services → per-service identity/health check.
-   If any stage fails, the release is **not** committed.
-7. On a new database with no active super administrator, initialize the app
-   administrator **separately**, using the runtime-only
-   `db-bootstrap-admin` Compose profile after migrations and grants.
-   It is intentionally not run automatically during deploy. Repeat the
-   governed deployment after that operator-governed app bootstrap.
+**For the observed UAT database (99 tables / Alembic `20261004_registry_analytics`):
+DO NOT use the fresh bootstrap.** `KAORI_BUNDLED_FRESH_BOOTSTRAP=false`
+must remain false. The operator has only prepared the protected
+`postgres-admin.env` / `postgres-migrate.env` files; neither new role exists
+yet and no SQL ownership cutover has occurred.
+
+**Important: the source-only** `provision-postgres-roles.sql` **and**
+`plan-postgres-ownership.sql` **are review/planning artifacts, not an
+additional step to execute before the automatic bundled cutover.** The
+`server_database_boundary.py cutover` command deliberately refuses
+pre-created role names or non-legacy object owners. Mixing manual role DDL
+and the governed in-place path would cause an ambiguous partial cutover.
+Do not execute those SQL files or issue manual `CREATE ROLE`, `ALTER OWNER`,
+`GRANT` or `REVOKE` on this bundled UAT host.
+
+Follow this exact order, each stage requiring evidence:
+
+1. **Keep the deployed legacy release healthy.** While `v0.3.0-rc.6` is
+   active, `/etc/kaori/secrets.env` must retain a working `DATABASE_URL`
+   for the existing `kaori` role and `POSTGRES_PASSWORD` for the legacy
+   deployment adapter. The operator has verified that legacy database login
+   works and restored the URL on disk without restarting containers.
+   Keep both `KAORI_BUNDLED_FRESH_BOOTSTRAP=false` and
+   `KAORI_BUNDLED_SCHEMA_CUTOVER=false`.
+2. **Admit the reviewed feature schema first, separately from role ownership.**
+   Existing Alembic `20261004_registry_analytics` and candidate migration
+   heads through `20261013_limit_exposure` are NOT equivalent. Under issue
+   #1710, first fix admission (#2203), verify all source-only or
+   review-required migrations, rehearse the schema upgrade/restore on an
+   isolated copy, and release/deploy the approved feature schema under
+   the **legacy adapter**. Never run a source-only/DO-NOT-EXECUTE migration
+   merely to align version numbers. Preserve immutable release identity.
+3. **Prove matching Alembic heads before preparing the role-only release.**
+   With an authorized read-only SQL session:
+   `SELECT version_num FROM public.alembic_version;` must match the
+   *exact* migration heads in the approved role-cutover image. Review
+   `inventory-postgres.sql`, role flags, database/schema and per-object
+   owner, public ACLs, active sessions, and extension/function inventories.
+   Any difference means HOLD; no credential switch.
+4. **Rehearse the complete role cutover and recovery in isolated PostgreSQL.**
+   A `pg_dump` checksum plus `pg_restore --list` is NOT a recovery test.
+   Restore the protected backup and globals into a disposable, access-isolated
+   instance, execute the role transfer and privilege checks there, and
+   demonstrate recovery to the previous roles/ownership and application
+   behavior. Review all expected relation/sequence/index ownership, runtime
+   CRUD/immutable ledger denial and Alembic write-only-by-migrator.
+5. **Approve one maintenance window and one immutable RC.** Before release,
+   prepare the distinct protected `/etc/kaori/postgres-admin.env`
+   (`POSTGRES_PASSWORD` of existing `kaori` administrator) and
+   `/etc/kaori/postgres-migrate.env` (URL for future `kaori_migrator`)
+   plus the future `DATABASE_URL` for `kaori_runtime`, but do not
+   publish passwords. Keep the new-role URLs off active legacy services.
+   At the approved cutover boundary, atomically update
+   `/etc/kaori/secrets.env` to the new `DATABASE_URL` and remove its
+   legacy `POSTGRES_PASSWORD`. Preserve original owner, 0600 mode and
+   a protected rollback copy. Keep admin/migrator credentials ONLY in their
+   service-scoped files; no privileged key in `app.env`.
+6. **Use the existing Staging Deploy workflow with exactly one cutover opt-in.**
+   Set `KAORI_BUNDLED_SCHEMA_CUTOVER=true` in `/etc/kaori/deploy.env`
+   for the **one authorized UAT release only**. The approved
+   `deploy/server/deploy.sh` will compare candidate and database Alembic
+   heads BEFORE draining writers, stop web/workers/Beat, take full DB +
+   schema + global-role protected backups, verify checksums and archive,
+   create the two restricted login roles and transfer only approved objects
+   transactionally, run Alembic solely as `kaori_migrator`, apply scoped
+   runtime privileges, verify Capsule immutable ledger/runtime identity,
+   and start/verify all services. A fail-closed outcome is NOT acceptance.
+7. **Post-acceptance:** confirm web and every worker/Beat use
+   `kaori_runtime`, with no owner/superuser membership, and that the
+   migration URL never appears in their container environments; verify
+   secure audit/CRUD/report paths and runtime negative privilege tests.
+   Change `KAORI_BUNDLED_SCHEMA_CUTOVER=false` after the approved UAT
+   evidence is recorded, without restarting only to update this flag.
+   Do not promote to `main` without independent acceptance.
+
+Do not run manual `flask db upgrade` with the ordinary runtime URL, edit
+`alembic_version` by hand, rotate/drop the legacy `kaori` superuser,
+delete volumes, or use `REASSIGN OWNED`. Do not enable role cutover while
+PR #2202 remains Draft and restore/schema-head admission has not passed.
 
 ## Negative admission / acceptance evidence
 
