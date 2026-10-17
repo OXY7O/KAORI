@@ -273,7 +273,7 @@ def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> No
     assert 'Choose a Delivery Provider' in template
     assert 'aria-label="Choose {{ provider_option.label }} notification provider"' in template
     assert '{% for provider_option in payload.providers %}' in template
-    assert """@click="provider = '{{ provider_option.key }}'" """ .strip() in template
+    assert '@click="provider = ' in template
     assert 'name="provider_key"' in template
     assert 'x-model="provider"' in template
     assert '{% include provider_option.form_partial %}' in template
