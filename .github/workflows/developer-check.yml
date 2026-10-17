@@ -43,7 +43,7 @@ jobs:
       template_paths: ${{ steps.route.outputs.template_paths }}
       summary: ${{ steps.route.outputs.summary }}
       source_tree: ${{ steps.route.outputs.source_tree }}
-      reuse: ${{ steps.reuse.outputs.reuse }}
+      reuse: ${{ steps.reuse.outcome == 'success' && steps.reuse.outputs.reuse == 'true' }}
       reuse_reason: ${{ steps.reuse.outputs.reuse_reason }}
     steps:
       - name: Checkout Work Branch
