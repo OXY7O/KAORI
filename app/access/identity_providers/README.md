@@ -105,3 +105,20 @@ authorization, admission, TLS or database functionality changed.
 The operator's real Dev Container Firefox result, CI and human
 acceptance remain PENDING/NOT RUN until executable evidence is recorded.
 Official staging/deployment/release remain HOLD.
+
+### REVIEW(3) — Header-level input guidance (#2301)
+
+Access Identity Provider Add/Edit now uses one canonical title-adjacent
+`info_tip.render(..., variant='guide')` per owning form section:
+Provider Identity and State, LDAP Adapter Connection, Directory Identity
+Mapping, browser Application, and Admission and JIT Provisioning.
+The section Guide consolidates **static input helper copy**, including
+directory TLS/service bind/secret handling, escaped directory user filter,
+identity mapping, OAuth/OIDC client ID/secret source and non-admin JIT role.
+The input labels, placeholders, field validation errors and live dynamic
+`data-enabled-copy`, provider-specific `data-admission-help`, JIT-toggle
+status, disabled-state notification and security controls remain visible
+in their original owning fields. Do not hide mandatory validation or current
+provider/admission state in a popover. The existing JS Info Tip controller
+owns keyboard/hover/touch and viewport placement. Actual Firefox Lenovo
+L13/mobile/light-dark/zoom acceptance remains PENDING until executed.

@@ -228,3 +228,44 @@ def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selec
     assert 'configuration_profile: ldap' in definitions
     assert 'validate_tls_mode' in forms
     assert 'Enabled LDAP providers require server, base DN, bind DN, and secret reference.' in forms
+
+
+def test_review3_provider_header_guides_replace_static_input_helpers() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/access/identity_providers/form.html')
+    ldap = read('app/templates/access/identity_providers/partials/_ldap_configuration.html')
+    sso = read('app/templates/access/identity_providers/partials/_sso_configuration.html')
+
+    for template, count in ((form, 1), (ldap, 2), (sso, 2)):
+        Environment().parse(template)
+        assert template.count('info_tip.render(') == count
+        assert template.count("variant='guide'") == count
+        assert template.count("placement='right'") == count
+        assert 'components/info_tip.html' in template
+        assert '{{ helper }}' not in template
+
+    for header in ('Provider Identity and State',):
+        assert header in form
+    for header in ('LDAP Adapter Connection', 'Directory Identity Mapping'):
+        assert header in ldap
+    for header in ('Admission and JIT Provisioning', 'data-browser-title'):
+        assert header in sso
+
+    assert 'data-enabled-copy' in form
+    assert 'form.key.errors' in form and 'form.display_name.errors' in form
+    assert 'form.enabled.errors' in form
+    assert 'form.tls_mode.errors' in ldap
+    assert 'for error in field.errors' in ldap
+    assert 'form.client_id.errors' in sso
+    assert 'form.client_secret_env.errors' in sso
+    assert 'data-admission-help' in sso
+    assert 'data-jit-off-note' in sso
+    assert 'form.jit_enabled.errors' in sso
+    assert 'form.admission_values.errors' in sso
+    assert 'KAORI resolves the secret at runtime' in sso
+    assert '{query} is escaped before substitution' in ldap
+    assert 'plaintext LDAP is blocked' in ldap
+    for source in (form, ldap, sso):
+        assert 'whitespace-nowrap' not in source
+

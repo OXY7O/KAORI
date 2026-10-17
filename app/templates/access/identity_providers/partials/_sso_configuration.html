@@ -1,5 +1,6 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/info_tip.html" as info_tip %}
 {% set browser_selected = selected_definition and selected_definition.configuration_profile == 'browser_client' %}
 <div class="space-y-5"
      data-configuration-panel="browser_client"
@@ -12,10 +13,18 @@
                    class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-base font-semibold leading-6 text-content-primary"
-                    data-browser-title>
-                    {{ (selected_definition.label ~ ' Application') if browser_selected else 'Browser SSO Application' }}
-                </h2>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold leading-6 text-content-primary"
+                        data-browser-title>
+                        {{ (selected_definition.label ~ ' Application') if browser_selected else 'Browser SSO Application' }}
+                    </h2>
+                    {{ info_tip.render('identity-provider-browser-credentials-guide',
+                                        'Browser SSO Credentials',
+                                        'The external provider owns authentication; KAORI uses a configured client and runtime secret reference.',
+                                        items=['OAuth / OIDC Client ID: copy the client identifier from the provider application registration.', 'Client Secret Environment Variable: enter only its name. KAORI resolves the secret at runtime and does not persist the value.'],
+                                        placement='right',
+                                        variant='guide') }}
+                </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">
                     Configure the external client identity and runtime secret reference required by the selected browser adapter.
                 </p>
@@ -25,7 +34,6 @@
             <label class="block min-w-0">
                 <span class="text-sm font-semibold text-content-primary">{{ form.client_id.label.text }}</span>
                 {{ form.client_id(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='External application client ID') }}
-                <span class="mt-2 block text-xs leading-5 text-content-muted">Copy the client identifier from the provider application registration.</span>
                 {% for error in form.client_id.errors %}
                     <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
                 {% endfor %}
@@ -33,7 +41,6 @@
             <label class="block min-w-0">
                 <span class="text-sm font-semibold text-content-primary">{{ form.client_secret_env.label.text }}</span>
                 {{ form.client_secret_env(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=selected_definition.client_secret_placeholder if browser_selected else 'KAORI_IDP_CLIENT_SECRET', data_client_secret_input='true') }}
-                <span class="mt-2 block text-xs leading-5 text-content-muted">Enter the variable name; KAORI loads the secret at runtime without storing it.</span>
                 {% for error in form.client_secret_env.errors %}
                     <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
                 {% endfor %}
@@ -46,7 +53,15 @@
                 <i data-lucide="user-plus" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-base font-semibold leading-6 text-content-primary">Admission and JIT Provisioning</h2>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold leading-6 text-content-primary">Admission and JIT Provisioning</h2>
+                    {{ info_tip.render('identity-provider-jit-guide',
+                                        'JIT Admission Guide',
+                                        'Admission remains governed by the selected provider catalog policy.',
+                                        items=['Default Role: administrative roles are excluded from JIT assignment.', 'Admission Policy Values: follow the selected provider policy; values are validated before KAORI admits an external identity.'],
+                                        placement='right',
+                                        variant='guide') }}
+                </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">
                     Keep pre-provisioned identities as the default, or enable controlled JIT using the admission policy declared by the provider catalog.
                 </p>
@@ -77,7 +92,6 @@
                 <label class="block min-w-0">
                     <span class="text-sm font-semibold text-content-primary">{{ form.default_role_id.label.text }}</span>
                     {{ form.default_role_id(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
-                    <span class="mt-2 block text-xs leading-5 text-content-muted">Administrative roles are excluded from JIT assignment.</span>
                     {% for error in form.default_role_id.errors %}<span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>{% endfor %}
                 </label>
                 <label class="block min-w-0" data-admission-policy-field>

@@ -4,6 +4,7 @@
     {% import "components/page_hero.html" as page_hero %}
     {% import "components/operational_section_card.html" as operational_section_card %}
     {% import "components/operational_callout.html" as operational_callout %}
+    {% import "components/info_tip.html" as info_tip %}
     {% set selected_label = selected_definition.label if selected_definition else 'Select Provider' %}
     <div class="space-y-6" data-provider-form-page>
         <section class="{{ page_hero.shell_classes() }}">
@@ -44,7 +45,15 @@
                     <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="id-card" class="h-5 w-5"></i></span>
                         <div>
-                            <h2 class="text-base font-semibold leading-6 text-content-primary">Provider Identity and State</h2>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-base font-semibold leading-6 text-content-primary">Provider Identity and State</h2>
+                                {{ info_tip.render('identity-provider-instance-guide',
+                                                    'Provider Identity and State',
+                                                    'Define stable provider identity without changing the authoritative authentication source.',
+                                                    items=['Provider Key: a stable URL-safe instance key referenced by audit metadata and browser callback routes.', 'Display Name: operator-facing name; for browser SSO, also the sign-in option label.'],
+                                                    placement='right',
+                                                    variant='guide') }}
+                            </div>
                             <p class="mt-1 text-sm leading-6 text-content-secondary">Define the stable provider instance key and keep authentication disabled until adapter validation succeeds.</p>
                         </div>
                     </header>
@@ -52,13 +61,11 @@
                         <label class="block min-w-0">
                             <span class="text-sm font-semibold text-content-primary">{{ form.key.label.text }}</span>
                             {{ form.key(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='corporate-directory') }}
-                            <span class="mt-2 block text-xs leading-5 text-content-muted">Stable URL-safe instance key used by audit metadata and browser callback routes.</span>
                             {% for error in form.key.errors %}<span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>{% endfor %}
                         </label>
                         <label class="block min-w-0">
                             <span class="text-sm font-semibold text-content-primary">{{ form.display_name.label.text }}</span>
                             {{ form.display_name(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='Corporate Identity') }}
-                            <span class="mt-2 block text-xs leading-5 text-content-muted">Operator-facing name and, for browser SSO, the sign-in option label.</span>
                             {% for error in form.display_name.errors %}<span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>{% endfor %}
                         </label>
                         <div class="sm:col-span-2">
