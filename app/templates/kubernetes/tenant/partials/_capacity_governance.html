@@ -35,7 +35,7 @@
                                                 'Storage Budget is an explicit logical allocation ceiling and is not presented as physical backend capacity.',
                                                 'Selecting an existing cluster reloads its committed policy values.'
                                                 ],
-                                                placement='right') }}
+                                                placement='right', variant='guide') }}
                     </span>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Govern CPU, memory, Pod, and logical storage commitment before positive Namespace allocation.</p>
                 </div>
@@ -67,7 +67,7 @@
                                                 'Unmanaged Commitment — governed commitment outside KAORI Tenant Management; it is not free capacity.',
                                                 'Tenant Budget = allocatable - reserve - safety headroom - unmanaged commitment.'
                                                 ],
-                                                placement='right') }}
+                                                placement='right', variant='guide') }}
                     </span>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Reserve and unmanaged commitments are explicit inputs; current utilization remains separate Analytics evidence.</p>
                 </div>
@@ -114,7 +114,7 @@
                                                 'Observe reports exposure only. Enforce additionally blocks unsafe positive allocations.',
                                                 'Unbounded or missing limits remain Unknown, not zero or free headroom.'
                                                 ],
-                                                placement='right') }}
+                                                placement='right', variant='guide') }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">
                         Compare declared maximum ceilings with operator policy. Requests still govern Kubernetes scheduling capacity.
@@ -181,7 +181,7 @@
                                                 'The budget is not derived from node filesystem capacity, PVC count, or PV/PVC totals.',
                                                 'Projected Tenant requests.storage is blocked before reconciliation when the logical ceiling would be exceeded.'
                                                 ],
-                                                placement='right') }}
+                                                placement='right', variant='guide') }}
                     </span>
                 </div>
                 <div class="p-4">
@@ -257,7 +257,7 @@
                         'Overcommitted — commitments exceed the governed budget.',
                         'Unknown — required capacity evidence is incomplete or stale.'
                         ],
-                        placement='right') }}
+                        placement='right', variant='guide') }}
         {% endset %}
         {{ table_ui.inventory_block_header('chart-no-axes-combined',
                 'Allocation Budget',

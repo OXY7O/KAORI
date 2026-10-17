@@ -583,7 +583,7 @@ def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> No
     assert 'h-6 w-6' in component
     assert 'circle-help' in component
 
-    assert 'document.body.appendChild(preview)' in controller
+    assert 'portal.appendChild(preview)' in controller
     assert "event.key === 'Escape'" in controller
     assert "document.addEventListener('htmx:beforeSwap'" in controller
 
@@ -1485,7 +1485,7 @@ def test_info_tip_uses_title_level_registry_guidance_and_viewport_portal() -> No
     layout = read('app/templates/layouts/app.html')
     positioning = read('app/static/js/info_tips.js')
     assert "filename='js/info_tips.js'" in layout
-    assert 'document.body.appendChild(preview)' in positioning
+    assert 'portal.appendChild(preview)' in positioning
     assert 'getBoundingClientRect()' in positioning
     assert 'window.innerWidth' in positioning
     assert 'window.innerHeight' in positioning

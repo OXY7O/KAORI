@@ -26,7 +26,7 @@ def test_info_tip_uses_one_non_modal_popover_for_all_input_methods() -> None:
     assert 'data-kaori-native-dialog' not in component
 
     for token in (
-        'document.body.appendChild(preview)',
+        'portal.appendChild(preview)',
         "document.addEventListener('pointerover'",
         "document.addEventListener('focusin'",
         "document.addEventListener('click'",
@@ -100,7 +100,7 @@ def test_title_level_guides_share_existing_portal_controller() -> None:
     assert 'data-kaori-info-tip-preview' in source
     assert "variant='guide'" in doc
     assert 'field-level' in doc
-    assert 'document.body.appendChild(preview)' in script
+    assert 'portal.appendChild(preview)' in script
     assert "document.addEventListener('htmx:beforeSwap'" in script
 
 
