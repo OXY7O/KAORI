@@ -269,3 +269,26 @@ def test_review3_provider_header_guides_replace_static_input_helpers() -> None:
     for source in (form, ldap, sso):
         assert 'whitespace-nowrap' not in source
 
+def test_review3_provider_guidance_steps_and_authority_notes() -> None:
+    from jinja2 import Environment
+
+    github = read('app/templates/access/identity_providers/providers/github/_guidance.html')
+    google = read('app/templates/access/identity_providers/providers/google/_guidance.html')
+    ldap = read('app/templates/access/identity_providers/providers/ldap_directory/_guidance.html')
+    for source in (github, google, ldap):
+        Environment().parse(source)
+        assert 'info_flow.render(' in source
+        assert "note_icon='shield-check'" in source
+        assert 'whitespace-nowrap' not in source
+
+    assert 'Register the exact KAORI callback URL as the authorized OAuth callback' in github
+    assert 'authorized Google redirect URI' in google
+    assert 'runtime environment reference.' in github
+    assert 'runtime environment reference.' in google
+    assert 'non-admin KAORI role' in github and 'approved external subjects' in github
+    assert 'non-admin KAORI role' in google and 'verified email domains' in google
+    assert "note='Directory owns credentials; KAORI governs access.'" in ldap
+    assert "note='Google signs in; KAORI governs access.'" in google
+    assert "note='GitHub signs in; KAORI governs access.'" in github
+    assert 'LDAP' not in github
+

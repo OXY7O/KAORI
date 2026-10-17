@@ -122,3 +122,17 @@ in their original owning fields. Do not hide mandatory validation or current
 provider/admission state in a popover. The existing JS Info Tip controller
 owns keyboard/hover/touch and viewport placement. Actual Firefox Lenovo
 L13/mobile/light-dark/zoom acceptance remains PENDING until executed.
+
+### REVIEW(3) — Provider Guidance line-density targets (#2279)
+
+Firefox Lenovo L13 review requests **approximately two natural lines**
+per browser-provider setup-step description and **one line** for each
+credential-ownership/admission note. The GitHub OAuth and Google OIDC
+four-step workflows use concise, complete guidance: registration, exact
+callback, environment-referenced secret, and explicit non-admin JIT
+admission. Provider notes distinguish external authentication from KAORI
+authorization; the LDAP guidance steps already describe identity mapping.
+The shared `info_flow.render()` component and typography remain unchanged.
+These are desktop screenshot targets, not forced line breaks, truncation,
+font reduction or browser PASS. Real Dev Container Firefox/mobile/zoom/dark
+and human acceptance remain PENDING.
