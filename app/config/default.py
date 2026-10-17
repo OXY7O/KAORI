@@ -419,6 +419,9 @@ class Config:
             'app.integrations.runtime.tasks.refresh_integration_runtime': {
                 'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
             },
+            'app.integrations.runtime.tasks.dispatch_integration_health_notification': {
+                'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
+            },
             'app.integrations.validation.tasks.validate_integration_instance': {
                 'queue': INTEGRATION_VALIDATION_CELERY_QUEUE,
             },
