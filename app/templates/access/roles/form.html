@@ -355,7 +355,7 @@
                                                             {% if not read_only and permission.id not in delegable_permission_ids %}{{ table_label.status_label('Outside Ceiling', 'unknown', 'shield-ban') }}{% endif %}
                                                         </span>
                                                         <span class="mt-1 block text-xs font-medium text-content-muted">{{ permission.key }}</span>
-                                                        <span class="mt-1.5 block text-xs leading-5 text-content-muted">{{ permission.description or 'No permission description is defined.' }}</span>
+                                                        <span class="mt-1.5 block min-h-10 text-xs leading-5 text-content-muted">{{ permission.description or 'No permission description is defined.' }}</span>
                                                     </span>
                                                 </label>
                                             {% endfor %}
