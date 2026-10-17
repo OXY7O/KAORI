@@ -86,7 +86,9 @@
                 : 'Browser SSO Application'
         // Re-query the live display icon: Lucide replaces <i> with <svg> after each render.
         // Provider radios only carry data-provider-option-icon and must never receive data-lucide.
-        const providerIcon = form.querySelector('[data-configuration-panel="browser_client"] [data-provider-display-icon]')
+        const providerIcon = form.querySelector(
+            '[data-configuration-panel="browser_client"] [data-provider-display-icon]'
+        )
         if (providerIcon) providerIcon.dataset.lucide = option?.dataset.providerOptionIcon || 'log-in'
         syncJit(option)
         if (window.lucide) window.lucide.createIcons()
