@@ -161,7 +161,7 @@ def test_role_detail_preserves_committed_evidence_and_mutation_guards() -> None:
 def test_roles_overview_copy_matches_approved_refinement() -> None:
     page = read('app/templates/access/roles/index.html')
 
-    assert 'Inactive roles fail closed on the next effective authorization check.' in page
+    assert 'Inactive roles fail closed at authorization.' in page
     assert 'Protected defaults require RBAC review.' in page
     assert 'Inactive roles fail closed on the next authorization check.' not in page
     assert 'Protected default definitions requiring RBAC convergence review.' not in page
