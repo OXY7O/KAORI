@@ -271,16 +271,15 @@ def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> No
     template = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
     assert "table_label.metadata_label('Edit Destination' if form_channel else 'New Destination'" in template
-    assert 'Choose a Delivery Provider' in template
-    assert 'aria-label="Choose {{ provider_option.label }} notification provider"' in template
+    assert 'Choose a Delivery Provider' not in template
     assert '{% for provider_option in payload.providers %}' in template
-    assert '@click="provider = ' in template
+    assert 'Select provider' in template
     assert 'name="provider_key"' in template
     assert 'x-model="provider"' in template
     assert '{% include provider_option.form_partial %}' in template
     assert 'Telegram, Email, or Microsoft Teams' not in template
-    assert 'Credential Boundary' in template
-    assert 'Activation Gate' in template
+    assert 'Delivery Policy' in template
+    assert 'Allowed Uses' in template
     for key in ('discord', 'slack', 'ntfy', 'telegram', 'email', 'microsoft_teams'):
         assert f"'{key}': NotificationProviderAdapter(" in providers
     for requirement in ('NOTIFICATION_NTFY_ALLOWED_ORIGINS', 'NOTIFICATION_NTFY_CA_BUNDLE',
@@ -312,4 +311,28 @@ def test_review6_provider_utilities_match_header_action_geometry_with_soft_hover
     assert 'hover:bg-kaori-primary' not in primitive
     assert 'aria-label="Open {{ provider.label }} setup guide"' in source
     assert 'aria-label="Configure {{ provider.label }} notification channel"' in source
+
+def test_review6_modal_has_context_metadata_and_single_native_provider_select() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    assert "metadata_label('Integrations', icon='plug')" in source
+    assert "metadata_label('Channel Configuration', icon='settings-2')" in source
+    assert "metadata_label('Delivery Providers', icon='network')" in source
+    assert "payload.providers|length ~ ' Setup Guides'" in source
+    assert 'Choose a Delivery Provider' not in source
+    assert 'Scheduled Reports and non-alert events ignore this threshold.' not in source
+    assert 'name="provider_key"' in source
+    assert 'x-model="provider"' in source
+    assert 'Select provider' in source
+    assert 'Delivery Policy' in source
+    assert "payload.domain_options|length" in source
+    assert "payload.event_type_options|length" in source
+    assert 'name="domains"' in source
+    assert 'name="event_types"' in source
+    assert 'name="enabled"' in source
+    assert 'form_channel.domains if form_channel else []' in source
+    assert 'form_channel.event_types if form_channel else []' in source
+    assert 'form_channel.enabled' in source
+    assert 'grid gap-2 sm:grid-cols-2 xl:grid-cols-3' in source
+    assert '{% include provider_option.form_partial %}' in source
+    assert 'name="csrf_token"' in source
 
