@@ -238,6 +238,10 @@ Access Overview now places its **Access Boundaries** heading and supporting expl
 Four Identity Governance descriptions are shortened for the Firefox Lenovo L13 sidebar-open layout. Provider ownership, external secrets and KAORI authorization remain authoritative. Only copy is changed; no truncation or forced nowrap. Mobile and zoom may wrap naturally. Browser acceptance is pending.
 
 
+### UAT-1(4) Access modal header/footer — #2261
+
+Access detail dialogs keep the existing `resource_detail_modal.host` chrome and their own body/width. User/Role destructive confirmations opt into a matching surface-card header with close control and contextual footer, preserving original body, dimensions, safe cancellation and protected confirmation actions. No default change applies to destructive confirmations elsewhere. Focus, keyboard, mobile/light-dark and destructive negative UAT are pending.
+
 ### UAT-1(4) Add User copy refinement — #2253
 
 On the create-user page, remove the redundant Display Name default helper and Assigned Role post-login helper (without removing the field or conditional administrator-role restriction). Shorten password/identity-owner guidance, provider-admission steps and the three Administrative Boundary descriptions to reduce laptop side-rail wrapping while retaining Local Database-only break-glass and last-active-Super-Admin protections. Input values, validation, authorization and identity-provider workflow are unchanged; live Firefox/browser UAT remains pending.

@@ -128,7 +128,8 @@
                 '',
                 action_label='Delete Role',
                 notice='Only an unreferenced custom role can be deleted.',
-                scope_value='Roles & Access') }}
+                scope_value='Roles & Access',
+                access_chrome=true) }}
     </div>
     <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
 {% endblock dashboard_content %}
