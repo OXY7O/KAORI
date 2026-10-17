@@ -323,6 +323,8 @@ def test_registry_routing_requires_live_canonical_provider(monkeypatch) -> None:
         {'enabled': True, 'lifecycle_status': 'retired'},
         {'lifecycle_status': 'active', 'readiness_status': 'blocked'},
         {'readiness_status': 'validation_failed'},
+        {'readiness_status': 'validation_required'},
+        {'readiness_status': None},
         {'integration_type': 'kubernetes'},
     ):
         saved = vars(provider).copy()
