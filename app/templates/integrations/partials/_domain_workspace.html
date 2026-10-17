@@ -71,10 +71,10 @@
     ] %}
 {% elif domain.key == 'registry' %}
     {% set domain_guidance_title = "Registry Authority and Evidence" %}
-    {% set domain_guidance_text = "Registry providers remain authoritative for repositories, artifacts, native policies, and registry runtime state. KAORI normalizes committed inventory, security, governance, runtime correlation, analytics, and audit evidence without cloning the provider control plane." %}
+    {% set domain_guidance_text = "Registry providers remain authoritative for repositories, artifacts, native policies, and runtime. KAORI correlates committed inventory, security, governance, analytics, and audit evidence." %}
     {% set domain_guidance_items = [
-        "Harbor is the first qualified Registry provider and uses the shared provider-neutral Registry contracts.",
-        "Future Registry providers must extend the same capability and evidence boundaries without provider-specific domain navigation."
+        "Harbor is the first qualified Registry provider under shared contracts.",
+        "Future providers extend those contracts without provider-specific domain navigation."
     ] %}
 {% endif %}
 <section class="{{ integration_ui.section_shell_classes() }}"
@@ -94,7 +94,8 @@
                                                         domain_guidance_title,
                                                         domain_guidance_text,
                                                         domain_guidance_items,
-                                                        placement='right') }}
+                                                        placement='right',
+                                                        variant='guide') }}
                         {% endif %}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider connections and cross-domain consumer bindings for assets in this domain.</p>
