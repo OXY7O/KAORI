@@ -52,12 +52,16 @@ def test_posture_and_governance_form_one_audit_style_overview() -> None:
         assert boundary in overview
 
     for concise_description in (
-        'Providers define identity authority; adapters define authentication.',
-        'Secrets stay external; KAORI stores references and non-secret settings.',
-        'External identities are linked or approved-provisioned before KAORI authorization.',
-        'Authentication verifies identity; active KAORI roles and account state govern access.',
+        'Providers own identity; adapters run sign-in.',
+        'External secrets; KAORI stores references.',
+        'Linked identities need KAORI authorization.',
+        'KAORI roles and account state gate access.',
     ):
         assert concise_description in overview
+        assert len(concise_description) <= 48
+
+    assert 'whitespace-nowrap' not in overview
+    assert 'text-ellipsis' not in overview
 
     # Governance must remain within the same overview surface.
     assert 'operational_section.render(' not in overview
