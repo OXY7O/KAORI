@@ -18,7 +18,8 @@ def test_provider_owned_optional_topic_config_is_sent_via_bot_api() -> None:
     assert 'message_thread_id=topic_id' in registry
     assert 'name="telegram_topic_id"' in form
     assert 'form_channel.telegram_topic_id' in form
-    assert 'Test Delivery' in form
+    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    assert 'Changing this requires a new Test Delivery.' in modal
 
 
 def test_channel_transport_change_and_recovery_snapshots_already_own_topic() -> None:
@@ -40,27 +41,45 @@ def test_github_actions_topic_stays_separate_from_application_events() -> None:
     assert 'github_actions.' not in catalog
 
 
-def test_telegram_field_help_uses_canonical_info_tips_without_inline_paragraphs() -> None:
+def test_telegram_uses_section_title_guide_and_one_desktop_input_row() -> None:
     form = read('app/templates/integrations/delivery/notification_channels/providers/telegram/_form.html')
+    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     info_tip = read('app/templates/components/info_tip.html')
     javascript = read('app/static/js/info_tips.js')
 
-    assert '{% import "components/info_tip.html" as info_tip %}' in form
-    assert form.count('info_tip.render(') == 3
-    for field, tip_id in (
-        ('bot_token', 'notification-telegram-token-help'),
-        ('target_chat_id', 'notification-telegram-chat-help'),
-        ('telegram_topic_id', 'notification-telegram-topic-help'),
+    assert 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3' in form
+    assert 'sm:col-span-2' not in form
+    assert '<p class=' not in form
+    assert 'info_tip.render(' not in form
+    assert '{% import "components/info_tip.html" as info_tip %}' in modal
+    assert "provider_option.key == 'telegram'" in modal
+    assert modal.count('notification-telegram-configuration-guide') == 1
+    assert "variant='guide'" in modal
+    assert 'flex flex-wrap items-center gap-2' in modal
+
+    for field, field_id in (
+        ('bot_token', 'notification-telegram-token'),
+        ('target_chat_id', 'notification-telegram-chat-id'),
+        ('telegram_topic_id', 'telegram-topic-id'),
     ):
         assert f'name="{field}"' in form
-        assert tip_id in form
-    assert '<p class="mt-1 text-xs leading-5 text-content-muted">' not in form
-    assert 'Stored as a secret and never rendered back after save.' in form
-    assert 'The bot must already be able to post to this destination.' in form
-    assert 'Numeric Telegram message_thread_id of a Forum Topic in your supergroup.' in form
-    assert 'Leave blank for ordinary chat delivery.' in form
-    assert 'Changing this requires a new Test Delivery.' in form
-    assert 'data-kaori-info-tip-trigger' in info_tip
+        assert f'for="{field_id}"' in form
+        assert f'id="{field_id}"' in form
+    assert 'type="password"' in form
+    assert 'autocomplete="new-password"' in form
+    assert 'inputmode="numeric"' in form
+    assert 'pattern="[0-9]*"' in form
+    assert 'form_channel.telegram_topic_id' in form
+
+    for guidance in (
+        'Bot Token: Stored as a secret and never rendered back after save.',
+        'Chat ID / @Channel: The bot must already be able to post to this destination.',
+        'Numeric Telegram message_thread_id of a Forum Topic in your supergroup.',
+        'Leave blank for ordinary chat delivery.',
+        'Changing this requires a new Test Delivery.',
+    ):
+        assert guidance in modal
+    assert "data-kaori-info-tip-variant=\"{{ 'guide' if guide_variant else 'icon' }}\"" in info_tip
     assert 'role="tooltip"' in info_tip
     assert "root.closest('dialog[open]')" in javascript
     assert 'openDialog instanceof HTMLDialogElement ? openDialog : document.body' in javascript

@@ -1,6 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/action_button.html" as action_button %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 <dialog id="notification-channel-guide-dialog"
         data-kaori-native-dialog
@@ -277,7 +278,24 @@
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                                       aria-hidden="true"><i data-lucide="{{ provider_option.icon }}" class="h-5 w-5"></i></span>
                                 <div class="min-w-0">
-                                    <h3 class="text-base font-semibold leading-6 text-content-primary">{{ provider_option.label }} Configuration</h3>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-base font-semibold leading-6 text-content-primary">{{ provider_option.label }} Configuration</h3>
+                                        {% if provider_option.key == 'telegram' %}
+                                            {{ info_tip.render(
+                                                'notification-telegram-configuration-guide',
+                                                'Telegram Configuration',
+                                                'Configure the bot credential and destination; a forum topic is optional.',
+                                                items=[
+                                                    'Bot Token: Stored as a secret and never rendered back after save.',
+                                                    'Chat ID / @Channel: The bot must already be able to post to this destination.',
+                                                    'Telegram Topic ID: Numeric Telegram message_thread_id of a Forum Topic in your supergroup.',
+                                                    'Leave blank for ordinary chat delivery. Changing this requires a new Test Delivery.'
+                                                ],
+                                                placement='right',
+                                                variant='guide'
+                                            ) }}
+                                        {% endif %}
+                                    </div>
                                     <p class="mt-1 text-sm leading-5 text-content-secondary">{{ provider_option.configuration }}</p>
                                 </div>
                             </div>
