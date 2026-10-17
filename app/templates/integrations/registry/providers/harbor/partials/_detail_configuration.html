@@ -67,7 +67,8 @@ setup_reference_template="integrations/registry/providers/harbor/partials/_minim
             <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Webhook Receiver URL</p>
             <code class="mt-2 block break-all rounded-lg border border-outline-subtle bg-surface-subtle p-3 text-xs text-content-primary">{{ webhook_url }}</code>
             <p class="mt-2 text-xs leading-5 text-content-secondary">Configure this endpoint in Harbor with a generated credential sent as <code>Authorization: Bearer &lt;token&gt;</code> or <code>X-KAORI-Webhook-Token: &lt;token&gt;</code>. The token is displayed only when generated or rotated.</p>
-            {% if webhook_url.startswith('http://localhost') or webhook_url.startswith('http://127.0.0.1') or webhook_url.startswith('http://[::1]') %}
+            {% set receiver_host = request.host.split(':', 1)[0]|lower %}
+            {% if receiver_host in ['localhost', '127.0.0.1'] or request.host.startswith('[::1]') %}
                 <p class="mt-2 flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2 text-xs leading-5 text-content-secondary"
                    role="note">
                     <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
