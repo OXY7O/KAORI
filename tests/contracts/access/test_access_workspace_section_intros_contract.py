@@ -66,3 +66,17 @@ def test_shared_intro_preserves_access_read_only_and_existing_card_titles() -> N
     assert '>User Directory</h2>' in directory
     for text in (permission, flow, directory):
         assert 'hx-post=' not in text
+
+
+
+def test_access_boundaries_uses_authorization_flow_external_intro_pattern() -> None:
+    overview = read('app/templates/access/overview/index.html')
+    roles = read('app/templates/access/roles/index.html')
+    assert "section_intro.render('Authorization Flow'," in roles
+    assert "section_intro.render('Access Boundaries'," in overview
+    assert "id='access-boundaries-heading'" in overview
+    assert 'aria-labelledby="access-boundaries-heading"' in overview
+    assert 'operational_section.shell_classes()' in overview
+    assert overview.index("section_intro.render('Access Boundaries'") < overview.index(
+        'aria-labelledby="access-boundaries-heading"'
+    )
