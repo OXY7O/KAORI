@@ -241,7 +241,7 @@ def test_reset_password_reuses_shared_security_surface_authority() -> None:
     assert 'Minimum 12 characters' in template
     assert 'data-operation-submit' in template
     assert 'data-loading-label="Resetting password..."' in template
-    assert 'sessions revoked next request' in template
+    assert 'sessions revoked on next request' in template
     assert 'Activity Audit logged' in template
     assert 'Role, active state, Super Admin, and external identity links unchanged.' in template
     assert 'Use the recovery workflow owned by the authoritative identity source.' in template
@@ -261,7 +261,7 @@ def test_reset_password_laptop_copy_density_preserves_security_semantics() -> No
     Environment().parse(template)
     expected = (
         ('Use 12+ characters, a unique passphrase, and no default passwords.', 72),
-        ('Hash replaced; sessions revoked next request; Activity Audit logged. '
+        ('Hash replaced; sessions revoked on next request; Activity Audit logged. '
          'Role, active state, Super Admin, and external identity links unchanged.', 150),
         ('KAORI owns local password hashes and audited resets.', 70),
         ('Sessions and remembered sign-ins are invalidated on next request.', 80),
@@ -272,7 +272,7 @@ def test_reset_password_laptop_copy_density_preserves_security_semantics() -> No
     for copy, budget in expected:
         assert len(copy) <= budget
         assert template.count(copy) == 1
-        caption = re.search(r'<p class="([^"]+)">\\s*' + re.escape(copy), template)
+        caption = re.search(r'<p class="([^"]+)">\s*' + re.escape(copy), template)
         assert caption, copy
         assert 'text-xs leading-5' in caption.group(1)
         assert not any(token in caption.group(1) for token in ('whitespace-nowrap', 'truncate', 'line-clamp'))
