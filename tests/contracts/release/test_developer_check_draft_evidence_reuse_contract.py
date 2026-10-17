@@ -173,9 +173,7 @@ def test_ready_guard_is_required_skipped_for_draft_evidence() -> None:
     policy, evidence, run, jobs, args = proven_case()
     assert policy._required_developer_jobs(PLAN)['Ready Admission Guard'] == 'skipped'
     assert policy.draft_developer_reuse_decision(evidence, run, jobs, **args).reusable
-    unexpected = [
-        dict(job, conclusion='success') if job['name'] == 'Ready Admission Guard' else job for job in jobs
-    ]
+    unexpected = [dict(job, conclusion='success') if job['name'] == 'Ready Admission Guard' else job for job in jobs]
     assert not policy.draft_developer_reuse_decision(evidence, run, unexpected, **args).reusable
     absent = [job for job in jobs if job['name'] != 'Ready Admission Guard']
     assert not policy.draft_developer_reuse_decision(evidence, run, absent, **args).reusable
