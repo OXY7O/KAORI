@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.integrations.delivery.notification_channels.catalog import (
+    domain_event_allowed,
     domain_label,
     domain_options,
     event_severity_scoped,
@@ -450,7 +451,9 @@ def list_event_channel_options(
     options: list[dict[str, Any]] = []
     for channel in channels:
         supports_event = event_type in (channel.event_types or [])
-        supports_domain = domain is None or domain in (channel.domains or [])
+        supports_domain = domain is None or (
+            domain in (channel.domains or []) and domain_event_allowed(domain, event_type)
+        )
         supports_severity = (
             severity is None
             or not event_severity_scoped(event_type)
@@ -776,6 +779,7 @@ def _channel_matches_event(
         and channel.configured
         and channel.test_status == 'success'
         and domain in (channel.domains or [])
+        and domain_event_allowed(domain, event_type)
         and event_type in allowed_events
     ):
         return False

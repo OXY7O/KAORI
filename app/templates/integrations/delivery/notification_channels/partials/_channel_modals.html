@@ -338,6 +338,7 @@
                                            {% if option.value in selected_domains %}checked{% endif %}
                                            class="h-4 w-4 rounded border-outline-default text-kaori-primary">
                                     <span>{{ option.label }}</span>
+                                    {% if option.hint %}<span class="text-xs text-content-muted">{{ option.hint }}</span>{% endif %}
                                 </label>
                             {% endfor %}
                         </div>

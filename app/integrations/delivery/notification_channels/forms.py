@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.integrations.delivery.notification_channels.catalog import domain_keys, event_type_keys
+from app.integrations.delivery.notification_channels.catalog import (
+    domain_event_allowed,
+    domain_keys,
+    event_type_keys,
+)
 from app.integrations.delivery.notification_channels.contracts import NotificationChannelFormInput
 from app.integrations.delivery.notification_channels.providers import get_notification_provider
 from app.models.notification_channel import NotificationChannel
@@ -56,6 +60,18 @@ def validate_channel_input(
         errors.append('Select at least one delivery domain for this notification channel.')
     if not data.event_types:
         errors.append('Select at least one allowed use for this notification channel.')
+    if data.domains and data.event_types:
+        ineligible_domains = [
+            domain
+            for domain in data.domains
+            if not any(domain_event_allowed(domain, event_type) for event_type in data.event_types)
+        ]
+        if ineligible_domains:
+            errors.append(
+                'Select an allowed use supported by each chosen delivery domain: '
+                + ', '.join(ineligible_domains)
+                + '.'
+            )
     errors.extend(adapter.form_validator(data))
     return errors
 
