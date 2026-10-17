@@ -1897,17 +1897,27 @@ def test_tenant_allocation_guidance_has_distinct_limit_reason_and_budget_formula
     Environment(autoescape=True).parse(overview)
 
     exposure = overview.split('id="tenant-limit-exposure-heading"', 1)[1].split('</section>', 1)[0]
+    assert 'components/info_tip.html' in overview
+    assert 'overflow-visible rounded-xl' in exposure
     assert exposure.index('Exposure assessment') < exposure.index('Governance boundary')
-    assert '{{ exposure.reason }}' in exposure
-    assert "exposure.state in ['Unknown', 'Overcommitted']" in exposure
+    assert exposure.count('info_tip.render(') == 2
+    assert "'tenant-limit-exposure-assessment-tip'" in exposure
+    assert "'tenant-limit-exposure-governance-boundary-tip'" in exposure
+    assert exposure.count("placement='right', variant='guide'") == 2
+    assert 'exposure.reason,' in exposure  # Committed reason in contextual guidance.
+    assert '{{ exposure.reason }}' in exposure  # Persistently visible for risks.
+    assert "exposure.state in ['Unknown', 'Near Capacity', 'Overcommitted']" in exposure
+    assert 'role="status"' in exposure
     assert 'operational_callout.semantic_border_classes(exposure_tone' in exposure
+    assert 'bg-status-critical-soft text-status-critical-text' in exposure
+    assert 'bg-status-warning-soft text-status-warning-text' in exposure
     assert "exposure.mode == 'observe'" in exposure
     assert 'Observe never blocks Resource Profile admission.' in exposure
     assert 'Enforce adds a Limits admission check.' in exposure
     assert 'Request Commitment above remains the admission baseline.' in exposure
     assert 'Ratios multiply the governed Tenant budget' in exposure
-    assert 'data-lucide="shield-check"' in exposure
-    assert 'sm:grid-cols-2' in exposure
+    assert 'grid gap-3 border-t' not in exposure
+    assert 'sm:grid-cols-2' not in exposure
 
     budget = overview.split('How allocation budgets work', 1)[1].split('</details>', 1)[0]
     assert budget.index('Request budget formula') < budget.index('Logical storage policy')
