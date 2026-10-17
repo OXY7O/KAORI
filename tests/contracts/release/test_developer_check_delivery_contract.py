@@ -54,7 +54,7 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert set(jobs['ready-admission-guard']['needs']) == {'developer-check', 'full-admission'}
     assert 'always()' in jobs['ready-admission-guard']['if']
     assert 'github.event.pull_request.head.repo.full_name == github.repository' in jobs['ready-admission-guard']['if']
-    assert 'FULL_ADMISSION_RESULT: ${{ needs.full-admission.result }}' in s
+    assert 'FULL_ADMISSION_RESULT: ${{ needs.full-admission.result }}' in read(DEVELOPER_WORKFLOW)
     assert jobs['full-admission']['needs'] == 'developer-check'
     assert jobs['full-admission']['uses'] == './.github/workflows/quality.yml'
     assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
