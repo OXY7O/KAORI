@@ -84,3 +84,8 @@ caption stays short. The modal retains the login disablement, audit retention
 and Restore → Inactive plus separate activation explanation. No server-side
 self-edit, CSRF, protected-admin or deletion guard changed. Browser rendering
 and accessibility acceptance remain pending at the exact aggregation SHA.
+
+Follow-up compact right-rail copy: the short self-edit caption is accompanied
+by the full existing restriction (own role, active state, Super Admin) in the
+Guide. Local credentials and resets remain KAORI-owned. Firefox rendered
+single-line confirmation remains pending.

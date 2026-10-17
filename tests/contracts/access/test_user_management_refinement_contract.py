@@ -352,7 +352,7 @@ def test_uat6_user_edit_copy_balances_context_specific_credential_text() -> None
 
     # Edit User: two-line-friendly link/boundary and 01/02 step descriptions.
     assert 'Review account state, source and role.' in form
-    assert 'KAORI owns local passwords, resets and access.' in form
+    assert 'KAORI owns local credentials and resets.' in form
     assert 'Identity profile</strong> updates username, display name and contact email without changing credential ownership.' in form
     assert 'Assigned Role</strong> changes KAORI RBAC permissions without modifying upstream identity or authentication credentials.' in form
     assert 'Identity profile updates the KAORI display name' not in form
@@ -404,9 +404,9 @@ def test_uat_review2_edit_profile_guide_and_user_registry_copy() -> None:
     Environment().parse(form)
     Environment().parse(users)
     assert 'Review account state, source and role.' in form
-    assert 'KAORI owns local passwords, resets and access.' in form
+    assert 'KAORI owns local credentials and resets.' in form
     assert "info_tip.render('edit-user-self-access-guide'," in form
-    assert 'Own role, state and Super Admin are protected.' in form
+    assert 'Own access controls are locked.' in form
     assert 'Profile metadata may be updated, but your own role, active state' in form
     assert "variant='guide'" in form
     assert "{% if is_self_edit %}" in form
