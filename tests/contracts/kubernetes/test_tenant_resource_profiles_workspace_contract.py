@@ -665,6 +665,19 @@ def test_create_profile_resource_sections_are_collapsed_native_disclosures() -> 
     assert '<details ' in controls
 
 
+def test_resource_profile_registry_offline_css_covers_both_layout_modes() -> None:
+    source = read('frontend/styles.css')
+    compiled = read('app/static/css/output.css')
+    marker = '[data-kaori-responsive-registry="resource-profiles"]'
+    for css in (source, compiled):
+        assert marker in css
+        assert 'display: table-header-group' in css
+        assert 'display: table-row-group' in css
+        assert 'grid-template-columns: repeat(2, minmax(0, 1fr))' in css
+        assert 'data-kaori-registry-empty' in css
+        assert '@media (max-width: 639px)' in css
+
+
 def test_resource_profile_registry_reflows_without_forced_horizontal_scrolling() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
     assert 'data-kaori-responsive-registry="resource-profiles"' in registry
@@ -681,6 +694,8 @@ def test_resource_profile_registry_reflows_without_forced_horizontal_scrolling()
         assert f'xl:hidden">{label}</span>' in registry
     assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
     assert 'colspan="5" class="block p-0 xl:table-cell"' in registry
+    assert 'data-kaori-registry-empty' in registry
+    assert registry.count('data-kaori-profile-column-label') == 3
 
 
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
