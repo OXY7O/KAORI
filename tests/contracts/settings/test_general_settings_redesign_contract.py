@@ -348,3 +348,19 @@ def test_uat_general_copy_is_concise_without_truncating_provider_contracts() -> 
     # Phone layouts must wrap naturally, never hide any evidence.
     assert 'truncate' not in timezone
     assert 'text-ellipsis' not in system
+
+
+def test_uat_compatibility_policy_columns_share_four_balanced_rows() -> None:
+    template = read('app/templates/settings/general/partials/_compatibility_versions.html')
+    assert 'data-compatibility-policy-reference="disclosure"' in template
+    assert 'data-compatibility-policy-layout="structured-reference"' in template
+    assert template.count('lg:grid lg:grid-rows-4') == 2
+    assert template.count('lg:min-h-20') == 5
+    assert "data-compatibility-policy-guide=\"numbered\"" in template
+    assert '<ol class=' in template and '<dl class=' in template
+    assert 'Contracts change only for breaking API behavior.' in template
+    assert 'Provider APIs, RBAC, metrics and bindings determine readiness.' in template
+    assert 'Contracts advance for breaking API or capability changes.' in template
+    assert 'Before the window: End of Life; future: Unverified.' in template
+    assert 'EOL, missing capabilities, invalid identity or failed checks block.' in template
+    assert 'truncate' not in template and 'whitespace-nowrap' not in template
