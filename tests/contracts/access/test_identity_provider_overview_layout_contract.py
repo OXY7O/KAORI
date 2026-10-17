@@ -32,8 +32,8 @@ def test_provider_overview_compacts_metrics_and_governance_in_shared_section() -
         'Authorization Boundary',
     ):
         assert boundary in template
-    assert 'Secrets stay external' in template
-    assert 'active KAORI roles and account state govern access' in template
+    assert 'External secrets; KAORI stores references.' in template
+    assert 'KAORI roles and account state gate access.' in template
 
 
 def test_provider_directory_strip_reuses_governed_flow_without_duplicate_cards() -> None:
