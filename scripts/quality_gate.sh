@@ -78,6 +78,23 @@ print_pytest_failure_excerpt() {
     tail -n 80 "$log_file" | filter_pytest_progress >&2
 }
 
+# Expose setup/build cost without changing selected tests, captured pytest logs,
+# or exit-code handling. Each invocation remains within its owning gate.
+run_timed_setup() {
+    local label="$1"
+    shift
+    local started elapsed status=0
+    started="$(date +%s)"
+    printf '⏳ %s\\n' "$label"
+    "$@" || status=$?
+    elapsed=$(( $(date +%s) - started ))
+    if [[ "$status" -ne 0 ]]; then
+        printf '❌ %s · exit %d · ⏱ %dm %02ds\\n' "$label" "$status" $((elapsed / 60)) $((elapsed % 60)) >&2
+        return "$status"
+    fi
+    printf '✅ %s · ⏱ %dm %02ds\\n' "$label" $((elapsed / 60)) $((elapsed % 60))
+}
+
 run_pytest_capture() {
     local label="$1"
     shift
@@ -306,8 +323,8 @@ run_static() {
 
 run_tests() {
     python scripts/verify_test_prerequisites.py
-    npm ci --no-audit --no-fund
-    npm run build-css
+    run_timed_setup 'Functional npm dependencies' npm ci --no-audit --no-fund
+    run_timed_setup 'Functional CSS build' npm run build-css
 
     run_pytest_capture \
         'Functional Tests' \
@@ -322,10 +339,10 @@ run_tests() {
 }
 
 run_frontend() {
-    npm ci --no-audit --no-fund
-    npm run check-format
-    npm run build-frontend
-    npm run verify-frontend
+    run_timed_setup 'Frontend npm dependencies' npm ci --no-audit --no-fund
+    run_timed_setup 'Frontend format check' npm run check-format
+    run_timed_setup 'Frontend asset build' npm run build-frontend
+    run_timed_setup 'Frontend asset verification' npm run verify-frontend
 }
 
 run_smoke() {
