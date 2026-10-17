@@ -56,3 +56,40 @@ def test_webhook_configuration_is_owned_by_harbor_connection_workspace() -> None
     assert 'def webhook_receive(integration_instance_id: int)' in registry_routes
     assert 'Generate Token' not in governance
     assert 'Webhook Admission' not in governance
+
+
+def test_webhook_ui_distinguishes_admission_from_delivery() -> None:
+    configuration = (
+        ROOT / 'app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html'
+    ).read_text()
+
+    assert 'Webhook Reconciliation' in configuration
+    assert 'request a targeted Inventory refresh' in configuration
+    assert 'Scheduled reconciliation remains the correctness and recovery path.' in configuration
+    assert 'Webhook Admission' in configuration
+    assert 'Ready means webhook admission is configured.' in configuration
+    assert 'It does not verify Harbor delivery or a completed Inventory refresh.' in configuration
+    assert 'No event received yet' in configuration
+
+
+def test_webhook_receiver_guidance_is_safe_and_localhost_aware() -> None:
+    configuration = (
+        ROOT / 'app/templates/integrations/registry/providers/harbor/partials/_detail_configuration.html'
+    ).read_text()
+    receiver = (ROOT / 'app/artifact_registry/routes.py').read_text()
+    auth = (ROOT / 'app/artifact_registry/webhooks.py').read_text()
+
+    assert 'Webhook Receiver URL' in configuration
+    assert "url_for('artifact_registry.webhook_receive'" in configuration
+    assert "webhook_url.startswith('http://localhost')" in configuration
+    assert "webhook_url.startswith('http://127.0.0.1')" in configuration
+    assert 'a Harbor-reachable HTTPS address' in configuration
+    assert 'Authorization: Bearer &lt;token&gt;' in configuration
+    assert 'X-KAORI-Webhook-Token: &lt;token&gt;' in configuration
+    assert 'The token is displayed only when generated or rotated.' in configuration
+    assert "request.headers.get('X-KAORI-Webhook-Token')" in receiver
+    assert "authorization.lower().startswith('bearer ')" in receiver
+    assert 'hmac.compare_digest' in auth
+    assert 'hx-post=' in configuration
+    assert 'name="csrf_token"' in configuration
+    assert "url_for('harbor.webhook_disable'" in configuration
