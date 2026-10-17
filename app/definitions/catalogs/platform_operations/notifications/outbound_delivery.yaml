@@ -11,6 +11,11 @@ domains:
     hint: Report Ready only
     allowed_events:
       - report.generated
+  integrations:
+    label: Integrations
+    hint: Provider Health Degraded only
+    allowed_events:
+      - integrations.health_degraded
 
 events:
   alert_intelligence.active_alert:
@@ -25,6 +30,9 @@ events:
   report.generated:
     label: Scheduled Reports · Report Ready
     severity_scoped: false
+  integrations.health_degraded:
+    label: Integrations · Provider Health Degraded
+    severity_scoped: true
   automation.approval_required:
     label: Automation Control · Approval Required
     severity_scoped: false
