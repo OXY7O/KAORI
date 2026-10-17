@@ -21,8 +21,13 @@ def test_work_branch_developer_check_is_separate_from_governed_admission() -> No
     assert workflow[True]['pull_request']['branches'] == ['kaori/staging']
     jobs = workflow['jobs']
     assert set(jobs) == {
-        'route', 'toolchain', 'python-check', 'validation-check', 'developer-check',
-        'full-admission', 'ready-admission-guard',
+        'route',
+        'toolchain',
+        'python-check',
+        'validation-check',
+        'developer-check',
+        'full-admission',
+        'ready-admission-guard',
     }
     assert jobs['route']['name'] == 'Route Checks'
     assert jobs['route']['if'] == (
