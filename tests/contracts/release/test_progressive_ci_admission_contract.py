@@ -145,9 +145,12 @@ def test_full_admission_comprehensive_gates_use_native_fail_fast_matrix() -> Non
     assert 'needs: validation-profile' in matrix
     assert 'strategy:' in matrix
     assert 'fail-fast: true' in matrix
-    assert 'max-parallel: 2' in matrix
+    # Temporary 8-GB builder budget (#2219): serialize heavy matrix legs,
+    # without skipping any required gate or weakening fail-fast admission.
+    assert 'max-parallel: 1' in matrix
+    assert 'max-parallel: 2' not in matrix
     assert matrix.index('gate: functional') < matrix.index('gate: static')
-    assert 'Keep the longest comprehensive gate in the first scheduling wave.' in matrix
+    assert 'Under serial admission, start the longest Functional gate first.' in matrix
     for gate in (
         'gate: static',
         'gate: security',

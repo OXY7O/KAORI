@@ -238,10 +238,13 @@ jobs:
     name: ${{ matrix.name }}
     strategy:
       fail-fast: true
-      max-parallel: 2
+      # Temporary 8-GB single-host builder mitigation (#2219): one heavyweight
+      # gate at a time until RAM/host isolation is increased and revalidated.
+      # Keep fail-fast and all five comprehensive matrix entries unchanged.
+      max-parallel: 1
       matrix:
         include:
-          # Keep the longest comprehensive gate in the first scheduling wave.
+          # Under serial admission, start the longest Functional gate first.
           - gate: functional
             name: Functional Tests
           - gate: static
