@@ -147,9 +147,9 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert 'open:bg-surface-subtle' not in main
     assert 'for highlight in system_information.release_highlights' in main
     source = read('app/settings/system_information.py')
-    assert 'Clearer Kubernetes, metrics, alert, and MinIO integration boundaries.' in source
-    assert 'Shared execution and evidence for jobs, lifecycle, delivery, and analytics.' in source
-    assert 'Stronger release tracing, identity, safety, and regression coverage.' in source
+    assert 'Kubernetes, metrics, alerts and MinIO have clear ownership.' in source
+    assert 'Shared evidence for jobs, lifecycle, delivery and analytics.' in source
+    assert 'Release tracing, identity, runtime safety and testing.' in source
     assert 'for group in system_information.feature_groups' in main
     assert 'for feature in group.features' in main
     assert '<details' in main
@@ -334,9 +334,9 @@ def test_uat_general_copy_is_concise_without_truncating_provider_contracts() -> 
         assert len(phrase) <= 80
     assert 'Secrets, credentials, database/Redis URLs, and internal endpoints.' in system
     for phrase in (
-        'Clearer Kubernetes, metrics, alert, and MinIO integration boundaries.',
-        'Shared execution and evidence for jobs, lifecycle, delivery, and analytics.',
-        'Stronger release tracing, identity, safety, and regression coverage.',
+        'Kubernetes, metrics, alerts and MinIO have clear ownership.',
+        'Shared evidence for jobs, lifecycle, delivery and analytics.',
+        'Release tracing, identity, runtime safety and testing.',
     ):
         assert phrase in catalog
         assert len(phrase) <= 80
