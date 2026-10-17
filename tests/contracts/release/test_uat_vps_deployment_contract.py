@@ -1,4 +1,7 @@
+import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -272,6 +275,61 @@ def test_verifier_checks_full_runtime_and_single_beat() -> None:
     assert '--restart-check' in source
     assert 'exactly one Beat' in source
     assert 'web unexpectedly publishes a host port' in source
+
+
+
+def _validate_celery_worker_response(payload: str, *, expected: list[str] | None = None) -> subprocess.CompletedProcess[str]:
+    source = _read(VERIFY)
+    script = source.split("python3 -c '\n", 1)[1].split("\n' \"$destination_csv\"", 1)[0]
+    workers = [
+        'worker', 'registry-security-worker', 'maintenance-worker', 'runtime-worker',
+        'validation-worker', 'analytics-worker', 'reports-worker', 'forecasting-worker',
+        'resolver-execution-worker', 'resolver-maintenance-worker',
+    ]
+    names = expected if expected is not None else [f'celery@worker-{n}' for n in range(10)]
+    return subprocess.run(
+        [sys.executable, '-c', script, ','.join(names), ','.join(workers)],
+        input=payload,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_celery_worker_readiness_checks_all_nodes_using_one_targeted_inspect() -> None:
+    source = _read(VERIFY)
+    assert source.count(' active_queues 2>/dev/null') == 1
+    assert '--destination="$destination_csv"' in source
+    assert '--json --timeout=20' in source
+    assert 'docker inspect --format' in source
+    assert 'worker) node_prefix=inventory' in source
+    assert 'registry-security-worker) node_prefix=registry-security' in source
+    assert 'reports-worker) node_prefix=reports' in source
+    assert 'Beat PASS' in source
+    assert 'server_database_boundary.py runtime' in source
+    assert '/health/ready' in source
+    assert '--restart-check' in source
+
+
+def test_celery_worker_readiness_positive_and_negative_response_contracts() -> None:
+    names = [f'celery@worker-{n}' for n in range(10)]
+    valid = {name: [{'name': 'queue', 'routing_key': 'queue'}] for name in names}
+    assert _validate_celery_worker_response(json.dumps(valid)).returncode == 0
+
+    missing = valid.copy()
+    del missing[names[4]]
+    result = _validate_celery_worker_response(json.dumps(missing))
+    assert result.returncode != 0
+    assert 'validation-worker did not report active queues' in result.stderr
+
+    empty = {**valid, names[2]: []}
+    assert _validate_celery_worker_response(json.dumps(empty)).returncode != 0
+    invalid_queue = {**valid, names[3]: [{'no_name': 'value'}]}
+    assert _validate_celery_worker_response(json.dumps(invalid_queue)).returncode != 0
+    assert _validate_celery_worker_response('not-json').returncode != 0
+    assert _validate_celery_worker_response('[]').returncode != 0
+    assert _validate_celery_worker_response(json.dumps(valid), expected=[names[0]] * 10).returncode != 0
+
 
 
 def test_production_image_keeps_deployment_tooling_outside_runtime() -> None:
