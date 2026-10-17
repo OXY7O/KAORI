@@ -1,7 +1,7 @@
 {% import "components/info_flow.html" as info_flow %}
 {% set setup_steps = [('Create OAuth App', 'Register a GitHub OAuth App for KAORI, including its callback and client settings.'), ('Register Callback', 'Register the exact KAORI callback URL as the authorized OAuth callback in GitHub.'), ('Supply Credentials', 'Store the client ID in KAORI; resolve the secret through a runtime environment reference.'), ('Control Admission', 'For JIT, select a non-admin KAORI role and admit only approved external subjects.')] %}
 {{ info_flow.render('GitHub OAuth Guidance',
-'Controlled path from application registration to locally authorized KAORI access.',
+'GitHub sign-in; KAORI grants access.',
 setup_steps,
 icon='workflow',
 note='GitHub signs in; KAORI governs access.',
