@@ -11,12 +11,59 @@ from app.kubernetes.tenant.service_contracts import (
     _CONTROL_TRUE_VALUES,
     _PROFILE_STORAGE_FIELDS,
     RESOURCE_PROFILE_ADVANCED_CONTROLS,
+    RESOURCE_PROFILE_PRESETS,
     _text,
 )
-from app.kubernetes.tenant.validation import validate_storage_policy
+from app.kubernetes.tenant.validation import validate_profile_spec, validate_storage_policy
 from app.models import Cluster
-from app.models.tenant import Tenant, TenantResourceProfile
+from app.models.tenant import Tenant, TenantNamespace, TenantResourceProfile
 from app.models.tenant_managed_resource import TenantManagedResourceMode
+
+
+def namespace_allocation_values(
+    profile: TenantResourceProfile,
+) -> tuple[dict[str, str], dict[str, dict[str, str]], dict[str, str], bool]:
+    """Canonical committed allocation values for Native Resource Profile attachment."""
+    if profile.profile_class in RESOURCE_PROFILE_PRESETS:
+        preset = RESOURCE_PROFILE_PRESETS[profile.profile_class]
+        stored_quota = profile.quota_hard_json or {}
+        stored_limits = profile.limit_defaults_json or {}
+        quota = {key: preset['quota'][key] for key in stored_quota if key in preset['quota']}
+        limits: dict[str, dict[str, str]] = {}
+        for group, resources in stored_limits.items():
+            preset_group = preset['limits'].get(group) or {}
+            for resource in resources or {}:
+                if resource in preset_group:
+                    limits.setdefault(group, {})[resource] = preset_group[resource]
+        quota, limits = validate_profile_spec(quota, limits)
+        storage_policy = validate_storage_policy(getattr(profile, 'storage_policy_json', {}) or {})
+        return quota, limits, storage_policy, False
+
+    quota, limits = validate_profile_spec(
+        profile.quota_hard_json or {},
+        profile.limit_defaults_json or {},
+    )
+    storage_policy = validate_storage_policy(getattr(profile, 'storage_policy_json', {}) or {})
+    return quota, limits, storage_policy, True
+
+
+def namespace_allocation_is_current(
+    record: TenantNamespace,
+    profile: TenantResourceProfile,
+    desired_quota: dict[str, str],
+    desired_limits: dict[str, dict[str, str]],
+    desired_storage: dict[str, str],
+) -> bool:
+    """The same committed-snapshot no-op predicate for registry and rollout POST.
+
+    This does not assert provider live state or absence of drift.
+    """
+    return (
+        int(record.resource_profile_version or 0) == int(profile.version or 1)
+        and dict(record.allocation_quota_json or {}) == desired_quota
+        and dict(record.allocation_limit_defaults_json or {}) == desired_limits
+        and dict(record.allocation_storage_policy_json or {}) == desired_storage
+    )
 
 
 def _control_contract_present(source: Mapping[str, Any]) -> bool:

@@ -331,27 +331,7 @@ def _resource_profile_values(
 def _namespace_allocation_values(
     profile: TenantResourceProfile,
 ) -> tuple[dict[str, str], dict[str, dict[str, str]], dict[str, str], bool]:
-    if profile.profile_class in RESOURCE_PROFILE_PRESETS:
-        preset = RESOURCE_PROFILE_PRESETS[profile.profile_class]
-        stored_quota = profile.quota_hard_json or {}
-        stored_limits = profile.limit_defaults_json or {}
-        quota = {key: preset['quota'][key] for key in stored_quota if key in preset['quota']}
-        limits: dict[str, dict[str, str]] = {}
-        for group, resources in stored_limits.items():
-            preset_group = preset['limits'].get(group) or {}
-            for resource in resources or {}:
-                if resource in preset_group:
-                    limits.setdefault(group, {})[resource] = preset_group[resource]
-        quota, limits = validate_profile_spec(quota, limits)
-        storage_policy = validate_storage_policy(getattr(profile, 'storage_policy_json', {}) or {})
-        return quota, limits, storage_policy, False
-
-    quota, limits = validate_profile_spec(
-        profile.quota_hard_json or {},
-        profile.limit_defaults_json or {},
-    )
-    storage_policy = validate_storage_policy(getattr(profile, 'storage_policy_json', {}) or {})
-    return quota, limits, storage_policy, True
+    return _resource_profile_controls.namespace_allocation_values(profile)
 
 
 def create_resource_profile(source: Mapping[str, Any]) -> TenantResourceProfile:
@@ -508,7 +488,12 @@ def rollout_resource_profile_to_tenant_committed(
         .filter(
             TenantNamespace.resource_profile_id == profile.id,
             TenantEnvironment.tenant_id == tenant.id,
-            TenantNamespace.provisioning_status != TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+            TenantNamespace.provisioning_status.notin_(
+                (
+                    TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
+                    TenantNamespaceProvisioningStatus.RELEASED.value,
+                )
+            ),
         )
         .order_by(TenantNamespace.namespace.asc(), TenantNamespace.id.asc())
         .all()
@@ -531,11 +516,8 @@ def rollout_resource_profile_to_tenant_committed(
     }
 
     for record in records:
-        if (
-            int(record.resource_profile_version or 0) == int(profile.version or 1)
-            and dict(record.allocation_quota_json or {}) == desired_quota
-            and dict(record.allocation_limit_defaults_json or {}) == desired_limits
-            and dict(record.allocation_storage_policy_json or {}) == desired_storage
+        if _resource_profile_controls.namespace_allocation_is_current(
+            record, profile, desired_quota, desired_limits, desired_storage
         ):
             summary['already_current'] += 1
             continue

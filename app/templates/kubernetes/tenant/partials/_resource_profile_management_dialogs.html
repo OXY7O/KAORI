@@ -568,29 +568,48 @@
                             </p>
                             <form method="post"
                                   action="{{ url_for('tenant.rollout_resource_profile_route', profile_id=profile.id) }}"
+                                  data-tenant-profile-rollout-form
+                                  data-rollout-permitted="{{ 'true' if can_manage and profile.enabled else 'false' }}"
                                   class="mt-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <label class="block min-w-0 flex-1">
                                     {{ form_field.label_row("Target Tenant") }}
                                     <select name="tenant_id"
                                             required
+                                            data-tenant-profile-rollout-select
                                             class="{{ form_field.select_classes() }} mt-1">
                                         <option value="">Select Tenant</option>
                                         {% for target in rollout_targets %}
                                             <option value="{{ target.tenant_id }}"
-                                                    {% if target.provider_key != 'native_kubernetes' %}disabled{% endif %}>
-                                                {{ target.tenant_name }} · {{ target.namespaces }} NS · {{ target.outdated }} pending{{ ' · Capsule workflow' if target.provider_key != 'native_kubernetes' else '' }}
+                                                    data-rollout-eligible="{{ 'true' if target.eligible else 'false' }}"
+                                                    data-rollout-current="{{ 'true' if target.already_current else 'false' }}"
+                                                    data-rollout-pending="{{ target.pending }}"
+                                                    {% if target.provider_key != 'native_kubernetes' or not target.eligible %}disabled{% endif %}>
+                                                {{ target.tenant_name }} · {{ target.namespaces }} NS
+                                                · {{ 'Already Current' if target.already_current else target.pending ~ ' pending' }}
+                                                {{ ' · Capsule workflow' if target.provider_key != 'native_kubernetes' else '' }}
                                             </option>
                                         {% endfor %}
                                     </select>
                                 </label>
                                 <button type="submit"
-                                        {% if not can_manage %}disabled aria-disabled="true"{% endif %}
+                                        data-tenant-profile-rollout-submit
+                                        disabled
+                                        aria-disabled="true"
                                         class="{{ action_button.classes('secondary') }} shrink-0">
                                     <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
                                     Rollout
                                 </button>
                             </form>
+                            <div class="mt-3 flex flex-wrap items-center gap-2"
+                                 data-tenant-profile-rollout-status>
+                                <span data-rollout-already-current hidden>{{ table_label.status_label('Already Current', 'normal') }}</span>
+                                <span data-rollout-needs-change hidden>{{ table_label.status_label('Rollout Needed', 'warning') }}</span>
+                                <p class="min-w-0 text-xs leading-5 text-content-secondary"
+                                   data-rollout-status-message
+                                   role="status"
+                                   aria-live="polite">Select a Tenant to check committed allocation readiness.</p>
+                            </div>
                             <details class="group mt-3">
                                 <summary class="inline-flex min-h-8 cursor-pointer list-none items-center gap-1.5 rounded-md text-xs font-semibold text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
                                     <i data-lucide="chevron-right"
