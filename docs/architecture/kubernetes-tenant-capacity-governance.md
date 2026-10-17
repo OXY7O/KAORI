@@ -453,18 +453,20 @@ storage availability. `ResourceQuota` enforces Kubernetes quota and never
 constitutes a physical node-resource reservation.
 
 
-**Visual UAT guidance hierarchy (#2371, #2382, review candidate):** The
+**Visual UAT guidance hierarchy (#2371, #2382, human correction):** The
 CPU/Memory Limit Exposure table retains committed limits, thresholds, mode and
-state badges. Its compact footer uses two title-adjacent, canonical Guide
-Info Tips: **Exposure assessment** shows the exact committed
-`exposure.reason`, and **Governance boundary** explains Observe versus Enforce,
-the continuing Request Commitment admission gate and governed ratio semantics.
+state badges. Exactly **one canonical Guide Info Tip sits beside the
+CPU & Memory Limit Exposure heading**, rather than in a separate footer. That
+single on-demand popover contains the exact committed `exposure.reason`, the
+mode-aware Observe/Enforce explanation, the continuing Request Commitment
+admission baseline and the governed ratio semantics. Neither Exposure assessment
+nor Governance boundary appears as a secondary visible help label or footer.
 For **Unknown, Near Capacity or Overcommitted**, the exact committed reason
-also remains persistently visible as a semantic warning/critical status line:
-operator risk evidence must not depend on opening hover help. Healthy guidance
-is shown only on demand. Hover, focus, touch, Escape and viewport positioning
-reuse the shared Info Tip component/controller without page-specific JavaScript
-or any change to admission or provider evidence.
+also remains persistently visible as a semantic warning/critical status line
+below the table; essential risk evidence must not be hover-only. Healthy
+state produces no guidance footer. Hover, focus, touch, Escape and viewport
+positioning reuse the shared Info Tip component/controller without page-specific
+JavaScript or any change to admission or provider evidence.
 The existing accessible **How allocation budgets work** disclosure
 separates one Violet-emphasized **request budget formula** (CPU/Memory/Pods)
 from distinct **logical storage policy** and **ResourceQuota boundary**
