@@ -107,7 +107,7 @@ def test_functional_full_suite_records_bounded_slowest_pytest_durations() -> Non
     source = QUALITY_GATE.read_text(encoding='utf-8')
     functional = source.split('run_tests() {', 1)[1].split('run_frontend() {', 1)[0]
 
-    assert "run_pytest_capture \\" in functional
+    assert 'run_pytest_capture \\' in functional
     assert "'Functional Tests'" in functional
     assert '--durations=15' in functional
     assert functional.count('--durations=15') == 1
