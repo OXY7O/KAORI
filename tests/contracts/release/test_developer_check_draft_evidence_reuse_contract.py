@@ -59,11 +59,13 @@ def proven_case():
         'head_sha': HEAD,
         'head_branch': 'kaori/perf-2220-exact-draft-evidence-reuse',
         'head_repository': {'full_name': REPO},
-        'pull_requests': [{
-            'number': 2220,
-            'head': {'sha': HEAD, 'ref': 'kaori/perf-2220-exact-draft-evidence-reuse'},
-            'base': {'sha': BASE},
-        }],
+        'pull_requests': [
+            {
+                'number': 2220,
+                'head': {'sha': HEAD, 'ref': 'kaori/perf-2220-exact-draft-evidence-reuse'},
+                'base': {'sha': BASE},
+            }
+        ],
     }
     jobs = [
         {'name': name, 'status': 'completed', 'conclusion': outcome}
