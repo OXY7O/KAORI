@@ -399,7 +399,6 @@
                                     {{ table_label.status_label(security.finding_interpretation.title,
                                                                         security.finding_interpretation.tone,
                                                                         icon=security.finding_interpretation.icon) }}
-                                    
                                 </div>
                             </div>
                         {% endif %}
@@ -408,7 +407,7 @@
                                 {{ table_label.metadata_label(security.pagination.total_items ~ (' Record' if security.pagination.total_items == 1 else ' Records') ,
                                 icon='list-filter'
                                 ) }}
-                            {% if security.view == 'vulnerabilities' %}
+                                {% if security.view == 'vulnerabilities' %}
                                     {{ info_tip.render('artifact-registry-vulnerability-evidence-help',
                                                                         security.finding_interpretation.title,
                                                                         security.finding_interpretation.description,
@@ -418,15 +417,13 @@
                             {% endset %}
                             {% set security_registry_header_actions %}
                                 {% if security.filters.search or security.filters.severity or security.filters.provider or security.filters.source_id %}
-                                        {{ registry.clear_filters_link(security.endpoint,
+                                    {{ registry.clear_filters_link(security.endpoint,
                                                                                 'artifact-registry-security-registry',
                                                                                 'artifact-registry-security-loading',
                                                                                 security.pagination.per_page,
-                                                                                table_ui.action_classes() ,
-                                        query_params=({'section': 'evidence'} if security.view == 'supply_chain' else {})
-                                        ) }}
-                                    {% endif %}
-
+                                                                                table_ui.action_classes(),
+                                                                                query_params=({'section': 'evidence'} if security.view == 'supply_chain' else {})) }}
+                                {% endif %}
                                 {% if security.view == 'vulnerabilities' %}
                                     <a href="{{ url_for('artifact_registry.runtime', source_id=security.filters.source_id) if security.filters.source_id else url_for('artifact_registry.runtime') }}"
                                        class="{{ table_ui.action_classes() }}">
@@ -494,7 +491,7 @@
                                             {% endfor %}
                                         </select>
                                     </label>
-                                                                    {% endcall %}
+                                {% endcall %}
                                 <div class="overflow-x-auto">
                                     {% if security.view == 'vulnerabilities' %}
                                         <table class="{{ table_ui.table_classes('min-w-[68rem] !table-fixed') }}">

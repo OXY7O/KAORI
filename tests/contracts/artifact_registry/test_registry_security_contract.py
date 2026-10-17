@@ -115,7 +115,6 @@ def test_vulnerability_evidence_status_is_inline_and_contextual() -> None:
         assert state in interpretation
 
 
-
 def test_security_registry_actions_use_shared_style_and_leading_header_clear() -> None:
     from jinja2 import Environment
 
@@ -145,6 +144,7 @@ def test_security_registry_actions_use_shared_style_and_leading_header_clear() -
     assert template.count('class="{{ table_ui.action_classes() }}"') >= 3
     assert template.count('View More') >= 2
     assert 'data-kaori-dialog-open' in template
+
 
 def test_security_has_two_level_three_views_above_the_hero() -> None:
     catalog = read('app/common/workspace_navigation_catalog.py')
