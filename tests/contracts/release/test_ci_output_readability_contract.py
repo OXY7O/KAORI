@@ -194,6 +194,27 @@ def test_full_admission_aggregates_split_junit_artifacts_before_evidence() -> No
         assert token in workflow
 
 
+def test_successful_functional_timing_artifact_is_bounded_and_does_not_replace_junit() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    timing = workflow.split('      - name: Upload Successful Functional Timing Report\n', 1)[1].split(
+        '      - name: Upload Static Diagnostics\n', 1
+    )[0]
+
+    assert "if: ${{ success() && matrix.gate == 'functional' }}" in timing
+    assert 'full-admission-functional-timing-${{ github.run_id }}-${{ github.run_attempt }}' in timing
+    assert 'path: tmp/ci-artifacts/test-output/functional-tests.*.log' in timing
+    assert 'path: tmp/ci-artifacts/test-output\n' not in timing
+    assert 'if-no-files-found: error' in timing
+    assert 'retention-days: 3' in timing
+    assert 'Upload Functional JUnit Evidence' in workflow
+    assert 'tmp/ci-artifacts/test-output/release-suite.xml' in workflow
+    assert 'tmp/ci-artifacts/test-output/e2e.xml' in workflow
+    failure_upload = workflow.split('      - name: Upload Test Diagnostics\n', 1)[1].split(
+        '      - name: Upload Runtime Diagnostics\n', 1
+    )[0]
+    assert "if: ${{ failure() && matrix.gate == 'functional' }}" in failure_upload
+
+
 def test_raw_ci_diagnostics_are_uploaded_as_artifacts() -> None:
     workflow = WORKFLOW.read_text(encoding='utf-8')
 
