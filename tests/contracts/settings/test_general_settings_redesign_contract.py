@@ -147,9 +147,9 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert 'open:bg-surface-subtle' not in main
     assert 'for highlight in system_information.release_highlights' in main
     source = read('app/settings/system_information.py')
-    assert 'Clearer integration ownership for Kubernetes' in source
-    assert 'Governed jobs, data lifecycle, notifications' in source
-    assert 'Stronger release traceability, identity boundaries' in source
+    assert 'Clearer Kubernetes, metrics, alert, and MinIO integration boundaries.' in source
+    assert 'Shared execution and evidence for jobs, lifecycle, delivery, and analytics.' in source
+    assert 'Stronger release tracing, identity, safety, and regression coverage.' in source
     assert 'for group in system_information.feature_groups' in main
     assert 'for feature in group.features' in main
     assert '<details' in main
@@ -318,3 +318,33 @@ def test_browser_timezone_redetection_reuses_canonical_operational_toast_without
     assert 'kaori:notifications-changed' not in runtime
     assert 'Activity Audit' not in runtime
     assert 'Detect Again' in settings_docs
+
+
+def test_uat_general_copy_is_concise_without_truncating_provider_contracts() -> None:
+    timezone = read('app/templates/settings/general/partials/_time_locale.html')
+    system = read('app/templates/settings/general/partials/_system_information.html')
+    definition = read('app/definitions/catalogs/integrations/compatibility.yaml')
+    catalog = read('app/settings/system_information.py')
+    for phrase in (
+        'KAORI workspaces and reports display timestamps in your selected timezone.',
+        'UTC records and explicit job/report scheduling timezones stay unchanged.',
+        'Kubernetes, monitoring, databases, and provider settings stay unchanged.',
+    ):
+        assert phrase in timezone
+        assert len(phrase) <= 80
+    assert 'Secrets, credentials, database/Redis URLs, and internal endpoints.' in system
+    for phrase in (
+        'Clearer Kubernetes, metrics, alert, and MinIO integration boundaries.',
+        'Shared execution and evidence for jobs, lifecycle, delivery, and analytics.',
+        'Stronger release tracing, identity, safety, and regression coverage.',
+    ):
+        assert phrase in catalog
+        assert len(phrase) <= 80
+    assert 'older qualified lines: KAORI Extended' in definition
+    assert 'Current: v0.42.x' in definition
+    assert 'Current: v0.34.x' in definition
+    assert 'Community archived; qualified release evidence retained.' in catalog
+    assert 'Unqualified MinIO releases degrade, not block solely by version.' in catalog
+    # Phone layouts must wrap naturally, never hide any evidence.
+    assert 'truncate' not in timezone
+    assert 'text-ellipsis' not in system
