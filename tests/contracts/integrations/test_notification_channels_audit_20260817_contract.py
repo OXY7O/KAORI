@@ -256,8 +256,8 @@ def test_review5_provider_card_controls_and_modal_header_are_reusable() -> None:
     cards = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     shared = read('app/templates/components/action_button.html')
-    assert 'components/action_button.html' in cards
-    assert "action_button.classes('secondary')" in cards
+    assert 'components/table_primitives.html' in cards
+    assert "table_ui.action_classes(size='header')" in cards
     assert 'aria-label="Open {{ provider.label }} setup guide"' in cards
     assert 'aria-label="Configure {{ provider.label }} notification channel"' in cards
     assert "data-dialog-target=\"notification-channel-guide-dialog\"" in cards
