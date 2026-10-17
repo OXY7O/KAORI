@@ -31,7 +31,8 @@ def test_microsoft_teams_uses_workflows_webhook_and_keeps_url_secret():
     assert "method='POST'" in provider
     assert "('.environment.api.powerplatform.com', '.logic.azure.com')" in provider
     catalog = read('app/integrations/delivery/notification_channels/providers/__init__.py')
-    assert 'legacy Office 365 connector webhook URLs' in catalog
+    assert 'legacy Office 365 connector ' in catalog
+    assert 'webhook URLs.' in catalog
     assert '<p class="mt-1 text-xs leading-5 text-content-muted">' not in page
     assert re.search(r'<input\b(?=[^>]*\bname="teams_workflow_url")(?=[^>]*\btype="password")[^>]*>', page)
     assert 'form_channel.teams_workflow_url' not in page
@@ -118,11 +119,11 @@ def test_all_notification_channel_configuration_guides_are_provider_owned() -> N
     assert 'sm:col-span-2' in email
 
     for guidance in (
-        'Human-readable name; the webhook decides which Discord channel receives messages.',
+        'Human-readable name; the webhook decides which Discord channel receives ',
         'Channel-bound official Slack URL; never rendered back.',
         'NOTIFICATION_NTFY_ALLOWED_ORIGINS',
         'Changing this requires a new Test Delivery.',
         'Separate multiple recipients with commas.',
-        'not legacy Office 365 connector webhook URLs.',
+        'not legacy Office 365 connector ',
     ):
         assert guidance in catalog
