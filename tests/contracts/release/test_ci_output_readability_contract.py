@@ -79,6 +79,21 @@ def test_release_suite_emits_junit_for_taxonomy_summary_without_duplicate_execut
     assert 'Domain Characterization Tests' not in source
 
 
+def test_functional_full_suite_records_bounded_slowest_pytest_durations() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    functional = source.split('run_tests() {', 1)[1].split('run_frontend() {', 1)[0]
+
+    assert "run_pytest_capture \\" in functional
+    assert "'Functional Tests'" in functional
+    assert '--durations=15' in functional
+    assert functional.count('--durations=15') == 1
+    assert '--junitxml="$TEST_OUTPUT_DIR/release-suite.xml"' in functional
+    assert "-m 'not debug and not e2e and not contract and not migration'" in functional
+    assert 'run_e2e_gate' in functional
+    assert 'render_test_taxonomy_summary' in functional
+    assert 'pytest "$@" >"$log_file" 2>&1' in source
+
+
 def test_taxonomy_summary_merges_split_junit_evidence_by_kaori_test_purpose(tmp_path: Path) -> None:
     release_junit = tmp_path / 'release-suite.xml'
     release_junit.write_text(
