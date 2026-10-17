@@ -14,6 +14,19 @@ def test_operations_overview_is_permission_scoped_navigation() -> None:
     assert '@any_permission_required(' in routes
     assert "endpoint='overview'" in routes
     assert "render_template('kubernetes/operations/overview.html')" in routes
+    assert 'from app.kubernetes.operations.operation_flow import cluster_required' in routes
+    overview_decorators = routes.split('def kubernetes_operations_overview():', 1)[0]
+    assert "@cluster_required(\n    'Kubernetes Operations'," in overview_decorators
+    assert overview_decorators.rindex('@any_permission_required(') < overview_decorators.rindex('@cluster_required(')
+    blocker = read('app/templates/kubernetes/operations/cluster_required.html')
+    assert "requested_page_title == 'Operations Overview'" in blocker
+    assert 'No Cluster Registered' in blocker
+    assert 'Target Validation Pending' in blocker
+    assert 'components/cluster/_hero_blocked_context.html' in blocker
+    assert 'components/cluster/_onboarding_banner.html' in blocker
+    assert 'data-kubernetes-operation-capabilities' not in blocker
+    assert 'Target Validation Required' in page
+    assert "'Governed'," not in page
     assert "url_for('kubernetes_operations.overview')" in menu
     catalog = read('app/common/workspace_navigation_catalog.py')
     navigation = read('app/common/workspace_navigation.py')
