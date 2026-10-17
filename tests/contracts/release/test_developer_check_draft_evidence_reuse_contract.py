@@ -169,6 +169,18 @@ def test_duplicate_extra_cancelled_and_stale_draft_results_fail_closed() -> None
     assert not policy.draft_developer_reuse_decision(evidence, run, jobs, **args).reusable
 
 
+def test_ready_guard_is_required_skipped_for_draft_evidence() -> None:
+    policy, evidence, run, jobs, args = proven_case()
+    assert policy._required_developer_jobs(PLAN)['Ready Admission Guard'] == 'skipped'
+    assert policy.draft_developer_reuse_decision(evidence, run, jobs, **args).reusable
+    unexpected = [
+        dict(job, conclusion='success') if job['name'] == 'Ready Admission Guard' else job for job in jobs
+    ]
+    assert not policy.draft_developer_reuse_decision(evidence, run, unexpected, **args).reusable
+    absent = [job for job in jobs if job['name'] != 'Ready Admission Guard']
+    assert not policy.draft_developer_reuse_decision(evidence, run, absent, **args).reusable
+
+
 def test_reuse_proof_respects_python_only_and_docs_only_lane_selection() -> None:
     policy = load_policy()
     docs = (
@@ -186,6 +198,7 @@ def test_reuse_proof_respects_python_only_and_docs_only_lane_selection() -> None
         'Frontend & Focused Validation': 'skipped',
         'Developer Check': 'success',
         'Full Admission': 'skipped',
+        'Ready Admission Guard': 'skipped',
     }
     assert policy._required_developer_jobs(python)['Python & Governance'] == 'success'
     assert policy._required_developer_jobs(python)['Frontend & Focused Validation'] == 'skipped'
