@@ -191,3 +191,32 @@ def test_uat_roles_dependency_boundary_uses_short_caption() -> None:
     assert 'Code-owned dependencies expand as needed.' in source
     assert "'Permission Dependencies', 'Catalog-Owned'" in source
     assert 'whitespace-nowrap' not in source
+
+def test_review4_role_identity_guide_and_access_guardrail_density() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/access/roles/form.html')
+    Environment().parse(source)
+    assert '{% import "components/info_tip.html" as info_tip %}' in source
+    assert "info_tip.render('role-identity-fields-guide'," in source
+    assert "variant='guide'" in source
+    assert "placement='right'" in source
+    assert 'Normalized to lowercase underscores and used as the stable backend identifier.</span>' not in source
+    assert 'Shown in User Management, role assignment, and identity projection.</span>' not in source
+    assert 'form.name(' in source and 'form.display_name(' in source
+    assert 'form.errors' in source
+    assert 'form.is_active(' in source
+    assert 'data-role-state-preview' in source
+    assert 'data-role-permission-matrix' in source
+    assert 'Active roles serve user and provider assignments; deactivation removes role-derived access.' in source
+    guardrails = (
+        'Compose reusable roles around operational duties rather than individual user accounts.',
+        'Permission dependencies are code-owned and expand automatically when required.',
+        'Delegation stays within effective access; Local Database Super Admin is the exception.',
+        'Super Admin is a Local Database-only flag, never inherited through role composition.',
+    )
+    for copy in guardrails:
+        assert source.count(copy) == 1
+        assert 70 <= len(copy) <= 100
+    assert 'whitespace-nowrap' not in source
+
