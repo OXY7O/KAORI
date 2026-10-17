@@ -17,7 +17,7 @@
     </header>
     <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
         {% set metrics = [
-                    ('activity', 'Events · 24H', summary.events_24h, 'Recorded administrative and operational activity · 24h.', 'bg-kaori-soft text-kaori-primary'),
+                    ('activity', 'Events · 24H', summary.events_24h, 'Notification-backed activity · 24h.', 'bg-kaori-soft text-kaori-primary'),
                     ('circle-check', 'Successful · 24H', summary.success_24h, 'Successful outcomes in the last 24 hours.', 'bg-status-normal-soft text-status-normal-text'),
                     ('triangle-alert', 'Attention · 24H', summary.attention_24h, 'Warnings and failures requiring review.', 'bg-status-warning-soft text-status-warning-text' if summary.attention_24h else 'bg-status-normal-soft text-status-normal-text'),
                     ('users-round', 'Actors · 24H', summary.actors_24h, 'Unique immutable actors in recent evidence.', 'bg-status-info-soft text-status-info-text')
