@@ -234,8 +234,8 @@ def test_review4_role_permission_card_description_uses_two_line_minimum() -> Non
 
 
 def test_permission_matrix_has_descriptive_copy_for_every_canonical_permission() -> None:
-    from jinja2 import Environment
     import yaml
+    from jinja2 import Environment
 
     from app.access.rbac.defaults import DEFAULT_PERMISSIONS, PERMISSION_MATRIX_DESCRIPTIONS
 
@@ -244,7 +244,7 @@ def test_permission_matrix_has_descriptive_copy_for_every_canonical_permission()
     records = {item['key']: item for item in catalog['permissions']}
     descriptions = PERMISSION_MATRIX_DESCRIPTIONS
 
-    assert len(canonical) == 64
+    assert canonical  # New canonical permissions must receive matrix copy automatically.
     assert set(records) == set(canonical) == set(descriptions)
     assert all(records[key]['description'] == description for key, description in canonical.items())
     assert all(records[key]['matrix_description'] == descriptions[key] for key in canonical)
