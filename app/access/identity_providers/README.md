@@ -62,3 +62,20 @@ Firefox L13 text budget follow-up: retain the exact generated callback URL below
 the header; keep the summary caption short. Google authenticates users, while
 KAORI's role and lifecycle governance remains authoritative in the existing
 identity-projection/workflow documentation. Runtime single-line QA pending.
+
+### Repeat Firefox UAT: LDAP card does not select (#2280)
+
+A further operator screenshot confirmed GitHub stayed checked and the LDAP
+configuration did not appear when trying to select the LDAP / Active Directory
+card. The previous badge-state change was insufficient. The provider choice
+still uses the same catalog-derived native radio, sibling label, accessible
+name, keyboard semantics and existing `change` controller; the native input
+now fills the card as an invisible pointer hit target. This removes reliance
+on forwarded clicks through the label in Firefox. It changes only the input
+hit area, not `disabled` gates, provider type, catalog, RBAC, LDAP credentials,
+TLS policy, JIT, or submission.
+
+A focused isolated Playwright UI regression exercises pointer and keyboard
+selection transitions and panel/field visibility without connecting to LDAP
+or submitting any provider changes. The operator's real Dev Container Firefox
+test and human acceptance still govern UAT PASS; official CI/CD stays HOLD.
