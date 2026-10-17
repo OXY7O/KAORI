@@ -560,9 +560,14 @@ unchanged. Delivery Domains show a compact full-width row of actual
 source-supported routing domains; Allowed Uses use a responsive 2-/3-column
 checkbox grid instead of a tall narrow rail. Preserve all selected values,
 server form validation, CSRF, current provider form partials, enabled-state
-contract and accessibility. The outbound catalog currently authorizes only
-Kubernetes and Object Storage; new domain routing **requires separate
-producer/authority audit (#2331)**, not a fabricated UI-only checkbox.
+contract and accessibility. The baseline catalog authorized Kubernetes and Object Storage. Review-only
+#2342 adds the published Reports domain **Artifact Registry**
+(`artifact_registry`) with `report.generated` as its sole qualified event.
+This is distinct from Alert Intelligence's `registry` domain, whose
+firing/resolved routing remains denied under #1186/#1512. Existing
+Kubernetes/Object Storage event policy stays unchanged; all further
+new-domain routing still requires producer/authority audit #2331, not
+a fabricated UI-only checkbox.
 No official admission until Dev Container functional/visual UAT and human
 acceptance are captured.
 
