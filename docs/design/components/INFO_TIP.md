@@ -47,7 +47,7 @@ Info Tip uses **one non-modal anchored popover** for every input method.
 - **click/touch** toggles the same popover;
 - **Escape**, outside click, HTMX replacement, resize, or scroll closes it.
 
-The shared `info_tips.js` controller temporarily portals the popover to `document.body`, positions it from the trigger, flips above when needed, and clamps it to the viewport. The same element is therefore used on desktop and touch/keyboard paths, and ordinary card/table overflow cannot clip it.
+The shared `info_tips.js` controller temporarily portals the popover to `document.body` for ordinary pages, or into the closest open native `<dialog>` when its trigger belongs to a modal top layer. It positions the preview from the trigger, flips above when needed, and clamps it to the viewport. This keeps field-level help visible inside Notification Channel dialogs without adding a second tooltip implementation. The same element supports desktop, touch, and keyboard paths; ordinary card/table overflow does not clip the preview.
 
 Info Tip is deliberately non-modal: it never traps focus and never owns confirmation or workflow actions. If content requires a form, destructive acknowledgement, security decision, or long interactive workflow, use the relevant KAORI dialog/callout pattern instead.
 
