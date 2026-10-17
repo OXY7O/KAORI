@@ -148,6 +148,12 @@ run_command_capture() {
         if [[ "$group" == 'Engineering Quality' ]]; then
             local elapsed=$(( $(date +%s) - started ))
             printf '✅ %s — %s · ⏱ %dm %02ds\n' "$group" "$label" $((elapsed / 60)) $((elapsed % 60))
+            if [[ "$label" == 'Pyright' ]]; then
+                # Expose supported analysis-phase stats only after Pyright passes.
+                # Retain the full raw result in the existing static diagnostic file.
+                printf '📊 Pyright analysis stats · last 24 lines (bounded)\n'
+                tail -n 24 "$log_file"
+            fi
         fi
         return 0
     else
@@ -308,7 +314,7 @@ run_static() {
         'Ruff Check' 'python -m ruff check app migrations tests scripts' \
         'Ruff Format' 'python -m ruff format --check app migrations tests scripts' \
         'DjLint' 'python -m djlint app/templates --check' \
-        'Pyright' 'python -m pyright --project pyrightconfig.json' \
+        'Pyright' 'python -m pyright --project pyrightconfig.json --stats' \
         'Architecture Boundaries' 'python scripts/verify_architecture_boundaries.py' \
         'Internal Import Symbols' 'python scripts/verify_internal_import_symbols.py' \
         'Import Cycles' 'python scripts/verify_import_cycles.py' \

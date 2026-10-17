@@ -74,6 +74,22 @@ def test_engineering_quality_verifier_timing_is_bounded_and_success_only() -> No
     assert quality.count("'python ") >= 18
 
 
+
+def test_static_pyright_stats_stay_bounded_to_success_and_keep_full_coverage() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    capture = source.split('run_command_capture() {', 1)[1].split('run_static_group() {', 1)[0]
+    static = source.split('run_static() {', 1)[1].split('run_contract_migration_gate', 1)[0]
+
+    assert "'Pyright' 'python -m pyright --project pyrightconfig.json --stats'" in static
+    assert 'if [[ "$label" == \'Pyright\' ]]' in capture
+    assert 'Pyright analysis stats' in capture
+    assert 'tail -n 24 "$log_file"' in capture
+    assert 'if "$@" >"$log_file" 2>&1; then' in capture
+    assert 'return "$status"' in capture
+    assert 'tail -n 60 "$log_file"' in capture
+    assert source.count("'Pyright' 'python -m pyright --project pyrightconfig.json --stats'") == 1
+
+
 def test_failed_static_verifier_remains_failure_first_and_names_the_check() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
