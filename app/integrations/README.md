@@ -548,3 +548,20 @@ explicit. A two-line display is a Firefox Lenovo L13 review target, **not**
 a forced clamp or a runtime PASS; narrower viewports may wrap further.
 Focused local provider and Jinja contracts, real browser Visual QA and
 human acceptance remain pending; official gates/deployment HOLD.
+
+### REVIEW(6) — Modal simplification and delivery policy (#2329)
+
+Provider selection is now **single-source via the existing native Provider
+dropdown**, with no duplicate six-card gallery. Add/Edit and Setup Guide
+modal headers show contextual metadata immediately below their descriptive
+subtitles. The redundant Minimum Alert Severity helper sentence is removed
+from the UI while its catalog-owned `severity_scoped` backend logic stays
+unchanged. Delivery Domains show a compact full-width row of actual
+source-supported routing domains; Allowed Uses use a responsive 2-/3-column
+checkbox grid instead of a tall narrow rail. Preserve all selected values,
+server form validation, CSRF, current provider form partials, enabled-state
+contract and accessibility. The outbound catalog currently authorizes only
+Kubernetes and Object Storage; new domain routing **requires separate
+producer/authority audit (#2331)**, not a fabricated UI-only checkbox.
+No official admission until Dev Container functional/visual UAT and human
+acceptance are captured.
