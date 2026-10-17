@@ -79,6 +79,30 @@ def test_release_suite_emits_junit_for_taxonomy_summary_without_duplicate_execut
     assert 'Domain Characterization Tests' not in source
 
 
+def test_full_admission_setup_timing_preserves_failure_and_existing_gate_ownership() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    timed = source.split('run_timed_setup() {', 1)[1].split('run_pytest_capture() {', 1)[0]
+    functional = source.split('run_tests() {', 1)[1].split('run_frontend() {', 1)[0]
+    frontend = source.split('run_frontend() {', 1)[1].split('run_smoke() {', 1)[0]
+
+    assert '"$@" || status=$?' in timed
+    assert 'return "$status"' in timed
+    assert "printf '❌ %s · exit %d" in timed
+    assert "printf '✅ %s · ⏱ %dm %02ds" in timed
+    assert "run_timed_setup 'Functional npm dependencies' npm ci --no-audit --no-fund" in functional
+    assert "run_timed_setup 'Functional CSS build' npm run build-css" in functional
+    for label, command in (
+        ('Frontend npm dependencies', 'npm ci --no-audit --no-fund'),
+        ('Frontend format check', 'npm run check-format'),
+        ('Frontend asset build', 'npm run build-frontend'),
+        ('Frontend asset verification', 'npm run verify-frontend'),
+    ):
+        assert f"run_timed_setup '{label}' {command}" in frontend
+    assert functional.index('Functional CSS build') < functional.index("'Functional Tests'")
+    assert '--durations=15' in functional
+    assert 'run_e2e_gate' in functional
+
+
 def test_functional_full_suite_records_bounded_slowest_pytest_durations() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
     functional = source.split('run_tests() {', 1)[1].split('run_frontend() {', 1)[0]
