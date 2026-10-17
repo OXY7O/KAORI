@@ -168,7 +168,7 @@ def registry_case_route_eligible(case: AlertCase) -> bool:
         and integration.integration_type == 'registry'
         and integration.enabled
         and integration.lifecycle_status == 'active'
-        and integration.readiness_status not in {'blocked', 'validation_failed', 'retired'}
+        and integration.readiness_status in {'ready', 'degraded'}
     )
 
 
