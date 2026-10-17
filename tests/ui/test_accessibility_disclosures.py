@@ -29,7 +29,7 @@ def _browser_evidence(page: Page, scenario: str, viewport_name: str) -> Iterator
 
 
 def _login(page: Page, kaori_authenticated_base_url: str) -> None:
-    response = page.goto(f'{kaori_authenticated_base_url}/auth/login', wait_until='networkidle')
+    response = page.goto(f'{kaori_authenticated_base_url}/auth/login', wait_until='domcontentloaded')
     assert response is not None
     assert response.ok
 
@@ -43,7 +43,9 @@ def _login(page: Page, kaori_authenticated_base_url: str) -> None:
     submit = page.get_by_role('button', name=re.compile(r'log in|login|sign in', re.I)).first
     expect(submit).to_be_visible()
     submit.click()
-    page.wait_for_load_state('networkidle')
+    # Assert authenticated navigation and rendered app shell rather than idle network.
+    expect(page).not_to_have_url(re.compile(r'/auth/login(?:[/?#]|$)'))
+    expect(page.locator('#app-sidebar')).to_be_visible()
     assert '/auth/login' not in page.url
 
 
