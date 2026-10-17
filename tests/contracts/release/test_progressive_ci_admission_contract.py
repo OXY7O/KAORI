@@ -124,10 +124,12 @@ def test_ready_feature_pr_is_sequenced_through_developer_check_before_admission(
     assert 'uses: ./.github/workflows/quality.yml' in developer
     assert "needs.developer-check.result == 'success'" in developer
     assert 'github.event.pull_request.draft == false' in developer
-    assert (
-        'github.event.pull_request.draft == true'
-        not in developer.split('\n  route:', 1)[1].split('\n  toolchain:', 1)[0]
-    )
+    # Draft artifact steps are permitted, but the Route Checks job itself
+    # must still execute for both Draft and Ready exact-head validation.
+    route_header = developer.split('\n  route:', 1)[1].split('\n    steps:', 1)[0]
+    assert 'github.event.pull_request.draft == true' not in route_header
+    assert 'github.event.pull_request.draft == false' not in route_header
+    assert 'github.event.pull_request.head.repo.full_name == github.repository' in route_header
 
     # Reusable Full Admission still receives the caller PR context and therefore
     # retains the existing feature-PR routing guard inside the called workflow.
