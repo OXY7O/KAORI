@@ -102,6 +102,17 @@ The one-time consumption path serializes the `SecretRevealRequest` row with a Po
 - One active request is allowed per requester, cluster, namespace, Secret, and key.
 - Approval-required requests enforce separation of duties.
 
+**My Reveal Requests registry (read-only navigation):** The requester-facing history uses the
+canonical KAORI table with default five rows, shared pagination, and SQL-backed search,
+status and newest/oldest ordering. Search matches the current requester's Secret name,
+namespace, key name or ticket reference only; it does not query or display Secret values.
+Status filtering is limited to known reveal lifecycle values. The requester filter is
+applied before all other filters, and approver-only Pending Approvals remains a separate
+permissioned pagination window. HTMX registry navigation preserves a full-page `My Requests`
+URL and the active filter state in refresh/polling. Controls for approval, Step-Up,
+one-time reveal, request expiry and CSRF remain governed by their existing routes.
+
+
 ### Delete Secret
 
 - Namespace and Secret selectors are live.
