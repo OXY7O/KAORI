@@ -143,6 +143,12 @@ run_command_capture() {
         if [[ "$label" == 'Release Surface Coverage' ]]; then
             cat "$log_file"
         fi
+        # Profile the measured Static bottleneck without logging every verifier.
+        # Keep each command's full stdout/stderr in its existing diagnostic file.
+        if [[ "$group" == 'Engineering Quality' ]]; then
+            local elapsed=$(( $(date +%s) - started ))
+            printf '✅ %s — %s · ⏱ %dm %02ds\n' "$group" "$label" $((elapsed / 60)) $((elapsed % 60))
+        fi
         return 0
     else
         status=$?
