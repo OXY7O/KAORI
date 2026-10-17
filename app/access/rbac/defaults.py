@@ -43,6 +43,7 @@ def _validate_permission_dependencies(
 def _load_access_defaults() -> tuple[
     list[tuple[str, str, str, str]],
     dict[str, str],
+    dict[str, str],
     dict[str, set[str]],
     set[str],
     dict[str, dict[str, str]],
@@ -72,6 +73,14 @@ def _load_access_defaults() -> tuple[
         )
         for index, item in enumerate(raw_permissions)
     ]
+    # Descriptions for the Role editor are source-controlled UI copy, not RBAC
+    # registry metadata. Never include them in DEFAULT_PERMISSIONS/seed-rbac.
+    permission_matrix_descriptions = {
+        require_str(item, 'key', f'permissions[{index}]'): require_str(
+            item, 'matrix_description', f'permissions[{index}]'
+        )
+        for index, item in enumerate(raw_permissions)
+    }
     permission_keys = {item[0] for item in permissions}
     permission_modules = {item[1] for item in permissions}
     unknown_modules = sorted(permission_modules - set(permission_module_labels))
@@ -126,6 +135,7 @@ def _load_access_defaults() -> tuple[
         role_permissions[key] = grants
     return (
         permissions,
+        permission_matrix_descriptions,
         permission_module_labels,
         permission_dependencies,
         access_administration_permissions,
@@ -136,6 +146,7 @@ def _load_access_defaults() -> tuple[
 
 (
     DEFAULT_PERMISSIONS,
+    PERMISSION_MATRIX_DESCRIPTIONS,
     PERMISSION_MODULE_LABELS,
     DEFAULT_PERMISSION_DEPENDENCIES,
     ACCESS_ADMINISTRATION_PERMISSIONS,
