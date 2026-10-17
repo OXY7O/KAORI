@@ -65,7 +65,7 @@ def test_engineering_quality_verifier_timing_is_bounded_and_success_only() -> No
 
     assert 'if [[ "$group" == \'Engineering Quality\' ]]' in capture
     assert 'local elapsed=$(( $(date +%s) - started ))' in capture
-    assert 'printf \'✅ %s — %s · ⏱ %dm %02ds\n\' "$group" "$label"' in capture
+    assert 'printf \'✅ %s — %s · ⏱ %dm %02ds\\n\' "$group" "$label"' in capture
     assert 'if "$@" >"$log_file" 2>&1; then' in capture
     assert 'if [[ "$label" == \'Release Surface Coverage\' ]]' in capture
     assert 'return "$status"' in capture
