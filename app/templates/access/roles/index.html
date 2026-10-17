@@ -74,7 +74,7 @@
             </div>
             <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    {% set boundaries = [('lock-keyhole', 'Protected Defaults', 'Code-Owned', 'Code-owned roles require cloning before edits.'), ('shield-ellipsis', 'Delegation Boundary', 'Effective Access', 'Delegation cannot exceed your effective access.'), ('git-merge', 'Permission Dependencies', 'Catalog-Owned', 'Required code-owned permissions expand as needed.'), ('shield-check', 'Effective Authorization', 'Fail Closed', 'Inactive roles fail closed at authorization.')] %}
+                    {% set boundaries = [('lock-keyhole', 'Protected Defaults', 'Code-Owned', 'Code-owned roles require cloning before edits.'), ('shield-ellipsis', 'Delegation Boundary', 'Effective Access', 'Delegation cannot exceed your effective access.'), ('git-merge', 'Permission Dependencies', 'Catalog-Owned', 'Code-owned dependencies expand as needed.'), ('shield-check', 'Effective Authorization', 'Fail Closed', 'Inactive roles fail closed at authorization.')] %}
                     {% for icon, title, value, description in boundaries %}
                         <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"

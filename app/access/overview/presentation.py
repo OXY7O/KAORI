@@ -85,7 +85,7 @@ def _role_supporting_text(summary: dict[str, Any]) -> str:
             f'{summary["inactive_assigned_users"]} user assignment(s) point to inactive roles '
             'and therefore fail closed.'
         )
-    return 'Protected defaults match the source-controlled baseline; custom role delegation remains ceiling-bound.'
+    return 'Protected defaults aligned; delegation capped.'
 
 
 def _permission_supporting_text(summary: dict[str, Any]) -> str:
@@ -267,8 +267,7 @@ def build_access_overview() -> dict[str, Any]:
             {
                 'title': 'Audit Evidence',
                 'description': (
-                    'Notification-backed Activity Audit keeps actor snapshots; '
-                    'other sources retain separate permissions.'
+                    'Audit actor snapshots; other sources stay gated.'
                 ),
                 'status_label': activity['posture_label'],
                 'status_tone': activity['posture_tone'],
