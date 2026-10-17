@@ -265,7 +265,7 @@ def test_uat_user_lifecycle_controls_use_shared_protected_header_geometry() -> N
     assert 'can_manage_admin_fields and super_admin_eligible' in scope
     assert 'Super Admin unavailable' in scope
     for copy in (
-        'Assigns post-login RBAC permissions.',
+        'Admin roles require Super Admin.',
         'Allows sign-in when the provider is ready; disabling retains the account.',
         'Local Database break-glass authority; the last active Super Admin stays protected.',
     ):
@@ -277,3 +277,24 @@ def test_uat_user_lifecycle_controls_use_shared_protected_header_geometry() -> N
     assert "mode == 'edit' and user and user.is_super_admin" in form
     assert 'Protected Super Admin Account' in form
     assert 'last active Local Database super admin remains protected' in form
+
+
+def test_uat4_user_create_copy_is_compact_and_canonical() -> None:
+    form = read('app/templates/access/users/form.html')
+    assert 'Optional; defaults to username.' not in form
+    assert 'Assigns post-login RBAC permissions.' not in form
+    assert '12+ characters; use a unique passphrase.' in form
+    assert 'KAORI owns local passwords; Directory and SSO use provider-owned admission.' in form
+    assert "Use the provider's admission workflow." in form
+    assert 'Identity and authorization stay separate.' in form
+    assert 'Provider sign-in; KAORI governs roles and lifecycle.' in form
+    assert '<strong class="font-semibold text-content-secondary">Assigned Role</strong> sets KAORI permissions after sign-in.' in form
+    assert '<strong class="font-semibold text-content-secondary">Active Account</strong> gates Local, Directory and SSO access.' in form
+    assert '<strong class="font-semibold text-content-secondary">Super Admin</strong> is Local Database-only, never Directory/SSO; keep one active.' in form
+    assert 'if not can_manage_admin_fields' in form
+    assert 'Admin roles require Super Admin.' in form
+    assert 'can_manage_admin_fields and super_admin_eligible' in form
+    assert '{{ form.role_id(class=' in form
+    assert '{{ form.display_name(class=' in form
+    assert '{{ form.is_super_admin(class=' in form
+    assert 'whitespace-nowrap' not in form
