@@ -276,7 +276,7 @@ This prevents trivial formatting, targeted-contract, or review findings from rea
 
 When Pre-Ready is clean, mark the PR **Ready for Review** and treat that exact source head as the frozen work-branch candidate.
 
-Ready triggers an exact-head Developer Check first. Only when that Ready Developer Check aggregate passes does the Developer Check workflow invoke the governed reusable Full Admission for the frozen candidate. A failed or cancelled Developer Check leaves Full Admission skipped. Do not add cleanup, wording, formatting, or opportunistic refactors after freeze; any source change invalidates prior evidence and must pass Developer Check again before another Ready candidate is admitted.
+Ready triggers an exact-head Developer Check authority first: a new execution of the selected lanes **or** a fresh, verified, immutable same-head/base Draft result proven against the live PR, workflow, validation plan, toolchain and successful required GitHub job conclusions. The Ready aggregate must pass independently; any unverifiable evidence invokes the original fresh lanes, and failed/cancelled work never becomes reusable. Only after a successful Ready aggregate does the Developer Check workflow invoke mandatory comprehensive Full Admission for that frozen candidate. Do not add cleanup, wording, formatting, or opportunistic refactors after freeze; any source/base/authority change invalidates the earlier Draft evidence and requires fresh checks.
 
 ## Full Admission and Evidence Authority
 
