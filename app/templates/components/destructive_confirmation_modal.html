@@ -32,7 +32,7 @@
                           aria-hidden="true">
                         <i data-lucide="triangle-alert" class="h-5 w-5"></i>
                     </span>
-                    <div class="min-w-0 flex-1">
+                    <div class="{{ 'min-w-0 flex-1' if access_chrome else 'min-w-0' }}">
                         {% if access_chrome %}<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">{% endif %}
                             <h2 id="{{ modal_id }}-title"
                                 data-destructive-modal-title
