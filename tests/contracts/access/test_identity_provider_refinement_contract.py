@@ -158,3 +158,27 @@ def test_identity_provider_form_family_reuses_shared_surface_and_semantic_author
         'data-admission-policy',
     ):
         assert hook in selector
+
+
+def test_uat_review2_idp_guidance_preserves_provider_authority_with_concise_copy() -> None:
+    from jinja2 import Environment
+
+    google = read('app/templates/access/identity_providers/providers/google/_guidance.html')
+    guidance = read('app/templates/access/identity_providers/partials/_provider_guidance.html')
+    overview = read('app/templates/access/identity_providers/partials/_overview.html')
+
+    for source in (google, guidance, overview):
+        Environment().parse(source)
+
+    assert "note='Google signs in; KAORI governs access and lifecycle.'" in google
+    assert "Google authenticates identity; KAORI retains local authorization" not in google
+    assert "Register this exact callback URL with the provider." in guidance
+    assert "Register this exact scheme, host, path, and provider instance key" not in guidance
+    assert 'data-browser-callback' in guidance
+    assert 'data-callback-key' in guidance
+    assert 'request.url_root.rstrip' in guidance
+    assert "'Provider / Adapter Boundary', 'Distinct Contracts'," in overview
+    assert "'Providers own identity; adapters run sign-in.'" in overview
+    for source in (google, guidance):
+        assert 'whitespace-nowrap' not in source
+        assert 'truncate' not in source
