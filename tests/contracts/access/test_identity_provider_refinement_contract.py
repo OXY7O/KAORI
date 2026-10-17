@@ -182,3 +182,35 @@ def test_uat_review2_idp_guidance_preserves_provider_authority_with_concise_copy
     for source in (google, guidance):
         assert 'whitespace-nowrap' not in source
         assert 'truncate' not in source
+
+def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selected_feedback() -> None:
+    from jinja2 import Environment
+
+    selector = read('app/templates/access/identity_providers/partials/_provider_selector.html')
+    script = read('app/static/js/identity_provider_form.js')
+    forms = read('app/access/identity_providers/forms.py')
+    catalog = read('app/access/authentication/identity_provider/catalog.py')
+    definitions = read('app/definitions/catalogs/access/authentication/identity_provider/providers.yaml')
+
+    Environment().parse(selector)
+    assert 'type="radio"' in selector
+    assert 'id="provider-key-{{ definition.provider_key }}"' in selector
+    assert 'for="provider-key-{{ definition.provider_key }}"' in selector
+    assert 'data-provider-option' in selector
+    assert 'data-provider-option-badge' in selector
+    assert 'data-provider-option-status' in selector
+    assert 'peer-checked:border-kaori-primary/30 peer-checked:text-kaori-primary' not in selector
+    assert "status.textContent = selected ? 'Selected' : 'Select'" in script
+    assert "input.nextElementSibling?.querySelector('[data-provider-option-badge]')" in script
+    assert "input.addEventListener('change', syncProvider)" in script
+    assert "const visible = panel.dataset.configurationPanel === profile" in script
+    assert "setControlsEnabled(panel, visible)" in script
+    assert "configurable_provider_definitions()" in catalog
+    assert "configurable_provider_choices()" in forms
+    assert 'provider_key: ldap_directory' in definitions
+    assert 'configurable: true' in definitions.split('provider_key: ldap_directory', 1)[1].split(
+        'provider_key: google', 1
+    )[0]
+    assert 'configuration_profile: ldap' in definitions
+    assert 'validate_tls_mode' in forms
+    assert 'Enabled LDAP providers require server, base DN, bind DN, and secret reference.' in forms
