@@ -79,3 +79,29 @@ A focused isolated Playwright UI regression exercises pointer and keyboard
 selection transitions and panel/field visibility without connecting to LDAP
 or submitting any provider changes. The operator's real Dev Container Firefox
 test and human acceptance still govern UAT PASS; official CI/CD stays HOLD.
+
+### Root-cause fix: Lucide replaced the LDAP radio (#2280)
+
+Actual Firefox DOM evidence exposed an SVG `lucide-log-in` carrying
+`type="radio"` and `data-provider-key="ldap_directory"` with only two native
+provider inputs remaining. This traced to a collision: every provider radio
+had `data-provider-icon` metadata while `identity_provider_form.js`
+selected the **first** `[data-provider-icon]` as an icon display target.
+The controller added `data-lucide` to the LDAP input; the bundled Lucide
+renderer replaced the input with an SVG. The earlier badge-only and
+full-card CSS changes did not address this destructive DOM mutation.
+
+The source-controlled provider option now holds icon metadata under
+`data-provider-option-icon`, separate from
+`data-provider-display-icon` on the actual SSO configuration icon.
+The controller selects the displayed icon within its configuration panel
+on each update because Lucide replaces the original `<i>` with `<svg>`.
+It never assigns `data-lucide` to a radio input. The existing Playwright
+browser test now loads the real vendored Lucide renderer and asserts all
+three native provider radios remain present after initial render, LDAP
+selection and keyboard switching. No credential, provider integration,
+authorization, admission, TLS or database functionality changed.
+
+The operator's real Dev Container Firefox result, CI and human
+acceptance remain PENDING/NOT RUN until executable evidence is recorded.
+Official staging/deployment/release remain HOLD.

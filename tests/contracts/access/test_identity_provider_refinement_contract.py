@@ -203,6 +203,16 @@ def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selec
     assert 'data-provider-option' in selector
     assert 'data-provider-option-badge' in selector
     assert 'data-provider-option-status' in selector
+    assert 'data-provider-option-icon="{{ definition.icon }}"' in selector
+    assert 'data-provider-icon="{{ definition.icon }}"' not in selector
+    assert 'data-provider-display-icon' in read(
+        'app/templates/access/identity_providers/partials/_sso_configuration.html'
+    )
+    assert "input[type=\"radio\"][data-provider-option]" in script
+    assert "option?.dataset.providerOptionIcon" in script
+    assert "'[data-configuration-panel=\"browser_client\"] [data-provider-display-icon]'" in script
+    assert "form.querySelector('[data-provider-icon]')" not in script
+    assert 'lucide.createIcons()' in script
     assert 'peer-checked:border-kaori-primary/30 peer-checked:text-kaori-primary' not in selector
     assert "status.textContent = selected ? 'Selected' : 'Select'" in script
     assert "input.nextElementSibling?.querySelector('[data-provider-option-badge]')" in script
