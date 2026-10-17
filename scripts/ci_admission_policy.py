@@ -672,6 +672,7 @@ def draft_developer_reuse_decision(
     authority_fingerprint: str,
     toolchain_key: str,
     current_run_id: int,
+    head_ref: str,
     current_time: datetime | None = None,
 ) -> ReuseDecision:
     def reject(reason: str) -> ReuseDecision:
@@ -695,8 +696,17 @@ def draft_developer_reuse_decision(
         return reject('Draft workflow is not a completed successful pull_request run.')
     if run.get('path') != '.github/workflows/developer-check.yml':
         return reject('Untrusted Developer Check workflow path.')
-    if run.get('head_sha') != head_sha or run.get('head_branch') is None:
-        return reject('Draft workflow head identity mismatch.')
+    if run.get('head_sha') != head_sha or run.get('head_branch') != head_ref:
+        return reject('Draft workflow head ref/SHA mismatch.')
+    associated_prs = run.get('pull_requests') or []
+    if not any(
+        item.get('number') == pull_number
+        and item.get('head', {}).get('sha') == head_sha
+        and item.get('head', {}).get('ref') == head_ref
+        and item.get('base', {}).get('sha') == base_sha
+        for item in associated_prs
+    ):
+        return reject('Draft run cannot be linked to exact PR head/base.')
     if run.get('head_repository', {}).get('full_name') != repository:
         return reject('Draft workflow did not execute in the trusted source repository.')
     try:
@@ -798,6 +808,7 @@ def find_remote_draft_developer_evidence(
                 authority_fingerprint=current_authority_fingerprint,
                 toolchain_key=current_toolchain_key,
                 current_run_id=current_run_id,
+                head_ref=str(pr['head']['ref']),
             )
             if decision.reusable:
                 return decision
