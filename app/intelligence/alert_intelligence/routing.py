@@ -84,6 +84,16 @@ def notification_channel_options() -> list[dict[str, Any]]:
                 'destination': channel.destination or '-',
                 'status': channel.display_status,
                 'eligible': bool(channel.enabled and channel.configured and channel.test_status == 'success'),
+                'registry_eligible': bool(
+                    channel.enabled
+                    and channel.configured
+                    and channel.test_status == 'success'
+                    and 'registry' in (channel.domains or [])
+                    and (
+                        'alert_ops.firing' in (channel.event_types or [])
+                        or 'alert_intelligence.active_alert' in (channel.event_types or [])
+                    )
+                ),
             }
         )
     return result
@@ -131,6 +141,8 @@ def upsert_routing_policy(
             )
         )
     }
+    if 'registry' in normalized_domains and set(config.channel_ids) != valid_channels:
+        raise ValueError('Select only validated Registry-scoped alert channels.')
     if not valid_channels:
         raise ValueError('Select at least one validated Notification Channel.')
     interval = max(5, min(int(config.repeat_interval_minutes or 60), 1440))
