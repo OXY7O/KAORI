@@ -1,4 +1,3 @@
-{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
@@ -21,9 +20,6 @@
             </a>
         {% endif %}
     </header>
-    <div class="px-5 sm:px-6" data-settings-content-loading>
-        {{ loading_bar.render('account-settings-loading', label='Updating Account & Authentication') }}
-    </div>
     <section class="border-b border-outline-default bg-surface-card px-5 py-4 sm:px-6"
              aria-labelledby="authentication-event-summary-heading"
              data-authentication-summary="compact-strip">
