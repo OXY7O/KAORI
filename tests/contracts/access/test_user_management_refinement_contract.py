@@ -351,8 +351,8 @@ def test_uat6_user_edit_copy_balances_context_specific_credential_text() -> None
     assert "{{ identity_context.credential_detail }}" in form
 
     # Edit User: two-line-friendly link/boundary and 01/02 step descriptions.
-    assert 'Return to User Registry for account state, assigned role, identity source, and administrative safeguards.' in form
-    assert 'KAORI owns this Local Database identity, its password hash, governed resets, and access lifecycle.' in form
+    assert 'Review account state, source and role.' in form
+    assert 'KAORI owns local passwords, resets and access.' in form
     assert 'Identity profile</strong> updates username, display name and contact email without changing credential ownership.' in form
     assert 'Assigned Role</strong> changes KAORI RBAC permissions without modifying upstream identity or authentication credentials.' in form
     assert 'Identity profile updates the KAORI display name' not in form
@@ -394,3 +394,23 @@ def test_uat_review2_user_form_guide_and_delete_copy() -> None:
     assert 'Restore returns the account to Inactive; activation remains separate.' in users
     assert "destructive_confirmation.render('delete-user-modal'," in users
 
+
+
+def test_uat_review2_edit_profile_guide_and_user_registry_copy() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/access/users/form.html')
+    users = read('app/templates/access/users/index.html')
+    Environment().parse(form)
+    Environment().parse(users)
+    assert 'Review account state, source and role.' in form
+    assert 'KAORI owns local passwords, resets and access.' in form
+    assert "info_tip.render('edit-user-self-access-guide'," in form
+    assert 'Own role, state and Super Admin are protected.' in form
+    assert 'Profile metadata may be updated, but your own role, active state' in form
+    assert "variant='guide'" in form
+    assert "{% if is_self_edit %}" in form
+    assert "notice='Soft delete; restoration is governed.'" in users
+    assert 'Deletion disables login but retains Activity Audit.' in users
+    assert 'Restore returns the account to Inactive; activation remains separate.' in users
+    assert 'whitespace-nowrap' not in users
