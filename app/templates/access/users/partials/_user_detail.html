@@ -8,6 +8,7 @@
         {% call detail_ui.inventory_section(
             'Identity', 'contact',
             description='Committed account identity',
+            badge=user_view.source.label,
             compact_layout=true
             ) %}
             <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2"
@@ -21,6 +22,7 @@
         {% call detail_ui.inventory_section(
             'Authentication', 'fingerprint',
             description='Identity authority and credential ownership',
+            badge=identity_context.credential_owner,
             compact_layout=true
             ) %}
             <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3"
@@ -48,6 +50,8 @@
         {% call detail_ui.inventory_section(
             'Authorization', 'shield-check',
             description='Effective local role and access state',
+            badge=user_view.access.label,
+            badge_type='status', badge_tone=user_view.access.tone,
             compact_layout=true
             ) %}
             <div class="grid min-w-0 gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3"
