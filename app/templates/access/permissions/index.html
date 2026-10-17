@@ -76,10 +76,10 @@
             <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     {% set boundaries = [
-                                            ('code-xml', 'Code Ownership', 'Application Code', 'Permission keys, module ownership, dependencies, and delegation tiers are source-controlled.'),
-                                            ('git-merge', 'Dependency Graph', 'Normalized', 'Dependent capabilities expand their transitive baseline requirements automatically.'),
-                                            ('shield-check', 'Role Consumption', summary.role_mappings ~ ' Mappings', summary.unused_contracts ~ ' canonical contracts are currently unassigned.'),
-                                            ('lock-keyhole', 'Authoritative Enforcement', 'Server Side', 'Route, service, role delegation, JIT, and provisioning guards remain authoritative.')
+                                            ('code-xml', 'Code Ownership', 'Application Code', 'Permissions and delegation are code-owned.'),
+                                            ('git-merge', 'Dependency Graph', 'Normalized', 'Required permission dependencies expand automatically.'),
+                                            ('shield-check', 'Role Consumption', summary.role_mappings ~ ' Mappings', summary.unused_contracts ~ ' unassigned contracts.'),
+                                            ('lock-keyhole', 'Authoritative Enforcement', 'Server Side', 'Server-side authorization guards remain authoritative.')
                                         ] %}
                     {% for icon, title, value, description in boundaries %}
                         <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
