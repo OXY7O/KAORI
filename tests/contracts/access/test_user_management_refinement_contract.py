@@ -62,8 +62,8 @@ def test_user_management_posture_matches_permission_registry_overview_structure(
         assert label in summary
     for label in ('Local Database', 'Directory', 'SSO Providers', 'Deleted & Restore'):
         assert label in summary
-    assert 'Restore returns Deleted → Inactive' in summary
-    assert 'never reactivates access' in summary
+    assert 'Restore: Deleted → Inactive' in summary
+    assert 'manual activation' in summary
     assert "'deleted': int(deleted_users or 0)" in directory
 
 
