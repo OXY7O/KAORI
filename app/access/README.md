@@ -250,3 +250,14 @@ On the create-user page, remove the redundant Display Name default helper and As
 ### UAT-1(5) modal header reference — #2261
 
 The newly supplied reference screenshot is **Permission Detail / `users.delete`** (title `Delete Users`, Canonical state, identity/dependency description and Access/permission/delegation badges), not the Delete User confirmation. Role Detail and Activity Detail retain their own authoritative data but now use the same header information order: icon, title with real status, description, metadata. Only Access destructive confirmations opt into matching header organization, using `Confirmation Required` and existing scope/action rather than mislabeling destructive operations as Canonical. The shared Permission Detail host footer defines the footer standard; the cropped screenshot itself does not display a footer. Body, modal dimensions, mutation buttons and permission controls remain unchanged. Executable and browser UAT, responsive Visual QA, focus restoration and human acceptance are pending.
+
+### REVIEW(2) Access Overview User count text — #2251
+
+The User Management posture caption in the read-only Access Overview uses
+the same authoritative `build_user_access_summary()` counts and active
+Local Database break-glass coverage. Only the human-facing text is shortened
+to a correctly pluralized `accounts · active Local DB break-glass admin(s)`
+statement, preserving all zero-active, no-admin and admission-warning
+precedence branches. This is a Firefox L13 one-line **target**, not a claimed
+browser PASS; actual responsive/zoom/light-dark and human UAT remains pending.
+No persistence, aggregation or provider calls are added.

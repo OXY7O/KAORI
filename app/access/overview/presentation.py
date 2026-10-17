@@ -55,9 +55,13 @@ def _user_supporting_text(summary: dict[str, Any]) -> str:
             f'{summary["access_review"]} account admission issue(s) require review across RBAC, '
             'external identity, or emergency-access state.'
         )
+    total = summary['total']
+    admin_count = summary['active_super_admins']
+    account_suffix = '' if total == 1 else 's'
+    admin_suffix = '' if admin_count == 1 else 's'
     return (
-        f'{summary["total"]} registered account(s) with {summary["active_super_admins"]} active Local Database '
-        'break-glass super admin(s).'
+        f'{total} account{account_suffix} · {admin_count} active Local DB '
+        f'break-glass admin{admin_suffix}.'
     )
 
 
