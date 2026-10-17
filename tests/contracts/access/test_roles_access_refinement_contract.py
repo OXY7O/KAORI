@@ -183,3 +183,11 @@ def test_role_form_routes_semantic_borders_through_shared_authority() -> None:
     assert "operational_callout.semantic_border_classes('critical')" in form
     assert 'border-status-warning-border' not in form
     assert 'border-status-critical-border' not in form
+
+
+
+def test_uat_roles_dependency_boundary_uses_short_caption() -> None:
+    source = read('app/templates/access/roles/index.html')
+    assert 'Code-owned dependencies expand as needed.' in source
+    assert "'Permission Dependencies', 'Catalog-Owned'" in source
+    assert 'whitespace-nowrap' not in source
