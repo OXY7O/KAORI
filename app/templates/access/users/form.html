@@ -2,6 +2,7 @@
 {% block title %}{{ 'Add User' if mode == 'create' else 'Edit User' }}{% endblock title %}
 {% block dashboard_content %}
     {% import "components/page_hero.html" as page_hero %}
+    {% import "components/info_tip.html" as info_tip %}
     {% import "components/related_page_card.html" as related_page_card %}
     {% import "components/table_primitives.html" as surface_ui %}
     {% import "components/table_label.html" as semantic_ui %}
@@ -115,7 +116,17 @@
                                     <i data-lucide="network" class="h-4 w-4"></i>
                                 </div>
                                 <div>
-                                    <h3 class="text-sm font-semibold text-content-primary">Identity Source & Credential Ownership</h3>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-sm font-semibold text-content-primary">Identity Source & Credential Ownership</h3>
+                                        {% if mode == 'create' %}
+                                            {{ info_tip.render('add-user-credential-guide',
+                                                                'Local Credential Guidance',
+                                                                'KAORI owns the new Local Database password; external identity passwords remain with their providers.',
+                                                                items=['Use at least 12 characters and a unique passphrase.', 'Confirm the initial password exactly before creating the account.'],
+                                                                placement='right',
+                                                                variant='guide') }}
+                                        {% endif %}
+                                    </div>
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">
                                         {{ 'This page creates Local Database credentials; external identities use their provider workflow.' if mode == 'create' else 'Review the authoritative credential owner and external identity reference.' }}
                                     </p>
@@ -142,12 +153,12 @@
                                     <div>
                                         <label class="mb-1.5 block text-sm font-semibold text-content-primary">Initial Password</label>
                                         {{ form.password(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password", placeholder="Minimum 12 characters") }}
-                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">12+ characters; use a unique passphrase.</p>
+                                        
                                     </div>
                                     <div>
                                         <label class="mb-1.5 block text-sm font-semibold text-content-primary">Confirm Password</label>
                                         {{ form.confirm_password(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
-                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Repeat the initial password exactly before submitting the account.</p>
+                                        
                                     </div>
                                 </div>
                             {% else %}
@@ -418,7 +429,7 @@
                     </details>
                     {% if current_user.has_permission('identity_providers.view') %}
                         {{ related_page_card.render('Identity Providers',
-                                                'Manage provider records, adapter contracts, and admission paths used to create external identities in KAORI.',
+                                                'Manage external identity providers and admission.',
                                                 url_for('identity_providers.index') ,
                         'Open Identity Providers',
                         icon='fingerprint',
@@ -553,7 +564,7 @@
                                 </div>
                                 <div>
                                     <h2 class="text-base font-semibold leading-6 text-content-primary">Editable Administrative Controls</h2>
-                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Changes remain local to KAORI and are written to Activity Audit Log.</p>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">KAORI changes enter Activity Audit.</p>
                                 </div>
                             </div>
                         </header>

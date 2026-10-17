@@ -10,7 +10,7 @@
     {{ destructive_confirmation.render('delete-user-modal',
         'Delete User?',
         'Selected User',
-        'Login access will be disabled while Activity Audit history remains retained. Restore returns the account to Inactive and requires an explicit activation decision.',
+        'Deletion disables login but retains Activity Audit. Restore returns the account to Inactive; activation remains separate.',
         '',
         action_label='Delete User',
         notice='This is a reversible soft delete governed by User Management restore guardrails.',

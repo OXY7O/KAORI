@@ -60,3 +60,15 @@ zoom, text must wrap naturally. Targeted source-contract checks and actual
 Dev Container Firefox screenshots/human acceptance are separate evidence;
 the latter remain PENDING until executed.
 
+### REVIEW(2) — Add User Guide and User deletion confirmation (#2278)
+
+The Add User credential section now places minimum password length, passphrase
+uniqueness and exact confirmation advice inside the existing accessible title-level
+Info Tip Guide. The two static helper sentences below the credential inputs are
+removed without altering placeholders, server-side password policy, validation errors,
+CSRF, Directory/SSO ownership or the edit-mode identity projection. The
+administrative audit caption and related Identity Providers summary are shortened.
+The Delete User confirmation describes login disablement, retained Activity Audit
+and Restore → Inactive with separate activation; destructive safeguards remain
+unchanged. These are Firefox Lenovo L13 copy targets, not browser PASS until
+executed and accepted in Dev Container; mobile and zoom must wrap naturally.
