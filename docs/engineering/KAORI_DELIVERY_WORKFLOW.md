@@ -196,6 +196,22 @@ A Pull Request to `main` is a governed promotion only when its source is exactly
 
 `kaori/working` is retired only after issue #10 proves all required commits are represented in `kaori/staging`.
 
+## Temporary DevContainer UAT Review Workbench (#2227)
+
+`kaori/review/staging-uat` is a previously used, **operator-authorized temporary holding and exploratory UAT branch**, not a third release, integration, or CI-admission authority. This exception does not change the two long-lived branches above. It permits separately reviewed issue-scoped changes to be observed together in the existing DevContainer while external integrations and resources are unavailable on the staging server. Historical human review of this workbench is **not** automatically Full Admission, staging UAT acceptance, VPS/RC approval, or permission to promote its entire source tree.
+
+The two lanes must remain distinct:
+
+- **Official delivery / performance lane:** issue-linked PRs continue targeting `kaori/staging` and passing exact-head Developer Check, Ready Full Admission, staging CI and any applicable human acceptance. Do not delay independent CI/performance work solely because DevContainer UI/UAT items remain on hold.
+- **Holding / exploratory UAT lane:** separate issue-linked PRs may target `kaori/review/staging-uat` for DevContainer review. Their merge or screenshot evidence only proves what was actually reviewed against a recorded branch SHA and environment; it is **not** an official admission event. The current GitHub `Developer Check` PR trigger is scoped to `kaori/staging`, so do not infer a gate PASS from a review-target PR.
+
+After **each accepted staging integration**, inspect the current `kaori/staging` and review heads, open review-target PRs, and then synchronize **staging → review** without force: fast-forward with a checked expected head when review is a staging ancestor, or a separately reviewed ordinary merge commit if review has unique commits. Preserve existing holding-branch changes and PRs; never reset, rebase, force-push, bulk-merge pending review PRs, or sync unaccepted review source backward into staging.
+
+For eventual admission, select only the accepted **issue-scoped** changes from the review workbench, reconcile them on a normal work branch based on the **latest** `kaori/staging`, and open a governed PR to staging. The frozen head must pass every mandatory quality/security/DAST gate and staging integration before the change can be considered admitted. Avoid wholesale review-branch promotion while unaccepted items remain.
+
+Use the existing `.devcontainer/devcontainer.json` and record the exact checkout SHA, configured external provider identity/readiness, positive/negative scenario evidence (including light/dark/responsive UI), and human decision. The DevContainer may have usable test integrations while the staging server does not, but simulated/offline coverage **does not** replace real provider, credential, migration, infrastructure-mutation, deployment, RC/digest or production-environment evidence. Mark environment-dependent scenarios **PENDING/BLOCKED** when they cannot run, never PASS. This exception is retired or reviewed when the staging environment has enough resources and required integrations for authoritative environment-specific UAT.
+
+
 ## Project Status Model
 
 GitHub Project `Status` is the lifecycle authority:

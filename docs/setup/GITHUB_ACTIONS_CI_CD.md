@@ -48,6 +48,8 @@ same immutable digest, no application rebuild
 
 The long-lived integration branches are `kaori/staging` and `main`. Work branches are short-lived and issue-scoped.
 
+**Temporary DevContainer holding branch (#2227):** `kaori/review/staging-uat` is an exploratory UAT aggregation workbench, **not** a third admission or promotion branch. Its review-target PRs do not trigger the official `Developer Check` workflow because that workflow only admits PRs targeting `kaori/staging`. Accepted staging commits may be synchronized **into** this review workbench via non-force fast-forward (or reviewed merge when histories diverge); never bulk-promote unaccepted UAT commits into staging. Selected work must return through issue-linked staging-target PRs and exact-head mandatory Full Admission. DevContainer provider testing supplements, rather than replaces, required environment/deployment UAT. The detailed branch and evidence rules remain in `docs/engineering/KAORI_DELIVERY_WORKFLOW.md`.
+
 ## Continuous Integration
 
 ### Work branch
