@@ -466,8 +466,9 @@ Dev Container before human acceptance; official CI/CD remains HOLD.
 **Tenant Contributions is detail on demand:** the overview shows the committed
 Tenant count and opens the canonical native KAORI dialog. After DevContainer
 visual feedback, this detail workspace uses **one visual hierarchy**: concise
-cluster header with a **Read-only** label beside the modal title, and a
-lightweight **Tenant Registry** navigation link pushed to the far right of the
+cluster header with the **Read-only** state and **Committed scope** metadata
+labels in a dedicated row directly beneath the modal title, and a lightweight
+**Tenant Registry** navigation link pushed to the far right of the
 helper-description row (wrapping to its own right-aligned line on narrow screens).
 The top-right header corner contains only **Close**. Four summary metrics
 appear without any enclosing or per-metric cards, separated **only between
@@ -478,8 +479,11 @@ responsive, vertically scrollable list of Tenant records.
 Each Tenant record has a single readable outline, without nested cards or shadows.
 This modal intentionally has **no Rows selector or pagination controls**:
 a compact read-only evidence footer stays visible beneath a separately framed
-scrolling viewport. The footer reports matching versus total Tenant counts
-and is updated with the search inside the existing HTMX-swapped body.
+scrolling viewport. The footer now keeps the read-only committed-evidence note
+on the left and exposes a shared-style **Close** action on the right, with
+compact padding to fit the 32px action height. Filtered matching versus total
+Tenant counts remain in the search status line, updated with the search inside
+the existing HTMX-swapped body; they are no longer duplicated in the footer.
 Each record groups Tenant name, ownership badge, stable ID, provider/authority,
 and a keyboard-accessible Namespace disclosure. Four governed requests use an
 unboxed two-column definition grid with one dividing rule at desktop widths.
