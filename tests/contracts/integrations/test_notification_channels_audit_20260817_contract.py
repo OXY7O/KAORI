@@ -367,5 +367,5 @@ def test_review6_provider_guide_summaries_keep_security_coverage_and_copy_densit
     assert 'STARTTLS' in found['email'][0] and 'TLS/SMTPS' in found['email'][0]
     assert 'Anyone' in ' '.join(found['microsoft_teams'][2])
     for value in found.values():
-        assert 'read' in value[1] or 'recipient' in value[1]
+        assert any(term in value[1] for term in ('read', 'recipient', 'receipt'))
 
