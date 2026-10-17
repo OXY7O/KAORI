@@ -30,7 +30,7 @@
                 (form.bind_password_env, 'KAORI_LDAP_BIND_PASSWORD'),
                 (form.user_filter, '(&(objectClass=user)(|(sAMAccountName={query})(mail={query})))')
                 ] %}
-                <label class="block min-w-0 {% if field == form.user_filter %}sm:col-span-2{% endif %}">
+                <label class="block min-w-0">
                     <span class="text-sm font-semibold text-content-primary">{{ field.label.text }}</span>
                     {{ field(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=placeholder) }}
                     {% for error in field.errors %}<span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>{% endfor %}

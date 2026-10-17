@@ -292,3 +292,29 @@ def test_review3_provider_guidance_steps_and_authority_notes() -> None:
     assert "note='GitHub signs in; KAORI governs access.'" in github
     assert 'LDAP' not in github
 
+
+def test_review4_ldap_mapping_example_placeholders_do_not_become_create_defaults() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/access/identity_providers/partials/_ldap_configuration.html')
+    forms = read('app/access/identity_providers/forms.py')
+    Environment().parse(template)
+    assert '{% if field == form.user_filter %}sm:col-span-2{% endif %}' not in template
+    assert "class=\"block min-w-0\"" in template
+    assert 'User Search Filter' in forms and 'TLS Mode' in forms
+    assert 'sm:grid-cols-2' in template
+    samples = {
+        'username_attribute': 'sAMAccountName',
+        'email_attribute': 'mail',
+        'display_name_attribute': 'displayName',
+        'stable_id_attribute': 'objectGUID',
+    }
+    for field, example in samples.items():
+        declaration = next(line for line in forms.splitlines() if line.strip().startswith(f'{field} = StringField('))
+        assert 'default=' not in declaration
+        assert f"(form.{field}, '{example}')" in template
+        assert f"form.{field}.data = config.get('{field}')" in forms
+        assert f"self._require_ldap_attribute(field," in forms
+    assert 'def validate_tls_mode' in forms
+    assert "if definition.configuration_profile == 'ldap':" in forms
+
