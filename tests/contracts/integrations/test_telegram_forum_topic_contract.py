@@ -38,3 +38,31 @@ def test_github_actions_topic_stays_separate_from_application_events() -> None:
     assert 'TELEGRAM_GITHUB_ACTIONS_TOPIC_ID' in workflow
     assert "'message_thread_id': topic_id" in notifier
     assert 'github_actions.' not in catalog
+
+
+def test_telegram_field_help_uses_canonical_info_tips_without_inline_paragraphs() -> None:
+    form = read('app/templates/integrations/delivery/notification_channels/providers/telegram/_form.html')
+    info_tip = read('app/templates/components/info_tip.html')
+    javascript = read('app/static/js/info_tips.js')
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in form
+    assert form.count('info_tip.render(') == 3
+    for field, tip_id in (
+        ('bot_token', 'notification-telegram-token-help'),
+        ('target_chat_id', 'notification-telegram-chat-help'),
+        ('telegram_topic_id', 'notification-telegram-topic-help'),
+    ):
+        assert f'name="{field}"' in form
+        assert tip_id in form
+    assert '<p class="mt-1 text-xs leading-5 text-content-muted">' not in form
+    assert 'Stored as a secret and never rendered back after save.' in form
+    assert 'The bot must already be able to post to this destination.' in form
+    assert 'Numeric Telegram message_thread_id of a Forum Topic in your supergroup.' in form
+    assert 'Leave blank for ordinary chat delivery.' in form
+    assert 'Changing this requires a new Test Delivery.' in form
+    assert 'data-kaori-info-tip-trigger' in info_tip
+    assert 'role="tooltip"' in info_tip
+    assert 'document.body.appendChild(preview)' in javascript
+    assert "addEventListener('focusin'" in javascript
+    assert "addEventListener('keydown'" in javascript
+    assert "addEventListener('scroll'" in javascript
