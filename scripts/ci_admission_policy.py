@@ -574,6 +574,7 @@ DRAFT_DEVELOPER_JOB_NAMES = (
     'Frontend & Focused Validation',
     'Developer Check',
     'Full Admission',
+    'Ready Admission Guard',
 )
 
 
@@ -615,6 +616,7 @@ def _required_developer_jobs(plan: str) -> dict[str, str]:
         'Frontend & Focused Validation': 'success' if focused else 'skipped',
         'Developer Check': 'success',
         'Full Admission': 'skipped',
+        'Ready Admission Guard': 'skipped',
     }
 
 
