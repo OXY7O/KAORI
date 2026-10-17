@@ -428,3 +428,27 @@ jobs:
     # !cancelled() preserves cancellation safety; the aggregate must be SUCCESS.
     if: ${{ !cancelled() && needs.developer-check.result == 'success' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
     uses: ./.github/workflows/quality.yml
+
+  # Independent fail-closed terminal check. GitHub may report a workflow green
+  # even when an essential reusable job was skipped due to dependency status.
+  # Never interpret such a Ready run as successful frozen admission.
+  ready-admission-guard:
+    name: Ready Admission Guard
+    needs: [developer-check, full-admission]
+    if: ${{ always() && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
+    runs-on: [self-hosted, linux, x64, platform-ci]
+    timeout-minutes: 5
+    steps:
+      - name: Enforce Completed Full Admission
+        shell: bash
+        env:
+          DEVELOPER_RESULT: ${{ needs.developer-check.result }}
+          FULL_ADMISSION_RESULT: ${{ needs.full-admission.result }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "$DEVELOPER_RESULT" != "success" || "$FULL_ADMISSION_RESULT" != "success" ]]; then
+            printf '❌ Ready Admission Guard — Developer Check=%s, Full Admission=%s\n' \
+              "$DEVELOPER_RESULT" "$FULL_ADMISSION_RESULT"
+            exit 1
+          fi
+          printf '✅ Ready Admission Guard PASS — comprehensive Full Admission completed successfully.\n'
