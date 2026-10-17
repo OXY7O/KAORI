@@ -423,5 +423,8 @@ jobs:
   full-admission:
     name: Full Admission
     needs: developer-check
-    if: ${{ needs.developer-check.result == 'success' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
+    # Skipped predecessor lanes are expected after verified Draft reuse; do not let
+    # GitHub's implicit success() short-circuit the mandatory Full Admission job.
+    # !cancelled() preserves cancellation safety; the aggregate must be SUCCESS.
+    if: ${{ !cancelled() && needs.developer-check.result == 'success' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
     uses: ./.github/workflows/quality.yml
