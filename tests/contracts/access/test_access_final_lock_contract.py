@@ -62,3 +62,39 @@ def test_current_access_documents_do_not_reopen_the_locked_ui() -> None:
     for document in current_docs:
         assert 'UI not final locked' not in document
         assert 'not final-lock the UI' not in document
+
+
+
+def test_uat4_access_modals_share_header_footer_chrome_without_changing_dialog_bodies() -> None:
+    shared = read('app/templates/components/destructive_confirmation_modal.html')
+    host = read('app/templates/components/resource_detail_modal.html')
+    permissions = read('app/templates/access/permissions/index.html')
+    roles = read('app/templates/access/roles/index.html')
+    activity = read('app/templates/access/activity_audit/index.html')
+    users = read('app/templates/access/users/index.html')
+
+    for page in (permissions, roles, activity):
+        assert 'resource_detail_modal.host(' in page
+    for label in ('Permission', 'Role', 'Activity'):
+        assert f"resource_detail_modal.host('{label}'" in (
+            permissions + roles + activity
+        )
+    assert 'data-resource-detail-header-host' in host
+    assert 'data-resource-detail-close' in host
+    assert 'data-resource-detail-summary-host' in host
+    assert 'footer_text' in host
+
+    assert 'access_chrome=false' in shared
+    assert 'presentation in [\'steps\', \'kubernetes\'] or access_chrome' in shared
+    assert 'if access_chrome else' in shared
+    assert 'data-destructive-modal-confirm' in shared
+    assert 'data-destructive-modal-close' in shared
+    assert 'data-submit-button-id="{{ confirm_button_id }}"' in shared
+    assert "if presentation == 'steps' else 'max-w-xl'" in shared
+    assert "if presentation == 'steps' else 'space-y-5 p-5'" in shared
+    assert 'scope_value }} · Confirmation required' in shared
+    assert "access_chrome=true" in roles and "access_chrome=true" in users
+    assert roles.count('access_chrome=true') == 1
+    assert users.count('access_chrome=true') == 1
+    assert 'role-delete-confirmation' in roles
+    assert 'delete-user-modal' in users
