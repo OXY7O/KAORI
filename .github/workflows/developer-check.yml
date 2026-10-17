@@ -69,7 +69,9 @@ jobs:
       # Draft evidence is a preflight identity artifact, NOT a PASS assertion.
       # Ready independently verifies the completed original workflow and all jobs.
       - name: Write Draft Route Identity
+        id: draft-identity
         if: ${{ github.event.pull_request.draft == true }}
+        continue-on-error: true
         shell: bash
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -87,7 +89,8 @@ jobs:
             --output tmp/ci-artifacts/developer-check/draft-developer-evidence.json
 
       - name: Upload Draft Route Identity
-        if: ${{ github.event.pull_request.draft == true }}
+        if: ${{ github.event.pull_request.draft == true && steps.draft-identity.outcome == 'success' }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kaori-draft-developer-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -98,6 +101,7 @@ jobs:
       - name: Verify Prior Exact Draft Evidence
         id: reuse
         if: ${{ github.event.pull_request.draft == false }}
+        continue-on-error: true
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -108,7 +112,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           python3 scripts/ci_admission.py find-draft-developer-evidence \
-            --repository "$GITHUB_REPOSITORY" --token "$GITHUB_TOKEN" \
+            --repository "$GITHUB_REPOSITORY" \
             --pull-number "$PR_NUMBER" --head-sha "$KAORI_SOURCE_SHA" \
             --base-sha "$BASE_SHA" --source-tree "$SOURCE_TREE" \
             --plan "$ROUTE_SUMMARY" --run-id "$GITHUB_RUN_ID"
