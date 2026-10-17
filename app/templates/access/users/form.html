@@ -603,7 +603,7 @@
                         'Open User Registry',
                         icon='users',
                         eyebrow='Related User Management',
-                        boundary='KAORI owns local passwords, resets and access.'
+                        boundary='KAORI owns local credentials and resets.'
                         ) }}
                     {% elif current_user.has_permission('identity_providers.view') %}
                         {{ related_page_card.render('Identity Providers',
@@ -630,7 +630,7 @@
                                                             placement='right',
                                                             variant='guide') }}
                                     </div>
-                                    <p class="mt-1 text-xs leading-5 text-status-warning-text">Own role, state and Super Admin are protected.</p>
+                                    <p class="mt-1 text-xs leading-5 text-status-warning-text">Own access controls are locked.</p>
                                 </div>
                             </div>
                         </section>
