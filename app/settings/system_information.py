@@ -138,8 +138,7 @@ def _object_storage_compatibility_presentation() -> dict[str, Any] | None:
             'S3 API reachability, bucket discovery, and optional object-storage governance capabilities.'
         ),
         'validation_basis': (
-            'Live S3 evidence decides readiness; qualification is supporting evidence. '
-            'Unqualified MinIO releases degrade, not block solely by version.'
+            'Live S3 checks decide readiness; unqualified MinIO releases degrade, not block by version alone.'
         ),
         'profiles': tuple(
             {
