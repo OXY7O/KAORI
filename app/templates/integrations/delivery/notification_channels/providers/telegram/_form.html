@@ -1,34 +1,62 @@
-<div class="grid gap-4 sm:grid-cols-2">
-    <div>
-        <label class="{{ table_ui.filter_label_classes() }}">Bot Token</label>
-        <input name="bot_token"
+{% import "components/info_tip.html" as info_tip %}
+<div class="grid gap-5 sm:grid-cols-2">
+    <div class="min-w-0">
+        <div class="mb-1.5 flex min-h-6 items-center gap-1.5">
+            <label for="notification-telegram-token"
+                   class="{{ table_ui.filter_label_classes() }}">Bot Token</label>
+            {{ info_tip.render(
+                'notification-telegram-token-help',
+                'Bot Token',
+                'Stored as a secret and never rendered back after save.',
+                placement='right'
+            ) }}
+        </div>
+        <input id="notification-telegram-token"
+               name="bot_token"
                type="password"
                autocomplete="new-password"
                class="{{ table_ui.filter_input_classes() }}"
                placeholder="{{ 'Leave blank to keep current token' if form_channel and form_channel.credential_configured else 'BotFather token' }}">
-        <p class="mt-1 text-xs leading-5 text-content-muted">Stored as a secret and never rendered back after save.</p>
     </div>
-    <div>
-        <label class="{{ table_ui.filter_label_classes() }}">Chat ID / @Channel</label>
-        <input name="target_chat_id"
+    <div class="min-w-0">
+        <div class="mb-1.5 flex min-h-6 items-center gap-1.5">
+            <label for="notification-telegram-chat-id"
+                   class="{{ table_ui.filter_label_classes() }}">Chat ID / @Channel</label>
+            {{ info_tip.render(
+                'notification-telegram-chat-help',
+                'Chat ID / @Channel',
+                'The bot must already be able to post to this destination.',
+                placement='right'
+            ) }}
+        </div>
+        <input id="notification-telegram-chat-id"
+               name="target_chat_id"
                value="{{ form_channel.target_chat_id if form_channel else '' }}"
                class="{{ table_ui.filter_input_classes() }}"
                placeholder="-1001234567890 or @channel">
-        <p class="mt-1 text-xs leading-5 text-content-muted">The bot must already be able to post to this destination.</p>
     </div>
-    <div class="sm:col-span-2">
-        <label for="telegram-topic-id" class="{{ table_ui.filter_label_classes() }}">Telegram Topic ID (Optional)</label>
+    <div class="min-w-0 sm:col-span-2">
+        <div class="mb-1.5 flex min-h-6 items-center gap-1.5">
+            <label for="telegram-topic-id"
+                   class="{{ table_ui.filter_label_classes() }}">Telegram Topic ID (Optional)</label>
+            {{ info_tip.render(
+                'notification-telegram-topic-help',
+                'Telegram Forum Topic',
+                'Numeric Telegram message_thread_id of a Forum Topic in your supergroup.',
+                [
+                    'Leave blank for ordinary chat delivery.',
+                    'Changing this requires a new Test Delivery.'
+                ],
+                placement='right'
+            ) }}
+        </div>
         <input id="telegram-topic-id"
                name="telegram_topic_id"
                type="text"
                inputmode="numeric"
                pattern="[0-9]*"
                value="{{ form_channel.telegram_topic_id if form_channel else '' }}"
-               class="{{ table_ui.filter_input_classes() }} max-w-sm"
+               class="{{ table_ui.filter_input_classes() }} w-full"
                placeholder="123">
-        <p class="mt-1 text-xs leading-5 text-content-muted">
-            Numeric Telegram message_thread_id of a Forum Topic in your supergroup.
-            Leave blank for ordinary chat delivery. Changing this requires a new Test Delivery.
-        </p>
     </div>
 </div>
