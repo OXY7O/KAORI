@@ -114,7 +114,6 @@ done
 
 destination_csv="$(IFS=,; printf '%s' "${expected_nodes[*]}")"
 service_csv="$(IFS=,; printf '%s' "${worker_services[*]}")"
-command -v python3 >/dev/null 2>&1 || fail 'python3 is required for queue response verification'
 if ! queue_response="$(docker exec "$probe_cid" celery --app celery_worker:celery_app inspect \
   --json --timeout=20 --destination="$destination_csv" active_queues 2>/dev/null)"; then
   fail 'targeted Celery active_queues inspection failed'
@@ -122,7 +121,7 @@ fi
 
 # The check is intentionally stricter than Celery's CLI exit code: all ten
 # individually named workers must reply, each with a valid active queue.
-python3 -c '
+docker exec -i "$probe_cid" python -c '
 import json
 import sys
 

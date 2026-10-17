@@ -277,10 +277,9 @@ def test_verifier_checks_full_runtime_and_single_beat() -> None:
     assert 'web unexpectedly publishes a host port' in source
 
 
-
 def _validate_celery_worker_response(payload: str, *, expected: list[str] | None = None) -> subprocess.CompletedProcess[str]:
     source = _read(VERIFY)
-    script = source.split("python3 -c '\n", 1)[1].split("\n' \"$destination_csv\"", 1)[0]
+    script = source.split("docker exec -i \\"$probe_cid\\" python -c '\n", 1)[1].split("\n' \"$destination_csv\"", 1)[0]
     workers = [
         'worker', 'registry-security-worker', 'maintenance-worker', 'runtime-worker',
         'validation-worker', 'analytics-worker', 'reports-worker', 'forecasting-worker',
