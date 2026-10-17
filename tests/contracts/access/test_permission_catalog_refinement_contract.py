@@ -368,3 +368,17 @@ def test_permission_effective_usage_excludes_inactive_role_assignments() -> None
     }
     assert _role_impact([active_role], enabled_jit_providers_by_role={})['active_user_count'] == 1
     assert _role_impact([], enabled_jit_providers_by_role={})['active_user_count'] == 0
+
+
+
+def test_uat_role_coverage_result_count_matches_permission_registry_title_placement() -> None:
+    registry = read('app/templates/access/permissions/partials/_registry.html')
+    coverage = read('app/templates/access/permissions/partials/_coverage.html')
+    for source, title in ((registry, 'Permission Registry'), (coverage, 'Role Coverage')):
+        header = source.split('</header>', 1)[0]
+        assert header.index(f'>{title}</h2>') < header.index('table_label.result_count(matching_count)')
+        assert header.index('table_label.result_count(matching_count)') < header.index('table_ui.block_description_classes()')
+        assert header.count('table_label.result_count(matching_count)') == 1
+    assert "matching_count ~ ' Matching '" not in coverage
+    workspace = read('app/templates/access/permissions/partials/_workspace.html')
+    assert 'result_count(' not in workspace

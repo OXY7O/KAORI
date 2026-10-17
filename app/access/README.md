@@ -217,3 +217,7 @@ User Directory retains `#users-page-content` for mutation feedback, domain summa
 ### UAT-1(1) Access copy review — #2251
 
 Shared Access summaries, role detail bands and User Management posture cards now use shorter presentation-only helper sentences to reduce avoidable desktop wrapping. Role/permission identity, inherited dependencies, role guard/permission constraints, source-scoped Activity Audit, verified Data Lifecycle archive and break-glass authority remain authoritative and unchanged. This human review supersedes older literal helper-copy expectations (including the formerly fixed inactive-role phrase) but does not supersede authorization or semantic contracts. Responsive/mobile and light/dark browser UAT remains NOT RUN until executed.
+
+### UAT-1(1) count badge placement — #2252
+
+Permission Registry, Role Coverage, and Administrative Source Evidence use the same shared `table_label.result_count` next to each table title, based on the current filtered result total. Tab navigation labels remain without counts. Filter actions, page size 5 and optional 10/25/50, HTMX and source permissions are unchanged; browser accessibility/visual review pending.
