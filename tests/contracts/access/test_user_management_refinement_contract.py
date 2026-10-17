@@ -250,3 +250,30 @@ def test_reset_password_reuses_shared_security_surface_authority() -> None:
     assert 'Recover access through GitHub.' in template
     assert 'xl:sticky xl:top-5' in template
     assert template_path not in baseline['files']
+
+
+def test_uat_user_lifecycle_controls_use_shared_protected_header_geometry() -> None:
+    form = read('app/templates/access/users/form.html')
+    scope = form.split('Lifecycle & Administrative Controls', 1)[1].split(
+        "{% if mode == 'edit' and user and user.is_super_admin %}", 1
+    )[0]
+    assert scope.count('rounded-lg border border-brand-outline bg-kaori-soft px-3.5') == 3
+    assert 'for="{{ form.role_id.id }}"' in scope
+    assert '{{ form.role_id(class=' in scope
+    assert '{{ form.is_active(class=' in scope
+    assert '{{ form.is_super_admin(class=' in scope
+    assert 'can_manage_admin_fields and super_admin_eligible' in scope
+    assert 'Super Admin unavailable' in scope
+    for copy in (
+        'Assigns post-login RBAC permissions.',
+        'Allows sign-in when the provider is ready; disabling retains the account.',
+        'Local Database break-glass authority; the last active Super Admin stays protected.',
+    ):
+        assert copy in scope
+    assert 'Role, active state, and administrative tier are presented with the same control structure.' not in scope
+    assert 'bg-surface-elevated px-3.5' not in scope
+    assert 'text-kaori-strong' in scope
+    # Shared violet geometry must not change actual super-admin eligibility or safeguards.
+    assert "mode == 'edit' and user and user.is_super_admin" in form
+    assert 'Protected Super Admin Account' in form
+    assert 'last active Local Database super admin remains protected' in form
