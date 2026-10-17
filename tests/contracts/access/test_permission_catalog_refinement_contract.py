@@ -382,3 +382,26 @@ def test_uat_role_coverage_result_count_matches_permission_registry_title_placem
     assert "matching_count ~ ' Matching '" not in coverage
     workspace = read('app/templates/access/permissions/partials/_workspace.html')
     assert 'result_count(' not in workspace
+
+
+
+def test_uat_laptop_permission_overview_descriptions_fit_compact_cards() -> None:
+    source = read('app/templates/access/permissions/index.html')
+    metric_copy = (
+        'Code-owned authorization contracts.',
+        'Source-owned control modules.',
+        'Local Database Super Admin-only delegation.',
+        'Code/database drift needs review.',
+    )
+    boundary_copy = (
+        'Code owns permissions and delegation.',
+        'Code-owned dependencies auto-expand.',
+        'Server-side guards enforce access.',
+    )
+    for phrase in (*metric_copy, *boundary_copy):
+        assert phrase in source
+        assert len(phrase) <= 48
+    assert 'summary.unused_contracts' in source
+    assert 'summary.access_administration_contracts' in source
+    assert 'summary.drift_count' in source
+    assert 'whitespace-nowrap' not in source
