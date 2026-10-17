@@ -19,7 +19,8 @@ def test_provider_owned_optional_topic_config_is_sent_via_bot_api() -> None:
     assert 'name="telegram_topic_id"' in form
     assert 'form_channel.telegram_topic_id' in form
     modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
-    assert 'Changing this requires a new Test Delivery.' in modal
+    catalog = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    assert 'Changing this requires a new Test Delivery.' in catalog
 
 
 def test_channel_transport_change_and_recovery_snapshots_already_own_topic() -> None:
@@ -52,8 +53,9 @@ def test_telegram_uses_section_title_guide_and_one_desktop_input_row() -> None:
     assert '<p class=' not in form
     assert 'info_tip.render(' not in form
     assert '{% import "components/info_tip.html" as info_tip %}' in modal
-    assert "provider_option.key == 'telegram'" in modal
-    assert modal.count('notification-telegram-configuration-guide') == 1
+    registry = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    assert "'telegram': NotificationProviderAdapter(" in registry
+    assert "'notification-' ~ provider_option.key ~ '-configuration-guide'" in modal
     assert "variant='guide'" in modal
     assert 'flex flex-wrap items-center gap-2' in modal
 
@@ -78,7 +80,7 @@ def test_telegram_uses_section_title_guide_and_one_desktop_input_row() -> None:
         'Leave blank for ordinary chat delivery.',
         'Changing this requires a new Test Delivery.',
     ):
-        assert guidance in modal
+        assert guidance in registry
     assert "data-kaori-info-tip-variant=\"{{ 'guide' if guide_variant else 'icon' }}\"" in info_tip
     assert 'role="tooltip"' in info_tip
     assert "root.closest('dialog[open]')" in javascript
