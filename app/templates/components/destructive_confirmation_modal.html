@@ -1,3 +1,4 @@
+{% import "components/table_label.html" as table_label %}
 {% macro render(
     modal_id,
     title,
@@ -31,11 +32,22 @@
                           aria-hidden="true">
                         <i data-lucide="triangle-alert" class="h-5 w-5"></i>
                     </span>
-                    <div class="min-w-0">
-                        <h2 id="{{ modal_id }}-title"
-                            data-destructive-modal-title
-                            class="break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h2>
+                    <div class="{{ 'min-w-0 flex-1' if access_chrome else 'min-w-0' }}">
+                        {% if access_chrome %}<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">{% endif %}
+                            <h2 id="{{ modal_id }}-title"
+                                data-destructive-modal-title
+                                class="break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h2>
+                            {% if access_chrome %}
+                                {{ table_label.status_label('Confirmation Required', 'warning', 'shield-alert', 'detail') }}
+                            {% endif %}
+                        {% if access_chrome %}</div>{% endif %}
                         <p class="mt-1 break-words text-sm {{ 'leading-5' if presentation == 'steps' else 'leading-6' }} text-content-secondary [overflow-wrap:anywhere]">{{ notice }}</p>
+                        {% if access_chrome %}
+                            <div class="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+                                {{ table_label.metadata_label(scope_value, 'shield-check') }}
+                                {{ table_label.metadata_label(action_label, 'archive-x') }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% if presentation in ['steps', 'kubernetes'] or access_chrome %}

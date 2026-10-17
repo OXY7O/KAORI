@@ -245,3 +245,8 @@ Access detail dialogs keep the existing `resource_detail_modal.host` chrome and 
 ### UAT-1(4) Add User copy refinement — #2253
 
 On the create-user page, remove the redundant Display Name default helper and Assigned Role post-login helper (without removing the field or conditional administrator-role restriction). Shorten password/identity-owner guidance, provider-admission steps and the three Administrative Boundary descriptions to reduce laptop side-rail wrapping while retaining Local Database-only break-glass and last-active-Super-Admin protections. Input values, validation, authorization and identity-provider workflow are unchanged; live Firefox/browser UAT remains pending.
+
+
+### UAT-1(5) modal header reference — #2261
+
+The newly supplied reference screenshot is **Permission Detail / `users.delete`** (title `Delete Users`, Canonical state, identity/dependency description and Access/permission/delegation badges), not the Delete User confirmation. Role Detail and Activity Detail retain their own authoritative data but now use the same header information order: icon, title with real status, description, metadata. Only Access destructive confirmations opt into matching header organization, using `Confirmation Required` and existing scope/action rather than mislabeling destructive operations as Canonical. The shared Permission Detail host footer defines the footer standard; the cropped screenshot itself does not display a footer. Body, modal dimensions, mutation buttons and permission controls remain unchanged. Executable and browser UAT, responsive Visual QA, focus restoration and human acceptance are pending.
