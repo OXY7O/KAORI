@@ -143,10 +143,7 @@
                                value="1.50"
                                data-capacity-policy-field="cpu_limit_ratio"
                                data-default-value="1.50"
-                               aria-describedby="tenant-cpu-limit-ratio-help"
                                class="{{ form_field.input_classes() }}">
-                        <p id="tenant-cpu-limit-ratio-help"
-                           class="mt-1 text-xs text-content-muted">Default 1.50× · controlled CPU overcommit</p>
                     </label>
                     <label class="block">
                         {{ form_field.label_row("Memory Limit Ratio") }}
@@ -160,10 +157,7 @@
                                value="1.00"
                                data-capacity-policy-field="memory_limit_ratio"
                                data-default-value="1.00"
-                               aria-describedby="tenant-memory-limit-ratio-help"
                                class="{{ form_field.input_classes() }}">
-                        <p id="tenant-memory-limit-ratio-help"
-                           class="mt-1 text-xs text-content-muted">Default 1.00× · conservative memory exposure</p>
                     </label>
                 </div>
             </section>
@@ -175,7 +169,7 @@
                                                 'Governed storage budget',
                                                 'Tenant Storage Budget is a logical admission ceiling for aggregate requests.storage.',
                                                 [
-                                                'Enter the ceiling in GiB; for example, 2048 GiB = 2 TiB.',
+                                                'Enter a ceiling in GiB; for example, 2048 GiB = 2 TiB. Blank means Not Governed.',
                                                 'The logical budget remains governable even when compute Capacity Analytics is unavailable.',
                                                 'Physical and usable backend capacity remain separate Kubernetes Storage Analytics evidence.',
                                                 'The budget is not derived from node filesystem capacity, PVC count, or PV/PVC totals.',
@@ -187,25 +181,19 @@
                 <div class="p-4">
                     <label for="tenant-storage-budget-gib" class="block">{{ form_field.label_row("Tenant Storage Budget (GiB)") }}</label>
                     <div class="mt-2 grid items-start gap-3 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)]">
-                        <div>
-                            <div class="relative">
-                                <input id="tenant-storage-budget-gib"
-                                       name="tenant_storage_budget_gib"
-                                       type="number"
-                                       min="0.01"
-                                       step="0.01"
-                                       inputmode="decimal"
-                                       data-capacity-policy-field="tenant_storage_budget_gib"
-                                       data-default-value=""
-                                       aria-describedby="tenant-storage-budget-help"
-                                       placeholder="Enter GiB amount"
-                                       class="{{ form_field.input_classes() }} !mt-0 pr-14">
-                                <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-semibold text-content-muted"
-                                      aria-hidden="true">GiB</span>
-                            </div>
-                            <div id="tenant-storage-budget-help">
-                                {{ form_field.help("Optional. Enter a value and save to govern storage; blank means Not Governed.") }}
-                            </div>
+                        <div class="relative">
+                            <input id="tenant-storage-budget-gib"
+                                   name="tenant_storage_budget_gib"
+                                   type="number"
+                                   min="0.01"
+                                   step="0.01"
+                                   inputmode="decimal"
+                                   data-capacity-policy-field="tenant_storage_budget_gib"
+                                   data-default-value=""
+                                   placeholder="Enter GiB amount"
+                                   class="{{ form_field.input_classes() }} !mt-0 pr-14">
+                            <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-semibold text-content-muted"
+                                  aria-hidden="true">GiB</span>
                         </div>
                         <div class="flex min-h-10 w-full items-center gap-2 rounded-lg border border-kaori-primary/15 bg-kaori-soft px-3 text-xs text-content-secondary">
                             <i data-lucide="database"
