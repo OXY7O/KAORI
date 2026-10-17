@@ -320,7 +320,7 @@ def test_uat4_user_create_copy_is_compact_and_canonical() -> None:
     form = read('app/templates/access/users/form.html')
     assert 'Optional; defaults to username.' not in form
     assert 'Assigns post-login RBAC permissions.' not in form
-    assert '12+ characters; use a unique passphrase.' in form
+    assert '12+ characters; use a unique passphrase.' not in form
     assert 'KAORI owns local passwords; Directory and SSO use provider-owned admission.' in form
     assert "Use the provider's admission workflow." in form
     assert 'Identity and authorization stay separate.' in form
@@ -365,3 +365,32 @@ def test_uat6_user_edit_copy_balances_context_specific_credential_text() -> None
     assert "url_for('users.index')" in form
     assert 'can_manage_admin_fields and super_admin_eligible' in form
     assert 'whitespace-nowrap' not in form
+
+def test_uat_review2_user_form_guide_and_delete_copy() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/access/users/form.html')
+    users = read('app/templates/access/users/index.html')
+    Environment().parse(form)
+    Environment().parse(users)
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in form
+    assert "info_tip.render('add-user-credential-guide'," in form
+    assert "variant='guide'" in form
+    assert "placement='right'" in form
+    assert "if mode == 'create'" in form
+    assert 'Use at least 12 characters and a unique passphrase.' in form
+    assert 'Confirm the initial password exactly before creating the account.' in form
+    assert '12+ characters; use a unique passphrase.</p>' not in form
+    assert 'Repeat the initial password exactly before submitting the account.</p>' not in form
+    assert 'autocomplete="new-password"' in form
+    assert 'form.confirm_password(' in form
+    assert 'Minimum 12 characters' in form
+    assert 'form.password(' in form
+    assert 'KAORI changes enter Activity Audit.' in form
+    assert 'Manage external identity providers and admission.' in form
+    assert 'Login access will be disabled while Activity Audit history remains retained.' not in users
+    assert 'Deletion disables login but retains Activity Audit.' in users
+    assert 'Restore returns the account to Inactive; activation remains separate.' in users
+    assert "destructive_confirmation.render('delete-user-modal'," in users
+
