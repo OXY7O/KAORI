@@ -56,7 +56,9 @@ def _login(page: Page, kaori_authenticated_base_url: str) -> None:
     submit.click()
     # Assert authenticated navigation and rendered app shell rather than idle network.
     expect(page).not_to_have_url(re.compile(r'/auth/login(?:[/?#]|$)'))
-    expect(page.locator('#app-sidebar')).to_be_visible()
+    # The sidebar is intentionally hidden on tablet/mobile until navigation opens.
+    # Require the authenticated Welcome workspace to be rendered at every viewport.
+    expect(page.get_by_role('heading', name='Welcome to KAORI')).to_be_visible()
     expect(page.locator('body')).to_be_visible()
     assert '/auth/login' not in page.url
 
