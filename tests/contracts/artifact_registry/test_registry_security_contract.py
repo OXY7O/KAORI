@@ -87,8 +87,13 @@ def test_vulnerability_evidence_status_is_inline_and_contextual() -> None:
 
     assert "section_intro.render('Vulnerability Findings'," in intro
     assert 'table_label.status_label(security.finding_interpretation.title' in intro
-    assert "info_tip.render('artifact-registry-vulnerability-evidence-help'," in intro
-    assert 'security.finding_interpretation.description' in intro
+    assert "info_tip.render('artifact-registry-vulnerability-evidence-help'," not in intro
+    registry_header = template.split('{% set result_badge %}', 1)[1].split('{% endset %}', 1)[0]
+    assert "info_tip.render('artifact-registry-vulnerability-evidence-help'," in registry_header
+    assert 'security.finding_interpretation.description' in registry_header
+    assert "variant='guide'" in registry_header
+    assert "placement='right'" in registry_header
+    assert 'title_extra=result_badge' in template
     assert "extra_classes='min-w-0 flex-1'" in intro
     assert 'sm:items-end sm:justify-between' in intro
     assert 'operational_callout.render(' not in intro
@@ -108,6 +113,37 @@ def test_vulnerability_evidence_status_is_inline_and_contextual() -> None:
         'No Vulnerabilities Observed',
     ):
         assert state in interpretation
+
+
+def test_security_registry_actions_use_shared_style_and_leading_header_clear() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/artifact_registry/partials/_security_workspace.html')
+    Environment().parse(template)
+
+    registry_header = template.split('{% set security_registry_header_actions %}', 1)[1].split(
+        '{% endset %}', 1
+    )[0]
+    assert 'registry.clear_filters_link(' in registry_header
+    assert registry_header.index('registry.clear_filters_link(') < registry_header.index(
+        'Open Runtime Usage'
+    )
+    assert "query_params=({'section': 'evidence'} if security.view == 'supply_chain' else {})" in (
+        registry_header
+    )
+    assert registry_header.count('table_ui.action_classes()') >= 2
+
+    filter_form = template.split('{% set security_registry_header_actions %}', 1)[1].split(
+        '{% call registry.filter_form(', 1
+    )[1].split('{% endcall %}', 1)[0]
+    assert 'registry.clear_filters_link(' not in filter_form
+    assert 'security.pagination.per_page' in filter_form
+
+    shared = read('app/templates/components/table_primitives.html')
+    assert 'macro action_classes(destructive=false)' in shared
+    assert template.count('class="{{ table_ui.action_classes() }}"') >= 3
+    assert template.count('View More') >= 2
+    assert 'data-kaori-dialog-open' in template
 
 
 def test_security_has_two_level_three_views_above_the_hero() -> None:

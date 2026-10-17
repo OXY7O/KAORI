@@ -156,6 +156,8 @@ Examples: `Open`, `View Details`, `Edit`, `Retry Sync`, `Run Now`, `Approve`, `D
 
 All ordinary non-CRUD table actions share one neutral utility appearance and the same hover, focus, disabled, and active behavior. Do not assign different colors to `Open`, `View Details`, `Manage`, `Retry`, `Validate`, or similar routine controls merely to distinguish their labels.
 
+Artifact Registry Security provides reviewed reference actions: `View More` inside vulnerability rows and `Open Runtime Usage` in the registry block header both use `table_ui.action_classes()`. The header action remains in the shared `inventory_block_header(..., header_actions=...)` group, while the row action retains its modal/navigation semantics. They reference the existing shared primitive; consumers must not copy their classes into page templates. In the same registry, conditional `Clear Filters` leads the header actions and the contextual `Guide` belongs beside the registry title through `title_extra`.
+
 CRUD actions may use semantic treatment when needed: `Create` normally belongs at block or page level; `Edit` may remain neutral or use the standard mutation treatment; `Delete` uses Critical styling. The geometry must remain consistent across all variants.
 
 Two visible row actions remain the preferred default because they preserve scanability. More than two are permitted when all actions are high-frequency, labels remain at most two words, the row has enough width without wrapping, the action group does not dominate the data, and the result remains visually balanced at supported desktop widths. Otherwise, move secondary actions into a `More` menu. Icon-only controls require both `title` and `aria-label`.
