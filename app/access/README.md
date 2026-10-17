@@ -277,3 +277,15 @@ protection and backend authorization enforcement remain unchanged.
 Desktop 1-/2-line targets are not guaranteed by a static copy budget;
 actual Dev Container Firefox visual, accessibility and human acceptance
 evidence remains PENDING. Official admission is HOLD.
+
+## REVIEW(4) — Permission Matrix description rhythm (#2308)
+
+The Roles permission-card description region reserves two ordinary lines of
+vertical space using existing Tailwind `min-h-10` and `leading-5` rhythm.
+Cards continue to show the complete authoritative `Permission.description`
+without rewriting canonical RBAC or database metadata. Longer explanations
+wrap fully at laptop, mobile, or zoom; shorter ones remain unchanged, with
+no invented policy text or ellipsis. This is a *minimum two-line space*, not
+a claim that every permission description comprises exactly two written
+lines. Firefox Visual QA, source/registry integrity, and human acceptance
+remain pending. Official admission remains HOLD.
