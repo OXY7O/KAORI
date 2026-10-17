@@ -8,6 +8,7 @@ domains:
     label: Object Storage
   artifact_registry:
     label: Artifact Registry
+    hint: Report Ready only
     allowed_events:
       - report.generated
 
