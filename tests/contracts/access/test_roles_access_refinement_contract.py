@@ -220,3 +220,15 @@ def test_review4_role_identity_guide_and_access_guardrail_density() -> None:
         assert 70 <= len(copy) <= 100
     assert 'whitespace-nowrap' not in source
 
+def test_review4_role_permission_card_description_uses_two_line_minimum() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/access/roles/form.html')
+    Environment().parse(source)
+    assert 'mt-1.5 block min-h-10 text-xs leading-5 text-content-muted' in source
+    assert "{{ permission.description or 'No permission description is defined.' }}" in source
+    assert 'data-role-permission-card' in source
+    assert 'data-role-permission' in source
+    # Preserve canonical RBAC text; never clip longer permission descriptions.
+    assert 'line-clamp-2' not in source
+
