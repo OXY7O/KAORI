@@ -101,6 +101,8 @@ def upsert_routing_policy(
     normalized_domains = sorted(
         {value for value in config.domains if value in {'kubernetes', 'object_storage', 'registry'}}
     )
+    if 'registry' in normalized_domains and len(normalized_domains) != 1:
+        raise ValueError('Registry AlertCases require a dedicated domain routing policy.')
     normalized_severities = sorted(
         {value for value in config.severities if value in {'critical', 'warning', 'info', 'unknown'}}
     )
@@ -158,7 +160,7 @@ def registry_case_route_eligible(case: AlertCase) -> bool:
     if case.domain != 'registry':
         return True
     key = str(getattr(case, 'asset_key', '') or '')
-    if not key.isascii() or not key.isdecimal() or int(key) <= 0 or len(key) > 18:
+    if len(key) > 18 or not key.isascii() or not key.isdecimal() or int(key) <= 0:
         return False
     integration = db.session.get(IntegrationInstance, int(key))
     return bool(
@@ -196,6 +198,8 @@ def firing_routes(case: AlertCase) -> list[FiringRoute]:
                     send_resolved=bool(policy.send_resolved),
                 )
                 for channel_id in (policy.channel_ids_json or [])
+                if case.domain != 'registry'
+                or _registry_policy_channel_eligible(channel_id)
             )
         return routes
 
@@ -222,6 +226,21 @@ def firing_routes(case: AlertCase) -> list[FiringRoute]:
             or 'alert_intelligence.active_alert' in (row.event_types or [])
         )
     ]
+
+
+def _registry_policy_channel_eligible(channel_id: int) -> bool:
+    channel = db.session.get(NotificationChannel, channel_id)
+    return bool(
+        channel is not None
+        and channel.enabled
+        and channel.configured
+        and channel.test_status == 'success'
+        and 'registry' in (channel.domains or [])
+        and (
+            'alert_ops.firing' in (channel.event_types or [])
+            or 'alert_intelligence.active_alert' in (channel.event_types or [])
+        )
+    )
 
 
 def acknowledgement_timeout_for_case(case: AlertCase) -> int:
@@ -254,24 +273,14 @@ def _policy_matches(policy: AlertRoutingPolicy, case: AlertCase) -> bool:
     source_types = policy.source_types_json or [KAORI_ALERT_SOURCE_TYPE]
     if case.source_type not in source_types:
         return False
-    if case.domain == 'registry':
-        eligible_channel_ids = {
-            row.id
-            for row in NotificationChannel.query.filter(
-                NotificationChannel.id.in_(policy.channel_ids_json or [])
-            ).all()
-            if row.enabled
-            and row.configured
-            and row.test_status == 'success'
-            and case.domain in (row.domains or [])
-            and (
-                'alert_ops.firing' in (row.event_types or [])
-                or 'alert_intelligence.active_alert' in (row.event_types or [])
-            )
-            and domain_event_allowed('registry', 'alert_ops.firing')
-        }
-        if not eligible_channel_ids:
-            return False
+    if case.domain == 'registry' and (
+        not domain_event_allowed('registry', 'alert_ops.firing')
+        or not any(
+            _registry_policy_channel_eligible(channel_id)
+            for channel_id in (policy.channel_ids_json or [])
+        )
+    ):
+        return False
     labels = case.labels_json or {}
     for key, expected in (policy.matchers_json or {}).items():
         if str(labels.get(key) or '') != str(expected):
