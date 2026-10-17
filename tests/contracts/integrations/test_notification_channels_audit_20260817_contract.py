@@ -288,3 +288,14 @@ def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> No
         assert requirement in providers
     assert 'Test Delivery' in providers
 
+def test_review6_channel_registry_loading_follows_header_before_filters() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    registry = source.split('id="notification-channel-registry"', 1)[1]
+    header = registry.index('<header')
+    loading = registry.index("loading_bar.render('notification-channel-loading'")
+    filters = registry.index("table_registry.filter_form('notification_channels.index'")
+    table = registry.index('<table')
+    footer = registry.index("table_registry.footer('notification_channels.index'")
+    assert header < loading < filters < table < footer
+    assert registry.count("loading_bar.render('notification-channel-loading'") == 1
+
