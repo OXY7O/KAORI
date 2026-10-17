@@ -70,15 +70,15 @@
                         Reading the Matrix
                     </h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Four distinct evidence layers, evaluated in sequence.</p>
-                    <ol class="mt-3 divide-y divide-outline-subtle"
+                    <ol class="mt-3 divide-y divide-outline-subtle lg:grid lg:grid-rows-4"
                         data-compatibility-policy-guide="numbered">
                         {% for number, label, description in [
                             ('01', 'Annual Lifecycle', 'Five-year support window and EOL boundary.'),
-                            ('02', 'General Contract', 'Core API contract generation changes only for breaking semantics.'),
+                            ('02', 'General Contract', 'Contracts change only for breaking API behavior.'),
                             ('03', 'Version Qualification', 'Per-release qualifications map to stable contracts.'),
-                            ('04', 'Live Readiness', 'Provider APIs, RBAC, metrics and consumer bindings determine usability.'),
+                            ('04', 'Live Readiness', 'Provider APIs, RBAC, metrics and bindings determine readiness.'),
                             ] %}
-                            <li class="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                            <li class="flex items-start gap-3 py-3 first:pt-0 last:pb-0 lg:min-h-20 lg:items-center">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft font-mono text-xs font-bold text-kaori-primary">{{ number }}</span>
                                 <div class="min-w-0">
                                     <h4 class="text-sm font-semibold text-content-primary">{{ label }}</h4>
@@ -98,29 +98,29 @@
                         Policy Boundary
                     </h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Governance rules, separate from observed provider readiness.</p>
-                    <dl class="mt-3 divide-y divide-outline-subtle">
-                        <div class="py-3 first:pt-0">
+                    <dl class="mt-3 divide-y divide-outline-subtle lg:grid lg:grid-rows-4">
+                        <div class="py-3 first:pt-0 lg:flex lg:min-h-20 lg:flex-col lg:justify-center">
                             <dt class="text-sm font-semibold text-content-primary">Annual Rollover</dt>
                             <dd class="mt-1 text-sm leading-6 text-content-secondary">
                                 Policy v{{ system_information.compatibility_policy_version }}: {{ system_information.compatibility_anchor_year }} anchor; {{ system_information.compatibility_policy_year }} current policy year.
                             </dd>
                         </div>
-                        <div class="py-3">
+                        <div class="py-3 lg:flex lg:min-h-20 lg:flex-col lg:justify-center">
                             <dt class="text-sm font-semibold text-content-primary">General Contract Version</dt>
                             <dd class="mt-1 text-sm leading-6 text-content-secondary">
-                                A contract advances for breaking API or capability changes, not each policy year.
+                                Contracts advance for breaking API or capability changes.
                             </dd>
                         </div>
-                        <div class="py-3">
+                        <div class="py-3 lg:flex lg:min-h-20 lg:flex-col lg:justify-center">
                             <dt class="text-sm font-semibold text-content-primary">Lifecycle Boundary</dt>
                             <dd class="mt-1 text-sm leading-6 text-content-secondary">
-                                Pre-window releases are End of Life. Future versions stay Unverified until qualified.
+                                Before the window: End of Life; future: Unverified.
                             </dd>
                         </div>
-                        <div class="pt-3">
+                        <div class="pt-3 lg:flex lg:min-h-20 lg:flex-col lg:justify-center">
                             <dt class="text-sm font-semibold text-content-primary">Blocking Rule</dt>
                             <dd class="mt-1 text-sm leading-6 text-content-secondary">
-                                End-of-life releases, missing mandatory capabilities, invalid provider identity and failed live validation remain blocking.
+                                EOL, missing required capabilities, invalid identity or failed validation block use.
                             </dd>
                         </div>
                     </dl>
