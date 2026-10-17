@@ -636,7 +636,10 @@ def test_create_profile_resource_sections_are_collapsed_native_disclosures() -> 
         assert 'data-tenant-resource-section' in opening
         assert f'aria-labelledby="{heading}"' in opening
         assert '<summary ' in section
-        assert section.index('<summary ') < section.index('Section help')
+        summary = section.split('</summary>', 1)[0]
+        assert "variant='guide'" in summary
+        assert 'info_tip.render(' in summary
+        assert 'Section help' not in section
         assert f'id="{heading}"' in section
         assert f'>{title}</h3>' in section
         assert 'group-open:rotate-180' in section

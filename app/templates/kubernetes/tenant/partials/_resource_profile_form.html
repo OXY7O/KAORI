@@ -38,7 +38,7 @@
                                         'Custom is operator-editable and can optionally inherit a preset as its starting lineage.',
                                         'Existing Namespace snapshots remain frozen until an explicit governed allocation change.'
                                         ],
-                                        placement='right') }}
+                                        placement='right', variant='guide') }}
                 </span>
                 <p class="mt-1 text-xs text-content-muted">Name the contract and choose its governance mode.</p>
             </div>
@@ -113,19 +113,11 @@
                  data-tenant-resource-section
                  aria-labelledby="resource-profile-compute-heading">
             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
-                <span class="min-w-0">
-                    <h3 id="resource-profile-compute-heading"
+                <div class="min-w-0">
+                    <div class="inline-flex flex-wrap items-center gap-1.5">
+                        <h3 id="resource-profile-compute-heading"
                         class="text-sm font-semibold text-content-primary">Basic Resources</h3>
-                    <span class="mt-1 block text-xs leading-5 text-content-muted">Basic profile guardrails for CPU, memory, and pod count.</span>
-                </span>
-                <i data-lucide="chevron-down"
-                   class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
-                   aria-hidden="true"></i>
-            </summary>
-            <div class="border-t border-outline-subtle">
-                <div class="flex items-center justify-end gap-2 px-4 pt-3">
-                    <span class="text-xs text-content-muted">Section help</span>
-                    {{ info_tip.render('resource-profile-compute-tip',
+                        {{ info_tip.render('resource-profile-compute-tip',
                                         'Compute and workload guardrails',
                                         'Core ResourceQuota dimensions for workload compute and pod count.',
                                         [
@@ -133,8 +125,15 @@
                                         'Managed means KAORI owns the selected provider dimension after governed attachment.',
                                         'Built-in preset values remain fixed.'
                                         ],
-                                        placement='right') }}
+                                        placement='right', variant='guide') }}
+                    </div>
+                    <span class="mt-1 block text-xs leading-5 text-content-muted">Basic profile guardrails for CPU, memory, and pod count.</span>
                 </div>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
+                   aria-hidden="true"></i>
+            </summary>
+            <div class="border-t border-outline-subtle">
                 <div class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
                     {% for field, label, placeholder in [
                         ('requests_cpu', 'CPU Requests', '2'),
@@ -176,19 +175,11 @@
                  data-tenant-resource-section
                  aria-labelledby="resource-profile-storage-heading">
             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
-                <span class="min-w-0">
-                    <h3 id="resource-profile-storage-heading"
+                <div class="min-w-0">
+                    <div class="inline-flex flex-wrap items-center gap-1.5">
+                        <h3 id="resource-profile-storage-heading"
                         class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
-                    <span class="mt-1 block text-xs leading-5 text-content-muted">Namespace quota and per-PVC bounds stay distinct but reconcile as one managed storage contract.</span>
-                </span>
-                <i data-lucide="chevron-down"
-                   class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
-                   aria-hidden="true"></i>
-            </summary>
-            <div class="border-t border-outline-subtle">
-                <div class="flex items-center justify-end gap-2 px-4 pt-3">
-                    <span class="text-xs text-content-muted">Section help</span>
-                    {{ info_tip.render('resource-profile-storage-tip',
+                        {{ info_tip.render('resource-profile-storage-tip',
                                         'Bidirectional storage policy',
                                         'Storage separates namespace-wide quota from per-PVC request bounds.',
                                         [
@@ -196,8 +187,15 @@
                                         'Min/Max PVC Size map to LimitRange[type=PersistentVolumeClaim].',
                                         'Built-in presets manage both bounds; adoption, drift, reapply, and provider-state acceptance use the same committed values.'
                                         ],
-                                        placement='right') }}
+                                        placement='right', variant='guide') }}
+                    </div>
+                    <span class="mt-1 block text-xs leading-5 text-content-muted">Namespace quota and per-PVC bounds stay distinct but reconcile as one managed storage contract.</span>
                 </div>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
+                   aria-hidden="true"></i>
+            </summary>
+            <div class="border-t border-outline-subtle">
                 <div class="grid gap-4 p-4 lg:grid-cols-2">
                     <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-3.5">
                         <div>
@@ -282,23 +280,22 @@
                  data-tenant-resource-section
                  aria-labelledby="resource-profile-object-heading">
             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
-                <span class="min-w-0">
-                    <h3 id="resource-profile-object-heading"
+                <div class="min-w-0">
+                    <div class="inline-flex flex-wrap items-center gap-1.5">
+                        <h3 id="resource-profile-object-heading"
                         class="text-sm font-semibold text-content-primary">Object Limits</h3>
+                        {{ info_tip.render('resource-profile-object-tip',
+                                        'Namespace object limits',
+                                        'ResourceQuota limits for common namespace objects.',
+                                        placement='right', variant='guide') }}
+                    </div>
                     <span class="mt-1 block text-xs leading-5 text-content-muted">Services, ConfigMaps, and Secrets are isolated from compute/storage for easier ownership review.</span>
-                </span>
+                </div>
                 <i data-lucide="chevron-down"
                    class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
                    aria-hidden="true"></i>
             </summary>
             <div class="border-t border-outline-subtle">
-                <div class="flex items-center justify-end gap-2 px-4 pt-3">
-                    <span class="text-xs text-content-muted">Section help</span>
-                    {{ info_tip.render('resource-profile-object-tip',
-                                        'Namespace object limits',
-                                        'ResourceQuota limits for common namespace objects.',
-                                        placement='right') }}
-                </div>
                 <div class="grid gap-3 p-4 sm:grid-cols-3">
                     {% for field, label, placeholder in [
                         ('services', 'Services', '10'),
@@ -338,23 +335,22 @@
                  data-tenant-resource-section
                  aria-labelledby="resource-profile-container-heading">
             <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
-                <span class="min-w-0">
-                    <h3 id="resource-profile-container-heading"
+                <div class="min-w-0">
+                    <div class="inline-flex flex-wrap items-center gap-1.5">
+                        <h3 id="resource-profile-container-heading"
                         class="text-sm font-semibold text-content-primary">Container Defaults</h3>
+                        {{ info_tip.render('resource-profile-limitrange-tip',
+                                        'Container LimitRange',
+                                        'These defaults are distinct from namespace ResourceQuota and do not change the profile class semantics.',
+                                        placement='right', variant='guide') }}
+                    </div>
                     <span class="mt-1 block text-xs leading-5 text-content-muted">Used only when a container omits request/limit values.</span>
-                </span>
+                </div>
                 <i data-lucide="chevron-down"
                    class="h-4 w-4 shrink-0 text-content-muted transition-transform group-open:rotate-180"
                    aria-hidden="true"></i>
             </summary>
             <div class="border-t border-outline-subtle">
-                <div class="flex items-center justify-end gap-2 px-4 pt-3">
-                    <span class="text-xs text-content-muted">Section help</span>
-                    {{ info_tip.render('resource-profile-limitrange-tip',
-                                        'Container LimitRange',
-                                        'These defaults are distinct from namespace ResourceQuota and do not change the profile class semantics.',
-                                        placement='right') }}
-                </div>
                 <div class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
                     {% for field, label, placeholder in [
                         ('default_request_cpu', 'Default CPU Request', '100m'),
