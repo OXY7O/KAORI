@@ -662,6 +662,24 @@ def test_create_profile_resource_sections_are_collapsed_native_disclosures() -> 
     assert '<details ' in controls
 
 
+def test_resource_profile_registry_reflows_without_forced_horizontal_scrolling() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
+    assert 'data-kaori-responsive-registry="resource-profiles"' in registry
+    assert 'overflow-x-auto' not in registry
+    assert 'min-w-[1150px]' not in registry
+    assert "table_ui.table_classes('block w-full xl:table xl:!table-fixed')" in registry
+    assert 'hidden xl:table-header-group' in registry
+    assert 'xl:table-row-group' in registry
+    assert 'grid min-w-0 grid-cols-1' in registry
+    assert 'sm:grid-cols-2 xl:table-row' in registry
+    assert 'col-span-full min-w-0' in registry
+    assert registry.count('xl:table-cell') >= 6
+    for label in ('Contract', 'Allocation', 'Usage'):
+        assert f'xl:hidden">{label}</span>' in registry
+    assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
+    assert 'colspan="5" class="block p-0 xl:table-cell"' in registry
+
+
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
     service = tenant_service_source()
@@ -679,7 +697,7 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert 'Allocation' in registry
     assert 'Usage' in registry
     assert '>Action</th>' in registry
-    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
+    assert "table_ui.table_classes('block w-full xl:table xl:!table-fixed')" in registry
     assert 'resource-profile-manage-' in registry
     assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
     assert 'Versioned Controls' in registry
@@ -716,7 +734,7 @@ def test_resource_profile_registry_shows_compact_identity_and_full_detail_in_man
     # Shared table geometry, HTMX, default pagination and actual Manage action stay intact.
     assert "title_cell(name, supporting_text='', icon='', supporting_content=None)" in table
     assert 'table_primitives.title_cell(name, supporting_text, icon, supporting_content)' in table
-    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
+    assert "table_ui.table_classes('block w-full xl:table xl:!table-fixed')" in registry
     assert 'registry_ui.footer' in registry
     assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
 
@@ -739,9 +757,9 @@ def test_resource_profile_workspace_redesign_preserves_governance_and_modal_work
     dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
 
     # One coherent fixed-column contract; no truncated resource evidence.
-    for label, width in [('Profile', 29), ('Contract', 21), ('Allocation', 26), ('Usage', 15), ('Action', 9)]:
+    for label, width in [('Profile', 28), ('Contract', 19), ('Allocation', 25), ('Usage', 16), ('Action', 12)]:
         assert f'w-[{width}%]">{label}' in registry
-    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
+    assert "table_ui.table_classes('block w-full xl:table xl:!table-fixed')" in registry
     assert 'grid grid-cols-2 gap-x-3 gap-y-2' in registry
     assert "('CPU', profile.quota_hard_json.get('requests.cpu') or 'Not Managed')" in registry
     assert "('Memory', profile.quota_hard_json.get('requests.memory') or 'Not Managed')" in registry
