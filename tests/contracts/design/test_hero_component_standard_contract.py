@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import re
 import runpy
-
-import pytest
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -51,10 +51,11 @@ def test_notification_channels_hero_uses_three_bounded_metadata_roles() -> None:
 def test_notification_channels_hero_rejects_dynamic_and_extra_metadata() -> None:
     verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
     check = verifier['_verify_bounded_hero_metadata']
-    row = '<div class="{{ page_hero.metadata_row_classes() }}">{}' '</div>'
+    row = '<div class="{{ page_hero.metadata_row_classes() }}">__ITEMS__</div>'
     with pytest.raises(AssertionError, match='unbounded/conditional'):
         check(
-            row.format(
+            row.replace(
+                '__ITEMS__',
                 '{% for provider in payload.providers %}'
                 '{{ page_hero.meta_label(provider.icon, provider.label) }}'
                 '{% endfor %}'
@@ -63,7 +64,7 @@ def test_notification_channels_hero_rejects_dynamic_and_extra_metadata() -> None
         )
     with pytest.raises(AssertionError, match='expected 3 stable'):
         check(
-            row.format("{{ page_hero.meta_label('a','one') }}" * 4),
+            row.replace('__ITEMS__', "{{ page_hero.meta_label('a','one') }}" * 4),
             owner='regression',
         )
 
