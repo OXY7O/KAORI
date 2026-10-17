@@ -241,15 +241,52 @@ def test_reset_password_reuses_shared_security_surface_authority() -> None:
     assert 'Minimum 12 characters' in template
     assert 'data-operation-submit' in template
     assert 'data-loading-label="Resetting password..."' in template
-    assert 'existing sessions are revoked through the credential session generation' in template
-    assert (
-        'Role assignment, active state, Super Admin status, and external identity links remain unchanged.' in template
-    )
+    assert 'sessions revoked on next request' in template
+    assert 'Activity Audit logged' in template
+    assert 'Role, active state, Super Admin, and external identity links unchanged.' in template
     assert 'Use the recovery workflow owned by the authoritative identity source.' in template
     assert "Use Google's account-recovery process." in template
     assert 'Recover access through GitHub.' in template
     assert 'xl:sticky xl:top-5' in template
     assert template_path not in baseline['files']
+
+
+def test_reset_password_laptop_copy_density_preserves_security_semantics() -> None:
+    import re
+
+    from jinja2 import Environment
+
+    template = read('app/templates/access/users/reset_password.html')
+    Environment().parse(template)
+    expected = (
+        ('Use 12+ characters, a unique passphrase, and no default passwords.', 72),
+        ('Hash replaced; sessions revoked on next request; Activity Audit logged. '
+         'Role, active state, Super Admin, and external identity links unchanged.', 150),
+        ('KAORI owns local password hashes and audited resets.', 70),
+        ('Sessions and remembered sign-ins are invalidated on next request.', 80),
+        ('Reset at the authoritative directory. KAORI stores identity links '
+         'and authorization, not external passwords.', 115),
+        ('RBAC role and admin tier remain; hash and session generation change.', 75),
+    )
+    for copy, budget in expected:
+        assert len(copy) <= budget
+        assert template.count(copy) == 1
+        caption = re.search(r'<p class="([^"]+)">\s*' + re.escape(copy), template)
+        assert caption, copy
+        assert 'text-xs leading-5' in caption.group(1)
+        assert not any(token in caption.group(1) for token in ('whitespace-nowrap', 'truncate', 'line-clamp'))
+
+    for preserved in (
+        'Minimum 12 characters',
+        "form.hidden_tag()",
+        "operational_callout.semantic_surface_classes('warning')",
+        "operational_callout.semantic_surface_classes('normal')",
+        "Revoked on Next Request",
+        "Reset Password",
+        "Use Google's account-recovery process.",
+        "Recover access through GitHub.",
+    ):
+        assert preserved in template
 
 
 def test_uat_user_lifecycle_controls_use_shared_protected_header_geometry() -> None:

@@ -45,3 +45,18 @@ The existing five-band User Detail resource sheet adds source-backed badges to t
 ### UAT-1(6) User Edit copy-density follow-up — #2253
 
 Keep the longer Local Database credential-boundary explanation grounded in `build_user_identity_context`, but show a short one-line local credential caption within the narrower violet Current Identity Source card. The User Registry related-page summary/boundary and administrative-control steps 01–02 now use fuller, balanced two-line descriptions at the operator's Firefox L13 viewport. Directory/SSO ownership and authorization guards remain unchanged. Browser line counts, mobile wrapping, Jinja/pytest and human acceptance remain pending.
+
+### Reset Password copy-density UAT — #2273
+
+The Reset Password page retains provider-owned credential boundaries and the
+`User.auth_session_version` revocation model. The security warning, password
+helper, Local Database/Directory ownership guidance, Target Account RBAC note
+and Reset Impact session hint use concise, factual captions. Firefox Lenovo L13
+operator feedback targets one desktop line for four captions and two desktop
+lines for Directory Provider and RBAC preservation. This is a copy-only change:
+no `whitespace-nowrap`, truncation, smaller fonts, altered reset policy or
+external-provider password actions. At narrow viewports and increased browser
+zoom, text must wrap naturally. Targeted source-contract checks and actual
+Dev Container Firefox screenshots/human acceptance are separate evidence;
+the latter remain PENDING until executed.
+
