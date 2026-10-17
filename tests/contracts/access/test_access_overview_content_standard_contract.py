@@ -73,3 +73,23 @@ def test_access_overview_explains_permission_scoped_control_boundaries() -> None
     ):
         assert boundary in presentation
     assert "'boundaries': boundaries" in presentation
+
+
+
+def test_uat_access_boundaries_intro_precedes_one_accessible_card() -> None:
+    template = read('app/templates/access/overview/index.html')
+    assert '{% import "components/section_intro.html" as section_intro %}' in template
+    anchor = template.split('{% if access_overview.boundaries %}', 1)[1]
+    assert "section_intro.render('Access Boundaries'," in anchor
+    assert "id='access-boundaries-heading'" in anchor
+    assert 'aria-labelledby="access-boundaries-heading"' in anchor
+    assert 'operational_section.shell_classes()' in anchor
+    assert anchor.index("section_intro.render('Access Boundaries'") < anchor.index(
+        '<section class="{{ operational_section.shell_classes() }}"'
+    )
+    assert "'Access Boundaries'" not in anchor.split('<section class=', 1)[1]
+    assert "operational_section.render(\n                'Access Boundaries'" not in anchor
+    assert '{% for boundary in access_overview.boundaries %}' in anchor
+    assert 'table_label.status_indicator_label(boundary.status_label, boundary.status_tone)' in anchor
+    assert 'xl:grid-cols-4' in anchor
+    assert anchor.count('<h2') == 0
