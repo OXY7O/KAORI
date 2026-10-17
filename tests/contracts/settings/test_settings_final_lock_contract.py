@@ -83,6 +83,22 @@ def test_settings_query_tabs_delegate_to_shared_htmx_tab_authority() -> None:
     assert "hx_indicator='#account-settings-loading'" in account
     assert "hx_sync='#account-authentication-page:replace'" in account
 
+    # Issue #2225: preserve shared HTMX feedback without a tab-adjacent bar.
+    for section, indicator_id, partials in (
+        ('general', 'general-settings-loading', (
+            '_time_locale.html', '_regional_format.html', '_system_information.html',
+            '_compatibility_versions.html')),
+        ('account', 'account-settings-loading', (
+            '_profile_cards.html', '_recent_login_activity.html', '_change_password.html')),
+    ):
+        page = read(f'app/templates/settings/{section}/partials/_page_content.html')
+        assert 'loading_bar.render(' not in page
+        for partial in partials:
+            source = read(f'app/templates/settings/{section}/partials/{partial}')
+            assert 'components/loading_bar.html' in source
+            assert f"loading_bar.render('{indicator_id}'" in source
+            assert source.index('loading_bar.render(') > source.index('</header>')
+
     assert "workspace_tabs = read('app/templates/components/workspace_tabs.html')" in verifier
     assert 'render_query_tabs' in verifier
     assert 'query-backed-htmx' in verifier

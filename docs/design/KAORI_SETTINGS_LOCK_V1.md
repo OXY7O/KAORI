@@ -55,7 +55,7 @@ Permanent enforcement: `scripts/verify_settings_final_lock.py`.
 
 ## Loading and operational feedback
 
-- General and Account use the shared KAORI loading-bar component for HTMX tab switches and mutations.
+- General and Account preserve the shared KAORI loading-bar component and existing HTMX indicator IDs for tab switches and mutations. Following the #2225 human visual finding, loading feedback belongs to the active destination content card, immediately below that card's own header, never between the query-backed tab strip and content. This supersedes the tab-adjacent placement previously accepted under #1151 without removing pending feedback, query-state history, `hx-sync`, or operation toasts.
 - User-triggered Settings mutations return the canonical operational toast for success and failure; field errors remain inline.
 - Background browser-timezone convergence stays silent.
 - Explicit **Detect Again** presents the canonical Operational Toast for detected/unchanged or failure outcomes, without persisting the local browser observation, producing an Activity Audit event, or creating a Notification Deck item. It does not replace **Save Time Zone**.
