@@ -52,10 +52,10 @@ def test_eight_overview_descriptions_use_approved_short_copy() -> None:
         'Successful outcomes in the last 24 hours.',
         'Warnings and failures requiring review.',
         'Unique immutable actors in recent evidence.',
-        'Sensitive credentials are excluded from audit metadata.',
-        'Authorized access to committed KAORI activity evidence.',
-        'Recent records in PostgreSQL; archived evidence in Data Lifecycle.',
-        'Actor identity, role, and authentication source preserved at commit.',
+        'Audit metadata excludes credentials.',
+        'Authorized Notification-backed activity.',
+        'Hot PostgreSQL; verified Data Lifecycle archive.',
+        'Actor, role and source recorded at commit.',
     ):
         assert wording in summary
 

@@ -147,7 +147,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Identity Lifecycle',
-                'description': 'User Management owns account state, role assignment, and break-glass authority.',
+                'description': 'Users owns state, roles and break-glass authority.',
                 'status_label': users['posture_label'],
                 'status_tone': users['posture_tone'],
             }
@@ -178,7 +178,7 @@ def build_access_overview() -> dict[str, Any]:
             {
                 'title': 'Authentication Sources',
                 'description': (
-                    'Identity Providers owns external source configuration, admission policy, and projection.'
+                    'Identity Providers governs external sign-in and admission.'
                 ),
                 'status_label': providers['posture_label'],
                 'status_tone': providers['posture_tone'],
@@ -233,7 +233,7 @@ def build_access_overview() -> dict[str, Any]:
             {
                 'title': 'Authorization Policy',
                 'description': (
-                    'Roles assign code-owned permissions; inactive roles fail closed and registry drift is explicit.'
+                    'Roles enforce code permissions; inactive roles deny access.'
                 ),
                 'status_label': 'Review Required' if authorization_review else 'Current',
                 'status_tone': 'warning' if authorization_review else 'normal',
@@ -267,8 +267,8 @@ def build_access_overview() -> dict[str, Any]:
             {
                 'title': 'Audit Evidence',
                 'description': (
-                    'Activity Audit preserves Notification-backed Activity Register evidence and its actor snapshots; '
-                    'other administrative sources retain their own scope and permissions.'
+                    'Notification-backed Activity Audit keeps actor snapshots; '
+                    'other sources retain separate permissions.'
                 ),
                 'status_label': activity['posture_label'],
                 'status_tone': activity['posture_tone'],
