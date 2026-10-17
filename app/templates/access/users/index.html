@@ -13,7 +13,7 @@
         'Deletion disables login but retains Activity Audit. Restore returns the account to Inactive; activation remains separate.',
         '',
         action_label='Delete User',
-        notice='This is a reversible soft delete governed by User Management restore guardrails.',
+        notice='Soft delete; restoration is governed.',
         scope_value='Account Lifecycle',
         access_chrome=true) }}
     <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>

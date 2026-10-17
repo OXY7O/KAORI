@@ -598,12 +598,12 @@
                         ) }}
                     {% elif user.auth_source == 'database' %}
                         {{ related_page_card.render('User Registry',
-                                                'Return to User Registry for account state, assigned role, identity source, and administrative safeguards.',
+                                                'Review account state, source and role.',
                                                 url_for('users.index') ,
                         'Open User Registry',
                         icon='users',
                         eyebrow='Related User Management',
-                        boundary='KAORI owns this Local Database identity, its password hash, governed resets, and access lifecycle.'
+                        boundary='KAORI owns local passwords, resets and access.'
                         ) }}
                     {% elif current_user.has_permission('identity_providers.view') %}
                         {{ related_page_card.render('Identity Providers',
@@ -622,8 +622,15 @@
                                     <i data-lucide="user-round-cog" class="h-4 w-4"></i>
                                 </div>
                                 <div>
-                                    <h2 class="text-sm font-semibold text-status-warning-text">Editing Your Own Profile</h2>
-                                    <p class="mt-1 text-xs leading-5 text-status-warning-text">Profile metadata may be updated, but your own role, active state, and Super Admin flag cannot be changed from User Management.</p>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h2 class="text-sm font-semibold text-status-warning-text">Editing Your Own Profile</h2>
+                                        {{ info_tip.render('edit-user-self-access-guide',
+                                                            'Self-Edit Safeguards',
+                                                            'Profile metadata may be updated, but your own role, active state, and Super Admin flag cannot be changed from User Management.',
+                                                            placement='right',
+                                                            variant='guide') }}
+                                    </div>
+                                    <p class="mt-1 text-xs leading-5 text-status-warning-text">Own role, state and Super Admin are protected.</p>
                                 </div>
                             </div>
                         </section>

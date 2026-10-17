@@ -72,3 +72,15 @@ The Delete User confirmation describes login disablement, retained Activity Audi
 and Restore → Inactive with separate activation; destructive safeguards remain
 unchanged. These are Firefox Lenovo L13 copy targets, not browser PASS until
 executed and accepted in Dev Container; mobile and zoom must wrap naturally.
+
+### REVIEW(2) follow-up — User Registry and self-edit notice (#2278)
+
+Firefox L13 review further requests one-line-friendly User Registry navigation
+and Local Database ownership summaries, as well as the self-edit warning and
+the Delete User confirmation notice. The existing `info_tip` title-level
+Guide on **Editing Your Own Profile** preserves the complete prohibition on
+changing one's own role, active state and Super Admin flag while the visible
+caption stays short. The modal retains the login disablement, audit retention
+and Restore → Inactive plus separate activation explanation. No server-side
+self-edit, CSRF, protected-admin or deletion guard changed. Browser rendering
+and accessibility acceptance remain pending at the exact aggregation SHA.
