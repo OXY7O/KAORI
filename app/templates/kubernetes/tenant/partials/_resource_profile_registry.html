@@ -140,7 +140,7 @@
                         <td class="{{ table_ui.cell_classes() }} min-w-0 !px-0 !py-2 align-middle xl:table-cell xl:!px-4 xl:!py-3">
                             <span data-kaori-profile-column-label class="mb-1 block text-xs font-semibold text-content-muted xl:hidden">Usage</span>
                             {% set rollout_targets = profile_rollout_targets.get(profile.id, []) %}
-                            {% set pending_rollout = rollout_targets|sum(attribute='outdated') if rollout_targets else 0 %}
+                            {% set pending_rollout = rollout_targets|sum(attribute='pending') if rollout_targets else 0 %}
                             <p class="text-xs font-semibold text-content-primary">{{ usage.namespaces }} Namespace{{ '' if usage.namespaces == 1 else 's' }}</p>
                             <p class="mt-1 text-xs text-content-muted">{{ usage.capacity_decisions }} Decision{{ '' if usage.capacity_decisions == 1 else 's' }}</p>
                             {% if pending_rollout %}

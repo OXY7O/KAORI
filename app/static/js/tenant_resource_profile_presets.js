@@ -840,9 +840,56 @@
         applyNamespaceProfile()
     }
 
+    const initProfileRolloutForm = (form) => {
+        if (!(form instanceof HTMLFormElement)) return
+        const select = form.querySelector('[data-tenant-profile-rollout-select]')
+        const submit = form.querySelector('[data-tenant-profile-rollout-submit]')
+        const status = form.parentElement?.querySelector('[data-tenant-profile-rollout-status]')
+        const currentBadge = status?.querySelector('[data-rollout-already-current]')
+        const pendingBadge = status?.querySelector('[data-rollout-needs-change]')
+        const message = status?.querySelector('[data-rollout-status-message]')
+        if (!(select instanceof HTMLSelectElement) || !(submit instanceof HTMLButtonElement)) return
+
+        const sync = () => {
+            const option = select.selectedOptions[0]
+            const selected = Boolean(option?.value)
+            const eligible = selected && option?.dataset.rolloutEligible === 'true'
+            const current = eligible && option?.dataset.rolloutCurrent === 'true'
+            const permitted = form.dataset.rolloutPermitted === 'true'
+            const disabled = !permitted || !eligible || current
+
+            submit.disabled = disabled
+            submit.setAttribute('aria-disabled', disabled ? 'true' : 'false')
+            if (currentBadge) currentBadge.hidden = !current
+            if (pendingBadge) pendingBadge.hidden = !eligible || current
+            if (message) {
+                message.textContent = !permitted
+                    ? 'Rollout is unavailable for this profile or permission scope.'
+                    : !selected
+                      ? 'Select a Tenant to check committed allocation readiness.'
+                      : !eligible
+                        ? 'This Tenant cannot use Native Resource Profile rollout.'
+                        : current
+                          ? 'All attached Namespace committed versions, quotas, defaults, and storage policies match. Provider drift is checked separately.'
+                          : `${option.dataset.rolloutPending} Namespace(s) require rollout; capacity admission and provider verification still apply.`
+            }
+        }
+
+        if (form.dataset.kaoriRolloutInitialized !== 'true') {
+            form.dataset.kaoriRolloutInitialized = 'true'
+            select.addEventListener('change', sync)
+            form.addEventListener('submit', (event) => {
+                sync()
+                if (submit.disabled) event.preventDefault()
+            })
+        }
+        sync()
+    }
+
     const init = (root = document) => {
         const scope = root instanceof Element || root instanceof Document ? root : document
         scope.querySelectorAll('[data-tenant-resource-profile-form]').forEach(initProfileForm)
+        scope.querySelectorAll('[data-tenant-profile-rollout-form]').forEach(initProfileRolloutForm)
         scope.querySelectorAll('[data-tenant-advanced-controls]').forEach(initAdvancedControls)
         scope.querySelectorAll('[data-tenant-capacity-policy-form]').forEach(initCapacityPolicyForm)
         scope.querySelectorAll('[data-tenant-allocation-change-form]').forEach(initAllocationChangeForm)
