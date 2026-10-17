@@ -198,8 +198,13 @@ def test_ready_integration_preserves_exact_head_aggregate_and_full_admission() -
     workflow = yaml.safe_load(source)
     jobs = workflow['jobs']
     assert set(jobs) == {
-        'route', 'toolchain', 'python-check', 'validation-check', 'developer-check',
-        'full-admission', 'ready-admission-guard',
+        'route',
+        'toolchain',
+        'python-check',
+        'validation-check',
+        'developer-check',
+        'full-admission',
+        'ready-admission-guard',
     }
     assert "needs.route.outputs.reuse != 'true'" in jobs['toolchain']['if']
     assert "needs.route.outputs.reuse != 'true'" in jobs['python-check']['if']
