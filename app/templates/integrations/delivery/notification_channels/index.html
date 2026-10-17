@@ -43,9 +43,9 @@
                             Govern notification channels, adapters, and lifecycle evidence.
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {% for provider in payload.providers %}
-                                {{ page_hero.meta_label(provider.icon, provider.label) }}
-                            {% endfor %}
+                            {{ page_hero.meta_label('send', 'Delivery Capability') }}
+                            {{ page_hero.meta_label('network', 'Provider Registry') }}
+                            {{ page_hero.meta_label('history', 'Delivery Evidence') }}
                         </div>
                     {% endcall %}
                 </div>
