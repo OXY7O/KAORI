@@ -263,7 +263,7 @@ def _channel_registry_page(
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     query = NotificationChannel.query
     if search:
-        query = query.filter(NotificationChannel.name.contains(search, autoescape=True))
+        query = query.filter(func.lower(NotificationChannel.name).contains(search.lower(), autoescape=True))
     if provider:
         query = query.filter(NotificationChannel.provider_key == provider)
     if state == 'enabled':

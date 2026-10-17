@@ -99,7 +99,7 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold leading-6 text-content-primary">Configured Channels</h2>
-                    {{ table_label.result_count(payload.summary.total) }}
+                    {{ table_label.result_count(payload.channel_pagination.total_items) }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Only enabled channels with a successful Test Delivery are eligible for automatic platform delivery.</p>
             </div>

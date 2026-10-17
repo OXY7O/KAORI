@@ -222,9 +222,10 @@ def test_review5_channels_registry_uses_canonical_filter_and_safe_server_paginat
     assert 'channel_search' in template
     assert "'channel_search': payload.channel_filters.search" in template
     assert 'No Matching Channels' in template
+    assert 'table_label.result_count(payload.channel_pagination.total_items)' in template
     for name in ('channel_search', 'channel_provider', 'channel_state'):
         assert f"request.args.get('{name}', '')" in routes
-    assert "NotificationChannel.name.contains(search, autoescape=True)" in service
+    assert "func.lower(NotificationChannel.name).contains(search.lower(), autoescape=True)" in service
     assert "NotificationChannel.provider_key == provider" in service
     assert "NotificationChannel.enabled.is_(True)" in service
     assert "NotificationChannel.enabled.is_(False)" in service
