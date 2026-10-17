@@ -40,7 +40,7 @@
     </div>
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {% set boundaries = [('globe-2', 'Hot Evidence Scope', 'Notification-backed', 'Authorized access to committed KAORI activity evidence.'), ('fingerprint', 'Actor Evidence', 'Immutable', 'Actor identity, role, and authentication source preserved at commit.'), ('archive-restore', 'Lifecycle Boundary', 'Hot + Archive', 'Recent records in PostgreSQL; archived evidence in Data Lifecycle.'), ('shield-check', 'Sensitive Data Boundary', 'Protected', 'Sensitive credentials are excluded from audit metadata.')] %}
+            {% set boundaries = [('globe-2', 'Hot Evidence Scope', 'Notification-backed', 'Authorized Notification-backed activity.'), ('fingerprint', 'Actor Evidence', 'Immutable', 'Actor, role and source recorded at commit.'), ('archive-restore', 'Lifecycle Boundary', 'Hot + Archive', 'Hot PostgreSQL; verified Data Lifecycle archive.'), ('shield-check', 'Sensitive Data Boundary', 'Protected', 'Audit metadata excludes credentials.')] %}
             {% for icon, title, value, description in boundaries %}
                 <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
