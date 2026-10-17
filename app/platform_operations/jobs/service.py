@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
@@ -453,7 +454,7 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
             queue=str(current_app.config.get('JOB_MAINTENANCE_CELERY_QUEUE') or 'maintenance'),
         )
     except (CeleryError, KombuOperationalError, OSError, RuntimeError):
-        current_app.logger.warning(
+        logging.getLogger(__name__).warning(
             'Job failure notification enqueue unavailable for committed JobExecution %s.',
             job.public_id,
         )
