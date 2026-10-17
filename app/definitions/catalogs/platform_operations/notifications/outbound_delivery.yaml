@@ -11,6 +11,13 @@ domains:
     hint: Report Ready only
     allowed_events:
       - report.generated
+  registry:
+    label: Registry Alerts
+    hint: Governed AlertCases only
+    allowed_events:
+      - alert_intelligence.active_alert
+      - alert_ops.firing
+      - alert_ops.resolved
 
 events:
   alert_intelligence.active_alert:

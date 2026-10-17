@@ -30,7 +30,7 @@ _VALID_WORKFLOW_STATES = {'all', 'open', 'acknowledged', 'mitigating', 'verifica
 _VALID_SOURCE_TYPES = {'all', 'recommendation'}
 _VALID_SOURCE_STATES = {'all', 'firing', 'unknown'}
 _DOMAIN_LABELS = {'kubernetes': 'Kubernetes', 'object_storage': 'Object Storage', 'registry': 'Artifact Registry'}
-_VALID_ROUTING_DOMAINS = {'all', 'kubernetes', 'object_storage'}
+_VALID_ROUTING_DOMAINS = {'all', 'kubernetes', 'object_storage', 'registry'}
 _VALID_ROUTING_STATUSES = {'all', 'enabled', 'disabled'}
 
 

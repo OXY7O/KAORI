@@ -165,7 +165,7 @@
                 <label>
                     <span class="{{ table_ui.filter_label_classes() }}">Policy Domain</span>
                     <select name="routing_domain" class="{{ table_ui.filter_select_classes() }}">
-                        {% for value, label in [('all', 'All Domains'), ('kubernetes', 'Kubernetes'), ('object_storage', 'Object Storage')] %}
+                        {% for value, label in [('all', 'All Domains'), ('kubernetes', 'Kubernetes'), ('object_storage', 'Object Storage'), ('registry', 'Registry Alerts')] %}
                             <option value="{{ value }}"
                                     {% if payload.routing_filters.domain == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
