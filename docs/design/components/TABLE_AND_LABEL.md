@@ -154,7 +154,11 @@ Standard:
 
 Examples: `Open`, `View Details`, `Edit`, `Retry Sync`, `Run Now`, `Approve`, `Deny`, and `Archive`.
 
-All ordinary non-CRUD table actions share one neutral utility appearance and the same hover, focus, disabled, and active behavior. Do not assign different colors to `Open`, `View Details`, `Manage`, `Retry`, `Validate`, or similar routine controls merely to distinguish their labels.
+All ordinary non-CRUD table actions share one neutral utility appearance and the same hover, focus, disabled, and active behavior.
+
+In Artifact Registry Security, `View More` inside vulnerability rows and `Open Runtime Usage` in the registry block header are reviewed reference actions: both reuse `table_ui.action_classes()`. The header action remains in the shared `inventory_block_header(..., header_actions=...)` group, while the row action retains its modal or navigation semantics. These are reference consumers of the existing shared primitive, not permission to copy their classes into page templates. In that same registry, `Clear Filters` precedes the Runtime action in the header group and the contextual `Guide` belongs beside the registry title through `title_extra`.
+
+ Do not assign different colors to `Open`, `View Details`, `Manage`, `Retry`, `Validate`, or similar routine controls merely to distinguish their labels.
 
 CRUD actions may use semantic treatment when needed: `Create` normally belongs at block or page level; `Edit` may remain neutral or use the standard mutation treatment; `Delete` uses Critical styling. The geometry must remain consistent across all variants.
 
