@@ -74,7 +74,6 @@ def test_engineering_quality_verifier_timing_is_bounded_and_success_only() -> No
     assert quality.count("'python ") >= 18
 
 
-
 def test_static_pyright_stats_stay_bounded_to_success_and_keep_full_coverage() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
     capture = source.split('run_command_capture() {', 1)[1].split('run_static_group() {', 1)[0]
