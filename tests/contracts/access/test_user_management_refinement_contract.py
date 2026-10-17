@@ -352,7 +352,7 @@ def test_uat6_user_edit_copy_balances_context_specific_credential_text() -> None
 
     # Edit User: two-line-friendly link/boundary and 01/02 step descriptions.
     assert 'Review account state, source and role.' in form
-    assert 'KAORI owns local credentials and resets.' in form
+    assert 'KAORI owns Local Database credentials, audited resets, and the account access lifecycle.' in form
     assert 'Identity profile</strong> updates username, display name and contact email without changing credential ownership.' in form
     assert 'Assigned Role</strong> changes KAORI RBAC permissions without modifying upstream identity or authentication credentials.' in form
     assert 'Identity profile updates the KAORI display name' not in form
@@ -404,7 +404,7 @@ def test_uat_review2_edit_profile_guide_and_user_registry_copy() -> None:
     Environment().parse(form)
     Environment().parse(users)
     assert 'Review account state, source and role.' in form
-    assert 'KAORI owns local credentials and resets.' in form
+    assert 'KAORI owns Local Database credentials, audited resets, and the account access lifecycle.' in form
     assert "info_tip.render('edit-user-self-access-guide'," in form
     assert 'Own access controls are locked.' in form
     assert 'Profile metadata may be updated, but your own role, active state' in form
@@ -414,3 +414,16 @@ def test_uat_review2_edit_profile_guide_and_user_registry_copy() -> None:
     assert 'Deletion disables login but retains Activity Audit.' in users
     assert 'Restore returns the account to Inactive; activation remains separate.' in users
     assert 'whitespace-nowrap' not in users
+
+def test_review3_local_database_credential_boundary_targets_two_desktop_lines() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/access/users/form.html')
+    Environment().parse(template)
+    boundary = 'KAORI owns Local Database credentials, audited resets, and the account access lifecycle.'
+    assert template.count(boundary) == 1
+    assert "user.auth_source == 'database'" in template
+    assert "related_page_card.render('User Registry'" in template
+    assert 'whitespace-nowrap' not in template
+    assert len(boundary) >= 75
+
