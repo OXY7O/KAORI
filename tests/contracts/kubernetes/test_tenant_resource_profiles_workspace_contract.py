@@ -1890,7 +1890,7 @@ def test_capacity_policy_reuses_info_tips_without_inline_helper_copy() -> None:
     assert 'name="csrf_token"' in form
 
 
-def test_tenant_allocation_guidance_has_distinct_limit_reason_and_budget_formula() -> None:
+def test_tenant_allocation_guidance_has_single_title_tip_and_budget_formula() -> None:
     from jinja2 import Environment
 
     overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
@@ -1899,13 +1899,17 @@ def test_tenant_allocation_guidance_has_distinct_limit_reason_and_budget_formula
     exposure = overview.split('id="tenant-limit-exposure-heading"', 1)[1].split('</section>', 1)[0]
     assert 'components/info_tip.html' in overview
     assert '<section class="overflow-visible rounded-xl' in overview
-    assert exposure.index('Exposure assessment') < exposure.index('Governance boundary')
-    assert exposure.count('info_tip.render(') == 2
-    assert "'tenant-limit-exposure-assessment-tip'" in exposure
-    assert "'tenant-limit-exposure-governance-boundary-tip'" in exposure
-    assert exposure.count("placement='right', variant='guide'") == 2
-    assert 'exposure.reason,' in exposure  # Committed reason in contextual guidance.
-    assert '{{ exposure.reason }}' in exposure  # Persistently visible for risks.
+    assert exposure.count('info_tip.render(') == 1
+    assert "'tenant-limit-exposure-guide-tip'" in exposure
+    assert exposure.count("placement='right', variant='guide'") == 1
+    assert exposure.index('CPU &amp; Memory Limit Exposure') < exposure.index('info_tip.render(')
+    assert exposure.index('info_tip.render(') < exposure.index('<div class="overflow-x-auto">')
+    assert 'tenant-limit-exposure-assessment-tip' not in exposure
+    assert 'tenant-limit-exposure-governance-boundary-tip' not in exposure
+    assert 'Exposure assessment</span>' not in exposure
+    assert 'Governance boundary</span>' not in exposure
+    assert 'exposure.reason,' in exposure  # Tooltip displays actual committed reasoning.
+    assert '{{ exposure.reason }}' in exposure  # Only risk reasons remain persistent.
     assert "exposure.state in ['Unknown', 'Near Capacity', 'Overcommitted']" in exposure
     assert 'role="status"' in exposure
     assert 'operational_callout.semantic_border_classes(exposure_tone' in exposure
