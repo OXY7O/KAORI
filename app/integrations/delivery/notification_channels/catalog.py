@@ -61,7 +61,14 @@ def event_severity_scoped(key: str) -> bool:
 
 
 def domain_options() -> list[dict[str, str]]:
-    return [{'value': key, 'label': domain_label(key)} for key in domain_keys()]
+    return [
+        {
+            'value': key,
+            'label': domain_label(key),
+            'hint': str(require_mapping(_DOMAIN_DEFINITIONS[key], f'domains.{key}').get('hint') or ''),
+        }
+        for key in domain_keys()
+    ]
 
 
 def event_type_options() -> list[dict[str, str]]:
