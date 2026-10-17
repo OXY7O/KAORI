@@ -1,3 +1,4 @@
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
 <form method="POST"
@@ -26,6 +27,9 @@
             </div>
             {{ table_label.metadata_label('Personal Preference', 'user-round-cog') }}
         </header>
+    <div class="px-5 pb-4 sm:px-6" data-settings-content-loading>
+        {{ loading_bar.render('general-settings-loading', label='Updating General Settings') }}
+    </div>
         <div class="space-y-6 p-5">
             <section aria-labelledby="regional-format-controls-title">
                 <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
