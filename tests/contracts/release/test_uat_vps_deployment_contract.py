@@ -277,14 +277,23 @@ def test_verifier_checks_full_runtime_and_single_beat() -> None:
     assert 'web unexpectedly publishes a host port' in source
 
 
-def _validate_celery_worker_response(payload: str, *, expected: list[str] | None = None) -> subprocess.CompletedProcess[str]:
+def _validate_celery_worker_response(
+    payload: str, *, expected: list[str] | None = None
+) -> subprocess.CompletedProcess[str]:
     source = _read(VERIFY)
     prefix = """docker exec -i "$probe_cid" python -c '"""
-    script = source.split(prefix + '\n', 1)[1].split("\n' \"$destination_csv\"", 1)[0]
+    script = source.split(prefix + '\n', 1)[1].split('\n\' "$destination_csv"', 1)[0]
     workers = [
-        'worker', 'registry-security-worker', 'maintenance-worker', 'runtime-worker',
-        'validation-worker', 'analytics-worker', 'reports-worker', 'forecasting-worker',
-        'resolver-execution-worker', 'resolver-maintenance-worker',
+        'worker',
+        'registry-security-worker',
+        'maintenance-worker',
+        'runtime-worker',
+        'validation-worker',
+        'analytics-worker',
+        'reports-worker',
+        'forecasting-worker',
+        'resolver-execution-worker',
+        'resolver-maintenance-worker',
     ]
     names = expected if expected is not None else [f'celery@worker-{n}' for n in range(10)]
     return subprocess.run(
@@ -329,7 +338,6 @@ def test_celery_worker_readiness_positive_and_negative_response_contracts() -> N
     assert _validate_celery_worker_response('not-json').returncode != 0
     assert _validate_celery_worker_response('[]').returncode != 0
     assert _validate_celery_worker_response(json.dumps(valid), expected=[names[0]] * 10).returncode != 0
-
 
 
 def test_production_image_keeps_deployment_tooling_outside_runtime() -> None:
