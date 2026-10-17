@@ -85,14 +85,14 @@ run_timed_setup() {
     shift
     local started elapsed status=0
     started="$(date +%s)"
-    printf '⏳ %s\\n' "$label"
+    printf '⏳ %s\n' "$label"
     "$@" || status=$?
     elapsed=$(( $(date +%s) - started ))
     if [[ "$status" -ne 0 ]]; then
-        printf '❌ %s · exit %d · ⏱ %dm %02ds\\n' "$label" "$status" $((elapsed / 60)) $((elapsed % 60)) >&2
+        printf '❌ %s · exit %d · ⏱ %dm %02ds\n' "$label" "$status" $((elapsed / 60)) $((elapsed % 60)) >&2
         return "$status"
     fi
-    printf '✅ %s · ⏱ %dm %02ds\\n' "$label" $((elapsed / 60)) $((elapsed % 60))
+    printf '✅ %s · ⏱ %dm %02ds\n' "$label" $((elapsed / 60)) $((elapsed % 60))
 }
 
 run_pytest_capture() {
