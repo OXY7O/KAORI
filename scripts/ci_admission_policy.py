@@ -1039,7 +1039,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     draft_lookup = sub.add_parser('find-draft-developer-evidence')
     draft_lookup.add_argument('--repository', required=True)
-    draft_lookup.add_argument('--token', required=True)
+    draft_lookup.add_argument('--token', default=os.environ.get('GITHUB_TOKEN', ''))
     draft_lookup.add_argument('--pull-number', type=int, required=True)
     draft_lookup.add_argument('--head-sha', required=True)
     draft_lookup.add_argument('--base-sha', required=True)
