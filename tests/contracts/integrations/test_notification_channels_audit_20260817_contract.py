@@ -205,3 +205,27 @@ def test_report_delivery_source_link_is_exact_committed_and_permissioned() -> No
     assert "@permission_required('reports.view')" in source_routes
     assert 'delivery.report_source_url' in page
     assert 'Open Report' in page
+
+def test_review5_channels_registry_uses_canonical_filter_and_safe_server_pagination() -> None:
+    template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+
+    assert "table_registry.filter_form('notification_channels.index'," in template
+    assert "table_registry.clear_filters_link('notification_channels.index'," in template
+    assert "form_id='notification-channel-filter-form'" in template
+    assert 'name="channel_provider"' in template
+    assert 'name="channel_state"' in template
+    assert 'channel_search' in template
+    assert "'channel_search': payload.channel_filters.search" in template
+    assert 'No Matching Channels' in template
+    for name in ('channel_search', 'channel_provider', 'channel_state'):
+        assert f"request.args.get('{name}', '')" in routes
+    assert "NotificationChannel.name.contains(search, autoescape=True)" in service
+    assert "NotificationChannel.provider_key == provider" in service
+    assert "NotificationChannel.enabled.is_(True)" in service
+    assert "NotificationChannel.enabled.is_(False)" in service
+    assert "query = query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())" in service
+    assert 'paginate_query(query, page=page, per_page=per_page)' in service
+    assert "request.args.get('channel_per_page', default=5, type=int)" in routes
+

@@ -106,6 +106,48 @@
                 <span>{{ payload.summary.operational }} operational</span>
             </div>
         </header>
+        {% call table_registry.filter_form('notification_channels.index',
+                    'notification-channel-registry',
+                    'notification-channel-loading',
+                    payload.channel_pagination.per_page,
+                    classes=table_ui.inventory_filter_bar_classes(),
+                    page_param='channel_page',
+                    per_page_param='channel_per_page',
+                    form_id='notification-channel-filter-form',
+                    aria_label='Filter configured notification channels') %}
+            <input type="hidden" name="tab" value="channels">
+            <div>
+                <label for="notification-channel-search" class="{{ table_ui.filter_label_classes() }}">Search Channel</label>
+                {{ table_ui.search_field('channel_search', payload.channel_filters.search, 'Channel name', id='notification-channel-search') }}
+            </div>
+            <div>
+                <label for="notification-channel-provider" class="{{ table_ui.filter_label_classes() }}">Provider</label>
+                <select id="notification-channel-provider" name="channel_provider" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Providers</option>
+                    {% for provider_option in payload.providers %}
+                        <option value="{{ provider_option.key }}" {% if payload.channel_filters.provider == provider_option.key %}selected{% endif %}>{{ provider_option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="notification-channel-state" class="{{ table_ui.filter_label_classes() }}">State</label>
+                <select id="notification-channel-state" name="channel_state" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All States</option>
+                    <option value="enabled" {% if payload.channel_filters.state == 'enabled' %}selected{% endif %}>Enabled</option>
+                    <option value="disabled" {% if payload.channel_filters.state == 'disabled' %}selected{% endif %}>Disabled</option>
+                </select>
+            </div>
+            {% if payload.channel_filters.search or payload.channel_filters.provider or payload.channel_filters.state %}
+                {{ table_registry.clear_filters_link('notification_channels.index',
+                    'notification-channel-registry',
+                    'notification-channel-loading',
+                    payload.channel_pagination.per_page,
+                    table_ui.action_classes(),
+                    query_params={'tab': 'channels'},
+                    page_param='channel_page',
+                    per_page_param='channel_per_page') }}
+            {% endif %}
+        {% endcall %}
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
                 <thead class="{{ table_ui.head_classes() }}">
@@ -195,8 +237,8 @@
                                 {% set empty_state_icon = "send" %}
                                 {% set empty_state_label = "Setup Required" %}
                                 {% set empty_state_tone = "warning" %}
-                                {% set empty_state_title = "No Notification Channels Configured" %}
-                                {% set empty_state_description = "Choose an available provider, follow its setup guide, then add and validate the first reusable delivery channel." %}
+                                {% set empty_state_title = "No Matching Channels" if (payload.channel_filters.search or payload.channel_filters.provider or payload.channel_filters.state) else "No Notification Channels Configured" %}
+                                {% set empty_state_description = "No configured channel matches the selected filters." if (payload.channel_filters.search or payload.channel_filters.provider or payload.channel_filters.state) else "Choose an available provider, follow its setup guide, then add and validate the first reusable delivery channel." %}
                                 {% set empty_state_min_height = "min-h-[190px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>
@@ -209,7 +251,7 @@
                 'notification-channel-registry',
                 'notification-channel-loading',
                 payload.channel_pagination,
-                {'tab': 'channels'},
+                {'tab': 'channels', 'channel_search': payload.channel_filters.search, 'channel_provider': payload.channel_filters.provider, 'channel_state': payload.channel_filters.state},
                 payload.channel_pagination.allowed_per_page,
                 resource_label='Channels',
                 rows_aria_label='Notification channels per page',

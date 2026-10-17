@@ -493,3 +493,15 @@ explicit ntfy internal network/CA tests, Flask permission/CSRF checks,
 responsive/light-dark/keyboard Visual QA, and permitted sandbox Test Delivery
 on authorized destinations. Do not advance staging/main promotion or claim
 human acceptance without evidence.
+
+### REVIEW(5) — Configured Channels registry (#2318)
+
+The notification channel registry now follows canonical `table_registry.filter_form`
+with live HTMX search by channel name, provider and enabled/disabled state,
+conditional `clear_filters_link`, server-side filters before pagination, default
+Rows 5, and query-preserving footer. Filtered empty results differ from a
+truly unconfigured channel inventory. Native GET remains the non-HTMX fallback.
+Name filtering deliberately avoids encrypted provider credentials, destination
+secrets and arbitrary provider calls. The existing read-only channel table,
+permission-gated Edit/Test/Delete actions, status computation, source-owned
+provider catalog and Activity Audit remain authoritative.

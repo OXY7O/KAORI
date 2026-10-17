@@ -42,6 +42,9 @@ def index() -> ResponseReturnValue:
     payload = get_notification_channels_payload(
         channel_page=request.args.get('channel_page', default=1, type=int),
         channel_per_page=request.args.get('channel_per_page', default=5, type=int),
+        channel_search=request.args.get('channel_search', ''),
+        channel_provider=request.args.get('channel_provider', ''),
+        channel_state=request.args.get('channel_state', ''),
         delivery_page=request.args.get('delivery_page', default=1, type=int),
         delivery_per_page=request.args.get('delivery_per_page', default=5, type=int),
         delivery_event_key=request.args.get('delivery_event_key', ''),
