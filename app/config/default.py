@@ -431,6 +431,9 @@ class Config:
             'app.platform_operations.jobs.tasks.reconcile_stale_jobs': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
+            'app.platform_operations.jobs.tasks.dispatch_failed_job_notification': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
             'app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
