@@ -15,10 +15,13 @@
                     </span>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold leading-5 text-kaori-primary">Notification Channels</p>
-                        <h2 id="notification-channel-guide-title"
-                            tabindex="-1"
-                            autofocus
-                            class="mt-0.5 text-xl font-semibold leading-7 text-content-primary">Provider Setup Guide</h2>
+                        <div class="mt-0.5 flex flex-wrap items-center gap-2">
+                            <h2 id="notification-channel-guide-title"
+                                tabindex="-1"
+                                autofocus
+                                class="text-xl font-semibold leading-7 text-content-primary">Provider Setup Guide</h2>
+                            {{ table_label.metadata_label('Guided Setup', icon='book-open-check') }}
+                        </div>
                         <p class="mt-1 text-sm leading-6 text-content-muted">Follow the provider-specific prerequisites, then save and validate the destination in KAORI.</p>
                     </div>
                 </div>

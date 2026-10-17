@@ -518,3 +518,12 @@ preservation follow the shared component, retaining native GET fallback.
 The **exact event-key** match and permissioned Report source links remain
 unchanged. Delivery history remains provider evidence, not extra authored
 Activity Audit. Firefox/Dev Container and human acceptance remain pending.
+
+### REVIEW(5) — Provider controls and modal header (#2320)
+
+Provider cards now use canonical secondary action-button geometry for
+Guide and Configure (icon-first, 40px, hover/focus/active), with
+provider-specific accessible names. Existing Alpine/native dialog behavior
+is unchanged. Provider Setup Guide has a shared 'Guided Setup' metadata
+label beside its title. No changes to provider adapter, credentials,
+permissions or outbound delivery; Dev Container browser UAT pending.
