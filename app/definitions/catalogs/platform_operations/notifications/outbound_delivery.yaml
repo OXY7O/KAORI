@@ -6,6 +6,10 @@ domains:
     label: Kubernetes
   object_storage:
     label: Object Storage
+  artifact_registry:
+    label: Artifact Registry
+    allowed_events:
+      - report.generated
 
 events:
   alert_intelligence.active_alert:
