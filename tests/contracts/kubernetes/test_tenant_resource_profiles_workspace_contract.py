@@ -899,8 +899,9 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'placeholder="2048"' not in capacity
     assert 'for="tenant-storage-budget-gib"' in capacity
     assert 'id="tenant-storage-budget-gib"' in capacity
-    assert 'aria-describedby="tenant-storage-budget-help"' in capacity
-    assert 'Optional. Enter a value and save to govern storage; blank means Not Governed.' in capacity
+    assert 'aria-describedby="tenant-storage-budget-help"' not in capacity
+    assert 'tenant-storage-budget-help' not in capacity
+    assert 'Blank means Not Governed.' in capacity
     assert '2048 GiB = 2 TiB' in capacity
     assert 'Compute evidence required' in capacity
     assert 'Logical storage governed' in capacity
@@ -1825,3 +1826,29 @@ def test_capacity_operator_limit_exposure_remains_separate_from_request_commitme
     assert 'quota_vector_factory=quota_limit_vector' in backend
     assert 'def _operator_limit_ratio(' in backend
     assert "down_revision = '20261012_capsule_handback_guard'" in migration
+
+
+def test_capacity_policy_reuses_info_tips_without_inline_helper_copy() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    Environment(autoescape=True).parse(form)
+
+    for help_id in (
+        'tenant-cpu-limit-ratio-help',
+        'tenant-memory-limit-ratio-help',
+        'tenant-storage-budget-help',
+    ):
+        assert help_id not in form
+
+    for input_name in ('cpu_limit_ratio', 'memory_limit_ratio', 'tenant_storage_budget_gib'):
+        assert f'name="{input_name}"' in form
+        assert f'data-capacity-policy-field="{input_name}"' in form
+
+    assert 'tenant-limit-exposure-policy-tip' in form
+    assert 'tenant-capacity-storage-budget-tip' in form
+    assert 'Blank means Not Governed.' in form
+    assert 'CPU ratio multiplies the governed Tenant CPU budget' in form
+    assert 'Memory defaults to 1.00' in form
+    assert 'Logical budget only.' in form
+    assert 'name="csrf_token"' in form
