@@ -336,3 +336,36 @@ def test_review6_modal_has_context_metadata_and_single_native_provider_select() 
     assert '{% include provider_option.form_partial %}' in source
     assert 'name="csrf_token"' in source
 
+def test_review6_provider_guide_summaries_keep_security_coverage_and_copy_density() -> None:
+    import ast
+
+    source = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    module = ast.parse(source)
+    found = {}
+    for node in ast.walk(module):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != 'NotificationProviderAdapter':
+            continue
+        values = {arg.arg: arg.value for arg in node.keywords}
+        key = ast.literal_eval(values['key'])
+        security = ast.literal_eval(values['security_note'])
+        validation = ast.literal_eval(values['validation_note'])
+        steps = ast.literal_eval(values['setup_steps'])
+        found[key] = (security, validation, steps)
+        assert 60 <= len(security) <= 115, key
+        assert 60 <= len(validation) <= 120, key
+
+    assert set(found) == {'discord', 'slack', 'ntfy', 'telegram', 'email', 'microsoft_teams'}
+    assert 'mentions' in found['discord'][0]
+    assert 'redirects' in found['discord'][0] and 'redirects' in found['slack'][0]
+    assert 'no bypass' in found['ntfy'][0]
+    assert 'NOTIFICATION_NTFY_ALLOWED_ORIGINS' in found['ntfy'][2][0]
+    assert 'NOTIFICATION_NTFY_CA_BUNDLE' in ' '.join(found['ntfy'][2])
+    assert 'topic' in found['telegram'][1]
+    assert 'GitHub Actions' in ' '.join(found['telegram'][2])
+    assert 'STARTTLS' in found['email'][0] and 'TLS/SMTPS' in found['email'][0]
+    assert 'Anyone' in ' '.join(found['microsoft_teams'][2])
+    for value in found.values():
+        assert 'read' in value[1] or 'recipient' in value[1]
+

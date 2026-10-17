@@ -565,3 +565,18 @@ Kubernetes and Object Storage; new domain routing **requires separate
 producer/authority audit (#2331)**, not a fabricated UI-only checkbox.
 No official admission until Dev Container functional/visual UAT and human
 acceptance are captured.
+
+### REVIEW(6) — Setup Guide copy density (#2330)
+
+The source-owned security and Test Delivery notes for all six provider
+adapters now use concise explanatory statements rather than multi-sentence
+paragraphs. Discord and Slack still require official HTTPS and forbid
+redirect/proxy relaxation; ntfy retains approved origins, CA bundle,
+verified TLS and egress limits; Telegram preserves separate GitHub Actions
+ownership, credentials and forum topic caveats; Email retains
+STARTTLS/SMTPS/trusted relay; Teams retains the Anyone trigger and secret
+Workflow URL handling. Test Delivery indicates provider acknowledgement,
+not guaranteed human reading. The long ntfy origin instruction is shortened
+without losing its required environment variable or app/worker scope.
+Actual two-line text wrapping depends on browser/viewport; real Firefox
+Visual QA and human acceptance remain pending, with no forced line clamp.
