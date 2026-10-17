@@ -1,7 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_registry.html" as table_registry %}
-{% import "components/action_button.html" as action_button %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% set selected_provider = form_channel.provider_key if form_channel else initial_provider %}
@@ -71,7 +70,7 @@
                                     @click="guideProvider = '{{ provider.key }}'"
                                     data-kaori-dialog-open
                                     data-dialog-target="notification-channel-guide-dialog"
-                                    class="{{ action_button.classes('secondary') }}">
+                                    class="{{ table_ui.action_classes(size='header') }}">
                                 <i data-lucide="book-open" class="h-4 w-4" aria-hidden="true"></i>
                                 Guide
                             </button>
@@ -81,7 +80,7 @@
                                         @click="provider = '{{ provider.key }}'"
                                         data-kaori-dialog-open
                                         data-dialog-target="notification-channel-config-dialog"
-                                        class="{{ action_button.classes('secondary') }}">
+                                        class="{{ table_ui.action_classes(size='header') }}">
                                     <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
                                     Configure
                                 </button>
