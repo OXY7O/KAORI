@@ -251,26 +251,29 @@
                                 <div>
                                     <h3 class="text-sm font-semibold text-content-primary">Lifecycle & Administrative Controls</h3>
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">
-                                        Role, active state, and administrative tier are presented with the same control structure.
+                                        Manage role, account access, and protected administrative authority.
                                     </p>
                                 </div>
                             </div>
                             <div class="grid gap-4 xl:grid-cols-3">
                                 <div class="flex min-h-full flex-col rounded-lg border border-outline-subtle bg-surface-card p-3.5">
-                                    <label class="mb-2 block text-sm font-semibold text-content-primary">Assigned Role</label>
-                                    {{ form.role_id(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
+                                    <div class="flex h-11 items-center gap-3 rounded-lg border border-brand-outline bg-kaori-soft px-3.5">
+                                        <i data-lucide="shield-check" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                        <label for="{{ form.role_id.id }}" class="text-sm font-semibold text-kaori-strong">Assigned Role</label>
+                                    </div>
+                                    {{ form.role_id(class="mt-3 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
                                     <p class="mt-3 text-xs leading-5 text-content-muted">
-                                        Defines the RBAC permissions available after authentication.
-                                        {% if not can_manage_admin_fields %} Administrator-level roles remain restricted to super admins.{% endif %}
+                                        Assigns post-login RBAC permissions.
+                                        {% if not can_manage_admin_fields %} Admin roles require Super Admin.{% endif %}
                                     </p>
                                 </div>
                                 <label class="flex min-h-full cursor-pointer flex-col rounded-lg border border-outline-subtle bg-surface-card p-3.5 transition hover:border-outline-strong">
-                                    <span class="flex h-11 items-center gap-3 rounded-lg border border-outline-default bg-surface-elevated px-3.5">
+                                    <span class="flex h-11 items-center gap-3 rounded-lg border border-brand-outline bg-kaori-soft px-3.5">
                                         {{ form.is_active(class="h-4 w-4 shrink-0 rounded border-outline-strong accent-kaori-primary focus:ring-kaori-primary") }}
-                                        <span class="text-sm font-semibold text-content-primary">Active Account</span>
+                                        <span class="text-sm font-semibold text-kaori-strong">Active Account</span>
                                     </span>
                                     <span class="mt-3 text-xs leading-5 text-content-muted">
-                                        Allows sign-in when the identity source and provider are available. Disable the account to block access without deleting it.
+                                        Allows sign-in when the provider is ready; disabling retains the account.
                                     </span>
                                 </label>
                                 {% if can_manage_admin_fields and super_admin_eligible %}
@@ -280,7 +283,7 @@
                                             <span class="text-sm font-semibold text-kaori-strong">Super Admin</span>
                                         </span>
                                         <span class="mt-3 text-xs leading-5 text-content-muted">
-                                            Grants Local Database break-glass authority. The final active Local Super Admin is protected from demotion, deactivation, and deletion.
+                                            Local Database break-glass authority; the last active Super Admin stays protected.
                                         </span>
                                     </label>
                                 {% else %}
@@ -290,7 +293,7 @@
                                             <span class="text-sm font-semibold text-content-secondary">Super Admin unavailable</span>
                                         </div>
                                         <p class="mt-3 text-xs leading-5 text-content-muted">
-                                            {{ 'Super Admin is reserved for Local Database break-glass accounts.' if not super_admin_eligible else 'Only an existing super admin may assign or remove the protected Super Admin tier.' }}
+                                            {{ 'Reserved for Local Database break-glass accounts.' if not super_admin_eligible else 'Only an existing Super Admin may change this protected tier.' }}
                                         </p>
                                     </div>
                                 {% endif %}

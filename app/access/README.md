@@ -221,3 +221,7 @@ Shared Access summaries, role detail bands and User Management posture cards now
 ### UAT-1(1) count badge placement — #2252
 
 Permission Registry, Role Coverage, and Administrative Source Evidence use the same shared `table_label.result_count` next to each table title, based on the current filtered result total. Tab navigation labels remain without counts. Filter actions, page size 5 and optional 10/25/50, HTMX and source permissions are unchanged; browser accessibility/visual review pending.
+
+### UAT-1(1) lifecycle card alignment — #2253
+
+The Add/Edit User `Lifecycle & Administrative Controls` section reuses the existing Super Admin card's Violet header geometry for Assigned Role, Active Account and eligible Super Admin, with concise descriptions that wrap naturally at phone/zoom widths. Actual role selection, account active state, Super Admin eligibility, unavailable branch, same-account restrictions, and last-active-Local-Super-Admin safeguards have not changed. Functional/browser UAT remains NOT RUN.
