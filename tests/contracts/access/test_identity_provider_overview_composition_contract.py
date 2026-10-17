@@ -52,7 +52,7 @@ def test_posture_and_governance_form_one_audit_style_overview() -> None:
         assert boundary in overview
 
     for concise_description in (
-        'Providers own identity; adapters verify it.',
+        'Providers own identity; adapters run sign-in.',
         'External secrets; KAORI stores references.',
         'Linked identities need KAORI authorization.',
         'KAORI roles and account state gate access.',
