@@ -40,3 +40,8 @@ Local password changes and administrator resets advance `User.auth_session_versi
 ### UAT-1(6) User Detail heading badges — #2265
 
 The existing five-band User Detail resource sheet adds source-backed badges to the Identity, Authentication and Authorization left header descriptions. Identity uses the recorded source label; Authentication uses actual credential ownership; Authorization uses computed effective access with semantic status color. These reuse the shared inventory-section macro without new markup or permission changes. The rendered Firefox/sidebar-open review and human acceptance remain pending.
+
+
+### UAT-1(6) User Edit copy-density follow-up — #2253
+
+Keep the longer Local Database credential-boundary explanation grounded in `build_user_identity_context`, but show a short one-line local credential caption within the narrower violet Current Identity Source card. The User Registry related-page summary/boundary and administrative-control steps 01–02 now use fuller, balanced two-line descriptions at the operator's Firefox L13 viewport. Directory/SSO ownership and authorization guards remain unchanged. Browser line counts, mobile wrapping, Jinja/pytest and human acceptance remain pending.
