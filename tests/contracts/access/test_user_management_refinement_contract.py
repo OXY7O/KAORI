@@ -251,7 +251,6 @@ def test_reset_password_reuses_shared_security_surface_authority() -> None:
     assert template_path not in baseline['files']
 
 
-
 def test_reset_password_laptop_copy_density_preserves_security_semantics() -> None:
     import re
 
@@ -288,6 +287,7 @@ def test_reset_password_laptop_copy_density_preserves_security_semantics() -> No
         "Recover access through GitHub.",
     ):
         assert preserved in template
+
 
 def test_uat_user_lifecycle_controls_use_shared_protected_header_geometry() -> None:
     form = read('app/templates/access/users/form.html')
