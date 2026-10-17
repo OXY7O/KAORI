@@ -202,6 +202,12 @@ def test_ready_integration_preserves_exact_head_aggregate_and_full_admission() -
     assert "needs.route.outputs.reuse != 'true'" in jobs['python-check']['if']
     assert "needs.route.outputs.reuse != 'true'" in jobs['validation-check']['if']
     assert "needs.developer-check.result == 'success'" in jobs['full-admission']['if']
+    # GitHub implicitly adds success() to job conditionals without a status
+    # function. Heavy lanes are deliberately skipped on verified reuse; Ready
+    # Full Admission must not be accidentally skipped with them.
+    assert "!cancelled()" in jobs['full-admission']['if']
+    assert "github.event.pull_request.draft == false" in jobs['full-admission']['if']
+    assert "github.event.pull_request.head.repo.full_name == github.repository" in jobs['full-admission']['if']
     assert 'VERIFIED_DRAFT_REUSE:' in source
     assert 'assert_lane' in source and 'Ready admission denied' in source
     assert 'Upload Draft Route Identity' in source
