@@ -53,3 +53,27 @@ def test_secret_reveal_v17_keeps_neutral_dark_mode_surfaces() -> None:
         assert 'bg-white' not in source
     assert 'bg-surface-card' in protected
     assert 'bg-surface-card' in administration
+
+
+def test_review7_reveal_step_up_shows_equal_height_information_peer() -> None:
+    step = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
+    assert 'data-reveal-step-up-peer-grid' in step
+    assert 'grid items-stretch gap-4 lg:grid-cols-2' in step
+    assert step.count('flex h-full min-w-0 flex-col') == 2
+    assert 'Step-Up Access Guidance' in step
+    assert 'Approval First' in step
+    assert 'Verified Session' in step
+    assert 'One-Time Access' in step
+    assert 'name="password"' in step
+    assert 'name="csrf_token"' in step
+    assert 'current_user.is_external' in step
+    assert 'Protected Session Verified' in step
+
+
+def test_review7_reveal_target_empty_cluster_status_not_below_form() -> None:
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    assert 'No eligible protected cluster' in page
+    assert 'No eligible cluster. Review readiness or policy.' not in page
+    assert 'KUBERNETES_SECRET_REVEAL_ENABLED=true' in page
+    assert 'selection_error' in page
+    assert "info_id='secret-reveal-target-guidance-tip'" in page
