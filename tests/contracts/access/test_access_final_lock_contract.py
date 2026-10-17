@@ -98,3 +98,48 @@ def test_uat4_access_modals_share_header_footer_chrome_without_changing_dialog_b
     assert users.count('access_chrome=true') == 1
     assert 'role-delete-confirmation' in roles
     assert 'delete-user-modal' in users
+
+
+
+def test_uat5_access_detail_headers_follow_permission_reference_without_body_relayout() -> None:
+    permission = read('app/templates/access/permissions/partials/_permission_detail.html')
+    role = read('app/templates/access/roles/partials/_role_detail.html')
+    activity = read('app/templates/access/activity_audit/partials/_activity_detail.html')
+    host = read('app/templates/components/resource_detail_modal.html')
+    confirmation = read('app/templates/components/destructive_confirmation_modal.html')
+
+    # Screenshot reference: identity icon, title + state, description, metadata.
+    permission_header = permission.split('<header data-resource-detail-header', 1)[1].split('</header>', 1)[0]
+    role_header = role.split('<header data-resource-detail-header', 1)[1].split('</header>', 1)[0]
+    activity_header = activity.split('<header data-resource-detail-header', 1)[1].split('</header>', 1)[0]
+    for header in (permission_header, role_header, activity_header):
+        assert 'detail_ui.expanded_workspace_icon_classes()' in header
+        assert 'detail_ui.header_identity_row()' in header
+        assert header.index('table_label.status_label(') < header.index('mt-1')
+        assert header.index('mt-1') < header.index('mt-2 flex min-w-0 flex-wrap items-center')
+        assert 'table_label.metadata_label(' in header
+
+    for expression in ('permission.state.label', 'permission.key', 'permission.module_label'):
+        assert expression in permission_header
+    for expression in ('detail.state_label', 'detail.type_short', 'role.name'):
+        assert expression in role_header
+    for expression in ('item.status_label', 'item.category_label', 'item.message'):
+        assert expression in activity_header
+
+    # The resource detail host retains the shared close button and footer.
+    assert 'data-resource-detail-header-host' in host
+    assert 'data-resource-detail-summary-host' in host
+    assert 'data-resource-detail-close' in host
+    assert 'footer_text' in host
+
+    # The Access-only destructive variant adopts the same hierarchy; no false
+    # Canonical status for destructive actions, no changed default or dialog body.
+    assert 'access_chrome=false' in confirmation
+    assert "table_label.status_label('Confirmation Required', 'warning', 'shield-alert', 'detail')" in confirmation
+    assert "table_label.metadata_label(scope_value, 'shield-check')" in confirmation
+    assert "table_label.metadata_label(action_label, 'archive-x')" in confirmation
+    assert "if access_chrome else 'min-w-0'" in confirmation
+    assert "if presentation == 'steps' else 'max-w-xl'" in confirmation
+    assert 'data-destructive-modal-confirm' in confirmation
+    assert 'data-submit-button-id="{{ confirm_button_id }}"' in confirmation
+    assert "Canonical" not in confirmation
