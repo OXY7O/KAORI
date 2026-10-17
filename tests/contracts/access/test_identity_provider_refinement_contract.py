@@ -318,3 +318,19 @@ def test_review4_ldap_mapping_example_placeholders_do_not_become_create_defaults
     assert 'def validate_tls_mode' in forms
     assert "if definition.configuration_profile == 'ldap':" in forms
 
+def test_review4_provider_guidance_title_descriptions_are_compact() -> None:
+    from jinja2 import Environment
+
+    captions = (
+        ('ldap_directory', 'Directory sign-in; KAORI grants access.'),
+        ('github', 'GitHub sign-in; KAORI grants access.'),
+        ('google', 'Google sign-in; KAORI grants access.'),
+    )
+    for provider, caption in captions:
+        source = read(f'app/templates/access/identity_providers/providers/{provider}/_guidance.html')
+        Environment().parse(source)
+        assert source.count(caption) == 1
+        assert len(caption) <= 42
+        assert 'info_flow.render(' in source
+        assert 'whitespace-nowrap' not in source
+

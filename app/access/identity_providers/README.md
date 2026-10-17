@@ -152,3 +152,13 @@ with placeholders. LDAP TLS guards, bind secret reference and
 `{query}` escape remain unchanged. Real Firefox Dev Container UAT,
 validation-negative testing, human acceptance and official admission
 are separate, pending evidence.
+
+### REVIEW(4) — Provider Guidance compact headings (#2279)
+
+Directory, GitHub and Google Guidance headers now use short descriptions
+identifying external sign-in and KAORI's local access decision. Detailed
+four-step provider onboarding and credential-authority notes remain in the
+existing Info Flow component. One-line appearance is a Firefox Lenovo L13
+visual target; mobile text may wrap naturally. No forced nowrap/clipping,
+policy change, provider API work, or secret access. Post-fix Firefox UAT
+and human acceptance remain PENDING; official CI/CD admission HOLD.
