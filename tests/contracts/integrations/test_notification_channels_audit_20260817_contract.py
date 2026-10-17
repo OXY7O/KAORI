@@ -266,3 +266,24 @@ def test_review5_provider_card_controls_and_modal_header_are_reusable() -> None:
     assert 'data-kaori-dialog-close' in modals
     assert "focus-visible:ring-outline-focus" in shared
 
+def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> None:
+    template = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    assert "table_label.metadata_label('Edit Destination' if form_channel else 'New Destination'" in template
+    assert 'Choose a Delivery Provider' in template
+    assert 'aria-label="Choose {{ provider_option.label }} notification provider"' in template
+    assert '{% for provider_option in payload.providers %}' in template
+    assert '@click="provider = ' in template
+    assert 'name="provider_key"' in template
+    assert 'x-model="provider"' in template
+    assert '{% include provider_option.form_partial %}' in template
+    assert 'Telegram, Email, or Microsoft Teams' not in template
+    assert 'Credential Boundary' in template
+    assert 'Activation Gate' in template
+    for key in ('discord', 'slack', 'ntfy', 'telegram', 'email', 'microsoft_teams'):
+        assert f"'{key}': NotificationProviderAdapter(" in providers
+    for requirement in ('NOTIFICATION_NTFY_ALLOWED_ORIGINS', 'NOTIFICATION_NTFY_CA_BUNDLE',
+                        'Anyone', 'GitHub Actions', 'STARTTLS', 'TLS/SMTPS'):
+        assert requirement in providers
+    assert 'Test Delivery' in providers
+
