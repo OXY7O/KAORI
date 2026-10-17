@@ -231,3 +231,8 @@ The Add/Edit User `Lifecycle & Administrative Controls` section reuses the exist
 ### UAT-1(2) Access Boundaries section hierarchy — #2257
 
 Access Overview now places its **Access Boundaries** heading and supporting explanation above the existing read-only boundary grid, using the shared `section_intro` and `operational_section.shell_classes` primitives in the same outer section rhythm as Authorization Flow. The boundary titles/statuses, permission-scoped domain composition, responsive grid and zero-boundary omission are unchanged. Screenshot-based laptop/mobile/light-dark human acceptance remains pending.
+
+
+### UAT-1(3) Identity Governance — #1335
+
+Four Identity Governance descriptions are shortened for the Firefox Lenovo L13 sidebar-open layout. Provider ownership, external secrets and KAORI authorization remain authoritative. Only copy is changed; no truncation or forced nowrap. Mobile and zoom may wrap naturally. Browser acceptance is pending.
