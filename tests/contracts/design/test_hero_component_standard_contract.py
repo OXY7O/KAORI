@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 import runpy
+
+import pytest
 import subprocess
 import sys
 from pathlib import Path
@@ -31,6 +33,39 @@ def test_hero_component_standard_is_enforced() -> None:
 
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'KAORI Hero component standard passed' in result.stdout
+
+
+def test_notification_channels_hero_uses_three_bounded_metadata_roles() -> None:
+    source = (ROOT / 'app/templates/integrations/delivery/notification_channels/index.html').read_text(
+        encoding='utf-8'
+    )
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    verifier['_verify_bounded_hero_metadata'](source, owner='Notification Channels')
+
+    for label in ('Delivery Capability', 'Provider Registry', 'Delivery Evidence'):
+        assert label in source
+    assert '{% for provider in payload.providers %}' in source
+    assert 'notification_subsection(provider.label' in source
+
+
+def test_notification_channels_hero_rejects_dynamic_and_extra_metadata() -> None:
+    verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
+    check = verifier['_verify_bounded_hero_metadata']
+    row = '<div class="{{ page_hero.metadata_row_classes() }}">{}' '</div>'
+    with pytest.raises(AssertionError, match='unbounded/conditional'):
+        check(
+            row.format(
+                '{% for provider in payload.providers %}'
+                '{{ page_hero.meta_label(provider.icon, provider.label) }}'
+                '{% endfor %}'
+            ),
+            owner='regression',
+        )
+    with pytest.raises(AssertionError, match='expected 3 stable'):
+        check(
+            row.format("{{ page_hero.meta_label('a','one') }}" * 4),
+            owner='regression',
+        )
 
 
 def test_unmanaged_hero_detector_scopes_brand_surface_to_shell_container() -> None:
