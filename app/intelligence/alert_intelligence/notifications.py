@@ -18,6 +18,7 @@ from app.intelligence.alert_intelligence.routing import (
     FiringRoute,
     firing_routes,
     policy_allows_resolved,
+    registry_case_route_eligible,
 )
 from app.intelligence.alert_intelligence.templates import render_case_message
 from app.models.alert_ops import AlertCase, AlertCaseEvent
@@ -70,7 +71,6 @@ def dispatch_case_notifications() -> dict[str, int]:
                     and_(
                         AlertCase.source_state == 'resolved',
                         AlertCase.workflow_state == 'closed',
-                        AlertCase.domain != 'registry',
                         had_successful_firing,
                         or_(AlertCase.last_resolved_notified_at.is_(None), failed_resolved),
                     ),
@@ -212,7 +212,7 @@ def _pending_resolved_channel_ids(
 
 def _dispatch_resolved(case: AlertCase) -> dict[str, int]:
     stats = {'firing': 0, 'resolved': 0, 'failed': 0, 'skipped': 0}
-    if case.domain == 'registry':
+    if case.domain == 'registry' and not registry_case_route_eligible(case):
         stats['skipped'] += 1
         return stats
     firing_channels = _successful_firing_channels(case)
@@ -221,6 +221,8 @@ def _dispatch_resolved(case: AlertCase) -> dict[str, int]:
         return stats
     delivered = _successful_resolved_channels(case)
     pending = _pending_resolved_channel_ids(firing_channels, delivered)
+    if case.domain == 'registry':
+        pending = [channel_id for channel_id in pending if policy_allows_resolved(case, channel_id)]
     for channel_id in pending:
         result = _deliver_case_event(
             case,
