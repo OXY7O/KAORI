@@ -41,7 +41,7 @@
                 {% if presentation in ['steps', 'kubernetes'] or access_chrome %}
                     <button type="button"
                             data-destructive-modal-close
-                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                            class="{{ 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus' if access_chrome else 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-muted transition hover:bg-surface-hover hover:text-content-primary' }}"
                             aria-label="Close {{ title }}">
                         <i data-lucide="x" class="h-4 w-4"></i>
                     </button>
@@ -215,7 +215,7 @@
                 {% endif %}
                 <button type="button"
                         data-destructive-modal-close
-                        class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Cancel</button>
+                        class="{{ 'inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus' if access_chrome else 'inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:bg-kaori-soft' }}">Cancel</button>
                 <button type="button"
                         data-destructive-modal-confirm
                         data-submit-button-id="{{ confirm_button_id }}"
