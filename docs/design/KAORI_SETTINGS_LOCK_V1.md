@@ -55,7 +55,7 @@ Permanent enforcement: `scripts/verify_settings_final_lock.py`.
 
 ## Loading and operational feedback
 
-- General and Account preserve the shared KAORI loading-bar component and existing HTMX indicator IDs for tab switches and mutations. Following the #2225 human visual finding, loading feedback belongs to the active destination content card, immediately below that card's own header, never between the query-backed tab strip and content. This supersedes the tab-adjacent placement previously accepted under #1151 without removing pending feedback, query-state history, `hx-sync`, or operation toasts.
+- **Superseding human UAT-1 / #2225 (2026-10-17): no visible loading/progress bar anywhere in Settings General or Account & Authentication, including content cards and tab boundaries.** The earlier #2237 content-card relocation and #1151 indicator placement are superseded for visual progress feedback. Preserve HTMX indicator IDs as nonvisual accessible `role=status` regions owned by the Settings page, plus existing submit-button pending states, operational toasts, inline validation, query-backed `hx-get`/`hx-target`/`hx-sync`/`hx-push-url`, and real href fallback. Do not revive `components/loading_bar.html::render` in any General/Account tab.
 - User-triggered Settings mutations return the canonical operational toast for success and failure; field errors remain inline.
 - Background browser-timezone convergence stays silent.
 - Explicit **Detect Again** presents the canonical Operational Toast for detected/unchanged or failure outcomes, without persisting the local browser observation, producing an Activity Audit event, or creating a Notification Deck item. It does not replace **Save Time Zone**.

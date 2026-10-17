@@ -4,6 +4,8 @@
 {% set last_auth_label = last_auth_source|replace('_', ' ')|title %}
 <div id="account-authentication-page" class="space-y-6">
     {% include "settings/account/partials/_hero.html" %}
+    {# Shared nonvisual HTMX pending announcement: no Settings loading bar or extra tab geometry. #}
+    <span id="account-settings-loading" class="htmx-indicator sr-only" role="status" aria-live="polite" aria-atomic="true">Updating Account & Authentication</span>
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
         {% include "settings/account/partials/_tabs.html" %}
         {% if active_tab == 'profile' %}

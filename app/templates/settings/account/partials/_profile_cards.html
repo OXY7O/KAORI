@@ -1,4 +1,3 @@
-{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
          data-account-profile-workspace="full-width">
@@ -14,9 +13,6 @@
         </div>
         {{ table_label.metadata_label('Read-Only Account View', 'scan-eye') }}
     </header>
-    <div class="px-5 sm:px-6" data-settings-content-loading>
-        {{ loading_bar.render('account-settings-loading', label='Updating Account & Authentication') }}
-    </div>
     <div class="space-y-7 p-5 xl:p-6">
         <section aria-labelledby="account-posture-title">
             <div class="mb-3">
