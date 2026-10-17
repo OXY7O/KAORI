@@ -1,4 +1,5 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/info_tip.html" as info_tip %}
 {% set ldap_selected = selected_definition and selected_definition.configuration_profile == 'ldap' %}
 <div class="space-y-5"
      data-configuration-panel="ldap"
@@ -9,29 +10,35 @@
                 <i data-lucide="network" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-base font-semibold leading-6 text-content-primary">LDAP Adapter Connection</h2>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold leading-6 text-content-primary">LDAP Adapter Connection</h2>
+                    {{ info_tip.render('identity-provider-ldap-connection-guide',
+                                        'LDAP Connection Fields',
+                                        'Use read-only directory connectivity while retaining external credential authority.',
+                                        items=['Server URI: prefer LDAPS or StartTLS in production.', 'Base DN: subtree searched for directory identities.', 'Bind DN: read-only service identity for directory searches.', 'Bind Password Environment Variable: only its name; no secret value is persisted.', 'User Filter: {query} is escaped before substitution.', 'TLS Mode: plaintext LDAP is blocked unless explicitly enabled by environment policy.'],
+                                        placement='right',
+                                        variant='guide') }}
+                </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Configure directory transport and read-only bind evidence without storing secret values in KAORI.</p>
             </div>
         </header>
         <div class="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
-            {% for field, placeholder, helper in [
-                (form.server_uri, 'ldaps://directory.example.com:636', 'LDAP endpoint. Prefer LDAPS or StartTLS in production.'),
-                (form.base_dn, 'DC=example,DC=com', 'Directory subtree used for identity search.'),
-                (form.bind_dn, 'CN=kaori-reader,OU=Service Accounts,DC=example,DC=com', 'Read-only service identity used to search directory entries.'),
-                (form.bind_password_env, 'KAORI_LDAP_BIND_PASSWORD', 'Environment-variable name only; the password value is never persisted.'),
-                (form.user_filter, '(&(objectClass=user)(|(sAMAccountName={query})(mail={query})))', 'Search filter used by directory provisioning. {query} is escaped before substitution.')
+            {% for field, placeholder in [
+                (form.server_uri, 'ldaps://directory.example.com:636'),
+                (form.base_dn, 'DC=example,DC=com'),
+                (form.bind_dn, 'CN=kaori-reader,OU=Service Accounts,DC=example,DC=com'),
+                (form.bind_password_env, 'KAORI_LDAP_BIND_PASSWORD'),
+                (form.user_filter, '(&(objectClass=user)(|(sAMAccountName={query})(mail={query})))')
                 ] %}
                 <label class="block min-w-0 {% if field == form.user_filter %}sm:col-span-2{% endif %}">
                     <span class="text-sm font-semibold text-content-primary">{{ field.label.text }}</span>
                     {{ field(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=placeholder) }}
-                    <span class="mt-2 block text-xs leading-5 text-content-muted">{{ helper }}</span>
                     {% for error in field.errors %}<span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>{% endfor %}
                 </label>
             {% endfor %}
             <label class="block min-w-0">
                 <span class="text-sm font-semibold text-content-primary">{{ form.tls_mode.label.text }}</span>
                 {{ form.tls_mode(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
-                <span class="mt-2 block text-xs leading-5 text-content-muted">Plain LDAP remains blocked unless explicitly enabled by environment policy.</span>
                 {% for error in form.tls_mode.errors %}<span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>{% endfor %}
             </label>
         </div>
@@ -40,21 +47,28 @@
         <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-text" class="h-5 w-5"></i></span>
             <div>
-                <h2 class="text-base font-semibold leading-6 text-content-primary">Directory Identity Mapping</h2>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold leading-6 text-content-primary">Directory Identity Mapping</h2>
+                    {{ info_tip.render('identity-provider-ldap-mapping-guide',
+                                        'Directory Identity Mapping Fields',
+                                        'Map directory attributes to stable KAORI identity projection fields.',
+                                        items=['Username Attribute: directory attribute mapped to the KAORI username.', 'Email Attribute: directory attribute mapped to KAORI email.', 'Display Name Attribute: attribute used for the user-facing display name.', 'Stable ID Attribute: immutable or stable directory subject identifier.'],
+                                        placement='right',
+                                        variant='guide') }}
+                </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Map adapter attributes into KAORI identity projection fields.</p>
             </div>
         </header>
         <div class="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
-            {% for field, placeholder, helper in [
-                (form.username_attribute, 'sAMAccountName', 'Attribute mapped to KAORI username.'),
-                (form.email_attribute, 'mail', 'Attribute mapped to KAORI email.'),
-                (form.display_name_attribute, 'displayName', 'Attribute mapped to the user-facing display name.'),
-                (form.stable_id_attribute, 'objectGUID', 'Immutable or stable directory identifier used as the external subject.')
+            {% for field, placeholder in [
+                (form.username_attribute, 'sAMAccountName'),
+                (form.email_attribute, 'mail'),
+                (form.display_name_attribute, 'displayName'),
+                (form.stable_id_attribute, 'objectGUID')
                 ] %}
                 <label class="block min-w-0">
                     <span class="text-sm font-semibold text-content-primary">{{ field.label.text }}</span>
                     {{ field(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=placeholder) }}
-                    <span class="mt-2 block text-xs leading-5 text-content-muted">{{ helper }}</span>
                     {% for error in field.errors %}<span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>{% endfor %}
                 </label>
             {% endfor %}
