@@ -1888,3 +1888,47 @@ def test_capacity_policy_reuses_info_tips_without_inline_helper_copy() -> None:
     assert 'Memory defaults to 1.00' in form
     assert 'Logical budget only.' in form
     assert 'name="csrf_token"' in form
+
+
+def test_tenant_allocation_guidance_has_distinct_limit_reason_and_budget_formula() -> None:
+    from jinja2 import Environment
+
+    overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
+    Environment(autoescape=True).parse(overview)
+
+    exposure = overview.split('id="tenant-limit-exposure-heading"', 1)[1].split('</section>', 1)[0]
+    assert exposure.index('Exposure assessment') < exposure.index('Governance boundary')
+    assert '{{ exposure.reason }}' in exposure
+    assert "exposure.state in ['Unknown', 'Overcommitted']" in exposure
+    assert 'operational_callout.semantic_border_classes(exposure_tone' in exposure
+    assert "exposure.mode == 'observe'" in exposure
+    assert 'Observe never blocks Resource Profile admission.' in exposure
+    assert 'Enforce adds a Limits admission check.' in exposure
+    assert 'Request Commitment above remains the admission baseline.' in exposure
+    assert 'Ratios multiply the governed Tenant budget' in exposure
+    assert 'data-lucide="shield-check"' in exposure
+    assert 'sm:grid-cols-2' in exposure
+
+    budget = overview.split('How allocation budgets work', 1)[1].split('</details>', 1)[0]
+    assert budget.index('Request budget formula') < budget.index('Logical storage policy')
+    assert budget.index('Logical storage policy') < budget.index('ResourceQuota boundary')
+    assert 'tenant-allocation-budget-formula-heading' in budget
+    assert 'data-lucide="calculator"' in budget
+    assert 'font-mono' in budget
+    assert 'border-kaori-primary/15 bg-kaori-soft' in budget
+    for term in (
+        'Tenant Budget',
+        'Ready-worker allocatable',
+        'platform reserve',
+        'safety headroom',
+        'unmanaged commitment',
+    ):
+        assert term in budget
+    assert 'Operator-governed requests.storage ceiling; not backend physical free space.' in budget
+    assert 'ResourceQuota enforces limits but does not reserve resources on Kubernetes nodes.' in budget
+    assert 'data-lucide="database"' in budget
+    assert 'sm:grid-cols-2' in budget
+    assert 'group-open:rotate-180' in overview
+    assert 'allocation_overview.bars' in overview
+    assert 'exposure.display[field ~ \'_committed\']' in overview
+    assert 'exposure.display[field ~ \'_threshold\']' in overview
