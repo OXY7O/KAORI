@@ -86,16 +86,68 @@ fi
 beat_count="$("${compose[@]}" ps -q beat | sed '/^$/d' | wc -l | tr -d ' ')"
 [[ "$beat_count" == '1' ]] || fail "expected exactly one Beat container, found $beat_count"
 
-active_queues() {
-  local service="$1"
-  local cid
+# Inspect the configured fleet once, and fail closed unless every expected
+# worker reports a nonempty queue list. A global inspect from each container
+# could pass based on another worker's response and repeats broker broadcasts.
+worker_services=(
+  worker registry-security-worker maintenance-worker runtime-worker
+  validation-worker analytics-worker reports-worker forecasting-worker
+  resolver-execution-worker resolver-maintenance-worker
+)
+expected_nodes=()
+probe_cid=""
+for service in "${worker_services[@]}"; do
   cid="$("${compose[@]}" ps -q "$service")"
-  docker exec "$cid" sh -ec 'celery --app celery_worker:celery_app inspect active_queues --timeout=10' 2>/dev/null || return 1
-}
-
-for service in worker registry-security-worker maintenance-worker runtime-worker validation-worker analytics-worker reports-worker forecasting-worker resolver-execution-worker resolver-maintenance-worker; do
-  active_queues "$service" >/dev/null || fail "$service did not report active_queues"
+  [[ -n "$cid" ]] || fail "$service has no container for queue inspection"
+  [[ -n "$probe_cid" ]] || probe_cid="$cid"
+  container_hostname="$(docker inspect --format '{{.Config.Hostname}}' "$cid")"
+  [[ "$container_hostname" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] ||
+    fail "$service has an invalid container hostname"
+  case "$service" in
+    worker) node_prefix=inventory ;;
+    registry-security-worker) node_prefix=registry-security ;;
+    reports-worker) node_prefix=reports ;;
+    *) node_prefix=celery ;;
+  esac
+  expected_nodes+=("$node_prefix@$container_hostname")
 done
+
+destination_csv="$(IFS=,; printf '%s' "${expected_nodes[*]}")"
+service_csv="$(IFS=,; printf '%s' "${worker_services[*]}")"
+if ! queue_response="$(docker exec "$probe_cid" celery --app celery_worker:celery_app inspect \
+  --json --timeout=20 --destination="$destination_csv" active_queues 2>/dev/null)"; then
+  fail 'targeted Celery active_queues inspection failed'
+fi
+
+# The check is intentionally stricter than Celery's CLI exit code: all ten
+# individually named workers must reply, each with a valid active queue.
+docker exec -i "$probe_cid" python -c '
+import json
+import sys
+
+expected = sys.argv[1].split(",")
+services = sys.argv[2].split(",")
+if len(expected) != 10 or len(services) != 10 or len(set(expected)) != len(expected):
+    raise SystemExit("duplicate or incomplete expected Celery worker identities")
+try:
+    actual = json.load(sys.stdin)
+except (ValueError, TypeError):
+    raise SystemExit("invalid Celery inspect JSON response") from None
+if not isinstance(actual, dict):
+    raise SystemExit("Celery inspect reply must be a node-keyed object")
+for node, service in zip(expected, services, strict=True):
+    queues = actual.get(node)
+    if not isinstance(queues, list) or not queues:
+        raise SystemExit(f"{service} did not report active queues")
+    if any(
+        not isinstance(queue, dict)
+        or not isinstance(queue.get("name"), str)
+        or not queue["name"].strip()
+        for queue in queues
+    ):
+        raise SystemExit(f"{service} reported invalid active queues")
+' "$destination_csv" "$service_csv" <<<"$queue_response" ||
+  fail 'worker queue readiness admission failed'
 printf '✅ Worker queues and Beat PASS\n'
 # Verify actual database sessions and environment of each running service;
 # Compose parity alone is insufficient to establish runtime least privilege.
