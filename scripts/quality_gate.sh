@@ -313,6 +313,7 @@ run_tests() {
         'Functional Tests' \
         -q \
         --tb=short \
+        --durations=15 \
         --junitxml="$TEST_OUTPUT_DIR/release-suite.xml" \
         -m 'not debug and not e2e and not contract and not migration'
 
