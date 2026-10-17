@@ -562,7 +562,6 @@ def find_remote_full_evidence(
     return ReuseDecision(False, 'No reusable Full Admission evidence was found for this tree and authority.')
 
 
-
 # Draft -> Ready optimization (#2220). This does not reuse Full Admission.
 # Draft route evidence is not authoritative until GitHub independently attests
 # the *completed* workflow and every required job on the same trusted PR head.
@@ -620,9 +619,18 @@ def _required_developer_jobs(plan: str) -> dict[str, str]:
 
 
 def build_draft_developer_evidence(
-    *, repository: str, pull_number: int, head_sha: str, base_sha: str,
-    source_tree: str, plan: str, run_id: int, run_attempt: int,
-    workflow_ref: str, authority_fingerprint: str, toolchain_key: str,
+    *,
+    repository: str,
+    pull_number: int,
+    head_sha: str,
+    base_sha: str,
+    source_tree: str,
+    plan: str,
+    run_id: int,
+    run_attempt: int,
+    workflow_ref: str,
+    authority_fingerprint: str,
+    toolchain_key: str,
     created_at: str,
 ) -> dict[str, Any]:
     _required_developer_jobs(plan)
@@ -651,10 +659,20 @@ def build_draft_developer_evidence(
 
 
 def draft_developer_reuse_decision(
-    evidence: Mapping[str, Any], run: Mapping[str, Any], jobs: Sequence[Mapping[str, Any]],
-    *, repository: str, pull_number: int, head_sha: str, base_sha: str,
-    source_tree: str, plan: str, authority_fingerprint: str, toolchain_key: str,
-    current_run_id: int, current_time: datetime | None = None,
+    evidence: Mapping[str, Any],
+    run: Mapping[str, Any],
+    jobs: Sequence[Mapping[str, Any]],
+    *,
+    repository: str,
+    pull_number: int,
+    head_sha: str,
+    base_sha: str,
+    source_tree: str,
+    plan: str,
+    authority_fingerprint: str,
+    toolchain_key: str,
+    current_run_id: int,
+    current_time: datetime | None = None,
 ) -> ReuseDecision:
     def reject(reason: str) -> ReuseDecision:
         return ReuseDecision(False, reason)
@@ -662,9 +680,14 @@ def draft_developer_reuse_decision(
     if evidence.get('schema') != DRAFT_DEVELOPER_EVIDENCE_VERSION or evidence.get('draft') is not True:
         return reject('Draft evidence schema/state mismatch.')
     identity = (
-        ('repository', repository), ('pull_number', pull_number), ('head_sha', head_sha),
-        ('base_sha', base_sha), ('source_tree', source_tree), ('plan', plan),
-        ('authority_fingerprint', authority_fingerprint), ('toolchain_key', toolchain_key),
+        ('repository', repository),
+        ('pull_number', pull_number),
+        ('head_sha', head_sha),
+        ('base_sha', base_sha),
+        ('source_tree', source_tree),
+        ('plan', plan),
+        ('authority_fingerprint', authority_fingerprint),
+        ('toolchain_key', toolchain_key),
     )
     if any(evidence.get(key) != value for key, value in identity):
         return reject('Exact Draft head/base/plan/authority/toolchain evidence mismatch.')
@@ -682,9 +705,7 @@ def draft_developer_reuse_decision(
             return reject('Draft run identity or retry attempt mismatch.')
     except (KeyError, TypeError, ValueError):
         return reject('Invalid Draft run ID or retry attempt.')
-    if not str(evidence.get('workflow_ref', '')).startswith(
-        f'{repository}/.github/workflows/developer-check.yml@'
-    ):
+    if not str(evidence.get('workflow_ref', '')).startswith(f'{repository}/.github/workflows/developer-check.yml@'):
         return reject('Invalid Draft workflow authority.')
     timestamp = _parse_evidence_timestamp(evidence.get('created_at'))
     if timestamp is None:
@@ -712,9 +733,17 @@ def draft_developer_reuse_decision(
 
 
 def find_remote_draft_developer_evidence(
-    *, repository: str, token: str, pull_number: int, head_sha: str, base_sha: str,
-    source_tree: str, plan: str, current_run_id: int,
-    current_authority_fingerprint: str, current_toolchain_key: str,
+    *,
+    repository: str,
+    token: str,
+    pull_number: int,
+    head_sha: str,
+    base_sha: str,
+    source_tree: str,
+    plan: str,
+    current_run_id: int,
+    current_authority_fingerprint: str,
+    current_toolchain_key: str,
 ) -> ReuseDecision:
     try:
         # Live PR state avoids treating stale Ready event snapshots as authority.
@@ -757,25 +786,48 @@ def find_remote_draft_developer_evidence(
                 token,
             ).get('jobs', [])
             decision = draft_developer_reuse_decision(
-                evidence, run, jobs, repository=repository, pull_number=pull_number,
-                head_sha=head_sha, base_sha=base_sha, source_tree=source_tree, plan=plan,
+                evidence,
+                run,
+                jobs,
+                repository=repository,
+                pull_number=pull_number,
+                head_sha=head_sha,
+                base_sha=base_sha,
+                source_tree=source_tree,
+                plan=plan,
                 authority_fingerprint=current_authority_fingerprint,
-                toolchain_key=current_toolchain_key, current_run_id=current_run_id,
+                toolchain_key=current_toolchain_key,
+                current_run_id=current_run_id,
             )
             if decision.reusable:
                 return decision
-    except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.CalledProcessError,
-            zipfile.BadZipFile, json.JSONDecodeError) as exc:
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        AttributeError,
+        subprocess.CalledProcessError,
+        zipfile.BadZipFile,
+        json.JSONDecodeError,
+    ) as exc:
         return ReuseDecision(False, f'Draft evidence lookup failed closed: {type(exc).__name__}.')
     return ReuseDecision(False, 'No complete, exact, fresh Draft Developer Check evidence; run Ready checks.')
 
 
 def _write_draft_developer_evidence(args: argparse.Namespace) -> int:
     payload = build_draft_developer_evidence(
-        repository=args.repository, pull_number=args.pull_number, head_sha=args.head_sha,
-        base_sha=args.base_sha, source_tree=args.source_tree, plan=args.plan,
-        run_id=args.run_id, run_attempt=args.run_attempt, workflow_ref=args.workflow_ref,
-        authority_fingerprint=compute_authority_fingerprint(), toolchain_key=developer_toolchain_key(),
+        repository=args.repository,
+        pull_number=args.pull_number,
+        head_sha=args.head_sha,
+        base_sha=args.base_sha,
+        source_tree=args.source_tree,
+        plan=args.plan,
+        run_id=args.run_id,
+        run_attempt=args.run_attempt,
+        workflow_ref=args.workflow_ref,
+        authority_fingerprint=compute_authority_fingerprint(),
+        toolchain_key=developer_toolchain_key(),
         created_at=datetime.now(UTC).isoformat(),
     )
     output = Path(args.output)
@@ -786,16 +838,23 @@ def _write_draft_developer_evidence(args: argparse.Namespace) -> int:
 
 def _find_draft_developer_evidence(args: argparse.Namespace) -> int:
     decision = find_remote_draft_developer_evidence(
-        repository=args.repository, token=args.token, pull_number=args.pull_number,
-        head_sha=args.head_sha, base_sha=args.base_sha, source_tree=args.source_tree,
-        plan=args.plan, current_run_id=args.run_id,
+        repository=args.repository,
+        token=args.token,
+        pull_number=args.pull_number,
+        head_sha=args.head_sha,
+        base_sha=args.base_sha,
+        source_tree=args.source_tree,
+        plan=args.plan,
+        current_run_id=args.run_id,
         current_authority_fingerprint=compute_authority_fingerprint(),
         current_toolchain_key=developer_toolchain_key(),
     )
-    _write_output({
-        'reuse': 'true' if decision.reusable else 'false',
-        'reuse_reason': decision.reason.replace('\n', ' '),
-    })
+    _write_output(
+        {
+            'reuse': 'true' if decision.reusable else 'false',
+            'reuse_reason': decision.reason.replace('\n', ' '),
+        }
+    )
     return 0
 
 
