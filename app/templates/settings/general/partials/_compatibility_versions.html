@@ -1,3 +1,4 @@
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
          data-compatibility-versions-workspace="unified"
@@ -39,6 +40,9 @@
             {% endfor %}
         </dl>
     </header>
+    <div class="px-5 pb-4 sm:px-6" data-settings-content-loading>
+        {{ loading_bar.render('general-settings-loading', label='Updating General Settings') }}
+    </div>
     {% include "settings/general/partials/_compatibility_registry.html" %}
     <section class="border-t border-outline-default bg-surface-card px-5 py-4 sm:px-6"
              aria-labelledby="compatibility-policy-heading">
