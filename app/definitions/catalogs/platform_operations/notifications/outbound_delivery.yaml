@@ -11,6 +11,11 @@ domains:
     hint: Report Ready only
     allowed_events:
       - report.generated
+  platform_operations:
+    label: Platform Operations
+    hint: Failed Jobs only
+    allowed_events:
+      - jobs.execution_failed
 
 events:
   alert_intelligence.active_alert:
@@ -25,6 +30,9 @@ events:
   report.generated:
     label: Scheduled Reports · Report Ready
     severity_scoped: false
+  jobs.execution_failed:
+    label: Jobs & Executions · Failed
+    severity_scoped: true
   automation.approval_required:
     label: Automation Control · Approval Required
     severity_scoped: false
