@@ -135,7 +135,7 @@ def test_registry_routing_policy_cannot_be_enabled_implicitly() -> None:
         send_resolved=True,
         matchers={},
     )
-    with pytest.raises(ValueError, match='Registry notification routing is not enabled'):
+    with pytest.raises(ValueError, match='Registry AlertCases require a dedicated domain routing policy'):
         routing.upsert_routing_policy(policy_id=None, config=policy, actor_user_id=1)
 
 
@@ -274,3 +274,108 @@ def test_case_lifecycle_notifications_keep_scope_for_all_domains() -> None:
                 'asset': [asset],
                 'case': ['CASE-7'],
             }
+
+
+def _registry_route_case(*, asset_key: str = '7', severity: str = 'critical') -> SimpleNamespace:
+    return SimpleNamespace(
+        domain='registry',
+        asset_key=asset_key,
+        asset_type='registry_integration',
+        source_type='recommendation',
+        source_state='firing',
+        routing_state='enabled',
+        severity=severity,
+        labels_json={'environment': 'uat'},
+    )
+
+
+def _registry_notification_stub(*, enabled: bool = True) -> SimpleNamespace:
+    return SimpleNamespace(
+        id=11,
+        enabled=enabled,
+        configured=True,
+        test_status='success',
+        domains=['registry'],
+        event_types=['alert_ops.firing', 'alert_ops.resolved'],
+    )
+
+
+def test_registry_routing_requires_live_canonical_provider(monkeypatch) -> None:
+    from app.models.integration import IntegrationInstance
+
+    provider = SimpleNamespace(
+        integration_type='registry',
+        enabled=True,
+        lifecycle_status='active',
+        readiness_status='ready',
+    )
+
+    def get_provider(model, identifier):
+        assert model is IntegrationInstance
+        assert identifier == 7
+        return provider
+
+    monkeypatch.setattr(routing, 'db', SimpleNamespace(session=SimpleNamespace(get=get_provider)))
+    case = _registry_route_case()
+    assert routing.registry_case_route_eligible(case)
+    for mutation in (
+        {'enabled': False},
+        {'enabled': True, 'lifecycle_status': 'retired'},
+        {'lifecycle_status': 'active', 'readiness_status': 'blocked'},
+        {'readiness_status': 'validation_failed'},
+        {'integration_type': 'kubernetes'},
+    ):
+        saved = vars(provider).copy()
+        vars(provider).update(mutation)
+        assert not routing.registry_case_route_eligible(case)
+        vars(provider).update(saved)
+    assert not routing.registry_case_route_eligible(_registry_route_case(asset_key='../../7'))
+    assert not routing.registry_case_route_eligible(_registry_route_case(asset_key='9' * 19))
+
+
+def test_registry_route_never_falls_back_to_broadcast_without_matching_policy(monkeypatch) -> None:
+    case = _registry_route_case()
+    monkeypatch.setattr(routing, 'registry_case_route_eligible', lambda _case: True)
+    monkeypatch.setattr(routing, 'matching_routing_policies', lambda _case: [])
+    assert routing.firing_routes(case) == []
+    assert not routing.policy_allows_resolved(case, 11)
+    case.source_state = 'unknown'
+    assert routing.firing_routes(case) == []
+
+
+def test_registry_route_requires_validated_scoped_channel_and_matching_rule(monkeypatch) -> None:
+    from app.models.notification_channel import NotificationChannel
+
+    case = _registry_route_case()
+    channel = _registry_notification_stub()
+    monkeypatch.setattr(routing, 'registry_case_route_eligible', lambda _case: True)
+
+    def get_channel(model, identifier):
+        assert model is NotificationChannel
+        assert identifier == 11
+        return channel
+
+    monkeypatch.setattr(routing, 'db', SimpleNamespace(session=SimpleNamespace(get=get_channel)))
+    policy = SimpleNamespace(
+        id=3,
+        enabled=True,
+        domains_json=['registry'],
+        severities_json=['critical'],
+        source_types_json=['recommendation'],
+        matchers_json={'environment': 'uat'},
+        channel_ids_json=[11],
+        repeat_interval_minutes=15,
+        send_resolved=True,
+    )
+    monkeypatch.setattr(routing, 'matching_routing_policies', lambda _case: [policy])
+    routes = routing.firing_routes(case)
+    assert len(routes) == 1
+    assert routes[0].channel_id == 11
+    assert routes[0].policy_id == 3
+    assert routing.policy_allows_resolved(case, 11)
+    channel.enabled = False
+    assert routing.firing_routes(case) == []
+    channel.enabled = True
+    channel.domains = ['artifact_registry']
+    assert routing.firing_routes(case) == []
+    assert routing.policy_allows_resolved(case, 99) is False
