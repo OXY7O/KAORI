@@ -157,10 +157,10 @@
             </section>
             <aside class="{{ form_context.rail_classes() }}"
                    aria-label="Create ConfigMap guidance">
-                {% set configmap_create_flow = [('Select Target', 'Choose the registered cluster and a namespace loaded from the live Kubernetes API.'), ('Define Configuration', 'Set the create-only name, configuration keys, content types, and mutability policy.'), ('Validate Object', 'Run Kubernetes server-side dry-run against the latest definition without creating anything.'), ('Create ConfigMap', 'Submit exactly the validated object. Any later input change requires validation again.')] %}
+                {% set configmap_create_flow = [('Select Target', 'Choose a cluster and its live namespace.'), ('Define Configuration', 'Define the name, keys, types, and immutability.'), ('Validate Object', 'Dry-run the latest form without creating an object.'), ('Create ConfigMap', 'Create the validated object; edits reset validation.')] %}
                 {% set configmap_create_note = "Target, name, data, type, or immutability changes require revalidation." %}
                 {{ info_flow.render('ConfigMap Creation Flow', 'Definition flow to one audited live ConfigMap.', configmap_create_flow, icon='waypoints', note=configmap_create_note, note_icon='circle-alert', open_by_default=true) }}
-                {% set configmap_create_guardrails = [('shield-check', 'Create Only', 'An existing ConfigMap with the same name is never overwritten.'), ('scan-search', 'Validate First', 'Create unlocks only for the exact form state accepted by server-side dry-run.'), ('radio-tower', 'Live Namespace Source', 'Namespace choices are loaded from the selected Kubernetes API.'), ('scroll-text', 'Metadata-Only Audit', 'Audit records actor, target, operation, and outcome—never ConfigMap values.')] %}
+                {% set configmap_create_guardrails = [('shield-check', 'Create Only', 'Existing ConfigMaps are never overwritten.'), ('scan-search', 'Validate First', 'Create requires the latest server-side dry-run.'), ('radio-tower', 'Live Namespace Source', 'Namespaces come from the selected live cluster.'), ('scroll-text', 'Metadata-Only Audit', 'Audit records metadata, never ConfigMap values.')] %}
                 {{ information_guide_card.render('Creation Safety Contract',
                                 'Active boundaries for this create workflow.',
                                 configmap_create_guardrails,

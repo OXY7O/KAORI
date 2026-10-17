@@ -116,9 +116,9 @@
             </section>
             <aside class="{{ form_context.rail_classes() }}"
                    aria-label="ConfigMap update guidance">
-                {% set configmap_update_flow = [('Select Object', 'Choose one live ConfigMap and load its current resourceVersion.'), ('Review & Edit', 'Choose Merge or Replace and change only the intended keys.'), ('Preview & Validate', 'Inspect the effective diff and run server-side dry-run.'), ('Apply Update', 'Apply exactly the validated state to the same live resourceVersion.')] %}
+                {% set configmap_update_flow = [('Select Object', 'Load one live ConfigMap and resourceVersion.'), ('Review & Edit', 'Choose Merge or Replace for intended keys.'), ('Preview & Validate', 'Review the full diff and dry-run the update.'), ('Apply Update', 'Apply the validated state at the same version.')] %}
                 {{ info_flow.render('ConfigMap Update Flow', 'One validated update from live state.', configmap_update_flow, icon='git-compare-arrows', note='Target, mode, or entry changes require revalidation.', note_icon='circle-alert', open_by_default=true) }}
-                {% set configmap_update_guardrails = [('eye', 'Live Read First', 'Live ConfigMap data and immutability are read from Kubernetes before editing.'), ('git-compare-arrows', 'Effective Diff', 'Added, changed, removed, and unchanged keys are explicit before apply.'), ('lock-keyhole', 'Immutable Protected', 'Immutable ConfigMaps remain blocked from mutation.'), ('shield-check', 'Stale Write Blocked', 'resourceVersion prevents applying to a target that changed after review.')] %}
+                {% set configmap_update_guardrails = [('eye', 'Live Read First', 'Read live data and immutability before editing.'), ('git-compare-arrows', 'Effective Diff', 'Review added, changed, removed, and unchanged keys.'), ('lock-keyhole', 'Immutable Protected', 'Immutable ConfigMaps cannot be mutated.'), ('shield-check', 'Stale Write Blocked', 'resourceVersion blocks stale updates.')] %}
                 {{ information_guide_card.render('Update Safety Contract', 'Controls that stay active while the live object is edited.', configmap_update_guardrails, icon='shield-check') }}
             </aside>
         </form>

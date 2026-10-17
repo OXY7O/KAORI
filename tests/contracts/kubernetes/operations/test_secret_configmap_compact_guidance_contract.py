@@ -47,9 +47,41 @@ def test_configmap_and_bulk_tls_guidance_is_compact_without_weakening_safety() -
     delete = (ROOT / 'app/templates/kubernetes/operations/configmaps/delete.html').read_text(encoding='utf-8')
     rotation = (ROOT / 'app/templates/kubernetes/operations/secrets/tls_rotation.html').read_text(encoding='utf-8')
 
-    assert 'Audit records actor, target, operation, and outcome—never ConfigMap values.' in create
-    assert 'Live ConfigMap data and immutability are read from Kubernetes before editing.' in update
-    assert 'Verify the exact name and effective delete authorization without issuing DELETE.' in delete
+    assert 'Audit records metadata, never ConfigMap values.' in create
+    assert 'Read live data and immutability before editing.' in update
+    assert 'Check exact name and RBAC without DELETE.' in delete
     assert 'Only explicitly checked TLS Secrets can be updated; all unselected targets remain untouched.' in rotation
     assert 'Validate the uploaded certificate pair and every selected TLS Secret before applying an update.' in rotation
     assert "workflow_control('Controlled Bulk TLS Rotation'" in rotation
+
+
+def test_review7_operation_titles_use_shared_violet_guide_not_legacy_question_icon() -> None:
+    component = (ROOT / 'app/templates/components/kubernetes_operation_ui.html').read_text(encoding='utf-8')
+    assert "variant='guide'" in component
+    assert 'flex min-h-6 flex-wrap items-center gap-2' in component
+    assert 'info_tip.render(info_id, info_title, info_text, info_items' in component
+    assert 'components/info_tip.html' in component
+
+
+def test_review7_compact_operations_copy_keeps_server_safety_semantics() -> None:
+    create = (ROOT / 'app/templates/kubernetes/operations/configmaps/create.html').read_text(encoding='utf-8')
+    update = (ROOT / 'app/templates/kubernetes/operations/configmaps/update.html').read_text(encoding='utf-8')
+    delete = (ROOT / 'app/templates/kubernetes/operations/configmaps/delete.html').read_text(encoding='utf-8')
+    secret_create = (ROOT / 'app/templates/kubernetes/operations/secrets/create.html').read_text(encoding='utf-8')
+    secret_delete = (ROOT / 'app/templates/kubernetes/operations/secrets/delete.html').read_text(encoding='utf-8')
+
+    for phrase, source in (
+        ('Existing ConfigMaps are never overwritten.', create),
+        ('Create requires the latest server-side dry-run.', create),
+        ('Audit records metadata, never ConfigMap values.', create),
+        ('Review added, changed, removed, and unchanged keys.', update),
+        ('Immutable ConfigMaps cannot be mutated.', update),
+        ('resourceVersion blocks stale updates.', update),
+        ('Check exact name and RBAC without DELETE.', delete),
+        ('Delete the same resource once using the receipt.', delete),
+        ('Secret values are never stored by KAORI.', secret_create),
+        ('Audit records metadata, never Secret values.', secret_create),
+        ('Verify name, version, and RBAC without DELETE.', secret_delete),
+        ('The receipt binds deletion to reviewed resourceVersion.', secret_delete),
+    ):
+        assert phrase in source
