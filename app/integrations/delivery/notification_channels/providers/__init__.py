@@ -248,12 +248,11 @@ _PROVIDERS = {
             "channel.",
         ),
         security_note=(
-            "Treat the webhook URL as an encrypted secret. Require official Discord HTTPS, reject "
-            "redirects and inherited proxies, and suppress user/role/everyone mentions."
+            "Encrypt webhook URLs; require official Discord HTTPS, block redirects/proxies, and suppress "
+            "all mass mentions."
         ),
         validation_note=(
-            "Test Delivery checks Discord webhook acceptance, not confirmation that a person read "
-            "the message."
+            "Test Delivery verifies Discord webhook acceptance, not a recipient's read confirmation."
         ),
         form_partial='integrations/delivery/notification_channels/providers/discord/_form.html',
         form_parser=parse_discord_form,
@@ -286,12 +285,11 @@ _PROVIDERS = {
             "Slack channel.",
         ),
         security_note=(
-            "The webhook URL is encrypted and never rendered back. Only approved official Slack "
-            "HTTPS hosts and paths are allowed; redirects and inherited proxies are rejected."
+            "Encrypt Slack webhook URLs; allow official HTTPS hosts/paths only, with no redirects or "
+            "inherited proxies."
         ),
         validation_note=(
-            "Test Delivery checks Slack webhook acceptance, not whether an individual has read the "
-            "message."
+            "Test Delivery verifies Slack webhook acceptance, not a recipient's read confirmation."
         ),
         form_partial='integrations/delivery/notification_channels/providers/slack/_form.html',
         form_parser=parse_slack_form,
@@ -315,8 +313,8 @@ _PROVIDERS = {
             'Optional ntfy access token with minimum publish rights.',
         ),
         setup_steps=(
-            "Allow only approved HTTPS origins through NOTIFICATION_NTFY_ALLOWED_ORIGINS on the app "
-            "and worker; restrict network egress.",
+            "Allow approved HTTPS origins via NOTIFICATION_NTFY_ALLOWED_ORIGINS on app and worker; "
+            "restrict egress.",
             "For internal PKI, configure NOTIFICATION_NTFY_CA_BUNDLE consistently on the "
             "application and worker.",
             "Create a private ntfy topic and issue a publish-scoped access token when authorization "
@@ -327,12 +325,11 @@ _PROVIDERS = {
             "subscriber.",
         ),
         security_note=(
-            "HTTPS is mandatory, with no TLS bypass or arbitrary endpoints. KAORI encrypts tokens; "
-            "operators must enforce approved DNS and network egress policy."
+            "Require approved HTTPS and verified TLS with no bypass; encrypt tokens and enforce "
+            "DNS/network egress policy."
         ),
         validation_note=(
-            "Test Delivery verifies ntfy HTTPS publish acceptance, not guaranteed receipt or "
-            "reading by every subscriber."
+            "Test Delivery verifies ntfy HTTPS publish acceptance, not individual subscriber receipt."
         ),
         form_partial='integrations/delivery/notification_channels/providers/ntfy/_form.html',
         form_parser=parse_ntfy_form,
@@ -372,12 +369,12 @@ _PROVIDERS = {
             "application delivery.",
         ),
         security_note=(
-            "Treat the bot token as a secret. KAORI encrypts the channel credential payload and "
-            "never renders stored bot tokens into the form."
+            "Encrypt Telegram bot tokens as channel secrets; never redisplay saved credentials after "
+            "setup."
         ),
         validation_note=(
-            "Test Delivery confirms Telegram bot access to the configured chat and optional forum "
-            "topic; it is not a read receipt."
+            "Test Delivery verifies bot posting access to the selected chat/topic, not a human read "
+            "receipt."
         ),
         form_partial='integrations/delivery/notification_channels/providers/telegram/_form.html',
         form_parser=parse_telegram_form,
@@ -414,12 +411,12 @@ _PROVIDERS = {
             "delivery.",
         ),
         security_note=(
-            "STARTTLS is recommended unless using TLS/SMTPS or an approved trusted relay. KAORI "
-            "encrypts SMTP passwords and never renders saved values back."
+            "Use STARTTLS, TLS/SMTPS or an approved trusted relay; encrypt SMTP passwords and never "
+            "redisplay them."
         ),
         validation_note=(
-            "Test Delivery checks SMTP connectivity, TLS, optional authentication, sender "
-            "acceptance, and recipient submission, not human reading."
+            "Test Delivery checks SMTP security, authentication, sender acceptance, and recipient "
+            "submission; not reading."
         ),
         form_partial='integrations/delivery/notification_channels/providers/email/_form.html',
         form_parser=parse_email_form,
@@ -455,12 +452,12 @@ _PROVIDERS = {
             "message before automatic use.",
         ),
         security_note=(
-            "Treat the Workflow URL as a secret because possession can permit posting. KAORI "
-            "encrypts the URL and never renders the stored value back."
+            "Encrypt the Teams Workflow URL as a secret; possession permits posting, so never redisplay "
+            "the saved URL."
         ),
         validation_note=(
-            "Test Delivery confirms the Teams Workflow accepted the KAORI payload with a successful "
-            "HTTP response, not a user read receipt."
+            "Test Delivery confirms the Teams Workflow accepts KAORI's payload over HTTPS, not a read "
+            "receipt."
         ),
         form_partial='integrations/delivery/notification_channels/providers/microsoft_teams/_form.html',
         form_parser=parse_microsoft_teams_form,
