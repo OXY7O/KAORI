@@ -447,6 +447,22 @@ platform reserve − safety headroom − unmanaged commitment**. Logical
 storage availability. `ResourceQuota` enforces Kubernetes quota and never
 constitutes a physical node-resource reservation.
 
+
+**Visual UAT guidance hierarchy (#2371, review candidate):** The committed
+CPU/Memory Limit Exposure footer presents the canonical `exposure.reason`
+in an **Exposure assessment** context area, alongside a separate
+**Governance boundary** explaining Observe versus Enforce and the continuing
+Request Commitment gate. It preserves Unknown/Overcommitted evidence semantics
+without inferring physical availability or introducing a new severity/status
+calculation. The existing accessible **How allocation budgets work** disclosure
+separates one Violet-emphasized **request budget formula** (CPU/Memory/Pods)
+from distinct **logical storage policy** and **ResourceQuota boundary**
+explanations. Visual hierarchy uses existing semantic tokens and Lucide icons;
+the cluster selector, committed values, provider-read boundary and admission
+logic remain unchanged. Verify light/dark, compact-width wrapping, keyboard
+summary toggling, stale evidence reasons, and Observe/Enforce display in
+Dev Container before human acceptance; official CI/CD remains HOLD.
+
 **Tenant Contributions is detail on demand:** the overview shows the committed
 Tenant count and opens the canonical native KAORI dialog. After DevContainer
 visual feedback, this detail workspace uses **one visual hierarchy**: concise
