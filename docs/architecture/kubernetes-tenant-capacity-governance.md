@@ -453,13 +453,19 @@ storage availability. `ResourceQuota` enforces Kubernetes quota and never
 constitutes a physical node-resource reservation.
 
 
-**Visual UAT guidance hierarchy (#2371, review candidate):** The committed
-CPU/Memory Limit Exposure footer presents the canonical `exposure.reason`
-in an **Exposure assessment** context area, alongside a separate
-**Governance boundary** explaining Observe versus Enforce and the continuing
-Request Commitment gate. It preserves Unknown/Overcommitted evidence semantics
-without inferring physical availability or introducing a new severity/status
-calculation. The existing accessible **How allocation budgets work** disclosure
+**Visual UAT guidance hierarchy (#2371, #2382, review candidate):** The
+CPU/Memory Limit Exposure table retains committed limits, thresholds, mode and
+state badges. Its compact footer uses two title-adjacent, canonical Guide
+Info Tips: **Exposure assessment** shows the exact committed
+`exposure.reason`, and **Governance boundary** explains Observe versus Enforce,
+the continuing Request Commitment admission gate and governed ratio semantics.
+For **Unknown, Near Capacity or Overcommitted**, the exact committed reason
+also remains persistently visible as a semantic warning/critical status line:
+operator risk evidence must not depend on opening hover help. Healthy guidance
+is shown only on demand. Hover, focus, touch, Escape and viewport positioning
+reuse the shared Info Tip component/controller without page-specific JavaScript
+or any change to admission or provider evidence.
+The existing accessible **How allocation budgets work** disclosure
 separates one Violet-emphasized **request budget formula** (CPU/Memory/Pods)
 from distinct **logical storage policy** and **ResourceQuota boundary**
 explanations. Visual hierarchy uses existing semantic tokens and Lucide icons;
