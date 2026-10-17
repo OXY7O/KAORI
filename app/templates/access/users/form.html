@@ -487,7 +487,7 @@
                                             <h3 class="text-sm font-semibold text-kaori-strong">{{ identity_context.provider_name }}</h3>
                                             <span class="inline-flex rounded-md border {{ semantic_ui.tone_border_classes('normal') if identity_context.provider_enabled else semantic_ui.tone_border_classes('warning') }} {{ 'bg-status-normal-soft text-status-normal-text' if identity_context.provider_enabled else 'bg-status-warning-soft text-status-warning-text' }} px-2 py-0.5 text-xs font-semibold">{{ 'Provider ready' if identity_context.provider_enabled else 'Provider disabled' }}</span>
                                         </div>
-                                        <p class="mt-1.5 text-xs leading-5 text-kaori-primary">{{ identity_context.credential_detail }}</p>
+                                        <p class="mt-1.5 text-xs leading-5 text-kaori-primary">{{ "KAORI owns local password hashes and resets." if user.auth_source == "database" else identity_context.credential_detail }}</p>
                                     </div>
                                 </div>
                             </article>
@@ -560,11 +560,11 @@
                         <div class="space-y-3 p-4 text-xs leading-5 text-content-muted">
                             <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
                                 <span class="font-semibold text-kaori-primary">01</span>
-                                <p><strong class="font-semibold text-content-secondary">Identity profile</strong> updates the KAORI display name, username, and contact email.</p>
+                                <p><strong class="font-semibold text-content-secondary">Identity profile</strong> updates username, display name and contact email without changing credential ownership.</p>
                             </div>
                             <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
                                 <span class="font-semibold text-kaori-primary">02</span>
-                                <p><strong class="font-semibold text-content-secondary">Assigned Role</strong> changes RBAC permissions without changing the upstream identity.</p>
+                                <p><strong class="font-semibold text-content-secondary">Assigned Role</strong> changes KAORI RBAC permissions without modifying upstream identity or authentication credentials.</p>
                             </div>
                             <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">
                                 <span class="font-semibold text-kaori-primary">03</span>
@@ -587,12 +587,12 @@
                         ) }}
                     {% elif user.auth_source == 'database' %}
                         {{ related_page_card.render('User Registry',
-                                                'Return to the KAORI user registry to review account status, assigned roles, identity source, and administrative boundaries.',
+                                                'Return to User Registry for account state, assigned role, identity source, and administrative safeguards.',
                                                 url_for('users.index') ,
                         'Open User Registry',
                         icon='users',
                         eyebrow='Related User Management',
-                        boundary='KAORI is authoritative for this Local Database identity and its credential lifecycle.'
+                        boundary='KAORI owns this Local Database identity, its password hash, governed resets, and access lifecycle.'
                         ) }}
                     {% elif current_user.has_permission('identity_providers.view') %}
                         {{ related_page_card.render('Identity Providers',

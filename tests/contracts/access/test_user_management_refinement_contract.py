@@ -298,3 +298,33 @@ def test_uat4_user_create_copy_is_compact_and_canonical() -> None:
     assert '{{ form.display_name(class=' in form
     assert '{{ form.is_super_admin(class=' in form
     assert 'whitespace-nowrap' not in form
+
+
+
+def test_uat6_user_edit_copy_balances_context_specific_credential_text() -> None:
+    form = read('app/templates/access/users/form.html')
+    directory = read('app/access/users/directory.py')
+
+    # Credential Detail is the long, authoritative two-line explanation in
+    # User Detail; the narrower violet edit card has a separate short caption.
+    assert "'KAORI stores the local password hash and manages resets through '" in directory
+    assert "'its governed, audited workflow.'" in directory
+    assert '"KAORI owns local password hashes and resets." if user.auth_source == "database"' in form
+    assert 'else identity_context.credential_detail' in form
+    assert "{{ identity_context.credential_detail }}" in form
+
+    # Edit User: two-line-friendly link/boundary and 01/02 step descriptions.
+    assert 'Return to User Registry for account state, assigned role, identity source, and administrative safeguards.' in form
+    assert 'KAORI owns this Local Database identity, its password hash, governed resets, and access lifecycle.' in form
+    assert 'Identity profile</strong> updates username, display name and contact email without changing credential ownership.' in form
+    assert 'Assigned Role</strong> changes KAORI RBAC permissions without modifying upstream identity or authentication credentials.' in form
+    assert 'Identity profile updates the KAORI display name' not in form
+    assert 'Assigned Role</strong> changes RBAC permissions without changing the upstream identity.' not in form
+
+    # Do not relax the unchanged edit guards, projection/read authority or URL.
+    assert "identity_context.source_family == 'directory'" in form
+    assert "current_user.has_permission('identity_providers.view')" in form
+    assert "user.auth_source == 'database'" in form
+    assert "url_for('users.index')" in form
+    assert 'can_manage_admin_fields and super_admin_eligible' in form
+    assert 'whitespace-nowrap' not in form
