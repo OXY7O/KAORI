@@ -14,6 +14,7 @@
         '',
         action_label='Delete User',
         notice='This is a reversible soft delete governed by User Management restore guardrails.',
-        scope_value='Account Lifecycle') }}
+        scope_value='Account Lifecycle',
+        access_chrome=true) }}
     <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
 {% endblock dashboard_content %}
