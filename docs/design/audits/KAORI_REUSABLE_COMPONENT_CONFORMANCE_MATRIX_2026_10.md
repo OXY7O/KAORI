@@ -1,6 +1,6 @@
 # KAORI Reusable Components — Page/State Conformance Matrix
 
-> **Audit candidate — source inventory, not executed Visual QA.** 2026-10-17. Work authority [#2296](https://github.com/OXY7O/KAORI/issues/2296); Design System [#572](https://github.com/OXY7O/KAORI/issues/572); focused table-action audit [#2270](https://github.com/OXY7O/KAORI/issues/2270).
+> **Audit candidate — source inventory, not executed Visual QA.** Original 2026-10-17 snapshot plus 2026-10-18 exact-head addendum. Do not treat historical row links as current-head QA. Work authority [#2296](https://github.com/OXY7O/KAORI/issues/2296); Design System [#572](https://github.com/OXY7O/KAORI/issues/572); focused table-action audit [#2270](https://github.com/OXY7O/KAORI/issues/2270).
 
 | Field | Pinned value |
 | --- | --- |
@@ -8,6 +8,7 @@
 | Audited baseline | `1c110073c947bf3444e996794e8a1734d4007bda` |
 | Proposed evidence branch | `kaori/task-2296-ui-conformance-matrix-uat` |
 | Work type | Documentation + execution plan; **no visual/product implementation** |
+| Current addendum holding SHA | `4aa8d2641c775f99eaf130974529125fba99ef0e` (supplemental C074–C088 only) |
 | Official CI, Developer Check, Full Admission | **HOLD — NOT RUN** |
 | Dev Container / Playwright / human acceptance | **NOT RUN** — no Dev Container/browser runtime in the connected environment |
 | Promotion / release | **NOT AUTHORIZED** |
@@ -124,6 +125,70 @@ Actual executed Visual QA uses only the existing three states in `KAORI_VISUAL_Q
 | C072 | Shared · Blocked State | Cards / Feedback | setup + unavailable | [`_blocked_state.html`](https://github.com/OXY7O/KAORI/blob/1c110073c947bf3444e996794e8a1734d4007bda/app/templates/components/states/_blocked_state.html) | `S` | — · Canonical blocked variant; distinguish dependency failure | NOT RUN |
 | C073 | Shared · Loading | Loading / Feedback | busy + reduced motion | [`operational_section_loading.html`](https://github.com/OXY7O/KAORI/blob/1c110073c947bf3444e996794e8a1734d4007bda/app/templates/components/operational_section_loading.html) | `S` | #943 · Reusable skeleton owned by Operational Dashboard family | NOT RUN |
 
+## 3.1 Current-head source reconciliation — 2026-10-18
+
+> **Additive exact-head review; does not rewrite historical baseline evidence.** The 73 original C001–C073 rows remain pinned to commit `1c110073c947bf3444e996794e8a1734d4007bda`. The 15 C074–C088 supplementary rows below were reviewed against holding `4aa8d2641c775f99eaf130974529125fba99ef0e`. Neither source inspection is browser execution.
+
+| Item | Verified read-only state |
+| --- | --- |
+| Latest reviewed holding SHA | `4aa8d2641c775f99eaf130974529125fba99ef0e` |
+| Original matrix source SHA | `1c110073c947bf3444e996794e8a1734d4007bda` |
+| Diff between source SHAs | 59 commits, 37 changed files, 0 behind (GitHub compare) |
+| Original distinct file links still present | 58 / 58 |
+| Directly changed baseline-linked templates | Notification Channels `_channels_workspace.html`, `_channel_modals.html`, and `index.html` |
+| Indirect cross-family changed owner | `components/table_primitives.html::action_classes(size='header')` |
+| Scope after additive reconciliation | 73 original rows + 15 supplemental = **88 page/state source rows**; not an exhaustive route census |
+| Playwright / browser / human acceptance | **NOT RUN / PENDING**; never infer PASS from source or issue history |
+| CI / staging / main / release | **HOLD**; this update is on the existing draft PR issue branch only |
+
+### Changed-source interpretation
+
+- **C031–C033 require re-evaluation at current HEAD.** Provider-card Guide/Configure actions now use shared compact `table_ui.action_classes(size='header')`; this does not resolve top-level Channel Registry `Setup Guide` / `Add Channel` local class ownership in #2283. Configured Channels now has canonical name/provider/enabled filters (#2318), header-owned loading (#2327), result-count and pagination; Delivery Activity now uses the shared event-key filter/clear contract (#2319). Modal headers/provider guidance changed (#2320/#2321/#2330), but #2292 still owns distinct modal-footer workflow buttons.
+- **Shared table primitives changed** to add the header-size variant. It preserves compact row geometry and is not a replacement for 40px primary workflow controls. All indirect consumers and negative states still require regression tests; compare alone does not prove estate-wide conformance.
+- **Other original C### file paths remain addressable**, but unchanged file bytes are not a substitute for browser testing, data projection review, CSS bundle verification, or new feature-route coverage.
+
+### Supplemental conformance rows
+
+| ID | Page/surface | Family | State(s) to review | Source evidence (current SHA) | Source | Authority / finding | Browser / human |
+| --- | --- | --- | --- | --- | :---: | --- | --- |
+| C074 | Integrations · Notification Channels Registry | Filters / Loading | normal + filtered + zero + request | [_channels_workspace.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html) | S | #2318, #2327 · Shared HTMX filter, filtered count, 5-row footer and header-owned loading integrated; browser pending. | NOT RUN |
+| C075 | Integrations · Notification Delivery Activity | Filters / Pagination | exact event-key + clear + zero | [index.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/integrations/delivery/notification_channels/index.html) | S | #2319 · Shared filter and Clear link source-integrated; preserve event-key matching and tab-scoped HTMX. | NOT RUN |
+| C076 | Integrations · Notification Guide / Config | Forms / Modals | guide + create + edit + keyboard | [_channel_modals.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html) | D | #2292, #2320, #2321, #2330 · Guide/header/copy refined on holding; modal footer action ownership remains separate source debt; UAT pending. | NOT RUN |
+| C077 | Settings · General | Loading / Tabs | tab fetch + screen-reader status | [_page_content.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/settings/general/partials/_page_content.html) | E | #2225 · Superseding human decision: no visible loading bars in Settings; nonvisual HTMX status is source-present. | NOT RUN |
+| C078 | Settings · Account | Loading / Tabs | tab fetch + mutation feedback | [_page_content.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/settings/account/partials/_page_content.html) | E | #2225 · Same approved exception; nonvisual HTMX status and canonical mutation feedback retained. | NOT RUN |
+| C079 | Shared · Right Context Rail | Cards / Documentation | related workspace light + dark | [RIGHT_CONTEXT_RAIL.md](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/docs/design/components/RIGHT_CONTEXT_RAIL.md) | D | #751, #572 · Rail doc still claims legacy deep-Violet related card while component and approved ownership require soft Violet. | NOT RUN |
+| C080 | Shared · Workspace Summary Card | Cards / Typography | title + description + wrap | [workspace_summary_card.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/components/workspace_summary_card.html) | D | #572 · Documented 14/12px conflicts with implemented 16/14px; decide accepted authority before styling. | NOT RUN |
+| C081 | Shared · Resource Detail History | Modals / Navigation | open + Back + Forward + direct link | [detail_rows.js](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/static/js/detail_rows.js) | D | #572 · Standard requires history push on row open; current opener calls replace; runtime navigation not proven. | NOT RUN |
+| C082 | Access · User Profile Form | Forms / Accessibility | label + input accessible name | [form.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/access/users/form.html) | R | #1340, #1726 · Some labels have no explicit for/wrapping input in source; browser accessibility-tree confirmation required. | NOT RUN |
+| C083 | Shared · Embedded Form Action Bar | Forms / Tokens | surface + dark theme + focus | [form_action_bar.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/components/form_action_bar.html) | R | #572 · Uses bg-surface-subtle; token mapping not seen in @theme source; verify generated CSS before declaring visual FAIL. | NOT RUN |
+| C084 | Kubernetes · Tenant Overview Posture | Cards / Responsive | five peers + narrow + zoom | [overview.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/kubernetes/tenant/overview.html) | R | #572 · Existing columns=5 resource posture grid is incompletely described in 3/4-column doc; determine approved exception. | NOT RUN |
+| C085 | Shared · Inventory Asset Catalog | Cards / Ownership | cross-domain asset destinations | [inventory_asset_card.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/components/inventory_asset_card.html) | S | #946 · Canonical asset card reused beyond Kubernetes; reconcile docs' Kubernetes-only scope without new components. | NOT RUN |
+| C086 | Artifact Registry · Governance | Empty / Progress | observed-empty + not-collected + viewer | [_governance_workspace.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/artifact_registry/partials/_governance_workspace.html) | R | #1453 · Presenter owns replication empty copy, but observed-zero/read-only polling require domain and browser verification. | NOT RUN |
+| C087 | Shared · Destructive Confirmation | Modals / Responsive | short viewport + focus + critical | [destructive_confirmation_modal.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/components/destructive_confirmation_modal.html) | R | #2277 · Short viewport and long consequences: verify modal body scrolling and critical action states. | NOT RUN |
+| C088 | Reports · Templates Registry | Tables / Filters | header + row + 40px filters | [index.html](https://github.com/OXY7O/KAORI/blob/4aa8d2641c775f99eaf130974529125fba99ef0e/app/templates/reports/report_templates/index.html) | D | #2275, #2305, #2313 · Existing action debt plus focused table geometry and filter-height source issues; keep issue scopes separate. | NOT RUN |
+
+### Authority reconciliation candidates (not auto-approved changes)
+
+1. **Source/doc mismatch:** Resource Detail history navigation needs a bounded authority decision: `RESOURCE_DETAIL_MODAL.md` says opening pushes browser history, while `detail_rows.js` row opens with replace. Preserve direct links, Back/Forward and focus behavior during any fix; do not implement a new navigation framework.
+2. **Stale guidance:** `RIGHT_CONTEXT_RAIL.md` still describes legacy deep-Violet Related Page Card; `RELATED_PAGE_CARD.md`, `REUSABLE_COMPONENT_OWNERSHIP.md`, and `related_page_card.html` support soft Violet (#751). Reconcile approved documentation; do not restore full-Violet panel.
+3. **Typography contract:** `WORKSPACE_SUMMARY_CARD.md` says 14px title and 12px description, whereas current shared HTML uses 16px and 14px. Human-approved reference determines whether code or documentation changes.
+4. **Documented composition:** `resource_posture_grid.html` supports five-column Tenant posture and `inventory_asset_card.html` is reused cross-domain. Document observed composition only after accepted viewport/semantic review.
+5. **Accessibility and tokens require proof:** bare form labels and `bg-surface-subtle` in embedded Form Action Bar are source-level review candidates, not asserted browser failures; check accessible names and generated CSS first.
+
+### Batch additions to the existing nine QA batches
+
+- **Batch A/C:** include Notification Channel top-level header, provider-card compact actions, filtered/zero Channel Registry, Delivery Activity exact event-key, 5→10 Rows and live Clear reset; verify current `table_primitives` header/row semantics.
+- **Batch F/G:** include Access username/email/password accessibility-tree labels, embedded form footer surface under light/dark, Resource Detail row open → Back → Forward → direct URL, destructive modal at 360×800/200% zoom.
+- **Batch H/I:** include Related Workspace soft Violet, peer summary typography, Tenant five-column posture, Governance observed-empty vs not-collected, Settings nonvisual HTMX status, Kubernetes Analytics skeleton (#2295), stale/failure and Job progress.
+- Reuse established #543/#1726/#1738 scenario and visual-test authorities. No new runners, screenshots, baselines, or acceptance statuses from this documentation revision.
+
+### Scope and acceptance gate
+
+- This delta updates **source evidence and test planning only**. `D` denotes source/documentation divergence, `R` requires further characterization, `E` preserves a source-visible approved exception, and `S` means shared-owner use is observed; none means tested PASS.
+- New implementation issues are not implicitly authorized by this matrix. First search relevant current/merged issue authorities; make a bounded child issue only for an unresolved confirmed defect without owner, preserving #572 as umbrella.
+- Before accepting the matrix, recheck exact review branch HEAD and attach actual Dev Container fixture, role, viewport/theme, screenshot/trace, and human acceptance for each executed batch. Current statuses remain **NOT RUN**.
+
+---
 ## 4. Visual QA execution plan — existing harness only
 
 ### 4.1 Environment preflight (NOT EXECUTED)
