@@ -48,7 +48,7 @@ def test_trace_icon_matches_violet_section_identity() -> None:
 def test_eight_overview_descriptions_use_approved_short_copy() -> None:
     summary = read('app/templates/access/activity_audit/partials/_activity_summary_cards.html')
     for wording in (
-        'Recorded administrative and operational activity · 24h.',
+        'Notification-backed activity · 24h.',
         'Successful outcomes in the last 24 hours.',
         'Warnings and failures requiring review.',
         'Unique immutable actors in recent evidence.',

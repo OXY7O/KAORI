@@ -73,3 +73,18 @@ def test_access_overview_explains_permission_scoped_control_boundaries() -> None
     ):
         assert boundary in presentation
     assert "'boundaries': boundaries" in presentation
+
+
+
+def test_uat_14_inch_access_overview_card_copy_is_concise() -> None:
+    source = read('app/access/overview/presentation.py')
+    assert "return 'Protected defaults aligned; delegation capped.'" in source
+    assert "'Audit actor snapshots; other sources stay gated.'" in source
+    assert 'role_summary[\'baseline_drift_count\']' in source
+    assert 'role_summary[\'inactive_assigned_users\']' in source
+    assert "get_activity_audit_summary()" in source
+    # These are display-only copy changes; no presentation truncation.
+    template = read('app/templates/access/overview/index.html')
+    assert '{{ workspace.supporting_text }}' in template
+    assert '{{ boundary.description }}' in template
+    assert 'whitespace-nowrap' not in template
