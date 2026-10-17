@@ -250,6 +250,39 @@ python scripts/verify_operational_feedback_coverage.py
 
 Existing evidence output paths (only after a real run): `tmp/ci-artifacts/test-output/ui-browser/` with screenshot and `*-trace.zip` as produced by the existing harness, plus `visual-audit-report.json` and `visual-audit-report.md`. No artifacts were produced by this document-only change.
 
+### 4.4a Exact-head executable pilot and non-deterministic gap
+
+**Preflight reviewed at work-branch HEAD `767af749a91760459cc2d69049ab4ab8f99be71a`.** The QA harness, Dev Container recipe and test entrypoints below are existing repository sources; **none has been executed in this GitHub-only session**. Run only inside the local KAORI Dev Container after an operator confirms safe test-owned resources.
+
+**Actual deterministic coverage boundary:** `tests/ui/visual_audit.py::DETERMINISTIC_VISUAL_SURFACES` currently contains **Welcome**, **Settings General**, and **Notification Center** only. `tests/ui/conftest.py` supplies a patched `kaori_authenticated_base_url` local Flask server and a separate unready authentication local server, so the following pilot does *not* require production provider credentials or a live external KAORI endpoint. Browser dependencies and Playwright binaries must still be installed in Dev Container; runtime startup and tests remain unverified here.
+
+```bash
+# From /workspace/kaori in the existing Dev Container
+git rev-parse HEAD
+git status --short
+# Inspect collection before execution; do not count SKIP as PASS
+python -m pytest --collect-only -q \
+  tests/ui/test_representative_interactions.py \
+  tests/ui/test_accessibility_disclosures.py \
+  tests/ui/test_runtime_state_responsiveness.py
+
+# Phase 1: isolated deterministic 6-viewport pilot, with real screenshot/trace on run
+python -m pytest -q --maxfail=1 \
+  tests/ui/test_representative_interactions.py::test_deterministic_visual_surface_catalog_light_and_dark \
+  tests/ui/test_representative_interactions.py::test_representative_filter_pagination_and_form_controls \
+  tests/ui/test_representative_interactions.py::test_reduced_motion_keeps_shared_loading_and_overlay_state_without_animation \
+  tests/ui/test_accessibility_disclosures.py::test_side_drawer_controller_contains_and_restores_focus_across_viewports \
+  tests/ui/test_runtime_state_responsiveness.py::test_authentication_readiness_state_is_responsive_and_traceable
+```
+
+**Pilot-to-batch mapping:** deterministic visual catalog supports representative **B/D/H** geometry/state review, notification filters support **C**, reduced-motion and HTMX feedback support **I**, side-drawer focus supports **G**, and login prerequisite failure supports **H**. It **does not** exercise complete real-world **A/F**, Notification Channels Create/Edit, Reports Generate, Tenant high-risk workflow, multi-source committed evidence, or external provider admission; mark these **NOT RUN** until test-owned fixtures and safe runner authority are supplied.
+
+**External-endpoint distinction:** `tests/ui/test_browser_smoke.py` and `tests/ui/test_visual_regression.py` consume `KAORI_UI_BASE_URL` and may **SKIP** without it. Do not claim an external smoke PASS from the deterministic in-process suite; likewise do not point the browser at production to fill this gap. The existing Dev Container configuration forwards Flask port 5000 but does not itself constitute running evidence.
+
+**Required human handoff per pilot result:** save actual `tmp/ci-artifacts/test-output/ui-browser/` screenshots/traces, exact commit, Playwright/Python result summary, six viewport names, theme and RBAC persona where applicable, linked C### rows and issue authority. Missing browser install, missing fixtures, collected-zero tests, exceptions or any SKIP must be reported individually as `NOT RUN`, `BLOCKED`, or a real failure—not rewritten into `PASS`. Keep `KAORI_UPDATE_VISUAL_BASELINES` unset; no GitHub CI workflow trigger.
+
+**Broader nine-batch follow-up:** use #1726 for new interactive browser coverage and #1738 for scenario authority; add tests only on their dedicated implementation work branches. Keep this #2296 PR documentation-only; do not silently add integration providers, mutations or a second runner to this PR.
+
 ### 4.5 Evidence recording and acceptance
 
 For each executed row/batch, append a result using this exact structure in the relevant issue evidence, without mutating the static source-audit classification:
