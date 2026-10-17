@@ -42,3 +42,26 @@ def test_credentials_and_csrf_remain_inside_the_native_configuration_form() -> N
     assert 'name="provider_key"' in modal
     assert 'role="dialog"' not in modal
     assert 'data-kaori-dialog-close' in modal
+
+
+def test_configuration_modal_scrollable_cards_keep_spaced_fixed_actions() -> None:
+    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    buttons = read('app/templates/components/action_button.html')
+
+    assert 'overflow-y-auto overscroll-contain bg-surface-page' in modal
+    assert 'space-y-5 p-4 sm:p-6' in modal
+    assert 'Channel Details' in modal
+    assert 'Delivery Policy' in modal
+    assert '{% include provider_option.form_partial %}' in modal
+    assert 'rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm sm:p-6' in modal
+    assert 'sm:grid-cols-2 xl:grid-cols-3' in modal
+    assert 'aria-label="Notification Channel Actions"' in modal
+    assert 'sm:px-7 sm:py-5' in modal
+    assert 'justify-end gap-3' in modal
+    assert "action_button.classes('secondary')" in modal
+    assert "action_button.classes('primary')" in modal
+    assert 'inline-flex h-10' in buttons
+    for name in ('csrf_token', 'provider_key', 'name', 'minimum_severity', 'domains', 'event_types', 'enabled'):
+        assert f'name="{name}"' in modal
+    assert 'form_channel.provider_key' in modal
+    assert 'data-kaori-dialog-transition' in modal
