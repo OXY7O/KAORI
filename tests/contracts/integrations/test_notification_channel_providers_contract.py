@@ -30,7 +30,9 @@ def test_microsoft_teams_uses_workflows_webhook_and_keeps_url_secret():
     assert "body = json.dumps({'text': _render_message(message)}" in provider
     assert "method='POST'" in provider
     assert "('.environment.api.powerplatform.com', '.logic.azure.com')" in provider
-    assert 'legacy Office 365 connector webhook URLs' in page
+    catalog = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    assert 'legacy Office 365 connector webhook URLs' in catalog
+    assert '<p class="mt-1 text-xs leading-5 text-content-muted">' not in page
     assert re.search(r'<input\b(?=[^>]*\bname="teams_workflow_url")(?=[^>]*\btype="password")[^>]*>', page)
     assert 'form_channel.teams_workflow_url' not in page
 
@@ -84,3 +86,43 @@ def test_provider_catalog_owns_setup_guidance_and_channel_tab_renders_one_guide_
     assert "guideProvider === '{{ provider.key }}'" in modal
     assert 'provider.setup_steps' in modal
     assert 'provider.setup_requirements' in modal
+
+
+def test_all_notification_channel_configuration_guides_are_provider_owned() -> None:
+    catalog = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    keys = ('discord', 'slack', 'ntfy', 'telegram', 'email', 'microsoft_teams')
+
+    assert 'configuration_guide_summary: str' in catalog
+    assert 'configuration_guide_items: tuple[str, ...]' in catalog
+    assert catalog.count('configuration_guide_summary=(') == len(keys)
+    assert catalog.count('configuration_guide_items=(') == len(keys)
+    assert "'configuration_guide_summary': adapter.configuration_guide_summary" in catalog
+    assert "'configuration_guide_items': list(adapter.configuration_guide_items)" in catalog
+    assert "'notification-' ~ provider_option.key ~ '-configuration-guide'" in modal
+    assert 'provider_option.configuration_guide_summary' in modal
+    assert 'items=provider_option.configuration_guide_items' in modal
+    assert "variant='guide'" in modal
+    assert "provider_option.key == 'telegram'" not in modal
+
+    for key in keys:
+        form = read(f'app/templates/integrations/delivery/notification_channels/providers/{key}/_form.html')
+        assert '<p class="mt-1 text-xs leading-5 text-content-muted">' not in form
+        assert 'info_tip.render(' not in form
+        assert 'sm:grid-cols-2' in form
+
+    ntfy = read('app/templates/integrations/delivery/notification_channels/providers/ntfy/_form.html')
+    email = read('app/templates/integrations/delivery/notification_channels/providers/email/_form.html')
+    assert 'lg:grid-cols-3' in ntfy and 'lg:grid-cols-3' in email
+    assert 'sm:col-span-2' not in ntfy
+    assert 'sm:col-span-2' in email
+
+    for guidance in (
+        'Human-readable name; the webhook decides which Discord channel receives messages.',
+        'Channel-bound official Slack URL; never rendered back.',
+        'NOTIFICATION_NTFY_ALLOWED_ORIGINS',
+        'Changing this requires a new Test Delivery.',
+        'Separate multiple recipients with commas.',
+        'not legacy Office 365 connector webhook URLs.',
+    ):
+        assert guidance in catalog

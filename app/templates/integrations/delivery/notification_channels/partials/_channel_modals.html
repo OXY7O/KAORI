@@ -280,21 +280,14 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-base font-semibold leading-6 text-content-primary">{{ provider_option.label }} Configuration</h3>
-                                        {% if provider_option.key == 'telegram' %}
-                                            {{ info_tip.render(
-                                                'notification-telegram-configuration-guide',
-                                                'Telegram Configuration',
-                                                'Configure the bot credential and destination; a forum topic is optional.',
-                                                items=[
-                                                    'Bot Token: Stored as a secret and never rendered back after save.',
-                                                    'Chat ID / @Channel: The bot must already be able to post to this destination.',
-                                                    'Telegram Topic ID: Numeric Telegram message_thread_id of a Forum Topic in your supergroup.',
-                                                    'Leave blank for ordinary chat delivery. Changing this requires a new Test Delivery.'
-                                                ],
-                                                placement='right',
-                                                variant='guide'
-                                            ) }}
-                                        {% endif %}
+                                        {{ info_tip.render(
+                                            'notification-' ~ provider_option.key ~ '-configuration-guide',
+                                            provider_option.label ~ ' Configuration',
+                                            provider_option.configuration_guide_summary,
+                                            items=provider_option.configuration_guide_items,
+                                            placement='right',
+                                            variant='guide'
+                                        ) }}
                                     </div>
                                     <p class="mt-1 text-sm leading-5 text-content-secondary">{{ provider_option.configuration }}</p>
                                 </div>

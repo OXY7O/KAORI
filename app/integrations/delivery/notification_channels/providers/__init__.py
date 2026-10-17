@@ -110,6 +110,8 @@ class NotificationProviderAdapter:
     setup_steps: tuple[str, ...]
     security_note: str
     validation_note: str
+    configuration_guide_summary: str
+    configuration_guide_items: tuple[str, ...]
     form_partial: str
     form_parser: ProviderFormParser
     form_validator: ProviderFormValidator
@@ -254,6 +256,14 @@ _PROVIDERS = {
         validation_note=(
             "Test Delivery verifies Discord webhook acceptance, not a recipient's read confirmation."
         ),
+        configuration_guide_summary=(
+            'Identify the Discord destination and supply its channel-bound webhook securely.'
+        ),
+        configuration_guide_items=(
+            'Destination Label: Human-readable name; the webhook decides which Discord channel receives '
+            'messages.',
+            'Discord Webhook URL: Encrypted secret; mass mentions disabled on every message.',
+        ),
         form_partial='integrations/delivery/notification_channels/providers/discord/_form.html',
         form_parser=parse_discord_form,
         form_validator=validate_discord_form,
@@ -290,6 +300,13 @@ _PROVIDERS = {
         ),
         validation_note=(
             "Test Delivery verifies Slack webhook acceptance, not a recipient's read confirmation."
+        ),
+        configuration_guide_summary=(
+            'Label the Slack destination and use the approved channel-bound webhook URL.'
+        ),
+        configuration_guide_items=(
+            'Destination Label: Reference only; the webhook URL owns the Slack channel binding.',
+            'Incoming Webhook URL: Encrypted secret. Channel-bound official Slack URL; never rendered back.',
         ),
         form_partial='integrations/delivery/notification_channels/providers/slack/_form.html',
         form_parser=parse_slack_form,
@@ -330,6 +347,15 @@ _PROVIDERS = {
         ),
         validation_note=(
             "Test Delivery verifies ntfy HTTPS publish acceptance, not individual subscriber receipt."
+        ),
+        configuration_guide_summary=(
+            'Use an approved HTTPS origin and private topic, with a publish token when needed.'
+        ),
+        configuration_guide_items=(
+            'ntfy HTTPS Server: Must match an origin allowed by NOTIFICATION_NTFY_ALLOWED_ORIGINS.',
+            'Topic: Approved private topic name; do not put secrets in the topic.',
+            'Access Token: Encrypted and never rendered after saving. Test Delivery verifies publishing to the '
+            'chosen topic.',
         ),
         form_partial='integrations/delivery/notification_channels/providers/ntfy/_form.html',
         form_parser=parse_ntfy_form,
@@ -376,6 +402,15 @@ _PROVIDERS = {
             "Test Delivery verifies bot posting access to the selected chat/topic, not a human read "
             "receipt."
         ),
+        configuration_guide_summary=(
+            'Configure the bot credential and destination; a forum topic is optional.'
+        ),
+        configuration_guide_items=(
+            'Bot Token: Stored as a secret and never rendered back after save.',
+            'Chat ID / @Channel: The bot must already be able to post to this destination.',
+            'Telegram Topic ID: Numeric Telegram message_thread_id of a Forum Topic in your supergroup.',
+            'Leave blank for ordinary chat delivery. Changing this requires a new Test Delivery.',
+        ),
         form_partial='integrations/delivery/notification_channels/providers/telegram/_form.html',
         form_parser=parse_telegram_form,
         form_validator=validate_telegram_form,
@@ -418,6 +453,17 @@ _PROVIDERS = {
             "Test Delivery checks SMTP security, authentication, sender acceptance, and recipient "
             "submission; not reading."
         ),
+        configuration_guide_summary=(
+            'Configure SMTP transport, credentials, sender identity, and the recipient list.'
+        ),
+        configuration_guide_items=(
+            'SMTP Host / Port / Transport Security: Use a reachable SMTP server and the approved STARTTLS, '
+            'TLS/SMTPS, or trusted relay policy.',
+            'SMTP Username / Password: Provide credentials when required; the password is stored encrypted and '
+            'is not rendered after save.',
+            'Sender Name / Email: Enter the approved sender identity for the SMTP relay.',
+            'Recipients: Separate multiple recipients with commas.',
+        ),
         form_partial='integrations/delivery/notification_channels/providers/email/_form.html',
         form_parser=parse_email_form,
         form_validator=validate_email_form,
@@ -459,6 +505,14 @@ _PROVIDERS = {
             "Test Delivery confirms the Teams Workflow accepts KAORI's payload over HTTPS, not a read "
             "receipt."
         ),
+        configuration_guide_summary=(
+            'Identify the Teams destination and use a qualified Power Automate Workflow endpoint.'
+        ),
+        configuration_guide_items=(
+            'Destination Label: Human-readable Teams channel or workflow destination.',
+            'Workflow Webhook URL: Use a Teams Workflow / Power Automate URL, not legacy Office 365 connector '
+            'webhook URLs.',
+        ),
         form_partial='integrations/delivery/notification_channels/providers/microsoft_teams/_form.html',
         form_parser=parse_microsoft_teams_form,
         form_validator=validate_microsoft_teams_form,
@@ -491,6 +545,8 @@ def provider_catalog() -> list[dict[str, Any]]:
             'setup_steps': list(adapter.setup_steps),
             'security_note': adapter.security_note,
             'validation_note': adapter.validation_note,
+            'configuration_guide_summary': adapter.configuration_guide_summary,
+            'configuration_guide_items': list(adapter.configuration_guide_items),
             'form_partial': adapter.form_partial,
         }
         for adapter in _PROVIDERS.values()
