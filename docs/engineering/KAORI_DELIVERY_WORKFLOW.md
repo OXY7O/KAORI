@@ -128,7 +128,7 @@ Use one logical change per commit, lowercase type/scope, an imperative concrete 
 
 ### Pull Requests
 
-A normal work-branch -> `kaori/staging` Pull Request opens as **Draft**. Draft is the implementation/review loop and remains under path-aware Developer Check / targeted validation only. Changing the PR to Ready freezes the candidate, reruns Developer Check on that exact head, and invokes comprehensive Full Admission only after the Developer Check aggregate passes.
+A normal work-branch -> `kaori/staging` Pull Request opens as **Draft**. Draft is the implementation/review loop and remains under path-aware Developer Check / targeted validation only. Changing the PR to Ready freezes the candidate and requires an **independently verified exact-head Developer Check PASS** before any comprehensive Full Admission. When a fresh, successful Draft run has an auditable route artifact matching the live trusted PR, exact head/base SHA, source tree, validation authority, toolchain, and every required GitHub job conclusion, the Ready aggregate may reuse those already-proven focused results. All missing, stale, failed, cancelled, unknown, or altered evidence falls back to a **fresh Ready Developer Check**, not an assumed PASS. The Ready aggregate remains required and Full Admission is always comprehensive on a new frozen candidate.
 
 Canonical PR body reading order remains:
 
