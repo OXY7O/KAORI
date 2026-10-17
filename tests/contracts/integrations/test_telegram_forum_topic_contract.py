@@ -62,7 +62,9 @@ def test_telegram_field_help_uses_canonical_info_tips_without_inline_paragraphs(
     assert 'Changing this requires a new Test Delivery.' in form
     assert 'data-kaori-info-tip-trigger' in info_tip
     assert 'role="tooltip"' in info_tip
-    assert 'document.body.appendChild(preview)' in javascript
+    assert "root.closest('dialog[open]')" in javascript
+    assert 'openDialog instanceof HTMLDialogElement ? openDialog : document.body' in javascript
+    assert 'portal.appendChild(preview)' in javascript
     assert "addEventListener('focusin'" in javascript
     assert "addEventListener('keydown'" in javascript
     assert "addEventListener('scroll'" in javascript
