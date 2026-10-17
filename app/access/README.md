@@ -225,3 +225,9 @@ Permission Registry, Role Coverage, and Administrative Source Evidence use the s
 ### UAT-1(1) lifecycle card alignment — #2253
 
 The Add/Edit User `Lifecycle & Administrative Controls` section reuses the existing Super Admin card's Violet header geometry for Assigned Role, Active Account and eligible Super Admin, with concise descriptions that wrap naturally at phone/zoom widths. Actual role selection, account active state, Super Admin eligibility, unavailable branch, same-account restrictions, and last-active-Local-Super-Admin safeguards have not changed. Functional/browser UAT remains NOT RUN.
+
+
+
+### UAT-1(2) Access Boundaries section hierarchy — #2257
+
+Access Overview now places its **Access Boundaries** heading and supporting explanation above the existing read-only boundary grid, using the shared `section_intro` and `operational_section.shell_classes` primitives in the same outer section rhythm as Authorization Flow. The boundary titles/statuses, permission-scoped domain composition, responsive grid and zero-boundary omission are unchanged. Screenshot-based laptop/mobile/light-dark human acceptance remains pending.
