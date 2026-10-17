@@ -1898,7 +1898,7 @@ def test_tenant_allocation_guidance_has_distinct_limit_reason_and_budget_formula
 
     exposure = overview.split('id="tenant-limit-exposure-heading"', 1)[1].split('</section>', 1)[0]
     assert 'components/info_tip.html' in overview
-    assert 'overflow-visible rounded-xl' in exposure
+    assert '<section class="overflow-visible rounded-xl' in overview
     assert exposure.index('Exposure assessment') < exposure.index('Governance boundary')
     assert exposure.count('info_tip.render(') == 2
     assert "'tenant-limit-exposure-assessment-tip'" in exposure
