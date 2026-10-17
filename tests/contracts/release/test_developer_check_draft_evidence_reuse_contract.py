@@ -36,16 +36,28 @@ def proven_case():
     policy = load_policy()
     timestamp = datetime.now(UTC)
     evidence = policy.build_draft_developer_evidence(
-        repository=REPO, pull_number=2220, head_sha=HEAD, base_sha=BASE,
-        source_tree=TREE, plan=PLAN, run_id=707, run_attempt=1,
+        repository=REPO,
+        pull_number=2220,
+        head_sha=HEAD,
+        base_sha=BASE,
+        source_tree=TREE,
+        plan=PLAN,
+        run_id=707,
+        run_attempt=1,
         workflow_ref=f'{REPO}/.github/workflows/developer-check.yml@refs/pull/2220/merge',
-        authority_fingerprint='fingerprint', toolchain_key='toolchain',
+        authority_fingerprint='fingerprint',
+        toolchain_key='toolchain',
         created_at=timestamp.isoformat(),
     )
     run = {
-        'id': 707, 'run_attempt': 1, 'status': 'completed', 'conclusion': 'success',
-        'event': 'pull_request', 'path': '.github/workflows/developer-check.yml',
-        'head_sha': HEAD, 'head_branch': 'kaori/perf-2220-exact-draft-evidence-reuse',
+        'id': 707,
+        'run_attempt': 1,
+        'status': 'completed',
+        'conclusion': 'success',
+        'event': 'pull_request',
+        'path': '.github/workflows/developer-check.yml',
+        'head_sha': HEAD,
+        'head_branch': 'kaori/perf-2220-exact-draft-evidence-reuse',
         'head_repository': {'full_name': REPO},
     }
     jobs = [
@@ -53,9 +65,16 @@ def proven_case():
         for name, outcome in policy._required_developer_jobs(PLAN).items()
     ]
     args = dict(
-        repository=REPO, pull_number=2220, head_sha=HEAD, base_sha=BASE,
-        source_tree=TREE, plan=PLAN, authority_fingerprint='fingerprint',
-        toolchain_key='toolchain', current_run_id=708, current_time=timestamp,
+        repository=REPO,
+        pull_number=2220,
+        head_sha=HEAD,
+        base_sha=BASE,
+        source_tree=TREE,
+        plan=PLAN,
+        authority_fingerprint='fingerprint',
+        toolchain_key='toolchain',
+        current_run_id=708,
+        current_time=timestamp,
     )
     return policy, evidence, run, jobs, args
 
@@ -67,40 +86,52 @@ def test_exact_completed_draft_plan_uses_audited_proof_not_sha_alone() -> None:
     assert 'all jobs' in decision.reason
 
 
-@pytest.mark.parametrize('field,value', [
-    ('repository', 'another/repo'),
-    ('pull_number', 2221),
-    ('head_sha', 'd' * 40),
-    ('base_sha', 'e' * 40),
-    ('source_tree', 'f' * 40),
-    ('plan', 'python=true tests=none'),
-    ('authority_fingerprint', 'different'),
-    ('toolchain_key', 'different'),
-])
+@pytest.mark.parametrize(
+    'field,value',
+    [
+        ('repository', 'another/repo'),
+        ('pull_number', 2221),
+        ('head_sha', 'd' * 40),
+        ('base_sha', 'e' * 40),
+        ('source_tree', 'f' * 40),
+        ('plan', 'python=true tests=none'),
+        ('authority_fingerprint', 'different'),
+        ('toolchain_key', 'different'),
+    ],
+)
 def test_any_identity_or_validation_authority_drift_fails_closed(field: str, value: object) -> None:
     policy, evidence, run, jobs, args = proven_case()
     args[field] = value
     assert not policy.draft_developer_reuse_decision(evidence, run, jobs, **args).reusable
 
 
-@pytest.mark.parametrize('field,value', [
-    ('status', 'in_progress'),
-    ('conclusion', 'failure'),
-    ('event', 'push'),
-    ('head_sha', 'another-head'),
-    ('head_repository', {'full_name': 'untrusted/fork'}),
-    ('path', '.github/workflows/quality.yml'),
-    ('run_attempt', 2),
-])
+@pytest.mark.parametrize(
+    'field,value',
+    [
+        ('status', 'in_progress'),
+        ('conclusion', 'failure'),
+        ('event', 'push'),
+        ('head_sha', 'another-head'),
+        ('head_repository', {'full_name': 'untrusted/fork'}),
+        ('path', '.github/workflows/quality.yml'),
+        ('run_attempt', 2),
+    ],
+)
 def test_untrusted_incomplete_or_rerun_workflow_fails_closed(field: str, value: object) -> None:
     policy, evidence, run, jobs, args = proven_case()
     run[field] = value
     assert not policy.draft_developer_reuse_decision(evidence, run, jobs, **args).reusable
 
 
-@pytest.mark.parametrize('name', [
-    'Route Checks', 'Prepare Toolchain', 'Frontend & Focused Validation', 'Developer Check',
-])
+@pytest.mark.parametrize(
+    'name',
+    [
+        'Route Checks',
+        'Prepare Toolchain',
+        'Frontend & Focused Validation',
+        'Developer Check',
+    ],
+)
 def test_failed_or_missing_mandatory_draft_jobs_never_reuse(name: str) -> None:
     policy, evidence, run, jobs, args = proven_case()
     changed = [dict(job, conclusion='failure') if job['name'] == name else job for job in jobs]
@@ -147,9 +178,7 @@ def test_ready_integration_preserves_exact_head_aggregate_and_full_admission() -
     source = WORKFLOW.read_text(encoding='utf-8')
     workflow = yaml.safe_load(source)
     jobs = workflow['jobs']
-    assert set(jobs) == {
-        'route', 'toolchain', 'python-check', 'validation-check', 'developer-check', 'full-admission'
-    }
+    assert set(jobs) == {'route', 'toolchain', 'python-check', 'validation-check', 'developer-check', 'full-admission'}
     assert "needs.route.outputs.reuse != 'true'" in jobs['toolchain']['if']
     assert "needs.route.outputs.reuse != 'true'" in jobs['python-check']['if']
     assert "needs.route.outputs.reuse != 'true'" in jobs['validation-check']['if']
