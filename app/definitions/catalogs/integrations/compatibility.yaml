@@ -131,7 +131,7 @@ products:
   supported_version_label: 'v0.24–v0.42.x · KAORI policy v1 (2026)'
   anchor_release_label: 'v0.24 · latest stable release in 2021'
   upper_release_label: 'v0.42.4 · latest stable release at 2026 policy snapshot'
-  upstream_lifecycle_label: 'Current qualified line: v0.42.x · older window versions are KAORI Extended'
+  upstream_lifecycle_label: 'Current: v0.42.x · older qualified lines: KAORI Extended'
   support_label: Current + Extended
   support_tone: info
   capability_summary: Long-retention PromQL through the shared Prometheus HTTP API v1 contract.
@@ -153,7 +153,7 @@ products:
   supported_version_label: 'v0.23–v0.34.x · KAORI policy v1 (2026)'
   anchor_release_label: 'v0.23 · latest stable release in 2021'
   upper_release_label: 'v0.34.1 · latest stable release at 2026 policy snapshot'
-  upstream_lifecycle_label: 'Current qualified line: v0.34.x · older window versions are KAORI Extended'
+  upstream_lifecycle_label: 'Current: v0.34.x · older qualified lines: KAORI Extended'
   support_label: Current + Extended
   support_tone: info
   capability_summary: Alertmanager API v2 status, alerts, and silences provider contract.
