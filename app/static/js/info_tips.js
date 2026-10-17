@@ -80,7 +80,11 @@
             pinned,
         }
 
-        document.body.appendChild(preview)
+        // A modal <dialog> is in the browser top layer. Portal inside that
+        // layer rather than behind it; non-modal Info Tips keep the body portal.
+        const openDialog = root.closest('dialog[open]')
+        const portal = openDialog instanceof HTMLDialogElement ? openDialog : document.body
+        portal.appendChild(preview)
         preview.classList.remove('hidden')
         preview.setAttribute('aria-hidden', 'false')
         preview.style.visibility = 'hidden'
