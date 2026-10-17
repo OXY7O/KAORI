@@ -35,3 +35,8 @@ User, Role, and Identity Provider mutations write the persisted `AuditEvent` led
 ## Password Reset Session Boundary
 
 Local password changes and administrator resets advance `User.auth_session_version` to revoke all existing authenticated sessions and remembered sign-ins for the affected credential generation. Self-service change may re-establish only the current browser on the new generation.
+
+
+### UAT-1(6) User Detail heading badges — #2265
+
+The existing five-band User Detail resource sheet adds source-backed badges to the Identity, Authentication and Authorization left header descriptions. Identity uses the recorded source label; Authentication uses actual credential ownership; Authorization uses computed effective access with semantic status color. These reuse the shared inventory-section macro without new markup or permission changes. The rendered Firefox/sidebar-open review and human acceptance remain pending.

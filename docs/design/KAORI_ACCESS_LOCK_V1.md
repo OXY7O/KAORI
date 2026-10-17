@@ -56,3 +56,5 @@ The permanent release guard is `scripts/verify_access_final_lock.py`, with contr
 
 
 Activity Audit administrative presentation uses existing framed workspace navigation and shared table registry behavior (full-width filters, Clear Filters, loading, Rows 5/10/25/50, numeric pagination, empty state), restricted to allowed hot AuditEvent sources and their existing domain permissions. This does not expand actor snapshots or archive authority.
+
+- **User Detail UAT-1(6) (#2265):** Identity, Authentication and Authorization left-hand resource-sheet headings use the existing shared `inventory_section` badge below description on xl desktop (near title at smaller widths), bound respectively to identity-source label, credential owner and effective KAORI access status/tone. Do not invent static trust/permission status, change the fact grid, provider authority, lifecycle or mutation gates. Firefox L13 and responsive human UAT pending.
