@@ -59,6 +59,21 @@ def test_successful_static_groups_emit_progress_then_one_rollup_row() -> None:
     assert 'Detailed output is retained in' in source
 
 
+def test_engineering_quality_verifier_timing_is_bounded_and_success_only() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    capture = source.split('run_command_capture() {', 1)[1].split('run_static_group() {', 1)[0]
+
+    assert "if [[ \"$group\" == 'Engineering Quality' ]]" in capture
+    assert 'local elapsed=$(( $(date +%s) - started ))' in capture
+    assert "printf '✅ %s — %s · ⏱ %dm %02ds\\n' \"$group\" \"$label\"" in capture
+    assert 'if "$@" >"$log_file" 2>&1; then' in capture
+    assert "if [[ \"$label\" == 'Release Surface Coverage' ]]" in capture
+    assert 'return "$status"' in capture
+    assert 'tail -n 60 "$log_file"' in capture
+    quality = source.split("run_static_group 'Engineering Quality'", 1)[1].split('run_contract_migration_gate', 1)[0]
+    assert quality.count("'python ") >= 18
+
+
 def test_failed_static_verifier_remains_failure_first_and_names_the_check() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 

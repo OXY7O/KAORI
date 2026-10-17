@@ -66,6 +66,8 @@ bash scripts/quality_gate.sh --static
 
 This includes source hygiene, architecture/final-lock verifiers, literal Jinja template-dependency resolution, Ruff check/format, djLint, Pyright, migration graph, import graph, UI contracts, and contract/migration pytest evidence.
 
+**Engineering Quality profiling (#2339):** Successful Static & Governance job logs report one bounded elapsed-time line for each of the 18 existing Engineering Quality checks (Ruff, djLint, Pyright, import/architecture/code-health verifiers). The Foundation and Domain groups retain their quiet per-command success output, and all groups retain their existing aggregate counts and diagnostics. Compare the same verifier across successful exact-head runs on the same runner; distinguish command time from the independent Contract & Migration Safety pytest and from GitHub queue wait. The per-command timing is observability only—not an optimization or permission to suppress a required check.
+
 ### Functional and security behavior
 
 ```bash
