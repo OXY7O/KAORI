@@ -468,7 +468,7 @@ class _GitHubArtifactRedirectHandler(urllib.request.HTTPRedirectHandler):
         return redirected
 
 
-def _github_request(url: str, token: str, *, binary: bool = False) -> Any:
+def _github_request(url: str, token: str, *, binary: bool = False, timeout: int = 60) -> Any:
     request = urllib.request.Request(
         _validated_github_url(url),
         headers={
@@ -480,9 +480,9 @@ def _github_request(url: str, token: str, *, binary: bool = False) -> Any:
     )
     if binary:
         opener = urllib.request.build_opener(_GitHubArtifactRedirectHandler())
-        with opener.open(request, timeout=60) as response:  # nosec B310
+        with opener.open(request, timeout=timeout) as response:  # nosec B310
             return response.read()
-    with urllib.request.urlopen(request, timeout=60) as response:  # nosec B310
+    with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310
         return json.load(response)
 
 
@@ -757,7 +757,7 @@ def find_remote_draft_developer_evidence(
 ) -> ReuseDecision:
     try:
         # Live PR state avoids treating stale Ready event snapshots as authority.
-        pr = _github_request(f'https://api.github.com/repos/{repository}/pulls/{pull_number}', token)
+        pr = _github_request(f'https://api.github.com/repos/{repository}/pulls/{pull_number}', token, timeout=5)
         if (
             pr.get('draft') is not False
             or pr.get('head', {}).get('sha') != head_sha
@@ -767,13 +767,14 @@ def find_remote_draft_developer_evidence(
             or pr.get('state') != 'open'
         ):
             return ReuseDecision(False, 'Live PR head/base/trust state changed; fresh Ready checks required.')
-        query = urllib.parse.urlencode({'head_sha': head_sha, 'event': 'pull_request', 'per_page': 30})
+        query = urllib.parse.urlencode({'head_sha': head_sha, 'event': 'pull_request', 'per_page': 10})
         runs = _github_request(
             f'https://api.github.com/repos/{repository}/actions/workflows/developer-check.yml/runs?{query}',
             token,
+            timeout=5,
         ).get('workflow_runs', [])
         # Never trust a candidate solely from an artifact or successful aggregate.
-        for run in runs[:15]:
+        for run in runs[:3]:
             if run.get('status') != 'completed' or run.get('conclusion') != 'success':
                 continue
             run_id = int(run['id'])
@@ -781,12 +782,12 @@ def find_remote_draft_developer_evidence(
                 continue
             artifact_name = f'kaori-draft-developer-{pull_number}-{head_sha}-{run_id}-{run["run_attempt"]}'
             artifacts = _github_request(
-                f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token
+                f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token, timeout=5
             ).get('artifacts', [])
             matching = [a for a in artifacts if a.get('name') == artifact_name and not a.get('expired')]
             if len(matching) != 1:
                 continue
-            archive = _github_request(str(matching[0]['archive_download_url']), token, binary=True)
+            archive = _github_request(str(matching[0]['archive_download_url']), token, binary=True, timeout=5)
             with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
                 if bundle.namelist() != ['draft-developer-evidence.json']:
                     continue
@@ -794,6 +795,7 @@ def find_remote_draft_developer_evidence(
             jobs = _github_request(
                 f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/jobs?filter=latest&per_page=100',
                 token,
+                timeout=5,
             ).get('jobs', [])
             decision = draft_developer_reuse_decision(
                 evidence,
