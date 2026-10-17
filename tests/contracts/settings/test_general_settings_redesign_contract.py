@@ -344,7 +344,7 @@ def test_uat_general_copy_is_concise_without_truncating_provider_contracts() -> 
     assert 'Current: v0.42.x' in definition
     assert 'Current: v0.34.x' in definition
     assert 'Community archived; qualified release evidence retained.' in catalog
-    assert 'Unqualified MinIO releases degrade, not block solely by version.' in catalog
+    assert 'Live S3 checks decide readiness; unqualified MinIO releases degrade, not block by version alone.' in catalog
     # Phone layouts must wrap naturally, never hide any evidence.
     assert 'truncate' not in timezone
     assert 'text-ellipsis' not in system
