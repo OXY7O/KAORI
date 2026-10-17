@@ -174,8 +174,11 @@ def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
     assert 'query.filter(NotificationDelivery.event_key == event_key)' in service
     assert "normalized_delivery_key = str(delivery_event_key or '').strip()[:255]" in service
     assert "'delivery_filter': normalized_delivery_key" in service
-    assert 'name="delivery_event_key"' in page
-    assert 'hx-select="#notification-channels-workspace"' in page
+    assert "table_ui.search_field('delivery_event_key'" in page
+    assert "table_registry.filter_form('notification_channels.index'," in page
+    assert "table_registry.clear_filters_link('notification_channels.index'," in page
+    assert "'notification-delivery-registry'" in page
+    assert "'notification-delivery-loading'" in page
     assert "'delivery_event_key': payload.delivery_filter" in page
     assert 'Delivery attempts and channel retries are provider-delivery evidence' in page
     assert 'No Matching Deliveries' in page
@@ -228,4 +231,23 @@ def test_review5_channels_registry_uses_canonical_filter_and_safe_server_paginat
     assert "query = query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())" in service
     assert 'paginate_query(query, page=page, per_page=per_page)' in service
     assert "request.args.get('channel_per_page', default=5, type=int)" in routes
+
+def test_review5_delivery_activity_auto_htmx_filter_has_no_search_button() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    canonical = read('app/templates/components/table_registry.html')
+    assert "form_id='notification-delivery-filter-form'" in page
+    assert "page_param='delivery_page'" in page
+    assert "per_page_param='delivery_per_page'" in page
+    assert "'tab': 'delivery', 'delivery_event_key': payload.delivery_filter" in page
+    assert 'Find Deliveries' not in page
+    assert '>Reset</a>' not in page
+    assert "table_registry.clear_filters_link('notification_channels.index'," in page
+    assert 'hx-trigger="change, input changed delay:450ms"' in canonical
+    assert 'hx-indicator="#{{ loading_id }}"' in canonical
+    assert 'hx-sync="closest section:replace"' in canonical
+    assert "loading_bar.render('notification-delivery-loading'" in page
+    assert 'No Matching Deliveries' in page
+    assert "request.args.get('delivery_per_page', default=5, type=int)" in read(
+        'app/integrations/delivery/notification_channels/routes.py'
+    )
 

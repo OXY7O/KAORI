@@ -505,3 +505,16 @@ Name filtering deliberately avoids encrypted provider credentials, destination
 secrets and arbitrary provider calls. The existing read-only channel table,
 permission-gated Edit/Test/Delete actions, status computation, source-owned
 provider catalog and Activity Audit remain authoritative.
+
+### REVIEW(5) — Delivery Activity canonical filter (#2319)
+
+Delivery Activity already has persisted rows, status/evidence columns,
+loading and pagination. The Exact Event Key filter now uses existing
+`table_registry.filter_form` auto-apply HTMX after input changes and
+`clear_filters_link` for active filters instead of the bespoke Find
+Deliveries submit button. Scoped `notification-delivery-registry` swaps,
+loading indicator, latest-request-wins synchronization and tab/Rows
+preservation follow the shared component, retaining native GET fallback.
+The **exact event-key** match and permissioned Report source links remain
+unchanged. Delivery history remains provider evidence, not extra authored
+Activity Audit. Firefox/Dev Container and human acceptance remain pending.
