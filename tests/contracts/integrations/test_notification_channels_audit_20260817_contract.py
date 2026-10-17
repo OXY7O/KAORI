@@ -299,3 +299,17 @@ def test_review6_channel_registry_loading_follows_header_before_filters() -> Non
     assert header < loading < filters < table < footer
     assert registry.count("loading_bar.render('notification-channel-loading'") == 1
 
+def test_review6_provider_utilities_match_header_action_geometry_with_soft_hover() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    primitive = read('app/templates/components/table_primitives.html')
+    assert source.count("table_ui.action_classes(size='header')") == 2
+    assert "action_button.classes('secondary')" not in source
+    assert 'data-lucide="book-open"' in source
+    assert 'data-lucide="settings-2"' in source
+    assert "size == 'header' else 'min-h-8 px-2.5'" in primitive
+    assert "'min-h-9 px-3'" in primitive
+    assert 'hover:bg-kaori-soft' in primitive
+    assert 'hover:bg-kaori-primary' not in primitive
+    assert 'aria-label="Open {{ provider.label }} setup guide"' in source
+    assert 'aria-label="Configure {{ provider.label }} notification channel"' in source
+
