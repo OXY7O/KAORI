@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
@@ -443,6 +444,20 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
     _set_progress_metadata(job, stage='Failed')
     _append_automatic_terminal_audit(job)
     db.session.commit()
+    # This is an outbound side effect, never a prerequisite for committing job failure.
+    # Delivery reads the same committed identity in an independent maintenance task.
+    try:
+        from app.platform_operations.jobs.tasks import dispatch_failed_job_notification
+
+        dispatch_failed_job_notification.apply_async(
+            args=[job.id],
+            queue=str(current_app.config.get('JOB_MAINTENANCE_CELERY_QUEUE') or 'maintenance'),
+        )
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError):
+        logging.getLogger(__name__).warning(
+            'Job failure notification enqueue unavailable for committed JobExecution %s.',
+            job.public_id,
+        )
     return job
 
 
