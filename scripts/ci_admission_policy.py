@@ -468,7 +468,7 @@ class _GitHubArtifactRedirectHandler(urllib.request.HTTPRedirectHandler):
         return redirected
 
 
-def _github_request(url: str, token: str, *, binary: bool = False) -> Any:
+def _github_request(url: str, token: str, *, binary: bool = False, timeout: int = 60) -> Any:
     request = urllib.request.Request(
         _validated_github_url(url),
         headers={
@@ -480,9 +480,9 @@ def _github_request(url: str, token: str, *, binary: bool = False) -> Any:
     )
     if binary:
         opener = urllib.request.build_opener(_GitHubArtifactRedirectHandler())
-        with opener.open(request, timeout=60) as response:  # nosec B310
+        with opener.open(request, timeout=timeout) as response:  # nosec B310
             return response.read()
-    with urllib.request.urlopen(request, timeout=60) as response:  # nosec B310
+    with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310
         return json.load(response)
 
 
@@ -560,6 +560,317 @@ def find_remote_full_evidence(
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError, zipfile.BadZipFile) as exc:
         return ReuseDecision(False, f'Admission evidence lookup failed closed: {type(exc).__name__}: {exc}')
     return ReuseDecision(False, 'No reusable Full Admission evidence was found for this tree and authority.')
+
+
+# Draft -> Ready optimization (#2220). This does not reuse Full Admission.
+# Draft route evidence is not authoritative until GitHub independently attests
+# the *completed* workflow and every required job on the same trusted PR head.
+DRAFT_DEVELOPER_EVIDENCE_VERSION = 1
+DRAFT_DEVELOPER_EVIDENCE_MAX_AGE_SECONDS = 2 * 60 * 60
+DRAFT_DEVELOPER_JOB_NAMES = (
+    'Route Checks',
+    'Prepare Toolchain',
+    'Python & Governance',
+    'Frontend & Focused Validation',
+    'Developer Check',
+    'Full Admission',
+    'Ready Admission Guard',
+)
+
+
+def developer_toolchain_key(root: Path | str = Path('.')) -> str:
+    directory = Path(root)
+    files = (
+        '.github/ci/Dockerfile',
+        '.github/ci/requirements-security.txt',
+        'requirements/base.txt',
+        'requirements/dev.txt',
+    )
+    digest = hashlib.sha256()
+    for file in files:
+        digest.update((directory / file).read_bytes())
+    return digest.hexdigest()[:20]
+
+
+def _required_developer_jobs(plan: str) -> dict[str, str]:
+    # Exact canonical planner summary is part of the identity; unknown formats
+    # cannot authorize reuse. Match the same lane-selection policy as YAML.
+    import re
+
+    values = dict(re.findall(r'\b([a-z_]+)=(true|false)\b', plan))
+    flags = ('python', 'templates', 'frontend', 'migrations', 'contracts', 'reports', 'wide')
+    if any(flag not in values for flag in flags) or 'tests=' not in plan:
+        raise ValueError('Incomplete canonical Developer Check plan.')
+    python = any(values[flag] == 'true' for flag in ('python', 'migrations', 'reports', 'wide'))
+    focused = any(values[flag] == 'true' for flag in ('templates', 'frontend', 'contracts'))
+    # All summary fields after tests= are trusted static selectors from planner.
+    tests = plan.split(' tests=', 1)
+    if len(tests) != 2 or not tests[1].strip():
+        raise ValueError('Developer Check plan lacks test selection.')
+    focused = focused or tests[1].strip() != 'none'
+    toolchain = python or focused
+    return {
+        'Route Checks': 'success',
+        'Prepare Toolchain': 'success' if toolchain else 'skipped',
+        'Python & Governance': 'success' if python else 'skipped',
+        'Frontend & Focused Validation': 'success' if focused else 'skipped',
+        'Developer Check': 'success',
+        'Full Admission': 'skipped',
+        'Ready Admission Guard': 'skipped',
+    }
+
+
+def build_draft_developer_evidence(
+    *,
+    repository: str,
+    pull_number: int,
+    head_sha: str,
+    base_sha: str,
+    source_tree: str,
+    plan: str,
+    run_id: int,
+    run_attempt: int,
+    workflow_ref: str,
+    authority_fingerprint: str,
+    toolchain_key: str,
+    created_at: str,
+) -> dict[str, Any]:
+    _required_developer_jobs(plan)
+    if not all((repository, head_sha, base_sha, source_tree, workflow_ref, authority_fingerprint, toolchain_key)):
+        raise ValueError('Cannot publish incomplete Draft Developer Check evidence.')
+    if not workflow_ref.startswith(f'{repository}/.github/workflows/developer-check.yml@'):
+        raise ValueError('Draft Developer Check workflow authority mismatch.')
+    if min(pull_number, run_id, run_attempt) <= 0:
+        raise ValueError('Invalid Draft Developer Check identity.')
+    return {
+        'schema': DRAFT_DEVELOPER_EVIDENCE_VERSION,
+        'repository': repository,
+        'pull_number': pull_number,
+        'head_sha': head_sha,
+        'base_sha': base_sha,
+        'source_tree': source_tree,
+        'plan': plan,
+        'run_id': run_id,
+        'run_attempt': run_attempt,
+        'workflow_ref': workflow_ref,
+        'authority_fingerprint': authority_fingerprint,
+        'toolchain_key': toolchain_key,
+        'created_at': created_at,
+        'draft': True,
+    }
+
+
+def draft_developer_reuse_decision(
+    evidence: Mapping[str, Any],
+    run: Mapping[str, Any],
+    jobs: Sequence[Mapping[str, Any]],
+    *,
+    repository: str,
+    pull_number: int,
+    head_sha: str,
+    base_sha: str,
+    source_tree: str,
+    plan: str,
+    authority_fingerprint: str,
+    toolchain_key: str,
+    current_run_id: int,
+    head_ref: str,
+    current_time: datetime | None = None,
+) -> ReuseDecision:
+    def reject(reason: str) -> ReuseDecision:
+        return ReuseDecision(False, reason)
+
+    if evidence.get('schema') != DRAFT_DEVELOPER_EVIDENCE_VERSION or evidence.get('draft') is not True:
+        return reject('Draft evidence schema/state mismatch.')
+    identity = (
+        ('repository', repository),
+        ('pull_number', pull_number),
+        ('head_sha', head_sha),
+        ('base_sha', base_sha),
+        ('source_tree', source_tree),
+        ('plan', plan),
+        ('authority_fingerprint', authority_fingerprint),
+        ('toolchain_key', toolchain_key),
+    )
+    if any(evidence.get(key) != value for key, value in identity):
+        return reject('Exact Draft head/base/plan/authority/toolchain evidence mismatch.')
+    if run.get('event') != 'pull_request' or run.get('status') != 'completed' or run.get('conclusion') != 'success':
+        return reject('Draft workflow is not a completed successful pull_request run.')
+    if run.get('path') != '.github/workflows/developer-check.yml':
+        return reject('Untrusted Developer Check workflow path.')
+    if run.get('head_sha') != head_sha or run.get('head_branch') != head_ref:
+        return reject('Draft workflow head ref/SHA mismatch.')
+    associated_prs = run.get('pull_requests') or []
+    if not any(
+        item.get('number') == pull_number
+        and item.get('head', {}).get('sha') == head_sha
+        and item.get('head', {}).get('ref') == head_ref
+        and item.get('base', {}).get('sha') == base_sha
+        for item in associated_prs
+    ):
+        return reject('Draft run cannot be linked to exact PR head/base.')
+    if run.get('head_repository', {}).get('full_name') != repository:
+        return reject('Draft workflow did not execute in the trusted source repository.')
+    try:
+        original_id, attempt = int(evidence['run_id']), int(evidence['run_attempt'])
+        if original_id == current_run_id or original_id != int(run['id']) or attempt != int(run['run_attempt']):
+            return reject('Draft run identity or retry attempt mismatch.')
+    except (KeyError, TypeError, ValueError):
+        return reject('Invalid Draft run ID or retry attempt.')
+    if not str(evidence.get('workflow_ref', '')).startswith(f'{repository}/.github/workflows/developer-check.yml@'):
+        return reject('Invalid Draft workflow authority.')
+    timestamp = _parse_evidence_timestamp(evidence.get('created_at'))
+    if timestamp is None:
+        return reject('Missing valid Draft evidence timestamp.')
+    age = ((current_time or datetime.now(UTC)) - timestamp).total_seconds()
+    if age < -300 or age > DRAFT_DEVELOPER_EVIDENCE_MAX_AGE_SECONDS:
+        return reject('Draft evidence is outside the safe freshness window.')
+    if not jobs or len(jobs) > 20:
+        return reject('Incomplete or oversized Draft job inventory.')
+    try:
+        required = _required_developer_jobs(plan)
+    except ValueError as exc:
+        return reject(str(exc))
+    observed: dict[str, str] = {}
+    for job in jobs:
+        name = str(job.get('name', ''))
+        if name in observed or name not in DRAFT_DEVELOPER_JOB_NAMES:
+            return reject('Unknown or duplicate Draft job identity.')
+        if job.get('status') != 'completed':
+            return reject('Draft job has not completed.')
+        observed[name] = str(job.get('conclusion', ''))
+    if observed != required:
+        return reject('Draft selected job conclusions do not match canonical plan.')
+    return ReuseDecision(True, 'Exact successful Draft source/base/route/authority and all jobs verified.')
+
+
+def find_remote_draft_developer_evidence(
+    *,
+    repository: str,
+    token: str,
+    pull_number: int,
+    head_sha: str,
+    base_sha: str,
+    source_tree: str,
+    plan: str,
+    current_run_id: int,
+    current_authority_fingerprint: str,
+    current_toolchain_key: str,
+) -> ReuseDecision:
+    try:
+        # Live PR state avoids treating stale Ready event snapshots as authority.
+        pr = _github_request(f'https://api.github.com/repos/{repository}/pulls/{pull_number}', token, timeout=5)
+        if (
+            pr.get('draft') is not False
+            or pr.get('head', {}).get('sha') != head_sha
+            or pr.get('base', {}).get('sha') != base_sha
+            or pr.get('head', {}).get('repo', {}).get('full_name') != repository
+            or pr.get('base', {}).get('ref') != 'kaori/staging'
+            or pr.get('state') != 'open'
+        ):
+            return ReuseDecision(False, 'Live PR head/base/trust state changed; fresh Ready checks required.')
+        query = urllib.parse.urlencode({'head_sha': head_sha, 'event': 'pull_request', 'per_page': 10})
+        runs = _github_request(
+            f'https://api.github.com/repos/{repository}/actions/workflows/developer-check.yml/runs?{query}',
+            token,
+            timeout=5,
+        ).get('workflow_runs', [])
+        # Never trust a candidate solely from an artifact or successful aggregate.
+        for run in runs[:3]:
+            if run.get('status') != 'completed' or run.get('conclusion') != 'success':
+                continue
+            run_id = int(run['id'])
+            if run_id == current_run_id:
+                continue
+            artifact_name = f'kaori-draft-developer-{pull_number}-{head_sha}-{run_id}-{run["run_attempt"]}'
+            artifacts = _github_request(
+                f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/artifacts', token, timeout=5
+            ).get('artifacts', [])
+            matching = [a for a in artifacts if a.get('name') == artifact_name and not a.get('expired')]
+            if len(matching) != 1:
+                continue
+            archive = _github_request(str(matching[0]['archive_download_url']), token, binary=True, timeout=5)
+            with zipfile.ZipFile(io.BytesIO(archive)) as bundle:
+                if bundle.namelist() != ['draft-developer-evidence.json']:
+                    continue
+                evidence = json.loads(bundle.read('draft-developer-evidence.json'))
+            jobs = _github_request(
+                f'https://api.github.com/repos/{repository}/actions/runs/{run_id}/jobs?filter=latest&per_page=100',
+                token,
+                timeout=5,
+            ).get('jobs', [])
+            decision = draft_developer_reuse_decision(
+                evidence,
+                run,
+                jobs,
+                repository=repository,
+                pull_number=pull_number,
+                head_sha=head_sha,
+                base_sha=base_sha,
+                source_tree=source_tree,
+                plan=plan,
+                authority_fingerprint=current_authority_fingerprint,
+                toolchain_key=current_toolchain_key,
+                current_run_id=current_run_id,
+                head_ref=str(pr['head']['ref']),
+            )
+            if decision.reusable:
+                return decision
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        AttributeError,
+        subprocess.CalledProcessError,
+        zipfile.BadZipFile,
+        json.JSONDecodeError,
+    ) as exc:
+        return ReuseDecision(False, f'Draft evidence lookup failed closed: {type(exc).__name__}.')
+    return ReuseDecision(False, 'No complete, exact, fresh Draft Developer Check evidence; run Ready checks.')
+
+
+def _write_draft_developer_evidence(args: argparse.Namespace) -> int:
+    payload = build_draft_developer_evidence(
+        repository=args.repository,
+        pull_number=args.pull_number,
+        head_sha=args.head_sha,
+        base_sha=args.base_sha,
+        source_tree=args.source_tree,
+        plan=args.plan,
+        run_id=args.run_id,
+        run_attempt=args.run_attempt,
+        workflow_ref=args.workflow_ref,
+        authority_fingerprint=compute_authority_fingerprint(),
+        toolchain_key=developer_toolchain_key(),
+        created_at=datetime.now(UTC).isoformat(),
+    )
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+    return 0
+
+
+def _find_draft_developer_evidence(args: argparse.Namespace) -> int:
+    decision = find_remote_draft_developer_evidence(
+        repository=args.repository,
+        token=args.token,
+        pull_number=args.pull_number,
+        head_sha=args.head_sha,
+        base_sha=args.base_sha,
+        source_tree=args.source_tree,
+        plan=args.plan,
+        current_run_id=args.run_id,
+        current_authority_fingerprint=compute_authority_fingerprint(),
+        current_toolchain_key=developer_toolchain_key(),
+    )
+    _write_output(
+        {
+            'reuse': 'true' if decision.reusable else 'false',
+            'reuse_reason': decision.reason.replace('\n', ' '),
+        }
+    )
+    return 0
 
 
 def _write_output(values: Mapping[str, str]) -> None:
@@ -727,6 +1038,30 @@ def build_parser() -> argparse.ArgumentParser:
     writer.add_argument('--production-runtime', required=True)
     writer.add_argument('--output', default='admission-evidence.json')
     writer.set_defaults(func=_write_evidence)
+
+    draft_writer = sub.add_parser('write-draft-developer-evidence')
+    draft_writer.add_argument('--repository', required=True)
+    draft_writer.add_argument('--pull-number', type=int, required=True)
+    draft_writer.add_argument('--head-sha', required=True)
+    draft_writer.add_argument('--base-sha', required=True)
+    draft_writer.add_argument('--source-tree', required=True)
+    draft_writer.add_argument('--plan', required=True)
+    draft_writer.add_argument('--run-id', type=int, required=True)
+    draft_writer.add_argument('--run-attempt', type=int, required=True)
+    draft_writer.add_argument('--workflow-ref', required=True)
+    draft_writer.add_argument('--output', default='draft-developer-evidence.json')
+    draft_writer.set_defaults(func=_write_draft_developer_evidence)
+
+    draft_lookup = sub.add_parser('find-draft-developer-evidence')
+    draft_lookup.add_argument('--repository', required=True)
+    draft_lookup.add_argument('--token', default=os.environ.get('GITHUB_TOKEN', ''))
+    draft_lookup.add_argument('--pull-number', type=int, required=True)
+    draft_lookup.add_argument('--head-sha', required=True)
+    draft_lookup.add_argument('--base-sha', required=True)
+    draft_lookup.add_argument('--source-tree', required=True)
+    draft_lookup.add_argument('--plan', required=True)
+    draft_lookup.add_argument('--run-id', type=int, required=True)
+    draft_lookup.set_defaults(func=_find_draft_developer_evidence)
 
     summary = sub.add_parser('summary')
     summary.add_argument('--result', required=True)
