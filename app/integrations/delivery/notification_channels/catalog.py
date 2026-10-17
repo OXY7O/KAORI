@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.definitions.loader import load_definition_document
-from app.definitions.validation import require_mapping, require_str
+from app.definitions.validation import require_list, require_mapping, require_str
 
 _DELIVERY_CONTRACT = load_definition_document(
     'platform_operations/notifications/outbound_delivery.yaml',
@@ -17,6 +17,20 @@ def domain_keys() -> tuple[str, ...]:
 
 def event_type_keys() -> tuple[str, ...]:
     return tuple(str(key) for key in _EVENT_DEFINITIONS)
+
+
+def domain_event_allowed(domain: str, event_type: str) -> bool:
+    """Require the catalog to authorize the exact domain/event pair."""
+    domain_key = str(domain or '').strip()
+    event_key = str(event_type or '').strip()
+    definition = _DOMAIN_DEFINITIONS.get(domain_key)
+    if definition is None or event_key not in _EVENT_DEFINITIONS:
+        return False
+    record = require_mapping(definition, f'domains.{domain_key}')
+    if 'allowed_events' not in record:
+        return True  # Preserve approved Kubernetes/Object Storage behavior.
+    allowed = require_list(record['allowed_events'], f'domains.{domain_key}.allowed_events')
+    return event_key in allowed
 
 
 def domain_label(key: str) -> str:
