@@ -131,10 +131,19 @@ def test_harbor_validation_and_authority_copy_is_compact() -> None:
     validation = read('app/templates/integrations/registry/providers/harbor/partials/_detail_validation.html')
 
     assert 'Harbor remains authoritative for native Registry state and policies.' in configuration
-    assert 'Certificate validation policy applied to Harbor API requests to ensure secure HTTPS connections and trusted server identity verification.' in configuration
-    assert 'Revalidate the Harbor integration after upgrades, credential rotations, permission updates, or changes to API accessibility and configuration.' in validation
     assert (
-        'Harbor API base URL used for secure, read-only discovery of Registry identity, compatibility, supported capabilities, and provider evidence.'
+        'Certificate validation policy applied to Harbor API requests to ensure secure HTTPS connections '
+        'and trusted server identity verification.'
+        in configuration
+    )
+    assert (
+        'Revalidate the Harbor integration after upgrades, credential rotations, permission updates, '
+        'or changes to API accessibility and configuration.'
+        in validation
+    )
+    assert (
+        'Harbor API base URL used for secure, read-only discovery of Registry identity, compatibility, '
+        'supported capabilities, and provider evidence.'
         in configuration
     )
     assert (
@@ -193,7 +202,11 @@ def test_harbor_detail_uses_shared_provider_domains_with_inventory_lifecycle() -
     assert 'Snapshot Freshness' in inventory
     assert 'Lifecycle Gate' in inventory
     assert 'inventory_status.detail|trim|trim(".")' in inventory
-    assert 'No active KAORI jobs currently block removal; review dependent bindings and retained evidence before deleting this Registry connection.' in inventory
+    assert (
+        'No active KAORI jobs currently block removal; review dependent bindings and retained evidence '
+        'before deleting this Registry connection.'
+        in inventory
+    )
     assert 'Detailed artifact metadata and management remain available in Artifact Registry.' in inventory
     assert 'KAORI Operational Consumers' in inventory
     assert 'Bound Observability Sources' in read(
