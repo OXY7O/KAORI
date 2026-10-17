@@ -451,7 +451,9 @@ def list_event_channel_options(
     options: list[dict[str, Any]] = []
     for channel in channels:
         supports_event = event_type in (channel.event_types or [])
-        supports_domain = domain is None or (domain in (channel.domains or []) and domain_event_allowed(domain, event_type))
+        supports_domain = domain is None or (
+            domain in (channel.domains or []) and domain_event_allowed(domain, event_type)
+        )
         supports_severity = (
             severity is None
             or not event_severity_scoped(event_type)
