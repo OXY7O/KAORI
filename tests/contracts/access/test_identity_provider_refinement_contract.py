@@ -170,9 +170,9 @@ def test_uat_review2_idp_guidance_preserves_provider_authority_with_concise_copy
     for source in (google, guidance, overview):
         Environment().parse(source)
 
-    assert "note='Google signs in; KAORI governs access and lifecycle.'" in google
+    assert "note='Google signs in; KAORI governs access.'" in google
     assert "Google authenticates identity; KAORI retains local authorization" not in google
-    assert "Register this exact callback URL with the provider." in guidance
+    assert "Register this exact URL with the provider." in guidance
     assert "Register this exact scheme, host, path, and provider instance key" not in guidance
     assert 'data-browser-callback' in guidance
     assert 'data-callback-key' in guidance

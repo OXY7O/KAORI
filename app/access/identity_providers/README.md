@@ -57,3 +57,8 @@ selection, panel-field enablement, form submission with safe test fixtures,
 negative TLS/missing-secret tests and human acceptance. External LDAP
 connectivity is separate provider-authoritative evidence. All remain PENDING
 until actually executed; official CI/CD and deployment HOLD.
+
+Firefox L13 text budget follow-up: retain the exact generated callback URL below
+the header; keep the summary caption short. Google authenticates users, while
+KAORI's role and lifecycle governance remains authoritative in the existing
+identity-projection/workflow documentation. Runtime single-line QA pending.
