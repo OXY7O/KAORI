@@ -38,3 +38,22 @@ silently rewritten or considered fixed. Capture the exact page and source
 projection during Dev Container Firefox UAT. Desktop one-line appearance,
 responsive/mobile wrapping, keyboard, light/dark and human acceptance remain
 PENDING until browser execution; no official admission is implied.
+
+## LDAP selector feedback UAT (#2280)
+
+Source-controlled `ldap_directory` remains an enabled *configurable choice*
+while provider authentication itself is independently controlled by the existing
+enabled flag, adapter validation and TLS/secret-reference gates. The Add
+Identity Provider selector uses native radio + matching label; the existing
+selection controller now updates the nested visible **Select / Selected** badge
+from the radio checked state, since nested badge children cannot use
+`peer-checked` directly. LDAP configuration form, credentials, permission
+checks and server-side validation have not changed.
+
+The operator reported that LDAP was not selectable; the source proves a
+visual-state feedback defect but does **not** prove the reported functional
+failure has been resolved. Run Firefox Dev Container pointer and keyboard
+selection, panel-field enablement, form submission with safe test fixtures,
+negative TLS/missing-secret tests and human acceptance. External LDAP
+connectivity is separate provider-authoritative evidence. All remain PENDING
+until actually executed; official CI/CD and deployment HOLD.

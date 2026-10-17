@@ -46,6 +46,19 @@
     }
 
     const syncProvider = () => {
+        // The radio and label are siblings. Nested badge elements cannot use peer-checked
+        // directly, so reflect the native checked state using this existing controller.
+        providerInputs.forEach((input) => {
+            const badge = input.nextElementSibling?.querySelector('[data-provider-option-badge]')
+            if (!badge) return
+            const selected = input.checked
+            const status = badge.querySelector('[data-provider-option-status]')
+            if (status) status.textContent = selected ? 'Selected' : 'Select'
+            badge.classList.toggle('border-brand-outline', selected)
+            badge.classList.toggle('border-outline-default', !selected)
+            badge.classList.toggle('text-kaori-primary', selected)
+            badge.classList.toggle('text-content-muted', !selected)
+        })
         const option = selectedOption()
         const profile = option?.dataset.configurationProfile || ''
         const flow = option?.dataset.flow || ''
