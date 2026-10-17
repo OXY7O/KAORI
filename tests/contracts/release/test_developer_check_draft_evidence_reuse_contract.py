@@ -59,6 +59,11 @@ def proven_case():
         'head_sha': HEAD,
         'head_branch': 'kaori/perf-2220-exact-draft-evidence-reuse',
         'head_repository': {'full_name': REPO},
+        'pull_requests': [{
+            'number': 2220,
+            'head': {'sha': HEAD, 'ref': 'kaori/perf-2220-exact-draft-evidence-reuse'},
+            'base': {'sha': BASE},
+        }],
     }
     jobs = [
         {'name': name, 'status': 'completed', 'conclusion': outcome}
@@ -74,6 +79,7 @@ def proven_case():
         authority_fingerprint='fingerprint',
         toolchain_key='toolchain',
         current_run_id=708,
+        head_ref='kaori/perf-2220-exact-draft-evidence-reuse',
         current_time=timestamp,
     )
     return policy, evidence, run, jobs, args
@@ -138,6 +144,17 @@ def test_failed_or_missing_mandatory_draft_jobs_never_reuse(name: str) -> None:
     assert not policy.draft_developer_reuse_decision(evidence, run, changed, **args).reusable
     missing = [job for job in jobs if job['name'] != name]
     assert not policy.draft_developer_reuse_decision(evidence, run, missing, **args).reusable
+
+
+def test_other_pr_or_head_branch_linkage_rejects_reuse() -> None:
+    policy, evidence, run, jobs, args = proven_case()
+    args['head_ref'] = 'kaori/different-branch'
+    assert not policy.draft_developer_reuse_decision(evidence, run, jobs, **args).reusable
+    args['head_ref'] = 'kaori/perf-2220-exact-draft-evidence-reuse'
+    run['pull_requests'] = []
+    assert not policy.draft_developer_reuse_decision(evidence, run, jobs, **args).reusable
+    run['pull_requests'] = [{'number': 2221, 'head': {'sha': HEAD}, 'base': {'sha': BASE}}]
+    assert not policy.draft_developer_reuse_decision(evidence, run, jobs, **args).reusable
 
 
 def test_duplicate_extra_cancelled_and_stale_draft_results_fail_closed() -> None:
