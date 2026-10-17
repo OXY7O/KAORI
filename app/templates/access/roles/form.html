@@ -2,6 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/info_tip.html" as info_tip %}
 {% set read_only = view_only|default(false) %}
 {% set is_system_role = protected_default|default(false) %}
 {% set page_mode = 'view' if read_only else ('clone' if clone_source else ('edit' if role else 'create')) %}
@@ -187,7 +188,15 @@
                                     <div class="flex items-start gap-3">
                                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="fingerprint" class="h-4 w-4"></i></span>
                                         <div>
-                                            <h3 class="text-sm font-bold text-content-primary">Role Identity</h3>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <h3 class="text-sm font-bold text-content-primary">Role Identity</h3>
+                                                {{ info_tip.render('role-identity-fields-guide',
+                                                                    'Role Identity Guide',
+                                                                    'Use a stable machine key and clear operator-facing role name.',
+                                                                    items=['Role slug: normalized to lowercase underscores; this is the stable backend identifier.', 'Display name: shown in User Management, role assignment, and external identity projection.'],
+                                                                    placement='right',
+                                                                    variant='guide') }}
+                                            </div>
                                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Stable machine identity and user-facing access label.</p>
                                         </div>
                                     </div>
@@ -197,12 +206,10 @@
                                     <label class="space-y-2">
                                         <span class="text-sm font-semibold text-content-secondary">Role slug</span>
                                         {{ form.name(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-mono text-sm font-semibold text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-disabled", placeholder="platform_operator", readonly=read_only) }}
-                                        <span class="block text-xs leading-5 text-content-muted">Normalized to lowercase underscores and used as the stable backend identifier.</span>
                                     </label>
                                     <label class="space-y-2">
                                         <span class="text-sm font-semibold text-content-secondary">Display name</span>
                                         {{ form.display_name(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-semibold text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-content-disabled", placeholder="Platform Operator", readonly=read_only) }}
-                                        <span class="block text-xs leading-5 text-content-muted">Shown in User Management, role assignment, and identity projection.</span>
                                     </label>
                                 </div>
                             </section>
@@ -229,7 +236,7 @@
                                             <span class="text-sm font-bold text-content-primary">Assignment availability</span>
                                             {{ role_state_badge('Active Role' if read_only else 'Active on Save', 'Inactive Role' if read_only else 'Inactive on Save') }}
                                         </span>
-                                        <span class="mt-1 block text-sm leading-6 text-content-muted">Active custom roles can be assigned in User Management and selected as an Identity Provider default. Deactivation removes role-derived access from assigned users.</span>
+                                        <span class="mt-1 block text-sm leading-6 text-content-muted">Active roles serve user and provider assignments; deactivation removes role-derived access.</span>
                                     </span>
                                 </label>
                             </section>
@@ -326,7 +333,7 @@
                                             {% for permission in module_permissions %}
                                                 <label class="group relative flex min-h-20 items-start gap-3 rounded-xl border border-outline-default bg-surface-card p-3 transition {{ 'cursor-default' if read_only else 'cursor-pointer hover:border-brand-outline hover:bg-kaori-soft' }}"
                                                        data-role-permission-card
-                                                       data-search="{{ (module_name ~ ' ' ~ permission.key ~ ' ' ~ (permission.description or '') ~ ' ' ~ permission.action)|lower }}">
+                                                       data-search="{{ (module_name ~ ' ' ~ permission.key ~ ' ' ~ (permission_matrix_descriptions.get(permission.key, permission.description or '')) ~ ' ' ~ (permission.description or '') ~ ' ' ~ permission.action)|lower }}">
                                                     <input type="checkbox"
                                                            name="permission_ids"
                                                            value="{{ permission.id }}"
@@ -348,7 +355,7 @@
                                                             {% if not read_only and permission.id not in delegable_permission_ids %}{{ table_label.status_label('Outside Ceiling', 'unknown', 'shield-ban') }}{% endif %}
                                                         </span>
                                                         <span class="mt-1 block text-xs font-medium text-content-muted">{{ permission.key }}</span>
-                                                        <span class="mt-1.5 block text-xs leading-5 text-content-muted">{{ permission.description or 'No permission description is defined.' }}</span>
+                                                        <span class="mt-1.5 block min-h-10 text-xs leading-5 text-content-muted">{{ permission_matrix_descriptions.get(permission.key, permission.description or 'No permission description is defined.') }}</span>
                                                     </span>
                                                 </label>
                                             {% endfor %}
@@ -478,28 +485,28 @@
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="target" class="h-4 w-4"></i></span>
                                 <div>
                                     <p class="text-sm font-semibold text-content-primary">Design for Responsibility</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Build reusable profiles around operational duties, not individual users.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Compose reusable roles around operational duties rather than individual user accounts.</p>
                                 </div>
                             </div>
                             <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3.5">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="git-merge" class="h-4 w-4"></i></span>
                                 <div>
                                     <p class="text-sm font-semibold text-content-primary">Dependency Normalization</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Required baseline permissions are source-controlled and added automatically when needed.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Permission dependencies are code-owned and expand automatically when required.</p>
                                 </div>
                             </div>
                             <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3.5">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="shield-ellipsis" class="h-4 w-4"></i></span>
                                 <div>
                                     <p class="text-sm font-semibold text-content-primary">Delegation Boundary</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Role managers can only delegate permissions already present in their own effective access. Local Database Super Admin is the explicit break-glass exception.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Delegation stays within effective access; Local Database Super Admin is the exception.</p>
                                 </div>
                             </div>
                             <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3.5">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="shield-alert" class="h-4 w-4"></i></span>
                                 <div>
                                     <p class="text-sm font-semibold text-content-primary">Super Admin Boundary</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Emergency authority remains a Local Database-only flag and is never granted through normal role composition.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Super Admin is a Local Database-only flag, never inherited through role composition.</p>
                                 </div>
                             </div>
                         </div>

@@ -203,6 +203,16 @@ def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selec
     assert 'data-provider-option' in selector
     assert 'data-provider-option-badge' in selector
     assert 'data-provider-option-status' in selector
+    assert 'data-provider-option-icon="{{ definition.icon }}"' in selector
+    assert 'data-provider-icon="{{ definition.icon }}"' not in selector
+    assert 'data-provider-display-icon' in read(
+        'app/templates/access/identity_providers/partials/_sso_configuration.html'
+    )
+    assert "input[type=\"radio\"][data-provider-option]" in script
+    assert "option?.dataset.providerOptionIcon" in script
+    assert "'[data-configuration-panel=\"browser_client\"] [data-provider-display-icon]'" in script
+    assert "form.querySelector('[data-provider-icon]')" not in script
+    assert 'lucide.createIcons()' in script
     assert 'peer-checked:border-kaori-primary/30 peer-checked:text-kaori-primary' not in selector
     assert "status.textContent = selected ? 'Selected' : 'Select'" in script
     assert "input.nextElementSibling?.querySelector('[data-provider-option-badge]')" in script
@@ -218,3 +228,109 @@ def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selec
     assert 'configuration_profile: ldap' in definitions
     assert 'validate_tls_mode' in forms
     assert 'Enabled LDAP providers require server, base DN, bind DN, and secret reference.' in forms
+
+
+def test_review3_provider_header_guides_replace_static_input_helpers() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/access/identity_providers/form.html')
+    ldap = read('app/templates/access/identity_providers/partials/_ldap_configuration.html')
+    sso = read('app/templates/access/identity_providers/partials/_sso_configuration.html')
+
+    for template, count in ((form, 1), (ldap, 2), (sso, 2)):
+        Environment().parse(template)
+        assert template.count('info_tip.render(') == count
+        assert template.count("variant='guide'") == count
+        assert template.count("placement='right'") == count
+        assert 'components/info_tip.html' in template
+        assert '{{ helper }}' not in template
+
+    for header in ('Provider Identity and State',):
+        assert header in form
+    for header in ('LDAP Adapter Connection', 'Directory Identity Mapping'):
+        assert header in ldap
+    for header in ('Admission and JIT Provisioning', 'data-browser-title'):
+        assert header in sso
+
+    assert 'data-enabled-copy' in form
+    assert 'form.key.errors' in form and 'form.display_name.errors' in form
+    assert 'form.enabled.errors' in form
+    assert 'form.tls_mode.errors' in ldap
+    assert 'for error in field.errors' in ldap
+    assert 'form.client_id.errors' in sso
+    assert 'form.client_secret_env.errors' in sso
+    assert 'data-admission-help' in sso
+    assert 'data-jit-off-note' in sso
+    assert 'form.jit_enabled.errors' in sso
+    assert 'form.admission_values.errors' in sso
+    assert 'KAORI resolves the secret at runtime' in sso
+    assert '{query} is escaped before substitution' in ldap
+    assert 'plaintext LDAP is blocked' in ldap
+    for source in (form, ldap, sso):
+        assert 'whitespace-nowrap' not in source
+
+def test_review3_provider_guidance_steps_and_authority_notes() -> None:
+    from jinja2 import Environment
+
+    github = read('app/templates/access/identity_providers/providers/github/_guidance.html')
+    google = read('app/templates/access/identity_providers/providers/google/_guidance.html')
+    ldap = read('app/templates/access/identity_providers/providers/ldap_directory/_guidance.html')
+    for source in (github, google, ldap):
+        Environment().parse(source)
+        assert 'info_flow.render(' in source
+        assert "note_icon='shield-check'" in source
+        assert 'whitespace-nowrap' not in source
+
+    assert 'Register the exact KAORI callback URL as the authorized OAuth callback' in github
+    assert 'authorized Google redirect URI' in google
+    assert 'runtime environment reference.' in github
+    assert 'runtime environment reference.' in google
+    assert 'non-admin KAORI role' in github and 'approved external subjects' in github
+    assert 'non-admin KAORI role' in google and 'verified email domains' in google
+    assert "note='Directory owns credentials; KAORI governs access.'" in ldap
+    assert "note='Google signs in; KAORI governs access.'" in google
+    assert "note='GitHub signs in; KAORI governs access.'" in github
+    assert 'LDAP' not in github
+
+
+def test_review4_ldap_mapping_example_placeholders_do_not_become_create_defaults() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/access/identity_providers/partials/_ldap_configuration.html')
+    forms = read('app/access/identity_providers/forms.py')
+    Environment().parse(template)
+    assert '{% if field == form.user_filter %}sm:col-span-2{% endif %}' not in template
+    assert "class=\"block min-w-0\"" in template
+    assert 'User Search Filter' in forms and 'TLS Mode' in forms
+    assert 'sm:grid-cols-2' in template
+    samples = {
+        'username_attribute': 'sAMAccountName',
+        'email_attribute': 'mail',
+        'display_name_attribute': 'displayName',
+        'stable_id_attribute': 'objectGUID',
+    }
+    for field, example in samples.items():
+        declaration = next(line for line in forms.splitlines() if line.strip().startswith(f'{field} = StringField('))
+        assert 'default=' not in declaration
+        assert f"(form.{field}, '{example}')" in template
+        assert f"form.{field}.data = config.get('{field}')" in forms
+        assert f"self._require_ldap_attribute(field," in forms
+    assert 'def validate_tls_mode' in forms
+    assert "if definition.configuration_profile == 'ldap':" in forms
+
+def test_review4_provider_guidance_title_descriptions_are_compact() -> None:
+    from jinja2 import Environment
+
+    captions = (
+        ('ldap_directory', 'Directory sign-in; KAORI grants access.'),
+        ('github', 'GitHub sign-in; KAORI grants access.'),
+        ('google', 'Google sign-in; KAORI grants access.'),
+    )
+    for provider, caption in captions:
+        source = read(f'app/templates/access/identity_providers/providers/{provider}/_guidance.html')
+        Environment().parse(source)
+        assert source.count(caption) == 1
+        assert len(caption) <= 42
+        assert 'info_flow.render(' in source
+        assert 'whitespace-nowrap' not in source
+

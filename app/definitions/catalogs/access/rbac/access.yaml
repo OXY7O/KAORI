@@ -42,258 +42,322 @@ permissions:
   module: k8s_dashboard
   action: view
   description: View the Kubernetes operations dashboard.
+  matrix_description: View the Kubernetes operations dashboard, including cluster health summaries, workload posture, and operational navigation.
 - key: clusters.view
   module: k8s_cluster
   action: view
   description: View Kubernetes cluster records and connection status.
+  matrix_description: Inspect registered Kubernetes clusters, connectivity details, status evidence, and available infrastructure inventory.
 - key: clusters.manage
   module: k8s_cluster
   action: manage
   description: Create, edit, and delete Kubernetes cluster records.
+  matrix_description: Create, update, and remove registered Kubernetes cluster records and their governed connection configuration.
 - key: clusters.sync
   module: k8s_cluster
   action: sync
   description: Run Kubernetes cluster connectivity and inventory sync actions.
+  matrix_description: Request cluster connectivity checks and inventory synchronization through the approved Kubernetes execution workflow.
 - key: inventory.view
   module: k8s_inventory
   action: view
   description: View Kubernetes inventory pages.
+  matrix_description: Browse Kubernetes inventory pages for discovered resources, relationships, and current infrastructure records.
 - key: object_storage_inventory.view
   module: storage_inventory
   action: view
   description: View committed Object Storage systems, buckets, containers, and inventory evidence.
+  matrix_description: Explore committed Object Storage systems, buckets, containers, inventory details, and related evidence records.
 - key: storage.sync
   module: storage_inventory
   action: sync
   description: Run object-storage inventory synchronization through canonical Job Execution.
+  matrix_description: Request governed Object Storage inventory synchronization through canonical background Job Execution and tracking.
 - key: kubernetes_configmaps.view
   module: k8s_operations
   action: view_configmap_management
   description: View Kubernetes ConfigMap Management and live non-secret configuration values.
+  matrix_description: Inspect Kubernetes ConfigMap inventory, configuration metadata, and permitted non-secret values within the workspace.
 - key: kubernetes_configmaps.create
   module: k8s_operations
   action: create_configmap
   description: Create validated Kubernetes ConfigMaps.
+  matrix_description: Create Kubernetes ConfigMaps through validated configuration entry and the existing governed creation workflow.
 - key: kubernetes_configmaps.update
   module: k8s_operations
   action: update_configmap
   description: Read and update Kubernetes ConfigMaps with diff preview and dry-run.
+  matrix_description: Review configuration differences and dry-run changes before updating existing Kubernetes ConfigMap values.
 - key: kubernetes_configmaps.delete
   module: k8s_operations
   action: delete_configmap
   description: Delete Kubernetes ConfigMaps after impact review and explicit confirmation.
+  matrix_description: Remove Kubernetes ConfigMaps only after impact review and explicit confirmation of the selected resource.
 - key: kubernetes_secrets.view
   module: k8s_operations
   action: view_secret_management
   description: View Kubernetes Secret Management operations.
+  matrix_description: Open Kubernetes Secret Management to inspect available operations and non-sensitive secret resource metadata.
 - key: kubernetes_secrets.create
   module: k8s_operations
   action: create_secret
   description: Create validated Kubernetes Secrets through guided workflows.
+  matrix_description: Create Kubernetes Secrets using guided input validation and the existing controlled secret-management workflow.
 - key: kubernetes_secrets.replace
   module: k8s_operations
   action: replace_secret_data
   description: Replace selected data keys in existing non-TLS Kubernetes Secrets without reading current values.
+  matrix_description: Replace selected keys in non-TLS Kubernetes Secrets without exposing their previously stored secret values.
 - key: kubernetes_secrets.delete
   module: k8s_operations
   action: delete_secret
   description: Delete live Kubernetes Secrets after impact review, dry-run validation, and exact-name confirmation.
+  matrix_description: Delete live Kubernetes Secrets after impact assessment, dry-run validation, and exact resource-name confirmation.
 - key: kubernetes_secrets.reveal
   module: k8s_operations
   action: reveal_secret_value
   description: Request and perform protected one-time reveal of an approved Kubernetes Secret key.
+  matrix_description: Submit and perform an approved, protected one-time reveal of a specific Kubernetes Secret data key.
 - key: kubernetes_secrets.approve_reveal
   module: k8s_operations
   action: approve_secret_reveal
   description: Approve or deny protected Kubernetes Secret reveal requests from another user.
+  matrix_description: Review and approve or reject another user's protected Kubernetes Secret reveal request under governance controls.
 - key: kubernetes_secrets.manage_reveal
   module: platform_operations
   action: manage_secret_reveal
   description: Configure cluster readiness and namespace-level Protected Secret Reveal policies.
+  matrix_description: Configure cluster readiness checks and namespace-level policies for protected Kubernetes Secret reveal operations.
 - key: kubernetes_secrets.rotate_tls
   module: k8s_operations
   action: rotate_tls_secret
   description: Validate and rotate an existing Kubernetes TLS Secret.
+  matrix_description: Validate certificate and key inputs, then rotate an existing Kubernetes TLS Secret through controlled actions.
 - key: kubernetes_secrets.bulk_rotate_tls
   module: k8s_operations
   action: bulk_rotate_tls_secret
   description: Validate and rotate multiple Kubernetes TLS Secrets.
+  matrix_description: Validate and rotate multiple Kubernetes TLS Secrets using the governed bulk rotation workflow and safeguards.
 - key: analytics.view
   module: k8s_analytics
   action: view
   description: View Kubernetes analytics, capacity, trend, and alert pages.
+  matrix_description: Explore Kubernetes capacity, performance trends, operational analytics, and configured alert insights.
 - key: object_storage_analytics.view
   module: storage_analytics
   action: view
   description: View Object Storage capacity, performance, forecast, consumer, and alert analytics.
+  matrix_description: Review Object Storage capacity, performance, usage forecasts, consumer insights, and alert analytics.
 - key: artifact_registry.view
   module: artifact_registry
   action: view
   description: View committed Artifact Registry inventory, security, governance, runtime correlation, and analytics evidence.
+  matrix_description: Inspect committed Artifact Registry inventory, image security findings, governance, runtime links, and analytics evidence.
 - key: artifact_registry.sync
   module: artifact_registry
   action: sync
   description: Run Artifact Registry reconciliation through canonical Job Execution.
+  matrix_description: Run Artifact Registry inventory reconciliation through canonical Job Execution with auditable execution outcomes.
 - key: governance.view
   module: governance
   action: view
   description: View Kubernetes governance workspace and navigation.
+  matrix_description: Open Kubernetes governance workspaces to review available controls, operational context, and navigation.
 - key: tls_certificates.view
   module: governance
   action: view_tls_certificates
   description: View Kubernetes TLS certificate inventory, expiry, issuer, and usage mapping.
+  matrix_description: Inspect Kubernetes TLS certificates, expiration timelines, issuing authorities, and mapped usage evidence.
 - key: tls_certificates.sync
   module: governance
   action: sync_tls_certificates
   description: Refresh TLS certificate metadata from Kubernetes TLS Secrets.
+  matrix_description: Refresh certificate metadata from Kubernetes TLS Secrets through the existing controlled inventory workflow.
 - key: tenant.view
   module: k8s_tenant
   action: view
   description: View the Kubernetes Tenant workspace and committed tenancy state.
+  matrix_description: Browse Kubernetes Tenant records, workspace context, and committed tenancy and namespace evidence.
 - key: tenant.manage
   module: k8s_tenant
   action: manage
   description: Create and reconcile governed Kubernetes Tenant resources.
+  matrix_description: Create, update, and reconcile governed Kubernetes Tenant resources under the platform's existing controls.
 - key: intelligence.view
   module: intelligence
   action: view
   description: View recommendation, alert intelligence, and intelligence catalog navigation.
+  matrix_description: Browse recommendation insights, alert intelligence, and available intelligence catalog workspaces.
 - key: knowledge.runbooks.view
   module: knowledge
   action: view_runbooks
   description: View KAORI runbooks and published revisions.
+  matrix_description: Read KAORI operational runbooks and their published revisions, with available documentation history.
 - key: knowledge.runbooks.manage
   module: knowledge
   action: manage_runbooks
   description: Create and edit draft KAORI runbook revisions.
+  matrix_description: Create and update draft KAORI runbook revisions while preserving published operational documentation.
 - key: knowledge.runbooks.publish
   module: knowledge
   action: publish_runbooks
   description: Publish, withdraw, and deprecate KAORI runbook revisions.
+  matrix_description: Publish, withdraw, or deprecate KAORI runbook revisions through the governed documentation lifecycle.
 - key: intelligence.decisions.view
   module: intelligence
   action: view_decisions
   description: View persisted KAORI decisions, approval outcomes, and execution journals.
+  matrix_description: Inspect committed KAORI decisions, approval results, supporting evidence, and execution journal history.
 - key: intelligence.decisions.create
   module: intelligence
   action: create_decisions
   description: Create immutable KAORI decision snapshots from current recommendation evidence.
+  matrix_description: Create immutable KAORI decision snapshots that preserve the recommendation evidence available at creation.
 - key: intelligence.decisions.approve
   module: intelligence
   action: approve_decisions
   description: Approve or reject KAORI decisions that require explicit authorization.
+  matrix_description: Approve or reject KAORI decisions that require explicit governance authorization before execution.
 - key: intelligence.decisions.execute
   module: intelligence
   action: execute_decisions
   description: Issue and consume one-time execution authorization for approved KAORI decisions.
+  matrix_description: Issue and consume single-use execution authorization for approved KAORI decisions under policy controls.
 - key: reports.view
   module: reports
   action: view
   description: View generated reports and reporting overview.
+  matrix_description: Browse generated operational reports, reporting summaries, and available report records and evidence.
 - key: reports.generate
   module: reports
   action: generate
   description: Generate and export operational reports.
+  matrix_description: Generate and export operational reports through supported reporting workflows and output formats.
 - key: reports.manage_templates
   module: reports
   action: manage_templates
   description: Manage report templates.
+  matrix_description: Create, update, and maintain report templates used to structure governed operational reporting outputs.
 - key: reports.manage_schedules
   module: reports
   action: manage_schedules
   description: Manage report schedules.
+  matrix_description: Configure and maintain automatic report schedules, execution timing, and existing schedule settings.
 - key: reports.manage_storage
   module: reports
   action: manage_storage
   description: Manage report storage verification and cleanup.
+  matrix_description: Manage report-storage verification and cleanup workflows for generated reporting artifacts.
 - key: jobs.view
   module: platform_operations
   action: view_jobs
   description: View KAORI background jobs, queue activity, progress, and execution outcomes.
+  matrix_description: Monitor KAORI background jobs, queued work, execution progress, results, and operational job history.
 - key: jobs.cancel
   module: platform_operations
   action: cancel_jobs
   description: Request cancellation for eligible queued, analytics, and forecasting jobs.
+  matrix_description: Request cancellation of eligible queued, analytics, or forecasting jobs using supported cancellation controls.
 - key: jobs.execute
   module: platform_operations
   action: execute_jobs
   description: Run supported KAORI jobs manually within the permissions of their owning domain.
+  matrix_description: Launch supported KAORI jobs manually within the permission boundary of each job's owning domain.
 - key: jobs.configure
   module: platform_operations
   action: configure_jobs
   description: Configure automatic schedules and execution policies for registered KAORI jobs.
+  matrix_description: Set automatic execution schedules and policy settings for registered KAORI background jobs.
 - key: settings.view
   module: settings
   action: view
   description: View settings pages.
+  matrix_description: Browse KAORI application settings pages and review the configuration information available to the user.
 - key: integrations.manage
   module: integrations
   action: manage_integrations
   description: Manage integration provider registration, bindings, validation, runtime configuration, and delivery channels.
+  matrix_description: Manage integration provider registration, bindings, validation, runtime configuration, and delivery channels.
 - key: activity_audit.view
   module: access
   action: view_operational_activity
   description: View cross-user operational activity, authentication evidence, and background action audit records.
+  matrix_description: Examine cross-user operational activity, sign-in evidence, and audited outcomes of background actions.
 - key: platform_operations.view_data_lifecycle
   module: platform_operations
   action: view_data_lifecycle
   description: View retention policies, archive storage posture, and lifecycle archive history.
+  matrix_description: Review retention policies, archive storage posture, and historical data-lifecycle archive records.
 - key: platform_operations.export_data_lifecycle
   module: platform_operations
   action: export_data_lifecycle
   description: Download verified data lifecycle archives and manifests.
+  matrix_description: Download verified lifecycle archives and their manifests using the governed export workflow.
 - key: platform_operations.manage_data_lifecycle
   module: platform_operations
   action: manage_data_lifecycle
   description: Configure policies and run, verify, or maintain lifecycle archives across data domains.
+  matrix_description: Configure retention policies and run, verify, or maintain data-lifecycle archives across supported domains.
 - key: users.view
   module: access
   action: view_users
   description: View user accounts and access assignments.
+  matrix_description: Inspect KAORI user accounts, assigned roles, account states, and available access-management information.
 - key: users.manage
   module: access
   action: manage_users
   description: Create and update user accounts.
+  matrix_description: Create and update KAORI user accounts, identity metadata, and governed administrative account settings.
 - key: users.reset_password
   module: access
   action: reset_user_password
   description: Reset passwords for database-managed user accounts.
+  matrix_description: Reset credentials for Local Database-managed users through the governed password-reset workflow.
 - key: users.activate
   module: access
   action: activate_users
   description: Activate or deactivate local application access.
+  matrix_description: Activate or deactivate local application access for eligible users under account-lifecycle safeguards.
 - key: users.delete
   module: access
   action: delete_users
   description: Soft delete user accounts.
+  matrix_description: Soft-delete eligible user accounts while retaining audit history and existing restoration safeguards.
 - key: identity_providers.view
   module: access
   action: view_identity_providers
   description: View configured authentication providers, posture, and identity-link evidence.
+  matrix_description: Review configured identity providers, authentication readiness, posture, and linked-identity evidence.
 - key: identity_providers.manage
   module: access
   action: manage_identity_providers
   description: Configure, validate, enable, and update authentication providers.
+  matrix_description: Configure, validate, enable, and update identity providers and their approved authentication settings.
 - key: identity_providers.provision
   module: access
   action: provision_external_identities
   description: Search directory providers and project external identities into KAORI user accounts.
+  matrix_description: Search connected directories and project selected external identities into governed KAORI user accounts.
 - key: roles.view
   module: access
   action: view_roles
   description: View roles and permission assignments.
+  matrix_description: Inspect defined roles, effective permission assignments, and their recorded access-control composition.
 - key: roles.manage
   module: access
   action: manage_roles
   description: Create and update custom roles.
+  matrix_description: Create and update custom authorization roles while respecting permission dependencies and delegation boundaries.
 - key: system.view
   module: system
   action: view
   description: View system information.
+  matrix_description: Review KAORI system information, available runtime metadata, and supported operational status details.
 - key: system.manage
   module: system
   action: manage
   description: Manage system-level settings.
+  matrix_description: Manage system-level application settings through authorized and governed administrative controls.
 permission_dependencies:
   clusters.manage: [clusters.view]
   clusters.sync: [clusters.view, jobs.execute]

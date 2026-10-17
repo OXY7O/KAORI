@@ -261,3 +261,50 @@ statement, preserving all zero-active, no-admin and admission-warning
 precedence branches. This is a Firefox L13 one-line **target**, not a claimed
 browser PASS; actual responsive/zoom/light-dark and human UAT remains pending.
 No persistence, aggregation or provider calls are added.
+
+## REVIEW(4) — Role form text and Guide (#2307)
+
+Firefox Lenovo L13 operator review shortens the Assignment Availability
+caption while retaining an explicit deactivation/effective-access
+consequence and the visible active/inactive status badge. The Access
+Guardrails rail keeps four role policy boundaries as readable, natural
+two-line desktop captions, including source-controlled dependencies,
+effective delegation and Local Database-only Super Admin separation.
+Static Role Slug and Display Name helper guidance is consolidated in the
+canonical title-adjacent `info_tip` Guide in **Role Identity**. Labels,
+input values, audit-sensitive errors, role lifecycle/CSRF, default-role
+protection and backend authorization enforcement remain unchanged.
+Desktop 1-/2-line targets are not guaranteed by a static copy budget;
+actual Dev Container Firefox visual, accessibility and human acceptance
+evidence remains PENDING. Official admission is HOLD.
+
+## REVIEW(4) — Permission Matrix description rhythm (#2308)
+
+The Roles permission-card description region reserves two ordinary lines of
+vertical space using existing Tailwind `min-h-10` and `leading-5` rhythm.
+Cards continue to show the complete authoritative `Permission.description`
+without rewriting canonical RBAC or database metadata. Longer explanations
+wrap fully at laptop, mobile, or zoom; shorter ones remain unchanged, with
+no invented policy text or ellipsis. This is a *minimum two-line space*, not
+a claim that every permission description comprises exactly two written
+lines. Firefox Visual QA, source/registry integrity, and human acceptance
+remain pending. Official admission remains HOLD.
+
+## REVIEW(4) follow-up — descriptive content, not only two-line height (#2308)
+
+The operator's Manage Integrations screenshot clarifies that the purpose is
+**meaningfully descriptive copy for each of the 64 Permission Matrix
+capabilities**, normally about two natural lines at Firefox Lenovo L13
+width, not merely reserving `min-h-10` vertical space. Every permission's
+source-owned `matrix_description` in the existing RBAC catalog describes
+the specific allowed action and its target/scope. Role Editor reads this
+copy from the committed catalog through `build_role_form_context()`, with
+original persisted descriptions retained as fallback for unexpected
+non-canonical/database-only records. Search also includes the richer copy.
+The old `min-h-10` line-height rhythm remains, with natural wrapping and
+no clipping. **Canonical RBAC descriptions, seeding, authorization, grants,
+dependencies, Permission Catalog and database contents are unchanged.**
+Real Firefox two-line appearance is a visual target rather than a source
+PASS. Local focused pytest/Jinja, responsive/light-dark/zoom/browser
+accessibility, negative RBAC and human acceptance remain pending. Official
+staging admission, deployment and release are HOLD.

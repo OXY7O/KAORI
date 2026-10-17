@@ -12,7 +12,7 @@
     {% set gate_label = "Registry Provider Eligible" %}
     {% set gate_body = "Required Harbor contracts are usable." %}
     {% set gate_tone = "normal" %}
-    {% set next_action = "Revalidate after Harbor upgrades, credential changes, or API access changes." %}
+    {% set next_action = "Revalidate the Harbor integration after upgrades, credential rotations, permission updates, or changes to API accessibility and configuration." %}
 {% elif readiness == "degraded" %}
     {% set readiness_label = "Degraded" %}
     {% set gate_label = "Eligible with Attention" %}

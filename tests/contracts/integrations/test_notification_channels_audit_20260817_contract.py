@@ -174,8 +174,11 @@ def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
     assert 'query.filter(NotificationDelivery.event_key == event_key)' in service
     assert "normalized_delivery_key = str(delivery_event_key or '').strip()[:255]" in service
     assert "'delivery_filter': normalized_delivery_key" in service
-    assert 'name="delivery_event_key"' in page
-    assert 'hx-select="#notification-channels-workspace"' in page
+    assert "table_ui.search_field('delivery_event_key'" in page
+    assert "table_registry.filter_form('notification_channels.index'," in page
+    assert "table_registry.clear_filters_link('notification_channels.index'," in page
+    assert "'notification-delivery-registry'" in page
+    assert "'notification-delivery-loading'" in page
     assert "'delivery_event_key': payload.delivery_filter" in page
     assert 'Delivery attempts and channel retries are provider-delivery evidence' in page
     assert 'No Matching Deliveries' in page
@@ -205,3 +208,164 @@ def test_report_delivery_source_link_is_exact_committed_and_permissioned() -> No
     assert "@permission_required('reports.view')" in source_routes
     assert 'delivery.report_source_url' in page
     assert 'Open Report' in page
+
+def test_review5_channels_registry_uses_canonical_filter_and_safe_server_pagination() -> None:
+    template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+
+    assert "table_registry.filter_form('notification_channels.index'," in template
+    assert "table_registry.clear_filters_link('notification_channels.index'," in template
+    assert "form_id='notification-channel-filter-form'" in template
+    assert 'name="channel_provider"' in template
+    assert 'name="channel_state"' in template
+    assert 'channel_search' in template
+    assert "'channel_search': payload.channel_filters.search" in template
+    assert 'No Matching Channels' in template
+    assert 'table_label.result_count(payload.channel_pagination.total_items)' in template
+    for name in ('channel_search', 'channel_provider', 'channel_state'):
+        assert f"request.args.get('{name}', '')" in routes
+    assert "func.lower(NotificationChannel.name).contains(search.lower(), autoescape=True)" in service
+    assert "NotificationChannel.provider_key == provider" in service
+    assert "NotificationChannel.enabled.is_(True)" in service
+    assert "NotificationChannel.enabled.is_(False)" in service
+    assert "query = query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())" in service
+    assert 'paginate_query(query, page=page, per_page=per_page)' in service
+    assert "request.args.get('channel_per_page', default=5, type=int)" in routes
+
+def test_review5_delivery_activity_auto_htmx_filter_has_no_search_button() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    canonical = read('app/templates/components/table_registry.html')
+    assert "form_id='notification-delivery-filter-form'" in page
+    assert "page_param='delivery_page'" in page
+    assert "per_page_param='delivery_per_page'" in page
+    assert "'tab': 'delivery', 'delivery_event_key': payload.delivery_filter" in page
+    assert 'Find Deliveries' not in page
+    assert '>Reset</a>' not in page
+    assert "table_registry.clear_filters_link('notification_channels.index'," in page
+    assert 'hx-trigger="change, input changed delay:450ms"' in canonical
+    assert 'hx-indicator="#{{ loading_id }}"' in canonical
+    assert 'hx-sync="closest section:replace"' in canonical
+    assert "loading_bar.render('notification-delivery-loading'" in page
+    assert 'No Matching Deliveries' in page
+    assert "request.args.get('delivery_per_page', default=5, type=int)" in read(
+        'app/integrations/delivery/notification_channels/routes.py'
+    )
+
+def test_review5_provider_card_controls_and_modal_header_are_reusable() -> None:
+    cards = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    shared = read('app/templates/components/action_button.html')
+    assert 'components/table_primitives.html' in cards
+    assert "table_ui.action_classes(size='header')" in cards
+    assert 'aria-label="Open {{ provider.label }} setup guide"' in cards
+    assert 'aria-label="Configure {{ provider.label }} notification channel"' in cards
+    assert "data-dialog-target=\"notification-channel-guide-dialog\"" in cards
+    assert "data-dialog-target=\"notification-channel-config-dialog\"" in cards
+    assert "table_label.metadata_label('Guided Setup', icon='book-open-check')" in modals
+    assert 'id="notification-channel-guide-title"' in modals
+    assert 'data-kaori-dialog-close' in modals
+    assert "focus-visible:ring-outline-focus" in shared
+
+def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> None:
+    template = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    assert "table_label.metadata_label('Edit Destination' if form_channel else 'New Destination'" in template
+    assert 'Choose a Delivery Provider' not in template
+    assert '{% for provider_option in payload.providers %}' in template
+    assert 'Select provider' in template
+    assert 'name="provider_key"' in template
+    assert 'x-model="provider"' in template
+    assert '{% include provider_option.form_partial %}' in template
+    assert 'Telegram, Email, or Microsoft Teams' not in template
+    assert 'Delivery Policy' in template
+    assert 'Allowed Uses' in template
+    for key in ('discord', 'slack', 'ntfy', 'telegram', 'email', 'microsoft_teams'):
+        assert f"'{key}': NotificationProviderAdapter(" in providers
+    for requirement in ('NOTIFICATION_NTFY_ALLOWED_ORIGINS', 'NOTIFICATION_NTFY_CA_BUNDLE',
+                        'Anyone', 'GitHub Actions', 'STARTTLS', 'TLS/SMTPS'):
+        assert requirement in providers
+    assert 'Test Delivery' in providers
+
+def test_review6_channel_registry_loading_follows_header_before_filters() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    registry = source.split('id="notification-channel-registry"', 1)[1]
+    header = registry.index('<header')
+    loading = registry.index("loading_bar.render('notification-channel-loading'")
+    filters = registry.index("table_registry.filter_form('notification_channels.index'")
+    table = registry.index('<table')
+    footer = registry.index("table_registry.footer('notification_channels.index'")
+    assert header < loading < filters < table < footer
+    assert registry.count("loading_bar.render('notification-channel-loading'") == 1
+
+def test_review6_provider_utilities_match_header_action_geometry_with_soft_hover() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    primitive = read('app/templates/components/table_primitives.html')
+    assert source.count("table_ui.action_classes(size='header')") == 2
+    assert "action_button.classes('secondary')" not in source
+    assert 'data-lucide="book-open"' in source
+    assert 'data-lucide="settings-2"' in source
+    assert "size == 'header' else 'min-h-8 px-2.5'" in primitive
+    assert "'min-h-9 px-3'" in primitive
+    assert 'hover:bg-kaori-soft' in primitive
+    assert 'hover:bg-kaori-primary' not in primitive
+    assert 'aria-label="Open {{ provider.label }} setup guide"' in source
+    assert 'aria-label="Configure {{ provider.label }} notification channel"' in source
+
+def test_review6_modal_has_context_metadata_and_single_native_provider_select() -> None:
+    source = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    assert "metadata_label('Integrations', icon='plug')" in source
+    assert "metadata_label('Channel Configuration', icon='settings-2')" in source
+    assert "metadata_label('Delivery Providers', icon='network')" in source
+    assert "payload.providers|length ~ ' Setup Guides'" in source
+    assert 'Choose a Delivery Provider' not in source
+    assert 'Scheduled Reports and non-alert events ignore this threshold.' not in source
+    assert 'name="provider_key"' in source
+    assert 'x-model="provider"' in source
+    assert 'Select provider' in source
+    assert 'Delivery Policy' in source
+    assert "payload.domain_options|length" in source
+    assert "payload.event_type_options|length" in source
+    assert 'name="domains"' in source
+    assert 'name="event_types"' in source
+    assert 'name="enabled"' in source
+    assert 'form_channel.domains if form_channel else []' in source
+    assert 'form_channel.event_types if form_channel else []' in source
+    assert 'form_channel.enabled' in source
+    assert 'grid gap-2 sm:grid-cols-2 xl:grid-cols-3' in source
+    assert '{% include provider_option.form_partial %}' in source
+    assert 'name="csrf_token"' in source
+
+def test_review6_provider_guide_summaries_keep_security_coverage_and_copy_density() -> None:
+    import ast
+
+    source = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    module = ast.parse(source)
+    found = {}
+    for node in ast.walk(module):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != 'NotificationProviderAdapter':
+            continue
+        values = {arg.arg: arg.value for arg in node.keywords}
+        key = ast.literal_eval(values['key'])
+        security = ast.literal_eval(values['security_note'])
+        validation = ast.literal_eval(values['validation_note'])
+        steps = ast.literal_eval(values['setup_steps'])
+        found[key] = (security, validation, steps)
+        assert 60 <= len(security) <= 115, key
+        assert 60 <= len(validation) <= 120, key
+
+    assert set(found) == {'discord', 'slack', 'ntfy', 'telegram', 'email', 'microsoft_teams'}
+    assert 'mentions' in found['discord'][0]
+    assert 'redirects' in found['discord'][0] and 'redirects' in found['slack'][0]
+    assert 'no bypass' in found['ntfy'][0]
+    assert 'NOTIFICATION_NTFY_ALLOWED_ORIGINS' in found['ntfy'][2][0]
+    assert 'NOTIFICATION_NTFY_CA_BUNDLE' in ' '.join(found['ntfy'][2])
+    assert 'topic' in found['telegram'][1]
+    assert 'GitHub Actions' in ' '.join(found['telegram'][2])
+    assert 'STARTTLS' in found['email'][0] and 'TLS/SMTPS' in found['email'][0]
+    assert 'Anyone' in ' '.join(found['microsoft_teams'][2])
+    for value in found.values():
+        assert any(term in value[1] for term in ('read', 'recipient', 'receipt'))
+

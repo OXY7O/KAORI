@@ -603,7 +603,7 @@
                         'Open User Registry',
                         icon='users',
                         eyebrow='Related User Management',
-                        boundary='KAORI owns local credentials and resets.'
+                        boundary='KAORI owns Local Database credentials, audited resets, and the account access lifecycle.'
                         ) }}
                     {% elif current_user.has_permission('identity_providers.view') %}
                         {{ related_page_card.render('Identity Providers',

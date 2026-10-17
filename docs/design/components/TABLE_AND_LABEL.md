@@ -267,3 +267,15 @@ The table standard is a consistency system, not a requirement to decorate every 
 ### Dense action groups
 
 When a registry row exposes several icon-only actions, do not rely on `flex-wrap` because the controls can fall into asymmetric layouts as column width changes. Use the shared `table_ui.action_grid_classes(2)` primitive for a compact two-column action block. Keep individual controls on `table_ui.action_classes()` so size, border, hover, focus, disabled, and destructive states remain canonical.
+
+## REVIEW(6) — Compact provider-card action exception (#2328)
+
+Provider-card Guide and Configure are **compact disclosure/configuration
+launchers**, not primary workflow completion buttons. They use the existing
+`table_primitives.action_classes(size='header')` semantic utility family:
+36px minimum height (matching the Channel Registry Add Channel launcher),
+soft Violet hover, visible focus, icon-first and readable labels. The
+existing default `action_classes()` continues to own 32px row utilities,
+and the global 40px `action_button.classes` primary/secondary contract is
+unchanged. This is a bounded compact utility exception, not a global
+relaxation of dark-mode primary-action contrast.

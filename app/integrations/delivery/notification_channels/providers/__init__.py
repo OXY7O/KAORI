@@ -238,16 +238,22 @@ _PROVIDERS = {
             'KAORI network access to the official Discord API over verified HTTPS.',
         ),
         setup_steps=(
-            'In the Discord channel, create a webhook with the minimum posting permissions.',
-            'Copy the secret Discord Webhook URL and give its target channel a recognizable label.',
-            'Enter the channel label and secret URL into KAORI and choose allowed event/domain policies.',
-            'Save and run Test Delivery; verify the alert appears only in the chosen channel.',
+            "Create a Discord channel webhook with only the minimum posting permissions required "
+            "for KAORI delivery.",
+            "Copy its secret Execute Webhook URL and label the intended destination channel "
+            "clearly.",
+            "Enter the label and secret URL in KAORI, then restrict allowed events and delivery "
+            "domains.",
+            "Save and run Test Delivery; verify the test alert appears only in the selected Discord "
+            "channel.",
         ),
         security_note=(
-            'Webhook URL is a secret and is stored encrypted. Official HTTPS Discord endpoint only, '
-            'no redirects, no inherited proxy, and all user/role/everyone mentions disabled.'
+            "Encrypt webhook URLs; require official Discord HTTPS, block redirects/proxies, and suppress "
+            "all mass mentions."
         ),
-        validation_note='Test Delivery checks acceptance by Discord, not human-read confirmation.',
+        validation_note=(
+            "Test Delivery verifies Discord webhook acceptance, not a recipient's read confirmation."
+        ),
         form_partial='integrations/delivery/notification_channels/providers/discord/_form.html',
         form_parser=parse_discord_form,
         form_validator=validate_discord_form,
@@ -269,16 +275,22 @@ _PROVIDERS = {
             'Publishing permission for that app in the target Slack channel.',
         ),
         setup_steps=(
-            'Create or configure a Slack app and enable Incoming Webhooks.',
-            'Select the destination channel and copy its dedicated webhook URL.',
-            'Enter the destination label and secret URL in KAORI, then select allowed event/domain policy.',
-            'Save and run Test Delivery; confirm the message arrived in the expected Slack channel.',
+            "Create or select a Slack app, enable Incoming Webhooks, and authorize it in the "
+            "intended workspace.",
+            "Choose the destination channel and copy its dedicated, channel-bound Incoming Webhook "
+            "URL.",
+            "Enter the destination label and secret URL in KAORI, then restrict allowed events and "
+            "delivery domains.",
+            "Save and run Test Delivery; confirm webhook acceptance and arrival in the selected "
+            "Slack channel.",
         ),
         security_note=(
-            'Incoming Webhook URL is a secret; it is encrypted and never rendered back. Only official HTTPS '
-            'Slack webhook hosts and paths are allowed, redirects and inherited proxies are rejected.'
+            "Encrypt Slack webhook URLs; allow official HTTPS hosts/paths only, with no redirects or "
+            "inherited proxies."
         ),
-        validation_note='Test Delivery checks a Slack webhook acceptance response, not human message read status.',
+        validation_note=(
+            "Test Delivery verifies Slack webhook acceptance, not a recipient's read confirmation."
+        ),
         form_partial='integrations/delivery/notification_channels/providers/slack/_form.html',
         form_parser=parse_slack_form,
         form_validator=validate_slack_form,
@@ -301,18 +313,24 @@ _PROVIDERS = {
             'Optional ntfy access token with minimum publish rights.',
         ),
         setup_steps=(
-            'Configure NOTIFICATION_NTFY_ALLOWED_ORIGINS on the KAORI application and worker; '
-            'include only approved HTTPS origins, then restrict egress at network policy/firewall.',
-            'If using internal PKI, configure NOTIFICATION_NTFY_CA_BUNDLE on the application and worker.',
-            'Create a private ntfy topic and issue a publish-scoped access token where authorization is required.',
-            'Set the server origin, topic, optional token and allowed KAORI event/domain policy.',
-            'Save and run Test Delivery; confirm server acknowledgement and arrival on a test subscriber.',
+            "Allow approved HTTPS origins via NOTIFICATION_NTFY_ALLOWED_ORIGINS on app and worker; "
+            "restrict egress.",
+            "For internal PKI, configure NOTIFICATION_NTFY_CA_BUNDLE consistently on the "
+            "application and worker.",
+            "Create a private ntfy topic and issue a publish-scoped access token when authorization "
+            "is required.",
+            "Enter the approved server origin, topic, optional token, and permitted KAORI "
+            "event/domain policy.",
+            "Save and run Test Delivery; confirm server acknowledgement and arrival on a test "
+            "subscriber.",
         ),
         security_note=(
-            'HTTPS is mandatory; no TLS bypass or arbitrary endpoints. Access tokens remain encrypted '
-            'and hidden after saving. Network egress/DNS policy remains an operator-owned requirement.'
+            "Require approved HTTPS and verified TLS with no bypass; encrypt tokens and enforce "
+            "DNS/network egress policy."
         ),
-        validation_note='Test Delivery checks ntfy HTTPS publishing, not individual subscriber receipt.',
+        validation_note=(
+            "Test Delivery verifies ntfy HTTPS publish acceptance, not individual subscriber receipt."
+        ),
         form_partial='integrations/delivery/notification_channels/providers/ntfy/_form.html',
         form_parser=parse_ntfy_form,
         form_validator=validate_ntfy_form,
@@ -339,21 +357,25 @@ _PROVIDERS = {
             'Posting permission for the bot in the selected chat and topic.',
         ),
         setup_steps=(
-            'Create or select a dedicated KAORI notification bot in BotFather and copy its token.',
-            'Add the bot to the intended chat, group, or channel and grant the minimum permission required '
-            'to post messages.',
-            'Resolve the destination as a numeric chat/supergroup ID or @channel username. Optionally enter a '
-            'numeric Topic ID for a supergroup forum topic.',
-            'Create one KAORI Notification Channel per application delivery topic, then save and run Test '
-            'Delivery to confirm the selected topic receives the message.',
-            'GitHub Actions notifications remain owned by the separate GitHub notifier; avoid subscribing an '
-            'application channel to duplicate that delivery.',
+            "Create or select a dedicated KAORI Telegram bot in BotFather and copy its secret bot "
+            "token.",
+            "Add the bot to the intended chat, group, or channel with minimum required posting "
+            "permissions.",
+            "Use a numeric chat/supergroup ID or @channel username; add an optional numeric Topic "
+            "ID for forum routing.",
+            "Create one KAORI channel per application delivery topic, then test delivery to the "
+            "chosen topic.",
+            "Keep GitHub Actions notifications on the separate GitHub notifier to avoid duplicate "
+            "application delivery.",
         ),
         security_note=(
-            'Treat the bot token as a secret. KAORI stores it in the channel credential payload and never renders '
-            'the stored token back into the form.'
+            "Encrypt Telegram bot tokens as channel secrets; never redisplay saved credentials after "
+            "setup."
         ),
-        validation_note='Test Delivery confirms bot access to the configured chat and optional forum topic.',
+        validation_note=(
+            "Test Delivery verifies bot posting access to the selected chat/topic, not a human read "
+            "receipt."
+        ),
         form_partial='integrations/delivery/notification_channels/providers/telegram/_form.html',
         form_parser=parse_telegram_form,
         form_validator=validate_telegram_form,
@@ -379,20 +401,22 @@ _PROVIDERS = {
             'One or more recipient addresses for the operational audience.',
         ),
         setup_steps=(
-            'Confirm the SMTP endpoint, port, and transport-security mode with the mail platform owner.',
-            'Configure sender identity. If the relay requires authentication, enter the SMTP username and password.',
-            'Add one or more recipients separated by commas and choose the KAORI domains and allowed uses for '
-            'this channel.',
-            'Save the channel and run Test Delivery. Verify the test message arrives before enabling the channel '
-            'for automatic delivery.',
+            "Confirm SMTP host, port, and transport security with the mail platform owner before "
+            "configuration.",
+            "Set the sender identity and, when required, enter the SMTP username and secret "
+            "password.",
+            "Enter comma-separated recipients, then choose allowed KAORI delivery domains and event "
+            "types.",
+            "Save and run Test Delivery; verify test message arrival before enabling automatic "
+            "delivery.",
         ),
         security_note=(
-            'STARTTLS is the recommended default. Store SMTP credentials only in the channel form; passwords are '
-            'encrypted at rest and are not rendered back after save.'
+            "Use STARTTLS, TLS/SMTPS or an approved trusted relay; encrypt SMTP passwords and never "
+            "redisplay them."
         ),
         validation_note=(
-            'Test Delivery proves SMTP connectivity, TLS negotiation, optional authentication, sender acceptance, '
-            'and recipient delivery submission.'
+            "Test Delivery checks SMTP security, authentication, sender acceptance, and recipient "
+            "submission; not reading."
         ),
         form_partial='integrations/delivery/notification_channels/providers/email/_form.html',
         form_parser=parse_email_form,
@@ -419,19 +443,21 @@ _PROVIDERS = {
             'At least one additional Workflow co-owner for operational continuity.',
         ),
         setup_steps=(
-            'Create the Workflow in the target Teams channel and use the Teams webhook request trigger.',
-            'Configure the trigger for Anyone authentication. The current KAORI adapter does not send a bearer token.',
-            'Copy the generated HTTPS webhook URL and enter a human-readable destination label in KAORI.',
-            'Save the channel and run Test Delivery. Confirm the message reaches the intended Teams conversation '
-            'before automatic use.',
+            "Create a Teams Workflow in the intended channel using the Teams webhook request "
+            "trigger.",
+            "Set trigger authentication to Anyone; the current KAORI adapter does not submit a "
+            "bearer token.",
+            "Copy the HTTPS Workflow URL and enter a recognizable destination label into KAORI.",
+            "Save and run Test Delivery; confirm the intended Teams conversation receives the "
+            "message before automatic use.",
         ),
         security_note=(
-            'Treat the Workflow URL as a secret because possession of the URL can permit message submission. '
-            'KAORI encrypts it at rest and never renders the stored URL back.'
+            "Encrypt the Teams Workflow URL as a secret; possession permits posting, so never redisplay "
+            "the saved URL."
         ),
         validation_note=(
-            'Test Delivery verifies that the Workflow endpoint accepts the KAORI message payload with a successful '
-            'HTTP response.'
+            "Test Delivery confirms the Teams Workflow accepts KAORI's payload over HTTPS, not a read "
+            "receipt."
         ),
         form_partial='integrations/delivery/notification_channels/providers/microsoft_teams/_form.html',
         form_parser=parse_microsoft_teams_form,

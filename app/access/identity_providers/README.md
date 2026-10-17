@@ -79,3 +79,86 @@ A focused isolated Playwright UI regression exercises pointer and keyboard
 selection transitions and panel/field visibility without connecting to LDAP
 or submitting any provider changes. The operator's real Dev Container Firefox
 test and human acceptance still govern UAT PASS; official CI/CD stays HOLD.
+
+### Root-cause fix: Lucide replaced the LDAP radio (#2280)
+
+Actual Firefox DOM evidence exposed an SVG `lucide-log-in` carrying
+`type="radio"` and `data-provider-key="ldap_directory"` with only two native
+provider inputs remaining. This traced to a collision: every provider radio
+had `data-provider-icon` metadata while `identity_provider_form.js`
+selected the **first** `[data-provider-icon]` as an icon display target.
+The controller added `data-lucide` to the LDAP input; the bundled Lucide
+renderer replaced the input with an SVG. The earlier badge-only and
+full-card CSS changes did not address this destructive DOM mutation.
+
+The source-controlled provider option now holds icon metadata under
+`data-provider-option-icon`, separate from
+`data-provider-display-icon` on the actual SSO configuration icon.
+The controller selects the displayed icon within its configuration panel
+on each update because Lucide replaces the original `<i>` with `<svg>`.
+It never assigns `data-lucide` to a radio input. The existing Playwright
+browser test now loads the real vendored Lucide renderer and asserts all
+three native provider radios remain present after initial render, LDAP
+selection and keyboard switching. No credential, provider integration,
+authorization, admission, TLS or database functionality changed.
+
+The operator's real Dev Container Firefox result, CI and human
+acceptance remain PENDING/NOT RUN until executable evidence is recorded.
+Official staging/deployment/release remain HOLD.
+
+### REVIEW(3) — Header-level input guidance (#2301)
+
+Access Identity Provider Add/Edit now uses one canonical title-adjacent
+`info_tip.render(..., variant='guide')` per owning form section:
+Provider Identity and State, LDAP Adapter Connection, Directory Identity
+Mapping, browser Application, and Admission and JIT Provisioning.
+The section Guide consolidates **static input helper copy**, including
+directory TLS/service bind/secret handling, escaped directory user filter,
+identity mapping, OAuth/OIDC client ID/secret source and non-admin JIT role.
+The input labels, placeholders, field validation errors and live dynamic
+`data-enabled-copy`, provider-specific `data-admission-help`, JIT-toggle
+status, disabled-state notification and security controls remain visible
+in their original owning fields. Do not hide mandatory validation or current
+provider/admission state in a popover. The existing JS Info Tip controller
+owns keyboard/hover/touch and viewport placement. Actual Firefox Lenovo
+L13/mobile/light-dark/zoom acceptance remains PENDING until executed.
+
+### REVIEW(3) — Provider Guidance line-density targets (#2279)
+
+Firefox Lenovo L13 review requests **approximately two natural lines**
+per browser-provider setup-step description and **one line** for each
+credential-ownership/admission note. The GitHub OAuth and Google OIDC
+four-step workflows use concise, complete guidance: registration, exact
+callback, environment-referenced secret, and explicit non-admin JIT
+admission. Provider notes distinguish external authentication from KAORI
+authorization; the LDAP guidance steps already describe identity mapping.
+The shared `info_flow.render()` component and typography remain unchanged.
+These are desktop screenshot targets, not forced line breaks, truncation,
+font reduction or browser PASS. Real Dev Container Firefox/mobile/zoom/dark
+and human acceptance remain PENDING.
+
+### REVIEW(4) — LDAP form columns and mapping placeholders (#2306)
+
+The LDAP User Search Filter and TLS Mode occupy adjacent columns in the
+existing `sm:grid-cols-2` configuration grid, reverting to natural
+stacking on narrower viewports. On **Add** Identity Provider, attribute
+examples `sAMAccountName`, `mail`, `displayName`, and `objectGUID`
+are input placeholders rather than WTForms-created field values. Their
+real configured values must be supplied and validated before LDAP
+save/enable; blank mapping attributes still fail existing required-field
+validation. **Edit** Identity Provider continues to hydrate actual saved
+mapping values from `populate_provider_form()`, never overwrite them
+with placeholders. LDAP TLS guards, bind secret reference and
+`{query}` escape remain unchanged. Real Firefox Dev Container UAT,
+validation-negative testing, human acceptance and official admission
+are separate, pending evidence.
+
+### REVIEW(4) — Provider Guidance compact headings (#2279)
+
+Directory, GitHub and Google Guidance headers now use short descriptions
+identifying external sign-in and KAORI's local access decision. Detailed
+four-step provider onboarding and credential-authority notes remain in the
+existing Info Flow component. One-line appearance is a Firefox Lenovo L13
+visual target; mobile text may wrap naturally. No forced nowrap/clipping,
+policy change, provider API work, or secret access. Post-fix Firefox UAT
+and human acceptance remain PENDING; official CI/CD admission HOLD.

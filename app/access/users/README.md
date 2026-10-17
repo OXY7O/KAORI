@@ -89,3 +89,14 @@ Follow-up compact right-rail copy: the short self-edit caption is accompanied
 by the full existing restriction (own role, active state, Super Admin) in the
 Guide. Local credentials and resets remain KAORI-owned. Firefox rendered
 single-line confirmation remains pending.
+
+### REVIEW(3) — Local Database related-card density (#2278)
+
+The updated Firefox Lenovo L13 reference requests a **two-line**
+explanation in the Local Database `Related User Management` card. The
+previous one-line operator caption is now expanded to name Local Database
+credential ownership, audited resets and KAORI's account lifecycle
+authority. The shared Related Page Card, provider-driven conditional
+visibility, actual password/session behavior and authorization are
+unchanged. No forced breaks, truncation or typography overrides. Actual
+Firefox laptop line count, mobile and human acceptance are PENDING.

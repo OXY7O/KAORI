@@ -78,6 +78,7 @@ def test_provider_cards_select_ldap_by_pointer_and_keyboard(page: Page) -> None:
           <input data-ldap-field name="server_uri" disabled>
         </div>
         <div data-configuration-panel="browser_client">
+          <i data-provider-display-icon data-lucide="log-in"></i>
           <input data-browser-field name="client_id">
         </div>
         <div data-provider-guidance id="guidance-ldap_directory" hidden>LDAP Guidance</div>
@@ -88,7 +89,16 @@ def test_provider_cards_select_ldap_by_pointer_and_keyboard(page: Page) -> None:
         </body></html>
         """
     )
+    # Exercise the real bundled Lucide renderer that previously replaced LDAP's <input> with <svg>.
+    page.add_script_tag(path=str(ROOT / 'app/static/vendor/lucide/lucide.min.js'))
     page.add_script_tag(content=(ROOT / 'app/static/js/identity_provider_form.js').read_text(encoding='utf-8'))
+    expect(page.locator('input[type="radio"][data-provider-option]')).to_have_count(3)
+    expect(page.locator('svg[data-provider-key="ldap_directory"]')).to_have_count(0)
+    expect(page.locator('[data-provider-display-icon]')).to_have_count(1)
+    expect(page.locator('svg[data-provider-display-icon]')).to_have_count(1)
+    assert page.locator('input[type="radio"][data-provider-option]').evaluate_all(
+        "inputs => inputs.every(input => !input.hasAttribute('data-lucide'))"
+    )
     ldap = page.locator('input[data-provider-key="ldap_directory"]')
     github = page.locator('input[data-provider-key="github"]')
     expect(github).to_be_checked()
@@ -102,6 +112,12 @@ def test_provider_cards_select_ldap_by_pointer_and_keyboard(page: Page) -> None:
     page.mouse.click(bounds['x'] + bounds['width'] / 2, bounds['y'] + bounds['height'] / 2)
     expect(ldap).to_be_checked()
     expect(github).not_to_be_checked()
+    assert page.locator('[data-provider-form]').evaluate(
+        "form => new FormData(form).get('provider_key')"
+    ) == 'ldap_directory'
+    expect(page.locator('input[type="radio"][data-provider-option]')).to_have_count(3)
+    expect(page.locator('svg[data-provider-key="ldap_directory"]')).to_have_count(0)
+    expect(page.locator('svg[data-provider-display-icon]')).to_have_count(1)
     expect(page.locator('#guidance-ldap_directory')).to_be_visible()
     expect(page.locator('#guidance-github')).to_be_hidden()
     expect(page.locator('[data-configuration-panel="ldap"]')).to_be_visible()
@@ -114,6 +130,8 @@ def test_provider_cards_select_ldap_by_pointer_and_keyboard(page: Page) -> None:
     ldap.focus()
     page.keyboard.press('ArrowRight')
     expect(page.locator('input[data-provider-key="google"]')).to_be_checked()
+    expect(page.locator('input[type="radio"][data-provider-option]')).to_have_count(3)
+    expect(page.locator('svg[data-provider-display-icon]')).to_have_count(1)
     expect(page.locator('#guidance-google')).to_be_visible()
     expect(page.locator('input[data-ldap-field]')).to_be_disabled()
     expect(page.locator('input[data-browser-field]')).to_be_enabled()
@@ -121,4 +139,7 @@ def test_provider_cards_select_ldap_by_pointer_and_keyboard(page: Page) -> None:
 
     page.keyboard.press('ArrowLeft')
     expect(ldap).to_be_checked()
+    expect(page.locator('input[type="radio"][data-provider-option]')).to_have_count(3)
+    expect(page.locator('svg[data-provider-key="ldap_directory"]')).to_have_count(0)
+    expect(page.locator('svg[data-provider-display-icon]')).to_have_count(1)
     expect(page.locator('#guidance-ldap_directory')).to_be_visible()

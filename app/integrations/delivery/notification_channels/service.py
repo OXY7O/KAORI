@@ -175,12 +175,26 @@ def get_notification_channels_payload(
     *,
     channel_page: int = 1,
     channel_per_page: int = 5,
+    channel_search: str = '',
+    channel_provider: str = '',
+    channel_state: str = '',
     delivery_page: int = 1,
     delivery_per_page: int = 5,
     delivery_event_key: str = '',
     can_view_reports: bool = False,
 ) -> dict[str, Any]:
-    channel_rows, channel_pagination = _channel_registry_page(page=channel_page, per_page=channel_per_page)
+    normalized_channel_search = str(channel_search or '').strip()[:160]
+    normalized_provider = str(channel_provider or '').strip().lower()
+    normalized_provider = normalized_provider if normalized_provider in _PROVIDER_LABELS else ''
+    normalized_state = str(channel_state or '').strip().lower()
+    normalized_state = normalized_state if normalized_state in {'enabled', 'disabled'} else ''
+    channel_rows, channel_pagination = _channel_registry_page(
+        page=channel_page,
+        per_page=channel_per_page,
+        search=normalized_channel_search,
+        provider=normalized_provider,
+        state=normalized_state,
+    )
     normalized_delivery_key = str(delivery_event_key or '').strip()[:255]
     delivery_rows, delivery_pagination = _delivery_registry_page(
         page=delivery_page,
@@ -211,6 +225,11 @@ def get_notification_channels_payload(
         'posture': {'label': summary['label'], 'tone': summary['tone']},
         'channels': channel_rows,
         'channel_pagination': channel_pagination,
+        'channel_filters': {
+            'search': normalized_channel_search,
+            'provider': normalized_provider,
+            'state': normalized_state,
+        },
         'deliveries': delivery_rows,
         'delivery_pagination': delivery_pagination,
         'delivery_filter': normalized_delivery_key,
@@ -239,8 +258,19 @@ def get_notification_channels_payload(
     }
 
 
-def _channel_registry_page(*, page: int, per_page: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    query = NotificationChannel.query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())
+def _channel_registry_page(
+    *, page: int, per_page: int, search: str = '', provider: str = '', state: str = ''
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    query = NotificationChannel.query
+    if search:
+        query = query.filter(func.lower(NotificationChannel.name).contains(search.lower(), autoescape=True))
+    if provider:
+        query = query.filter(NotificationChannel.provider_key == provider)
+    if state == 'enabled':
+        query = query.filter(NotificationChannel.enabled.is_(True))
+    elif state == 'disabled':
+        query = query.filter(NotificationChannel.enabled.is_(False))
+    query = query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())
     rows, pagination = paginate_query(query, page=page, per_page=per_page)
     usage_map = channel_usage_map([channel.id for channel in rows])
     return [_channel_view(channel, usage=usage_map.get(channel.id)) for channel in rows], pagination
