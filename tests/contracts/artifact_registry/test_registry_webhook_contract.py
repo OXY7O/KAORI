@@ -81,8 +81,9 @@ def test_webhook_receiver_guidance_is_safe_and_localhost_aware() -> None:
 
     assert 'Webhook Receiver URL' in configuration
     assert "url_for('artifact_registry.webhook_receive'" in configuration
-    assert "webhook_url.startswith('http://localhost')" in configuration
-    assert "webhook_url.startswith('http://127.0.0.1')" in configuration
+    assert "request.host.split(':', 1)[0]|lower" in configuration
+    assert "receiver_host in ['localhost', '127.0.0.1']" in configuration
+    assert "request.host.startswith('[::1]')" in configuration
     assert 'a Harbor-reachable HTTPS address' in configuration
     assert 'Authorization: Bearer &lt;token&gt;' in configuration
     assert 'X-KAORI-Webhook-Token: &lt;token&gt;' in configuration
