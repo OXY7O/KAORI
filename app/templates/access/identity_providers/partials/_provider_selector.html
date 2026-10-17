@@ -14,12 +14,13 @@
     <fieldset class="grid gap-3 p-5 sm:grid-cols-3 sm:p-6">
         <legend class="sr-only">{{ form.provider_key.label.text }}</legend>
         {% for definition in provider_options %}
+            {# Make the native radio the full-card hit target: Firefox must not depend on forwarding sibling-label clicks. #}
             <div class="relative min-w-0">
                 <input id="provider-key-{{ definition.provider_key }}"
                        type="radio"
                        name="{{ form.provider_key.name }}"
                        value="{{ definition.provider_key }}"
-                       class="peer sr-only"
+                       class="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
                        data-provider-option
                        data-provider-key="{{ definition.provider_key }}"
                        data-adapter-key="{{ definition.adapter_key }}"

@@ -194,6 +194,10 @@ def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selec
 
     Environment().parse(selector)
     assert 'type="radio"' in selector
+    assert 'class="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"' in selector
+    assert 'class="peer sr-only"' not in selector
+    assert 'peer-checked:border-kaori-primary' in selector
+    assert 'peer-focus-visible:ring-2' in selector
     assert 'id="provider-key-{{ definition.provider_key }}"' in selector
     assert 'for="provider-key-{{ definition.provider_key }}"' in selector
     assert 'data-provider-option' in selector
