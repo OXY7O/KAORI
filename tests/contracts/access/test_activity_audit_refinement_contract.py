@@ -467,3 +467,16 @@ def test_activity_audit_framed_tabs_and_canonical_administrative_filters() -> No
     assert "if selected_audit_tab == 'administrative' and not has_administrative_sources:" in routes
     for param in ('admin_search', 'admin_outcome', 'admin_time_range', 'admin_per_page'):
         assert f"request.args.get('{param}'" in routes or f"_request_int('{param}'" in routes
+
+
+
+def test_uat_administrative_evidence_uses_shared_title_result_count() -> None:
+    administrative = read('app/templates/access/activity_audit/partials/_administrative_evidence.html')
+    header = administrative.split('</header>', 1)[0]
+    assert header.index('>Administrative Source Evidence</h2>') < header.index(
+        'table_label.result_count(administrative_evidence.pagination.total_items)'
+    )
+    assert header.count('table_label.result_count(') == 1
+    assert '{{ administrative_evidence.pagination.total_items }} Recorded' not in header
+    assert 'registry_ui.clear_filters_action(' in header
+    assert "loading_bar.render('administrative-activity-loading'" in header
