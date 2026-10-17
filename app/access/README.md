@@ -261,3 +261,19 @@ statement, preserving all zero-active, no-admin and admission-warning
 precedence branches. This is a Firefox L13 one-line **target**, not a claimed
 browser PASS; actual responsive/zoom/light-dark and human UAT remains pending.
 No persistence, aggregation or provider calls are added.
+
+## REVIEW(4) — Role form text and Guide (#2307)
+
+Firefox Lenovo L13 operator review shortens the Assignment Availability
+caption while retaining an explicit deactivation/effective-access
+consequence and the visible active/inactive status badge. The Access
+Guardrails rail keeps four role policy boundaries as readable, natural
+two-line desktop captions, including source-controlled dependencies,
+effective delegation and Local Database-only Super Admin separation.
+Static Role Slug and Display Name helper guidance is consolidated in the
+canonical title-adjacent `info_tip` Guide in **Role Identity**. Labels,
+input values, audit-sensitive errors, role lifecycle/CSRF, default-role
+protection and backend authorization enforcement remain unchanged.
+Desktop 1-/2-line targets are not guaranteed by a static copy budget;
+actual Dev Container Firefox visual, accessibility and human acceptance
+evidence remains PENDING. Official admission is HOLD.
