@@ -226,9 +226,45 @@ def test_review4_role_permission_card_description_uses_two_line_minimum() -> Non
     source = read('app/templates/access/roles/form.html')
     Environment().parse(source)
     assert 'mt-1.5 block min-h-10 text-xs leading-5 text-content-muted' in source
-    assert "{{ permission.description or 'No permission description is defined.' }}" in source
+    assert "permission_matrix_descriptions.get(permission.key, permission.description or" in source
     assert 'data-role-permission-card' in source
     assert 'data-role-permission' in source
     # Preserve canonical RBAC text; never clip longer permission descriptions.
     assert 'line-clamp-2' not in source
+
+
+def test_permission_matrix_has_descriptive_copy_for_every_canonical_permission() -> None:
+    import yaml
+    from jinja2 import Environment
+
+    from app.access.rbac.defaults import DEFAULT_PERMISSIONS, PERMISSION_MATRIX_DESCRIPTIONS
+
+    catalog = yaml.safe_load(read('app/definitions/catalogs/access/rbac/access.yaml'))
+    canonical = {item[0]: item[3] for item in DEFAULT_PERMISSIONS}
+    records = {item['key']: item for item in catalog['permissions']}
+    descriptions = PERMISSION_MATRIX_DESCRIPTIONS
+
+    assert canonical  # New canonical permissions must receive matrix copy automatically.
+    assert set(records) == set(canonical) == set(descriptions)
+    assert all(records[key]['description'] == description for key, description in canonical.items())
+    assert all(records[key]['matrix_description'] == descriptions[key] for key in canonical)
+    assert all(80 <= len(value) <= 160 for value in descriptions.values())
+    assert len(set(descriptions.values())) == len(descriptions)
+    assert descriptions['integrations.manage'] == (
+        'Manage integration provider registration, bindings, validation, runtime configuration, and delivery channels.'
+    )
+    assert 'without exposing' in descriptions['kubernetes_secrets.replace']
+    assert 'approve or reject' in descriptions['kubernetes_secrets.approve_reveal'].lower()
+    assert 'Local Database' in descriptions['users.reset_password']
+
+    role_form = read('app/templates/access/roles/form.html')
+    presentation = read('app/access/roles/presentation.py')
+    Environment().parse(role_form)
+    assert 'PERMISSION_MATRIX_DESCRIPTIONS' in presentation
+    assert "'permission_matrix_descriptions': PERMISSION_MATRIX_DESCRIPTIONS" in presentation
+    assert 'permission_matrix_descriptions.get(permission.key,' in role_form
+    assert 'data-role-permission-card' in role_form
+    assert 'min-h-10' in role_form
+    assert 'line-clamp-2' not in role_form
+    assert 'permission.description' in role_form  # DB-only registry entries retain their fallback
 

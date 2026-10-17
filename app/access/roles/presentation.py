@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import func
 from sqlalchemy.orm import lazyload
 
-from app.access.rbac.defaults import DEFAULT_PERMISSION_DEPENDENCIES
+from app.access.rbac.defaults import DEFAULT_PERMISSION_DEPENDENCIES, PERMISSION_MATRIX_DESCRIPTIONS
 from app.access.rbac.policy import (
     actor_delegable_permission_keys,
     role_is_delegable_by_actor,
@@ -251,6 +251,7 @@ def build_role_form_context(
         'clone_source': clone_source,
         'view_only': view_only,
         'permissions_by_module': permissions_by_module,
+        'permission_matrix_descriptions': PERMISSION_MATRIX_DESCRIPTIONS,
         'selected_permission_ids': selected_permission_ids,
         'required_permission_ids': _required_permission_ids(selected_permission_ids, permissions_by_module),
         'delegable_permission_ids': delegable_ids,
