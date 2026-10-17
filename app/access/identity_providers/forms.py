@@ -36,10 +36,10 @@ class IdentityProviderForm(FlaskForm):
         choices=[('ldaps', 'LDAPS'), ('starttls', 'StartTLS'), ('plain', 'Plain (development only)')],
         validate_choice=False,
     )
-    username_attribute = StringField('Username Attribute', validators=[Length(max=100)], default='sAMAccountName')
-    email_attribute = StringField('Email Attribute', validators=[Length(max=100)], default='mail')
-    display_name_attribute = StringField('Display Name Attribute', validators=[Length(max=100)], default='displayName')
-    stable_id_attribute = StringField('Stable ID Attribute', validators=[Length(max=100)], default='objectGUID')
+    username_attribute = StringField('Username Attribute', validators=[Length(max=100)])
+    email_attribute = StringField('Email Attribute', validators=[Length(max=100)])
+    display_name_attribute = StringField('Display Name Attribute', validators=[Length(max=100)])
+    stable_id_attribute = StringField('Stable ID Attribute', validators=[Length(max=100)])
     client_id = StringField('OAuth / OIDC Client ID', validators=[Optional(), Length(max=255)])
     client_secret_env = StringField('Client Secret Environment Variable', validators=[Optional(), Length(max=150)])
     submit = SubmitField('Save Provider')

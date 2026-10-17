@@ -136,3 +136,19 @@ The shared `info_flow.render()` component and typography remain unchanged.
 These are desktop screenshot targets, not forced line breaks, truncation,
 font reduction or browser PASS. Real Dev Container Firefox/mobile/zoom/dark
 and human acceptance remain PENDING.
+
+### REVIEW(4) — LDAP form columns and mapping placeholders (#2306)
+
+The LDAP User Search Filter and TLS Mode occupy adjacent columns in the
+existing `sm:grid-cols-2` configuration grid, reverting to natural
+stacking on narrower viewports. On **Add** Identity Provider, attribute
+examples `sAMAccountName`, `mail`, `displayName`, and `objectGUID`
+are input placeholders rather than WTForms-created field values. Their
+real configured values must be supplied and validated before LDAP
+save/enable; blank mapping attributes still fail existing required-field
+validation. **Edit** Identity Provider continues to hydrate actual saved
+mapping values from `populate_provider_form()`, never overwrite them
+with placeholders. LDAP TLS guards, bind secret reference and
+`{query}` escape remain unchanged. Real Firefox Dev Container UAT,
+validation-negative testing, human acceptance and official admission
+are separate, pending evidence.
