@@ -107,3 +107,31 @@ def test_uat_access_boundaries_intro_precedes_one_accessible_card() -> None:
     assert 'table_label.status_indicator_label(boundary.status_label, boundary.status_tone)' in anchor
     assert 'xl:grid-cols-4' in anchor
     assert anchor.count('<h2') == 0
+
+
+def test_uat_review2_user_account_counts_keep_dynamic_break_glass_evidence() -> None:
+    import ast
+    from typing import Any
+
+    source = read('app/access/overview/presentation.py')
+    module = ast.parse(source)
+    function = next(
+        node for node in module.body
+        if isinstance(node, ast.FunctionDef) and node.name == '_user_supporting_text'
+    )
+    namespace: dict[str, Any] = {'Any': Any}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), '<user-posture>', 'exec'), namespace)
+    supporting_text = namespace['_user_supporting_text']
+
+    baseline = {'active': 2, 'total': 2, 'active_super_admins': 1, 'access_review': 0}
+    assert supporting_text(baseline) == '2 accounts · 1 active Local DB break-glass admin.'
+    assert len(supporting_text(baseline)) < 55
+    assert supporting_text({**baseline, 'total': 1, 'active_super_admins': 2}) == (
+        '1 account · 2 active Local DB break-glass admins.'
+    )
+    assert 'No active break-glass super admin' in supporting_text(
+        {**baseline, 'active_super_admins': 0}
+    )
+    assert 'account admission issue(s)' in supporting_text({**baseline, 'access_review': 3})
+    assert 'No active user account' in supporting_text({**baseline, 'active': 0})
+    assert 'registered account(s) with' not in source
