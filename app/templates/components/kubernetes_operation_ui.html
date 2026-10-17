@@ -14,10 +14,10 @@
             <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
         </span>
         <span class="min-w-0">
-            <span class="inline-flex min-h-6 items-center gap-1.5">
+            <span class="flex min-h-6 flex-wrap items-center gap-2">
                 <span class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ title }}</span>
                 {% if info_id and info_title %}
-                    {{ info_tip.render(info_id, info_title, info_text, info_items, placement=info_placement) }}
+                    {{ info_tip.render(info_id, info_title, info_text, info_items, placement=info_placement, variant='guide') }}
                 {% endif %}
             </span>
             <span class="mt-1 block break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ description }}</span>
