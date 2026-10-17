@@ -527,3 +527,24 @@ provider-specific accessible names. Existing Alpine/native dialog behavior
 is unchanged. Provider Setup Guide has a shared 'Guided Setup' metadata
 label beside its title. No changes to provider adapter, credentials,
 permissions or outbound delivery; Dev Container browser UAT pending.
+
+### REVIEW(5) — Add Notification Channel modal and setup guidance (#2321)
+
+Create Channel displays the canonical `New Destination` header label and a
+catalog-driven selection gallery for all six supported transports (Discord,
+Slack, ntfy, Telegram, Email/SMTP and Microsoft Teams). Choosing a card sets
+the existing Alpine-bound native Provider selector and exposes the
+unchanged adapter-owned destination/credential form. Edit Channel retains
+its immutable provider and actual saved state; CSRF, form validation and
+encryption of secrets are unchanged. Prior to selection, existing credential
+and activation boundaries are visible instead of a sparse, obsolete prompt.
+
+Provider-owned Setup Guide sequences, credential security boundaries and
+Test Delivery interpretations are now concise action-and-purpose sentences.
+The complete ntfy allowed origin/CA/network requirements, Telegram topic
+and separate GitHub notifier boundaries, Slack/Discord HTTPS constraints,
+SMTP TLS/password safeguards and Teams Anyone trigger requirement stay
+explicit. A two-line display is a Firefox Lenovo L13 review target, **not**
+a forced clamp or a runtime PASS; narrower viewports may wrap further.
+Focused local provider and Jinja contracts, real browser Visual QA and
+human acceptance remain pending; official gates/deployment HOLD.
