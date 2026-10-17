@@ -392,8 +392,10 @@ physical or usable backend capacity.
 
 The **View More** dialog uses one resource-first comparison rather than
 three dense parallel cards. Its header has one left-aligned hierarchy: a shared
-icon, Allocation Budget eyebrow, cluster title beside its actual capacity-state
-label, environment context and a right-aligned native Close action. This avoids
+icon, Allocation Budget eyebrow, cluster title, a dedicated label row
+**beneath the title** with the actual capacity-state and **Governed budget**
+metadata label, environment context and a right-aligned native Close action.
+This avoids
 the off-center title/status placement seen in earlier DevContainer feedback.
 
 Four resource rows—CPU Requests, Memory Requests, Pod Slots and Logical
@@ -411,10 +413,13 @@ percentage is unavailable along with the canonical reason.
 
 At desktop widths the common column header remains aligned with metric rows;
 narrower screens place the three labelled metric values beneath the resource
-name in one three-column grid, without horizontal scrolling. A small note below
-the comparison retains governed Namespace count and the logical-storage
-boundary. The redundant lower Close footer was removed; the accessible Close
-action remains in the top-right header.
+name in one three-column grid, without horizontal scrolling. The governed
+Namespace count and logical-storage boundary now live in a separate
+**non-scrolling informational footer** after the scrollable comparison, beside
+a shared 32px **Close** utility. That footer wraps on narrow viewports and
+remains reachable without scrolling through a tall metric list; it supersedes
+the prior decision to omit the bottom Close action. The top-right header Close
+remains available as an alternate keyboard/pointer control.
 
 The dialog retains `data-kaori-native-dialog`, labelled heading/description,
 close control, existing access semantics, light/dark tokens and responsive
