@@ -9,7 +9,8 @@
     scope_value='Live Kubernetes target',
     impact_items=none,
     warning=none,
-    presentation='default'
+    presentation='default',
+    access_chrome=false
     ) -%}
     <div id="{{ modal_id }}"
          data-destructive-confirmation-modal
@@ -24,7 +25,7 @@
                  aria-labelledby="{{ modal_id }}-title"
                  tabindex="-1"
                  class="relative flex max-h-[calc(100dvh-2rem)] w-full {{ 'max-w-6xl' if presentation == 'steps' else 'max-w-xl' }} flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl">
-            <header class="flex items-start justify-between gap-4 border-b border-outline-subtle {{ 'px-6 py-5' if presentation == 'steps' else 'px-5 py-4' }}">
+            <header class="flex items-start justify-between gap-4 border-b border-outline-subtle {{ 'bg-surface-card px-5 py-4 sm:px-6' if access_chrome else ('px-6 py-5' if presentation == 'steps' else 'px-5 py-4') }}">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-status-critical-soft text-status-critical-text"
                           aria-hidden="true">
@@ -37,10 +38,10 @@
                         <p class="mt-1 break-words text-sm {{ 'leading-5' if presentation == 'steps' else 'leading-6' }} text-content-secondary [overflow-wrap:anywhere]">{{ notice }}</p>
                     </div>
                 </div>
-                {% if presentation in ['steps', 'kubernetes'] %}
+                {% if presentation in ['steps', 'kubernetes'] or access_chrome %}
                     <button type="button"
                             data-destructive-modal-close
-                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-muted transition hover:bg-surface-hover hover:text-content-primary"
+                            class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                             aria-label="Close {{ title }}">
                         <i data-lucide="x" class="h-4 w-4"></i>
                     </button>
@@ -205,10 +206,16 @@
                     {% endif %}
                 {% endif %}
             </div>
-            <footer class="flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover {{ 'px-6 py-4' if presentation == 'steps' else 'px-5 py-4' }} sm:flex-row sm:justify-end">
+            <footer class="{{ 'flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6' if access_chrome else ('flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover ' ~ ('px-6 py-4' if presentation == 'steps' else 'px-5 py-4') ~ ' sm:flex-row sm:justify-end') }}">
+                {% if access_chrome %}
+                    <p class="mr-auto hidden min-w-0 items-center gap-2 text-xs leading-5 text-content-muted sm:flex">
+                        <i data-lucide="shield-alert" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        {{ scope_value }} · Confirmation required
+                    </p>
+                {% endif %}
                 <button type="button"
                         data-destructive-modal-close
-                        class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:bg-kaori-soft">Cancel</button>
+                        class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Cancel</button>
                 <button type="button"
                         data-destructive-modal-confirm
                         data-submit-button-id="{{ confirm_button_id }}"
