@@ -33,7 +33,7 @@
             {% call detail_ui.resource_sheet() %}
                 {% call detail_ui.inventory_section(
                     'Role Identity', 'badge-info',
-                    description='Committed role identity and baseline',
+                    description='Role identity and baseline',
                     badge=detail.type_short,
                     compact_layout=true
                     ) %}
@@ -66,7 +66,7 @@
                 {% endcall %}
                 {% call detail_ui.inventory_section(
                     'Assignment Impact', 'users-round',
-                    description='Membership, provider defaults and authorization',
+                    description='Assignments and authorization',
                     badge='Available' if role.is_active else 'Blocked',
                     badge_type='status', badge_tone='normal' if role.is_active else 'unknown',
                     compact_layout=true
@@ -92,7 +92,7 @@
                 {% endcall %}
                 {% call detail_ui.inventory_section(
                     'Permission Coverage', 'key-round',
-                    description='All effective capabilities by control module',
+                    description='Effective capabilities by module',
                     badge=detail.permission_count ~ (' Permission' if detail.permission_count == 1 else ' Permissions'),
                     compact_layout=true
                     ) %}
@@ -133,7 +133,7 @@
                 {% endcall %}
                 {% call detail_ui.inventory_section(
                     'Administrative Boundary', 'shield-check',
-                    description='Ownership and permitted role actions',
+                    description='Permitted role actions',
                     badge='Protected' if detail.mutation_protected else 'Custom',
                     compact_layout=true
                     ) %}
