@@ -96,7 +96,7 @@ worker_services=(
 )
 expected_nodes=()
 probe_cid=""
-for service in ""${worker_services[@]}""; do
+for service in "${worker_services[@]}"; do
   cid="$("${compose[@]}" ps -q "$service")"
   [[ -n "$cid" ]] || fail "$service has no container for queue inspection"
   [[ -n "$probe_cid" ]] || probe_cid="$cid"
@@ -112,8 +112,8 @@ for service in ""${worker_services[@]}""; do
   expected_nodes+=("$node_prefix@$container_hostname")
 done
 
-destination_csv="$(IFS=,; printf '%s' ""${expected_nodes[*]}"")"
-service_csv="$(IFS=,; printf '%s' ""${worker_services[@]}"")"
+destination_csv="$(IFS=,; printf '%s' "${expected_nodes[*]}")"
+service_csv="$(IFS=,; printf '%s' "${worker_services[*]}")"
 command -v python3 >/dev/null 2>&1 || fail 'python3 is required for queue response verification'
 if ! queue_response="$(docker exec "$probe_cid" celery --app celery_worker:celery_app inspect \
   --json --timeout=20 --destination="$destination_csv" active_queues 2>/dev/null)"; then
