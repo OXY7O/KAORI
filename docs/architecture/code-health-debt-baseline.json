@@ -126,7 +126,7 @@
     "app/kubernetes/tenant/decommission_service.py::execute_tenant_decommission": 33,
     "app/kubernetes/tenant/discovery_adoption.py::_require_re_adoption_handback_for_managed_release": 53,
     "app/kubernetes/tenant/discovery_adoption.py::attach_discovered_capsule_namespace_committed": 54,
-    "app/kubernetes/tenant/discovery_service.py::get_tenant_adoption_preflight_context": 35,
+    "app/kubernetes/tenant/discovery_service.py::get_tenant_adoption_preflight_context": 34,
     "app/kubernetes/tenant/discovery_service.py::get_tenant_discovery_context": 104,
     "app/kubernetes/tenant/external_access_observation.py::normalize_capsule_access_spec": 39,
     "app/kubernetes/tenant/external_native_access_observation.py::normalize_native_role_binding": 31,
@@ -161,7 +161,7 @@
     "app/storage/object_storage/inventory/system_presentation.py::_system_row": 31
   },
   "function_line_limits": {
-    "app/access/overview/presentation.py::build_access_overview": 199,
+    "app/access/overview/presentation.py::build_access_overview": 192,
     "app/artifact_registry/correlation.py::refresh_registry_workload_bindings": 179,
     "app/artifact_registry/governance_tasks.py::sync_all_registry_governance_task": 161,
     "app/artifact_registry/presentation_topology.py::build_dependency_topology": 252,
