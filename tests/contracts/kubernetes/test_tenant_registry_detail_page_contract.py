@@ -277,13 +277,13 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
     assert 'w-full shrink-0 sm:w-auto' in stage_one
     assert '<form ' not in stage_two
 
-    forms = re.findall(r'<form\\b.*?</form>', release, flags=re.DOTALL)
+    forms = re.findall(r'<form\b.*?</form>', release, flags=re.DOTALL)
     assert len(forms) == 20
     assert 'tenant.review_tenant_release_route' in forms[0]
     for form in forms[1:]:
         opening = form.split('>', 1)[0]
         assert re.search(r'class="w-full max-w-(?:xl|2xl) ', opening)
-        button = re.search(r'<button type="submit"\\s+class="([^"]+)"', form)
+        button = re.search(r'<button type="submit"\s+class="([^"]+)"', form)
         assert button is not None
         assert 'w-full sm:w-auto' in button.group(1)
         assert 'hx-post=' in form
