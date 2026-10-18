@@ -591,6 +591,24 @@ The tests were **authored, not run** here. GitHub source checks do not prove Jin
 
 **Governance:** issue #2293/#2429 remain OPEN until executable regression, Dev Container Visual QA and Human Acceptance; 6 other `R` source rows from #2428 remain unremediated/review pending. Official Developer Check, Full Admission, `kaori/staging`, `main`, deploy/tag/release **HOLD**.
 
+
+## 3.11 Intelligence table review-candidate remediation checkpoint — 2026-10-18 (#2437, #2438)
+
+**Historical source review is preserved:** the original six `R` rows C209/C210/C213/C216/C219/C220 were intentionally *review candidates*, not proven rendered defects. The later bounded source improvements below address those candidates while preserving their original pinned observations. **Do not retroactively relabel these R entries D/FAIL or claim assistive-technology PASS without rendered evidence.**
+
+**Merged Dev Container holding:** `kaori/review/staging-uat@fff031c4c43515bc78761abc070c9b19eb22e192`.
+
+| Issue and audit rows | Source improvement in current holding | GitHub evidence | Verification boundary |
+| --- | --- | --- | --- |
+| [#2437](https://github.com/OXY7O/KAORI/issues/2437), C209/C210/C219/C220 | Automation Control Decisions (3 tables) and Execution (5 tables) now delegate duplicate TH/TD and row styling to existing shared `table_ui.header_cell_classes()`, `cell_classes()`, `row_classes()`. Original 39 column-width definitions and action positions, shared pagination, maker-checker/runbook/verification/Dead Letter semantics remain. Native `scope="col"` and descriptive `sr-only` captions give all 8 tables explicit heading/name associations. | [PR #2441](https://github.com/OXY7O/KAORI/pull/2441), merge `52bcedecc25926d65c608e0cc769c3710bc6a4fe`, source + existing Automation table contract | Source-only structural readback PASS (17+22 columns, 3+5 captions, original table/row/cell/form counts); **pytest/djlint/browser/AT/Human Acceptance NOT RUN** |
+| [#2438](https://github.com/OXY7O/KAORI/issues/2438), C213/C216 | Recommendations desktop record table and Alert Operations Active table keep existing shared UI/data/action/filter semantics and gain native table names plus explicit `scope="col"` on 6+8 existing headers. Responsive Recommendation cards, AlertCase source-state, HTMX and modal handling unchanged. | [PR #2442](https://github.com/OXY7O/KAORI/pull/2442), merge `fff031c4c43515bc78761abc070c9b19eb22e192`, two source templates + two existing focused contract files | Source-only structural readback PASS (same TABLE/TR/TH/TD/form counts; 1+1 captions, 6+8 column scopes); **pytest/djlint/browser/AT/Human Acceptance NOT RUN** |
+
+**Source checks:** source changes only in four owning templates and focused tests; 10 total table captions and 53 explicit `scope=col` associations observed on post-merge holding, across 8 Automation tables plus Recommendations and Active Alerts. Existing route/CSRF/permission/governance/provider mutation boundaries and data authority were not changed. The historical D items #2293 and #2429 remain source-remediated by §3.10, likewise without human acceptance. Current implementation workstreams #2437 and #2438 remain OPEN until executable regression, Visual QA and acceptance.
+
+**Dev Container Human Acceptance plan:** test **Intelligence → Automation Control → Decisions** (Candidate Queue, Persisted Decisions, Approval Notification Delivery) and **Execution** (Resolver Registry, Safety Controls, Deployment Policies, Execution Journal, Dead Letter): verify 0/1/5 rows, 5-default pagination, long IDs, status/technical text, scoped filters, inline View More, permission-disabled actions, no horizontal page overflow, keyboard table-navigation and eight distinct table captions. Test **Intelligence → Recommendations** desktop table and mobile cards with filter-scoped Hero/summary, default 5 and Rows 10/25/50, View Details modal and keyboard; test **Alert Intelligence → Alert Records** Active Cases source-state unknown versus severity, 8 columns, modal focus, no unapproved state mutation. Use six viewports (1440×900, 1280×800, 1024×768, 768×1024, 390×844, 360×800), light/dark, keyboard and screen reader. Record tested SHA, role, screenshots/traces, PASS/FAIL findings and Human Acceptance decision.
+
+**Quality/release boundary:** Focused regression contracts were authored in existing `tests/contracts/intelligence/` tests but **not executed**. No Dev Container access in this GitHub-only source session, and no official Developer Check, Full Admission, `kaori/staging`, `main`, deploy/tag/release was triggered. Remain **HOLD**.
+
 ## 4. Visual QA execution plan — existing harness only
 
 ### 4.1 Environment preflight (NOT EXECUTED)
