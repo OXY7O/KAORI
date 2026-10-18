@@ -341,7 +341,9 @@ def _provider_detail_sections(
                 }
             )
         if rows:
-            normalized_description = str(section.get('description') or 'Provider-specific inventory evidence.')
+            normalized_description = str(
+                section.get('description') or 'Provider-specific inventory evidence.'
+            )
             if (
                 title == 'MinIO Bucket Configuration'
                 and normalized_description
@@ -493,7 +495,9 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
     elif protection_assessed < total:
         protection_title = 'Protection Not Assessed' if protection_assessed == 0 else 'Protection Partially Assessed'
         protection_tone = 'unknown' if protection_assessed == 0 else 'warning'
-        protection_description = f'No flags; {protection_assessed}/{total} protection assessed.'
+        protection_description = (
+            f'No flags; {protection_assessed}/{total} protection assessed.'
+        )
     else:
         protection_title, protection_tone = 'No Protection Attention', 'normal'
         protection_description = 'All assets have protection evidence.'
