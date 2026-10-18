@@ -71,7 +71,8 @@ def test_native_and_capsule_namespace_rows_share_one_renderer_and_semantic_statu
     assert 'allocation.display_values,' in section
     assert "(namespace.get('allocation') or {}).get('display_values', [])" in section
     assert section.count("table_label.status_label('Observed', 'info')") == 2
-    assert section.count("table_label.metadata_label('Adopted Baseline', wrap=true)") == 2
+    assert section.count("table_label.metadata_label('Adopted Baseline', wrap=true)") == 1
+    assert section.count("table_label.metadata_label('Observed Baseline' if row.adoption_management_blocker else 'Adopted Baseline', wrap=true)") == 1
     assert 'No supported quota dimensions observed.' in section
     assert 'No supported namespaced quota/limit dimensions observed.' in section
     assert 'Adopted Baseline · Observed</span>' not in section
@@ -113,6 +114,23 @@ def test_capsule_preflight_blocks_unadmitted_quota_without_offering_submit() -> 
     assert 'disabled' in source
     assert 'Adoption Blocked' in source
     assert 'Control Unavailable.' in source
+    # A blocked preflight must never advertise future write/read-back as an
+    # adoption result, despite retaining those descriptions for eligible paths.
+    for blocked_copy in (
+        'Managed adoption unavailable.',
+        'No KAORI governance record will be committed while managed adoption is blocked.',
+        'Not Adopted · Control Unavailable',
+        'Not Eligible · Control Unavailable',
+        'No adoption or quota transfer can be committed from this preflight.',
+        'No adoption committed',
+        'Not permitted — managed adoption blocked',
+        'No Tenant-wide quota observed; namespaced allocation remains provider-owned',
+    ):
+        assert blocked_copy in source
+    assert "Observed Baseline' if row.adoption_management_blocker else 'Adopted Baseline'" in source
+    assert "if row.provider_key == 'capsule' and row.adoption_management_blocker" in source
+    assert source.count('type="submit"') == 1
+    assert 'aria-disabled="true"' in source
     assert 'Attach Capsule Namespace' in source
     assert 'Adopt & Manage' in source
     # The route/form remains intact for eligible managed adoption or mirror-only

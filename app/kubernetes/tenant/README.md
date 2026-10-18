@@ -974,6 +974,21 @@ Tenant does not own a second Intelligence engine or export subsystem.
 - PDF, XLSX, and CSV publication is routed through the canonical Reports publication lifecycle from #655.
 - Missing/stale evidence remains explicit; absence of provider/capacity evidence is never converted into a healthy or zero value.
 
+**Blocked preflight UX alignment (#2463 human evidence, 2026-10-18):**
+For the observed `kaori-adopt-lab-v2` preflight, the technical authority key is
+`native_namespaced` and correlated Namespace `kaori-adopt-lab-v2-app` has
+nonempty resource quotas. This does **not** establish a Capsule Tenant or
+GlobalResourceQuota mutation authority. In the blocked state, the decision,
+after-adoption outcome, proposed mapping, prospective provenance and provider
+mutation summary now consistently communicate **Not Eligible · Control
+Unavailable**, **No adoption committed**, and **Not permitted — managed
+adoption blocked**. Correlated provider quotas are explicitly **Observed
+Baseline**, not an already committed adopted baseline. Shared Tenant quota
+absence is distinct from Namespace quota absence. Existing allowed-adoption
+paths continue advertising governed provider cutover when actually admitted.
+No retry, provider mutation, or observed-only fallback occurs from these UI
+changes; gather live Capsule CR/GRQ/correlation evidence separately.
+
 ## Capsule Managed Adoption Authority Admission (#2463)
 
 A Capsule Tenant shown as **Discovered** is not necessarily eligible for
