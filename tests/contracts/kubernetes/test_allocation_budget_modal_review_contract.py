@@ -20,10 +20,18 @@ def test_allocation_budget_header_labels_and_fixed_info_footer() -> None:
     scroll_body, footer = dialog.split('<footer ', 1)
 
     assert 'id="{{ dialog_id }}-title"' in header
-    assert 'Allocation Budget evidence labels' in header
+    # Screenshot #3 reference: icon then inline cluster title/state,
+    # explanatory text next, and metadata chips as the final header row.
+    assert 'data-lucide="chart-no-axes-combined"' in header
+    assert 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft' in header
+    assert 'flex min-w-0 flex-wrap items-center gap-2' in header
     assert header.index('{{ item.cluster.name }}') < header.index('table_label.status_label(item.state, state_tone)')
-    assert "table_label.metadata_label('Governed budget', 'gauge')" in header
+    assert header.index('table_label.status_label(item.state, state_tone)') < header.index('id="{{ dialog_id }}-description"')
+    assert header.index('id="{{ dialog_id }}-description"') < header.index('aria-label="Allocation Budget context"')
+    assert "table_label.metadata_label('Allocation Budget', icon='chart-no-axes-combined')" in header
+    assert "table_label.metadata_label('Request commitment', icon='gauge')" in header
     assert 'item.cluster.environment|title' in header
+    assert 'Allocation Budget</p>' not in header
 
     assert 'min-h-0 overflow-y-auto bg-surface-page p-4 text-left sm:p-5' in scroll_body
     assert 'capacity_budget_bars.get(item.cluster.id|string, [])' in scroll_body
