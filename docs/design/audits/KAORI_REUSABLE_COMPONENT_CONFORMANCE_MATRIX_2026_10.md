@@ -392,6 +392,24 @@ Use **existing** Dev Container/browser QA and test runners (#1726, #1738, `tests
 
 **Recorded execution:** GitHub source/path and issue-authority inspection **DONE**; Jinja, pytest, djlint, verifiers, browser Playwright, AT, screenshots, external provider and human acceptance **NOT RUN**. **Official CI/CD, Full Admission, `kaori/staging`, `main`, deploy/release remain HOLD.** This is audit before remediation, with product templates/CSS/JS unchanged.
 
+
+## 3.6 Object Storage source remediation checkpoint — 2026-10-18 (issues #2284, #2317)
+
+**Original C148–C168 classifications remain pinned historical evidence.** Their four source `D` rows represent **two unique confirmed defects** observed at `7bf8739e62974b1b375d4dd6c90cdfc1ce4cb088`, not four unresolved independent issues. Source-level remediation is recorded here at later holding state; do not convert those rows to Visual QA PASS without executable evidence.
+
+**Temporary Dev Container holding after both fixes:** `kaori/review/staging-uat@c4dad0d078663c056d64919a2890d98bcecfeed9`.
+
+| Issue / source rows | Implemented only on holding branch | PR | Source checkpoint | Dev Container / human acceptance |
+| --- | --- | --- | --- | --- |
+| [#2284](https://github.com/OXY7O/KAORI/issues/2284) · C157 and C165 | Object Storage Analytics → Alerts & Anomalies → Provider Alert Records: conditional Clear Filters moved before status and source metadata; original query/pagination and HTMX intact | [#2413](https://github.com/OXY7O/KAORI/pull/2413), merge `50621852bb5d980403708650e84947e0dd1a81b4` | **Source order remediated**; source-only assertions read back | **NOT RUN / PENDING** |
+| [#2317](https://github.com/OXY7O/KAORI/issues/2317) · C160 and C168 | MinIO → Instance Detail → Capability Registry: Clear Filters leads permanent Capability Contracts metadata. Existing #2317 scope applied simultaneously to four other provider adapters (Kubernetes, Harbor, Metrics Source, Alertmanager) | [#2414](https://github.com/OXY7O/KAORI/pull/2414), merge `c4dad0d078663c056d64919a2890d98bcecfeed9` | **Source order remediated** in five adapters; original condition, counter and HTMX intact | **NOT RUN / PENDING** |
+
+**Validation performed:** two bounded PR source diffs and post-merge holding file readback for all six template locations. Source transformations move only existing status/metadata expressions; no additional component, route, data/provider logic, CSS, RBAC, migration, or storage mutation. Focused regression contract assertions were added under existing `tests/contracts/analytics/test_object_storage_analytics_workspace_review_20260824_contract.py` and `tests/contracts/integrations/test_provider_capability_registry_loading_contract.py`, but **they have not been executed** in this GitHub-only session.
+
+**Review to perform before acceptance:** active/inactive filtering; Clear Filters as first right-header item; correctly retained status/source and Capability Contracts counts; filter submit and clear reset page while preserving selected rows; 5/10/25 pagination where supported; HTMX replacement and loading; keyboard/assistive reading order; six approved viewports (1440×900, 1280×800, 1024×768, 768×1024, 390×844, 360×800) and light/dark. Explicitly record full/limited provider evidence state, screenshot, tested SHA, trace and human acceptance. **#946 and Bucket Records table accessible-name candidates remain `R`** and are not silently remediated.
+
+**Governance:** the fixes are **merged into temporary `kaori/review/staging-uat` only**; #2284/#2317 remain OPEN pending browser acceptance. Official Developer Check, Full Admission, `kaori/staging`, `main`, deployment and release stay **HOLD**. No unapproved automation or external provider mutation.
+
 ## 4. Visual QA execution plan — existing harness only
 
 ### 4.1 Environment preflight (NOT EXECUTED)
