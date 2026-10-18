@@ -820,7 +820,7 @@ Two independently governed ownership dimensions must never be conflated:
 | Allocation already **KAORI Managed** | Managed Allocation Change, or explicit Drift & Reconcile | No repeated cutover; Sync observes only |
 | Capsule owner with only namespaced Native ResourceQuota, absent/unhealthy/multiple/unsupported Capsule quota authority | **Control Unavailable**; preserve evidence and stop | No Capsule-managed adoption, no Native cutover bypass, no automatic observed-only adoption |
 
-**Capsule authority is capability-first, source-specific.** Serving the
+**Capsule authority is capability-first, source-specific.** The Tenant CR observation key is `capsule_tenant_resource_quotas` and the distinct shared quota key is `capsule_global_resource_quota`. Serving the
 `Tenant.spec.resourceQuotas` schema is necessary but not sufficient.
 Tenant CR quotas and GlobalResourceQuota have **separate** governance
 services/commit paths; selecting the wrong quota path must be disabled
