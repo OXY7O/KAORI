@@ -1024,7 +1024,7 @@
                                                 </section>
                                                 {% if handoff_plan %}
                                                     <section class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated/35 p-3.5 sm:p-4"
-                                                             aria-label="Planned handoff record">
+                                                             aria-label="Planned Handoff Record">
                                                         <div class="flex min-w-0 items-center gap-2">
                                                             <i data-lucide="clipboard-list" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                                                             <h5 class="text-xs font-semibold text-content-primary">Planned Handoff Record</h5>
@@ -1200,7 +1200,7 @@
                                                                        class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
                                                                        aria-hidden="true"></i>
                                                                     <div class="min-w-0">
-                                                                        <h5 class="text-sm font-semibold text-content-primary">Platform Admin verification</h5>
+                                                                        <h5 class="text-sm font-semibold text-content-primary">Platform Admin Verification</h5>
                                                                         <p class="mt-1 text-xs leading-5 text-content-secondary">
                                                                             KAORI uses its registered Kubernetes X.509 connection to verify provider identity and scoped permissions before recording an explicit Platform Admin decision for the reviewed plan. No successor credential, private key or separate Kubernetes user token is required.
                                                                         </p>
@@ -1283,7 +1283,7 @@
                                                                class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
                                                                aria-hidden="true"></i>
                                                             <div class="min-w-0 flex-1">
-                                                                <p class="text-xs font-semibold text-content-primary">External handoff inspection is unavailable</p>
+                                                                <p class="text-xs font-semibold text-content-primary">External Handoff Inspection Unavailable</p>
                                                                 {% if readback_status.approval_expired %}
                                                                     <p class="mt-1 text-xs leading-5 text-content-secondary">The plan or independent approval has expired. The original requester must restart it and a different operator must approve the new SHA. Old references and dry-run evidence cannot be reused.</p>
                                                                     <a href="{{ tenant_release_step_urls['finalize'] }}"
