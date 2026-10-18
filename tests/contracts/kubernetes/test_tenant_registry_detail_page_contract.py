@@ -639,6 +639,19 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'data-release-next-action-approval-expired' in expired_action
     assert 'aria-label="Expired handoff recovery"' in expired_action
     assert 'Renew Independent Approval' in expired_action
+    # The recovery list already has a bottom divider. A second border on
+    # the requester form or alternative guidance created duplicate rules.
+    assert 'Expired approval is audit-only; it cannot authorize acceptance or Release.' in expired_action
+    assert 'divide-y divide-outline-subtle border-y border-outline-subtle' in expired_action
+    assert 'border-t border-outline-subtle' not in expired_action
+    assert 'class="w-full mt-3 space-y-3"' in expired_action
+    for role_message in (
+        'native_cycle.restart_blocked_by_readback',
+        'row.release_handoff_plan.requested_by == current_user.id',
+        'row.release_handoff_plan.requested_by != current_user.id',
+        'Restart requires the original requester with both Tenant and Integrations management permissions',
+    ):
+        assert role_message in expired_action
     assert 'aria-label="Expired handoff approval recovery steps"' in expired_action
     assert expired_action.count('<li class=') == 3
     for instruction in (
