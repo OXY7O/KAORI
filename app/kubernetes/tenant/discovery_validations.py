@@ -18,5 +18,3 @@ def validate_existing_tenant_attachment_target(tenant: Tenant, *, cluster_id: st
 def validate_namespace_attachment_uid(*, observed_uid: str, expected_uid: str) -> None:
     if not observed_uid or not expected_uid or observed_uid != expected_uid:
         raise ValueError('Namespace UID changed since adoption preflight; refresh Discovery.')
-
-

@@ -101,5 +101,3 @@ def _managed_capsule_map(cluster_ids: list[str]) -> dict[tuple[str, str], Tenant
             if reference:
                 result[(str(tenant.cluster_id), reference)] = tenant
     return result
-
-

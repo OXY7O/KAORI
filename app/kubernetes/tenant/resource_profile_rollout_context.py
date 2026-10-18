@@ -109,5 +109,3 @@ def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[
         target['already_current'] = target['eligible'] and target['pending'] == 0 and target['namespaces'] > 0
 
     return result
-
-

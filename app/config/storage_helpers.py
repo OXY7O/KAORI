@@ -13,5 +13,3 @@ def _normalize_storage_backend(value: str | None) -> str:
 def _resolve_path(value: str | None, default: Path) -> str:
     path = Path((value or str(default)).strip())
     return str(path if path.is_absolute() else BASE_DIR / path)
-
-

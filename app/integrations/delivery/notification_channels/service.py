@@ -1000,5 +1000,3 @@ def _alert_message(
         action_url=action_url,
         action_label='Open Alert Intelligence',
     )
-
-
