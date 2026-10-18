@@ -78,14 +78,14 @@ def test_notification_channel_configuration_fields_have_associated_labels() -> N
     ):
         assert modal.count(f'id="{field_id}"') == 1
         assert re.search(
-            rf'<label for="{field_id}"[^>]*>{label}</label>\\s*'
-            rf'<(?:input|select) id="{field_id}"\\s+name="{name}"',
+            rf'<label for="{field_id}"[^>]*>{label}</label>\s*'
+            rf'<(?:input|select) id="{field_id}"\s+name="{name}"',
             modal,
         )
 
     # Edit mode is immutable metadata, never a label pointing at a missing select.
     assert re.search(
-        r'{% if form_channel %}\\s*<dl>\\s*<dt[^>]*>Provider</dt>\\s*'
+        r'{% if form_channel %}\s*<dl>\s*<dt[^>]*>Provider</dt>\s*'
         r'<dd[^>]*>',
         modal,
     )
