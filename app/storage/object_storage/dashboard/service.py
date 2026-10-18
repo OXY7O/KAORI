@@ -562,7 +562,9 @@ def _recommended_actions(selected: ObjectStorageSystem | None) -> list[dict[str,
     return [
         {
             'title': str(item.get('title') or 'Review recommendation'),
-            'description': str(item.get('recommended_action') or item.get('summary') or ''),
+            'description': str(
+                item.get('dashboard_action') or item.get('recommended_action') or item.get('summary') or ''
+            ),
             'category': str(item.get('category_label') or item.get('category') or 'Operations'),
             'severity': str(item.get('severity') or 'info'),
             'priority': str(item.get('priority') or 'P3'),
