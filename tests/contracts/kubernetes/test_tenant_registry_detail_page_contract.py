@@ -400,8 +400,8 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'break-all font-mono' in approval
     assert 'Plan SHA-256' in approval
 
-    # Approved Native handoff content fills the workspace using the same
-    # responsive 3:2 layout; Capsule keeps its full-width approval branch.
+    # Approved Native handoff uses two responsive peer surfaces without
+    # forced equal-height whitespace; Capsule retains full-width approval.
     assert 'data-release-accepted-handoff-workspace' in approval
     assert 'data-release-accepted-handoff-actions' in approval
     assert 'data-release-accepted-handoff-evidence' in approval
@@ -412,7 +412,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'External Handoff &amp; Read-Back' in approval
     assert 'Evidence Boundaries' in approval
     # Actions and evidence must be peer surfaces, not stacked bordered cards.
-    assert 'items-stretch gap-4 lg:grid-cols-5' in approval
+    assert 'items-start gap-4 lg:grid-cols-5' in approval
     assert 'Handoff Actions' in approval
     assert 'Complete governed actions only when eligible.' in approval
     assert 'class="w-full mt-3 space-y-3"' in approval
@@ -420,7 +420,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'aria-label="Independent Platform Admin required"' in approval
     assert 'You prepared this plan. A different authorized Platform Admin must verify and accept it.' in approval
     assert 'aria-label="External read-back prerequisites"' in approval
-    assert 'mt-3 flex min-w-0 items-start gap-2.5 border-t border-outline-subtle pt-3' in approval
+    assert 'mt-4 flex min-w-0 items-start gap-2.5 rounded-lg bg-surface-elevated/50 p-3' in approval
     assert 'External Handoff &amp; Read-Back' in approval
     assert approval.count('data-release-accepted-handoff-evidence') == 1
     assert approval.count('External Handoff Inspection Unavailable') == 1
@@ -824,8 +824,8 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert 'name="confirm_native_handoff_readback"' in approval
     assert 'tenant.inspect_native_external_handoff_route' in approval
     assert 'Historical / Not Current' in approval
-    assert 'Last recorded read-back:' in approval
-    assert 'This historical observation does not verify external acceptance' in approval
+    assert 'Last read-back:' in approval
+    assert 'Historical evidence does not verify external acceptance' in approval
 
     assert "_checked_recently((successor_claim or {}).get('recorded_at'))" in readiness
     assert 'external_readback_prerequisites_current' in readiness
@@ -1288,4 +1288,54 @@ def test_expired_release_review_has_compact_responsive_single_sentence() -> None
     assert 'whitespace-nowrap' not in expired
     assert 'Refresh the Provider Review' in expired
     assert 'Review Expired' in expired
+    Environment().parse(detail)
+
+
+def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
+    detail = read(DETAIL)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        'id="tenant-release-stage-finalize"', 1
+    )[0]
+    final = detail.split('id="tenant-release-stage-finalize"', 1)[1]
+
+    # Content hierarchy: concise status rows, unstretched peers, aligned actions.
+    assert 'items-start gap-4 lg:grid-cols-5' in approval
+    assert 'data-release-accepted-handoff-actions' in approval
+    assert 'data-release-accepted-handoff-evidence' in approval
+    assert 'sm:grid-cols-[auto_minmax(0,1fr)]' in approval
+    assert 'Kubeconfig and scoped access verified through' in approval
+    assert 'provider ownership remains unchanged.' in approval
+    assert 'lg:w-3/5' in approval
+    assert 'External Handoff Inspection Unavailable' in approval
+
+    # A visual redesign never weakens native dry-run, mutation or finalization.
+    for route in (
+        'dry_run_native_release_handoff_route',
+        'execute_native_release_handoff_route',
+        'inspect_native_external_handoff_route',
+    ):
+        assert route in approval
+    for required_field in (
+        'confirm_native_handoff_dry_run',
+        'confirm_native_handoff_execution',
+        'confirm_native_handoff_readback',
+    ):
+        assert f'name="{required_field}"' in approval
+    assert 'Partial failure requires recovery.' in approval
+    assert 'No successor token or private key is required.' in approval
+    assert 'historical Dry-Run Passed receipt may be expired' in approval
+
+    release = final.split('tenant.finalize_verified_native_release_route', 1)[1]
+    release = release.split('</form>', 1)[0]
+    assert 'mx-auto mt-5 w-full max-w-4xl' in release
+    assert 'Verified Native Transfer · Ready for Governance Release' in release
+    assert 'confirm_native_release_finalization' in release
+    assert 'Fresh provider read-back must preserve every Namespace' in release
+    assert 'zero dependencies' in release
+    assert 'Preserve all external Kubernetes resources.' in release
+
+    # Entire page retains its existing privilege-gated mutation contracts.
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23
     Environment().parse(detail)
