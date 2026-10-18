@@ -610,7 +610,7 @@ The tests were **authored, not run** here. GitHub source checks do not prove Jin
 **Quality/release boundary:** Focused regression contracts were authored in existing `tests/contracts/intelligence/` tests but **not executed**. No Dev Container access in this GitHub-only source session, and no official Developer Check, Full Admission, `kaori/staging`, `main`, deploy/tag/release was triggered. Remain **HOLD**.
 
 
-## 3.11 Reports reusable page/view source audit — 2026-10-18 (#2445)
+## 3.12 Reports reusable page/view source audit — 2026-10-18 (#2445)
 
 **Source authority:** #572 Design System v2 → #2296 page/state matrix → [#2445](https://github.com/OXY7O/KAORI/issues/2445) Reports audit. Reports publication authority: `docs/reports/kaori-reporting-standard-v1.md`, `kaori-report-job-standard-v1.md`, `kaori-analytics-pdf-publication-standard-v3.md`; approved UI hierarchy `docs/design/audits/REPORTS_OVERVIEW_FINAL_REVIEW_2026_08.md` and `REPORTS_GENERATE_FINAL_REVIEW_2026_08.md`. **Pinned source:** `kaori/review/staging-uat@5601362740c546bb91579290daf93a9e726b517c`.
 
@@ -681,6 +681,30 @@ Reuse `tests/contracts/reports/` and `tests/reports/`, existing `tests/ui/visual
 7. **Publication contract (separate)** — generated analytics PDF using shared WeasyPrint primitives and XLSX/CSV evidence from the same committed source; printable pagination/cutoff/classification and 0/partial/unavailable source. No implicit PASS without rendered bytes and runtime evidence.
 
 **Validation:** GitHub pinned tree/source/docs/prior issues inspection, source paths and matrix ID uniqueness **checked**. **NOT RUN:** pytest, Ruff, djlint, pyright, `verify_*`, Dev Container browser, 6 viewport × 2 theme, keyboard/AT, PDF/XLSX/CSV rendering, provider mutation, Human Acceptance. Official Developer Check, Full Admission, staging/main/deploy/release remain **HOLD**. This source audit does **not** implement remediation.
+
+
+## 3.13 Reports source remediation checkpoint — 2026-10-18 (#2445)
+
+**Historical source audit preserved:** Reports C222–C242 are pinned to `5601362740c546bb91579290daf93a9e726b517c`. Their original source statuses are not overwritten: `D` rows describe source drift *before* correction, not current Dev Container/browser failure. The six `D` rows correspond to five unique remediation authorities: #2446, #2447, #2305, #2313, #2275.
+
+**Post-remediation holding source:** `kaori/review/staging-uat@233028c0e5c391e37f9e13f8c694931e2f1c4485`. All five implementation PRs were merged **only** to the temporary holding branch.
+
+| Issue / original rows | Scoped source-level remediation | Merged GitHub PR | Source checks | Runtime / Human |
+| --- | --- | --- | --- | --- |
+| [#2446](https://github.com/OXY7O/KAORI/issues/2446), C223 | Reports Generate five-step wizard footer: Cancel/Back use shared `action_button.classes('secondary')`, Next/Create & Queue use `classes('primary')`; preserve the `hidden`/JS `inline-flex` step-controller, IDs, form validation, readiness-disabled and operation loading | [PR #2450](https://github.com/OXY7O/KAORI/pull/2450), merge `377d18960847188fe526690227d9c87ffa8e6706` | Exact two-file diff, Jinja source/JS visibility selectors and existing test authored | **NOT RUN** |
+| [#2447](https://github.com/OXY7O/KAORI/issues/2447), C227 | Reports Schedules form Save/Create/Edit uses shared `action_button.classes('primary')`; retains `data-operation-submit`, cadence/recipient/CSRF/POST, disabled and validation authority | [PR #2451](https://github.com/OXY7O/KAORI/pull/2451), merge `f41cd68f79f49ee8ff02aa076135b4041c7c295d` | Two-file diff; form loading and action preserved | **NOT RUN** |
+| [#2305](https://github.com/OXY7O/KAORI/issues/2305), C226/C232 | Report Templates registry 6-column table delegates table/head/body/row/cell classes; keeps `compact-v3`, six 31/25/12/10/14/8% widths, retained source text/permissions/row View modal, adds TH scopes, caption and `overflow-x-auto` | [PR #2452](https://github.com/OXY7O/KAORI/pull/2452), merge `3e8b6b54f5ccfc324d37e88f84ef34850885de88` | Two-file diff, shared primitive readback and accessible header count | **NOT RUN** |
+| [#2313](https://github.com/OXY7O/KAORI/issues/2313), C226/C233 | Template Registry 7 Search/Family/Domain/Type/Ownership/Status/Format filters compose canonical 40px shared input/select/label classes; maintain names/options, select values, shared HTMX filter form, pagination and clear | [PR #2453](https://github.com/OXY7O/KAORI/pull/2453), merge `714e3786cb68ee36c85d3da7a8d80b4b32e896da` | Two-file diff, exact 1 search + 6 selects + 7 labels | **NOT RUN** |
+| [#2275](https://github.com/OXY7O/KAORI/issues/2275), C226/C234 | Report Template Create/Edit/Save buttons now shared primary, dialog Cancel secondary, destructive Delete confirmation critical; keep neutral compact View table action (icon-first), form CSRF/permissions, dialog and loading | [PR #2454](https://github.com/OXY7O/KAORI/pull/2454), merge `233028c0e5c391e37f9e13f8c694931e2f1c4485` | Two-file diff; source 3 primary + 1 secondary + 1 critical shared actions and retained routes | **NOT RUN** |
+
+**Focused regression contracts authored, NOT EXECUTED:**
+- `tests/contracts/reports/test_generate_report_workspace_redesign_contract.py`
+- `tests/contracts/reports/test_report_schedules_registry_redesign_contract.py`
+- `tests/contracts/reports/test_report_templates_registry_redesign_contract.py`
+
+**Dev Container handoff / human acceptance:** Reports → Generate (all five steps, Back/Next/Cancel, final disabled Queue, retained validation, narrow footer); Reports → Schedules (Create/Edit Save button and permissions, notification/period selections, Recent Runs); Reports → Templates (registry 6 columns and per-page 5/10/25/50, 7 filter fields/clear, three contexts for custom/system, View detail modal, protected templates, Critical delete confirmation, permission/CSRF/disabled/loading/empty). Check **1440×900, 1280×800, 1024×768, 768×1024, 390×844, 360×800** in light/dark, hover/focus/keyboard/AT, no page-wide overflow, 0/1/5 records and HTMX/fallback. **Visual-only UAT must not submit Queue/Create/Edit/Save/Delete or schedule a real job.** Record exact tested SHA, screenshot/trace, role, fixture, and explicit Human Acceptance before any Done/promotion.
+
+**Source/diff status:** GitHub readback of 3 owner templates, 3 existing contract files, 5 bounded PRs and shared UI macros **PASS**. No executable `pytest`, `djlint`, `verify_ui_style.py`, `verify_ui_reuse.py`, runtime Jinja rendering, browser, keyboard/AT, actual PDF/XLSX/CSV or Human Acceptance was executed. **NOT RUN / PENDING**. Reports audit `R` rows C224/C231/C235/C238/C239 remain browser-review candidates, not automatically remediated. Official Developer Check, Full Admission, `kaori/staging`, `main`, image/deploy/tag/release **HOLD**.
 
 ## 4. Visual QA execution plan — existing harness only
 
