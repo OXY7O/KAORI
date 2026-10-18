@@ -178,3 +178,26 @@ def test_template_registry_filter_fields_compose_canonical_controls() -> None:
     assert 'min-h-9 w-full rounded-lg' not in region
     assert 'relative mt-1.5' not in region
     assert 'Search Templates...' in region
+
+
+def test_template_action_groups_use_shared_semantic_button_variants() -> None:
+    from jinja2 import Environment
+
+    template = read(ROOT / 'app/templates/reports/report_templates/index.html')
+    Environment().parse(template)
+    assert '{% import "components/action_button.html" as action_button %}' in template
+    assert template.count("action_button.classes('primary')") == 3
+    assert template.count("action_button.classes('critical')") == 1
+    assert template.count("action_button.classes('secondary')") == 1
+
+    for token in ('data-operation-submit', 'data-loading-label="Creating Custom Template..."',
+                  'data-loading-label="Deleting Template..."', 'data-dialog-target="template-form-dialog"',
+                  'data-dialog-target="template-delete-{{ loop.index }}"',
+                  'data-kaori-dialog-close', 'csrf_token', 'template.delete_href',
+                  'template.duplicate_href', 'template.edit_href'):
+        assert token in template
+    assert "table_ui.action_classes()" in template
+    assert 'data-template-registry-table="compact-v3"' in template
+    assert '<i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>' in template
+    assert 'inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary' not in template
+    assert 'bg-status-critical-soft px-4 text-xs font-semibold text-status-critical-text' not in template

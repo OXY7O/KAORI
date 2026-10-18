@@ -7,6 +7,7 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "reports/components/_record_detail_modal.html" as record_modal %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/action_button.html" as action_button %}
 {% block title %}Report Templates{% endblock title %}
 {% block dashboard_content %}
     {% set template_form = payload.edit_template or payload.create_form %}
@@ -326,8 +327,8 @@
                                             data-kaori-dialog-open
                                             data-dialog-target="template-detail-{{ loop.index }}"
                                             class="{{ table_ui.action_classes() }}">
-                                        View
                                         <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
+                                        View
                                     </button>
                                 </td>
                             </tr>
@@ -466,12 +467,12 @@
                                                     <button type="submit"
                                                             data-operation-submit
                                                             data-loading-label="Creating Custom Template..."
-                                                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
+                                                            class="{{ action_button.classes('primary') }}"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
                                                 </form>
                                             {% endif %}
                                         {% else %}
                                             <a href="{{ template.edit_href }}"
-                                               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Template</a>
+                                               class="{{ action_button.classes('primary') }}"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Template</a>
                                             {% if template.can_duplicate %}
                                                 <form method="POST" action="{{ template.duplicate_href }}">
                                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
@@ -513,7 +514,7 @@
                                             <button type="submit"
                                                     data-operation-submit
                                                     data-loading-label="Deleting Template..."
-                                                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft px-4 text-xs font-semibold text-status-critical-text transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Delete Custom Template</span></button>
+                                                    class="{{ action_button.classes('critical') }}"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Delete Custom Template</span></button>
                                         </form>
                                     </div>
                                 {% endcall %}
@@ -694,11 +695,11 @@
                     <button type="button"
                             data-kaori-dialog-close
                             data-dialog-target="template-form-dialog"
-                            class="{{ table_ui.action_classes() }}">Cancel</button>
+                            class="{{ action_button.classes('secondary') }}"><i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>Cancel</button>
                     <button type="submit"
                             data-operation-submit
                             data-loading-label="{{ 'Saving Template...' if template_form_is_edit else 'Creating Template...' }}"
-                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>{{ 'Save Template' if template_form_is_edit else 'Create Template' }}</span></button>
+                            class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>{{ 'Save Template' if template_form_is_edit else 'Create Template' }}</span></button>
                 </div>
             </form>
         {% endcall %}
