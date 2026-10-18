@@ -568,6 +568,29 @@ Use existing `tests/contracts/intelligence/` suites and canonical visual harness
 
 **Validation completed:** read-only GitHub tree + pinned source/docs/issue inspection and new row source-path existence; **NOT RUN:** Python/djlint/JS verifiers, Jinja render, Playwright, browser/AT, screenshots, actual provider/mutation, Human Acceptance, CI/CD. Audit is documentation-only. **Official Developer Check, Full Admission, staging/main, deploy/release HOLD.**
 
+
+## 3.10 Intelligence source remediation checkpoint — 2026-10-18 (#2293, #2429)
+
+**Immutable original findings:** C202/C212 (Rule Catalog shared-table ownership) and C217/C218 (policy-modal action states) remain classified `D` in the original source audit pinned to `5a16596c9b2c787e67cd2b0fc3851b8f5209f42e`. Four source rows refer to **two distinct implementation issues**, each subsequently fixed at source. This checkpoint records the later candidate without rewriting historical evidence or claiming browser/assistive/human PASS.
+
+**Review holding after both merges:** `kaori/review/staging-uat@5e6dc5e86689e72226db992646026add7336e989`.
+
+| Remediation issue / historical rows | Implemented in temporary holding | PR / merged SHA | Source-only evidence | Runtime and human acceptance |
+| --- | --- | --- | --- | --- |
+| [#2293](https://github.com/OXY7O/KAORI/issues/2293), C217/C218 | Routing Editor Delete Policy uses shared `action_button.classes('critical')`; Create/Update Routing Policy and two Automation Execution Configuration Save buttons use `classes('primary')`, preserving CSRF, routes, `formnovalidate`, permissions, disabled gate and original policy/execution behavior | [#2434](https://github.com/OXY7O/KAORI/pull/2434), merge `c38b82cdddf1941b77dff8a652a3ea577f970fa8` | Four files: two templates, two focused existing contract files. Shared state macro imports/actions verified in merged source; local duplicated action button class bundles removed | **NOT RUN / PENDING** |
+| [#2429](https://github.com/OXY7O/KAORI/issues/2429), C202/C212 | Rule Catalog table/head/body/row/cell classes now owned by shared `table_primitives.html`; five original column proportions 32/18/20/18/12%, minimum width, right-aligned Details, approved inline `detail_row` behavior, rule status/evidence and empty state retained; 5 `scope=col` headers and hidden caption added | [#2435](https://github.com/OXY7O/KAORI/pull/2435), merge `5e6dc5e86689e72226db992646026add7336e989` | Two files: record-table partial and existing Rule Catalog review contract. Five columns, source/availability tokens, native toggle+adjacent five-column detail row verified in merged source | **NOT RUN / PENDING** |
+
+**Source verification only:** exact two scoped PR file comparisons, preserving original endpoint/permission/data content and merged Github readback of all three affected templates. Existing focused tests added/updated:
+- `tests/contracts/intelligence/test_alert_operations_final_workspace_contract.py`;
+- `tests/contracts/intelligence/test_automation_control_table_modal_redesign_contract.py`;
+- `tests/contracts/intelligence/test_rule_catalog_review_20260815_contract.py`.
+
+The tests were **authored, not run** here. GitHub source checks do not prove Jinja rendering, HTMX navigation, ARIA behavior, focus return, automated test pass, or human acceptance.
+
+**Dev Container review:** test Intelligence → Rule Catalog filter + Result Rows default 5, 10/25/50, 0/1/5 rules, long rule names, source evidence and Available/Imported Signal/Reserved Plan; View Rule/Hide Rule must open/close the *adjacent inline row*, not a modal. Confirm five header associations and horizontally scrollable table at 360×800/390×844 without page-level overflow. Test Alert Intelligence → Routing Policy Editor and Automation Control → Execution → Execution Configuration for keyboard/hover/focus/active/disabled classes, correct Critical/Violet roles, responsive light/dark, tab order and modal focus return. Use non-mutating fixtures; **do not submit Delete/Save, enable execution, or mutate infrastructure** in a visual-only UAT. Extend to 768×1024, 1024×768, 1280×800, 1440×900 and both themes. Capture exact tested SHA, role, state, screenshot/trace and Human Acceptance decision.
+
+**Governance:** issue #2293/#2429 remain OPEN until executable regression, Dev Container Visual QA and Human Acceptance; 6 other `R` source rows from #2428 remain unremediated/review pending. Official Developer Check, Full Admission, `kaori/staging`, `main`, deploy/tag/release **HOLD**.
+
 ## 4. Visual QA execution plan — existing harness only
 
 ### 4.1 Environment preflight (NOT EXECUTED)
