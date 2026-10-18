@@ -439,6 +439,19 @@ on narrow screens, retain #2390's bounded form and responsive button, and
 leave active, blocked, expired and recovery states untouched. Tests/DevContainer
 human QA are pending; CI/CD admission stays HOLD.
 
+**Tenant Release Step 4 — Approval Pending path list (#2401 follow-up):**
+The three `Remaining Approval Path` tiles in the Step 4 **Next Required Action**
+pending state are now one compact vertical numbered list, matching existing
+Step 3 **Approval boundaries** semantics: **Independent Review**,
+**Provider Acceptance**, and **Verify & Finalize**, each with one short
+operator-readable sentence. Numbered rows use canonical Violet status tokens,
+one shared border and dividers, and remain naturally wrapping on mobile.
+The pending-status explanation is a single sentence; the original **Open
+Approval & Handoff** HTMX navigation, permission checks, readiness projection
+and provider-preserving authority remain unchanged. This is guidance only,
+not three automatically completed workflow states. Contract regression
+assertions added; Dev Container Visual QA and official gates remain HOLD.
+
 **Tenant Release Step 4 expired review next action (#2401; Dev Container candidate):**
 The `Next Required Action` header now uses Title Case. For the existing
 `native_cycle.review_expired` branch only, the former short status/CTA
