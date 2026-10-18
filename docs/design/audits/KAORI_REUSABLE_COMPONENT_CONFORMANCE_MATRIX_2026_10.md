@@ -839,6 +839,42 @@ Use **existing** `tests/ui/conftest.py::CANONICAL_VIEWPORTS` and `docs/design/KA
 
 **Safety:** navigation, focus and fixture-controlled read-only checks only. Do **not** run Test Connection, Full Validation, Delete, Test Delivery, bind/swap source, Kubernetes RBAC bootstrap, provider refresh, external credential changes or production mutations as a shortcut to visual evidence. Use deterministic seeded fixtures; runtime-dependent surfaces remain **NOT RUN/BLOCKED** if unavailable. Keep `KAORI_UPDATE_VISUAL_BASELINES` unset; link actual screenshots/traces to C### IDs, RBAC persona and exact SHA, and obtain explicit Human Acceptance. Reuse existing `djlint`, `ruff`, `pytest`, `verify_ui_style.py`, `verify_ui_reuse.py`, `verify_filter_layout_standard.py`, and focused browser tests when separately authorized; **none were executed in this GitHub source audit**. Official CI/CD, Developer Check, Full Admission, `kaori/staging`, main, deployment and release remain HOLD.
 
+## 3.16 Integrations source remediation checkpoint — 2026-10-18 (#2464)
+
+**Prior source audit is immutable:** §3.15 source-pinned `7dcecbb9d9b02eb979e589879fdb315df8134839`, C268–C302, **S=29 / D=2 / R=4**, remains a factual historical observation. The two `D` source ownership drifts were corrected through separate implementation authorities; do **not** rewrite the source-pinned classifications as a claim of browser PASS.
+
+| Historical audit row | Remediation authority | Integrated source change | Holding merge SHA | Runtime/Human Acceptance |
+| --- | --- | --- | --- | --- |
+| C296 · Source Binding action footer | [#2467](https://github.com/OXY7O/KAORI/issues/2467) / [PR #2472](https://github.com/OXY7O/KAORI/pull/2472) | `integrations/bindings/partials/_workspace.html` now imports `components/action_button.html` and assigns **2 primary + 3 secondary** variants to matching existing actions, retaining binding POST/CSRF/selector/readiness gates | `e767df923df78316710437333784f57aa51915cb` | **NOT RUN / PENDING** |
+| C299 · Notification Channels Create/Edit modal | [#2466](https://github.com/OXY7O/KAORI/issues/2466) / [PR #2471](https://github.com/OXY7O/KAORI/pull/2471) | `integrations/delivery/notification_channels/partials/_channel_modals.html` associates Name, editable Provider and Minimum Severity via stable `for`/`id`; immutable edit Provider uses semantic `dl/dt/dd` | `a8906284ad9f3679889af93f902279cfbfe54844` | **NOT RUN / PENDING** |
+
+**Regression contract ownership:** #2466 extends `tests/contracts/integrations/test_notification_channel_native_dialog_accessibility_contract.py` for exact field associations, immutable Provider metadata, original field names and dialogs. #2467 extends `tests/contracts/integrations/test_observability_source_binding_standard_contract.py` for canonical action variants and preserved source binding form/POST/CSRF/isolation field names. No new test runner, component style, provider/API behavior, permission rule, schema, migration or operational workflow was introduced.
+
+**Source validation readback:** two merged PRs into **temporary** `kaori/review/staging-uat`, four changed files total (two owning HTML templates, two existing contract tests), no overlapping source changes; GitHub readback at `e767df923df78316710437333784f57aa51915cb` confirms all three unique modal field IDs with matching labels, static edit Provider metadata, source binding 2 primary/3 secondary shared actions and unchanged form names/POST/CSRF. This is **source-level verification only**; executable `pytest`, `djlint`, `ruff`, shared `verify_*`, browser screenshots, AT/keyboard and Human Acceptance are **NOT RUN**.
+
+### Integrations Dev Container test handoff — NOT EXECUTED
+
+Using the actual accepted holding head in a local Dev Container, run the existing focused contract tests and template checks, without official GitHub CI dispatch:
+
+```bash
+git fetch origin
+git switch kaori/review/staging-uat
+git pull --ff-only origin kaori/review/staging-uat
+git rev-parse HEAD
+
+python -m pytest -q \
+  tests/contracts/integrations/test_notification_channel_native_dialog_accessibility_contract.py \
+  tests/contracts/integrations/test_notification_channels_audit_20260817_contract.py \
+  tests/contracts/integrations/test_observability_source_binding_standard_contract.py
+
+djlint app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html --check
+djlint app/templates/integrations/bindings/partials/_workspace.html --check
+```
+
+**Visual and interaction checks:** record all **6** canonical viewports (1440, 1280, 1024, 768, 390, 360) × Light/Dark and RBAC persona/fixture. For C301 open Notification Channel Add/Edit dialogs, check Name/Provider/Minimum Severity accessible labels, edit Provider immutable metadata, keyboard/Escape/focus restore, errors and viewport overflow. For C299 inspect five Source Binding action-state branches (already bound, eligible, some ineligible, all ineligible, no source), primary/secondary action hierarchy, responsive stacking, hover/active/focus/disabled. Do **not** submit Source Binding, provider Test Delivery, configuration save, delete, revalidate, bootstrap, provider-refresh or any external mutation just to obtain a screenshot. Captured PASS/Needs refinement/Broken must come from actual browser evidence; absent runtime/fixtures remains NOT RUN/BLOCKED. Four earlier `R` source candidates C271/C277/C300/C301 remain separately pending browser/AT evidence, not silently remediated.
+
+**Promotion boundary:** these source fixes do not authorize Developer Check, Full Admission, official `kaori/staging`, main, deployment, image/tag or release. Keep #2464/#2466/#2467 OPEN until Dev Container UAT and Human Acceptance; Project status/relationships require explicit project metadata synchronization.
+
 ## 4. Visual QA execution plan — existing harness only
 
 ### 4.1 Environment preflight (NOT EXECUTED)
