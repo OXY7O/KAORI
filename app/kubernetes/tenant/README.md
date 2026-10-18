@@ -429,7 +429,14 @@ handoff and read-back as **different states**; none are inferred from a
 plain-text reference. Preserve native/Capsule gating, original requester
 restart, audit, all Step 3 POST endpoints, 14 CSRF/HTMX forms, global toast,
 and provider-authoritative checks. The change is visual hierarchy and copy
-only. Tests/DevContainer human QA are pending; CI/CD admission stays HOLD.
+only. The **Prepare Handoff** state additionally uses the existing Step 4
+responsive 3:2 two-panel geometry: the original successor/change reference
+form remains on the left, while a read-only **Approval boundaries** panel
+explains independent review, provider consent/ownership and Release
+verification without presenting any of these as completed. The panels stack
+on narrow screens, retain #2390's bounded form and responsive button, and
+leave active, blocked, expired and recovery states untouched. Tests/DevContainer
+human QA are pending; CI/CD admission stays HOLD.
 
 **Managed allocation blocker/admission copy compatibility (#1085 corrective):**
 The longer Resource Profile-linked allocation message from

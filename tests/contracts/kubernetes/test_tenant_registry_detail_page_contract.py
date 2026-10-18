@@ -315,6 +315,53 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
     assert 'id="tenant-release-stage-finalize"' in release
 
 
+
+def test_release_step_three_preparation_uses_balanced_governance_panels():
+    detail = read(DETAIL)
+    Environment().parse(detail)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    preparation = approval.split(
+        "{% if row.release_handoff_preparation_state == 'available'", 1
+    )[1].split("{% else %}", 1)[0]
+
+    # Match the existing Step 4 3:2 panel pattern without constraining other
+    # approved, blocked, expired or provider-recovery evidence branches.
+    assert approval.count('data-release-handoff-preparation-layout') == 1
+    assert 'data-release-handoff-preparation-layout' in preparation
+    assert 'lg:grid-cols-5' in preparation
+    assert 'lg:col-span-3' in preparation
+    assert 'lg:col-span-2' in preparation
+    assert preparation.count('<section ') == 2
+    assert 'aria-labelledby="tenant-release-preparation-heading"' in preparation
+    assert 'id="tenant-release-preparation-heading"' in preparation
+    assert 'aria-labelledby="tenant-release-approval-boundaries-heading"' in preparation
+    assert 'id="tenant-release-approval-boundaries-heading"' in preparation
+    assert 'aria-label="Handoff approval sequence"' in preparation
+
+    # The right panel is read-only guidance, never another authorization path,
+    # implicit approval checkbox or invented provider-completion indicator.
+    boundaries = preparation.split('id="tenant-release-approval-boundaries-heading"', 1)[1]
+    assert boundaries.count('<li ') == 3
+    assert '<form ' not in boundaries
+    assert '<button ' not in boundaries
+    assert 'Preparing it does not record approval.' in boundaries
+    assert 'does not verify consent or transfer provider ownership.' in boundaries
+    assert 'Release remains gated by committed verification' in boundaries
+
+    # Original submission stays intact, bounded at desktop and touch-friendly
+    # on mobile; no changes to the requester identity/CSRF/HTMX contract.
+    assert preparation.count('<form ') == 1
+    assert 'tenant.prepare_tenant_release_handoff_route' in preparation
+    assert 'name="csrf_token"' in preparation
+    assert 'name="successor_owner"' in preparation
+    assert 'name="change_reference"' in preparation
+    assert 'w-full max-w-xl mt-3 space-y-2' in preparation
+    assert 'w-full sm:w-auto' in preparation
+    assert 'Prepare Handoff' in preparation
+
+
 def test_release_step_three_separates_plan_review_external_claim_and_platform_admin():
     detail = read(DETAIL)
     approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(

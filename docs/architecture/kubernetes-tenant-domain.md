@@ -765,6 +765,17 @@ committed evidence regions:
   required explicit checkbox authorization (plan SHA and exact resources),
   and the unchanged submit action.
 
+For the **eligible Prepare Handoff** state, Step 3 reuses Step 4's
+responsive **3:2 two-panel** presentation: a compact successor/change-reference
+form on the left and a read-only **Approval boundaries** sequence on the
+right. The sequence explains independent reviewer separation, external
+provider consent/ownership authority, and the separate committed checks
+before Release. At smaller breakpoints the panels stack; the existing
+desktop-bounded/mobile-full-width form and button contract from #2390
+remains unchanged. It is guidance, not a recorded review, live provider
+status, or extra approval control. Existing locked, expired, blocked and
+provider recovery states keep their previously approved presentation.
+
 The same committed plan/approval/claim attributes, requester/reviewer
 separation, endpoint actions, one-active-plan policy, successor identity
 checks, CSRF/HTMX, approval/dry-run/executor/read-back/restart conditionals
