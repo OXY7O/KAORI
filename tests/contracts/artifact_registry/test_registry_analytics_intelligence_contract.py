@@ -548,3 +548,57 @@ def test_registry_alert_workspace_reuses_committed_alert_evidence_contract() -> 
     assert 'alert_per_page' in template
     assert '[5, 10, 25, 50]' in template
     assert "url_for('artifact_registry.analytics_alerts_table')" in template
+
+
+def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
+    """Keep the materialized forecast content while reusing shared table geometry."""
+    from jinja2 import Environment
+
+    template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text(
+        encoding='utf-8'
+    )
+    # Verify the real owning template parses, without requiring a live Registry provider.
+    Environment().parse(template)
+    capacity = template.split("{% elif analytics.active_tab == 'capacity' %}", 1)[1].split(
+        "{% elif analytics.active_tab == 'usage' %}", 1
+    )[0]
+    shared = (ROOT / 'app/templates/components/table_primitives.html').read_text(encoding='utf-8')
+
+    for macro in (
+        'table_classes',
+        'head_classes',
+        'header_cell_classes',
+        'body_classes',
+        'row_classes',
+        'cell_classes',
+    ):
+        assert f'macro {macro}(' in shared
+    assert '{% import "components/table_primitives.html" as table_ui %}' in template
+    assert "table_ui.table_classes('min-w-[760px]')" in capacity
+    assert 'table_ui.head_classes()' in capacity
+    assert capacity.count('table_ui.header_cell_classes()') == 5
+    assert capacity.count('scope="col"') == 5
+    assert 'table_ui.body_classes()' in capacity
+    assert 'table_ui.row_classes()' in capacity
+    assert capacity.count('table_ui.cell_classes()') == 6
+    assert 'overflow-x-auto' in capacity
+    assert '<table class="min-w-full divide-y divide-outline-subtle text-sm">' not in capacity
+    assert '<th class="px-4 py-3">' not in capacity
+
+    for label in ('Registry / Project', 'Usage / Quota', 'Utilization', 'Growth', 'Forecast'):
+        assert f'>{label}</th>' in capacity
+    for value in (
+        'row.project_name',
+        'row.registry_name',
+        'row.usage_display',
+        'row.quota_display',
+        'row.utilization_display',
+        'row.growth_display',
+        "table_label.status_indicator_label(row.days_to_quota_display, 'info')",
+    ):
+        assert value in capacity
+    assert 'analytics.forecast_rows[:5]' in capacity
+    assert 'colspan="5"' in capacity
+    assert 'No qualified project quota forecast is available.' in capacity
+    assert 'analytics.capacity_outlook.nearest_quota_days' in capacity
+    assert 'analytics.capacity_outlook.quota_headroom_display' in capacity
