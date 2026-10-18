@@ -520,10 +520,28 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'Next Required Action' in step
     assert 'data-release-next-action-pending' in step
     assert 'aria-label="Independent approval required"' in step
-    assert 'Remaining approval path' in step
+    assert 'Remaining Approval Path' in step
     assert 'aria-label="Remaining Release approval gates"' in step
-    assert 'The requester cannot approve their own plan.' in step
+    assert 'The requester cannot self-approve;' in step
     assert 'Open Approval &amp; Handoff' in step
+    # Match the existing Step 3 Approval boundaries numbered-list pattern,
+    # without the previous three-card grid or additional approval forms.
+    approval_pending = step.split('{% elif not native_cycle.approval_complete %}', 1)[1].split(
+        '{% elif not row.cluster or not row.cluster.kubernetes_connection', 1
+    )[0]
+    approval_list = approval_pending.split('data-release-approval-path-list', 1)[1].split('</ol>', 1)[0]
+    assert 'divide-y divide-outline-subtle' in approval_pending
+    assert 'xl:grid-cols-3' not in approval_pending
+    assert approval_list.count('<li class=') == 3
+    for title, sentence in (
+        ('Independent Review', 'A separate authorized operator reviews the exact plan and evidence.'),
+        ('Provider Acceptance', 'An authorized Platform Admin verifies and records successor acceptance.'),
+        ('Verify &amp; Finalize', 'Verify provider handoff and read-back before Release.'),
+    ):
+        assert title in approval_list
+        assert sentence in approval_list
+    assert 'hx-get=' in approval_pending
+    assert '<form ' not in approval_pending
     assert re.search(r'role="status"\s+aria-label="Expired handoff recovery"', step)
     assert 'native_cycle.approval_expired' in step
     assert 'native_cycle.review_expired' in step

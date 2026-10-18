@@ -2193,22 +2193,36 @@
                                                             <span class="text-xs font-medium text-content-muted">Independent review</span>
                                                         </div>
                                                         <p class="mt-2 text-sm font-semibold leading-5 text-content-primary">A second authorized operator must approve this exact plan.</p>
-                                                        <p class="mt-1 text-xs leading-5 text-content-secondary">The requester cannot approve their own plan. Platform Admin verification follows independent acknowledgement.</p>
+                                                        <p class="mt-1 text-xs leading-5 text-content-secondary">The requester cannot self-approve; Platform Admin verification follows independent review.</p>
                                                     </div>
                                                     <div class="min-w-0">
-                                                        <p class="text-xs font-semibold text-content-primary">Remaining approval path</p>
-                                                        <ol class="mt-2 grid min-w-0 gap-2 xl:grid-cols-3" aria-label="Remaining Release approval gates">
-                                                            <li class="rounded-lg border border-outline-subtle px-3 py-2">
-                                                                <span class="text-[11px] font-semibold text-kaori-primary">01 · Review</span>
-                                                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">Independent operator confirms plan and evidence.</p>
+                                                        <p class="text-xs font-semibold text-content-primary">Remaining Approval Path</p>
+                                                        <ol class="mt-2 min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card divide-y divide-outline-subtle"
+                                                            aria-label="Remaining Release approval gates"
+                                                            data-release-approval-path-list>
+                                                            <li class="flex min-w-0 items-start gap-2.5 px-3 py-2.5">
+                                                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary"
+                                                                      aria-hidden="true">1</span>
+                                                                <div class="min-w-0 flex-1">
+                                                                    <p class="text-xs font-semibold text-content-primary">Independent Review</p>
+                                                                    <p class="mt-0.5 text-xs leading-5 text-content-secondary">A separate authorized operator reviews the exact plan and evidence.</p>
+                                                                </div>
                                                             </li>
-                                                            <li class="rounded-lg border border-outline-subtle px-3 py-2">
-                                                                <span class="text-[11px] font-semibold text-kaori-primary">02 · Accept</span>
-                                                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">Authorized Platform Admin verifies and records successor acceptance.</p>
+                                                            <li class="flex min-w-0 items-start gap-2.5 px-3 py-2.5">
+                                                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary"
+                                                                      aria-hidden="true">2</span>
+                                                                <div class="min-w-0 flex-1">
+                                                                    <p class="text-xs font-semibold text-content-primary">Provider Acceptance</p>
+                                                                    <p class="mt-0.5 text-xs leading-5 text-content-secondary">An authorized Platform Admin verifies and records successor acceptance.</p>
+                                                                </div>
                                                             </li>
-                                                            <li class="rounded-lg border border-outline-subtle px-3 py-2">
-                                                                <span class="text-[11px] font-semibold text-kaori-primary">03 · Verify</span>
-                                                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">Confirm provider handoff and read-back before Release.</p>
+                                                            <li class="flex min-w-0 items-start gap-2.5 px-3 py-2.5">
+                                                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary"
+                                                                      aria-hidden="true">3</span>
+                                                                <div class="min-w-0 flex-1">
+                                                                    <p class="text-xs font-semibold text-content-primary">Verify &amp; Finalize</p>
+                                                                    <p class="mt-0.5 text-xs leading-5 text-content-secondary">Verify provider handoff and read-back before Release.</p>
+                                                                </div>
                                                             </li>
                                                         </ol>
                                                         <a href="{{ tenant_release_step_urls['approval'] }}"
