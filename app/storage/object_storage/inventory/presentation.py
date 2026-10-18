@@ -341,10 +341,17 @@ def _provider_detail_sections(
                 }
             )
         if rows:
+            normalized_description = str(section.get('description') or 'Provider-specific inventory evidence.')
+            if (
+                title == 'MinIO Bucket Configuration'
+                and normalized_description
+                == 'Provider-native S3 configuration evidence collected by Object Storage Inventory Sync.'
+            ):
+                normalized_description = 'Collected MinIO S3 settings.'
             sections.append(
                 {
                     'title': title,
-                    'description': str(section.get('description') or 'Provider-specific inventory evidence.'),
+                    'description': normalized_description,
                     'icon': str(section.get('icon') or 'braces'),
                     'rows': rows,
                 }
@@ -465,51 +472,50 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
     usage_collected = int(posture['usage_collected'])
     if total == 0:
         quota_title, quota_tone = 'No Quota Evidence', 'unknown'
-        quota_description = 'No committed bucket or container assets are available yet.'
+        quota_description = 'No committed assets to assess.'
     elif quota_gaps:
         quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'warning'
         quota_description = (
-            f'{quota_configured} asset(s) have configured quota; {quota_gaps} still require provider evidence.'
+            f'{quota_configured} ceilings; {quota_gaps} need quota evidence.'
         )
     else:
         quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'normal'
-        quota_description = f'Quota evidence is complete; {quota_configured} asset(s) have a configured quota ceiling.'
+        quota_description = f'Quota assessed; {quota_configured} ceiling(s) set.'
 
     if total == 0:
         protection_title, protection_tone = 'No Protection Evidence', 'unknown'
-        protection_description = 'No committed bucket or container assets are available yet.'
+        protection_description = 'No committed assets to assess.'
     elif protection_attention:
         protection_title, protection_tone = f'{protection_attention} Protection Attention', 'warning'
         protection_description = (
-            f'Review flagged controls; complete protection evidence exists for {protection_assessed}/{total} assets.'
+            f'Review flags; {protection_assessed}/{total} protection assessed.'
         )
     elif protection_assessed < total:
         protection_title = 'Protection Not Assessed' if protection_assessed == 0 else 'Protection Partially Assessed'
         protection_tone = 'unknown' if protection_assessed == 0 else 'warning'
-        protection_description = f'No attention observed, but complete protection evidence exists for only {protection_assessed}/{total} assets.'
+        protection_description = f'No flags; {protection_assessed}/{total} protection assessed.'
     else:
         protection_title, protection_tone = 'No Protection Attention', 'normal'
-        protection_description = 'All committed assets have assessed versioning, encryption, and immutability evidence.'
+        protection_description = 'All assets have protection evidence.'
 
     if total == 0:
         exposure_title, exposure_tone = 'No Exposure Evidence', 'unknown'
-        exposure_description = 'No committed bucket or container assets are available yet.'
+        exposure_description = 'No committed assets to assess.'
     elif public_exposure:
         exposure_title, exposure_tone = f'{public_exposure} Public Exposure', 'critical'
         exposure_description = (
-            f'Review provider access policy evidence for publicly exposed assets; '
-            f'exposure is classified for {exposure_assessed}/{total} assets.'
+            f'Public exposure flagged; {exposure_assessed}/{total} classified.'
         )
     elif exposure_assessed < total:
         exposure_title = 'Exposure Not Assessed' if exposure_assessed == 0 else 'Exposure Partially Assessed'
         exposure_tone = 'unknown' if exposure_assessed == 0 else 'warning'
         exposure_description = (
-            f'No public exposure observed; classification evidence exists for only {exposure_assessed}/{total} assets.'
+            f'No public assets observed; {exposure_assessed}/{total} classified.'
         )
     else:
         exposure_title, exposure_tone = 'No Public Exposure', 'normal'
         exposure_description = (
-            'No committed asset is currently classified as public in the latest Object Storage inventory evidence.'
+            'No assets classified public.'
         )
 
     return [
@@ -529,9 +535,9 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
         {
             'title': f'{usage_collected}/{total} Usage Collected' if total else 'No Usage Evidence',
             'description': (
-                'Used size and object count are optional usage evidence.'
+                'Usage metrics are optional.'
                 if total
-                else 'No committed bucket or container assets are available for usage collection.'
+                else 'No committed assets for usage.'
             ),
             'icon': 'chart-no-axes-column',
             'tone': 'info',
