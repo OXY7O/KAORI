@@ -193,9 +193,7 @@
                            aria-hidden="true"></i>
                         Description
                     </dt>
-                    <dd class="min-w-0 whitespace-pre-wrap break-words text-sm leading-5 text-content-secondary [overflow-wrap:anywhere]">
-                        {{ tenant.description or 'No Tenant description has been recorded.' }}
-                    </dd>
+                    <dd class="min-w-0 whitespace-pre-wrap break-words text-sm leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ tenant.description or 'No Tenant description has been recorded.' }}</dd>
                 </div>
             </dl>
             <p class="flex min-w-0 items-start gap-2 border-t border-outline-subtle px-4 py-2.5 text-xs leading-5 text-content-muted sm:px-5"
@@ -322,7 +320,8 @@
                                     'Independent plan approval is not external successor acceptance.',
                                     'Provider handoff, verified read-back and authorized finalization are separate gates.'
                                 ],
-                                placement='left'
+                                placement='left',
+                                variant='guide'
                             ) }}
                         </div>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">
@@ -2133,8 +2132,7 @@
                                                         {{ table_label.status_label('Review Expired', 'warning') }}
                                                         <h6 class="mt-2 text-sm font-semibold leading-5 text-content-primary">Refresh the Provider Review</h6>
                                                         <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                                            The previous Kubernetes inventory review has expired.
-                                                            Its resource scope and fingerprint are not current Release evidence.
+                                                            Kubernetes review expired; scope and fingerprint are stale for Release.
                                                         </p>
                                                     </div>
                                                     <div class="min-w-0">
