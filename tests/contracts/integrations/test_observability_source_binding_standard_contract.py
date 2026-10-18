@@ -203,7 +203,10 @@ def test_source_binding_actions_use_shared_semantic_buttons() -> None:
         'Register {{ provider.label }} Connection',
     ):
         assert action in workspace
-    assert 'class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary' not in workspace
+    assert (
+        'class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary'
+        not in workspace
+    )
     assert 'class="inline-flex min-h-9 items-center justify-center' not in workspace
     assert 'class="mt-4 inline-flex min-h-10' not in workspace
 
