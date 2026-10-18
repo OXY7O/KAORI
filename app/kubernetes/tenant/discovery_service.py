@@ -25,8 +25,8 @@ from app.kubernetes.tenant.capsule_provider import discover_capsule
 from app.kubernetes.tenant.discovery_presentation import (
     _capsule_phase,
     _managed_capsule_map,
-    _native_management,
     _namespace_phase,
+    _native_management,
     _tone,
     _unclaimed_provider_ownership_reason,
 )

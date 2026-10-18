@@ -15,11 +15,11 @@ from app.kubernetes.tenant.capacity_governance import (
     build_capacity_governance_summary,
 )
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
-from app.kubernetes.tenant.resource_profile_rollout_context import _resource_profile_rollout_targets
 from app.kubernetes.tenant.resource_profile_controls import (
     _tenant_capability_statuses,
     evaluate_resource_profile_advanced_controls,
 )
+from app.kubernetes.tenant.resource_profile_rollout_context import _resource_profile_rollout_targets
 from app.kubernetes.tenant.service_contracts import (
     _ALLOWED_ENVIRONMENTS,
     _ALLOWED_PROFILE_CLASSES,
