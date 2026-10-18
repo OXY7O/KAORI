@@ -536,7 +536,7 @@ def _enrich_bucket_summary(
         'sections': [
             {
                 'title': 'MinIO Bucket Configuration',
-                'description': 'Provider-native S3 configuration evidence collected by Object Storage Inventory Sync.',
+                'description': 'Collected MinIO S3 settings.',
                 'icon': 'settings-2',
                 'rows': configuration.native_rows,
             }
