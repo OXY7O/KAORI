@@ -196,8 +196,8 @@
                 marker_value='true'
                 ) %}
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Search</span>
-                    <div class="relative mt-1.5">
+                    <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                    <div class="relative">
                         <i data-lucide="search"
                            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
                            aria-hidden="true"></i>
@@ -205,13 +205,13 @@
                                name="search"
                                value="{{ payload.selected_filters.search }}"
                                placeholder="Search Templates..."
-                               class="min-h-9 w-full rounded-lg border border-outline-default bg-surface-card py-2 pl-9 pr-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                               class="{{ table_ui.filter_input_classes() }} pl-9">
                     </div>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Family</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Family</span>
                     <select name="family"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.families %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.family == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -219,9 +219,9 @@
                     </select>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Domain</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
                     <select name="domain"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.domains %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -229,9 +229,9 @@
                     </select>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Report Type</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Report Type</span>
                     <select name="report_type"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.report_types %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -239,9 +239,9 @@
                     </select>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Ownership</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Ownership</span>
                     <select name="ownership"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.ownership %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.ownership == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -249,9 +249,9 @@
                     </select>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Status</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Status</span>
                     <select name="status"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.statuses %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -259,9 +259,9 @@
                     </select>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Format</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Format</span>
                     <select name="output_format"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.formats %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
