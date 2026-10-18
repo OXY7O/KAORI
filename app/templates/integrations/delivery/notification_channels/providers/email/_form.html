@@ -1,14 +1,16 @@
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     <div>
         <label for="smtp-host" class="{{ table_ui.filter_label_classes() }}">SMTP Host</label>
-        <input id="smtp-host" name="smtp_host"
+        <input id="smtp-host"
+               name="smtp_host"
                value="{{ form_channel.smtp_host if form_channel else '' }}"
                class="{{ table_ui.filter_input_classes() }}"
                placeholder="smtp.example.com">
     </div>
     <div>
         <label for="smtp-port" class="{{ table_ui.filter_label_classes() }}">SMTP Port</label>
-        <input id="smtp-port" name="smtp_port"
+        <input id="smtp-port"
+               name="smtp_port"
                type="number"
                min="1"
                max="65535"
@@ -17,7 +19,9 @@
     </div>
     <div>
         <label for="smtp-security" class="{{ table_ui.filter_label_classes() }}">Transport Security</label>
-        <select id="smtp-security" name="smtp_security" class="{{ table_ui.filter_select_classes() }}">
+        <select id="smtp-security"
+                name="smtp_security"
+                class="{{ table_ui.filter_select_classes() }}">
             {% for option in payload.smtp_security_options %}
                 <option value="{{ option.value }}"
                         {% if (form_channel.smtp_security if form_channel else 'starttls') == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -26,14 +30,16 @@
     </div>
     <div>
         <label for="smtp-username" class="{{ table_ui.filter_label_classes() }}">SMTP Username</label>
-        <input id="smtp-username" name="smtp_username"
+        <input id="smtp-username"
+               name="smtp_username"
                value="{{ form_channel.smtp_username if form_channel else '' }}"
                class="{{ table_ui.filter_input_classes() }}"
                placeholder="Optional for trusted relay">
     </div>
     <div>
         <label for="smtp-password" class="{{ table_ui.filter_label_classes() }}">SMTP Password</label>
-        <input id="smtp-password" name="smtp_password"
+        <input id="smtp-password"
+               name="smtp_password"
                type="password"
                autocomplete="new-password"
                class="{{ table_ui.filter_input_classes() }}"
@@ -41,14 +47,16 @@
     </div>
     <div>
         <label for="smtp-sender-name" class="{{ table_ui.filter_label_classes() }}">Sender Name</label>
-        <input id="smtp-sender-name" name="sender_name"
+        <input id="smtp-sender-name"
+               name="sender_name"
                value="{{ form_channel.sender_name if form_channel else 'KAORI' }}"
                class="{{ table_ui.filter_input_classes() }}"
                placeholder="KAORI">
     </div>
     <div>
         <label for="smtp-sender-email" class="{{ table_ui.filter_label_classes() }}">Sender Email</label>
-        <input id="smtp-sender-email" name="sender_email"
+        <input id="smtp-sender-email"
+               name="sender_email"
                type="email"
                value="{{ form_channel.sender_email if form_channel else '' }}"
                class="{{ table_ui.filter_input_classes() }}"
@@ -56,7 +64,8 @@
     </div>
     <div class="sm:col-span-2">
         <label for="smtp-recipients" class="{{ table_ui.filter_label_classes() }}">Recipients</label>
-        <input id="smtp-recipients" name="email_recipients"
+        <input id="smtp-recipients"
+               name="email_recipients"
                value="{{ form_channel.email_recipients if form_channel else '' }}"
                class="{{ table_ui.filter_input_classes() }}"
                placeholder="noc@example.com, platform@example.com">

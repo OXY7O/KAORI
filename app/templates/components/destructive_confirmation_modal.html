@@ -40,7 +40,7 @@
                             {% if access_chrome %}
                                 {{ table_label.status_label('Confirmation Required', 'warning', 'shield-alert', 'detail') }}
                             {% endif %}
-                        {% if access_chrome %}</div>{% endif %}
+                            {% if access_chrome %}</div>{% endif %}
                         <p class="mt-1 break-words text-sm {{ 'leading-5' if presentation == 'steps' else 'leading-6' }} text-content-secondary [overflow-wrap:anywhere]">{{ notice }}</p>
                         {% if access_chrome %}
                             <div class="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
@@ -221,7 +221,9 @@
             <footer class="{{ 'flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6' if access_chrome else ('flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover ' ~ ('px-6 py-4' if presentation == 'steps' else 'px-5 py-4') ~ ' sm:flex-row sm:justify-end') }}">
                 {% if access_chrome %}
                     <p class="mr-auto hidden min-w-0 items-center gap-2 text-xs leading-5 text-content-muted sm:flex">
-                        <i data-lucide="shield-alert" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="shield-alert"
+                           class="h-4 w-4 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
                         {{ scope_value }} · Confirmation required
                     </p>
                 {% endif %}

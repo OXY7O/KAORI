@@ -145,14 +145,14 @@
                         ) %}
                         <div id="notification-delivery-registry">
                             {% call table_registry.filter_form('notification_channels.index',
-                                        'notification-delivery-registry',
-                                        'notification-delivery-loading',
-                                        payload.delivery_pagination.per_page,
-                                        classes=table_ui.inventory_filter_bar_classes(),
-                                        page_param='delivery_page',
-                                        per_page_param='delivery_per_page',
-                                        form_id='notification-delivery-filter-form',
-                                        aria_label='Filter notification delivery evidence') %}
+                                'notification-delivery-registry',
+                                'notification-delivery-loading',
+                                payload.delivery_pagination.per_page,
+                                classes=table_ui.inventory_filter_bar_classes(),
+                                page_param='delivery_page',
+                                per_page_param='delivery_per_page',
+                                form_id='notification-delivery-filter-form',
+                                aria_label='Filter notification delivery evidence') %}
                                 <input type="hidden" name="tab" value="delivery">
                                 <div>
                                     <label for="notification-delivery-event-key"
@@ -161,14 +161,14 @@
                                 </div>
                                 {% if payload.delivery_filter %}
                                     {{ table_registry.clear_filters_link('notification_channels.index',
-                                        'notification-delivery-registry',
-                                        'notification-delivery-loading',
-                                        payload.delivery_pagination.per_page,
-                                        table_ui.action_classes(),
-                                        label='Clear Filters',
-                                        query_params={'tab': 'delivery'},
-                                        page_param='delivery_page',
-                                        per_page_param='delivery_per_page') }}
+                                                                        'notification-delivery-registry',
+                                                                        'notification-delivery-loading',
+                                                                        payload.delivery_pagination.per_page,
+                                                                        table_ui.action_classes() ,
+                                    label='Clear Filters',
+                                    query_params={'tab': 'delivery'},
+                                    page_param='delivery_page',
+                                    per_page_param='delivery_per_page') }}
                                 {% endif %}
                             {% endcall %}
                             <p class="border-b border-outline-subtle px-4 py-2 text-xs leading-5 text-content-muted sm:px-5">
