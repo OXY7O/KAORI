@@ -97,15 +97,15 @@
                             </div>
                             <div class="grid {{ 'gap-4 xl:grid-cols-3' if mode == 'create' else 'gap-5 lg:grid-cols-2' }}">
                                 <div>
-                                    <label class="mb-1.5 block text-sm font-semibold text-content-primary">Username</label>
+                                    <label for="{{ form.username.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Username</label>
                                     {{ form.username(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
                                 </div>
                                 <div>
-                                    <label class="mb-1.5 block text-sm font-semibold text-content-primary">Email</label>
+                                    <label for="{{ form.email.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Email</label>
                                     {{ form.email(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
                                 </div>
                                 <div class="{{ 'xl:col-span-1' if mode == 'create' else 'lg:col-span-2' }}">
-                                    <label class="mb-1.5 block text-sm font-semibold text-content-primary">Display Name</label>
+                                    <label for="{{ form.display_name.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Display Name</label>
                                     {{ form.display_name(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="Optional friendly name") }}
                                 </div>
                             </div>
@@ -151,12 +151,12 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="mb-1.5 block text-sm font-semibold text-content-primary">Initial Password</label>
+                                        <label for="{{ form.password.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Initial Password</label>
                                         {{ form.password(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password", placeholder="Minimum 12 characters") }}
                                         
                                     </div>
                                     <div>
-                                        <label class="mb-1.5 block text-sm font-semibold text-content-primary">Confirm Password</label>
+                                        <label for="{{ form.confirm_password.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">Confirm Password</label>
                                         {{ form.confirm_password(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
                                         
                                     </div>
