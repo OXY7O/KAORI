@@ -163,7 +163,12 @@ def test_capsule_new_tenant_adoption_rejects_namespace_owned_by_another_tenant(m
     monkeypatch.setattr(
         module,
         'observe_capsule_tenant_allocation',
-        lambda *_args, **_kwargs: {'correlated_namespaces': [{'name': 'claimed-ns'}]},
+        lambda *_args, **_kwargs: {
+            'allocation_authority': 'none_observed',
+            'control_state': 'observed',
+            'shared_quota': {},
+            'correlated_namespaces': [{'name': 'claimed-ns'}],
+        },
     )
     monkeypatch.setattr(
         module,
