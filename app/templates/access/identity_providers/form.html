@@ -49,11 +49,11 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2 class="text-base font-semibold leading-6 text-content-primary">Provider Identity and State</h2>
                                 {{ info_tip.render('identity-provider-instance-guide',
-                                                    'Provider Identity and State',
-                                                    'Define stable provider identity without changing the authoritative authentication source.',
-                                                    items=['Provider Key: a stable URL-safe instance key referenced by audit metadata and browser callback routes.', 'Display Name: operator-facing name; for browser SSO, also the sign-in option label.'],
-                                                    placement='right',
-                                                    variant='guide') }}
+                                                                'Provider Identity and State',
+                                                                'Define stable provider identity without changing the authoritative authentication source.',
+                                                                items=['Provider Key: a stable URL-safe instance key referenced by audit metadata and browser callback routes.', 'Display Name: operator-facing name; for browser SSO, also the sign-in option label.'],
+                                                                placement='right',
+                                                                variant='guide') }}
                             </div>
                             <p class="mt-1 text-sm leading-6 text-content-secondary">Define the stable provider instance key and keep authentication disabled until adapter validation succeeds.</p>
                         </div>
@@ -109,8 +109,7 @@
                                 formaction="{{ url_for('identity_providers.test_configuration', provider_id=provider.id) if provider else url_for('identity_providers.test_configuration') }}"
                                 formmethod="post"
                                 class="{{ action_button.classes('secondary') }}"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button>
-                        <button type="submit"
-                                class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4"></i>Save Provider</button>
+                        <button type="submit" class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4"></i>Save Provider</button>
                     </div>
                 </footer>
             </main>

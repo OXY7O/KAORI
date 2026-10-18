@@ -418,11 +418,11 @@
                             {% set security_registry_header_actions %}
                                 {% if security.filters.search or security.filters.severity or security.filters.provider or security.filters.source_id %}
                                     {{ registry.clear_filters_link(security.endpoint,
-                                                                                'artifact-registry-security-registry',
-                                                                                'artifact-registry-security-loading',
-                                                                                security.pagination.per_page,
-                                                                                table_ui.action_classes(),
-                                                                                query_params=({'section': 'evidence'} if security.view == 'supply_chain' else {})) }}
+                                                                        'artifact-registry-security-registry',
+                                                                        'artifact-registry-security-loading',
+                                                                        security.pagination.per_page,
+                                                                        table_ui.action_classes() ,
+                                    query_params=({'section': 'evidence'} if security.view == 'supply_chain' else {})) }}
                                 {% endif %}
                                 {% if security.view == 'vulnerabilities' %}
                                     <a href="{{ url_for('artifact_registry.runtime', source_id=security.filters.source_id) if security.filters.source_id else url_for('artifact_registry.runtime') }}"
@@ -650,7 +650,9 @@
                                                                 control_name='artifact-registry-security') }}
                             </section>
                         {% endif %}
-                        {% if security.view == 'vulnerabilities' %}</section>{% endif %}
+                        {% if security.view == 'vulnerabilities' %}
+                        </section>
+                    {% endif %}
                     {% if security.view == 'supply_chain' %}
                     </div>
                 </section>

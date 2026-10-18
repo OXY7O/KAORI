@@ -48,7 +48,7 @@
                 <h4 class="text-sm font-semibold leading-5 text-content-primary">Resolver Registry</h4>
             </header>
             <table class="{{ table_ui.table_classes() }} table-fixed">
-                        <caption class="sr-only">Resolver Action Registry</caption>
+                <caption class="sr-only">Resolver Action Registry</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[40%]">Action</th>
@@ -78,7 +78,7 @@
                 <h4 class="text-sm font-semibold leading-5 text-content-primary">Safety Controls</h4>
             </header>
             <table class="{{ table_ui.table_classes() }} table-fixed">
-                        <caption class="sr-only">Operational Safety Controls</caption>
+                <caption class="sr-only">Operational Safety Controls</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[34%]">Scope</th>
@@ -140,7 +140,7 @@
         {% endcall %}
     </div>
     <table class="{{ table_ui.table_classes() }} table-fixed">
-                        <caption class="sr-only">Deployment Policies</caption>
+        <caption class="sr-only">Deployment Policies</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[30%]">Action</th>
@@ -205,7 +205,7 @@
         {% endcall %}
     </div>
     <table class="{{ table_ui.table_classes() }} table-fixed">
-                        <caption class="sr-only">Execution Journal</caption>
+        <caption class="sr-only">Execution Journal</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[28%]">Execution</th>
@@ -213,7 +213,8 @@
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">State</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Verification</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Attempts</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -275,7 +276,7 @@
         {% endcall %}
     </div>
     <table class="{{ table_ui.table_classes() }} table-fixed">
-                        <caption class="sr-only">Dead-Letter Review</caption>
+        <caption class="sr-only">Dead-Letter Review</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[34%]">Action / Journal</th>

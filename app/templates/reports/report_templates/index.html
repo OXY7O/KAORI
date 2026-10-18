@@ -211,8 +211,7 @@
                 </label>
                 <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Family</span>
-                    <select name="family"
-                            class="{{ table_ui.filter_select_classes() }}">
+                    <select name="family" class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.families %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.family == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -221,8 +220,7 @@
                 </label>
                 <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
-                    <select name="domain"
-                            class="{{ table_ui.filter_select_classes() }}">
+                    <select name="domain" class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.domains %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -231,8 +229,7 @@
                 </label>
                 <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Report Type</span>
-                    <select name="report_type"
-                            class="{{ table_ui.filter_select_classes() }}">
+                    <select name="report_type" class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.report_types %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -241,8 +238,7 @@
                 </label>
                 <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Ownership</span>
-                    <select name="ownership"
-                            class="{{ table_ui.filter_select_classes() }}">
+                    <select name="ownership" class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.ownership %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.ownership == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -251,8 +247,7 @@
                 </label>
                 <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Status</span>
-                    <select name="status"
-                            class="{{ table_ui.filter_select_classes() }}">
+                    <select name="status" class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.statuses %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -261,8 +256,7 @@
                 </label>
                 <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Format</span>
-                    <select name="output_format"
-                            class="{{ table_ui.filter_select_classes() }}">
+                    <select name="output_format" class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.formats %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -276,12 +270,14 @@
                     <caption class="sr-only">Report template definitions, contracts and available actions</caption>
                     <thead class="{{ table_ui.head_classes() }}">
                         <tr>
-                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[31%] sm:px-6">Template</th>
+                            <th scope="col"
+                                class="{{ table_ui.header_cell_classes() }} w-[31%] sm:px-6">Template</th>
                             <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Contract</th>
                             <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Output</th>
                             <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">Sections</th>
                             <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Ownership</th>
-                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[8%] sm:px-6">Action</th>
+                            <th scope="col"
+                                class="{{ table_ui.header_cell_classes(action=true) }} w-[8%] sm:px-6">Action</th>
                         </tr>
                     </thead>
                     <tbody class="{{ table_ui.body_classes() }}">

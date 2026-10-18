@@ -40,8 +40,11 @@
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <input type="hidden" name="partial_mode" value="page_workspace">
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}" for="configuration-cluster-filter">Cluster</label>
-                <select id="configuration-cluster-filter" name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="configuration-cluster-filter">Cluster</label>
+                <select id="configuration-cluster-filter"
+                        name="cluster_id"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
                         <option value="{{ cluster.id }}"
@@ -50,8 +53,11 @@
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}" for="configuration-namespace-filter">Namespace</label>
-                <select id="configuration-namespace-filter" name="namespace" class="{{ table_ui.filter_select_classes() }}">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="configuration-namespace-filter">Namespace</label>
+                <select id="configuration-namespace-filter"
+                        name="namespace"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Namespaces</option>
                     {% for ns in inventory.namespaces %}
                         <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
@@ -59,8 +65,11 @@
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}" for="configuration-type-filter">Object Type</label>
-                <select id="configuration-type-filter" name="type" class="{{ table_ui.filter_select_classes() }}">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="configuration-type-filter">Object Type</label>
+                <select id="configuration-type-filter"
+                        name="type"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Types</option>
                     {% for type_name in inventory.types %}
                         <option value="{{ type_name }}"
@@ -69,7 +78,8 @@
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}" for="configuration-search-filter">Search</label>
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="configuration-search-filter">Search</label>
                 {{ table_ui.search_field('search', search, 'Name, type, or namespace', id='configuration-search-filter') }}
             </div>
         </form>

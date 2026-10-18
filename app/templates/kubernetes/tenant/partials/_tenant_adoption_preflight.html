@@ -149,7 +149,9 @@
                              aria-label="Capsule managed adoption blocked"
                              data-capsule-adoption-authority-blocked>
                         <div class="flex items-center gap-2 text-status-warning-text">
-                            <i data-lucide="shield-alert" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
+                            <i data-lucide="shield-alert"
+                               class="h-4 w-4 shrink-0"
+                               aria-hidden="true"></i>
                             <p class="text-sm font-semibold">Managed Adoption Blocked</p>
                         </div>
                         <p class="mt-1 text-xs leading-5 text-status-warning-text">{{ row.adoption_management_blocker }}</p>
@@ -823,11 +825,7 @@
                             class="{{ action_button.classes('secondary') }}">Cancel</button>
                     <button type="submit"
                             class="{{ action_button.classes('primary') }} disabled:cursor-not-allowed disabled:opacity-50"
-                            {% if row.provider_key == 'capsule' and row.adoption_management_blocker and not tenant_adoption_attachment_only %}
-                                disabled
-                                aria-disabled="true"
-                                aria-label="Managed adoption blocked by unadmitted Capsule quota authority"
-                            {% endif %}>
+                            {% if row.provider_key == 'capsule' and row.adoption_management_blocker and not tenant_adoption_attachment_only %} disabled aria-disabled="true" aria-label="Managed adoption blocked by unadmitted Capsule quota authority" {% endif %}>
                         <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
                         {% if tenant_adoption_attachment_only %}
                             Attach Capsule Namespace

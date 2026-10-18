@@ -192,11 +192,11 @@
                                             <div class="flex flex-wrap items-center gap-2">
                                                 <h3 class="text-sm font-bold text-content-primary">Role Identity</h3>
                                                 {{ info_tip.render('role-identity-fields-guide',
-                                                                    'Role Identity Guide',
-                                                                    'Use a stable machine key and clear operator-facing role name.',
-                                                                    items=['Role slug: normalized to lowercase underscores; this is the stable backend identifier.', 'Display name: shown in User Management, role assignment, and external identity projection.'],
-                                                                    placement='right',
-                                                                    variant='guide') }}
+                                                                                                'Role Identity Guide',
+                                                                                                'Use a stable machine key and clear operator-facing role name.',
+                                                                                                items=['Role slug: normalized to lowercase underscores; this is the stable backend identifier.', 'Display name: shown in User Management, role assignment, and external identity projection.'],
+                                                                                                placement='right',
+                                                                                                variant='guide') }}
                                             </div>
                                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Stable machine identity and user-facing access label.</p>
                                         </div>
@@ -334,7 +334,7 @@
                                             {% for permission in module_permissions %}
                                                 <label class="group relative flex min-h-20 items-start gap-3 rounded-xl border border-outline-default bg-surface-card p-3 transition {{ 'cursor-default' if read_only else 'cursor-pointer hover:border-brand-outline hover:bg-kaori-soft' }}"
                                                        data-role-permission-card
-                                                       data-search="{{ (module_name ~ ' ' ~ permission.key ~ ' ' ~ (permission_matrix_descriptions.get(permission.key, permission.description or '')) ~ ' ' ~ (permission.description or '') ~ ' ' ~ permission.action)|lower }}">
+                                                       data-search="{{ (module_name ~ ' ' ~ permission.key ~ ' ' ~ (permission_matrix_descriptions.get(permission.key, permission.description or '') ) ~ ' ' ~ (permission.description or '') ~ ' ' ~ permission.action)|lower }}">
                                                     <input type="checkbox"
                                                            name="permission_ids"
                                                            value="{{ permission.id }}"
@@ -381,8 +381,7 @@
                                 <a href="{{ url_for('access.roles.clone', role_id=role.id) }}"
                                    class="{{ action_button.classes('primary') }}"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone default role</a>
                             {% elif not read_only %}
-                                <button type="submit"
-                                        class="{{ action_button.classes('primary') }}">
+                                <button type="submit" class="{{ action_button.classes('primary') }}">
                                     <i data-lucide="save" class="h-4 w-4"></i>
                                     {% if page_mode == 'clone' %}
                                         Create cloned role

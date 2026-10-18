@@ -60,7 +60,7 @@
         {% endcall %}
     </div>
     <table class="{{ table_ui.table_classes() }} table-fixed">
-                        <caption class="sr-only">Candidate Review Queue</caption>
+        <caption class="sr-only">Candidate Review Queue</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[28%]">Rule / Candidate</th>
@@ -68,7 +68,8 @@
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Runbook</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Severity</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Status</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -157,7 +158,7 @@
         {% endcall %}
     </div>
     <table class="{{ table_ui.table_classes() }} table-fixed">
-                        <caption class="sr-only">Persisted Decisions</caption>
+        <caption class="sr-only">Persisted Decisions</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[26%]">Decision</th>
@@ -165,7 +166,8 @@
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Action</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Policy</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Status</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes(action=true) }} w-[12%]">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -267,7 +269,7 @@
         {% endcall %}
     </div>
     <table class="{{ table_ui.table_classes() }} table-fixed">
-                        <caption class="sr-only">Approval Notification Delivery</caption>
+        <caption class="sr-only">Approval Notification Delivery</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[28%]">Event</th>
