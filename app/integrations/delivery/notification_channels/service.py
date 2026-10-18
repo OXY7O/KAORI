@@ -36,6 +36,14 @@ from app.integrations.delivery.notification_channels.providers import (
     provider_catalog,
     provider_labels,
 )
+from app.integrations.delivery.notification_channels.service_helpers import (
+    DeliveryPagination,
+    _credential_map,
+    _encode_credentials,
+    _minimum_severity_label,
+    _normalize_severity,
+    _reset_channel_validation,
+)
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
 from app.models.report import Report
 from app.security.credentials import CredentialEncryptionError, decrypt_credential, encrypt_credential
@@ -179,8 +187,7 @@ def get_notification_channels_payload(
     channel_search: str = '',
     channel_provider: str = '',
     channel_state: str = '',
-    delivery_page: int = 1,
-    delivery_per_page: int = 5,
+    delivery_pagination: DeliveryPagination = DeliveryPagination(),
     delivery_event_key: str = '',
     can_view_reports: bool = False,
 ) -> dict[str, Any]:
@@ -198,8 +205,8 @@ def get_notification_channels_payload(
     )
     normalized_delivery_key = str(delivery_event_key or '').strip()[:255]
     delivery_rows, delivery_pagination = _delivery_registry_page(
-        page=delivery_page,
-        per_page=delivery_per_page,
+        page=delivery_pagination.page,
+        per_page=delivery_pagination.per_page,
         event_key=normalized_delivery_key,
         can_view_reports=can_view_reports,
     )
@@ -320,16 +327,6 @@ def _report_source_url(delivery: NotificationDelivery, report_lookup: dict[int, 
     if report_id is None or report_id not in report_lookup:
         return None
     return url_for('reports.generated_report_detail', report_id=report_id)
-
-
-def _reset_channel_validation(channel: NotificationChannel) -> None:
-    channel.test_status = 'not_tested'
-    channel.test_message = 'Destination, credentials, or transport configuration changed. Validate the channel again.'
-    channel.last_tested_at = None
-    channel.last_delivery_status = 'never'
-    channel.last_delivery_message = None
-    channel.last_delivery_attempt_at = None
-    channel.last_delivery_at = None
 
 
 def _provider_label(provider_key: str) -> str:
@@ -1005,35 +1002,3 @@ def _alert_message(
     )
 
 
-def _encode_credentials(credentials: dict[str, str]) -> str:
-    return json.dumps(credentials, separators=(',', ':'), sort_keys=True)
-
-
-def _credential_map(channel: NotificationChannel) -> dict[str, str]:
-    raw = str(channel.credential_payload or '').strip()
-    if not raw:
-        return {}
-    try:
-        payload = json.loads(raw)
-    except (TypeError, ValueError):
-        return {}
-    if not isinstance(payload, dict):
-        return {}
-    return {str(key): str(value) for key, value in payload.items() if value is not None}
-
-
-def _normalize_severity(value: Any) -> str:
-    normalized = str(value or '').strip().lower()
-    if normalized in {'critical', 'error', 'fatal', 'p1'}:
-        return 'critical'
-    if normalized in {'warning', 'warn', 'p2'}:
-        return 'warning'
-    return 'info'
-
-
-def _minimum_severity_label(value: str) -> str:
-    return {
-        'critical': 'Critical only',
-        'warning': 'Warning and Critical',
-        'info': 'Info and above',
-    }.get(value, 'Warning and Critical')

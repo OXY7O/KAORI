@@ -19,6 +19,7 @@ from app.extensions.limiter import limiter
 from app.kubernetes.operations.operation_flow import cluster_required
 from app.kubernetes.operations.secrets.reveal_service import (
     ActiveRevealRequestExists,
+    PendingRevealPagination,
     create_reveal_request,
     decide_reveal_request,
     get_reveal_page_context,
@@ -90,8 +91,10 @@ def _reveal_status_context() -> dict[str, Any]:
             my_search=request.args.get('my_search', ''),
             my_status=request.args.get('my_status', ''),
             my_sort=request.args.get('my_sort', 'newest'),
-            pending_page=request.args.get('pending_page', 1, type=int) or 1,
-            pending_per_page=request.args.get('pending_per_page', 5, type=int) or 5,
+            pending_pagination=PendingRevealPagination(
+                page=request.args.get('pending_page', 1, type=int) or 1,
+                per_page=request.args.get('pending_per_page', 5, type=int) or 5,
+            ),
         ),
         'step_up_active': _secret_reveal_step_up_active(),
         'can_reveal': current_user.has_permission('kubernetes_secrets.reveal'),

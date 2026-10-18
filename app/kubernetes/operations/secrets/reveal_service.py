@@ -316,6 +316,12 @@ def get_reveal_target_context(
     }
 
 
+@dataclass(frozen=True, slots=True)
+class PendingRevealPagination:
+    page: int = 1
+    per_page: int = 5
+
+
 def get_reveal_page_context(
     *,
     user_id: int,
@@ -325,8 +331,7 @@ def get_reveal_page_context(
     my_search: str = '',
     my_status: str = '',
     my_sort: str = 'newest',
-    pending_page: int = 1,
-    pending_per_page: int = 5,
+    pending_pagination: PendingRevealPagination = PendingRevealPagination(),
 ) -> dict[str, Any]:
     _expire_stale_requests()
 
@@ -374,15 +379,15 @@ def get_reveal_page_context(
         )
         pending_requests, pending_window = paginate_query(
             pending_query,
-            page=pending_page,
-            per_page=pending_per_page,
+            page=pending_pagination.page,
+            per_page=pending_pagination.per_page,
         )
     else:
         pending_window = pagination_payload(
             build_pagination_window(
                 total_items=0,
-                page=pending_page,
-                per_page=pending_per_page,
+                page=pending_pagination.page,
+                per_page=pending_pagination.per_page,
             )
         )
     pending_pagination = {
