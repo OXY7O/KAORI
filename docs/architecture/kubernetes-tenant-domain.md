@@ -785,6 +785,20 @@ The outer Release wizard continues to own one active URL-scoped step, while
 this content stays committed-state driven. All **10 Step 3 conditional forms**
 and **14 Tenant forms** remain present in source.
 
+**Step 4 Approval Pending — compact numbered list (#2401 follow-up):**
+Within the unchanged `not native_cycle.approval_complete` branch of
+**Next Required Action**, replace the horizontal 3-card approval path with
+the existing Step 3 `Approval boundaries` vertical ordered-list pattern:
+numbered Violet tokens, divided shared surface, title, and one concise
+sentence per action. Row meanings remain independent-review approval,
+external successor acceptance by an authorized Platform Admin, and later
+provider handoff/read-back before Release. These are guidance milestones
+only, not committed approvals. The single-sentence role-separation status
+and original Step 3 HTMX CTA remain; no new backend, provider calls, forms,
+permissions, or implicit admission. Preserve mobile wrapping, keyboard,
+light/dark and existing recovery/expiry precedence. Source contract tests
+were updated; runtime and browser UAT are pending under CI/CD HOLD.
+
 **Release Step 4 Review Expired action content (#2401 follow-up; presentation only):**
 The `native_cycle.review_expired` conditional now displays the Title Case
 **Next Required Action** header and a balanced Violet action region with
