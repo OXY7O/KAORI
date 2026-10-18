@@ -159,3 +159,22 @@ def test_template_registry_uses_shared_table_geometry_and_keeps_contract_columns
     assert 'data-dialog-target="template-detail-{{ loop.index }}"' in table
     assert '<thead class="border-b border-outline-subtle' not in table
     assert '<td class="px-4 py-4 align-top"' not in table
+
+
+def test_template_registry_filter_fields_compose_canonical_controls() -> None:
+    from jinja2 import Environment
+
+    template = read(ROOT / 'app/templates/reports/report_templates/index.html')
+    Environment().parse(template)
+    region = template.split('{% call registry_ui.filter_form(', 1)[1].split('{% endcall %}', 1)[0]
+    assert "marker_name='data-template-filters'" in region
+    assert region.count('table_ui.filter_select_classes()') == 6
+    assert region.count('table_ui.filter_input_classes()') == 1
+    assert region.count('table_ui.filter_label_classes()') == 7
+    for field in ('search', 'family', 'domain', 'report_type', 'ownership', 'status', 'output_format'):
+        assert f'name="{field}"' in region
+    assert 'payload.selected_filters.search' in region
+    assert 'payload.selected_filters.output_format' in region
+    assert 'min-h-9 w-full rounded-lg' not in region
+    assert 'relative mt-1.5' not in region
+    assert 'Search Templates...' in region
