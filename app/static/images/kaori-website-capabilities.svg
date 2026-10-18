@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 600" role="img" aria-labelledby="title description">
+  <title id="title">KAORI connected infrastructure operations</title>
+  <desc id="description">Visibility, Control, Intelligence and Assurance connect to KAORI as a single operational context.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#120e22"/><stop offset=".52" stop-color="#241544"/><stop offset="1" stop-color="#110e20"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#302051" stop-opacity=".98"/><stop offset="1" stop-color="#18132c" stop-opacity=".98"/>
+    </linearGradient>
+    <linearGradient id="logo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e3d8ff"/><stop offset=".45" stop-color="#a974ff"/><stop offset="1" stop-color="#6530d2"/>
+    </linearGradient>
+    <radialGradient id="aura">
+      <stop offset="0" stop-color="#7634e3" stop-opacity=".32"/>
+      <stop offset=".6" stop-color="#6427ce" stop-opacity=".09"/>
+      <stop offset="1" stop-color="#6427ce" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="46" height="46" patternUnits="userSpaceOnUse">
+      <path d="M46 0H0V46" stroke="#b79ce8" stroke-opacity=".036" fill="none"/>
+    </pattern>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="920" height="600" rx="24" fill="url(#background)"/>
+  <rect width="920" height="600" rx="24" fill="url(#grid)"/>
+  <ellipse cx="460" cy="300" rx="300" ry="265" fill="url(#aura)"/>
+  <g fill="#7d40e2" fill-opacity=".12">
+    <rect x="322" y="186" width="128" height="135" rx="30"/>
+    <rect x="470" y="186" width="128" height="135" rx="30"/>
+    <rect x="322" y="323" width="128" height="130" rx="30"/>
+    <rect x="470" y="323" width="128" height="130" rx="30"/>
+    <rect x="50" y="410" width="96" height="120" rx="26"/>
+    <rect x="784" y="88" width="96" height="122" rx="26"/>
+  </g>
+  <g stroke="#b18aff" stroke-opacity=".88" stroke-width="1.8" fill="none">
+    <path d="M325 163h33q24 0 24 24v78h26"/>
+    <path d="M595 163h-33q-24 0-24 24v78h-26"/>
+    <path d="M325 442h33q24 0 24-24v-80h26"/>
+    <path d="M595 442h-33q-24 0-24-24v-80h-26"/>
+  </g>
+  <g fill="#d5b6ff" filter="url(#glow)">
+    <circle cx="325" cy="163" r="4.5"/><circle cx="595" cy="163" r="4.5"/>
+    <circle cx="325" cy="442" r="4.5"/><circle cx="595" cy="442" r="4.5"/>
+  </g>
+  <g fill="url(#panel)" stroke="#9f73ed" stroke-width="1.5">
+    <rect x="58" y="104" width="267" height="118" rx="20"/>
+    <rect x="595" y="104" width="267" height="118" rx="20"/>
+    <rect x="58" y="383" width="267" height="118" rx="20"/>
+    <rect x="595" y="383" width="267" height="118" rx="20"/>
+  </g>
+  <g fill="#5e31ba" stroke="#9e71ef" stroke-opacity=".38">
+    <rect x="83" y="134" width="62" height="62" rx="12"/>
+    <rect x="620" y="134" width="62" height="62" rx="12"/>
+    <rect x="83" y="413" width="62" height="62" rx="12"/>
+    <rect x="620" y="413" width="62" height="62" rx="12"/>
+  </g>
+  <g stroke="#e3d2ff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M97 165q17-21 34 0-17 21-34 0Z"/><circle cx="114" cy="165" r="6"/>
+    <path d="M633 154h34m-34 12h34m-34 12h34"/>
+    <circle cx="642" cy="154" r="4" fill="#6530d2"/><circle cx="657" cy="166" r="4" fill="#6530d2"/><circle cx="646" cy="178" r="4" fill="#6530d2"/>
+    <path d="M97 445c-4-9 4-16 11-13 4-12 19-11 23-1 10-1 14 12 6 17 3 9-7 16-14 10-6 10-19 5-19-5-7 2-12-2-7-8Z"/>
+    <path d="M112 438v21m8-17v14m6-21v14"/>
+    <path d="m635 442 13 12 19-23"/><path d="M650 414 633 422v18c0 15 8 23 17 29 10-6 18-14 18-29v-18Z"/>
+  </g>
+  <g font-family="Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+    <g fill="#f6f2ff" font-size="21" font-weight="700">
+      <text x="159" y="160">Visibility</text>
+      <text x="696" y="160">Control</text>
+      <text x="159" y="439">Intelligence</text>
+      <text x="696" y="439">Assurance</text>
+    </g>
+    <g fill="#c5b7de" font-size="14">
+      <text x="159" y="184">Infrastructure context</text>
+      <text x="696" y="184">Governed workflows</text>
+      <text x="159" y="463">Connected evidence</text>
+      <text x="696" y="463">Traceable operations</text>
+    </g>
+  </g>
+  <rect x="375" y="228" width="170" height="200" rx="28" fill="#3d1b7d" opacity=".17" filter="url(#glow)"/>
+  <rect x="365" y="212" width="190" height="206" rx="26" fill="url(#panel)" stroke="#b18aff" stroke-width="2"/>
+  <g filter="url(#glow)">
+    <rect x="419" y="248" width="36" height="37" rx="8" fill="#e4d6ff"/>
+    <rect x="461" y="248" width="36" height="37" rx="8" fill="#7938ee"/>
+    <rect x="419" y="292" width="36" height="37" rx="8" fill="#7938ee"/>
+    <rect x="461" y="292" width="36" height="37" rx="8" fill="#6930d7"/>
+    <rect x="442" y="271" width="30" height="35" fill="none" stroke="#efe7ff" stroke-width="5"/>
+    <circle cx="457" cy="287" r="11" fill="url(#logo)" stroke="#f8f4ff" stroke-width="2"/>
+  </g>
+  <text x="460" y="364" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="27" letter-spacing="5" font-weight="800" fill="#fff">KAORI</text>
+  <text x="460" y="390" text-anchor="middle" font-family="Inter,system-ui,sans-serif" font-size="12.5" fill="#d1c2e8">Connected operational context</text>
+</svg>
