@@ -32,7 +32,6 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
                 {% if filters.query or filters.requirement != 'all' or filters.status != 'all' %}
                     {% set capability_clear_href = url_for(detail_endpoint, instance_id=instance.id, tab='validation', page=1, per_page=pagination.per_page) %}
                     {% set capability_clear_url = url_for(registry_endpoint, instance_id=instance.id, page=1, per_page=pagination.per_page) %}
@@ -45,6 +44,7 @@
                     marker=target_id
                     ) }}
                 {% endif %}
+                {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
             </div>
         </div>
         <div data-kaori-capability-loading-region>
