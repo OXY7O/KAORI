@@ -3,14 +3,13 @@ from __future__ import annotations
 from celery import shared_task
 
 from app.extensions.db import db
+from app.integrations.runtime.monitoring import dispatch_integration_runtime_refresh
 from app.integrations.runtime.notifications import (
     dispatch_integration_health_event,
     is_health_degradation,
 )
 from app.models.integration import IntegrationInstance
 from app.models.runtime import IntegrationRuntimeObservation
-
-from app.integrations.runtime.monitoring import dispatch_integration_runtime_refresh
 
 
 @shared_task(

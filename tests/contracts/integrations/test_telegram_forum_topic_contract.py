@@ -18,7 +18,6 @@ def test_provider_owned_optional_topic_config_is_sent_via_bot_api() -> None:
     assert 'message_thread_id=topic_id' in registry
     assert 'name="telegram_topic_id"' in form
     assert 'form_channel.telegram_topic_id' in form
-    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     catalog = read('app/integrations/delivery/notification_channels/providers/__init__.py')
     assert 'Changing this requires a new Test Delivery.' in catalog
 
