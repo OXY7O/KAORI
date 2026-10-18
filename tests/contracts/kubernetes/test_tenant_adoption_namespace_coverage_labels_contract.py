@@ -72,7 +72,12 @@ def test_native_and_capsule_namespace_rows_share_one_renderer_and_semantic_statu
     assert "(namespace.get('allocation') or {}).get('display_values', [])" in section
     assert section.count("table_label.status_label('Observed', 'info')") == 2
     assert section.count("table_label.metadata_label('Adopted Baseline', wrap=true)") == 1
-    assert section.count("table_label.metadata_label('Observed Baseline' if row.adoption_management_blocker else 'Adopted Baseline', wrap=true)") == 1
+    assert (
+        section.count(
+            "table_label.metadata_label('Observed Baseline' if row.adoption_management_blocker else 'Adopted Baseline', wrap=true)"
+        )
+        == 1
+    )
     assert 'No supported quota dimensions observed.' in section
     assert 'No supported namespaced quota/limit dimensions observed.' in section
     assert 'Adopted Baseline · Observed</span>' not in section
@@ -109,7 +114,7 @@ def test_capsule_preflight_blocks_unadmitted_quota_without_offering_submit() -> 
     assert 'data-capsule-adoption-authority-blocked' in source
     assert 'Managed Adoption Blocked' in source
     assert 'row.adoption_management_blocker' in source
-    assert 'row.provider_key == \'capsule\' and row.adoption_management_blocker' in source
+    assert "row.provider_key == 'capsule' and row.adoption_management_blocker" in source
     assert 'aria-label="Managed adoption blocked by unadmitted Capsule quota authority"' in source
     assert 'disabled' in source
     assert 'Adoption Blocked' in source

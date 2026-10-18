@@ -103,8 +103,7 @@ def test_field_and_row_specific_evidence_remains_icon_only() -> None:
 
     reconciliation = _read('_access_grant_registry.html')
     row_tip = next(
-        expression for expression in _tip_expressions(reconciliation)
-        if "'access-grant-reconciliation-'" in expression
+        expression for expression in _tip_expressions(reconciliation) if "'access-grant-reconciliation-'" in expression
     )
     assert "variant='guide'" not in row_tip
     assert 'grant.reconciliation_message' in row_tip

@@ -12,16 +12,12 @@ _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
     {
         'title': 'Provider-Neutral Integration Lifecycle',
         'icon': 'unplug',
-        'description': (
-            'Kubernetes, metrics, alerts and MinIO have clear ownership.'
-        ),
+        'description': ('Kubernetes, metrics, alerts and MinIO have clear ownership.'),
     },
     {
         'title': 'Operations & Data Lifecycle Control Plane',
         'icon': 'workflow',
-        'description': (
-            'Shared evidence for jobs, lifecycle, delivery and analytics.'
-        ),
+        'description': ('Shared evidence for jobs, lifecycle, delivery and analytics.'),
     },
     {
         'title': 'Release Reliability & Identity Hardening',

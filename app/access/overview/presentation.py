@@ -59,10 +59,7 @@ def _user_supporting_text(summary: dict[str, Any]) -> str:
     admin_count = summary['active_super_admins']
     account_suffix = '' if total == 1 else 's'
     admin_suffix = '' if admin_count == 1 else 's'
-    return (
-        f'{total} account{account_suffix} · {admin_count} active Local DB '
-        f'break-glass admin{admin_suffix}.'
-    )
+    return f'{total} account{account_suffix} · {admin_count} active Local DB break-glass admin{admin_suffix}.'
 
 
 def _identity_provider_supporting_text(summary: dict[str, Any]) -> str:
@@ -181,9 +178,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Authentication Sources',
-                'description': (
-                    'Identity Providers governs external sign-in and admission.'
-                ),
+                'description': ('Identity Providers governs external sign-in and admission.'),
                 'status_label': providers['posture_label'],
                 'status_tone': providers['posture_tone'],
             }
@@ -236,9 +231,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Authorization Policy',
-                'description': (
-                    'Roles enforce code permissions; inactive roles deny access.'
-                ),
+                'description': ('Roles enforce code permissions; inactive roles deny access.'),
                 'status_label': 'Review Required' if authorization_review else 'Current',
                 'status_tone': 'warning' if authorization_review else 'normal',
             }
@@ -270,9 +263,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Audit Evidence',
-                'description': (
-                    'Audit actor snapshots; other sources stay gated.'
-                ),
+                'description': ('Audit actor snapshots; other sources stay gated.'),
                 'status_label': activity['posture_label'],
                 'status_tone': activity['posture_tone'],
             }

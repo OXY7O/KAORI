@@ -43,7 +43,7 @@ def test_analytics_overview_section_skeleton_has_single_shared_accessible_owner(
     overview = TARGET_PATH.read_text(encoding='utf-8')
 
     assert 'analysis_surface.snapshot_section_loading(' in partial
-    assert 'tab[1] if tab is defined else \'Health Summary\'' in partial
+    assert "tab[1] if tab is defined else 'Health Summary'" in partial
     assert 'animate-pulse' not in partial
     assert 'macro snapshot_section_loading(' in shared
     assert 'snapshot_shell_classes()' in shared

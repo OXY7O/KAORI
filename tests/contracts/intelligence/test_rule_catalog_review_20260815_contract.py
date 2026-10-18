@@ -79,8 +79,12 @@ def test_rule_catalog_record_table_uses_shared_geometry_and_retains_inline_detai
 
     assert '{% import "components/table_primitives.html" as table_ui %}' in records
     for macro in (
-        'table_classes', 'head_classes', 'header_cell_classes',
-        'body_classes', 'row_classes', 'cell_classes',
+        'table_classes',
+        'head_classes',
+        'header_cell_classes',
+        'body_classes',
+        'row_classes',
+        'cell_classes',
     ):
         assert f'macro {macro}(' in primitives
     assert "table_ui.table_classes('min-w-[980px] !table-fixed')" in records

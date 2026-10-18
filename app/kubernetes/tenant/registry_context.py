@@ -243,11 +243,10 @@ def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[
     for target in targets.values():
         # A version-only zero is insufficient. Require every committed snapshot
         # to match all three allocation families and the version.
-        target['already_current'] = (
-            target['eligible'] and target['pending'] == 0 and target['namespaces'] > 0
-        )
+        target['already_current'] = target['eligible'] and target['pending'] == 0 and target['namespaces'] > 0
 
     return result
+
 
 _ALLOWED_PAGE_SIZES = (5, 10, 25, 50)
 

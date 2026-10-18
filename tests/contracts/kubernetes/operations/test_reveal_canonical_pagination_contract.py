@@ -30,10 +30,10 @@ def test_review7_my_requests_uses_sql_filters_with_requester_isolation() -> None
     assert 'my_sort: str' in block
     assert 'SecretRevealRequest.query.filter_by(requester_user_id=user_id)' in block
     assert 'autoescape=True' in block
-    assert "SecretRevealRequest.status == state_filter" in block
-    assert "SecretRevealRequest.requested_at.asc()" in block
-    assert "SecretRevealRequest.requested_at.desc()" in block
-    assert "if state_filter not in allowed_statuses" in block
+    assert 'SecretRevealRequest.status == state_filter' in block
+    assert 'SecretRevealRequest.requested_at.asc()' in block
+    assert 'SecretRevealRequest.requested_at.desc()' in block
+    assert 'if state_filter not in allowed_statuses' in block
     assert "'my_reveal_filters':" in block
 
 
@@ -43,10 +43,10 @@ def test_review7_my_requests_uses_canonical_filter_loading_table_and_footer() ->
     assert "table_registry.filter_form('kubernetes_operations.reveal_secret'" in source
     assert "table_registry.footer('kubernetes_operations.reveal_secret'" in source
     assert "table_registry.clear_filters_link('kubernetes_operations.reveal_secret'" in source
-    assert "table_ui.table_classes(" in source
-    assert "table_ui.head_classes()" in source
-    assert "table_ui.body_classes()" in source
-    assert "table_ui.row_classes()" in source
+    assert 'table_ui.table_classes(' in source
+    assert 'table_ui.head_classes()' in source
+    assert 'table_ui.body_classes()' in source
+    assert 'table_ui.row_classes()' in source
     assert "loading_bar.render('my-secret-reveal-loading'" in source
     assert 'scope="col"' in source
     assert 'No Matching Reveal Requests' in source

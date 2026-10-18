@@ -116,7 +116,7 @@ def test_unknown_or_operator_suppressed_cases_cannot_autonomously_execute() -> N
     assert "'autonomous_execution_allowed': not human_controlled" in candidates
     assert "if case.source_state != 'firing' or case.routing_state != 'enabled':" in routing
     assert "if case.domain == 'registry' and not registry_case_route_eligible(case):" in routing
-    assert "return []  # Registry requires an explicit enabled policy; never default-broadcast." in routing
+    assert 'return []  # Registry requires an explicit enabled policy; never default-broadcast.' in routing
 
 
 def test_migration_adds_unknown_routing_and_manual_withdrawal_fields() -> None:

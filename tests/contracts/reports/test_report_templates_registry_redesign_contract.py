@@ -190,13 +190,20 @@ def test_template_action_groups_use_shared_semantic_button_variants() -> None:
     assert template.count("action_button.classes('critical')") == 1
     assert template.count("action_button.classes('secondary')") == 1
 
-    for token in ('data-operation-submit', 'data-loading-label="Creating Custom Template..."',
-                  'data-loading-label="Deleting Template..."', 'data-dialog-target="template-form-dialog"',
-                  'data-dialog-target="template-delete-{{ loop.index }}"',
-                  'data-kaori-dialog-close', 'csrf_token', 'template.delete_href',
-                  'template.duplicate_href', 'template.edit_href'):
+    for token in (
+        'data-operation-submit',
+        'data-loading-label="Creating Custom Template..."',
+        'data-loading-label="Deleting Template..."',
+        'data-dialog-target="template-form-dialog"',
+        'data-dialog-target="template-delete-{{ loop.index }}"',
+        'data-kaori-dialog-close',
+        'csrf_token',
+        'template.delete_href',
+        'template.duplicate_href',
+        'template.edit_href',
+    ):
         assert token in template
-    assert "table_ui.action_classes()" in template
+    assert 'table_ui.action_classes()' in template
     assert 'data-template-registry-table="compact-v3"' in template
     assert '<i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>' in template
     assert 'inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary' not in template

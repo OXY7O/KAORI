@@ -341,9 +341,7 @@ def _provider_detail_sections(
                 }
             )
         if rows:
-            normalized_description = str(
-                section.get('description') or 'Provider-specific inventory evidence.'
-            )
+            normalized_description = str(section.get('description') or 'Provider-specific inventory evidence.')
             if (
                 title == 'MinIO Bucket Configuration'
                 and normalized_description
@@ -477,9 +475,7 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
         quota_description = 'No committed assets to assess.'
     elif quota_gaps:
         quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'warning'
-        quota_description = (
-            f'{quota_configured} ceilings; {quota_gaps} need quota evidence.'
-        )
+        quota_description = f'{quota_configured} ceilings; {quota_gaps} need quota evidence.'
     else:
         quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'normal'
         quota_description = f'Quota assessed; {quota_configured} ceiling(s) set.'
@@ -489,15 +485,11 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
         protection_description = 'No committed assets to assess.'
     elif protection_attention:
         protection_title, protection_tone = f'{protection_attention} Protection Attention', 'warning'
-        protection_description = (
-            f'Review flags; {protection_assessed}/{total} protection assessed.'
-        )
+        protection_description = f'Review flags; {protection_assessed}/{total} protection assessed.'
     elif protection_assessed < total:
         protection_title = 'Protection Not Assessed' if protection_assessed == 0 else 'Protection Partially Assessed'
         protection_tone = 'unknown' if protection_assessed == 0 else 'warning'
-        protection_description = (
-            f'No flags; {protection_assessed}/{total} protection assessed.'
-        )
+        protection_description = f'No flags; {protection_assessed}/{total} protection assessed.'
     else:
         protection_title, protection_tone = 'No Protection Attention', 'normal'
         protection_description = 'All assets have protection evidence.'
@@ -507,20 +499,14 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
         exposure_description = 'No committed assets to assess.'
     elif public_exposure:
         exposure_title, exposure_tone = f'{public_exposure} Public Exposure', 'critical'
-        exposure_description = (
-            f'Public exposure flagged; {exposure_assessed}/{total} classified.'
-        )
+        exposure_description = f'Public exposure flagged; {exposure_assessed}/{total} classified.'
     elif exposure_assessed < total:
         exposure_title = 'Exposure Not Assessed' if exposure_assessed == 0 else 'Exposure Partially Assessed'
         exposure_tone = 'unknown' if exposure_assessed == 0 else 'warning'
-        exposure_description = (
-            f'No public assets observed; {exposure_assessed}/{total} classified.'
-        )
+        exposure_description = f'No public assets observed; {exposure_assessed}/{total} classified.'
     else:
         exposure_title, exposure_tone = 'No Public Exposure', 'normal'
-        exposure_description = (
-            'No assets classified public.'
-        )
+        exposure_description = 'No assets classified public.'
 
     return [
         {'title': quota_title, 'description': quota_description, 'icon': 'gauge', 'tone': quota_tone},
@@ -538,11 +524,7 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
         },
         {
             'title': f'{usage_collected}/{total} Usage Collected' if total else 'No Usage Evidence',
-            'description': (
-                'Usage metrics are optional.'
-                if total
-                else 'No committed assets for usage.'
-            ),
+            'description': ('Usage metrics are optional.' if total else 'No committed assets for usage.'),
             'icon': 'chart-no-axes-column',
             'tone': 'info',
         },

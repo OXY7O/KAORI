@@ -25,9 +25,7 @@ from app.integrations.delivery.notification_channels.contracts import Notificati
         ('artifact_registry', 'unknown.event', False),
     ],
 )
-def test_only_source_qualified_domain_events_are_eligible(
-    domain: str, event: str, allowed: bool
-) -> None:
+def test_only_source_qualified_domain_events_are_eligible(domain: str, event: str, allowed: bool) -> None:
     assert domain_event_allowed(domain, event) is allowed
 
 
@@ -66,9 +64,9 @@ def test_form_requires_at_least_one_approved_use_for_every_domain(
         lambda _key: SimpleNamespace(form_validator=lambda _data: []),
     )
 
-    assert forms.validate_channel_input(
-        _channel_input(domains=('artifact_registry',), events=('report.generated',))
-    ) == []
+    assert (
+        forms.validate_channel_input(_channel_input(domains=('artifact_registry',), events=('report.generated',))) == []
+    )
     rejected = forms.validate_channel_input(
         _channel_input(domains=('artifact_registry',), events=('alert_ops.firing',))
     )
@@ -79,12 +77,15 @@ def test_form_requires_at_least_one_approved_use_for_every_domain(
     )
     assert any('artifact_registry' in message for message in mixed_rejected)
 
-    assert forms.validate_channel_input(
-        _channel_input(
-            domains=('kubernetes', 'artifact_registry'),
-            events=('alert_ops.firing', 'report.generated'),
+    assert (
+        forms.validate_channel_input(
+            _channel_input(
+                domains=('kubernetes', 'artifact_registry'),
+                events=('alert_ops.firing', 'report.generated'),
+            )
         )
-    ) == []
+        == []
+    )
 
 
 def test_delivery_matcher_preserves_report_only_boundary_even_for_stale_policy() -> None:

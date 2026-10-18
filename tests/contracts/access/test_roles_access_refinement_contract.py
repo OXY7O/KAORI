@@ -185,12 +185,12 @@ def test_role_form_routes_semantic_borders_through_shared_authority() -> None:
     assert 'border-status-critical-border' not in form
 
 
-
 def test_uat_roles_dependency_boundary_uses_short_caption() -> None:
     source = read('app/templates/access/roles/index.html')
     assert 'Code-owned dependencies expand as needed.' in source
     assert "'Permission Dependencies', 'Catalog-Owned'" in source
     assert 'whitespace-nowrap' not in source
+
 
 def test_review4_role_identity_guide_and_access_guardrail_density() -> None:
     from jinja2 import Environment
@@ -220,13 +220,14 @@ def test_review4_role_identity_guide_and_access_guardrail_density() -> None:
         assert 70 <= len(copy) <= 100
     assert 'whitespace-nowrap' not in source
 
+
 def test_review4_role_permission_card_description_uses_two_line_minimum() -> None:
     from jinja2 import Environment
 
     source = read('app/templates/access/roles/form.html')
     Environment().parse(source)
     assert 'mt-1.5 block min-h-10 text-xs leading-5 text-content-muted' in source
-    assert "permission_matrix_descriptions.get(permission.key, permission.description or" in source
+    assert 'permission_matrix_descriptions.get(permission.key, permission.description or' in source
     assert 'data-role-permission-card' in source
     assert 'data-role-permission' in source
     # Preserve canonical RBAC text; never clip longer permission descriptions.
@@ -267,4 +268,3 @@ def test_permission_matrix_has_descriptive_copy_for_every_canonical_permission()
     assert 'min-h-10' in role_form
     assert 'line-clamp-2' not in role_form
     assert 'permission.description' in role_form  # DB-only registry entries retain their fallback
-

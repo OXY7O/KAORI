@@ -26,7 +26,6 @@ def test_provider_capability_registries_share_server_side_filtering_contract():
         assert 'setTimeout' not in text
 
 
-
 def test_all_provider_capability_registry_headers_lead_with_canonical_clear_filters() -> None:
     """Preserve the shared clear-first DOM order across provider adapters."""
     registry_paths = (
@@ -55,7 +54,7 @@ def test_all_provider_capability_registry_headers_lead_with_canonical_clear_filt
         ), path
         assert 'table_ui.action_classes()' in header, path
         assert "swap='outerHTML'" in header, path
-        assert "marker=" in header, path
+        assert 'marker=' in header, path
         assert 'hx-get=' in source, path
         assert 'hx-target=' in source, path
         assert 'hx-indicator=' in source, path

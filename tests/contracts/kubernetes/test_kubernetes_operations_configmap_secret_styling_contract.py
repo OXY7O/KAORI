@@ -212,6 +212,7 @@ def test_secret_operation_surface_debt_uses_shared_style_authorities() -> None:
         assert 'secret_ui.surface_shell_classes' in source
         assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source
 
+
 def test_secret_replacement_title_help_uses_canonical_guide_trigger() -> None:
     """The selected Secret header owns guidance; field-level ? tips stay unchanged."""
     source = read('app/templates/kubernetes/operations/secrets/_replace_content_form.html')
@@ -222,7 +223,7 @@ def test_secret_replacement_title_help_uses_canonical_guide_trigger() -> None:
     assert source.count(heading) == 1
     assert source.count(trigger) == 1
 
-    header_help = source[source.index(heading):source.index(') }}', source.index(trigger)) + 4]
+    header_help = source[source.index(heading) : source.index(') }}', source.index(trigger)) + 4]
     assert header_help.index(heading) < header_help.index(trigger)
     assert "placement='right'" in header_help
     assert "variant='guide'" in header_help

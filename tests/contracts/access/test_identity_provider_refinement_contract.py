@@ -171,9 +171,9 @@ def test_uat_review2_idp_guidance_preserves_provider_authority_with_concise_copy
         Environment().parse(source)
 
     assert "note='Google signs in; KAORI governs access.'" in google
-    assert "Google authenticates identity; KAORI retains local authorization" not in google
-    assert "Register this exact URL with the provider." in guidance
-    assert "Register this exact scheme, host, path, and provider instance key" not in guidance
+    assert 'Google authenticates identity; KAORI retains local authorization' not in google
+    assert 'Register this exact URL with the provider.' in guidance
+    assert 'Register this exact scheme, host, path, and provider instance key' not in guidance
     assert 'data-browser-callback' in guidance
     assert 'data-callback-key' in guidance
     assert 'request.url_root.rstrip' in guidance
@@ -182,6 +182,7 @@ def test_uat_review2_idp_guidance_preserves_provider_authority_with_concise_copy
     for source in (google, guidance):
         assert 'whitespace-nowrap' not in source
         assert 'truncate' not in source
+
 
 def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selected_feedback() -> None:
     from jinja2 import Environment
@@ -208,23 +209,24 @@ def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selec
     assert 'data-provider-display-icon' in read(
         'app/templates/access/identity_providers/partials/_sso_configuration.html'
     )
-    assert "input[type=\"radio\"][data-provider-option]" in script
-    assert "option?.dataset.providerOptionIcon" in script
-    assert "'[data-configuration-panel=\"browser_client\"] [data-provider-display-icon]'" in script
+    assert 'input[type="radio"][data-provider-option]' in script
+    assert 'option?.dataset.providerOptionIcon' in script
+    assert '\'[data-configuration-panel="browser_client"] [data-provider-display-icon]\'' in script
     assert "form.querySelector('[data-provider-icon]')" not in script
     assert 'lucide.createIcons()' in script
     assert 'peer-checked:border-kaori-primary/30 peer-checked:text-kaori-primary' not in selector
     assert "status.textContent = selected ? 'Selected' : 'Select'" in script
     assert "input.nextElementSibling?.querySelector('[data-provider-option-badge]')" in script
     assert "input.addEventListener('change', syncProvider)" in script
-    assert "const visible = panel.dataset.configurationPanel === profile" in script
-    assert "setControlsEnabled(panel, visible)" in script
-    assert "configurable_provider_definitions()" in catalog
-    assert "configurable_provider_choices()" in forms
+    assert 'const visible = panel.dataset.configurationPanel === profile' in script
+    assert 'setControlsEnabled(panel, visible)' in script
+    assert 'configurable_provider_definitions()' in catalog
+    assert 'configurable_provider_choices()' in forms
     assert 'provider_key: ldap_directory' in definitions
-    assert 'configurable: true' in definitions.split('provider_key: ldap_directory', 1)[1].split(
-        'provider_key: google', 1
-    )[0]
+    assert (
+        'configurable: true'
+        in definitions.split('provider_key: ldap_directory', 1)[1].split('provider_key: google', 1)[0]
+    )
     assert 'configuration_profile: ldap' in definitions
     assert 'validate_tls_mode' in forms
     assert 'Enabled LDAP providers require server, base DN, bind DN, and secret reference.' in forms
@@ -269,6 +271,7 @@ def test_review3_provider_header_guides_replace_static_input_helpers() -> None:
     for source in (form, ldap, sso):
         assert 'whitespace-nowrap' not in source
 
+
 def test_review3_provider_guidance_steps_and_authority_notes() -> None:
     from jinja2 import Environment
 
@@ -300,7 +303,7 @@ def test_review4_ldap_mapping_example_placeholders_do_not_become_create_defaults
     forms = read('app/access/identity_providers/forms.py')
     Environment().parse(template)
     assert '{% if field == form.user_filter %}sm:col-span-2{% endif %}' not in template
-    assert "class=\"block min-w-0\"" in template
+    assert 'class="block min-w-0"' in template
     assert 'User Search Filter' in forms and 'TLS Mode' in forms
     assert 'sm:grid-cols-2' in template
     samples = {
@@ -318,6 +321,7 @@ def test_review4_ldap_mapping_example_placeholders_do_not_become_create_defaults
     assert 'def validate_tls_mode' in forms
     assert "if definition.configuration_profile == 'ldap':" in forms
 
+
 def test_review4_provider_guidance_title_descriptions_are_compact() -> None:
     from jinja2 import Environment
 
@@ -333,4 +337,3 @@ def test_review4_provider_guidance_title_descriptions_are_compact() -> None:
         assert len(caption) <= 42
         assert 'info_flow.render(' in source
         assert 'whitespace-nowrap' not in source
-

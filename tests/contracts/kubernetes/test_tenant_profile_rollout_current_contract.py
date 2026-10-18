@@ -29,11 +29,12 @@ def test_rollout_read_model_reuses_exact_service_predicate_without_provider_call
     assert '_resource_profile_controls.namespace_allocation_values(profile)' in service
     assert 'load_only(' in registry
     assert 'TenantNamespace.resource_profile_id.in_(profile_ids)' in registry
-    assert 'target[\'already_current\'] = (' in registry
+    assert "target['already_current'] = (" in registry
     assert "target['eligible'] and target['pending'] == 0" in registry
-    assert 'tenant_workspace_connection_available(' not in registry.split(
-        'def _resource_profile_rollout_targets(', 1
-    )[1].split('_ALLOWED_PAGE_SIZES', 1)[0]
+    assert (
+        'tenant_workspace_connection_available('
+        not in registry.split('def _resource_profile_rollout_targets(', 1)[1].split('_ALLOWED_PAGE_SIZES', 1)[0]
+    )
 
 
 def test_rollout_form_disables_only_fully_current_selected_native_targets() -> None:
@@ -56,8 +57,8 @@ def test_rollout_form_disables_only_fully_current_selected_native_targets() -> N
         assert marker in dialogs
 
     assert "target.provider_key != 'native_kubernetes'" in dialogs
-    assert "target.eligible" in dialogs
-    assert "target.already_current" in dialogs
+    assert 'target.eligible' in dialogs
+    assert 'target.already_current' in dialogs
     assert 'disabled\n                                        aria-disabled="true"' in dialogs
     assert "rollout_targets|sum(attribute='pending')" in registry
     assert "rollout_targets|sum(attribute='outdated')" not in registry
@@ -66,7 +67,7 @@ def test_rollout_form_disables_only_fully_current_selected_native_targets() -> N
         "const current = eligible && option?.dataset.rolloutCurrent === 'true'",
         'const disabled = !permitted || !eligible || current',
         'submit.disabled = disabled',
-        'submit.setAttribute(\'aria-disabled\', disabled ? \'true\' : \'false\')',
+        "submit.setAttribute('aria-disabled', disabled ? 'true' : 'false')",
         "select.addEventListener('change', sync)",
         "form.addEventListener('submit', (event) => {",
         'if (submit.disabled) event.preventDefault()',
@@ -83,7 +84,7 @@ def test_server_retains_native_mutation_guards_and_skips_released_history() -> N
     routes = read('app/kubernetes/tenant/routes.py')
     assert 'def rollout_resource_profile_to_tenant_committed(' in service
     assert "if tenant.provider_key != 'native_kubernetes':" in service
-    assert "tenant.lifecycle_status != TenantLifecycleStatus.READY.value" in service
+    assert 'tenant.lifecycle_status != TenantLifecycleStatus.READY.value' in service
     assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in service
     assert "summary['already_current'] += 1" in service
     assert 'change_native_namespace_allocation_committed(' in service

@@ -222,7 +222,6 @@ def test_user_compact_toggle_keeps_shared_expandable_contract() -> None:
     assert 'shadow-sm' in normal
 
 
-
 def test_uat6_user_detail_left_headers_use_source_backed_labels() -> None:
     detail = source('app/templates/access/users/partials/_user_detail.html')
     shared = source('app/templates/components/details/_detail_content.html')
@@ -230,12 +229,14 @@ def test_uat6_user_detail_left_headers_use_source_backed_labels() -> None:
     for title, icon, description, badge in (
         ('Identity', 'contact', 'Committed account identity', 'user_view.source.label'),
         (
-            'Authentication', 'fingerprint',
+            'Authentication',
+            'fingerprint',
             'Identity authority and credential ownership',
             'identity_context.credential_owner',
         ),
         (
-            'Authorization', 'shield-check',
+            'Authorization',
+            'shield-check',
             'Effective local role and access state',
             'user_view.access.label',
         ),
@@ -244,16 +245,14 @@ def test_uat6_user_detail_left_headers_use_source_backed_labels() -> None:
         section = detail.split(marker, 1)[1].split('compact_layout=true', 1)[0]
         assert f"description='{description}'" in section
         assert f'badge={badge}' in section
-    authorization = detail.split("'Authorization', 'shield-check',", 1)[1].split(
-        'compact_layout=true', 1
-    )[0]
+    authorization = detail.split("'Authorization', 'shield-check',", 1)[1].split('compact_layout=true', 1)[0]
     assert "badge_type='status', badge_tone=user_view.access.tone" in authorization
     assert 'badge=user_view.role.label' not in detail
-    assert "detail_ui.inventory_section(" in detail
+    assert 'detail_ui.inventory_section(' in detail
     assert detail.count('detail_ui.inventory_section(') == 5
-    assert "data-kaori-user-identity-facts" in detail
-    assert "data-kaori-user-authentication-facts" in detail
-    assert "data-kaori-user-authorization-facts" in detail
+    assert 'data-kaori-user-identity-facts' in detail
+    assert 'data-kaori-user-authentication-facts' in detail
+    assert 'data-kaori-user-authorization-facts' in detail
     # Shared macro already places the badge under the description at xl.
     assert 'mt-3 hidden xl:flex' in shared
     assert 'table_label.metadata_label(badge' in shared

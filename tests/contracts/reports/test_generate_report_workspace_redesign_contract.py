@@ -480,15 +480,23 @@ def test_wizard_footer_actions_compose_shared_button_variants_and_keep_js_visibi
     assert footer.count("action_button.classes('secondary')") == 2
     assert footer.count("action_button.classes('primary')") == 2
     assert 'class="hidden {{ action_button.classes(' in footer
-    for marker in ('wizard-back-button', 'wizard-next-button', 'generate-report-button',
-                   'data-operation-submit', 'data-loading-label="Queueing report..."',
-                   'initial_request_ready', 'disabled'):
+    for marker in (
+        'wizard-back-button',
+        'wizard-next-button',
+        'generate-report-button',
+        'data-operation-submit',
+        'data-loading-label="Queueing report..."',
+        'initial_request_ready',
+        'disabled',
+    ):
         assert marker in footer
-    for token in ("wizardBackButton.classList.toggle('hidden'",
-                  "wizardBackButton.classList.toggle('inline-flex'",
-                  "wizardNextButton.classList.toggle('hidden'",
-                  "wizardNextButton.classList.toggle('inline-flex'",
-                  "generateButton.classList.toggle('hidden'",
-                  "generateButton.classList.toggle('inline-flex'"):
+    for token in (
+        "wizardBackButton.classList.toggle('hidden'",
+        "wizardBackButton.classList.toggle('inline-flex'",
+        "wizardNextButton.classList.toggle('hidden'",
+        "wizardNextButton.classList.toggle('inline-flex'",
+        "generateButton.classList.toggle('hidden'",
+        "generateButton.classList.toggle('inline-flex'",
+    ):
         assert token in runtime
     assert 'min-h-9 items-center justify-center' not in footer

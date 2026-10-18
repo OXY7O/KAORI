@@ -68,7 +68,6 @@ def test_shared_intro_preserves_access_read_only_and_existing_card_titles() -> N
         assert 'hx-post=' not in text
 
 
-
 def test_access_boundaries_uses_authorization_flow_external_intro_pattern() -> None:
     overview = read('app/templates/access/overview/index.html')
     roles = read('app/templates/access/roles/index.html')

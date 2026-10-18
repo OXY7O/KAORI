@@ -103,9 +103,7 @@ def test_routing_and_execution_policy_actions_use_shared_button_variants() -> No
     from jinja2 import Environment
 
     routing = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
-    execution = read(
-        'app/templates/intelligence/partials/automation_control/_execution_configuration_modal.html'
-    )
+    execution = read('app/templates/intelligence/partials/automation_control/_execution_configuration_modal.html')
     shared = read('app/templates/components/action_button.html')
 
     for template in (routing, execution):

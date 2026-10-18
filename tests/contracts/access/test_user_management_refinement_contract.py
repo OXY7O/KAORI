@@ -260,12 +260,18 @@ def test_reset_password_laptop_copy_density_preserves_security_semantics() -> No
     Environment().parse(template)
     expected = (
         ('Use 12+ characters, a unique passphrase, and no default passwords.', 72),
-        ('Hash replaced; sessions revoked on next request; Activity Audit logged. '
-         'Role, active state, Super Admin, and external identity links unchanged.', 150),
+        (
+            'Hash replaced; sessions revoked on next request; Activity Audit logged. '
+            'Role, active state, Super Admin, and external identity links unchanged.',
+            150,
+        ),
         ('KAORI owns local password hashes and audited resets.', 70),
         ('Sessions and remembered sign-ins are invalidated on next request.', 80),
-        ('Reset at the authoritative directory. KAORI stores identity links '
-         'and authorization, not external passwords.', 115),
+        (
+            'Reset at the authoritative directory. KAORI stores identity links '
+            'and authorization, not external passwords.',
+            115,
+        ),
         ('RBAC role and admin tier remain; hash and session generation change.', 75),
     )
     for copy, budget in expected:
@@ -278,13 +284,13 @@ def test_reset_password_laptop_copy_density_preserves_security_semantics() -> No
 
     for preserved in (
         'Minimum 12 characters',
-        "form.hidden_tag()",
+        'form.hidden_tag()',
         "operational_callout.semantic_surface_classes('warning')",
         "operational_callout.semantic_surface_classes('normal')",
-        "Revoked on Next Request",
-        "Reset Password",
+        'Revoked on Next Request',
+        'Reset Password',
         "Use Google's account-recovery process.",
-        "Recover access through GitHub.",
+        'Recover access through GitHub.',
     ):
         assert preserved in template
 
@@ -325,9 +331,18 @@ def test_uat4_user_create_copy_is_compact_and_canonical() -> None:
     assert "Use the provider's admission workflow." in form
     assert 'Identity and authorization stay separate.' in form
     assert 'Provider sign-in; KAORI governs roles and lifecycle.' in form
-    assert '<strong class="font-semibold text-content-secondary">Assigned Role</strong> sets KAORI permissions after sign-in.' in form
-    assert '<strong class="font-semibold text-content-secondary">Active Account</strong> gates Local, Directory and SSO access.' in form
-    assert '<strong class="font-semibold text-content-secondary">Super Admin</strong> is Local Database-only, never Directory/SSO; keep one active.' in form
+    assert (
+        '<strong class="font-semibold text-content-secondary">Assigned Role</strong> sets KAORI permissions after sign-in.'
+        in form
+    )
+    assert (
+        '<strong class="font-semibold text-content-secondary">Active Account</strong> gates Local, Directory and SSO access.'
+        in form
+    )
+    assert (
+        '<strong class="font-semibold text-content-secondary">Super Admin</strong> is Local Database-only, never Directory/SSO; keep one active.'
+        in form
+    )
     assert 'if not can_manage_admin_fields' in form
     assert 'Admin roles require Super Admin.' in form
     assert 'can_manage_admin_fields and super_admin_eligible' in form
@@ -335,7 +350,6 @@ def test_uat4_user_create_copy_is_compact_and_canonical() -> None:
     assert '{{ form.display_name(class=' in form
     assert '{{ form.is_super_admin(class=' in form
     assert 'whitespace-nowrap' not in form
-
 
 
 def test_uat6_user_edit_copy_balances_context_specific_credential_text() -> None:
@@ -348,13 +362,19 @@ def test_uat6_user_edit_copy_balances_context_specific_credential_text() -> None
     assert "'its governed, audited workflow.'" in directory
     assert '"KAORI owns local password hashes and resets." if user.auth_source == "database"' in form
     assert 'else identity_context.credential_detail' in form
-    assert "{{ identity_context.credential_detail }}" in form
+    assert '{{ identity_context.credential_detail }}' in form
 
     # Edit User: two-line-friendly link/boundary and 01/02 step descriptions.
     assert 'Review account state, source and role.' in form
     assert 'KAORI owns Local Database credentials, audited resets, and the account access lifecycle.' in form
-    assert 'Identity profile</strong> updates username, display name and contact email without changing credential ownership.' in form
-    assert 'Assigned Role</strong> changes KAORI RBAC permissions without modifying upstream identity or authentication credentials.' in form
+    assert (
+        'Identity profile</strong> updates username, display name and contact email without changing credential ownership.'
+        in form
+    )
+    assert (
+        'Assigned Role</strong> changes KAORI RBAC permissions without modifying upstream identity or authentication credentials.'
+        in form
+    )
     assert 'Identity profile updates the KAORI display name' not in form
     assert 'Assigned Role</strong> changes RBAC permissions without changing the upstream identity.' not in form
 
@@ -365,6 +385,7 @@ def test_uat6_user_edit_copy_balances_context_specific_credential_text() -> None
     assert "url_for('users.index')" in form
     assert 'can_manage_admin_fields and super_admin_eligible' in form
     assert 'whitespace-nowrap' not in form
+
 
 def test_uat_review2_user_form_guide_and_delete_copy() -> None:
     from jinja2 import Environment
@@ -395,7 +416,6 @@ def test_uat_review2_user_form_guide_and_delete_copy() -> None:
     assert "destructive_confirmation.render('delete-user-modal'," in users
 
 
-
 def test_uat_review2_edit_profile_guide_and_user_registry_copy() -> None:
     from jinja2 import Environment
 
@@ -409,11 +429,12 @@ def test_uat_review2_edit_profile_guide_and_user_registry_copy() -> None:
     assert 'Own access controls are locked.' in form
     assert 'Profile metadata may be updated, but your own role, active state' in form
     assert "variant='guide'" in form
-    assert "{% if is_self_edit %}" in form
+    assert '{% if is_self_edit %}' in form
     assert "notice='Soft delete; restoration is governed.'" in users
     assert 'Deletion disables login but retains Activity Audit.' in users
     assert 'Restore returns the account to Inactive; activation remains separate.' in users
     assert 'whitespace-nowrap' not in users
+
 
 def test_review3_local_database_credential_boundary_targets_two_desktop_lines() -> None:
     from jinja2 import Environment
@@ -426,7 +447,6 @@ def test_review3_local_database_credential_boundary_targets_two_desktop_lines() 
     assert "related_page_card.render('User Registry'" in template
     assert 'whitespace-nowrap' not in template
     assert len(boundary) >= 75
-
 
 
 def test_access_user_and_reset_password_fields_keep_explicit_labels() -> None:

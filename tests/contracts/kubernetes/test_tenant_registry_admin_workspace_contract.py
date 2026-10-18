@@ -1924,7 +1924,10 @@ def test_credential_and_grant_dialog_mutations_use_canonical_workflow_actions() 
     assert 'bg-status-critical' in action
     assert 'h-10' in action
     for filename, expected_routes in (
-        ('_credential_registry.html', ('renew_credential_route', 'suspend_credential_route', 'revoke_credential_route')),
+        (
+            '_credential_registry.html',
+            ('renew_credential_route', 'suspend_credential_route', 'revoke_credential_route'),
+        ),
         ('_access_grant_registry.html', ('reconcile_access_grant_route', 'revoke_access_grant_route')),
     ):
         registry = read(f'app/templates/kubernetes/tenant/partials/{filename}')

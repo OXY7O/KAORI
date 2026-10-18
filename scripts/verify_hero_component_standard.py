@@ -984,7 +984,10 @@ def _verify_notification_channels_hero_metadata() -> None:
     source = _read(NOTIFICATION_CHANNELS_HERO)
     owner = str(NOTIFICATION_CHANNELS_HERO.relative_to(ROOT))
     _verify_bounded_hero_metadata(source, owner=owner)
-    if '{% for provider in payload.providers %}' not in source or 'notification_subsection(provider.label' not in source:
+    if (
+        '{% for provider in payload.providers %}' not in source
+        or 'notification_subsection(provider.label' not in source
+    ):
         raise AssertionError(f'{owner}: complete provider catalog must remain in the Delivery Providers workspace')
 
 

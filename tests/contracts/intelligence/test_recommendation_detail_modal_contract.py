@@ -111,9 +111,7 @@ def test_operational_dashboard_recommendation_cards_deep_link_to_filtered_review
 def test_recommendation_record_table_has_accessible_name_and_column_scope() -> None:
     from jinja2 import Environment
 
-    source = Path('app/templates/intelligence/partials/_recommendation_records.html').read_text(
-        encoding='utf-8'
-    )
+    source = Path('app/templates/intelligence/partials/_recommendation_records.html').read_text(encoding='utf-8')
     Environment().parse(source)
     assert source.count('<table ') == 1
     assert source.count('<caption class="sr-only">') == 1
