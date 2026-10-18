@@ -75,3 +75,99 @@ def test_object_storage_recommendation_thresholds_match_analytics_capacity_bound
     assert 'QUOTA_CRITICAL_PERCENT = 95.0' in evaluator
     assert "row['quota_utilization'] >= 85" in capacity
     assert "row['quota_utilization'] >= 95" in capacity
+
+
+def test_storage_and_registry_dashboard_copy_is_rule_authored() -> None:
+    import yaml
+
+    catalog = yaml.safe_load(read('app/definitions/catalogs/intelligence/rules.yaml'))
+    selected = {
+        rule['rule_key']: rule
+        for rule in catalog['rules']
+        if rule['domain'] in {'object_storage', 'registry'}
+    }
+    assert len(selected) == 18
+    assert sum(rule['domain'] == 'object_storage' for rule in selected.values()) == 12
+    assert sum(rule['domain'] == 'registry' for rule in selected.values()) == 6
+    for rule in selected.values():
+        action = rule['dashboard_action']
+        assert 35 <= len(action) <= 110
+        assert action.endswith('.')
+        assert rule['recommended_action'] != action
+        assert action not in rule['recommended_action']
+
+    encryption = selected['object_storage.bucket.encryption_not_configured']
+    assert encryption['dashboard_action'] == (
+        'Check data classification. Apply approved encryption if required; '
+        'resync inventory.'
+    )
+    vulnerability = selected['registry.security.critical_runtime_vulnerability']
+    assert vulnerability['dashboard_action'] == (
+        'Validate exposure and fixed-artifact options. '
+        'Use approved deployment controls.'
+    )
+    correlation = selected['registry.runtime.tag_only_correlation']
+    assert correlation['dashboard_action'] == (
+        'Use pinned digests or verified imageID evidence. '
+        'Refresh Registry correlation.'
+    )
+
+
+def test_dashboard_projection_prefers_authored_action_without_losing_finding_identity(
+    monkeypatch,
+) -> None:
+    from types import SimpleNamespace
+
+    from app.artifact_registry import presentation_common as registry
+    from app.storage.object_storage.dashboard import service as storage
+
+    findings = [
+        {
+            'title': 'Finding with compact action',
+            'rule_key': 'domain.rule:asset',
+            'recommended_action': 'Full remediation instructions stay in Intelligence.',
+            'dashboard_action': 'Review evidence. Prepare a governed change.',
+            'category': 'governance',
+            'priority': 'P2',
+            'severity': 'warning',
+            'signal_source': 'object_storage_inventory',
+        },
+        {
+            'title': 'Unmapped legacy finding',
+            'rule_key': 'domain.other:asset',
+            'recommended_action': 'Keep complete guidance when short copy is absent.',
+        },
+    ]
+    for module, builder in (
+        (storage, storage._recommended_actions),
+        (registry, registry._registry_recommended_actions),
+    ):
+        calls = []
+
+        def findings_stub(*, domain, asset_key):
+            calls.append((domain, asset_key))
+            return findings
+
+        monkeypatch.setattr(
+            module, 'get_dashboard_recommendation_findings', findings_stub
+        )
+        cards = builder(SimpleNamespace(id=17))
+        assert calls == [('object_storage' if module is storage else 'registry', '17')]
+        assert cards[0]['description'] == findings[0]['dashboard_action']
+        assert cards[1]['description'] == findings[1]['recommended_action']
+        for field in ('title', 'rule_key', 'priority', 'severity'):
+            assert cards[0][field] == findings[0][field]
+        assert findings[0]['recommended_action'] == (
+            'Full remediation instructions stay in Intelligence.'
+        )
+
+
+def test_shared_recommendation_card_and_kubernetes_copy_stay_unchanged() -> None:
+    cards = read('app/templates/components/operational_recommendation_cards.html')
+    kubernetes = read('app/kubernetes/dashboard/sections/recommendations.py')
+    catalog = read('app/intelligence/catalog.py')
+    assert '{{ action.description }}' in cards
+    assert 'line-clamp-4' in cards
+    assert "card.get('recommended_action')" in kubernetes
+    assert "card.get('dashboard_action')" not in kubernetes
+    assert "require_str(raw, 'dashboard_action', path)" in catalog
