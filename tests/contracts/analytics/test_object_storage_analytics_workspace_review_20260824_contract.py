@@ -160,7 +160,7 @@ def test_provider_alert_records_clear_filters_precedes_persistent_source_context
     assert header.index('{% if alert_filters_active %}') < header.index('registry_ui.clear_filters_action(')
     assert (
         header.index('registry_ui.clear_filters_action(')
-        < header.index('{% endif %}')
+        < header.index('{% endif %}', header.index('registry_ui.clear_filters_action('))
         < header.index('table_label.status_label(alert_source.label, alert_source.tone)')
         < header.index("table_label.metadata_label(alert_source.resolved_label ~ ' Source'")
     )
