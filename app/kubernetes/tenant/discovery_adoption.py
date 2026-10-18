@@ -24,7 +24,6 @@ from app.kubernetes.tenant.capsule_tenant import qualify_capsule_tenant_adoption
 from app.kubernetes.tenant.discovery_service import (
     _adoption_environment,
     _apply_capsule_allocation_capability_state,
-    capsule_managed_adoption_blocker,
     _capsule_phase,
     _managed_capsule_map,
     _managed_namespace_map,
@@ -36,6 +35,7 @@ from app.kubernetes.tenant.discovery_service import (
     _read_capsule_tenant,
     _take_over_capsule_allocation,
     _unclaimed_provider_ownership_reason,
+    capsule_managed_adoption_blocker,
     select_capsule_namespace_attachment_candidate,
 )
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
