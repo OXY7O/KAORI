@@ -2,6 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/form_field.html" as form_field %}
+{% import "components/action_button.html" as action_button %}
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% import "components/info_tip.html" as info_tip %}
 {% set registry_id = "tenant-group-registry" %}
@@ -296,11 +297,11 @@
             <footer class="flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:justify-end">
                 <button type="button"
                         data-tenant-group-edit-close
-                        class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:bg-kaori-soft">
+                        class="{{ action_button.classes('secondary') }}">
                     Cancel
                 </button>
                 <button type="submit"
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                        class="{{ action_button.classes('primary') }}">
                     <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                     Save Changes
                 </button>
