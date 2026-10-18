@@ -185,3 +185,43 @@ def test_binding_actions_keep_canonical_single_line_geometry() -> None:
     assert 'flex shrink-0 items-center justify-end gap-2' in modal
     assert 'shrink-0 items-center justify-center whitespace-nowrap' in modal
     assert 'gap-2 whitespace-nowrap rounded-lg bg-kaori-primary' in modal
+
+
+def test_source_binding_actions_use_shared_semantic_buttons() -> None:
+    workspace = read('app/templates/integrations/bindings/partials/_workspace.html')
+
+    assert 'components/action_button.html' in workspace
+    assert workspace.count("action_button.classes('primary')") == 2
+    assert workspace.count("action_button.classes('secondary')") == 3
+
+    # Each visible branch keeps the approved action intent, not a copied Violet bundle.
+    for action in (
+        'Review Binding',
+        'Register New Connection',
+        'Bind Existing Source',
+        'Review {{ provider.label }} Registry',
+        'Register {{ provider.label }} Connection',
+    ):
+        assert action in workspace
+    assert 'class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary' not in workspace
+    assert 'class="inline-flex min-h-9 items-center justify-center' not in workspace
+    assert 'class="mt-4 inline-flex min-h-10' not in workspace
+
+    # Mutation remains a single protected binding POST with the same isolation fields.
+    assert workspace.count('<form method="post"') == 1
+    assert 'hx-post="{{ url_for(provider.bind_endpoint, scope_key=cluster.id) }}"' in workspace
+    for name in (
+        'csrf_token',
+        'scope_type',
+        'scope_key',
+        'binding_role',
+        'priority',
+        'selector_operator',
+        'source_id',
+        'selector_label',
+        'selector_value',
+    ):
+        assert f'name="{name}"' in workspace
+    assert 'scope_row and scope_row.source' in workspace
+    assert 'elif selectable_source_count' in workspace
+    assert 'elif source_options' in workspace
