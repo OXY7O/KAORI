@@ -314,7 +314,7 @@ def test_review4_ldap_mapping_example_placeholders_do_not_become_create_defaults
         assert 'default=' not in declaration
         assert f"(form.{field}, '{example}')" in template
         assert f"form.{field}.data = config.get('{field}')" in forms
-        assert "self._require_ldap_attribute(field," in forms
+        assert 'self._require_ldap_attribute(field,' in forms
     assert 'def validate_tls_mode' in forms
     assert "if definition.configuration_profile == 'ldap':" in forms
 
