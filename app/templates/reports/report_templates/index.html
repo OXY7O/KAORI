@@ -7,6 +7,7 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "reports/components/_record_detail_modal.html" as record_modal %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/action_button.html" as action_button %}
 {% block title %}Report Templates{% endblock title %}
 {% block dashboard_content %}
     {% set template_form = payload.edit_template or payload.create_form %}
@@ -196,8 +197,8 @@
                 marker_value='true'
                 ) %}
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Search</span>
-                    <div class="relative mt-1.5">
+                    <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                    <div class="relative">
                         <i data-lucide="search"
                            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
                            aria-hidden="true"></i>
@@ -205,13 +206,13 @@
                                name="search"
                                value="{{ payload.selected_filters.search }}"
                                placeholder="Search Templates..."
-                               class="min-h-9 w-full rounded-lg border border-outline-default bg-surface-card py-2 pl-9 pr-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                               class="{{ table_ui.filter_input_classes() }} pl-9">
                     </div>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Family</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Family</span>
                     <select name="family"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.families %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.family == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -219,9 +220,9 @@
                     </select>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Domain</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
                     <select name="domain"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.domains %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -229,9 +230,9 @@
                     </select>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Report Type</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Report Type</span>
                     <select name="report_type"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.report_types %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -239,9 +240,9 @@
                     </select>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Ownership</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Ownership</span>
                     <select name="ownership"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.ownership %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.ownership == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -249,9 +250,9 @@
                     </select>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Status</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Status</span>
                     <select name="status"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.statuses %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -259,9 +260,9 @@
                     </select>
                 </label>
                 <label class="block min-w-0">
-                    <span class="text-xs font-semibold text-content-muted">Format</span>
+                    <span class="{{ table_ui.filter_label_classes() }}">Format</span>
                     <select name="output_format"
-                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            class="{{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.formats %}
                             <option value="{{ option.value }}"
                                     {% if payload.selected_filters.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -269,24 +270,25 @@
                     </select>
                 </label>
             {% endcall %}
-            <div class="min-w-0">
-                <table class="w-full table-fixed text-left"
+            <div class="min-w-0 overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[1050px] !table-fixed') }}"
                        data-template-registry-table="compact-v3">
-                    <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold uppercase tracking-wide text-content-muted">
+                    <caption class="sr-only">Report template definitions, contracts and available actions</caption>
+                    <thead class="{{ table_ui.head_classes() }}">
                         <tr>
-                            <th class="w-[31%] px-5 py-3 sm:px-6">Template</th>
-                            <th class="w-[25%] px-4 py-3">Contract</th>
-                            <th class="w-[12%] px-4 py-3">Output</th>
-                            <th class="w-[10%] px-4 py-3">Sections</th>
-                            <th class="w-[14%] px-4 py-3">Ownership</th>
-                            <th class="w-[8%] px-5 py-3 text-right sm:px-6">Action</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[31%] sm:px-6">Template</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Contract</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Output</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">Sections</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Ownership</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[8%] sm:px-6">Action</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-outline-subtle">
+                    <tbody class="{{ table_ui.body_classes() }}">
                         {% for template in payload.templates %}
-                            <tr class="transition hover:bg-surface-hover"
+                            <tr class="{{ table_ui.row_classes() }}"
                                 data-template-row="{{ template.template_key }}">
-                                <td class="px-5 py-4 align-top sm:px-6">
+                                <td class="{{ table_ui.cell_classes() }} sm:px-6">
                                     <div class="flex min-w-0 items-start gap-3">
                                         <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary"
                                               aria-hidden="true">
@@ -299,7 +301,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="{{ table_ui.cell_classes() }}">
                                     <p class="truncate text-sm font-semibold text-content-primary"
                                        title="{{ template.report_type_label }}">{{ template.report_type_label }}</p>
                                     <div class="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-5 text-content-muted">
@@ -308,25 +310,25 @@
                                         <span>{{ template.family_label }}</span>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="{{ table_ui.cell_classes() }}">
                                     <p class="text-sm font-semibold text-content-primary">{{ template.output_format }}</p>
                                     <p class="mt-1 text-xs text-content-muted">{{ template.allowed_formats|join(" / ") if template.allowed_formats else template.output_format }}</p>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="{{ table_ui.cell_classes() }}">
                                     <p class="text-sm font-semibold text-content-primary">{{ template.section_count }}</p>
                                     <p class="mt-1 text-xs text-content-muted">Included Sections</p>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="{{ table_ui.cell_classes() }}">
                                     {{ table_label.status_indicator_label(template.status_label, template.status_tone) }}
                                     <p class="mt-1 text-xs text-content-muted">{{ template.ownership_label }}</p>
                                 </td>
-                                <td class="px-5 py-4 text-right align-top sm:px-6">
+                                <td class="{{ table_ui.cell_classes(action=true) }} sm:px-6">
                                     <button type="button"
                                             data-kaori-dialog-open
                                             data-dialog-target="template-detail-{{ loop.index }}"
                                             class="{{ table_ui.action_classes() }}">
-                                        View
                                         <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
+                                        View
                                     </button>
                                 </td>
                             </tr>
@@ -465,12 +467,12 @@
                                                     <button type="submit"
                                                             data-operation-submit
                                                             data-loading-label="Creating Custom Template..."
-                                                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
+                                                            class="{{ action_button.classes('primary') }}"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
                                                 </form>
                                             {% endif %}
                                         {% else %}
                                             <a href="{{ template.edit_href }}"
-                                               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Template</a>
+                                               class="{{ action_button.classes('primary') }}"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Template</a>
                                             {% if template.can_duplicate %}
                                                 <form method="POST" action="{{ template.duplicate_href }}">
                                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
@@ -512,7 +514,7 @@
                                             <button type="submit"
                                                     data-operation-submit
                                                     data-loading-label="Deleting Template..."
-                                                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft px-4 text-xs font-semibold text-status-critical-text transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Delete Custom Template</span></button>
+                                                    class="{{ action_button.classes('critical') }}"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Delete Custom Template</span></button>
                                         </form>
                                     </div>
                                 {% endcall %}
@@ -693,11 +695,11 @@
                     <button type="button"
                             data-kaori-dialog-close
                             data-dialog-target="template-form-dialog"
-                            class="{{ table_ui.action_classes() }}">Cancel</button>
+                            class="{{ action_button.classes('secondary') }}"><i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>Cancel</button>
                     <button type="submit"
                             data-operation-submit
                             data-loading-label="{{ 'Saving Template...' if template_form_is_edit else 'Creating Template...' }}"
-                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>{{ 'Save Template' if template_form_is_edit else 'Create Template' }}</span></button>
+                            class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>{{ 'Save Template' if template_form_is_edit else 'Create Template' }}</span></button>
                 </div>
             </form>
         {% endcall %}

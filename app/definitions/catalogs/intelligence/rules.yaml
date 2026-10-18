@@ -360,6 +360,7 @@ rules:
   condition_summary: Committed bucket usage is at least 85% and below 95% of the configured quota.
   recommended_action: Review bucket growth and ownership, validate physical capacity headroom, then adjust quota or reduce
     retained data through the approved change path.
+  dashboard_action: "Review bucket growth and headroom. Adjust quota or retention through approved change."
   impact: Reduces the risk of quota exhaustion while keeping bucket governance separate from physical storage capacity.
   evidence_boundary: This rule is evaluated from committed Object Storage inventory quota and usage evidence. Metrics Source may
     provide operational growth context but is not required to detect the committed quota posture.
@@ -387,6 +388,7 @@ rules:
   condition_summary: Committed bucket usage is at least 95% of the configured quota.
   recommended_action: Validate the current bucket demand and physical headroom immediately, then expand the approved quota
     or reduce retained data before writes are constrained.
+  dashboard_action: "Check demand and headroom now. Approve quota expansion or usage reduction."
   impact: Protects write availability and prevents bucket-level quota exhaustion from becoming an operational incident.
   evidence_boundary: This rule is evaluated from committed Object Storage inventory quota and usage evidence. Metrics Source may
     enrich trend analysis but does not replace the quota evidence.
@@ -416,6 +418,7 @@ rules:
     than 30 and at most 90 days.
   recommended_action: Validate the sustained growth window, review top consumers and lifecycle policy, then schedule capacity
     expansion or demand reduction before headroom narrows further.
+  dashboard_action: "Review forecast and consumers. Plan capacity or lifecycle changes."
   impact: Supports proactive Object Storage capacity planning before the system enters a critical exhaustion window.
   evidence_boundary: Metrics Source supplies history to the forecasting worker; Intelligence consumes only the committed forecast
     snapshot and does not issue a live metrics query.
@@ -446,6 +449,7 @@ rules:
     days or less.
   recommended_action: Validate the current forecast immediately, prepare approved capacity expansion or demand reduction,
     and monitor the highest-contributing consumers until headroom is restored.
+  dashboard_action: "Validate the urgent forecast. Prepare approved capacity or demand changes."
   impact: Reduces the risk of near-term Object Storage saturation and protects write availability.
   evidence_boundary: Metrics Source supplies history to the forecasting worker; Intelligence consumes only the committed forecast
     snapshot and does not issue a live metrics query.
@@ -474,6 +478,7 @@ rules:
   condition_summary: The latest committed bucket inventory reports exposure_state as public.
   recommended_action: Confirm public access is intentional and approved. If it is not required, restrict anonymous access
     and resync Object Storage inventory to verify the exposure posture.
+  dashboard_action: "Confirm public access is approved. Restrict it if unnecessary; resync evidence."
   impact: Reduces unintended data exposure while allowing intentionally public buckets to be reviewed against ownership and
     policy.
   evidence_boundary: This is Object Storage access-governance evidence from the provider API. Metrics Source and Alertmanager
@@ -511,6 +516,7 @@ rules:
   condition_summary: The latest committed bucket inventory reports encryption_state as not_configured.
   recommended_action: Validate the data-classification requirement, enable the approved server-side encryption policy when
     required, and resync Object Storage inventory to verify the resulting posture.
+  dashboard_action: "Check data classification. Apply approved encryption if required; resync inventory."
   impact: Improves storage governance and reduces the risk of retaining sensitive data without the intended encryption control.
   evidence_boundary: This is provider configuration evidence from Object Storage inventory. Metrics Source and Alertmanager do
     not determine bucket encryption configuration.
@@ -538,6 +544,7 @@ rules:
   condition_summary: Operational capacity utilization is at least 85% and below 95% for the selected Object Storage system.
   recommended_action: Review growth direction, top consumers, lifecycle policy, and planned capacity expansion before headroom
     narrows further.
+  dashboard_action: "Review usage growth and consumers. Plan capacity before headroom narrows."
   impact: Provides an early capacity-pressure signal while preserving time to remediate before critical saturation.
   evidence_boundary: KAORI evaluates the canonical Object Storage capacity and usage metrics. The current MinIO implementation
     receives those metrics through the qualified MetricsSource adapter; Intelligence does not issue its own live query.
@@ -566,6 +573,7 @@ rules:
   condition_summary: Operational capacity utilization is at least 95% for the selected Object Storage system.
   recommended_action: Protect write headroom immediately by validating current demand, reducing retained data when approved,
     or expanding usable capacity.
+  dashboard_action: "Protect write headroom. Reduce retained data if approved or expand capacity."
   impact: Reduces the risk of storage saturation and write disruption when usable headroom becomes critically constrained.
   evidence_boundary: The signal is derived from canonical capacity and usage evidence. Metrics Source is the current MinIO metrics
     backend, but the rule remains owned by the Object Storage analysis domain.
@@ -594,6 +602,7 @@ rules:
   condition_summary: Observed request error ratio is at least 5% and below 10% for the selected Object Storage system.
   recommended_action: Review request-path errors, affected buckets, storage-node health, and recent workload or configuration
     changes before demand is increased.
+  dashboard_action: "Inspect request errors and affected buckets. Check node health and recent changes."
   impact: Surfaces material request degradation before the error ratio enters the critical reliability boundary.
   evidence_boundary: KAORI derives the ratio from canonical request and error-rate metrics. The current MinIO implementation
     uses Metrics Source through the qualified MetricsSource adapter.
@@ -622,6 +631,7 @@ rules:
   condition_summary: Observed request error ratio is at least 10% for the selected Object Storage system.
   recommended_action: Triage request failures immediately, correlate active provider alerts, validate storage-node health,
     and reduce avoidable demand until reliability recovers.
+  dashboard_action: "Triage request failures and provider alerts. Verify nodes and reduce excess demand."
   impact: Highlights severe request-path degradation that can materially affect application access to stored objects.
   evidence_boundary: KAORI derives the signal from canonical request and error-rate metrics; Alertmanager lifecycle records
     remain a separate authoritative evidence stream.
@@ -651,6 +661,7 @@ rules:
     zero.
   recommended_action: Review request demand, error pressure, throughput direction, and storage-node health before treating
     queue pressure as a capacity-only issue.
+  dashboard_action: "Review queued requests, throughput, errors, and storage-node health."
   impact: Provides early request-processing pressure context without inventing a provider-specific concurrency threshold.
   evidence_boundary: Any positive waiting count is treated as a review signal. KAORI does not infer a critical concurrency
     threshold until a validated provider-specific boundary exists.
@@ -679,6 +690,7 @@ rules:
   condition_summary: Canonical offline-node evidence is available and one or more storage nodes are offline.
   recommended_action: Validate the affected node state, healing or redundancy posture, active provider alerts, and request
     reliability before restoring normal operational assumptions.
+  dashboard_action: "Check offline nodes, redundancy and alerts. Assess impact before recovery."
   impact: Highlights loss of storage-node availability that can affect redundancy, request handling, and maintenance safety.
   evidence_boundary: KAORI evaluates canonical node-health evidence and correlates it with provider alerts separately; Alertmanager
     remains authoritative for alert lifecycle state.
@@ -1447,6 +1459,7 @@ rules:
   summary: Identifies a Registry artifact with critical vulnerability evidence that is also referenced by committed Kubernetes runtime inventory.
   condition_summary: The latest committed Registry artifact has one or more critical findings and at least one committed runtime binding.
   recommended_action: Validate exploitability and workload exposure, confirm whether a fixed artifact is available, then use the approved deployment and Automation Control path for remediation.
+  dashboard_action: "Validate exposure and fixed-artifact options. Use approved deployment controls."
   impact: Prioritizes supply-chain findings with demonstrated runtime blast radius without turning raw CVEs into direct alerts.
   evidence_boundary: Artifact Registry owns vulnerability and runtime-correlation facts. Intelligence owns recommendation and alert-escalation semantics.
   supported_sources:
@@ -1471,6 +1484,7 @@ rules:
   summary: Identifies runtime-referenced artifacts without a normalized successful committed vulnerability scan state.
   condition_summary: An artifact has at least one runtime binding while scan status is not success, finished, or completed.
   recommended_action: Restore the provider scanner or artifact scan evidence path, then reconcile Registry inventory before making risk decisions.
+  dashboard_action: "Restore successful artifact scans. Reconcile inventory before risk decisions."
   impact: Prevents runtime exposure from being assessed against an unknown vulnerability posture.
   evidence_boundary: This rule consumes committed Registry security and runtime-correlation evidence; it does not trigger scans itself.
   supported_sources:
@@ -1494,6 +1508,7 @@ rules:
   summary: Identifies public Registry projects whose committed governance evidence has no configured immutability rule.
   condition_summary: Project visibility is public and immutability posture is not_configured in the latest committed governance snapshot.
   recommended_action: Confirm whether mutable tags are intentionally permitted. If not, apply the approved provider-native immutability policy through the governed change path and reconcile evidence.
+  dashboard_action: "Confirm mutable tags are approved. Apply governed immutability if required."
   impact: Reduces accidental mutable-tag risk for publicly visible artifact namespaces.
   evidence_boundary: Registry governance is read-only in KAORI; Harbor or the authoritative provider remains the policy execution authority.
   supported_sources:
@@ -1517,6 +1532,7 @@ rules:
   summary: Identifies Kubernetes runtime correlation that can only be resolved through a mutable tag rather than an immutable digest.
   condition_summary: The committed RegistryWorkloadBinding match type is tag with medium confidence.
   recommended_action: Prefer digest-pinned image references or collect authoritative imageID digest evidence, then refresh Kubernetes inventory and Registry correlation.
+  dashboard_action: "Use pinned digests or verified imageID evidence. Refresh Registry correlation."
   impact: Improves deployment provenance and reduces ambiguity when tags move between artifact digests.
   evidence_boundary: The Registry domain owns match confidence; Intelligence owns the recommendation lifecycle.
   supported_sources:
@@ -1540,6 +1556,7 @@ rules:
   summary: Raises a planning recommendation when worker-materialized Registry analytics projects project quota exhaustion within 90 days.
   condition_summary: Current project quota forecast has positive growth and days_to_quota is greater than 30 and at most 90.
   recommended_action: Review artifact growth, retention policy, stale candidates, and project ownership before changing quota or deleting artifacts.
+  dashboard_action: "Review growth, retention and stale artifacts. Plan approved capacity changes."
   impact: Provides time to plan retention, cleanup, or quota changes before project headroom becomes critical.
   evidence_boundary: Intelligence consumes committed Registry Analytics snapshots and does not issue live Metrics Source or Registry provider queries.
   supported_sources:
@@ -1563,6 +1580,7 @@ rules:
   summary: Raises a critical planning recommendation when worker-materialized Registry analytics projects project quota exhaustion within 30 days.
   condition_summary: Current project quota forecast has positive growth and days_to_quota is 30 or less.
   recommended_action: Validate the forecast immediately, review retention and stale artifacts, and prepare an approved quota or cleanup change before pushes are constrained.
+  dashboard_action: "Validate imminent quota risk. Prepare approved cleanup or quota expansion."
   impact: Reduces the risk of project-level quota exhaustion interrupting artifact publication.
   evidence_boundary: Intelligence consumes committed Registry Analytics snapshots; provider mutation remains outside the recommendation evaluator.
   supported_sources:

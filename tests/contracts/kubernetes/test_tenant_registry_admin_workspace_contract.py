@@ -1916,3 +1916,27 @@ def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
     )
     assert 'li class="min-w-0 bg-surface-card p-4"' in modal
     assert 'li class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4"' not in modal
+
+
+def test_credential_and_grant_dialog_mutations_use_canonical_workflow_actions() -> None:
+    action = read('app/templates/components/action_button.html')
+    assert "variant == 'critical'" in action
+    assert 'bg-status-critical' in action
+    assert 'h-10' in action
+    for filename, expected_routes in (
+        ('_credential_registry.html', ('renew_credential_route', 'suspend_credential_route', 'revoke_credential_route')),
+        ('_access_grant_registry.html', ('reconcile_access_grant_route', 'revoke_access_grant_route')),
+    ):
+        registry = read(f'app/templates/kubernetes/tenant/partials/{filename}')
+        assert '{% import "components/action_button.html" as action_button %}' in registry
+        assert 'class="{{ action_button.classes(\'secondary\', full=true) }}"' in registry
+        assert 'class="{{ action_button.classes(\'critical\', full=true) }}"' in registry
+        assert 'class="{{ table_ui.action_classes(true) }} w-full' not in registry
+        assert 'hx-target="#tenant-admin-workspace"' in registry
+        assert 'hx-disabled-elt="find button"' in registry
+        assert 'name="csrf_token"' in registry
+        assert 'data-kaori-native-dialog' in registry
+        for route in expected_routes:
+            assert route in registry
+        # Compact registry More launchers intentionally stay table action buttons.
+        assert 'table_ui.action_classes()' in registry

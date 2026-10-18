@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/action_button.html" as action_button %}
 {% set can_manage = current_user.has_permission('integrations.manage') %}
 <div data-kaori-detail-variant="modal"
      data-kaori-routing-modal-layout="recommendation-inspired"
@@ -237,7 +238,7 @@
                             <button type="submit"
                                     formaction="{{ url_for('alert_intelligence.delete_routing_policy', policy_id=selected_policy.id) }}"
                                     formnovalidate
-                                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white transition hover:opacity-90">
+                                    class="{{ action_button.classes('critical') }}">
                                 <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
                                 Delete Policy
                             </button>
@@ -245,7 +246,7 @@
                             <span></span>
                         {% endif %}
                         <button type="submit"
-                                class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                                class="{{ action_button.classes('primary') }}">
                             <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                             {{ 'Update Routing Policy' if selected_policy else 'Create Routing Policy' }}
                         </button>

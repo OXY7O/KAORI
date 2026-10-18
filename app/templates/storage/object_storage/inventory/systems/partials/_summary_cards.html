@@ -1,10 +1,10 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% set metrics = [
-    ('server', 'Systems in Scope', inventory.total_systems, 'Managed object-storage systems matching the active filters.', 'brand'),
-    ('circle-check', 'Ready Systems', inventory.ready_systems, 'Provider-ready systems available for inventory operations.', 'normal' if inventory.total_systems and inventory.ready_systems == inventory.total_systems else ('unknown' if inventory.total_systems == 0 else 'warning')),
-    ('database-backup', 'Inventoried Systems', inventory.inventoried_systems, 'Systems with a committed Object Storage Inventory Sync snapshot.', 'normal' if inventory.total_systems and inventory.inventoried_systems == inventory.total_systems else ('unknown' if inventory.total_systems == 0 else 'warning')),
-    ('triangle-alert', 'Blocked Systems', inventory.blocked_systems, 'Systems with provider conditions requiring review. Inspect each affected system readiness, provider status, and committed inventory evidence before choosing remediation.', 'critical' if inventory.blocked_systems else ('unknown' if inventory.total_systems == 0 else 'normal'))
+    ('server', 'Systems in Scope', inventory.total_systems, 'Systems matching active filters.', 'brand'),
+    ('circle-check', 'Ready Systems', inventory.ready_systems, 'Provider-ready inventory systems.', 'normal' if inventory.total_systems and inventory.ready_systems == inventory.total_systems else ('unknown' if inventory.total_systems == 0 else 'warning')),
+    ('database-backup', 'Inventoried Systems', inventory.inventoried_systems, 'Systems with committed snapshots.', 'normal' if inventory.total_systems and inventory.inventoried_systems == inventory.total_systems else ('unknown' if inventory.total_systems == 0 else 'warning')),
+    ('triangle-alert', 'Blocked Systems', inventory.blocked_systems, 'Provider conditions require review.', 'critical' if inventory.blocked_systems else ('unknown' if inventory.total_systems == 0 else 'normal'))
 ] %}
 {% call operational_section_card.render(
     'System Inventory Posture',

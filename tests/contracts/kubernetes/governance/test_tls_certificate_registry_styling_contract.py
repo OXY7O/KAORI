@@ -121,3 +121,16 @@ def test_tls_registry_condenses_redundant_evidence_copy() -> None:
     assert 'presentation.ingress_mapping_reported' in table
     assert 'presentation.coverage_reported' in table
     assert 'resource_detail_modal.detail_button(record.id' in table
+
+
+def test_tls_certificate_search_filter_has_associated_label_and_stable_htmx_contract() -> None:
+    filters = _read('app/templates/kubernetes/governance/tls_certificates/partials/_filters.html')
+    table_macro = _read('app/templates/components/table_primitives.html')
+
+    assert 'for="tls-search-filter"' in filters
+    assert "table_ui.search_field('search', payload.filters.search," in filters
+    assert "id='tls-search-filter')" in filters
+    assert '{% if id %}id="{{ id }}"{% endif %}' in table_macro
+    assert 'hx-target="#tls-certificates-page-workspace"' in filters
+    assert 'name="partial_mode" value="page_workspace"' in filters
+    assert 'name="page" value="1"' in filters

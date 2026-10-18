@@ -7,6 +7,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "reports/components/_record_detail_modal.html" as record_modal %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/action_button.html" as action_button %}
 {% block title %}Report Schedules{% endblock title %}
 {% macro schedule_form(form_state, form_action, submit_label, loading_label, return_url) -%}
     <form method="POST"
@@ -344,7 +345,7 @@
             <button type="submit"
                     data-operation-submit
                     data-loading-label="{{ loading_label }}"
-                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>{{ submit_label }}</span></button>
+                    class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>{{ submit_label }}</span></button>
         </div>
     </form>
 {%- endmacro %}
@@ -889,7 +890,7 @@
                                                 data-operation-submit
                                                 data-loading-label="Queueing Report..."
                                                 {% if not payload.run_actions_enabled %}disabled title="Artifact storage is unavailable."{% endif %}
-                                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted"><i data-lucide="play" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Run Now</span></button>
+                                                class="{{ action_button.classes('primary') }}"><i data-lucide="play" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Run Now</span></button>
                                     </form>
                                 </div>
                             </div>
@@ -908,7 +909,7 @@
                                     <button type="submit"
                                             data-operation-submit
                                             data-loading-label="Deleting Schedule..."
-                                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('critical') }} bg-status-critical-soft px-4 text-xs font-semibold text-status-critical-text transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Delete Schedule</span></button>
+                                            class="{{ action_button.classes('critical') }}"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Delete Schedule</span></button>
                                 </form>
                             </div>
                         {% endcall %}

@@ -109,6 +109,22 @@ Dashboard explicitly requests `domain='kubernetes'`, preventing Object Storage f
 into a Kubernetes-only surface. Object Storage Analytics recommendation tabs consume the same Intelligence finding source rather than
 re-implementing these rule conditions.
 
+## Dashboard recommendation action copy
+
+The canonical Intelligence rule catalog may declare an optional `dashboard_action` alongside
+its complete `recommended_action`. This is **authored operational microcopy per rule**,
+not a character-trim, generic action mapping, or a new recommendation evaluator.
+Object Storage and Artifact Registry dashboards display `dashboard_action` when defined,
+falling back to the complete action for unmapped or older findings. Kubernetes retains
+its existing action descriptions.
+
+Write short, specific steps that retain provider/source authority, approval requirements,
+evidence refresh, and necessary conditional wording. Do not turn a conditional policy
+recommendation into an unconditional mutation instruction. The full `recommended_action`,
+impact, detailed evidence and remediation remain owned by Intelligence and available
+through the existing linked Recommendations detail. Shared dashboard card geometry and
+status/priority/ranking/asset scopes stay unchanged.
+
 ## Object Storage Rule Catalog coverage
 
 Rule Catalog now records Object Storage definitions as canonical `object_storage.*` rules with explicit
