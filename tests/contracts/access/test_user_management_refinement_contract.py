@@ -427,3 +427,45 @@ def test_review3_local_database_credential_boundary_targets_two_desktop_lines() 
     assert 'whitespace-nowrap' not in template
     assert len(boundary) >= 75
 
+
+
+def test_access_user_and_reset_password_fields_keep_explicit_labels() -> None:
+    from jinja2 import Environment
+
+    entries = (
+        (
+            'app/templates/access/users/form.html',
+            (
+                ('Username', 'username'),
+                ('Email', 'email'),
+                ('Display Name', 'display_name'),
+                ('Initial Password', 'password'),
+                ('Confirm Password', 'confirm_password'),
+            ),
+        ),
+        (
+            'app/templates/access/users/reset_password.html',
+            (
+                ('New password', 'password'),
+                ('Confirm password', 'confirm_password'),
+            ),
+        ),
+    )
+    for path, labels in entries:
+        template = read(path)
+        Environment().parse(template)
+        for label, field_name in labels:
+            expected = (
+                f'<label for="{{{{ form.{field_name}.id }}}}" '
+                'class="mb-1.5 block text-sm font-semibold text-content-primary">'
+                f'{label}</label>'
+            )
+            assert template.count(expected) == 1
+
+    user_form = read('app/templates/access/users/form.html')
+    reset_form = read('app/templates/access/users/reset_password.html')
+    assert 'for="{{ form.role_id.id }}"' in user_form
+    assert 'form.hidden_tag()' in user_form
+    assert 'form.hidden_tag()' in reset_form
+    assert 'data-operation-submit' in user_form
+    assert 'data-operation-submit' in reset_form
