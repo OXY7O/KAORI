@@ -958,6 +958,46 @@ At the accepted exact holding SHA, use `docs/design/KAORI_VISUAL_QA.md`, `tests/
 
 Use the existing canonical six viewports **1440×900, 1280×800, 1024×768, 768×1024, 390×844 and 360×800**, in Light/Dark (12 combinations), from `tests/ui/conftest.py`. Record exact reviewed holding SHA and safe authenticated roles (standard account, system.view-enabled administrator; local-database vs external identity when fixture-backed). General: four content tabs, timezone auto/manual with safe fixture and CSRF/readback, regional preview, permission-gated System Information provenance without secret leakage, Compatibility Registry search/support filters/Reset/5-product list/independent qualification pages, no-JS Apply Filters. Account: three query-backed tabs, Profile read-only attribution, Activity 0/1/many events without actor-target conflation, Credentials local-only form/error/disabled and external-provider guidance. Verify keyboard/tab order, focused HTMX swaps, aria-live without visible loading bar, 0/empty/error/blocked/permission negative states and no page-level horizontal overflow. **Do not save Regional Format, change password, sync a real browser timezone, or invoke production/provider mutations as a substitute for visual evidence**; use approved deterministic fixtures or mark BLOCKED/NOT RUN. Save actual screenshots/traces and explicit Human Acceptance; no pytest/djlint/ruff/verify_* or browser execution was performed in this read-only source audit.
 
+## 3.19 Access source remediation checkpoint — 2026-10-18 (#2474)
+
+**Historical source audit stays pinned and immutable:** §3.17 (C303–C331; S=15 / D=6 / R=5 / E=3) records the pre-remediation source at `26d3affaef2a53d6fc884eae622c0fa63e0a2e00`. The six `D` rows map to **two independent** issue-scoped remediations. Do not rewrite these rows to machine or visual PASS; source correction alone cannot complete Dev Container UAT.
+
+| Historical rows | Finding and issue authority | Integrated implementation | Temporary holding merge | UAT / Human Acceptance |
+| --- | --- | --- | --- | --- |
+| C309 + C311 | [#2476](https://github.com/OXY7O/KAORI/issues/2476), WTForms user/reset field-label association | [PR #2480](https://github.com/OXY7O/KAORI/pull/2480): `access/users/form.html` binds Username/Email/Display Name/Initial Password/Confirm Password labels to existing `form.<field>.id`, and `access/users/reset_password.html` binds New/Confirm Password; existing regression test `test_user_management_refinement_contract.py` extended | `f5945e125dd64f8a85a1ba1a7046cc1ccb309b70` | **NOT RUN / PENDING** |
+| C310 + C312 + C315 + C322 | [#2477](https://github.com/OXY7O/KAORI/issues/2477), shared Access admin form actions | [PR #2482](https://github.com/OXY7O/KAORI/pull/2482): User Add/Edit (1 Primary/1 Secondary); Reset Password (1/1); Roles Create/Read-only/Edit/Clone (3/1 conditional variants); Identity Provider Add/Edit (1/2). Shared `components/action_button.html`; regression `test_access_final_lock_contract.py` extended | `07890014eb5f4da1c1ccc0b792384b2f1ea1a868` | **NOT RUN / PENDING** |
+
+**Source preservation:** Both PRs merged only into **temporary** `kaori/review/staging-uat`, on separate issue work branches, modifying six scoped templates and two existing Access regression contract files. WTForms field IDs/names, form hidden CSRF tags, Login/auth routing, Access RBAC/session revocation, destructive confirmation, security audit, SSO Test Connection `formaction`/`formmethod`, view-only/clone roles and provider-credential boundaries are unchanged. Settings §3.18 C332–C349 remains source-only and unaffected. No schema, provider, migration or release artifact was changed.
+
+**Static readback boundary:** Source inspection, PR changed-file comparison, seven explicit label associations, shared-action occurrences and original forms/branch markers are confirmed; executable `pytest`, `djlint`, `ruff`, Jinja/Flask render, Playwright, keyboard/screen reader, screenshots, UAT and Human Acceptance **NOT RUN**. No claims of runtime PASS; prior Access Final Lock is historical authority, not execution evidence for this holding SHA.
+
+### Dev Container verification handoff — NOT EXECUTED
+
+At the checked-out accepted exact holding SHA, use the existing commands and quality gates, not new verifier scripts:
+
+```bash
+git fetch origin
+git switch kaori/review/staging-uat
+git pull --ff-only origin kaori/review/staging-uat
+git rev-parse HEAD
+git status --short
+
+python -m pytest -q \
+  tests/contracts/access/test_user_management_refinement_contract.py \
+  tests/contracts/access/test_user_management_audit_20260817_contract.py \
+  tests/contracts/access/test_roles_access_refinement_contract.py \
+  tests/contracts/access/test_identity_provider_refinement_contract.py \
+  tests/contracts/access/test_access_final_lock_contract.py
+
+djlint app/templates/access/users/form.html app/templates/access/users/reset_password.html \
+  app/templates/access/roles/form.html app/templates/access/identity_providers/form.html --check
+python scripts/verify_access_final_lock.py
+```
+
+Using existing `docs/design/KAORI_VISUAL_QA.md` / `tests/ui/conftest.py::CANONICAL_VIEWPORTS`, inspect **1440×900, 1280×800, 1024×768, 768×1024, 390×844, 360×800** in Light/Dark with fixture-backed viewers/managers/role permissions. For **C309/C311**, check every editable user/password field's accessible label, focus order, error, autocomplete/masking and required validation without submitting a credential change. For **C310/C312/C315/C322**, review Primary vs Secondary hierarchy, hover/active/focus/disabled/loading, Create/Edit/Read-only/Clone conditional controls, provider draft Test Connection `formaction` semantics, and narrow-screen wrapping. **Do not execute** Test Connection, Save, Reset Password, role/user mutation or external provider operations only to produce visual evidence. Historical `R` and `E` rows remain independently governed; missing browser fixtures mean NOT RUN, never PASS. Record real screenshots/traces/role/exact SHA and obtain explicit Human Acceptance.
+
+**Promotion gate:** Source integrated → Dev Container UAT pending. Official CI/CD, Developer Check, Full Admission, `kaori/staging`, main, deployment, release and tag remain **HOLD**. Keep audit #2474 and remediation issues #2476/#2477 OPEN until UAT acceptance and process closeout. GitHub Project metadata and parent/child relationships require manual sync if not exposed by connector.
+
 ## 4. Visual QA execution plan — existing harness only
 
 ### 4.1 Environment preflight (NOT EXECUTED)
