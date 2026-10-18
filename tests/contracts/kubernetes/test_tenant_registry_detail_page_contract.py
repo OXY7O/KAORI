@@ -1132,3 +1132,59 @@ def test_release_review_scope_is_one_unified_committed_evidence_surface():
     assert review.count('hx-post=') == 1
     assert 'for blocker in row.release_preflight.blockers' in review
     assert 'row.release_preflight.status' in review
+
+
+def test_tenant_description_value_has_no_template_indentation() -> None:
+    detail = read(DETAIL)
+    overview = detail.split('id="tenant-detail-snapshot"', 1)[1].split(
+        'aria-label="Tenant management sections"', 1
+    )[0]
+    # Jinja whitespace trimming leaves the user's own multiline text unchanged.
+    assert 'whitespace-pre-wrap break-words' in overview
+    assert (
+        "{{- tenant.description or 'No Tenant description has been recorded.' -}}"
+        in overview
+    )
+    assert (
+        "{{ tenant.description or 'No Tenant description has been recorded.' }}"
+        not in overview
+    )
+    Environment().parse(detail)
+
+
+def test_release_heading_uses_canonical_title_level_guide() -> None:
+    detail = read(DETAIL)
+    release_header = detail.split('id="tenant-release-governance"', 1)[1].split(
+        'aria-label="Release wizard steps"', 1
+    )[0]
+    title = (
+        '<h2 class="text-lg font-semibold text-content-primary">'
+        'Release Governance</h2>'
+    )
+    guide_id = "'tenant-release-governance-help'"
+    assert release_header.count(title) == 1
+    assert release_header.count('info_tip.render(') == 1
+    assert release_header.count(guide_id) == 1
+    guide = release_header.split(guide_id, 1)[1].split(') }}', 1)[0]
+    assert release_header.index(title) < release_header.index(guide_id)
+    assert "placement='left'," in guide
+    assert "variant='guide'" in guide
+    assert 'Independent plan approval is not external successor acceptance.' in guide
+    assert 'Provider handoff, verified read-back' in guide
+
+
+def test_expired_release_review_has_compact_responsive_single_sentence() -> None:
+    detail = read(DETAIL)
+    expired = detail.split('data-release-next-action-review-expired', 1)[1].split(
+        'aria-label="Expired provider review recovery steps"', 1
+    )[0]
+    copy = 'Kubernetes review expired; scope and fingerprint are stale for Release.'
+    assert detail.count(copy) == 1
+    assert copy in expired
+    assert len(copy) <= 75
+    assert copy.count('.') == 1
+    assert 'The previous Kubernetes inventory review has expired.' not in detail
+    assert 'whitespace-nowrap' not in expired
+    assert 'Refresh the Provider Review' in expired
+    assert 'Review Expired' in expired
+    Environment().parse(detail)
