@@ -307,6 +307,27 @@ Follow #1726, #1738 and existing `docs/design/KAORI_VISUAL_QA.md` / `tests/ui/vi
 
 **Governance:** Audit documentation PR #2298 stays **OPEN/DRAFT** to `kaori/review/staging-uat`; #2398/#2399/#2400 are bounded remediation issues, not product changes. The work branch must be non-destructively reconciled with the moving holding baseline before integration. No official Developer Check, Full Admission, deployment, staging/main promotion or release authorized.
 
+
+## 3.4 Remediation applied to temporary Dev Container holding — 2026-10-18
+
+**Do not overwrite the pinned C001–C147 source findings.** Rows `D` remain truthful for their historical evidence SHA. This section records **subsequent source remediation** at a newer holding SHA; no browser acceptance follows from the GitHub merge.
+
+**Aggregated Dev Container holding:** `kaori/review/staging-uat@be7922fac481e3b2374ce80ce6847d83c471cc8f`. The official `kaori/staging` / `main` and admission pipelines are **HOLD**.
+
+| Source finding authority | Review entry | Issue-scoped remediation | Holding PR | Source disposition | Browser / UAT |
+| --- | --- | --- | --- | --- | --- |
+| #2398 | Inventory → Services, Ingresses, Configuration | Associate 13 filter labels with stable select/search IDs through existing table primitives | [#2402](https://github.com/OXY7O/KAORI/pull/2402) | MERGED holding; source readback | NOT RUN |
+| #2399 | Governance → TLS Certificates → Search | Bind existing Search label to the shared search input | [#2403](https://github.com/OXY7O/KAORI/pull/2403) | MERGED holding; source readback | NOT RUN |
+| #2290 | Tenant → Tenants → Memberships → Group Edit | Secondary Cancel and Primary Save use shared action button | [#2404](https://github.com/OXY7O/KAORI/pull/2404) | MERGED holding; source readback | NOT RUN |
+| #2295 | Analytics → Overview → Health Summary / tabs | Delegate repeatable skeleton geometry to shared Analytics surfaces, with accessible busy/loading state | [#2405](https://github.com/OXY7O/KAORI/pull/2405) | MERGED holding; source readback | NOT RUN |
+| #2276 | Tenant → Tenants → Credentials / Access Grants → More Actions | Shared secondary workflow actions and Critical Revoke, preserving compact table launchers | [#2406](https://github.com/OXY7O/KAORI/pull/2406) | MERGED holding; source readback | NOT RUN |
+| #2367 | Tenant → Resource Profiles → Profile Library | Earlier responsive implementation already aggregated, not reimplemented | [#2370](https://github.com/OXY7O/KAORI/pull/2370), [#2372](https://github.com/OXY7O/KAORI/pull/2372) | SOURCE ALREADY REMEDIATED | NOT RUN |
+| #2400 | Kubernetes Admin → Overview CTA | Navigation-vs-mutation owner remains a semantic review candidate; no speculative change | No remediation PR | REVIEW CANDIDATE | NOT RUN |
+
+Existing components and documentation remain canonical: `table_primitives.search_field(..., id=...)`, `action_button.classes()` with shared Critical variant under `BUTTON.md`, and `analytics/components/_analysis_surfaces.html`. This is not a new domain architecture or provider-specific UI library.
+
+**Source validation actually performed:** GitHub five PR bounded diffs, SHA-pinned merges and post-merge readback of 11 modified UI/docs paths. **No executable tests were run** in this GitHub-only environment. Review in Dev Container with approved `pytest` focused contracts, existing UI verifiers, frontend asset build, six viewports in light/dark, keyboard/AT, loading/empty/error/HTMX and explicit permitted mutation fixtures. Capture exact SHA/evidence, then request human acceptance before moving any issue to accepted/done or opening official staging PRs.
+
 ## 4. Visual QA execution plan — existing harness only
 
 ### 4.1 Environment preflight (NOT EXECUTED)
