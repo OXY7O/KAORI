@@ -100,12 +100,17 @@
                                         {% if row.provider_key == 'native_kubernetes' and tenant_adoption_existing_environments %}
                                             <span data-tenant-adoption-create-copy>Adopt into a <strong class="text-content-primary">new KAORI Tenant</strong>.</span>
                                             <span data-tenant-adoption-attach-copy class="hidden">Attach Namespace to an <strong class="text-content-primary">existing KAORI Tenant</strong>.</span>
+                                        {% elif row.provider_key == 'capsule' and row.adoption_management_blocker %}
+                                            <span class="font-semibold text-content-primary">Managed adoption unavailable.</span>
+                                            Capsule quota authority is not admitted for this provider state.
                                         {% else %}
                                             Adopt as <span class="font-semibold text-content-primary">Adopted / Managed</span>.
                                         {% endif %}
-                                        {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }} remains execution authority.
-                                        KAORI applies admitted allocation ownership controls with provider write/read-back while preserving
-                                        equivalent effective values; controller-owned dimensions remain provider-mirrored.
+                                        {% if not (row.provider_key == 'capsule' and row.adoption_management_blocker) %}
+                                            {{ 'Capsule' if row.provider_key == 'capsule' else 'Native Kubernetes' }} remains execution authority.
+                                            KAORI applies admitted allocation ownership controls with provider write/read-back while preserving
+                                            equivalent effective values; controller-owned dimensions remain provider-mirrored.
+                                        {% endif %}
                                     {% endif %}
                                 </p>
                             </div>
@@ -164,7 +169,13 @@
                             </span>
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">KAORI records</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Commits identity, provider lineage, Namespace evidence, and observed allocation.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    {% if row.provider_key == 'capsule' and row.adoption_management_blocker %}
+                                        No KAORI governance record will be committed while managed adoption is blocked.
+                                    {% else %}
+                                        Commits identity, provider lineage, Namespace evidence, and observed allocation.
+                                    {% endif %}
+                                </p>
                             </div>
                         </div>
                         <div class="flex items-start gap-3 px-4 py-3.5">
@@ -177,6 +188,8 @@
                                 <p class="mt-1 text-xs leading-5 text-content-muted">
                                     {% if tenant_adoption_attachment_only %}
                                         Capsule resources and external constraints stay unchanged; KAORI commits attachment evidence only.
+                                    {% elif row.provider_key == 'capsule' and row.adoption_management_blocker %}
+                                        Capsule remains authoritative. No quota cutover is available from this preflight.
                                     {% else %}
                                         Kubernetes/Capsule remains authoritative. KAORI verifies admitted allocation changes
                                         by provider read-back and preserves external constraints.
@@ -195,6 +208,9 @@
                                     {% if tenant_adoption_attachment_only %}
                                         Ownership → <span class="font-semibold text-content-primary">Adopted / Provider Mirrored</span>.
                                         Only KAORI state is committed; Capsule allocation and external access stay provider-owned.
+                                    {% elif row.provider_key == 'capsule' and row.adoption_management_blocker %}
+                                        Ownership → <span class="font-semibold text-content-primary">Not Adopted · Control Unavailable</span>.
+                                        The quota authority must be admitted before managed adoption is permitted.
                                     {% else %}
                                         Ownership → <span class="font-semibold text-content-primary">Adopted / Managed</span>.
                                         {% if allocation.control_state == 'observed' %}
@@ -266,7 +282,13 @@
                         <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                             <p class="text-xs text-content-muted">Provenance</p>
                             <p class="mt-1 text-sm font-semibold text-content-primary">Imported Provider Baseline</p>
-                            <p class="mt-2 text-xs text-content-muted">Current effective values become the initial committed KAORI contract.</p>
+                            <p class="mt-2 text-xs text-content-muted">
+                                {% if row.provider_key == 'capsule' and row.adoption_management_blocker %}
+                                    These are live provider observations; no KAORI allocation baseline is committed by this blocked action.
+                                {% else %}
+                                    Current effective values become the initial committed KAORI contract.
+                                {% endif %}
+                            </p>
                         </div>
                         <div class="rounded-xl border border-outline-subtle bg-surface-card p-4 lg:col-span-2">
                             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -368,7 +390,13 @@
                             </dl>
                         {% else %}
                             <div class="px-4 py-4 sm:px-5">
-                                <p class="text-xs leading-5 text-content-muted">No supported allocation dimensions observed; baseline remains unbounded.</p>
+                                <p class="text-xs leading-5 text-content-muted">
+                                    {% if row.provider_key == 'capsule' and allocation.allocation_authority == 'native_namespaced' %}
+                                        No Tenant-wide quota observed; namespaced allocation remains provider-owned and is listed below.
+                                    {% else %}
+                                        No supported allocation dimensions observed; baseline remains unbounded.
+                                    {% endif %}
+                                </p>
                             </div>
                         {% endif %}
                     </div>
@@ -403,7 +431,7 @@
                                     </div>
                                     <div class="flex max-w-40 flex-wrap items-start justify-end gap-1.5 self-start">
                                         {{ table_label.status_label('Observed', 'info') }}
-                                        {{ table_label.metadata_label('Adopted Baseline', wrap=true) }}
+                                        {{ table_label.metadata_label('Observed Baseline' if row.adoption_management_blocker else 'Adopted Baseline', wrap=true) }}
                                     </div>
                                 </div>
                             {% endfor %}
@@ -660,10 +688,15 @@
                                             <span data-tenant-adoption-attach-copy class="hidden">Existing Tenant identity retained; Namespace allocation is managed and provider read-back verified.</span>
                                         </p>
                                     {% else %}
-                                        <p class="mt-1 text-sm font-semibold text-content-primary">Adopted / Managed</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">
-                                            {{ 'Native allocation ownership is written and provider read-back verified.' if row.provider_key == 'native_kubernetes' else 'Capsule allocation governance uses admitted provider writes; generated Namespace constraints remain mirrored.' }}
-                                        </p>
+                                        {% if row.provider_key == 'capsule' and row.adoption_management_blocker %}
+                                            <p class="mt-1 text-sm font-semibold text-status-warning-text">Not Eligible · Control Unavailable</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">No adoption or quota transfer can be committed from this preflight.</p>
+                                        {% else %}
+                                            <p class="mt-1 text-sm font-semibold text-content-primary">Adopted / Managed</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                                {{ 'Native allocation ownership is written and provider read-back verified.' if row.provider_key == 'native_kubernetes' else 'Capsule allocation governance uses admitted provider writes; generated Namespace constraints remain mirrored.' }}
+                                            </p>
+                                        {% endif %}
                                     {% endif %}
                                 </div>
                             </div>
@@ -708,15 +741,21 @@
                             </dd>
                         </div>
                         <div>
-                            <dt class="text-xs text-content-muted">Adoption provenance</dt>
+                            <dt class="text-xs text-content-muted">{{ 'Prospective provenance' if row.provider_key == 'capsule' and row.adoption_management_blocker else 'Adoption provenance' }}</dt>
                             <dd class="mt-1 text-xs font-medium text-content-secondary">
-                                adopted_observed
+                                {{ 'No adoption committed' if row.provider_key == 'capsule' and row.adoption_management_blocker else 'adopted_observed' }}
                             </dd>
                         </div>
                         <div>
                             <dt class="text-xs text-content-muted">Provider mutation during adoption</dt>
                             <dd class="mt-1 text-xs font-medium text-content-secondary">
-                                {{ 'No — committed KAORI attachment only' if tenant_adoption_attachment_only else 'Yes — admitted provider allocation cutover and read-back' }}
+                                {% if tenant_adoption_attachment_only %}
+                                    No — committed KAORI attachment only
+                                {% elif row.provider_key == 'capsule' and row.adoption_management_blocker %}
+                                    Not permitted — managed adoption blocked
+                                {% else %}
+                                    Yes — admitted provider allocation cutover and read-back
+                                {% endif %}
                             </dd>
                         </div>
                     </dl>
