@@ -738,6 +738,31 @@ non-destructive preservation. The original long blocker remains in the
 explicit trusted-reason allowlist for historical plan compatibility only; new
 reviews produce the shorter reason.
 
+## Dev Container UI follow-up — cohesive approval surfaces and expired recovery (#2401)
+
+After human screenshots of the acknowledged Native plan, Step 3 now keeps
+**Handoff Actions** in a single unbroken Violet surface (reference form
+and conditional authorized Platform Admin action or requester-only note).
+The external read-back area remains one companion surface. Its unavailable
+state is inline under the same header, not an extra card inside a card.
+Both columns stretch to a common workspace height on desktop and stack
+naturally on narrow screens. The read-back prerequisite branch, owner
+permissions, exact plan SHA and provider verification POST remain original
+authorities; UI spacing never implies eligibility or transfers ownership.
+
+Step 4 **Approval Expired** is now an unboxed semantic recovery sequence
+with three ordered steps, driven by the same read-back guard: verify
+ownership, request governed recovery **instead of restart when blocked**
+(or restart only as the original requester when safe), then obtain fresh
+independent approval for a newly prepared plan SHA. Historical approval
+remains audit evidence, never current authorization. The existing CSRF
+and explicit requester-only restart form, conditional no-transfer note,
+and role-restricted alternative instructions remain intact. Native
+provider-effect recovery always overrides restart. Source contract tests
+check Jinja structure, conditional branches and unchanged forms; runtime
+Dev Container tests/visual acceptance are still outstanding. Official
+CI/CD admission remains HOLD.
+
 ## Release Governance Step 3–4 approval layout and verification guidance (#2401; 2026-10-18)
 
 The Step 3 governed workflow now uses Title Case for **Independent Approval and
