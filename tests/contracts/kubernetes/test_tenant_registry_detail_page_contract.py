@@ -1127,7 +1127,10 @@ def test_tenant_description_value_has_no_template_indentation() -> None:
         "{{- tenant.description or 'No Tenant description has been recorded.' -}}"
         in overview
     )
-    assert "{{ tenant.description or 'No Tenant description has been recorded.' }}" not in overview
+    assert (
+        "{{ tenant.description or 'No Tenant description has been recorded.' }}"
+        not in overview
+    )
     Environment().parse(detail)
 
 
@@ -1136,7 +1139,10 @@ def test_release_heading_uses_canonical_title_level_guide() -> None:
     release_header = detail.split('id="tenant-release-governance"', 1)[1].split(
         'aria-label="Release wizard steps"', 1
     )[0]
-    title = '<h2 class="text-lg font-semibold text-content-primary">Release Governance</h2>'
+    title = (
+        '<h2 class="text-lg font-semibold text-content-primary">'
+        'Release Governance</h2>'
+    )
     guide_id = "'tenant-release-governance-help'"
     assert release_header.count(title) == 1
     assert release_header.count('info_tip.render(') == 1
