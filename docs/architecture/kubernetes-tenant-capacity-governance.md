@@ -392,11 +392,13 @@ physical or usable backend capacity.
 
 The **View More** dialog uses one resource-first comparison rather than
 three dense parallel cards. Its header has one left-aligned hierarchy: a shared
-icon, Allocation Budget eyebrow, cluster title, a dedicated label row
-**beneath the title** with the actual capacity-state and **Governed budget**
-metadata label, environment context and a right-aligned native Close action.
-This avoids
-the off-center title/status placement seen in earlier DevContainer feedback.
+40px Violet icon and **cluster title + authoritative capacity-state** badge
+inline, matching the human-approved **Manage Identity Providers** modal
+header reference. The next line is the environment and meaningful budget
+description, followed by compact **Allocation Budget** and **Request
+commitment** metadata labels. The top-right native Close is unchanged.
+This avoids the extra eyebrow/status stack that displaced the description
+in the previous DevContainer screenshot.
 
 Four resource rows—CPU Requests, Memory Requests, Pod Slots and Logical
 Storage—show authoritative Budget, Committed and Headroom display values in

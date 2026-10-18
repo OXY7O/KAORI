@@ -337,20 +337,22 @@
                                                 <i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i>
                                             </span>
                                             <div class="min-w-0 flex-1">
-                                                <p class="text-xs font-semibold text-kaori-primary">Allocation Budget</p>
-                                                <h2 id="{{ dialog_id }}-title"
-                                                    class="mt-1 min-w-0 break-words text-lg font-semibold leading-6 text-content-primary">
-                                                    {{ item.cluster.name }}
-                                                </h2>
-                                                <div class="mt-2 flex min-w-0 flex-wrap items-center gap-2"
-                                                     aria-label="Allocation Budget evidence labels">
+                                                <div class="flex min-w-0 flex-wrap items-center gap-2">
+                                                    <h2 id="{{ dialog_id }}-title"
+                                                        class="min-w-0 break-words text-lg font-semibold leading-6 text-content-primary">
+                                                        {{ item.cluster.name }}
+                                                    </h2>
                                                     {{ table_label.status_label(item.state, state_tone) }}
-                                                    {{ table_label.metadata_label('Governed budget', 'gauge') }}
                                                 </div>
                                                 <p id="{{ dialog_id }}-description"
-                                                   class="mt-2 text-xs leading-5 text-content-muted">
+                                                   class="mt-1 text-xs leading-5 text-content-muted">
                                                     {{ item.cluster.environment|title }} · Governed request budgets and remaining headroom.
                                                 </p>
+                                                <div class="mt-2 flex min-w-0 flex-wrap items-center gap-2"
+                                                     aria-label="Allocation Budget context">
+                                                    {{ table_label.metadata_label('Allocation Budget', icon='chart-no-axes-combined') }}
+                                                    {{ table_label.metadata_label('Request commitment', icon='gauge') }}
+                                                </div>
                                             </div>
                                             <button type="button"
                                                     data-kaori-dialog-close
