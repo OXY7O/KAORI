@@ -80,9 +80,7 @@ def test_object_storage_recommendation_thresholds_match_analytics_capacity_bound
 def test_storage_and_registry_dashboard_copy_is_rule_authored() -> None:
     import yaml
 
-    catalog = yaml.safe_load(
-        read('app/definitions/catalogs/intelligence/rules.yaml')
-    )
+    catalog = yaml.safe_load(read('app/definitions/catalogs/intelligence/rules.yaml'))
     selected = {
         rule['rule_key']: rule
         for rule in catalog['rules']
@@ -98,14 +96,20 @@ def test_storage_and_registry_dashboard_copy_is_rule_authored() -> None:
         assert rule['recommended_action'] != action
         assert action not in rule['recommended_action']
 
-    assert selected['object_storage.bucket.encryption_not_configured']['dashboard_action'] == (
-        'Check data classification. Apply approved encryption if required; resync inventory.'
+    encryption = selected['object_storage.bucket.encryption_not_configured']
+    assert encryption['dashboard_action'] == (
+        'Check data classification. Apply approved encryption if required; '
+        'resync inventory.'
     )
-    assert selected['registry.security.critical_runtime_vulnerability']['dashboard_action'] == (
-        'Validate exposure and fixed-artifact options. Use approved deployment controls.'
+    vulnerability = selected['registry.security.critical_runtime_vulnerability']
+    assert vulnerability['dashboard_action'] == (
+        'Validate exposure and fixed-artifact options. '
+        'Use approved deployment controls.'
     )
-    assert selected['registry.runtime.tag_only_correlation']['dashboard_action'] == (
-        'Use pinned digests or verified imageID evidence. Refresh Registry correlation.'
+    correlation = selected['registry.runtime.tag_only_correlation']
+    assert correlation['dashboard_action'] == (
+        'Use pinned digests or verified imageID evidence. '
+        'Refresh Registry correlation.'
     )
 
 
@@ -139,15 +143,16 @@ def test_dashboard_projection_prefers_authored_action_without_losing_finding_ide
         (registry, registry._registry_recommended_actions),
     ):
         calls = []
+
         def findings_stub(*, domain, asset_key):
             calls.append((domain, asset_key))
             return findings
 
-        monkeypatch.setattr(module, 'get_dashboard_recommendation_findings', findings_stub)
+        monkeypatch.setattr(
+            module, 'get_dashboard_recommendation_findings', findings_stub
+        )
         cards = builder(SimpleNamespace(id=17))
-        assert calls == [
-            ('object_storage' if module is storage else 'registry', '17')
-        ]
+        assert calls == [('object_storage' if module is storage else 'registry', '17')]
         assert cards[0]['description'] == findings[0]['dashboard_action']
         assert cards[1]['description'] == findings[1]['recommended_action']
         for field in ('title', 'rule_key', 'priority', 'severity'):
