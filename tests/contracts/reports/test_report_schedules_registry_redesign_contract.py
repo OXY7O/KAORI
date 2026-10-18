@@ -335,11 +335,13 @@ def test_schedule_run_now_and_delete_confirmation_use_canonical_action_states() 
         "action=\"{{ url_for('reports.delete_schedule', schedule_id=schedule.id) }}\"", 1
     )[1].split('</form>', 1)[0]
 
+    for endpoint in ("reports.run_schedule", "reports.delete_schedule"):
+        opener = template.split(f"{{{{ url_for('{endpoint}', schedule_id=schedule.id) }}}}", 1)[0]
+        assert 'method="POST"' in opener.rsplit('<form', 1)[1]
     assert "action_button.classes('primary')" in run_form
     assert "action_button.classes('critical')" in delete_form
     for form in (run_form, delete_form):
         assert 'class="inline-flex min-h-9' not in form
-        assert 'method="POST"' not in form  # Defined by the surrounding opening form element.
         assert 'name="csrf_token"' in form
         assert 'name="next"' in form
         assert 'data-operation-submit' in form
