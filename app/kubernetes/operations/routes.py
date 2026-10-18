@@ -3,7 +3,6 @@ from __future__ import annotations
 from flask import Blueprint, render_template
 
 from app.access.rbac.decorators import any_permission_required
-from app.kubernetes.operations.operation_flow import cluster_required
 from app.kubernetes.operations.configmaps.routes import (
     configmap_delete_target,
     configmap_editor,
@@ -14,6 +13,7 @@ from app.kubernetes.operations.configmaps.routes import (
     delete_configmap_page,
     update_configmap_page,
 )
+from app.kubernetes.operations.operation_flow import cluster_required
 from app.kubernetes.operations.secrets.crud_routes import (
     create_secret,
     delete_secret,

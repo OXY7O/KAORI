@@ -16,10 +16,10 @@ from app.kubernetes.tenant.capacity_governance import (
 )
 from app.kubernetes.tenant.native_provider import tenant_workspace_connection_available
 from app.kubernetes.tenant.resource_profile_controls import (
-    namespace_allocation_is_current,
-    namespace_allocation_values,
     _tenant_capability_statuses,
     evaluate_resource_profile_advanced_controls,
+    namespace_allocation_is_current,
+    namespace_allocation_values,
 )
 from app.kubernetes.tenant.service_contracts import (
     _ALLOWED_ENVIRONMENTS,
