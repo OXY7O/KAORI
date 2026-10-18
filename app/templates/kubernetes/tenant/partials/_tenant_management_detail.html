@@ -530,10 +530,10 @@
                                                 aria-label="Recorded Release conditions">
                                                 {% for blocker in row.release_preflight.blockers %}
                                                     {% if 'KAORI-mutated Namespace provider controls' in blocker %}
-                                                        {% set condition_title = "Namespace handoff required" %}
+                                                        {% set condition_title = blocker.split(' has KAORI-mutated ')[0] ~ ' · Namespace handoff' %}
                                                         {% set condition_action = "Independent external handoff approval required." %}
                                                     {% elif 'KAORI-linked allocation ownership' in blocker %}
-                                                        {% set condition_title = "Allocation handoff required" %}
+                                                        {% set condition_title = blocker.split(' KAORI-linked allocation ownership')[0] ~ ' · Allocation handoff' %}
                                                         {% set condition_action = "Approve external handoff and verify provider state." %}
                                                     {% elif blocker.startswith('Adoption performed KAORI-owned provider mutations.') %}
                                                         {% set condition_title = "KAORI provider handoff required" %}
@@ -2160,7 +2160,7 @@
                                                             </li>
                                                             <li class="rounded-lg border border-outline-subtle px-3 py-2">
                                                                 <span class="text-[11px] font-semibold text-kaori-primary">02 · Accept</span>
-                                                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">Authorized Platform Admin verifies successor consent.</p>
+                                                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">Authorized Platform Admin verifies and records successor acceptance.</p>
                                                             </li>
                                                             <li class="rounded-lg border border-outline-subtle px-3 py-2">
                                                                 <span class="text-[11px] font-semibold text-kaori-primary">03 · Verify</span>
