@@ -1,7 +1,11 @@
 <div id="general-settings-page" class="space-y-6">
     {% include "settings/general/partials/_hero.html" %}
     {# Shared nonvisual HTMX pending announcement: no Settings loading bar or extra tab geometry. #}
-    <span id="general-settings-loading" class="htmx-indicator sr-only" role="status" aria-live="polite" aria-atomic="true">Updating General Settings</span>
+    <span id="general-settings-loading"
+          class="htmx-indicator sr-only"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true">Updating General Settings</span>
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
         {% include "settings/general/partials/_tabs.html" %}
         {% if active_tab == 'time-locale' %}
