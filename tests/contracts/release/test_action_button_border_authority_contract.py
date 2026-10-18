@@ -13,8 +13,10 @@ DISABLED_BORDER = 'disabled:border-status-disabled-border'
 def test_action_button_owns_canonical_disabled_border_semantics() -> None:
     source = TARGET_PATH.read_text(encoding='utf-8')
 
-    assert source.count(DISABLED_BORDER) == 2
+    assert source.count(DISABLED_BORDER) == 3
     assert "variant == 'primary'" in source
+    assert "variant == 'critical'" in source
+    assert 'border border-transparent bg-status-critical' in source
     assert 'border border-transparent bg-kaori-primary' in source
     assert 'border border-outline-default bg-surface-card' in source
     assert 'focus-visible:ring-outline-focus' in source
