@@ -27,7 +27,6 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
                 {% if filters.query or filters.requirement or filters.status %}
                     {% set capability_clear_href = url_for('minio.instance_detail', instance_id=instance.id, capability_page=1, capability_per_page=pagination.per_page) ~ '#validation' %}
                     {% set capability_clear_url = url_for('minio.capability_registry', instance_id=instance.id, capability_page=1, capability_per_page=pagination.per_page) %}
@@ -40,6 +39,7 @@
                     marker='minio-capability-registry'
                     ) }}
                 {% endif %}
+                {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
             </div>
         </div>
         <div data-kaori-capability-loading-region>
