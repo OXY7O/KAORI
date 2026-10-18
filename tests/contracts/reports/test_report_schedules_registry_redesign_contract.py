@@ -319,3 +319,44 @@ def test_schedule_form_submit_uses_shared_primary_button_without_changing_post()
                   'data-schedule-form', 'data-operation-submit', 'data-loading-label="{{ loading_label }}"',
                   '{{ submit_label }}', 'name="next"'):
         assert token in schedule_form
+
+
+def test_schedule_run_now_and_delete_confirmation_use_canonical_action_states() -> None:
+    from jinja2 import Environment
+
+    template = read(TEMPLATE)
+    shared = read(ROOT / 'app/templates/components/action_button.html')
+    Environment().parse(template)
+
+    run_form = template.split(
+        "action=\"{{ url_for('reports.run_schedule', schedule_id=schedule.id) }}\"", 1
+    )[1].split('</form>', 1)[0]
+    delete_form = template.split(
+        "action=\"{{ url_for('reports.delete_schedule', schedule_id=schedule.id) }}\"", 1
+    )[1].split('</form>', 1)[0]
+
+    assert "action_button.classes('primary')" in run_form
+    assert "action_button.classes('critical')" in delete_form
+    for form in (run_form, delete_form):
+        assert 'class="inline-flex min-h-9' not in form
+        assert 'method="POST"' not in form  # Defined by the surrounding opening form element.
+        assert 'name="csrf_token"' in form
+        assert 'name="next"' in form
+        assert 'data-operation-submit' in form
+        assert 'data-operation-submit-label' in form
+
+    assert 'data-loading-label="Queueing Report..."' in run_form
+    assert 'not payload.run_actions_enabled' in run_form
+    assert 'disabled title="Artifact storage is unavailable."' in run_form
+    assert 'data-loading-label="Deleting Schedule..."' in delete_form
+    assert "data-dialog-target=\"schedule-delete-{{ loop.index }}\"" in template
+    assert 'Confirm Schedule Deletion' in template
+
+    # The existing macro owns focus, active and disabled behavior, not the page.
+    for state in (
+        'active:bg-kaori-primary-dark',
+        'active:opacity-80',
+        'focus-visible:ring-2',
+        'disabled:cursor-not-allowed',
+    ):
+        assert state in shared
