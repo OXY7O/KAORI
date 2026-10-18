@@ -1520,6 +1520,60 @@ def test_allocation_change_all_title_info_tips_are_adjacent_not_corner_actions()
         assert template.count('type="submit"') >= 1, filename
 
 
+
+def test_adoption_and_legacy_cutover_guidance_match_approved_current_authority() -> None:
+    """#2481: do not conflate #777 Managed-on-Adopt with legacy #762 cutover."""
+    from jinja2 import Environment
+
+    templates = {
+        '_allocation_cutover.html': (
+            'For legacy Adopted / Observed allocation only',
+            'Native ResourceQuota / LimitRange',
+        ),
+        '_capsule_tenant_quota_cutover.html': (
+            'For legacy Adopted / Observed allocation only',
+            'Tenant.spec.resourceQuotas',
+        ),
+        '_capsule_shared_allocation_cutover.html': (
+            'For legacy Adopted / Observed Capsule allocation only',
+            'GlobalResourceQuota',
+        ),
+    }
+    for filename, (legacy_copy, provider_authority) in templates.items():
+        source = read('app/templates/kubernetes/tenant/partials/' + filename)
+        Environment(autoescape=True).parse(source)
+        assert legacy_copy in source, filename
+        assert provider_authority in source, filename
+        assert 'Managed-on-Adopt' in source, filename
+        assert source.count('info_tip.render(') == 1, filename
+        assert source.count('name="csrf_token"') >= 1, filename
+        assert source.count('type="submit"') >= 1, filename
+
+    operator = read('app/kubernetes/tenant/README.md')
+    architecture = read('docs/architecture/kubernetes-tenant-domain.md')
+    assert '### Managed Adoption and Legacy Allocation Governance Cutover' in operator
+    assert '## Tenant Adoption vs Allocation Cutover — Current Authority' in architecture
+    assert '**Adopt & Manage**' in operator
+    assert 'New human-confirmed adoption uses **Adopt & Manage**' in operator
+    for authority in (
+        'capsule_tenant_resource_quotas',
+        'Tenant.spec.resourceQuotas',
+        'GlobalResourceQuota',
+        'native_namespaced',
+        'Adopted / Observed',
+        'KAORI Managed',
+        'Drift & Reconcile',
+    ):
+        assert authority in operator
+        assert authority in architecture
+    assert 'The primary action is **Adopt as Observed**' not in operator
+    assert 'Submit **Adopt as Observed**' not in operator
+    assert 'Tenant.spec.resourceQuotas` and ambiguous/unsupported Capsule authority remain' not in operator
+    assert 'Capsule Tenant Quota Governance' in operator
+    assert 'Capsule Shared Allocation Governance' in operator
+    assert 'Adopted Native Governance Cutover' in operator
+
+
 def test_adopted_native_cutover_reuses_committed_allocation_comparison() -> None:
     from jinja2 import Environment
 

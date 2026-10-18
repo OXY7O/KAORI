@@ -793,6 +793,54 @@ actions remain excluded; the existing Step 3 HTMX navigation is not an
 approval or Release endpoint. Provider recovery, approval expiry, TLS failure
 and review expiry retain higher priority; admission and human UAT stay HOLD.
 
+## Tenant Adoption vs Allocation Cutover — Current Authority (#777, #762, #769, #771, #773, #2481)
+
+**Authority precedence:** #777's human-approved **Managed-on-Adopt** contract governs
+new eligible adoption. #762/#768/#769 describe **legacy committed
+Adopted / Observed** records and their explicit subsequent allocation
+cutover; their original observation-first adoption language is historical,
+**not an alternate automatic fallback for new adoption**. The current
+Native/Capsule cutover services decide eligibility, not the label of a
+Resource Profile or an available CRD field.
+
+Two independently governed ownership dimensions must never be conflated:
+- **Tenant/Namespace lifecycle:** a Namespace can remain
+  `ownership_status=adopted` after KAORI manages its quota.
+- **Allocation control:** `adopted_observed` means recorded provider evidence
+  without KAORI mutation authority; `kaori_managed` requires successful
+  admitted authoritative write + provider read-back; **Drifted** requires an
+  explicit reconciliation decision, never an automatic mutation on Sync.
+
+| Entry condition | Appropriate workflow | Provider authority / outcome |
+| --- | --- | --- |
+| New Discovered Native or Capsule with admitted, unambiguous allocation | Review Adoption → **Adopt & Manage** | Recheck live authority/UID/resourceVersion, capacity + ownership; equivalent provider write/read-back before allocation becomes Managed |
+| Previously committed legacy **Adopted / Observed** Native Namespace | **Adopted Native Governance Cutover** | Supported Native ResourceQuota / Container LimitRange; Namespace lifecycle stays adopted |
+| Previously committed legacy **Adopted / Observed** Capsule Tenant CR quota | **Capsule Tenant Quota Governance** (#773) | `Tenant.spec.resourceQuotas` with admitted `tenant_resource_quotas`; write only authoritative Tenant CR |
+| Previously committed legacy **Adopted / Observed** Capsule shared quota | **Capsule Shared Allocation Governance** (#771) | Exactly one admitted `GlobalResourceQuota` with `shared_global_quota`; do not multiply shared quota by Namespace |
+| Allocation already **KAORI Managed** | Managed Allocation Change, or explicit Drift & Reconcile | No repeated cutover; Sync observes only |
+| Capsule owner with only namespaced Native ResourceQuota, absent/unhealthy/multiple/unsupported Capsule quota authority | **Control Unavailable**; preserve evidence and stop | No Capsule-managed adoption, no Native cutover bypass, no automatic observed-only adoption |
+
+**Capsule authority is capability-first, source-specific.** The Tenant CR observation key is `capsule_tenant_resource_quotas` and the distinct shared quota key is `capsule_global_resource_quota`. Serving the
+`Tenant.spec.resourceQuotas` schema is necessary but not sufficient.
+Tenant CR quotas and GlobalResourceQuota have **separate** governance
+services/commit paths; selecting the wrong quota path must be disabled
+rather than substituted. A namespaced ResourceQuota label referencing a
+Capsule Tenant proves correlation, not a supported Tenant/GRQ write path.
+The observed `kaori-adopt-lab-v2` has no Tenant CR quota and no
+GlobalResourceQuota but has a namespaced ResourceQuota: correctly blocked
+as `native_namespaced`. Never create competing provider quota solely
+to pass UAT.
+
+**Failure semantics:** preflight is read-only; mutation-capable submit
+revalidates fresh provider and admission evidence. A failed/unverified
+provider attempt must not be represented as a completed cutover.
+Explicit legacy cutover and new managed adoption both require provider
+read-back before committing managed allocation. Provider drift remains
+committed observed evidence until separately accepted/reapplied by an
+authorized operator. The current service contracts and tests, not older
+issue text, are authoritative when wording differs. No new mode or
+permission is added by this documentation clarification.
+
 ## Capsule Managed Adoption Authority Preflight (#2463, 2026-10-18)
 
 The approved **Adopt & Manage** path is a mutation-capable governance cutover,
