@@ -411,6 +411,17 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'aria-label="External handoff and provider read-back"' in approval
     assert 'External Handoff &amp; Read-Back' in approval
     assert 'Evidence Boundaries' in approval
+    # Actions and evidence must be peer surfaces, not stacked bordered cards.
+    assert 'items-stretch gap-4 lg:grid-cols-5' in approval
+    assert 'Handoff Actions' in approval
+    assert 'Complete governed actions only when eligible.' in approval
+    assert 'class="w-full mt-3 space-y-3"' in approval
+    assert 'class="w-full mt-3 space-y-3 border-t border-outline-subtle pt-3"' in approval
+    assert 'aria-label="Independent Platform Admin required"' in approval
+    assert 'You prepared this plan. A different authorized Platform Admin must verify and accept it.' in approval
+    assert 'aria-label="External read-back prerequisites"' in approval
+    assert 'mt-3 flex min-w-0 items-start gap-2.5 border-t border-outline-subtle pt-3' in approval
+    assert 'External Handoff &amp; Read-Back' in approval
     assert approval.count('data-release-accepted-handoff-evidence') == 1
     assert approval.count('External Handoff Inspection Unavailable') == 1
     assert approval.index('data-release-accepted-handoff-workspace') < approval.index(
@@ -620,6 +631,29 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'hx-get=' in review_expired
     assert '<form ' not in review_expired
     assert 'native_cycle.restart_blocked_by_readback' in step
+    # Expired approval is one clean ordered recovery list, with the original
+    # requester-only restart and blocked-by-read-back guards unchanged.
+    expired_action = step.split('{% elif native_cycle.approval_expired %}', 1)[1].split(
+        '{% elif native_cycle.review_expired %}', 1
+    )[0]
+    assert 'data-release-next-action-approval-expired' in expired_action
+    assert 'aria-label="Expired handoff recovery"' in expired_action
+    assert 'Renew Independent Approval' in expired_action
+    assert 'aria-label="Expired handoff approval recovery steps"' in expired_action
+    assert expired_action.count('<li class=') == 3
+    for instruction in (
+        'Verify Provider Ownership',
+        'Restart the Expired Plan',
+        'Request Governed Recovery',
+        'Obtain Independent Approval',
+    ):
+        assert instruction in expired_action
+    assert 'native_cycle.restart_blocked_by_readback' in expired_action
+    assert 'native_cycle.restart_required' in expired_action
+    assert 'row.release_handoff_plan.requested_by == current_user.id' in expired_action
+    assert 'name="confirm_handoff_restart"' in expired_action
+    assert 'Restart Expired Handoff Plan' in expired_action
+    assert expired_action.count('<form ') == 1
     assert 'native_cycle.restart_required' in step
     assert 'native_cycle.restart_zero_transfer_recheck_required' in step
     assert 'Last committed read-back classified zero transferred resources' in step
@@ -766,7 +800,7 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert 'readback_status.dry_run_passed' in approval
     assert 'aria-label="External read-back prerequisites"' in approval
     assert 'External Handoff Inspection Unavailable' in approval
-    assert 'The original requester must restart it' in approval
+    assert 'The original requester must restart with a new SHA' in approval
     assert "tenant_release_step_urls['finalize']" in approval
     assert 'View recovery steps' in approval
     assert 'A historical Dry-Run Passed receipt' not in approval
