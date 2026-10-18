@@ -693,6 +693,11 @@ def test_resource_profile_registry_reflows_without_forced_horizontal_scrolling()
     for label in ('Contract', 'Allocation', 'Usage'):
         assert f'xl:hidden">{label}</span>' in registry
     assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
+    # The desktop Manage action follows the same 16px right inset as the
+    # shared Kubernetes Inventory action column and this table's Action header.
+    action_cell = registry.split('<td class="{{ table_ui.cell_classes(action=true) }}', 1)[1].split('</td>', 1)[0]
+    assert 'xl:!px-4' in action_cell
+    assert 'xl:!px-2' not in action_cell
     assert 'colspan="5" class="block p-0 xl:table-cell"' in registry
     assert 'data-kaori-registry-empty' in registry
     assert registry.count('data-kaori-profile-column-label') == 3
