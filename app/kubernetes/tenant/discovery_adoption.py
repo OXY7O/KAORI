@@ -24,6 +24,7 @@ from app.kubernetes.tenant.capsule_tenant import qualify_capsule_tenant_adoption
 from app.kubernetes.tenant.discovery_service import (
     _adoption_environment,
     _apply_capsule_allocation_capability_state,
+    capsule_managed_adoption_blocker,
     _capsule_phase,
     _managed_capsule_map,
     _managed_namespace_map,
@@ -674,6 +675,11 @@ def _adopt_capsule(context: _AdoptionContext) -> tuple[TenantEnvironment, Tenant
         provider_state=provider_state,
         capability_evidence=capability_evidence,
     )
+    # Recheck the identical preflight authority rule against fresh provider
+    # observation before allocating KAORI rows or invoking a provider cutover.
+    adoption_blocker = capsule_managed_adoption_blocker(allocation, preview_only=False)
+    if adoption_blocker:
+        raise ValueError(adoption_blocker)
 
     # The Capsule controller may report Namespaces already governed through
     # Native or another Capsule Tenant. Never reparent such Namespace records
