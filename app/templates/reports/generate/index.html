@@ -3,6 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/form_field.html" as form_field %}
+{% import "components/action_button.html" as action_button %}
 {% macro workflow_number(number, compact=false) -%}
     <span class="inline-flex shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft font-semibold tracking-wide text-kaori-primary {% if compact %}h-7 min-w-7 px-1.5 text-xs{% else %}h-8 min-w-8 px-2 text-xs{% endif %}"
           data-generate-section-number="{{ number }}"
@@ -778,25 +779,25 @@
                     </div>
                     <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
                         <a href="{{ url_for('reports.generated_reports') }}"
-                           class="inline-flex min-h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">Cancel</a>
+                           class="{{ action_button.classes('secondary') }}"><i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>Cancel</a>
                         <button type="button"
                                 id="wizard-back-button"
-                                class="hidden min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">
+                                class="hidden {{ action_button.classes('secondary') }}">
                             <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
                             Back
                         </button>
                         <button type="button"
                                 id="wizard-next-button"
-                                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                            Next
+                                class="{{ action_button.classes('primary') }}">
                             <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
+                            Next
                         </button>
                         <button type="submit"
                                 id="generate-report-button"
                                 data-operation-submit
                                 data-loading-label="Queueing report..."
                                 {% if not initial_request_ready %}disabled{% endif %}
-                                class="hidden min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted">
+                                class="hidden {{ action_button.classes('primary') }}">
                             <i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>
                             <span data-operation-submit-label>Create &amp; Queue Report</span>
                         </button>
