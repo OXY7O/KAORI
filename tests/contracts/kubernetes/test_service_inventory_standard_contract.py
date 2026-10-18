@@ -146,7 +146,7 @@ def test_kubernetes_inventory_network_and_configuration_filters_have_associated_
         for control_id, query_name in filter_controls.items():
             assert f'for="{control_id}"' in card
             if query_name == 'search':
-                assert f"table_ui.search_field('search', search," in card
+                assert "table_ui.search_field('search', search," in card
                 assert f"id='{control_id}')" in card
             else:
                 assert f'<select id="{control_id}" name="{query_name}"' in card
