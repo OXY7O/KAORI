@@ -229,24 +229,29 @@
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">Channel Name</label>
-                            <input name="name"
+                            <label for="notification-channel-name" class="{{ table_ui.filter_label_classes() }}">Channel Name</label>
+                            <input id="notification-channel-name"
+                                   name="name"
                                    required
                                    value="{{ form_channel.name if form_channel else '' }}"
                                    class="{{ table_ui.filter_input_classes() }}"
                                    placeholder="Operations Alerts">
                         </div>
                         <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">Provider</label>
                             {% if form_channel %}
-                                <div class="flex min-h-10 items-center rounded-md border border-outline-default bg-surface-subtle px-3 text-sm font-semibold text-content-primary">
-                                    {% for provider_option in payload.providers %}
-                                        {% if provider_option.key == form_channel.provider_key %}{{ provider_option.label }}{% endif %}
-                                    {% endfor %}
-                                </div>
+                                <dl>
+                                    <dt class="{{ table_ui.filter_label_classes() }}">Provider</dt>
+                                    <dd class="flex min-h-10 items-center rounded-md border border-outline-default bg-surface-subtle px-3 text-sm font-semibold text-content-primary">
+                                        {% for provider_option in payload.providers %}
+                                            {% if provider_option.key == form_channel.provider_key %}{{ provider_option.label }}{% endif %}
+                                        {% endfor %}
+                                    </dd>
+                                </dl>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Provider is immutable. Create a new channel to change transport.</p>
                             {% else %}
-                                <select name="provider_key"
+                                <label for="notification-channel-provider" class="{{ table_ui.filter_label_classes() }}">Provider</label>
+                                <select id="notification-channel-provider"
+                                        name="provider_key"
                                         x-model="provider"
                                         required
                                         class="{{ table_ui.filter_select_classes() }}">
@@ -258,8 +263,9 @@
                             {% endif %}
                         </div>
                         <div>
-                            <label class="{{ table_ui.filter_label_classes() }}">Minimum Alert Severity</label>
-                            <select name="minimum_severity"
+                            <label for="notification-channel-minimum-severity" class="{{ table_ui.filter_label_classes() }}">Minimum Alert Severity</label>
+                            <select id="notification-channel-minimum-severity"
+                                    name="minimum_severity"
                                     class="{{ table_ui.filter_select_classes() }}">
                                 {% for option in payload.severity_options %}
                                     <option value="{{ option.value }}"
