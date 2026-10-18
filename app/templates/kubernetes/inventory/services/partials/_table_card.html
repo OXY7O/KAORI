@@ -39,8 +39,8 @@
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <input type="hidden" name="partial_mode" value="page_workspace">
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}">Cluster</label>
-                <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
+                <label class="{{ table_ui.filter_label_classes() }}" for="services-cluster-filter">Cluster</label>
+                <select id="services-cluster-filter" name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
                         <option value="{{ cluster.id }}"
@@ -49,8 +49,8 @@
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}">Namespace</label>
-                <select name="namespace" class="{{ table_ui.filter_select_classes() }}">
+                <label class="{{ table_ui.filter_label_classes() }}" for="services-namespace-filter">Namespace</label>
+                <select id="services-namespace-filter" name="namespace" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Namespaces</option>
                     {% for ns in inventory.namespaces %}
                         <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
@@ -58,8 +58,8 @@
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}">Service Type</label>
-                <select name="type" class="{{ table_ui.filter_select_classes() }}">
+                <label class="{{ table_ui.filter_label_classes() }}" for="services-type-filter">Service Type</label>
+                <select id="services-type-filter" name="type" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Types</option>
                     {% for type_name in inventory.service_filter_types %}
                         <option value="{{ type_name }}"
@@ -68,8 +68,8 @@
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}">Search Services</label>
-                {{ table_ui.search_field('search', search, 'Search Service, namespace, type, IP, or port') }}
+                <label class="{{ table_ui.filter_label_classes() }}" for="services-search-filter">Search Services</label>
+                {{ table_ui.search_field('search', search, 'Search Service, namespace, type, IP, or port', id='services-search-filter') }}
             </div>
         </form>
     </div>
