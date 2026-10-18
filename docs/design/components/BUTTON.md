@@ -16,6 +16,8 @@ Each action group must contain no more than one visually dominant primary action
 
 Primary and destructive controls share the same geometry, typography, icon placement, focus behavior, and loading behavior. Destructive differs through semantic color and action icon, not through a different shape or density.
 
+The canonical shared `components/action_button.html::classes()` exposes `primary`, `secondary`, and `critical` variants. Use `classes('critical', full=true)` for a full-width revoke/delete workflow submission **inside an explicitly destructive context**; keep table-row `table_ui.action_classes()` confined to row utilities/launchers. The shared variant owns 40px geometry, Critical color, focus, active, and disabled states; domain templates still own authorization and the submission/confirmation lifecycle.
+
 ## Required anatomy
 
 A standard action button uses this order:

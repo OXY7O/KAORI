@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/info_tip.html" as info_tip %}
@@ -273,7 +274,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit"
                                             {% if not can_manage %}disabled aria-disabled="true"{% endif %}
-                                            class="{{ table_ui.action_classes() }} w-full justify-center gap-2 py-2">
+                                            class="{{ action_button.classes('secondary', full=true) }}">
                                         <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                                         Reconcile
                                     </button>
@@ -298,7 +299,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit"
                                             {% if not can_manage %}disabled aria-disabled="true"{% endif %}
-                                            class="{{ table_ui.action_classes(true) }} w-full justify-center gap-2 py-2">
+                                            class="{{ action_button.classes('critical', full=true) }}">
                                         <i data-lucide="shield-x" class="h-4 w-4"></i>
                                         Revoke
                                     </button>
