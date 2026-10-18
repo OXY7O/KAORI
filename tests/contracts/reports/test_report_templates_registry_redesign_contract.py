@@ -133,3 +133,29 @@ def test_template_mutations_preserve_registry_context() -> None:
     assert 'name="next" value="{{ payload.registry_return_url }}"' in template
     assert template.count('name="next" value="{{ payload.registry_return_url }}"') >= 4
     assert 'Activate to Generate' in template
+
+
+def test_template_registry_uses_shared_table_geometry_and_keeps_contract_columns() -> None:
+    from jinja2 import Environment
+
+    template = read(ROOT / 'app/templates/reports/report_templates/index.html')
+    Environment().parse(template)
+    registry = template.split('data-template-registry-table="compact-v3"', 1)
+    assert len(registry) == 2
+    prefix = registry[0].rsplit('<div class="min-w-0 overflow-x-auto">', 1)[1]
+    assert "table_ui.table_classes('min-w-[1050px] !table-fixed')" in prefix
+    table = registry[1].split('</table>', 1)[0]
+    assert '<caption class="sr-only">' in table
+    assert 'table_ui.head_classes()' in table
+    assert 'table_ui.body_classes()' in table
+    assert 'table_ui.row_classes()' in table
+    assert table.count('scope="col"') == 6
+    assert table.count('table_ui.header_cell_classes(') == 6
+    assert table.count('table_ui.cell_classes(') == 6
+    for proportion in ('31', '25', '12', '10', '14', '8'):
+        assert f'w-[{proportion}%]' in table
+    assert 'data-template-row="{{ template.template_key }}"' in table
+    assert 'table_label.status_indicator_label(template.status_label, template.status_tone)' in table
+    assert 'data-dialog-target="template-detail-{{ loop.index }}"' in table
+    assert '<thead class="border-b border-outline-subtle' not in table
+    assert '<td class="px-4 py-4 align-top"' not in table

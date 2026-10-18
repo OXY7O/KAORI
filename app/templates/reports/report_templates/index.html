@@ -269,24 +269,25 @@
                     </select>
                 </label>
             {% endcall %}
-            <div class="min-w-0">
-                <table class="w-full table-fixed text-left"
+            <div class="min-w-0 overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[1050px] !table-fixed') }}"
                        data-template-registry-table="compact-v3">
-                    <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold uppercase tracking-wide text-content-muted">
+                    <caption class="sr-only">Report template definitions, contracts and available actions</caption>
+                    <thead class="{{ table_ui.head_classes() }}">
                         <tr>
-                            <th class="w-[31%] px-5 py-3 sm:px-6">Template</th>
-                            <th class="w-[25%] px-4 py-3">Contract</th>
-                            <th class="w-[12%] px-4 py-3">Output</th>
-                            <th class="w-[10%] px-4 py-3">Sections</th>
-                            <th class="w-[14%] px-4 py-3">Ownership</th>
-                            <th class="w-[8%] px-5 py-3 text-right sm:px-6">Action</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[31%] sm:px-6">Template</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[25%]">Contract</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Output</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[10%]">Sections</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Ownership</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[8%] sm:px-6">Action</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-outline-subtle">
+                    <tbody class="{{ table_ui.body_classes() }}">
                         {% for template in payload.templates %}
-                            <tr class="transition hover:bg-surface-hover"
+                            <tr class="{{ table_ui.row_classes() }}"
                                 data-template-row="{{ template.template_key }}">
-                                <td class="px-5 py-4 align-top sm:px-6">
+                                <td class="{{ table_ui.cell_classes() }} sm:px-6">
                                     <div class="flex min-w-0 items-start gap-3">
                                         <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary"
                                               aria-hidden="true">
@@ -299,7 +300,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="{{ table_ui.cell_classes() }}">
                                     <p class="truncate text-sm font-semibold text-content-primary"
                                        title="{{ template.report_type_label }}">{{ template.report_type_label }}</p>
                                     <div class="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-5 text-content-muted">
@@ -308,19 +309,19 @@
                                         <span>{{ template.family_label }}</span>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="{{ table_ui.cell_classes() }}">
                                     <p class="text-sm font-semibold text-content-primary">{{ template.output_format }}</p>
                                     <p class="mt-1 text-xs text-content-muted">{{ template.allowed_formats|join(" / ") if template.allowed_formats else template.output_format }}</p>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="{{ table_ui.cell_classes() }}">
                                     <p class="text-sm font-semibold text-content-primary">{{ template.section_count }}</p>
                                     <p class="mt-1 text-xs text-content-muted">Included Sections</p>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td class="{{ table_ui.cell_classes() }}">
                                     {{ table_label.status_indicator_label(template.status_label, template.status_tone) }}
                                     <p class="mt-1 text-xs text-content-muted">{{ template.ownership_label }}</p>
                                 </td>
-                                <td class="px-5 py-4 text-right align-top sm:px-6">
+                                <td class="{{ table_ui.cell_classes(action=true) }} sm:px-6">
                                     <button type="button"
                                             data-kaori-dialog-open
                                             data-dialog-target="template-detail-{{ loop.index }}"
