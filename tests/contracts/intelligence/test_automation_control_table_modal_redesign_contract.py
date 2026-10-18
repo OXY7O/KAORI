@@ -97,3 +97,43 @@ def test_non_overview_workspaces_share_one_padded_canvas_and_do_not_own_outer_sp
     ):
         template = read(path)
         assert '<div class="space-y-5">' not in template
+
+
+def test_routing_and_execution_policy_actions_use_shared_button_variants() -> None:
+    from jinja2 import Environment
+
+    routing = read('app/templates/intelligence/partials/_alert_ops_routing_editor_modal.html')
+    execution = read(
+        'app/templates/intelligence/partials/automation_control/_execution_configuration_modal.html'
+    )
+    shared = read('app/templates/components/action_button.html')
+
+    for template in (routing, execution):
+        Environment().parse(template)
+        assert '{% import "components/action_button.html" as action_button %}' in template
+        assert 'class="inline-flex min-h-10' not in template
+
+    assert routing.count("action_button.classes('critical')") == 1
+    assert routing.count("action_button.classes('primary')") == 1
+    assert 'delete_routing_policy' in routing
+    assert 'formnovalidate' in routing
+    assert 'selected_policy' in routing
+    assert 'Create Routing Policy' in routing
+    assert 'Update Routing Policy' in routing
+
+    assert execution.count("action_button.classes('primary')") == 2
+    assert 'min-w-[14rem] whitespace-nowrap' in execution
+    assert 'disabled aria-disabled="true"' in execution
+    assert 'update_automation_deployment_policy' in execution
+    assert 'update_automation_operational_control' in execution
+    assert execution.count('name="csrf_token"') == 2
+
+    for token in (
+        'hover:bg-kaori-primary-hover',
+        'active:bg-kaori-primary-dark',
+        'hover:opacity-90',
+        'active:opacity-80',
+        'focus-visible:ring-2',
+        'disabled:cursor-not-allowed',
+    ):
+        assert token in shared

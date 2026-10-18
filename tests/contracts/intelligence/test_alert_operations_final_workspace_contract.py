@@ -64,7 +64,9 @@ def test_routing_workspace_is_table_led_and_crud_uses_modal() -> None:
     assert 'bg-kaori-soft text-kaori-primary' in editor
     assert 'Matcher tip:' in editor
     assert 'Policy Checklist' in editor
-    assert 'bg-status-critical' in editor
+    assert '{% import "components/action_button.html" as action_button %}' in editor
+    assert "action_button.classes('critical')" in editor
+    assert "action_button.classes('primary')" in editor
     assert 'Delete Policy' in editor
     assert 'def routing_policy_details(policy_ref: str)' in routes
     assert 'def delete_routing_policy(policy_id: int)' in routes
