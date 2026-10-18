@@ -99,3 +99,24 @@ def test_adoption_provider_copy_retains_readback_and_external_constraints() -> N
     assert 'by provider read-back and preserves external constraints.' in adoption
     assert 'KAORI Managed Namespace allocation verified by Native Kubernetes read-back.' in allocation
     assert 'Adoption origin retained in evidence.' in allocation
+
+
+def test_capsule_preflight_blocks_unadmitted_quota_without_offering_submit() -> None:
+    source = _source()
+    # A Capsule Tenant with observed Native namespaced quota must not be
+    # presented as eligible for provider-authoritative managed cutover.
+    assert 'data-capsule-adoption-authority-blocked' in source
+    assert 'Managed Adoption Blocked' in source
+    assert 'row.adoption_management_blocker' in source
+    assert 'row.provider_key == \'capsule\' and row.adoption_management_blocker' in source
+    assert 'aria-label="Managed adoption blocked by unadmitted Capsule quota authority"' in source
+    assert 'disabled' in source
+    assert 'Adoption Blocked' in source
+    assert 'Control Unavailable.' in source
+    assert 'Attach Capsule Namespace' in source
+    assert 'Adopt & Manage' in source
+    # The route/form remains intact for eligible managed adoption or mirror-only
+    # namespace attachment; no additional write endpoint is created.
+    assert source.count('type="submit"') == 1
+    assert 'tenant.adopt_discovered_tenant_route' in source
+    assert 'name="csrf_token"' in source

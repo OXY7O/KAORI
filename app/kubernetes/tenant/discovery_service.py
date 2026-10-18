@@ -209,6 +209,50 @@ def _apply_capsule_allocation_capability_state(
     allocation['capability_preview'] = capability if preview_only else None
 
 
+_CAPSULE_MANAGED_ADOPTION_CAPABILITIES = {
+    'capsule_global_resource_quota': 'shared_global_quota',
+    'capsule_tenant_resource_quotas': 'tenant_resource_quotas',
+}
+
+
+def capsule_managed_adoption_blocker(
+    allocation: Mapping[str, Any],
+    *,
+    preview_only: bool,
+) -> str | None:
+    """Admit only proven Capsule-owned quota for mutation-capable adoption.
+
+    Native Namespace ResourceQuota/LimitRange may be observed beneath Capsule
+    but is never a substitute for a Capsule Tenant/GRQ write authority.
+    """
+    authority = str(allocation.get('allocation_authority') or '')
+    if allocation.get('error'):
+        return 'Capsule allocation observation failed; review current provider evidence before adoption.'
+    if allocation.get('authority_unsupported_dimensions') or allocation.get('authority_ambiguous_dimensions'):
+        return 'Capsule quota fields or competing authorities need review before managed adoption.'
+    if authority == 'none_observed' and not allocation.get('shared_quota'):
+        return None
+    if authority == 'native_namespaced':
+        return (
+            'Only namespaced quota/policy is observed; a Capsule-managed Tenant needs one admitted '
+            'Tenant.spec.resourceQuotas or GlobalResourceQuota authority. Native quota cannot substitute.'
+        )
+    required_capability = _CAPSULE_MANAGED_ADOPTION_CAPABILITIES.get(authority)
+    if not required_capability:
+        return 'Capsule allocation authority is unproven or ambiguous; managed adoption is blocked.'
+
+    capability_key = 'capability_preview' if preview_only else 'admitted_capability'
+    if (
+        allocation.get('control_state') != 'observed'
+        or allocation.get(capability_key) != required_capability
+    ):
+        return (
+            f'Capsule quota authority {authority} requires an available {required_capability} '
+            'capability and supported provider evidence before managed adoption.'
+        )
+    return None
+
+
 def get_tenant_discovery_context(
     *,
     page: int = 1,
@@ -690,6 +734,13 @@ def get_tenant_adoption_preflight_context(
             capability_evidence=capsule_capability_evidence,
             preview_only=True,
         )
+        adoption_management_blocker = capsule_managed_adoption_blocker(
+            allocation,
+            preview_only=True,
+        )
+        if adoption_management_blocker:
+            allocation['control_state'] = 'control_unavailable'
+            allocation['control_reason'] = adoption_management_blocker
         metadata = item.get('metadata') or {}
         row = {
             'cluster': cluster,
@@ -710,6 +761,7 @@ def get_tenant_adoption_preflight_context(
             'provider_api_version': capsule_version,
             'allocation_preflight': allocation,
             'capsule_capability_preflight': capsule_capability_evidence,
+            'adoption_management_blocker': adoption_management_blocker,
         }
 
     existing_tenant_environments: list[dict[str, Any]] = []

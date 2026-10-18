@@ -974,6 +974,36 @@ Tenant does not own a second Intelligence engine or export subsystem.
 - PDF, XLSX, and CSV publication is routed through the canonical Reports publication lifecycle from #655.
 - Missing/stale evidence remains explicit; absence of provider/capacity evidence is never converted into a healthy or zero value.
 
+## Capsule Managed Adoption Authority Admission (#2463)
+
+A Capsule Tenant shown as **Discovered** is not necessarily eligible for
+**Adopt & Manage**. The current approved managed-on-adopt path requires either
+a unique, supported `Tenant.spec.resourceQuotas` or `GlobalResourceQuota`
+source with available matching Capsule capability, or a genuinely quota-absent
+Tenant. A Capsule-controlled Tenant with only namespaced Native
+ResourceQuota/LimitRange must **not** be treated as managed-adoption eligible:
+`control_state=observed` alone does not establish a Capsule source-write
+authority. Ambiguous, unsupported, degraded, or unproven authority also fails
+closed.
+
+Deep **Review Adoption** now shows **Managed Adoption Blocked**, the actual
+authority reason and disabled **Adopt & Manage** when that admission is
+missing, while leaving provider observation and technical evidence visible.
+Submit recomputes the same authority predicate from live identity,
+UID/resourceVersion, quota and capability observations **before constructing
+governance records or calling the Capsule cutover**. The original backend
+cutover/read-back gates are unchanged; no Native quota fallback is allowed.
+This is not an implicit **Adopted / Observed** workflow or provider fix.
+Resolve the Capsule authority with the owning infrastructure team and
+re-run a fresh preflight before further UAT.
+
+This does not prove whether a previous submission mutated provider state.
+The route's generic may-have-written warning is conservative; verify the
+Capsule Tenant, any GlobalResourceQuota and correlated Namespace quotas
+against the last known live evidence before retrying. Capture rejected and
+admitted preflight screenshots and fresh server/provider evidence. Official
+CI/CD and human acceptance remain HOLD until instructed.
+
 ## Final UAT boundary
 
 Native-provider acceptance is mandatory. Final UAT must exercise, as applicable:
