@@ -1916,3 +1916,19 @@ def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
     )
     assert 'li class="min-w-0 bg-surface-card p-4"' in modal
     assert 'li class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4"' not in modal
+
+
+def test_tenant_group_edit_modal_uses_canonical_primary_and_secondary_actions() -> None:
+    group = read('app/templates/kubernetes/tenant/partials/_group_registry.html')
+    action = read('app/templates/components/action_button.html')
+    assert '{% import "components/action_button.html" as action_button %}' in group
+    footer = group.split('<footer class="flex flex-col-reverse gap-2', 1)[1].split('</footer>', 1)[0]
+    assert 'data-tenant-group-edit-close' in footer
+    assert 'class="{{ action_button.classes(\'secondary\') }}"' in footer
+    assert 'type="submit"' in footer
+    assert 'class="{{ action_button.classes(\'primary\') }}"' in footer
+    assert 'Save Changes' in footer
+    assert 'variant == \'primary\'' in action
+    assert 'disabled:bg-status-disabled-soft' in action
+    assert 'hx-disabled-elt="find button"' in group
+    assert 'data-tenant-group-edit-subject' in group
