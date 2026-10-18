@@ -738,7 +738,7 @@ non-destructive preservation. The original long blocker remains in the
 explicit trusted-reason allowlist for historical plan compatibility only; new
 reviews produce the shorter reason.
 
-## Tenant Release Step 3 — structured independent approval evidence (#1089; current presentation authority)
+## Tenant Release Step 3 — structured independent approval evidence (#1089, #2401; current presentation authority)
 
 Human DevContainer review of Release wizard **Step 3: Independent approval and handoff**
 found an acknowledged plan, external reference, long SHA-256, and Platform Admin
@@ -746,11 +746,11 @@ verification stacked as nearly equal paragraphs. The canonical Step 3 now
 has a compact KAORI icon/title, a separation-of-duties note, and distinct
 committed evidence regions:
 
-- **Active handoff plan** is a single compact locked-plan status panel showing
-  the original pending/acknowledged/not-replaceable state, successor owner,
-  and change-record reference. It explains plan immutability and governed
-  restart without implying Release is authorized. Expired plans still
-  distinguish original requester and required fresh preflight.
+- **Active handoff plan** now uses two adjacent responsive evidence cards (#2401):
+  the read-only locked-plan review state and the planned successor owner /
+  change record. Cards stack on narrow screens. The same pending/acknowledged/
+  expired conditionals and original-requester fresh preflight requirement are
+  preserved; neither card claims provider ownership has transferred.
 - The exact **Plan SHA-256** remains visible in a wrap-safe monospace value
   directly beneath the plan; it is not ellipsized or substituted with a
   status chip. A short acknowledgement line makes the outstanding external
@@ -784,6 +784,20 @@ provider-side operation, identity mapping, credential or approval engine.
 The outer Release wizard continues to own one active URL-scoped step, while
 this content stays committed-state driven. All **10 Step 3 conditional forms**
 and **14 Tenant forms** remain present in source.
+
+**Release Governance contextual guidance / Step 4 pending action (#2401):**
+The shared `components/info_tip.html` provides pointer, keyboard and touch
+guidance alongside the permanent Release Governance heading. It distinguishes
+committed review, independently approved plan, external successor consent,
+provider handoff/read-back and authorized finalization. The Step 1 condition
+cards use shortened operator summaries for Namespace provider mutation and
+KAORI-linked allocation ownership; the exact original provider/governance
+reason stays accessible under **Exact recorded reason** and remains unchanged
+in committed evidence. In Step 4 only the `approval_complete == false` action
+branch gains a structured status and three not-yet-complete gates (review,
+successor acceptance, provider verification), followed by the same HTMX
+navigation CTA. Expiry, provider recovery, TLS and other branches are untouched.
+No approval evidence, provider mutation or Release state is synthesized.
 
 This supersedes *only* Step 3 presentation from the earlier #1075/#1077
 four-step wizard, not its admission/security rules. Browser Visual QA for

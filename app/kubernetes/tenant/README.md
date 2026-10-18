@@ -416,10 +416,11 @@ external-reference status and audit lineage are preserved. No live
 provider fetch in normal UI; no automatic mutation. DevContainer Visual
 QA pending and every CI/CD/admission gate remains HOLD.
 
-**Tenant Release Step 3 — independent approval evidence (#1089; current UI):**
+**Tenant Release Step 3 — independent approval evidence (#1089, #2401; current UI):**
 In the four-step Native/Capsule Release wizard, the independent-approval
-step now separates a compact locked-plan state and original Successor owner /
-Change record from an untruncated monospace Plan SHA-256, the
+step now presents the locked-plan review status and original Successor owner /
+Change record in **two responsive cards** (stacked on mobile), followed by
+an untruncated monospace Plan SHA-256, the
 independent-review acknowledgement, and the **External Reference Unverified**
 claim. A standalone focused Platform Admin verification form retains
 existing X.509 registered Kubernetes connection, permission proof and
@@ -437,6 +438,21 @@ verification without presenting any of these as completed. The panels stack
 on narrow screens, retain #2390's bounded form and responsive button, and
 leave active, blocked, expired and recovery states untouched. Tests/DevContainer
 human QA are pending; CI/CD admission stays HOLD.
+
+**Tenant Release guidance and pending action clarity (#2401):**
+The permanent Release Governance header uses the existing keyboard/touch/hover
+`info_tip` control for a short explanation of independent approval versus
+successor acceptance, provider read-back and Release. Step 1 translates the two
+verbose Namespace provider mutation / KAORI-linked allocation blockers into
+short operator-friendly condition cards without altering their canonical audit
+evidence or the **Exact recorded reason** expansion. Step 3 preserves the
+pending/acknowledged/expired predicates and existing reviewer/consent form.
+Step 4's **Approval Pending** state makes the distinct review, acceptance and
+provider verification gates readable in the formerly mostly empty action card
+and retains its original read-only navigation to Step 3. No other readiness
+branch, route, permission, CSRF/HTMX action or provider operation changes.
+Focused source contracts are updated; execution, browser Visual QA, Developer
+Check, Full Admission and staging promotion remain HOLD.
 
 **Managed allocation blocker/admission copy compatibility (#1085 corrective):**
 The longer Resource Profile-linked allocation message from

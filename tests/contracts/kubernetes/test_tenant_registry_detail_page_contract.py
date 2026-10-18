@@ -346,7 +346,7 @@ def test_release_step_three_preparation_uses_balanced_governance_panels():
     assert boundaries.count('<li ') == 3
     assert '<form ' not in boundaries
     assert '<button ' not in boundaries
-    assert 'Preparing it does not record approval.' in boundaries
+    assert 'A separate authorized operator must approve this exact plan.' in boundaries
     assert 'does not verify consent or transfer provider ownership.' in boundaries
     assert 'Release remains gated by committed verification' in boundaries
 
@@ -376,6 +376,11 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
 
     # An acknowledged plan is locked without inventing approval or provider transfer.
     assert re.search(r'role="status"\s+aria-label="Active handoff plan"', approval)
+    assert 'data-release-plan-review-cards' in approval
+    assert 'md:grid-cols-2' in approval
+    assert 'aria-label="Independent review status"' in approval
+    assert 'aria-label="Planned handoff record"' in approval
+    assert 'Scope locked to this plan.' in approval
     assert "row.release_handoff_preparation_state == 'acknowledged'" in approval
     assert "row.release_handoff_preparation_state == 'expired'" in approval
     assert 'governed restart' in approval
@@ -505,6 +510,12 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert '{{ checkpoint.label }}' in step
     assert 'checkpoint.display_status' in step
     assert 'Next required action' in step
+    assert 'data-release-next-action-pending' in step
+    assert 'aria-label="Independent approval required"' in step
+    assert 'Remaining approval path' in step
+    assert 'aria-label="Remaining Release approval gates"' in step
+    assert 'The requester cannot approve their own plan.' in step
+    assert 'Open Approval &amp; Handoff' in step
     assert re.search(r'role="status"\s+aria-label="Expired handoff recovery"', step)
     assert 'native_cycle.approval_expired' in step
     assert 'native_cycle.review_expired' in step
@@ -935,6 +946,14 @@ def test_release_is_permanent_and_other_governance_sections_remain_accessible():
     assert '<summary' not in release.split('aria-label="Release wizard steps"', 1)[0]
     assert 'data-lucide="clipboard-check" class="h-5 w-5"' in release
     assert 'aria-label="Release Governance"' in release
+    assert 'info_tip.render(' in release
+    assert "'tenant-release-governance-help'" in release
+    assert 'Independent plan approval is not external successor acceptance.' in release
+    assert 'KAORI-mutated Namespace provider controls' in release
+    assert 'KAORI-linked allocation ownership' in release
+    assert 'Independent external handoff approval required.' in release
+    assert 'Approve external handoff and verify provider state.' in release
+    assert 'Exact recorded reason' in release
     assert detail.count('name="tenant-governance"') == len(names)
     assert detail.count('tenant_detail_open_section ==') == len(names) + 1
     assert detail.count('group-open:rotate-180') == len(names) + 1
