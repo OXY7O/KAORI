@@ -39,8 +39,11 @@
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <input type="hidden" name="partial_mode" value="page_workspace">
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}" for="ingresses-cluster-filter">Cluster</label>
-                <select id="ingresses-cluster-filter" name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="ingresses-cluster-filter">Cluster</label>
+                <select id="ingresses-cluster-filter"
+                        name="cluster_id"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
                         <option value="{{ cluster.id }}"
@@ -49,8 +52,11 @@
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}" for="ingresses-namespace-filter">Namespace</label>
-                <select id="ingresses-namespace-filter" name="namespace" class="{{ table_ui.filter_select_classes() }}">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="ingresses-namespace-filter">Namespace</label>
+                <select id="ingresses-namespace-filter"
+                        name="namespace"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Namespaces</option>
                     {% for ns in inventory.namespaces %}
                         <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
@@ -58,8 +64,11 @@
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}" for="ingresses-class-filter">Ingress Class</label>
-                <select id="ingresses-class-filter" name="class" class="{{ table_ui.filter_select_classes() }}">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="ingresses-class-filter">Ingress Class</label>
+                <select id="ingresses-class-filter"
+                        name="class"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Class States</option>
                     {% for option in inventory.classes %}
                         <option value="{{ option.value }}"
@@ -68,8 +77,11 @@
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}" for="ingresses-tls-filter">TLS Reference</label>
-                <select id="ingresses-tls-filter" name="tls" class="{{ table_ui.filter_select_classes() }}">
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="ingresses-tls-filter">TLS Reference</label>
+                <select id="ingresses-tls-filter"
+                        name="tls"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All TLS States</option>
                     <option value="enabled" {% if selected_tls == 'enabled' %}selected{% endif %}>TLS Declared</option>
                     <option value="disabled"
@@ -77,7 +89,8 @@
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}" for="ingresses-search-filter">Search</label>
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="ingresses-search-filter">Search</label>
                 {{ table_ui.search_field('search', search, 'Name, host, backend, or Secret', id='ingresses-search-filter') }}
             </div>
         </form>

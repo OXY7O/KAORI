@@ -116,16 +116,16 @@
                 <div class="min-w-0">
                     <div class="inline-flex flex-wrap items-center gap-1.5">
                         <h3 id="resource-profile-compute-heading"
-                        class="text-sm font-semibold text-content-primary">Basic Resources</h3>
+                            class="text-sm font-semibold text-content-primary">Basic Resources</h3>
                         {{ info_tip.render('resource-profile-compute-tip',
-                                        'Compute and workload guardrails',
-                                        'Core ResourceQuota dimensions for workload compute and pod count.',
-                                        [
-                                        'CPU/memory requests feed Capacity Governance.',
-                                        'Managed means KAORI owns the selected provider dimension after governed attachment.',
-                                        'Built-in preset values remain fixed.'
-                                        ],
-                                        placement='right', variant='guide') }}
+                                                'Compute and workload guardrails',
+                                                'Core ResourceQuota dimensions for workload compute and pod count.',
+                                                [
+                                                'CPU/memory requests feed Capacity Governance.',
+                                                'Managed means KAORI owns the selected provider dimension after governed attachment.',
+                                                'Built-in preset values remain fixed.'
+                                                ],
+                                                placement='right', variant='guide') }}
                     </div>
                     <span class="mt-1 block text-xs leading-5 text-content-muted">Basic profile guardrails for CPU, memory, and pod count.</span>
                 </div>
@@ -178,16 +178,16 @@
                 <div class="min-w-0">
                     <div class="inline-flex flex-wrap items-center gap-1.5">
                         <h3 id="resource-profile-storage-heading"
-                        class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
+                            class="text-sm font-semibold text-content-primary">Storage Guardrails</h3>
                         {{ info_tip.render('resource-profile-storage-tip',
-                                        'Bidirectional storage policy',
-                                        'Storage separates namespace-wide quota from per-PVC request bounds.',
-                                        [
-                                        'PVCs controls claim count; Total Storage controls cumulative requests.storage quota.',
-                                        'Min/Max PVC Size map to LimitRange[type=PersistentVolumeClaim].',
-                                        'Built-in presets manage both bounds; adoption, drift, reapply, and provider-state acceptance use the same committed values.'
-                                        ],
-                                        placement='right', variant='guide') }}
+                                                'Bidirectional storage policy',
+                                                'Storage separates namespace-wide quota from per-PVC request bounds.',
+                                                [
+                                                'PVCs controls claim count; Total Storage controls cumulative requests.storage quota.',
+                                                'Min/Max PVC Size map to LimitRange[type=PersistentVolumeClaim].',
+                                                'Built-in presets manage both bounds; adoption, drift, reapply, and provider-state acceptance use the same committed values.'
+                                                ],
+                                                placement='right', variant='guide') }}
                     </div>
                     <span class="mt-1 block text-xs leading-5 text-content-muted">Namespace quota and per-PVC bounds stay distinct but reconcile as one managed storage contract.</span>
                 </div>
@@ -283,11 +283,11 @@
                 <div class="min-w-0">
                     <div class="inline-flex flex-wrap items-center gap-1.5">
                         <h3 id="resource-profile-object-heading"
-                        class="text-sm font-semibold text-content-primary">Object Limits</h3>
+                            class="text-sm font-semibold text-content-primary">Object Limits</h3>
                         {{ info_tip.render('resource-profile-object-tip',
-                                        'Namespace object limits',
-                                        'ResourceQuota limits for common namespace objects.',
-                                        placement='right', variant='guide') }}
+                                                'Namespace object limits',
+                                                'ResourceQuota limits for common namespace objects.',
+                                                placement='right', variant='guide') }}
                     </div>
                     <span class="mt-1 block text-xs leading-5 text-content-muted">Services, ConfigMaps, and Secrets are isolated from compute/storage for easier ownership review.</span>
                 </div>
@@ -338,11 +338,11 @@
                 <div class="min-w-0">
                     <div class="inline-flex flex-wrap items-center gap-1.5">
                         <h3 id="resource-profile-container-heading"
-                        class="text-sm font-semibold text-content-primary">Container Defaults</h3>
+                            class="text-sm font-semibold text-content-primary">Container Defaults</h3>
                         {{ info_tip.render('resource-profile-limitrange-tip',
-                                        'Container LimitRange',
-                                        'These defaults are distinct from namespace ResourceQuota and do not change the profile class semantics.',
-                                        placement='right', variant='guide') }}
+                                                'Container LimitRange',
+                                                'These defaults are distinct from namespace ResourceQuota and do not change the profile class semantics.',
+                                                placement='right', variant='guide') }}
                     </div>
                     <span class="mt-1 block text-xs leading-5 text-content-muted">Used only when a container omits request/limit values.</span>
                 </div>
