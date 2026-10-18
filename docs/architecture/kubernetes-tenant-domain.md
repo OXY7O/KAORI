@@ -793,6 +793,31 @@ actions remain excluded; the existing Step 3 HTMX navigation is not an
 approval or Release endpoint. Provider recovery, approval expiry, TLS failure
 and review expiry retain higher priority; admission and human UAT stay HOLD.
 
+## Capsule Managed Adoption Authority Preflight (#2463, 2026-10-18)
+
+The approved **Adopt & Manage** path is a mutation-capable governance cutover,
+not a read-only adoption. Capsule quota ownership must be proven before that
+action is offered. Capability-first preflight uses the same predicate as
+commit-time validation: one supported Capsule Tenant.spec.resourceQuotas or
+GlobalResourceQuota source with matching available served capability and no
+unresolved authoritative dimension conflict; genuinely absent quota may
+retain the existing empty-source behavior. A Native namespaced quota under
+Capsule management does not grant KAORI a Capsule source-write path, even if
+its observation would otherwise report `observed`.
+
+**Fail-closed flow:** Discovery → selected live deep preflight → classify
+authority + capability + unsupported/ambiguous fields → show
+**Control Unavailable** and a disabled managed-adoption submit for
+unadmitted paths → fresh submit-side identity and authority recheck →
+existing provider-specific cutover/read-back only when admitted.
+The UI exposes blockers and technical evidence without offering
+implicit provider writes. The submit service validates before allocating
+KAORI governance rows; provider remains authoritative and there is no
+Native fallback or silent observed-only mode. Failure of the server-side
+predicate is not approval to retry; user must inspect actual provider
+evidence and repeat a fresh preflight. Protected approval/CSRF/HTMX
+mechanics and existing committed-read surfaces are unchanged.
+
 ## Tenant Release Step 3 — structured independent approval evidence (#1089, #2401; current presentation authority)
 
 Human DevContainer review of Release wizard **Step 3: Independent approval and handoff**
