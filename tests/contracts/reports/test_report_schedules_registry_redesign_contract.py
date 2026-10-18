@@ -304,3 +304,18 @@ def test_schedule_detail_modal_uses_four_read_only_contract_blocks() -> None:
     ):
         assert label in template
     assert 'The canonical report definition reused by every scheduled execution.' not in template
+
+
+def test_schedule_form_submit_uses_shared_primary_button_without_changing_post() -> None:
+    from jinja2 import Environment
+
+    template = read(TEMPLATE)
+    Environment().parse(template)
+    assert '{% import "components/action_button.html" as action_button %}' in template
+    schedule_form = template.split('{% macro schedule_form(', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert "action_button.classes('primary')" in schedule_form
+    assert 'class="inline-flex min-h-9' not in schedule_form
+    for token in ('method="POST"', 'action="{{ form_action }}"', 'csrf_token',
+                  'data-schedule-form', 'data-operation-submit', 'data-loading-label="{{ loading_label }}"',
+                  '{{ submit_label }}', 'name="next"'):
+        assert token in schedule_form
