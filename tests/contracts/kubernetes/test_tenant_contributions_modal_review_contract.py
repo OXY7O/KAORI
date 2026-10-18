@@ -20,11 +20,19 @@ def test_contributions_header_labels_and_footer_close_contract() -> None:
     footer = dialog.split('<footer ', 1)[1].split('</footer>', 1)[0]
 
     assert 'id="{{ contributions_dialog_id }}-title"' in header
-    assert 'Tenant Contributions evidence labels' in header
+    # Screenshot #3 reference: icon, inline title/status, description,
+    # then contextual metadata and right-aligned registry navigation.
+    assert 'data-lucide="users-round"' in header
+    assert 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft' in header
+    assert 'flex min-w-0 flex-wrap items-center gap-2' in header
     assert header.index('Tenant Contributions</h2>') < header.index("status_label('Read-only', 'info')")
-    assert "table_label.metadata_label('Committed scope', 'layers-3')" in header
-    assert 'allocation_overview.cluster.name' in header
+    assert header.index("status_label('Read-only', 'info')") < header.index('id="{{ contributions_dialog_id }}-description"')
+    assert header.index('id="{{ contributions_dialog_id }}-description"') < header.index('aria-label="Tenant Contributions context"')
+    assert "table_label.metadata_label('Committed scope', icon='layers-3')" in header
+    assert "table_label.metadata_label((allocation_overview.cluster.name ~ ' · ' ~ (allocation_overview.cluster.environment|title)), icon='server', wrap=true)" in header
+    assert 'Governed Namespace requests; Capsule shared quota counted once per Tenant.' in header
     assert 'Tenant Registry' in header
+    assert 'Committed Allocation Evidence</p>' not in header
 
     assert 'aria-label="Tenant Contributions evidence footer"' in dialog
     assert 'px-4 py-2.5 sm:px-6' in footer

@@ -479,11 +479,13 @@ Dev Container before human acceptance; official CI/CD remains HOLD.
 **Tenant Contributions is detail on demand:** the overview shows the committed
 Tenant count and opens the canonical native KAORI dialog. After DevContainer
 visual feedback, this detail workspace uses **one visual hierarchy**: concise
-cluster header with the **Read-only** state and **Committed scope** metadata
-labels in a dedicated row directly beneath the modal title, and a lightweight
-**Tenant Registry** navigation link pushed to the far right of the
-helper-description row (wrapping to its own right-aligned line on narrow screens).
-The top-right header corner contains only **Close**. Four summary metrics
+header aligned to the human-approved **Manage Identity Providers** modal reference:
+40px Violet icon at left, **Tenant Contributions** and its **Read-only** status
+inline, then the governed Namespace/Capsule deduplication description immediately
+below. The next compact context row holds **Committed scope** and the actual
+cluster/environment metadata labels plus the lightweight **Tenant Registry**
+navigation action, which wraps without horizontal overflow. The top-right
+header corner contains only the icon **Close**. Four summary metrics
 appear without any enclosing or per-metric cards, separated **only between
 columns** by full-height vertical rules that reach the summary strip edges
 (no stray right-edge divider or floating row-gap). The grid remains
