@@ -416,6 +416,27 @@ external-reference status and audit lineage are preserved. No live
 provider fetch in normal UI; no automatic mutation. DevContainer Visual
 QA pending and every CI/CD/admission gate remains HOLD.
 
+**Release Governance Step 3–4 approved-pattern layout refresh (#2401; Dev Container candidate):**
+Step 3 uses Title Case headings for Independent Approval and Handoff,
+Prepare Handoff Plan, Approval Boundaries and Planned Handoff Record.
+The reviewer checkbox retains its required `confirm_handoff_approval`
+authorization but reads: "I reviewed the successor, change record, and
+provider evidence; no transfer occurred." The acknowledged Native plan
+now places external-reference and permitted Platform Admin verification
+in the left 3/5 workspace and existing external handoff inspection/read-back
+evidence in the right 2/5. Mobile stacks the same controls; Native, Capsule,
+actor and expired states are still isolated by their original conditions.
+The original inspection form/status is moved, not duplicated or authorized
+automatically. No new provider API access or action.
+
+Step 4 **Verification Required** is now a status-and-steps panel with
+role-aware text and a short numbered list for outstanding successor
+acceptance, Native handoff or verified finalization. The original
+`Open Handoff Controls` HTMX link remains navigation only. Existing
+expirations, security permissions, recovery priority, forms, CSRF and
+provider-preserving Release gates remain intact. Existing contract test
+assertions are expanded; browser/runtime QA and official CI/CD remain HOLD.
+
 **Tenant Release Step 3 — independent approval evidence (#1089, #2401; current UI):**
 In the four-step Native/Capsule Release wizard, the independent-approval
 step now presents the locked-plan review status and original Successor owner /
