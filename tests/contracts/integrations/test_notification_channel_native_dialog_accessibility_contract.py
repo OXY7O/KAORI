@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -65,3 +66,30 @@ def test_configuration_modal_scrollable_cards_keep_spaced_fixed_actions() -> Non
         assert f'name="{name}"' in modal
     assert 'form_channel.provider_key' in modal
     assert 'data-kaori-dialog-transition' in modal
+
+
+def test_notification_channel_configuration_fields_have_associated_labels() -> None:
+    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+
+    for field_id, name, label in (
+        ('notification-channel-name', 'name', 'Channel Name'),
+        ('notification-channel-provider', 'provider_key', 'Provider'),
+        ('notification-channel-minimum-severity', 'minimum_severity', 'Minimum Alert Severity'),
+    ):
+        assert modal.count(f'id="{field_id}"') == 1
+        assert re.search(
+            rf'<label for="{field_id}"[^>]*>{label}</label>\\s*'
+            rf'<(?:input|select) id="{field_id}"\\s+name="{name}"',
+            modal,
+        )
+
+    # Edit mode is immutable metadata, never a label pointing at a missing select.
+    assert re.search(
+        r'{% if form_channel %}\\s*<dl>\\s*<dt[^>]*>Provider</dt>\\s*'
+        r'<dd[^>]*>',
+        modal,
+    )
+    assert 'name="provider_key"' in modal  # Hidden edit value and create select stay intact.
+    assert 'name="csrf_token"' in modal
+    assert '{% include provider_option.form_partial %}' in modal
+    assert modal.count('data-kaori-native-dialog') == 2
