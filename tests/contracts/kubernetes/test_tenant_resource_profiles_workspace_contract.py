@@ -1544,7 +1544,7 @@ def test_adoption_and_legacy_cutover_guidance_match_approved_current_authority()
         Environment(autoescape=True).parse(source)
         assert legacy_copy in source, filename
         assert provider_authority in source, filename
-        assert 'new ' in source.lower() or 'New ' in source, filename
+        assert 'Managed-on-Adopt' in source, filename
         assert source.count('info_tip.render(') == 1, filename
         assert source.count('name="csrf_token"') >= 1, filename
         assert source.count('type="submit"') >= 1, filename
