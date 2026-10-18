@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% import "components/action_button.html" as action_button %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_callout.html" as operational_callout %}
@@ -372,16 +373,16 @@
                         </p>
                         <div class="flex shrink-0 justify-end gap-3">
                             <a href="{{ url_for('access.roles.index') }}"
-                               class="inline-flex min-h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-secondary hover:bg-surface-hover">{{ 'Back' if read_only else 'Cancel' }}</a>
+                               class="{{ action_button.classes('secondary') }}">{{ 'Back' if read_only else 'Cancel' }}</a>
                             {% if read_only and can_mutate_role %}
                                 <a href="{{ url_for('access.roles.edit', role_id=role.id) }}"
-                                   class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90"><i data-lucide="pencil" class="h-4 w-4"></i>Edit custom role</a>
+                                   class="{{ action_button.classes('primary') }}"><i data-lucide="pencil" class="h-4 w-4"></i>Edit custom role</a>
                             {% elif read_only and is_system_role and current_user.has_permission('roles.manage') %}
                                 <a href="{{ url_for('access.roles.clone', role_id=role.id) }}"
-                                   class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone default role</a>
+                                   class="{{ action_button.classes('primary') }}"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone default role</a>
                             {% elif not read_only %}
                                 <button type="submit"
-                                        class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary/90 cursor-pointer disabled:cursor-not-allowed">
+                                        class="{{ action_button.classes('primary') }}">
                                     <i data-lucide="save" class="h-4 w-4"></i>
                                     {% if page_mode == 'clone' %}
                                         Create cloned role

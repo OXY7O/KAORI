@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% block title %}{{ 'Add User' if mode == 'create' else 'Edit User' }}{% endblock title %}
 {% block dashboard_content %}
+    {% import "components/action_button.html" as action_button %}
     {% import "components/page_hero.html" as page_hero %}
     {% import "components/info_tip.html" as info_tip %}
     {% import "components/related_page_card.html" as related_page_card %}
@@ -336,13 +337,13 @@
                         <p class="max-w-2xl text-xs leading-5 text-content-muted">{{ 'Creates a Local Database identity with lifecycle and RBAC controls.' if mode == 'create' else 'Updates KAORI profile, lifecycle, and authorization only; the authoritative identity provider remains unchanged.' }}</p>
                         <div class="flex justify-end gap-2">
                             <a href="{{ url_for('users.index') }}"
-                               class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                               class="{{ action_button.classes('secondary') }}">
                                 Cancel
                             </a>
                             <button type="submit"
                                     data-operation-submit
                                     data-loading-label="{{ 'Creating user...' if mode == 'create' else 'Updating user...' }}"
-                                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
+                                    class="{{ action_button.classes('primary') }} disabled:cursor-wait">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 <span data-operation-submit-label>{{ 'Create User' if mode == 'create' else 'Update User' }}</span>
                             </button>
