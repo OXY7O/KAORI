@@ -193,7 +193,9 @@
                            aria-hidden="true"></i>
                         Description
                     </dt>
-                    <dd class="min-w-0 whitespace-pre-wrap break-words text-sm leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ tenant.description or 'No Tenant description has been recorded.' }}</dd>
+                    <dd class="min-w-0 whitespace-pre-wrap break-words text-sm leading-5 text-content-secondary [overflow-wrap:anywhere]">
+                        {{- tenant.description or 'No Tenant description has been recorded.' -}}
+                    </dd>
                 </div>
             </dl>
             <p class="flex min-w-0 items-start gap-2 border-t border-outline-subtle px-4 py-2.5 text-xs leading-5 text-content-muted sm:px-5"
