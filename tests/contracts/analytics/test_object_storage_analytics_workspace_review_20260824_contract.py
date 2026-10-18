@@ -146,3 +146,30 @@ def test_object_storage_evidence_copy_stays_compact_and_factual() -> None:
     assert "if not stream.get('connected'):" in alert_projection
     assert "status, tone = 'Unknown', 'unknown'" in alert_projection
     assert "status, tone = 'No Active Alerts', 'normal'" in alert_projection
+
+
+
+def test_provider_alert_records_clear_filters_precedes_persistent_source_context() -> None:
+    """Filtered and unfiltered headers keep one canonical DOM reading order."""
+    source = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
+    header = source.split('<header', 1)[1].split('</header>', 1)[0]
+
+    assert 'components/table_registry.html' in source
+    assert 'components/table_primitives.html' in source
+    assert header.count('registry_ui.clear_filters_action(') == 1
+    assert header.index('{% if alert_filters_active %}') < header.index('registry_ui.clear_filters_action(')
+    assert (
+        header.index('registry_ui.clear_filters_action(')
+        < header.index('{% endif %}', header.index('registry_ui.clear_filters_action('))
+        < header.index('table_label.status_label(alert_source.label, alert_source.tone)')
+        < header.index("table_label.metadata_label(alert_source.resolved_label ~ ' Source'")
+    )
+    assert "table_ui.action_classes() ~ ' h-9 px-3'" in header
+    assert "target='#object-storage-alert-records'" in header
+    assert "indicator='#object-storage-alert-records-loading'" in header
+    assert "sync='#object-storage-alert-records:replace'" in header
+    assert "tab='records'" in header
+    assert 'alert_per_page=alert_table.pagination.per_page' in header
+    assert "alert_table.severity != 'all'" in source
+    assert "alert_table.state != 'all'" in source
+    assert "hx-target=\"#object-storage-alert-records\"" in source
