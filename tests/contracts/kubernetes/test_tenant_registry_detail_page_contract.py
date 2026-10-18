@@ -377,6 +377,14 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     # An acknowledged plan is locked without inventing approval or provider transfer.
     assert re.search(r'role="status"\s+aria-label="Active handoff plan"', approval)
     assert 'data-release-plan-review-cards' in approval
+    # A previous two-card redesign dropped the enclosing Jinja endif and
+    # broke every Tenant detail GET with TemplateSyntaxError on the next elif.
+    # Environment().parse(detail) above must compile the complete template.
+    assert re.search(
+        r'{%\s*endif\s*%}\s*</div>\s*{%\s*endif\s*%}\s*{%\s*if handoff_plan\s*%}'
+        r'\s*<dl class="flex min-w-0 flex-wrap',
+        approval,
+    )
     assert 'md:grid-cols-2' in approval
     assert 'aria-label="Independent review status"' in approval
     assert 'aria-label="Planned handoff record"' in approval
