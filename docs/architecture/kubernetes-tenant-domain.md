@@ -785,6 +785,21 @@ The outer Release wizard continues to own one active URL-scoped step, while
 this content stays committed-state driven. All **10 Step 3 conditional forms**
 and **14 Tenant forms** remain present in source.
 
+**Release Step 4 Review Expired action content (#2401 follow-up; presentation only):**
+The `native_cycle.review_expired` conditional now displays the Title Case
+**Next Required Action** header and a balanced Violet action region with
+current recorded **Review Expired** status, the need for fresh authoritative
+provider preflight, three sequential read-only instructions and its
+original Step 1 HTMX link. The instructions explicitly require inspection
+of refreshed committed identities, dependencies and blockers, then
+revalidation of exact plan/independent approval freshness. They are
+guidance, **not** automatic provider refresh, successor consent,
+re-review, restarts or Release authorization. Existing priority order
+(provider handoff recovery → approval expired → review expired →
+approval pending → TLS → other verification) and all original permission,
+CSRF, navigation and action contracts remain unchanged. Source contracts
+are updated; runtime and Dev Container visual acceptance are pending.
+
 **Release Governance contextual guidance / Step 4 pending action (#2401):**
 The shared `components/info_tip.html` provides pointer, keyboard and touch
 guidance alongside the permanent Release Governance heading. It distinguishes

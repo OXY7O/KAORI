@@ -469,7 +469,7 @@ def test_native_platform_admin_acceptance_requires_verified_cluster_tls_in_ui():
     assert 'name="confirm_successor_acceptance"' in approval
 
     # Step 4 action explains the same canonical connection requirement.
-    assert 'Next required action' in final
+    assert 'Next Required Action' in final
     assert 'Verified TLS Required' in final
     assert 'Test Connection and complete Full Validation' in final
     assert "url_for('cluster.edit_cluster', cluster_id=row.cluster.id)" in final
@@ -517,7 +517,7 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'native_cycle.stages' in step
     assert '{{ checkpoint.label }}' in step
     assert 'checkpoint.display_status' in step
-    assert 'Next required action' in step
+    assert 'Next Required Action' in step
     assert 'data-release-next-action-pending' in step
     assert 'aria-label="Independent approval required"' in step
     assert 'Remaining approval path' in step
@@ -527,6 +527,26 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert re.search(r'role="status"\s+aria-label="Expired handoff recovery"', step)
     assert 'native_cycle.approval_expired' in step
     assert 'native_cycle.review_expired' in step
+    # A stale provider preflight needs actionable read-only guidance, not a
+    # nearly empty action panel or a misleading implicit Release approval.
+    review_expired = step.split('{% elif native_cycle.review_expired %}', 1)[1].split(
+        '{% elif not native_cycle.approval_complete %}', 1
+    )[0]
+    assert 'data-release-next-action-review-expired' in review_expired
+    assert 'aria-label="Expired provider review next action"' in review_expired
+    assert 'Refresh the Provider Review' in review_expired
+    assert 'Required Next Steps' in review_expired
+    assert 'aria-label="Expired provider review recovery steps"' in review_expired
+    for instruction in (
+        'Run Review Release',
+        'Inspect Committed Evidence',
+        'Revalidate Handoff Approval',
+    ):
+        assert instruction in review_expired
+    assert 'does not approve the handoff, transfer ownership or authorize Release.' in review_expired
+    assert "tenant_release_step_urls['scope']" in review_expired
+    assert 'hx-get=' in review_expired
+    assert '<form ' not in review_expired
     assert 'native_cycle.restart_blocked_by_readback' in step
     assert 'native_cycle.restart_required' in step
     assert 'native_cycle.restart_zero_transfer_recheck_required' in step

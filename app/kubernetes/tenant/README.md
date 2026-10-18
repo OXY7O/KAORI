@@ -439,6 +439,22 @@ on narrow screens, retain #2390's bounded form and responsive button, and
 leave active, blocked, expired and recovery states untouched. Tests/DevContainer
 human QA are pending; CI/CD admission stays HOLD.
 
+**Tenant Release Step 4 expired review next action (#2401; Dev Container candidate):**
+The `Next Required Action` header now uses Title Case. For the existing
+`native_cycle.review_expired` branch only, the former short status/CTA
+becomes a bounded, responsive evidence-first workspace: **Review Expired**,
+**Refresh the Provider Review**, and three explicit read-only instructions:
+run the actual **Review Release** preflight in Step 1, inspect committed
+provider identity/dependency/blocker evidence, and revalidate the exact
+plan and independent approval. The original HTMX **Open Review Scope**
+navigation stays unchanged, and the guidance explicitly distinguishes
+navigation/refreshed evidence from approval, provider transfer and Release.
+This does not add a server mutation, freshness override, extra form,
+permission change or implicit clearance. Other recovery/action branches
+retain their own priority and controls. Contract test enforces the unique
+expired-review panel and exact navigation semantics; browser Visual QA,
+runtime checks and official admission remain HOLD.
+
 **Tenant Release guidance and pending action clarity (#2401):**
 The permanent Release Governance header uses the existing keyboard/touch/hover
 `info_tip` control for a short explanation of independent approval versus
