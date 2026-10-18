@@ -416,6 +416,26 @@ external-reference status and audit lineage are preserved. No live
 provider fetch in normal UI; no automatic mutation. DevContainer Visual
 QA pending and every CI/CD/admission gate remains HOLD.
 
+**Dev Container feedback: Step 3 single-surface actions and Step 4 Approval Expired list (#2401):**
+For an acknowledged Native plan, Step 3 now uses one surface for
+**Handoff Actions** (successor reference and any authorized Platform Admin
+action), with a single separator and inline requester-ineligible note,
+beside one **External Handoff & Read-Back** evidence surface. The expired
+inspection warning is presented inline instead of an additional bordered
+card. Original reference, consent, inspection and provider handoff actions,
+actor restrictions and CSRF/HTMX routes are preserved without new state.
+The paired surfaces stretch equally on desktop and stack on mobile.
+
+In Step 4, the existing `native_cycle.approval_expired` branch is now
+a concise **Renew Independent Approval** summary with three sequential
+recovery steps; it visibly distinguishes governed recovery when transfer
+or read-back evidence blocks restart, requester-only restart with the same
+required confirmation and plan SHA, and non-requester/access instructions.
+Historical approval, provider evidence and exact plan review remain
+authoritative. No extra automated checks, provider calls, approval bypass,
+staging promotion, release or deployment. Focused Tenant source contracts
+updated; Dev Container tests and Visual QA require execution. CI/CD HOLD.
+
 **Release Governance Step 3–4 approved-pattern layout refresh (#2401; Dev Container candidate):**
 Step 3 uses Title Case headings for Independent Approval and Handoff,
 Prepare Handoff Plan, Approval Boundaries and Planned Handoff Record.
