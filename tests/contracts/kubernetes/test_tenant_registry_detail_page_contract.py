@@ -177,7 +177,7 @@ def test_release_evidence_is_readable_full_width_without_nested_scroll():
     for label in (
         'Scope readiness',
         'Provider handoff scope',
-        'Independent approval and handoff',
+        'Independent Approval and Handoff',
         "('finalize', 'Verify & Finalize', 'Read-back & Release')",
         'aria-label="Release blockers"',
         'aria-label="Provider handoff inventory"',
@@ -368,7 +368,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
         "{% elif tenant_release_step == 'finalize' %}", 1
     )[0]
     Environment().parse(detail)
-    assert 'Independent approval and handoff' in approval
+    assert 'Independent Approval and Handoff' in approval
     assert 'aria-label="Governed handoff workflow"' in approval
     assert 'data-release-handoff-approval' in approval
     assert 'One active plan per Tenant.' in approval
@@ -387,7 +387,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     )
     assert 'md:grid-cols-2' in approval
     assert 'aria-label="Independent review status"' in approval
-    assert 'aria-label="Planned handoff record"' in approval
+    assert 'aria-label="Planned Handoff Record"' in approval
     assert 'Scope locked to this plan.' in approval
     assert "row.release_handoff_preparation_state == 'acknowledged'" in approval
     assert "row.release_handoff_preparation_state == 'expired'" in approval
@@ -400,6 +400,33 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'break-all font-mono' in approval
     assert 'Plan SHA-256' in approval
 
+    # Approved Native handoff content fills the workspace using the same
+    # responsive 3:2 layout; Capsule keeps its full-width approval branch.
+    assert 'data-release-accepted-handoff-workspace' in approval
+    assert 'data-release-accepted-handoff-actions' in approval
+    assert 'data-release-accepted-handoff-evidence' in approval
+    assert 'lg:grid-cols-5' in approval
+    assert 'lg:col-span-3' in approval
+    assert 'lg:col-span-2' in approval
+    assert 'aria-label="External handoff and provider read-back"' in approval
+    assert 'External Handoff &amp; Read-Back' in approval
+    assert 'Evidence Boundaries' in approval
+    assert approval.count('data-release-accepted-handoff-evidence') == 1
+    assert approval.count('External Handoff Inspection Unavailable') == 1
+    assert approval.index('data-release-accepted-handoff-workspace') < approval.index(
+        'data-release-accepted-handoff-evidence'
+    ) < approval.index("{% if tenant.provider_key == 'capsule' %}", approval.index(
+        'data-release-accepted-handoff-workspace'
+    ))
+    assert 'I reviewed the successor, change record, and provider evidence; no transfer occurred.' in approval
+    for heading in (
+        'Approval Boundaries',
+        'Prepare Handoff Plan',
+        'Planned Handoff Record',
+        'Independent Approval and Handoff',
+    ):
+        assert heading in approval
+
     # Recorded independent review does not imply verified successor acceptance.
     assert 'Independent review recorded. External owner acceptance' in approval
     assert re.search(r'role="status"\s+aria-label="External successor evidence"', approval)
@@ -411,7 +438,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
 
     # Exact platform-admin permission/identity action is preserved verbatim.
     assert 'aria-label="Platform Admin provider verification"' in approval
-    assert 'Platform Admin verification' in approval
+    assert 'Platform Admin Verification' in approval
     assert 'registered Kubernetes X.509 connection' in approval
     assert 'tenant.accept_native_successor_handoff_route' in approval
     assert 'name="confirm_successor_acceptance"' in approval
@@ -518,6 +545,33 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert '{{ checkpoint.label }}' in step
     assert 'checkpoint.display_status' in step
     assert 'Next Required Action' in step
+
+    # Verification Required is now informative for each committed readiness
+    # state; the same Step 3 navigation remains read-only and role-aware.
+    verification = step.split('data-release-next-action-verification', 1)[1].split(
+        '{% endif %}\n                                        </section>', 1
+    )[0]
+    assert 'aria-label="Native handoff verification next action"' in step
+    assert 'Required Next Steps' in verification
+    assert 'aria-label="Native handoff verification steps"' in verification
+    assert 'verify_steps' in verification
+    for message in (
+        'Independent Platform Admin Required',
+        'Verify Provider & Accept as Platform Admin',
+        'Complete Native Provider Handoff',
+        'Complete Release Finalization',
+        'Review Exact Plan',
+        'Verify Provider Access',
+        'Record Acceptance',
+        'Preview Native Transfer',
+        'Execute Accepted Handoff',
+        'Verify Read-Back',
+        'Finalize Authorized Release',
+    ):
+        assert message in step
+    assert 'Open Handoff Controls' in verification
+    assert 'hx-get=' in verification
+    assert '<form ' not in verification
     assert 'data-release-next-action-pending' in step
     assert 'aria-label="Independent approval required"' in step
     assert 'Remaining Approval Path' in step
@@ -711,7 +765,7 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert 'readback_status.external_reference_current' in approval
     assert 'readback_status.dry_run_passed' in approval
     assert 'aria-label="External read-back prerequisites"' in approval
-    assert 'External handoff inspection is unavailable' in approval
+    assert 'External Handoff Inspection Unavailable' in approval
     assert 'The original requester must restart it' in approval
     assert "tenant_release_step_urls['finalize']" in approval
     assert 'View recovery steps' in approval
