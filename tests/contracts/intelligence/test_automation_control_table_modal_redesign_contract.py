@@ -137,3 +137,49 @@ def test_routing_and_execution_policy_actions_use_shared_button_variants() -> No
         'disabled:cursor-not-allowed',
     ):
         assert token in shared
+
+
+def test_decision_and_execution_tables_delegate_shared_geometry_without_changing_governance() -> None:
+    from jinja2 import Environment
+
+    cases = (
+        ('app/templates/intelligence/partials/automation_control/_decisions.html', 3, 17),
+        ('app/templates/intelligence/partials/automation_control/_operations.html', 5, 22),
+    )
+    for path, table_count, column_count in cases:
+        source = read(path)
+        Environment().parse(source)
+
+        assert source.count('table_ui.table_classes()') == table_count, path
+        assert source.count('table_ui.head_classes()') == table_count, path
+        assert source.count('table_ui.body_classes()') == table_count, path
+        assert source.count('<caption class="sr-only">') == table_count, path
+        assert source.count('scope="col"') == column_count, path
+        assert source.count('table_ui.header_cell_classes(') == column_count, path
+        assert source.count('table_ui.cell_classes(') >= column_count, path
+        assert '<th class="w-[' not in source, path
+        assert '<td class="px-4 py-3' not in source, path
+        assert 'table_ui.row_classes()' in source, path
+        assert 'table_registry.footer' in source, path
+        assert 'table_registry.filter_form' in source, path
+        assert 'detail_row.static_detail_row' in source, path
+        assert 'detail_row.toggle_button' in source, path
+
+    decisions = read(cases[0][0])
+    operations = read(cases[1][0])
+    for action in (
+        'promote_automation_candidate',
+        'dismiss_automation_candidate',
+        'approve_automation_decision',
+        'reject_automation_decision',
+        'execute_automation_decision',
+    ):
+        assert action in decisions
+    for action in (
+        'automation-policy-registry',
+        'automation-journal-registry',
+        'automation-dead-letter-registry',
+        'Kill Switch',
+        'No Execution Journals',
+    ):
+        assert action in operations
