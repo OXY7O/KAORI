@@ -738,6 +738,36 @@ non-destructive preservation. The original long blocker remains in the
 explicit trusted-reason allowlist for historical plan compatibility only; new
 reviews produce the shorter reason.
 
+## Release Governance Step 3–4 approval layout and verification guidance (#2401; 2026-10-18)
+
+The Step 3 governed workflow now uses Title Case for **Independent Approval and
+Handoff**, **Prepare Handoff Plan**, **Approval Boundaries**, and **Planned
+Handoff Record**. The independent reviewer consent text is shortened to
+"I reviewed the successor, change record, and provider evidence; no transfer
+occurred." Its required checkbox, same-Plan-SHA confirmation and backend
+authorization rules remain unchanged.
+
+For an independently acknowledged Native plan, the external successor
+reference action and the role-gated Platform Admin verification now occupy
+a responsive 3:2 actions/evidence workspace rather than narrow form cards
+followed by a full-width inspection warning. The original external
+read-back inspection form or conditional unavailable/stale prerequisite
+status is **moved unchanged** to the evidence column; on mobile the columns
+stack. This preserves all current plan/SHA, actor, trusted X.509, checked
+provider permissions, HTMX, CSRF, independent approval, and exact provider
+read-back gates. Capsule/expired/other roles keep their separate conditional
+scope. Reference evidence never creates consent; read-back never transfers
+ownership by inspection. No provider mutation was introduced by layout.
+
+Step 4 **Next Required Action → Verification Required** uses the same Violet
+status/ordered-list/navigation pattern already approved for review expiry
+and pending approval. Its short checklist is conditionally derived from
+committed successor acceptance and provider transfer projections, with
+requester versus independent Platform Admin wording retained. Ineligible
+actions remain excluded; the existing Step 3 HTMX navigation is not an
+approval or Release endpoint. Provider recovery, approval expiry, TLS failure
+and review expiry retain higher priority; admission and human UAT stay HOLD.
+
 ## Tenant Release Step 3 — structured independent approval evidence (#1089, #2401; current presentation authority)
 
 Human DevContainer review of Release wizard **Step 3: Independent approval and handoff**
