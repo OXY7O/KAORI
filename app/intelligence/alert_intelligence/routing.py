@@ -99,6 +99,18 @@ def notification_channel_options() -> list[dict[str, Any]]:
     return result
 
 
+def _route_channel_eligible(channel: NotificationChannel, *, registry_scoped: bool) -> bool:
+    if not (channel.enabled and channel.configured and channel.test_status == 'success'):
+        return False
+    if registry_scoped:
+        event_types = channel.event_types or []
+        if 'registry' not in (channel.domains or []) or not (
+            'alert_ops.firing' in event_types or 'alert_intelligence.active_alert' in event_types
+        ):
+            return False
+    return True
+
+
 def upsert_routing_policy(
     *,
     policy_id: int | None,
@@ -127,19 +139,7 @@ def upsert_routing_policy(
     valid_channels = {
         row.id
         for row in NotificationChannel.query.filter(NotificationChannel.id.in_(config.channel_ids)).all()
-        if row.enabled
-        and row.configured
-        and row.test_status == 'success'
-        and (
-            'registry' not in normalized_domains
-            or (
-                'registry' in (row.domains or [])
-                and (
-                    'alert_ops.firing' in (row.event_types or [])
-                    or 'alert_intelligence.active_alert' in (row.event_types or [])
-                )
-            )
-        )
+        if _route_channel_eligible(row, registry_scoped='registry' in normalized_domains)
     }
     if 'registry' in normalized_domains and set(config.channel_ids) != valid_channels:
         raise ValueError('Select only validated Registry-scoped alert channels.')

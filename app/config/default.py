@@ -5,6 +5,7 @@ from pathlib import Path
 from celery.schedules import crontab
 from dotenv import dotenv_values
 
+from app.config.storage_helpers import _normalize_storage_backend, _resolve_path
 from app.integrations.delivery.notification_channels.config import build_notification_beat_schedule
 from app.intelligence.alert_signals.config import build_alert_signal_beat_schedule
 
@@ -132,16 +133,6 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
             },
         }
     return schedule
-
-
-def _normalize_storage_backend(value: str | None) -> str:
-    backend = (value or 'local').strip().lower()
-    return backend if backend in {'local', 's3'} else 'local'
-
-
-def _resolve_path(value: str | None, default: Path) -> str:
-    path = Path((value or str(default)).strip())
-    return str(path if path.is_absolute() else BASE_DIR / path)
 
 
 def _object_storage_usage_stats_mode() -> str:
