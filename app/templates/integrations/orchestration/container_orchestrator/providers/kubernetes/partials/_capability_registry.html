@@ -30,7 +30,6 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label(registry.total_contracts ~ ' Capability Contracts') }}
                 {% if filters.query or filters.requirement or filters.status %}
                     {% set capability_clear_href = url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='validation', capability_page=1, capability_per_page=pagination.per_page) %}
                     {% set capability_clear_url = url_for('integrations.kubernetes_capability_registry', cluster_id=cluster.id, capability_page=1, capability_per_page=pagination.per_page) %}
@@ -43,6 +42,7 @@
                     marker='kubernetes-capability-registry'
                     ) }}
                 {% endif %}
+                {{ table_label.metadata_label(registry.total_contracts ~ ' Capability Contracts') }}
             </div>
         </div>
         <div data-kaori-capability-loading-region>
