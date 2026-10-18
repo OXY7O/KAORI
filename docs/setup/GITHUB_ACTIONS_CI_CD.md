@@ -52,7 +52,7 @@ The long-lived integration branches are `kaori/staging` and `main`. Work branche
 
 ### Work branch
 
-A `kaori/*` work branch uses the path-aware **Developer Check** workflow for Draft development and again on the exact Ready head. Draft validation remains targeted; Ready Full Admission is invoked only after the exact-head Developer Check aggregate passes.
+A `kaori/*` work branch uses the path-aware **Developer Check** workflow for Draft development and independent exact-head verification on Ready. Draft validation remains targeted; it produces a bounded route-identity artifact but this artifact is **not PASS evidence on its own**. If the Ready event has the same trusted live PR, head/base SHA, source tree, canonical plan, authority fingerprint and toolchain key, a completed successful Draft workflow and every required GitHub job conclusion must be verified before the Ready aggregate can reuse those results. Evidence is valid for at most two hours. Missing/failed/stale/changed evidence, API unavailability, or suspicious job state falls back to ordinary fresh Ready lanes. Regardless of reuse, Ready Full Admission runs **only after** exact-head Developer Check aggregate PASS, with its complete Security, Functional, Static, Frontend, Runtime/DAST and CI Admission coverage. A separate lightweight **Ready Admission Guard** fails the workflow unless both the exact-head Developer Check aggregate and the mandatory Full Admission job actually finish SUCCESS; a skipped Full Admission is never accepted as a green Ready run.
 
 Developer Check resolves changed paths once, prepares one deterministic shared CI toolchain, and runs the heavy `kaori-ci` lanes **sequentially when both are required**: **Python & Governance** first, followed by **Frontend & Focused Validation** only when Python succeeds. Frontend-only changes still run the selected frontend/focused lane when Python is legitimately skipped by path-aware routing. If Python fails, the downstream validation lane is skipped immediately rather than continuing expensive pytest after an already decisive failure. The final lightweight aggregate still evaluates all required lane conclusions fail-closed, and a failed Developer Check prevents Full Admission. Redundant parent/child focused-test paths are normalized before pytest execution. This sequencing also avoids simultaneous memory-intensive Pyright and pytest on the shared runner host. It may increase the total wall-clock duration of fully successful two-lane runs, but avoids wasting runner minutes and delaying actionable failures when the earlier lane fails. It does not reduce any selected validation or comprehensive Ready-state gate.
 
@@ -94,6 +94,35 @@ Use GitHub **Settings → Actions → Runners** to reconcile each registration/l
 Only after operator approval and available headroom, run a controlled two-PR test on distinct candidate heads: first a single Draft/Ready heavy job, then two independently queued heavy flows. Verify no overlap on the physical 8-GB host, **both complete** rather than a pending candidate being replaced, no false PASS or missing mandatory gate, and full cleanup/evidence. Separate same-PR supersession behavior from cross-PR queue safety. Stop and keep the conservative serial policy when OOM events, unknown runner mapping, unbounded queue eviction, or insufficient memory evidence occurs.
 
 **Preferred durable options:** route all memory-heavy jobs through one specifically eligible runner registration on the 8-GB host (with other registrations restricted to truly lightweight workloads), or provide separate physical hosts/adequate RAM before increasing parallelism. This is an option assessment, **not an authorization to relabel, deregister, or restart runners**. Any host workflow must have operator-reviewed maintenance, rollback to the last accepted runner label/service mapping, and a recovery path if the single eligible runner is offline. Update the existing release/runner contracts when routing is actually changed; prove exact-head Developer Check, all five Full Admission gates, CI Admission, staging Fast Smoke, and operational UAT before considering #2219/#2231 complete.
+
+**Approved constrained-host capacity (2026-10-17, #2231): exactly ONE active `kaori-ci` runner on the ~7.8 GiB RAM / no-swap builder.** Two independent heavy workflows previously overlapped and both exited 137; the historical two-active-lane guidance (#665/#673) is superseded for this host. Preserve `quality.yml` five-gate `max-parallel: 1`, Draft/Ready, Security, DAST, CI Admission and immutable evidence. Independent heavy jobs must queue on the single GitHub runner rather than share physical RAM. Do not use a broad GitHub `concurrency.group` because pending runs can be replaced.
+
+The operator verified this exact on-host installation/unit mapping. Recheck each installation's `.service` file, process tree and GitHub Actions runner **names/labels/online status** before any future maintenance:
+
+| Runner installation | Exact systemd unit | Approved state |
+| --- | --- | --- |
+| `/opt/actions-runner` | `actions.runner.OXY7O.runner-contabo.service` | active/enabled; only `kaori-ci` heavy slot |
+| `/opt/actions-runner-02` | `actions.runner.OXY7O.runner-contabo-02.service` | inactive/disabled spare |
+| `/opt/actions-runner-03` | `actions.runner.OXY7O.runner-contabo-03.service` | inactive/disabled spare |
+| `/opt/actions-workflow` | `actions.runner.OXY7O.platform-contabo.service` | active/enabled; independent `platform-ci` |
+
+**Actual incident and root cause:** former spare `-02` unit had `KillMode=process`. `systemctl disable --now` showed inactive while a Node `RunnerService.js` supervisor and `Runner.Listener` persisted within its cgroup. SIGTERM of the listener alone made the Node supervisor automatically respawn a fresh listener 5 seconds later; that unexpected second slot accepted all five gates from an otherwise successful Full Admission. This is why **service inactive/disabled alone is insufficient** to prove physical isolation.
+
+The approved host-only maintenance sequence is: **first confirm no GitHub job running/queued on the affected runner and no busy Worker**, identify exact `-02` unit/cgroup, disable the two spares, and terminate only the stopped spare's residual cgroup, never all runner processes or Docker:
+
+```bash
+SECOND=actions.runner.OXY7O.runner-contabo-02.service
+THIRD=actions.runner.OXY7O.runner-contabo-03.service
+systemctl status "$SECOND" --no-pager
+pgrep -af 'RunnerService.js|Runner.Listener|runsvc.sh' || true
+sudo systemctl disable --now "$SECOND" "$THIRD"
+# Only after confirming no active work and -02's remaining service cgroup:
+sudo systemctl kill --signal=SIGTERM --kill-whom=all "$SECOND"
+```
+
+The operator applied drop-ins under `/etc/systemd/system/{exact-spare-unit}.d/10-kaori-cgroup-stop.conf` with `[Service]` / `KillMode=control-group`, then `systemctl daemon-reload`. Both spares must show `KillMode=control-group`, `ActiveState=inactive`, `UnitFileState=disabled`; process inventory after 10+ seconds must show **only** one listener/supervisor from `/opt/actions-runner` and one from `/opt/actions-workflow`. Do **not** change the live main or `platform-ci` units. Keep the drop-ins and existing two spare units for controlled recovery, without deregistering or deleting anything.
+
+**Rollback/recovery:** if the single primary runner fails, drain running work and stop/disable it *before* enabling exactly one verified spare, then switch back only after draining the spare. Never restore two simultaneous physical `kaori-ci` slots without new measured host capacity or separate hosts and operator acceptance. Validate two different mandatory candidate workflows queue and finish without OOM or silently dropped jobs; verify Full Admission, CI Admission, staging Fast Smoke, observed queue time and human infrastructure UAT before closing #2231/#2219. One successful Full Admission by itself does not prove longitudinal no-OOM stability.
 
 After merge to `kaori/staging`, the workflow verifies exact source-tree/authority evidence and transition lineage. Evidence discovery accepts both valid run parents: direct `quality.yml` runs and sequenced `developer-check.yml` caller runs that contain the reusable Full Admission artifact. The evidence payload itself must still identify the governed `quality.yml` authority and pass the existing tree, authority-fingerprint, profile-version, and lineage checks. The normal staging path reuses the admitted evidence and runs fresh Fast Smoke; staging falls back to a fresh Full Admission only when reuse cannot be proven.
 

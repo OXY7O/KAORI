@@ -42,6 +42,9 @@ jobs:
       test_paths: ${{ steps.route.outputs.test_paths }}
       template_paths: ${{ steps.route.outputs.template_paths }}
       summary: ${{ steps.route.outputs.summary }}
+      source_tree: ${{ steps.route.outputs.source_tree }}
+      reuse: ${{ steps.reuse.outcome == 'success' && steps.reuse.outputs.reuse == 'true' }}
+      reuse_reason: ${{ steps.reuse.outputs.reuse_reason }}
     steps:
       - name: Checkout Work Branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -61,12 +64,64 @@ jobs:
             --base "$BASE_SHA" \
             --head "$KAORI_SOURCE_SHA" \
             --github-output "$GITHUB_OUTPUT"
+          printf 'source_tree=%s\n' "$(git show -s --format=%T HEAD)" >> "$GITHUB_OUTPUT"
+
+      # Draft evidence is a preflight identity artifact, NOT a PASS assertion.
+      # Ready independently verifies the completed original workflow and all jobs.
+      - name: Write Draft Route Identity
+        id: draft-identity
+        if: ${{ github.event.pull_request.draft == true }}
+        continue-on-error: true
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          ROUTE_SUMMARY: ${{ steps.route.outputs.summary }}
+          SOURCE_TREE: ${{ steps.route.outputs.source_tree }}
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci_admission.py write-draft-developer-evidence \
+            --repository "$GITHUB_REPOSITORY" --pull-number "$PR_NUMBER" \
+            --base-sha "$BASE_SHA" --head-sha "$KAORI_SOURCE_SHA" \
+            --source-tree "$SOURCE_TREE" --plan "$ROUTE_SUMMARY" \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --output tmp/ci-artifacts/developer-check/draft-developer-evidence.json
+
+      - name: Upload Draft Route Identity
+        if: ${{ github.event.pull_request.draft == true && steps.draft-identity.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kaori-draft-developer-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/developer-check/draft-developer-evidence.json
+          if-no-files-found: error
+          retention-days: 2
+
+      - name: Verify Prior Exact Draft Evidence
+        id: reuse
+        if: ${{ github.event.pull_request.draft == false }}
+        continue-on-error: true
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          ROUTE_SUMMARY: ${{ steps.route.outputs.summary }}
+          SOURCE_TREE: ${{ steps.route.outputs.source_tree }}
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/ci_admission.py find-draft-developer-evidence \
+            --repository "$GITHUB_REPOSITORY" \
+            --pull-number "$PR_NUMBER" --head-sha "$KAORI_SOURCE_SHA" \
+            --base-sha "$BASE_SHA" --source-tree "$SOURCE_TREE" \
+            --plan "$ROUTE_SUMMARY" --run-id "$GITHUB_RUN_ID"
 
   toolchain:
     name: Prepare Toolchain
     needs: route
     # Pure documentation/copy outside validation authority does not need a CI image.
-    if: ${{ needs.route.result == 'success' && (needs.route.outputs.python == 'true' || needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true' || needs.route.outputs.test_paths != '') }}
+    if: ${{ needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && (needs.route.outputs.python == 'true' || needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true' || needs.route.outputs.test_paths != '') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 10
     outputs:
@@ -92,7 +147,7 @@ jobs:
   python-check:
     name: Python & Governance
     needs: [route, toolchain]
-    if: ${{ needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.route.outputs.python == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true') }}
+    if: ${{ needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && needs.toolchain.result == 'success' && (needs.route.outputs.python == 'true' || needs.route.outputs.migrations == 'true' || needs.route.outputs.reports == 'true' || needs.route.outputs.wide == 'true') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 15
     steps:
@@ -165,7 +220,7 @@ jobs:
     # Both kaori-ci runner services share host 'kaori': serialize memory-intensive
     # Pyright and focused pytest; still run frontend-only routes if Python is skipped.
     needs: [route, toolchain, python-check]
-    if: ${{ !cancelled() && needs.route.result == 'success' && needs.toolchain.result == 'success' && (needs.python-check.result == 'success' || needs.python-check.result == 'skipped') && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
+    if: ${{ !cancelled() && needs.route.result == 'success' && needs.route.outputs.reuse != 'true' && needs.toolchain.result == 'success' && (needs.python-check.result == 'success' || needs.python-check.result == 'skipped') && (needs.route.outputs.templates == 'true' || needs.route.outputs.frontend == 'true' || needs.route.outputs.contracts == 'true' || needs.route.outputs.test_paths != '') }}
     runs-on: [self-hosted, linux, x64, kaori-ci]
     timeout-minutes: 20
     steps:
@@ -292,6 +347,8 @@ jobs:
         shell: bash
         env:
           PR_DRAFT: ${{ github.event.pull_request.draft }}
+          VERIFIED_DRAFT_REUSE: ${{ needs.route.outputs.reuse }}
+          VERIFIED_DRAFT_REASON: ${{ needs.route.outputs.reuse_reason }}
           ROUTE_SUMMARY: ${{ needs.route.outputs.summary }}
           CHECK_PYTHON: ${{ needs.route.outputs.python }}
           CHECK_MIGRATIONS: ${{ needs.route.outputs.migrations }}
@@ -337,6 +394,19 @@ jobs:
             fi
           }
 
+          if [[ "$VERIFIED_DRAFT_REUSE" == "true" ]]; then
+            # Never claim a Ready PASS when any heavy lane executed unexpectedly.
+            [[ "$PR_DRAFT" == "false" && "$TOOLCHAIN_RESULT" == "skipped" && \
+               "$PYTHON_RESULT" == "skipped" && "$VALIDATION_RESULT" == "skipped" ]] || {
+              printf '❌ Verified Draft evidence routing mismatch; Ready admission denied.\n'
+              exit 1
+            }
+            printf '✅ Developer Check PASS · verified exact Draft evidence\n'
+            printf '📦 %s\n' "$ROUTE_SUMMARY"
+            printf '➡️ %s · starting governed Full Admission.\n' "$VERIFIED_DRAFT_REASON"
+            exit 0
+          fi
+
           assert_lane 'Prepare Toolchain' "$toolchain_required" "$TOOLCHAIN_RESULT"
 
           assert_lane 'Python & Governance' "$python_required" "$PYTHON_RESULT"
@@ -353,5 +423,32 @@ jobs:
   full-admission:
     name: Full Admission
     needs: developer-check
-    if: ${{ needs.developer-check.result == 'success' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
+    # Skipped predecessor lanes are expected after verified Draft reuse; do not let
+    # GitHub's implicit success() short-circuit the mandatory Full Admission job.
+    # !cancelled() preserves cancellation safety; the aggregate must be SUCCESS.
+    if: ${{ !cancelled() && needs.developer-check.result == 'success' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
     uses: ./.github/workflows/quality.yml
+
+  # Independent fail-closed terminal check. GitHub may report a workflow green
+  # even when an essential reusable job was skipped due to dependency status.
+  # Never interpret such a Ready run as successful frozen admission.
+  ready-admission-guard:
+    name: Ready Admission Guard
+    needs: [developer-check, full-admission]
+    if: ${{ always() && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.event.pull_request.head.ref, 'kaori/') && github.event.pull_request.head.ref != 'kaori/staging' }}
+    runs-on: [self-hosted, linux, x64, platform-ci]
+    timeout-minutes: 5
+    steps:
+      - name: Enforce Completed Full Admission
+        shell: bash
+        env:
+          DEVELOPER_RESULT: ${{ needs.developer-check.result }}
+          FULL_ADMISSION_RESULT: ${{ needs.full-admission.result }}
+        run: |
+          set -Eeuo pipefail
+          if [[ "$DEVELOPER_RESULT" != "success" || "$FULL_ADMISSION_RESULT" != "success" ]]; then
+            printf '❌ Ready Admission Guard — Developer Check=%s, Full Admission=%s\n' \
+              "$DEVELOPER_RESULT" "$FULL_ADMISSION_RESULT"
+            exit 1
+          fi
+          printf '✅ Ready Admission Guard PASS — comprehensive Full Admission completed successfully.\n'

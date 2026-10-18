@@ -59,6 +59,36 @@ def test_successful_static_groups_emit_progress_then_one_rollup_row() -> None:
     assert 'Detailed output is retained in' in source
 
 
+def test_engineering_quality_verifier_timing_is_bounded_and_success_only() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    capture = source.split('run_command_capture() {', 1)[1].split('run_static_group() {', 1)[0]
+
+    assert 'if [[ "$group" == \'Engineering Quality\' ]]' in capture
+    assert 'local elapsed=$(( $(date +%s) - started ))' in capture
+    assert 'printf \'✅ %s — %s · ⏱ %dm %02ds\\n\' "$group" "$label"' in capture
+    assert 'if "$@" >"$log_file" 2>&1; then' in capture
+    assert 'if [[ "$label" == \'Release Surface Coverage\' ]]' in capture
+    assert 'return "$status"' in capture
+    assert 'tail -n 60 "$log_file"' in capture
+    quality = source.split("run_static_group 'Engineering Quality'", 1)[1].split('run_contract_migration_gate', 1)[0]
+    assert quality.count("'python ") >= 18
+
+
+def test_static_pyright_stats_stay_bounded_to_success_and_keep_full_coverage() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    capture = source.split('run_command_capture() {', 1)[1].split('run_static_group() {', 1)[0]
+    static = source.split('run_static() {', 1)[1].split('run_contract_migration_gate', 1)[0]
+
+    assert "'Pyright' 'python -m pyright --project pyrightconfig.json --stats'" in static
+    assert 'if [[ "$label" == \'Pyright\' ]]' in capture
+    assert 'Pyright analysis stats' in capture
+    assert 'tail -n 24 "$log_file"' in capture
+    assert 'if "$@" >"$log_file" 2>&1; then' in capture
+    assert 'return "$status"' in capture
+    assert 'tail -n 60 "$log_file"' in capture
+    assert source.count("'Pyright' 'python -m pyright --project pyrightconfig.json --stats'") == 1
+
+
 def test_failed_static_verifier_remains_failure_first_and_names_the_check() -> None:
     source = QUALITY_GATE.read_text(encoding='utf-8')
 
@@ -107,7 +137,7 @@ def test_functional_full_suite_records_bounded_slowest_pytest_durations() -> Non
     source = QUALITY_GATE.read_text(encoding='utf-8')
     functional = source.split('run_tests() {', 1)[1].split('run_frontend() {', 1)[0]
 
-    assert "run_pytest_capture \\" in functional
+    assert 'run_pytest_capture \\' in functional
     assert "'Functional Tests'" in functional
     assert '--durations=15' in functional
     assert functional.count('--durations=15') == 1
@@ -192,6 +222,27 @@ def test_full_admission_aggregates_split_junit_artifacts_before_evidence() -> No
         'admission-junit/functional/e2e.xml',
     ):
         assert token in workflow
+
+
+def test_successful_functional_timing_artifact_is_bounded_and_does_not_replace_junit() -> None:
+    workflow = WORKFLOW.read_text(encoding='utf-8')
+    timing = workflow.split('      - name: Upload Successful Functional Timing Report\n', 1)[1].split(
+        '      - name: Upload Static Diagnostics\n', 1
+    )[0]
+
+    assert "if: ${{ success() && matrix.gate == 'functional' }}" in timing
+    assert 'full-admission-functional-timing-${{ github.run_id }}-${{ github.run_attempt }}' in timing
+    assert 'path: tmp/ci-artifacts/test-output/functional-tests.*.log' in timing
+    assert 'path: tmp/ci-artifacts/test-output\n' not in timing
+    assert 'if-no-files-found: error' in timing
+    assert 'retention-days: 3' in timing
+    assert 'Upload Functional JUnit Evidence' in workflow
+    assert 'tmp/ci-artifacts/test-output/release-suite.xml' in workflow
+    assert 'tmp/ci-artifacts/test-output/e2e.xml' in workflow
+    failure_upload = workflow.split('      - name: Upload Test Diagnostics\n', 1)[1].split(
+        '      - name: Upload Runtime Diagnostics\n', 1
+    )[0]
+    assert "if: ${{ failure() && matrix.gate == 'functional' }}" in failure_upload
 
 
 def test_raw_ci_diagnostics_are_uploaded_as_artifacts() -> None:

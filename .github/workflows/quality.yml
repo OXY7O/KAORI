@@ -386,6 +386,17 @@ jobs:
           overwrite: true
           retention-days: 1
 
+      # Keep successful pytest --durations=15 output accessible without uploading
+      # browser traces/screenshots; failure diagnostics remain a separate artifact.
+      - name: Upload Successful Functional Timing Report
+        if: ${{ success() && matrix.gate == 'functional' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: full-admission-functional-timing-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/ci-artifacts/test-output/functional-tests.*.log
+          if-no-files-found: error
+          retention-days: 3
+
       - name: Upload Static Diagnostics
         if: ${{ failure() && matrix.gate == 'static' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

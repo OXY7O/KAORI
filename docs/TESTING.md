@@ -66,13 +66,18 @@ bash scripts/quality_gate.sh --static
 
 This includes source hygiene, architecture/final-lock verifiers, literal Jinja template-dependency resolution, Ruff check/format, djLint, Pyright, migration graph, import graph, UI contracts, and contract/migration pytest evidence.
 
+**Engineering Quality profiling (#2339):** Successful Static & Governance job logs report one bounded elapsed-time line for each of the 18 existing Engineering Quality checks (Ruff, djLint, Pyright, import/architecture/code-health verifiers). The Foundation and Domain groups retain their quiet per-command success output, and all groups retain their existing aggregate counts and diagnostics. Compare the same verifier across successful exact-head runs on the same runner; distinguish command time from the independent Contract & Migration Safety pytest and from GitHub queue wait. The per-command timing is observability only—not an optimization or permission to suppress a required check.
+
+**Pyright phase breakdown (#2358):** On a successful Full Admission Static & Governance check, Pyright runs with its supported `--stats` option, retaining the same `--project pyrightconfig.json`, basic checking mode, scope, exit code and type diagnostics. The existing static capture helper prints only the final 24 lines of the successful Pyright diagnostic log, including analysis statistics where present, while retaining its full raw output internally. Draft Developer Check retains its original Pyright invocation. Compare file-count and analysis phase timing against the observed Pyright command wall time (Draft 145s, Ready 138s) before proposing caching/parallelism; stats are measurement, not runtime acceleration.
+
+
 ### Functional and security behavior
 
 ```bash
 bash scripts/quality_gate.sh --tests
 ```
 
-The full Functional Tests pytest invocation records the **15 slowest test durations** using pytest's existing `--durations=15` option (#2232). It uses the same test selection, fixtures, JUnit `release-suite.xml`, and `run_pytest_capture` diagnostic logs — **no second test run or new profiler**. Inspect the existing `Upload Test Diagnostics` artifact on the comprehensive Full Admission run and locate `tmp/ci-artifacts/test-output/functional-tests.*.log`; review the `slowest durations` section. Distinguish test setup/call/teardown timing from job queue delay, `npm ci`, CSS setup and runner-resource overhead, which require separate job/log/host measurements. Profiling is observational, not a speedup or permission to suppress slow tests.
+The full Functional Tests pytest invocation records the **15 slowest test durations** using pytest's existing `--durations=15` option (#2232). It uses the same test selection, fixtures, JUnit `release-suite.xml`, and `run_pytest_capture` diagnostic logs — **no second test run or new profiler**. On a **successful** Full Admission, download the compact `full-admission-functional-timing-<run-id>-<attempt>` artifact (retained for 3 days) and inspect `functional-tests.*.log` for the `slowest durations` section; the existing `Upload Test Diagnostics` artifact continues to retain broader evidence **only on failure**. The success artifact contains just the pytest log, not browser screenshots, traces, or complete test-output directories. Distinguish test setup/call/teardown timing from job queue delay, `npm ci`, CSS setup and runner-resource overhead, which require separate job/log/host measurements. Profiling is observational, not a speedup or permission to suppress slow tests.
 
 ### Frontend reproducibility
 
