@@ -71,7 +71,8 @@ def test_native_and_capsule_namespace_rows_share_one_renderer_and_semantic_statu
     assert 'allocation.display_values,' in section
     assert "(namespace.get('allocation') or {}).get('display_values', [])" in section
     assert section.count("table_label.status_label('Observed', 'info')") == 2
-    assert section.count("table_label.metadata_label('Adopted Baseline', wrap=true)") == 2
+    assert section.count("table_label.metadata_label('Adopted Baseline', wrap=true)") == 1
+    assert section.count("table_label.metadata_label('Observed Baseline' if row.adoption_management_blocker else 'Adopted Baseline', wrap=true)") == 1
     assert 'No supported quota dimensions observed.' in section
     assert 'No supported namespaced quota/limit dimensions observed.' in section
     assert 'Adopted Baseline · Observed</span>' not in section
