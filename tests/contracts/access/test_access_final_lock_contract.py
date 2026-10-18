@@ -143,3 +143,41 @@ def test_uat5_access_detail_headers_follow_permission_reference_without_body_rel
     assert 'data-destructive-modal-confirm' in confirmation
     assert 'data-submit-button-id="{{ confirm_button_id }}"' in confirmation
     assert "Canonical" not in confirmation
+
+
+def test_access_administration_form_actions_reuse_canonical_button_variants() -> None:
+    from jinja2 import Environment
+
+    cases = (
+        ('app/templates/access/users/form.html', 1, 1),
+        ('app/templates/access/users/reset_password.html', 1, 1),
+        ('app/templates/access/roles/form.html', 3, 1),
+        ('app/templates/access/identity_providers/form.html', 1, 2),
+    )
+    for path, expected_primary, expected_secondary in cases:
+        template = read(path)
+        Environment().parse(template)
+        assert 'components/action_button.html' in template
+        assert template.count("action_button.classes('primary')") == expected_primary
+        assert template.count("action_button.classes('secondary')") == expected_secondary
+
+    user = read('app/templates/access/users/form.html')
+    reset = read('app/templates/access/users/reset_password.html')
+    role = read('app/templates/access/roles/form.html')
+    provider = read('app/templates/access/identity_providers/form.html')
+
+    for template in (user, reset):
+        assert 'form.hidden_tag()' in template
+        assert 'data-operation-submit' in template
+        assert 'data-loading-label=' in template
+    assert 'data-operation-submit-label' in user
+    assert 'Reset Password</span>' in reset
+    assert 'form.hidden_tag()' in role
+    assert "read_only and can_mutate_role" in role
+    assert "read_only and is_system_role" in role
+    assert 'page_mode == \'clone\'' in role
+    assert 'form.hidden_tag()' in provider
+    assert 'formaction="{{ url_for(\'identity_providers.test_configuration\'' in provider
+    assert 'formmethod="post"' in provider
+    assert 'Test Connection</button>' in provider
+    assert 'Save Provider</button>' in provider
