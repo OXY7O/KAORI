@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+from typing import cast
 
+from celery.app.task import Task
 from celery.exceptions import CeleryError
 from flask import current_app
 from kombu.exceptions import OperationalError as KombuOperationalError
@@ -67,7 +69,7 @@ def persist_runtime_state(
         try:
             from app.integrations.runtime.tasks import dispatch_integration_health_notification
 
-            dispatch_integration_health_notification.apply_async(
+            cast(Task, dispatch_integration_health_notification).apply_async(
                 args=[row.id],
                 queue=str(current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE') or 'integration-runtime'),
             )

@@ -390,7 +390,7 @@ def get_reveal_page_context(
                 per_page=pending_pagination.per_page,
             )
         )
-    pending_pagination = {
+    pending_pagination_payload = {
         **pending_window,
         'total': pending_window['total_items'],
         'pages': pending_window['total_pages'],
@@ -410,7 +410,7 @@ def get_reveal_page_context(
         'my_reveal_pagination': my_pagination,
         'my_reveal_filters': {'search': search, 'status': state_filter, 'sort': ordering},
         'pending_reveal_requests': pending_requests,
-        'pending_reveal_pagination': pending_pagination,
+        'pending_reveal_pagination': pending_pagination_payload,
         'reveal_policies': REVEAL_NAMESPACE_POLICIES,
         'reveal_window_seconds': int(current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15)),
     }

@@ -3,9 +3,10 @@ from __future__ import annotations
 import hashlib
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
+from celery.app.task import Task
 from celery.exceptions import CeleryError
 from flask import current_app
 from kombu.exceptions import OperationalError as KombuOperationalError
@@ -449,7 +450,7 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
     try:
         from app.platform_operations.jobs.tasks import dispatch_failed_job_notification
 
-        dispatch_failed_job_notification.apply_async(
+        cast(Task, dispatch_failed_job_notification).apply_async(
             args=[job.id],
             queue=str(current_app.config.get('JOB_MAINTENANCE_CELERY_QUEUE') or 'maintenance'),
         )

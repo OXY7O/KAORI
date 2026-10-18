@@ -204,7 +204,7 @@ def get_notification_channels_payload(
         state=normalized_state,
     )
     normalized_delivery_key = str(delivery_event_key or '').strip()[:255]
-    delivery_rows, delivery_pagination = _delivery_registry_page(
+    delivery_rows, delivery_window = _delivery_registry_page(
         page=delivery_pagination.page,
         per_page=delivery_pagination.per_page,
         event_key=normalized_delivery_key,
@@ -239,7 +239,7 @@ def get_notification_channels_payload(
             'state': normalized_state,
         },
         'deliveries': delivery_rows,
-        'delivery_pagination': delivery_pagination,
+        'delivery_pagination': delivery_window,
         'delivery_filter': normalized_delivery_key,
         'providers': providers,
         'domain_options': domain_options(),
