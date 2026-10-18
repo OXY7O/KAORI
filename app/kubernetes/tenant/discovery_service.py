@@ -242,10 +242,7 @@ def capsule_managed_adoption_blocker(
         return 'Capsule allocation authority is unproven or ambiguous; managed adoption is blocked.'
 
     capability_key = 'capability_preview' if preview_only else 'admitted_capability'
-    if (
-        allocation.get('control_state') != 'observed'
-        or allocation.get(capability_key) != required_capability
-    ):
+    if allocation.get('control_state') != 'observed' or allocation.get(capability_key) != required_capability:
         return (
             f'Capsule quota authority {authority} requires an available {required_capability} '
             'capability and supported provider evidence before managed adoption.'

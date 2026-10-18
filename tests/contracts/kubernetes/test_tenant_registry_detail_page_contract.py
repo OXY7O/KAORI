@@ -263,9 +263,7 @@ def test_release_handoff_inventory_is_structured_with_full_on_demand_identifiers
 def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile():
     detail = read(DETAIL)
     Environment().parse(detail)
-    release = detail.split('id="tenant-release-governance"', 1)[1].split(
-        'id="tenant-native-handback"', 1
-    )[0]
+    release = detail.split('id="tenant-release-governance"', 1)[1].split('id="tenant-native-handback"', 1)[0]
 
     # Step 1 keeps its full-width evidence surface and responsive primary CTA;
     # Step 2 is an evidence-only inventory with no mutation forms.
@@ -292,9 +290,7 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
 
     # Short input forms use the narrower preset, while confirmation panels
     # retain adequate space for complete permission and provider scope copy.
-    prepare = next(
-        form for form in forms if 'tenant.prepare_tenant_release_handoff_route' in form
-    )
+    prepare = next(form for form in forms if 'tenant.prepare_tenant_release_handoff_route' in form)
     assert 'w-full max-w-xl' in prepare.split('>', 1)[0]
     assert 'name="successor_owner"' in prepare
     assert 'name="change_reference"' in prepare
@@ -308,12 +304,9 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
         assert 'w-full max-w-2xl' in form.split('>', 1)[0]
 
     # The Step 4 flex-column fallback CTA must not stretch on desktop.
-    fallback = next(
-        form for form in forms if 'tenant.release_tenant_governance_route' in form
-    )
+    fallback = next(form for form in forms if 'tenant.release_tenant_governance_route' in form)
     assert 'w-full sm:w-auto self-start' in fallback
     assert 'id="tenant-release-stage-finalize"' in release
-
 
 
 def test_release_step_three_preparation_uses_balanced_governance_panels():
@@ -322,9 +315,9 @@ def test_release_step_three_preparation_uses_balanced_governance_panels():
     approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
         "{% elif tenant_release_step == 'finalize' %}", 1
     )[0]
-    preparation = approval.split(
-        "{% if row.release_handoff_preparation_state == 'available'", 1
-    )[1].split("{% else %}", 1)[0]
+    preparation = approval.split("{% if row.release_handoff_preparation_state == 'available'", 1)[1].split(
+        '{% else %}', 1
+    )[0]
 
     # Match the existing Step 4 3:2 panel pattern without constraining other
     # approved, blocked, expired or provider-recovery evidence branches.
@@ -424,11 +417,13 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'External Handoff &amp; Read-Back' in approval
     assert approval.count('data-release-accepted-handoff-evidence') == 1
     assert approval.count('External Handoff Inspection Unavailable') == 1
-    assert approval.index('data-release-accepted-handoff-workspace') < approval.index(
-        'data-release-accepted-handoff-evidence'
-    ) < approval.index("{% if tenant.provider_key == 'capsule' %}", approval.index(
-        'data-release-accepted-handoff-workspace'
-    ))
+    assert (
+        approval.index('data-release-accepted-handoff-workspace')
+        < approval.index('data-release-accepted-handoff-evidence')
+        < approval.index(
+            "{% if tenant.provider_key == 'capsule' %}", approval.index('data-release-accepted-handoff-workspace')
+        )
+    )
     assert 'I reviewed the successor, change record, and provider evidence; no transfer occurred.' in approval
     for heading in (
         'Approval Boundaries',
@@ -1237,31 +1232,20 @@ def test_release_review_scope_is_one_unified_committed_evidence_surface():
 
 def test_tenant_description_value_has_no_template_indentation() -> None:
     detail = read(DETAIL)
-    overview = detail.split('id="tenant-detail-snapshot"', 1)[1].split(
-        'aria-label="Tenant management sections"', 1
-    )[0]
+    overview = detail.split('id="tenant-detail-snapshot"', 1)[1].split('aria-label="Tenant management sections"', 1)[0]
     # Jinja whitespace trimming leaves the user's own multiline text unchanged.
     assert 'whitespace-pre-wrap break-words' in overview
-    assert (
-        "{{- tenant.description or 'No Tenant description has been recorded.' -}}"
-        in overview
-    )
-    assert (
-        "{{ tenant.description or 'No Tenant description has been recorded.' }}"
-        not in overview
-    )
+    assert "{{- tenant.description or 'No Tenant description has been recorded.' -}}" in overview
+    assert "{{ tenant.description or 'No Tenant description has been recorded.' }}" not in overview
     Environment().parse(detail)
 
 
 def test_release_heading_uses_canonical_title_level_guide() -> None:
     detail = read(DETAIL)
-    release_header = detail.split('id="tenant-release-governance"', 1)[1].split(
-        'aria-label="Release wizard steps"', 1
-    )[0]
-    title = (
-        '<h2 class="text-lg font-semibold text-content-primary">'
-        'Release Governance</h2>'
-    )
+    release_header = detail.split('id="tenant-release-governance"', 1)[1].split('aria-label="Release wizard steps"', 1)[
+        0
+    ]
+    title = '<h2 class="text-lg font-semibold text-content-primary">Release Governance</h2>'
     guide_id = "'tenant-release-governance-help'"
     assert release_header.count(title) == 1
     assert release_header.count('info_tip.render(') == 1
@@ -1293,9 +1277,9 @@ def test_expired_release_review_has_compact_responsive_single_sentence() -> None
 
 def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
     detail = read(DETAIL)
-    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
-        'id="tenant-release-stage-finalize"', 1
-    )[0]
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split('id="tenant-release-stage-finalize"', 1)[
+        0
+    ]
     final = detail.split('id="tenant-release-stage-finalize"', 1)[1]
 
     # Content hierarchy: concise status rows, unstretched peers, aligned actions.

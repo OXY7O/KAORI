@@ -210,8 +210,7 @@ def firing_routes(case: AlertCase) -> list[FiringRoute]:
                     send_resolved=bool(policy.send_resolved),
                 )
                 for channel_id in (policy.channel_ids_json or [])
-                if case.domain != 'registry'
-                or _registry_policy_channel_eligible(channel_id)
+                if case.domain != 'registry' or _registry_policy_channel_eligible(channel_id)
             )
         return routes
 
@@ -266,8 +265,7 @@ def policy_allows_resolved(case: AlertCase, channel_id: int) -> bool:
     policies = matching_routing_policies(case)
     if case.domain == 'registry':
         return any(
-            policy.send_resolved and channel_id in (policy.channel_ids_json or [])
-            for policy in policies
+            policy.send_resolved and channel_id in (policy.channel_ids_json or []) for policy in policies
         )  # No legacy default for Registry.
     if not policies:
         # Default delivery is valid only where no matching domain policy was
@@ -287,10 +285,7 @@ def _policy_matches(policy: AlertRoutingPolicy, case: AlertCase) -> bool:
         return False
     if case.domain == 'registry' and (
         not domain_event_allowed('registry', 'alert_ops.firing')
-        or not any(
-            _registry_policy_channel_eligible(channel_id)
-            for channel_id in (policy.channel_ids_json or [])
-        )
+        or not any(_registry_policy_channel_eligible(channel_id) for channel_id in (policy.channel_ids_json or []))
     ):
         return False
     labels = case.labels_json or {}

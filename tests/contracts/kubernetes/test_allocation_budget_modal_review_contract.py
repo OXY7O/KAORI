@@ -8,14 +8,10 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_allocation_budget_header_labels_and_fixed_info_footer() -> None:
-    source = (
-        ROOT / 'app/templates/kubernetes/tenant/partials/_capacity_governance.html'
-    ).read_text(encoding='utf-8')
+    source = (ROOT / 'app/templates/kubernetes/tenant/partials/_capacity_governance.html').read_text(encoding='utf-8')
     Environment(autoescape=True).parse(source)
 
-    dialog = source.split('<dialog id="{{ dialog_id }}"', 1)[1].split(
-        '</dialog>', 1
-    )[0]
+    dialog = source.split('<dialog id="{{ dialog_id }}"', 1)[1].split('</dialog>', 1)[0]
     header = dialog.split('<header ', 1)[1].split('</header>', 1)[0]
     scroll_body, footer = dialog.split('<footer ', 1)
 
@@ -26,7 +22,9 @@ def test_allocation_budget_header_labels_and_fixed_info_footer() -> None:
     assert 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft' in header
     assert 'flex min-w-0 flex-wrap items-center gap-2' in header
     assert header.index('{{ item.cluster.name }}') < header.index('table_label.status_label(item.state, state_tone)')
-    assert header.index('table_label.status_label(item.state, state_tone)') < header.index('id="{{ dialog_id }}-description"')
+    assert header.index('table_label.status_label(item.state, state_tone)') < header.index(
+        'id="{{ dialog_id }}-description"'
+    )
     assert header.index('id="{{ dialog_id }}-description"') < header.index('aria-label="Allocation Budget context"')
     assert "table_label.metadata_label('Allocation Budget', icon='chart-no-axes-combined')" in header
     assert "table_label.metadata_label('Request commitment', icon='gauge')" in header
@@ -50,5 +48,7 @@ def test_allocation_budget_header_labels_and_fixed_info_footer() -> None:
     assert 'aria-label="Close Allocation Budget"' in footer
     assert 'class="{{ table_ui.action_classes() }} ml-auto shrink-0"' in footer
     assert dialog.count('data-kaori-dialog-close') == 2
-    assert dialog.index('</div>\n                                        <footer') > dialog.index('min-h-0 overflow-y-auto')
+    assert dialog.index('</div>\n                                        <footer') > dialog.index(
+        'min-h-0 overflow-y-auto'
+    )
     assert 'hx-post' not in dialog

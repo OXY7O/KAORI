@@ -85,11 +85,16 @@ def test_settings_query_tabs_delegate_to_shared_htmx_tab_authority() -> None:
 
     # Superseding UAT-1: no Settings loading bars anywhere in Account/General.
     for section, status_id, partials in (
-        ('general', 'general-settings-loading', (
-            '_time_locale.html', '_regional_format.html', '_system_information.html',
-            '_compatibility_versions.html')),
-        ('account', 'account-settings-loading', (
-            '_profile_cards.html', '_recent_login_activity.html', '_change_password.html')),
+        (
+            'general',
+            'general-settings-loading',
+            ('_time_locale.html', '_regional_format.html', '_system_information.html', '_compatibility_versions.html'),
+        ),
+        (
+            'account',
+            'account-settings-loading',
+            ('_profile_cards.html', '_recent_login_activity.html', '_change_password.html'),
+        ),
     ):
         page = read(f'app/templates/settings/{section}/partials/_page_content.html')
         assert 'loading_bar.render(' not in page

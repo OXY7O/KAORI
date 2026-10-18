@@ -141,7 +141,7 @@ def test_kubernetes_inventory_network_and_configuration_filters_have_associated_
 
     for resource, filter_controls in filters_by_resource.items():
         card = read(f'app/templates/kubernetes/inventory/{resource}/partials/_table_card.html')
-        assert f'url_for(\'inventory.{resource}\')' in card
+        assert f"url_for('inventory.{resource}')" in card
         assert 'name="partial_mode" value="page_workspace"' in card
         for control_id, query_name in filter_controls.items():
             assert f'for="{control_id}"' in card

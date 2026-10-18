@@ -42,9 +42,7 @@ def _observation(
         ('healthy', 'healthy', False),
     ],
 )
-def test_health_degradation_requires_a_new_observed_transition(
-    previous: str, current: str, notify: bool
-) -> None:
+def test_health_degradation_requires_a_new_observed_transition(previous: str, current: str, notify: bool) -> None:
     before = _observation(health_status=previous, observation_id=6)
     after = _observation(health_status=current)
     assert notifications.is_health_degradation(before, after) is notify
@@ -90,7 +88,7 @@ def test_notification_enqueue_is_after_source_commit_and_delivery_refuses_stale_
         'dispatch_integration_health_notification.apply_async('
     )
     assert "instance.lifecycle_status != 'active'" in task
-    assert "or not instance.enabled" in task
-    assert "latest.id != observation.id" in task
-    assert "if not is_health_degradation(previous, observation):" in task
+    assert 'or not instance.enabled' in task
+    assert 'latest.id != observation.id' in task
+    assert 'if not is_health_degradation(previous, observation):' in task
     assert "'app.integrations.runtime.tasks.dispatch_integration_health_notification'" in config

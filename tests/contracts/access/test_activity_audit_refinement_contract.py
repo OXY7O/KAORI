@@ -469,7 +469,6 @@ def test_activity_audit_framed_tabs_and_canonical_administrative_filters() -> No
         assert f"request.args.get('{param}'" in routes or f"_request_int('{param}'" in routes
 
 
-
 def test_uat_administrative_evidence_uses_shared_title_result_count() -> None:
     administrative = read('app/templates/access/activity_audit/partials/_administrative_evidence.html')
     header = administrative.split('</header>', 1)[0]

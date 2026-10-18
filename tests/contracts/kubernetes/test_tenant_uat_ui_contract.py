@@ -150,6 +150,7 @@ def test_tenant_operations_data_surfaces_are_canonical_paginated_registries() ->
     assert '_OPERATIONS_EVIDENCE_TYPES' in workspace
     assert 'paginate_query(' in workspace
 
+
 def test_tenant_group_edit_modal_uses_canonical_primary_and_secondary_actions() -> None:
     group = _read('app/templates/kubernetes/tenant/partials/_group_registry.html')
     action = _read('app/templates/components/action_button.html')
@@ -160,7 +161,7 @@ def test_tenant_group_edit_modal_uses_canonical_primary_and_secondary_actions() 
     assert 'type="submit"' in footer
     assert 'class="{{ action_button.classes(\'primary\') }}"' in footer
     assert 'Save Changes' in footer
-    assert 'variant == \'primary\'' in action
+    assert "variant == 'primary'" in action
     assert 'disabled:bg-status-disabled-soft' in action
     assert 'hx-disabled-elt="find button"' in group
     assert 'data-tenant-group-edit-subject' in group

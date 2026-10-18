@@ -150,7 +150,11 @@ def main() -> int:
         errors,
     )
     require('loading_bar.render(' not in general_page, 'General Settings must not render a loading bar', errors)
-    require('id="general-settings-loading" class="htmx-indicator sr-only"' in general_page, 'General Settings nonvisual HTMX status missing', errors)
+    require(
+        'id="general-settings-loading" class="htmx-indicator sr-only"' in general_page,
+        'General Settings nonvisual HTMX status missing',
+        errors,
+    )
     for relative in (
         '_time_locale.html',
         '_regional_format.html',
@@ -275,7 +279,11 @@ def main() -> int:
         errors,
     )
     require('loading_bar.render(' not in account_page, 'Account Settings must not render a loading bar', errors)
-    require('id="account-settings-loading" class="htmx-indicator sr-only"' in account_page, 'Account nonvisual HTMX status missing', errors)
+    require(
+        'id="account-settings-loading" class="htmx-indicator sr-only"' in account_page,
+        'Account nonvisual HTMX status missing',
+        errors,
+    )
     for relative in ('_profile_cards.html', '_recent_login_activity.html', '_change_password.html'):
         source = read('app/templates/settings/account/partials/' + relative)
         require('components/loading_bar.html' not in source, f'{relative}: visual loading bar prohibited', errors)

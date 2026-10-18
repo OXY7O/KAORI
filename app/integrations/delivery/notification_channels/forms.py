@@ -68,9 +68,7 @@ def validate_channel_input(
         ]
         if ineligible_domains:
             errors.append(
-                'Select an allowed use supported by each chosen delivery domain: '
-                + ', '.join(ineligible_domains)
-                + '.'
+                'Select an allowed use supported by each chosen delivery domain: ' + ', '.join(ineligible_domains) + '.'
             )
     errors.extend(adapter.form_validator(data))
     return errors

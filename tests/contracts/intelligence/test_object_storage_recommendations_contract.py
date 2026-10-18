@@ -81,11 +81,7 @@ def test_storage_and_registry_dashboard_copy_is_rule_authored() -> None:
     import yaml
 
     catalog = yaml.safe_load(read('app/definitions/catalogs/intelligence/rules.yaml'))
-    selected = {
-        rule['rule_key']: rule
-        for rule in catalog['rules']
-        if rule['domain'] in {'object_storage', 'registry'}
-    }
+    selected = {rule['rule_key']: rule for rule in catalog['rules'] if rule['domain'] in {'object_storage', 'registry'}}
     assert len(selected) == 18
     assert sum(rule['domain'] == 'object_storage' for rule in selected.values()) == 12
     assert sum(rule['domain'] == 'registry' for rule in selected.values()) == 6
@@ -98,18 +94,15 @@ def test_storage_and_registry_dashboard_copy_is_rule_authored() -> None:
 
     encryption = selected['object_storage.bucket.encryption_not_configured']
     assert encryption['dashboard_action'] == (
-        'Check data classification. Apply approved encryption if required; '
-        'resync inventory.'
+        'Check data classification. Apply approved encryption if required; resync inventory.'
     )
     vulnerability = selected['registry.security.critical_runtime_vulnerability']
     assert vulnerability['dashboard_action'] == (
-        'Validate exposure and fixed-artifact options. '
-        'Use approved deployment controls.'
+        'Validate exposure and fixed-artifact options. Use approved deployment controls.'
     )
     correlation = selected['registry.runtime.tag_only_correlation']
     assert correlation['dashboard_action'] == (
-        'Use pinned digests or verified imageID evidence. '
-        'Refresh Registry correlation.'
+        'Use pinned digests or verified imageID evidence. Refresh Registry correlation.'
     )
 
 
@@ -148,18 +141,14 @@ def test_dashboard_projection_prefers_authored_action_without_losing_finding_ide
             calls.append((domain, asset_key))
             return findings
 
-        monkeypatch.setattr(
-            module, 'get_dashboard_recommendation_findings', findings_stub
-        )
+        monkeypatch.setattr(module, 'get_dashboard_recommendation_findings', findings_stub)
         cards = builder(SimpleNamespace(id=17))
         assert calls == [('object_storage' if module is storage else 'registry', '17')]
         assert cards[0]['description'] == findings[0]['dashboard_action']
         assert cards[1]['description'] == findings[1]['recommended_action']
         for field in ('title', 'rule_key', 'priority', 'severity'):
             assert cards[0][field] == findings[0][field]
-        assert findings[0]['recommended_action'] == (
-            'Full remediation instructions stay in Intelligence.'
-        )
+        assert findings[0]['recommended_action'] == ('Full remediation instructions stay in Intelligence.')
 
 
 def test_shared_recommendation_card_and_kubernetes_copy_stay_unchanged() -> None:

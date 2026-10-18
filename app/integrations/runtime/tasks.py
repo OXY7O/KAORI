@@ -47,9 +47,11 @@ def dispatch_integration_health_notification(observation_id: int) -> dict[str, o
     latest = prior_query.order_by(IntegrationRuntimeObservation.id.desc()).first()
     if latest is None or latest.id != observation.id:
         return {'status': 'skipped', 'reason': 'stale_transition'}
-    previous = prior_query.filter(
-        IntegrationRuntimeObservation.id < observation.id
-    ).order_by(IntegrationRuntimeObservation.id.desc()).first()
+    previous = (
+        prior_query.filter(IntegrationRuntimeObservation.id < observation.id)
+        .order_by(IntegrationRuntimeObservation.id.desc())
+        .first()
+    )
     if not is_health_degradation(previous, observation):
         return {'status': 'skipped', 'reason': 'not_healthy_to_degraded'}
     return {'status': 'completed', **dispatch_integration_health_event(observation)}

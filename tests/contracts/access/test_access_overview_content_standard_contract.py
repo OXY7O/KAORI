@@ -75,14 +75,13 @@ def test_access_overview_explains_permission_scoped_control_boundaries() -> None
     assert "'boundaries': boundaries" in presentation
 
 
-
 def test_uat_14_inch_access_overview_card_copy_is_concise() -> None:
     source = read('app/access/overview/presentation.py')
     assert "return 'Protected defaults aligned; delegation capped.'" in source
     assert "'Audit actor snapshots; other sources stay gated.'" in source
-    assert 'role_summary[\'baseline_drift_count\']' in source
-    assert 'role_summary[\'inactive_assigned_users\']' in source
-    assert "get_activity_audit_summary()" in source
+    assert "role_summary['baseline_drift_count']" in source
+    assert "role_summary['inactive_assigned_users']" in source
+    assert 'get_activity_audit_summary()' in source
     # These are display-only copy changes; no presentation truncation.
     template = read('app/templates/access/overview/index.html')
     assert '{{ workspace.supporting_text }}' in template
@@ -116,8 +115,7 @@ def test_uat_review2_user_account_counts_keep_dynamic_break_glass_evidence() -> 
     source = read('app/access/overview/presentation.py')
     module = ast.parse(source)
     function = next(
-        node for node in module.body
-        if isinstance(node, ast.FunctionDef) and node.name == '_user_supporting_text'
+        node for node in module.body if isinstance(node, ast.FunctionDef) and node.name == '_user_supporting_text'
     )
     namespace: dict[str, Any] = {'Any': Any}
     exec(compile(ast.Module(body=[function], type_ignores=[]), '<user-posture>', 'exec'), namespace)
@@ -129,9 +127,7 @@ def test_uat_review2_user_account_counts_keep_dynamic_break_glass_evidence() -> 
     assert supporting_text({**baseline, 'total': 1, 'active_super_admins': 2}) == (
         '1 account · 2 active Local DB break-glass admins.'
     )
-    assert 'No active break-glass super admin' in supporting_text(
-        {**baseline, 'active_super_admins': 0}
-    )
+    assert 'No active break-glass super admin' in supporting_text({**baseline, 'active_super_admins': 0})
     assert 'account admission issue(s)' in supporting_text({**baseline, 'access_review': 3})
     assert 'No active user account' in supporting_text({**baseline, 'active': 0})
     assert 'registered account(s) with' not in source

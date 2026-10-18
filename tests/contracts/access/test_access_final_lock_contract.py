@@ -64,7 +64,6 @@ def test_current_access_documents_do_not_reopen_the_locked_ui() -> None:
         assert 'not final-lock the UI' not in document
 
 
-
 def test_uat4_access_modals_share_header_footer_chrome_without_changing_dialog_bodies() -> None:
     shared = read('app/templates/components/destructive_confirmation_modal.html')
     host = read('app/templates/components/resource_detail_modal.html')
@@ -76,16 +75,14 @@ def test_uat4_access_modals_share_header_footer_chrome_without_changing_dialog_b
     for page in (permissions, roles, activity):
         assert 'resource_detail_modal.host(' in page
     for label in ('Permission', 'Role', 'Activity'):
-        assert f"resource_detail_modal.host('{label}'" in (
-            permissions + roles + activity
-        )
+        assert f"resource_detail_modal.host('{label}'" in (permissions + roles + activity)
     assert 'data-resource-detail-header-host' in host
     assert 'data-resource-detail-close' in host
     assert 'data-resource-detail-summary-host' in host
     assert 'footer_text' in host
 
     assert 'access_chrome=false' in shared
-    assert 'presentation in [\'steps\', \'kubernetes\'] or access_chrome' in shared
+    assert "presentation in ['steps', 'kubernetes'] or access_chrome" in shared
     assert 'if access_chrome else' in shared
     assert 'data-destructive-modal-confirm' in shared
     assert 'data-destructive-modal-close' in shared
@@ -93,12 +90,11 @@ def test_uat4_access_modals_share_header_footer_chrome_without_changing_dialog_b
     assert "if presentation == 'steps' else 'max-w-xl'" in shared
     assert "if presentation == 'steps' else 'space-y-5 p-5'" in shared
     assert 'scope_value }} · Confirmation required' in shared
-    assert "access_chrome=true" in roles and "access_chrome=true" in users
+    assert 'access_chrome=true' in roles and 'access_chrome=true' in users
     assert roles.count('access_chrome=true') == 1
     assert users.count('access_chrome=true') == 1
     assert 'role-delete-confirmation' in roles
     assert 'delete-user-modal' in users
-
 
 
 def test_uat5_access_detail_headers_follow_permission_reference_without_body_relayout() -> None:
@@ -142,7 +138,7 @@ def test_uat5_access_detail_headers_follow_permission_reference_without_body_rel
     assert "if presentation == 'steps' else 'max-w-xl'" in confirmation
     assert 'data-destructive-modal-confirm' in confirmation
     assert 'data-submit-button-id="{{ confirm_button_id }}"' in confirmation
-    assert "Canonical" not in confirmation
+    assert 'Canonical' not in confirmation
 
 
 def test_access_administration_form_actions_reuse_canonical_button_variants() -> None:
@@ -173,11 +169,11 @@ def test_access_administration_form_actions_reuse_canonical_button_variants() ->
     assert 'data-operation-submit-label' in user
     assert 'Reset Password</span>' in reset
     assert 'form.hidden_tag()' in role
-    assert "read_only and can_mutate_role" in role
-    assert "read_only and is_system_role" in role
-    assert 'page_mode == \'clone\'' in role
+    assert 'read_only and can_mutate_role' in role
+    assert 'read_only and is_system_role' in role
+    assert "page_mode == 'clone'" in role
     assert 'form.hidden_tag()' in provider
-    assert 'formaction="{{ url_for(\'identity_providers.test_configuration\'' in provider
+    assert "formaction=\"{{ url_for('identity_providers.test_configuration'" in provider
     assert 'formmethod="post"' in provider
     assert 'Test Connection</button>' in provider
     assert 'Save Provider</button>' in provider

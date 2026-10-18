@@ -11,7 +11,9 @@ from app.models.runtime import IntegrationRuntimeObservation
 HEALTH_DEGRADED_EVENT = 'integrations.health_degraded'
 
 
-def is_health_degradation(previous: IntegrationRuntimeObservation | None, current: IntegrationRuntimeObservation) -> bool:
+def is_health_degradation(
+    previous: IntegrationRuntimeObservation | None, current: IntegrationRuntimeObservation
+) -> bool:
     """Only an observed healthy-to-unhealthy transition is a new outbound event."""
     return bool(
         previous is not None

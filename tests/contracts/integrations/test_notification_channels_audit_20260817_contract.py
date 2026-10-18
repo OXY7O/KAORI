@@ -209,6 +209,7 @@ def test_report_delivery_source_link_is_exact_committed_and_permissioned() -> No
     assert 'delivery.report_source_url' in page
     assert 'Open Report' in page
 
+
 def test_review5_channels_registry_uses_canonical_filter_and_safe_server_pagination() -> None:
     template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     routes = read('app/integrations/delivery/notification_channels/routes.py')
@@ -225,13 +226,14 @@ def test_review5_channels_registry_uses_canonical_filter_and_safe_server_paginat
     assert 'table_label.result_count(payload.channel_pagination.total_items)' in template
     for name in ('channel_search', 'channel_provider', 'channel_state'):
         assert f"request.args.get('{name}', '')" in routes
-    assert "func.lower(NotificationChannel.name).contains(search.lower(), autoescape=True)" in service
-    assert "NotificationChannel.provider_key == provider" in service
-    assert "NotificationChannel.enabled.is_(True)" in service
-    assert "NotificationChannel.enabled.is_(False)" in service
-    assert "query = query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())" in service
+    assert 'func.lower(NotificationChannel.name).contains(search.lower(), autoescape=True)' in service
+    assert 'NotificationChannel.provider_key == provider' in service
+    assert 'NotificationChannel.enabled.is_(True)' in service
+    assert 'NotificationChannel.enabled.is_(False)' in service
+    assert 'query = query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())' in service
     assert 'paginate_query(query, page=page, per_page=per_page)' in service
     assert "request.args.get('channel_per_page', default=5, type=int)" in routes
+
 
 def test_review5_delivery_activity_auto_htmx_filter_has_no_search_button() -> None:
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
@@ -252,6 +254,7 @@ def test_review5_delivery_activity_auto_htmx_filter_has_no_search_button() -> No
         'app/integrations/delivery/notification_channels/routes.py'
     )
 
+
 def test_review5_provider_card_controls_and_modal_header_are_reusable() -> None:
     cards = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
@@ -260,12 +263,13 @@ def test_review5_provider_card_controls_and_modal_header_are_reusable() -> None:
     assert "table_ui.action_classes(size='header')" in cards
     assert 'aria-label="Open {{ provider.label }} setup guide"' in cards
     assert 'aria-label="Configure {{ provider.label }} notification channel"' in cards
-    assert "data-dialog-target=\"notification-channel-guide-dialog\"" in cards
-    assert "data-dialog-target=\"notification-channel-config-dialog\"" in cards
+    assert 'data-dialog-target="notification-channel-guide-dialog"' in cards
+    assert 'data-dialog-target="notification-channel-config-dialog"' in cards
     assert "table_label.metadata_label('Guided Setup', icon='book-open-check')" in modals
     assert 'id="notification-channel-guide-title"' in modals
     assert 'data-kaori-dialog-close' in modals
-    assert "focus-visible:ring-outline-focus" in shared
+    assert 'focus-visible:ring-outline-focus' in shared
+
 
 def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> None:
     template = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
@@ -282,10 +286,17 @@ def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> No
     assert 'Allowed Uses' in template
     for key in ('discord', 'slack', 'ntfy', 'telegram', 'email', 'microsoft_teams'):
         assert f"'{key}': NotificationProviderAdapter(" in providers
-    for requirement in ('NOTIFICATION_NTFY_ALLOWED_ORIGINS', 'NOTIFICATION_NTFY_CA_BUNDLE',
-                        'Anyone', 'GitHub Actions', 'STARTTLS', 'TLS/SMTPS'):
+    for requirement in (
+        'NOTIFICATION_NTFY_ALLOWED_ORIGINS',
+        'NOTIFICATION_NTFY_CA_BUNDLE',
+        'Anyone',
+        'GitHub Actions',
+        'STARTTLS',
+        'TLS/SMTPS',
+    ):
         assert requirement in providers
     assert 'Test Delivery' in providers
+
 
 def test_review6_channel_registry_loading_follows_header_before_filters() -> None:
     source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
@@ -297,6 +308,7 @@ def test_review6_channel_registry_loading_follows_header_before_filters() -> Non
     footer = registry.index("table_registry.footer('notification_channels.index'")
     assert header < loading < filters < table < footer
     assert registry.count("loading_bar.render('notification-channel-loading'") == 1
+
 
 def test_review6_provider_utilities_match_header_action_geometry_with_soft_hover() -> None:
     source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
@@ -312,6 +324,7 @@ def test_review6_provider_utilities_match_header_action_geometry_with_soft_hover
     assert 'aria-label="Open {{ provider.label }} setup guide"' in source
     assert 'aria-label="Configure {{ provider.label }} notification channel"' in source
 
+
 def test_review6_modal_has_context_metadata_and_single_native_provider_select() -> None:
     source = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     assert "metadata_label('Integrations', icon='plug')" in source
@@ -324,8 +337,8 @@ def test_review6_modal_has_context_metadata_and_single_native_provider_select() 
     assert 'x-model="provider"' in source
     assert 'Select provider' in source
     assert 'Delivery Policy' in source
-    assert "payload.domain_options|length" in source
-    assert "payload.event_type_options|length" in source
+    assert 'payload.domain_options|length' in source
+    assert 'payload.event_type_options|length' in source
     assert 'name="domains"' in source
     assert 'name="event_types"' in source
     assert 'name="enabled"' in source
@@ -335,6 +348,7 @@ def test_review6_modal_has_context_metadata_and_single_native_provider_select() 
     assert 'grid gap-2 sm:grid-cols-2 xl:grid-cols-3' in source
     assert '{% include provider_option.form_partial %}' in source
     assert 'name="csrf_token"' in source
+
 
 def test_review6_provider_guide_summaries_keep_security_coverage_and_copy_density() -> None:
     import ast
@@ -368,4 +382,3 @@ def test_review6_provider_guide_summaries_keep_security_coverage_and_copy_densit
     assert 'Anyone' in ' '.join(found['microsoft_teams'][2])
     for value in found.values():
         assert any(term in value[1] for term in ('read', 'recipient', 'receipt'))
-

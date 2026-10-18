@@ -356,7 +356,7 @@ def test_uat_compatibility_policy_columns_share_four_balanced_rows() -> None:
     assert 'data-compatibility-policy-layout="structured-reference"' in template
     assert template.count('lg:grid lg:grid-rows-4') == 2
     assert template.count('lg:min-h-20') == 5
-    assert "data-compatibility-policy-guide=\"numbered\"" in template
+    assert 'data-compatibility-policy-guide="numbered"' in template
     assert '<ol class=' in template and '<dl class=' in template
     assert 'Contracts change only for breaking API behavior.' in template
     assert 'Provider APIs, RBAC, metrics and bindings determine readiness.' in template

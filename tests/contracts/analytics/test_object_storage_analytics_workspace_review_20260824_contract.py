@@ -148,7 +148,6 @@ def test_object_storage_evidence_copy_stays_compact_and_factual() -> None:
     assert "status, tone = 'No Active Alerts', 'normal'" in alert_projection
 
 
-
 def test_provider_alert_records_clear_filters_precedes_persistent_source_context() -> None:
     """Filtered and unfiltered headers keep one canonical DOM reading order."""
     source = read('app/templates/storage/object_storage/analytics/partials/_alert_records.html')
@@ -172,4 +171,4 @@ def test_provider_alert_records_clear_filters_precedes_persistent_source_context
     assert 'alert_per_page=alert_table.pagination.per_page' in header
     assert "alert_table.severity != 'all'" in source
     assert "alert_table.state != 'all'" in source
-    assert "hx-target=\"#object-storage-alert-records\"" in source
+    assert 'hx-target="#object-storage-alert-records"' in source

@@ -112,9 +112,10 @@ def test_provider_cards_select_ldap_by_pointer_and_keyboard(page: Page) -> None:
     page.mouse.click(bounds['x'] + bounds['width'] / 2, bounds['y'] + bounds['height'] / 2)
     expect(ldap).to_be_checked()
     expect(github).not_to_be_checked()
-    assert page.locator('[data-provider-form]').evaluate(
-        "form => new FormData(form).get('provider_key')"
-    ) == 'ldap_directory'
+    assert (
+        page.locator('[data-provider-form]').evaluate("form => new FormData(form).get('provider_key')")
+        == 'ldap_directory'
+    )
     expect(page.locator('input[type="radio"][data-provider-option]')).to_have_count(3)
     expect(page.locator('svg[data-provider-key="ldap_directory"]')).to_have_count(0)
     expect(page.locator('svg[data-provider-display-icon]')).to_have_count(1)

@@ -121,21 +121,17 @@ def test_security_registry_actions_use_shared_style_and_leading_header_clear() -
     template = read('app/templates/artifact_registry/partials/_security_workspace.html')
     Environment().parse(template)
 
-    registry_header = template.split('{% set security_registry_header_actions %}', 1)[1].split(
-        '{% endset %}', 1
-    )[0]
+    registry_header = template.split('{% set security_registry_header_actions %}', 1)[1].split('{% endset %}', 1)[0]
     assert 'registry.clear_filters_link(' in registry_header
-    assert registry_header.index('registry.clear_filters_link(') < registry_header.index(
-        'Open Runtime Usage'
-    )
-    assert "query_params=({'section': 'evidence'} if security.view == 'supply_chain' else {})" in (
-        registry_header
-    )
+    assert registry_header.index('registry.clear_filters_link(') < registry_header.index('Open Runtime Usage')
+    assert "query_params=({'section': 'evidence'} if security.view == 'supply_chain' else {})" in (registry_header)
     assert registry_header.count('table_ui.action_classes()') >= 2
 
-    filter_form = template.split('{% set security_registry_header_actions %}', 1)[1].split(
-        '{% call registry.filter_form(', 1
-    )[1].split('{% endcall %}', 1)[0]
+    filter_form = (
+        template.split('{% set security_registry_header_actions %}', 1)[1]
+        .split('{% call registry.filter_form(', 1)[1]
+        .split('{% endcall %}', 1)[0]
+    )
     assert 'registry.clear_filters_link(' not in filter_form
     assert 'security.pagination.per_page' in filter_form
 

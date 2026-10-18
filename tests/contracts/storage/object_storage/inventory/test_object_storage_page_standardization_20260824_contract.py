@@ -154,15 +154,9 @@ def test_inventory_tables_keep_canonical_scope_refresh_and_pagination_ownership(
 
 
 def test_object_storage_concise_descriptions_cover_all_reviewed_surfaces() -> None:
-    systems = read(
-        'app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html'
-    )
-    bucket = read(
-        'app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html'
-    )
-    system = read(
-        'app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html'
-    )
+    systems = read('app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html')
+    bucket = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    system = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
     copy_by_surface = (
         (
             systems,
@@ -216,9 +210,9 @@ def test_object_storage_concise_descriptions_cover_all_reviewed_surfaces() -> No
 
     # State classification and snapshot authority still own the metric values.
     for token in (
-        "quota_title, quota_tone",
-        "protection_title, protection_tone",
-        "exposure_title, exposure_tone",
+        'quota_title, quota_tone',
+        'protection_title, protection_tone',
+        'exposure_title, exposure_tone',
         "'quota_assessed': quota_assessed",
         "'protection_assessed': protection_assessed",
         "'exposure_assessed': exposure_assessed",
@@ -230,13 +224,8 @@ def test_object_storage_concise_descriptions_cover_all_reviewed_surfaces() -> No
 def test_legacy_minio_bucket_metadata_gets_display_only_compact_copy() -> None:
     presentation = read('app/storage/object_storage/inventory/presentation.py')
     client = read('app/integrations/storage/object_storage/providers/minio/client.py')
-    bucket = read(
-        'app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html'
-    )
-    old = (
-        'Provider-native S3 configuration evidence collected by '
-        'Object Storage Inventory Sync.'
-    )
+    bucket = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    old = 'Provider-native S3 configuration evidence collected by Object Storage Inventory Sync.'
     assert old in presentation
     assert old not in client
     assert "title == 'MinIO Bucket Configuration'" in presentation

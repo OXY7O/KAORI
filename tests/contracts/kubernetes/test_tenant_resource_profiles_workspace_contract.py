@@ -1520,7 +1520,6 @@ def test_allocation_change_all_title_info_tips_are_adjacent_not_corner_actions()
         assert template.count('type="submit"') >= 1, filename
 
 
-
 def test_adoption_and_legacy_cutover_guidance_match_approved_current_authority() -> None:
     """#2481: do not conflate #777 Managed-on-Adopt with legacy #762 cutover."""
     from jinja2 import Environment
@@ -2003,5 +2002,5 @@ def test_tenant_allocation_guidance_has_single_title_tip_and_budget_formula() ->
     assert 'sm:grid-cols-2' in budget
     assert 'group-open:rotate-180' in overview
     assert 'allocation_overview.bars' in overview
-    assert 'exposure.display[field ~ \'_committed\']' in overview
-    assert 'exposure.display[field ~ \'_threshold\']' in overview
+    assert "exposure.display[field ~ '_committed']" in overview
+    assert "exposure.display[field ~ '_threshold']" in overview

@@ -110,7 +110,10 @@ def test_resource_detail_row_buttons_reuse_canonical_table_action_classes() -> N
     table = env.get_template('components/table_primitives.html').module
     canonical = str(table.action_classes()).split()
 
-    for options in ({}, {'class_name': 'ml-auto', 'label': 'Inspect', 'icon': 'eye', 'controls': 'resource-detail-drawer'}):
+    for options in (
+        {},
+        {'class_name': 'ml-auto', 'label': 'Inspect', 'icon': 'eye', 'controls': 'resource-detail-drawer'},
+    ):
         rendered = str(
             modal.detail_button(
                 'audit-7',

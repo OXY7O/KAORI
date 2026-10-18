@@ -36,9 +36,7 @@ def test_hero_component_standard_is_enforced() -> None:
 
 
 def test_notification_channels_hero_uses_three_bounded_metadata_roles() -> None:
-    source = (ROOT / 'app/templates/integrations/delivery/notification_channels/index.html').read_text(
-        encoding='utf-8'
-    )
+    source = (ROOT / 'app/templates/integrations/delivery/notification_channels/index.html').read_text(encoding='utf-8')
     verifier = runpy.run_path(str(ROOT / 'scripts/verify_hero_component_standard.py'))
     verifier['_verify_bounded_hero_metadata'](source, owner='Notification Channels')
 
@@ -58,7 +56,7 @@ def test_notification_channels_hero_rejects_dynamic_and_extra_metadata() -> None
                 '__ITEMS__',
                 '{% for provider in payload.providers %}'
                 '{{ page_hero.meta_label(provider.icon, provider.label) }}'
-                '{% endfor %}'
+                '{% endfor %}',
             ),
             owner='regression',
         )

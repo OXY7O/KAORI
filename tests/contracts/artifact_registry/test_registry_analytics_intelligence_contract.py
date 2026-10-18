@@ -554,9 +554,7 @@ def test_registry_capacity_outlook_table_reuses_canonical_primitives() -> None:
     """Keep the materialized forecast content while reusing shared table geometry."""
     from jinja2 import Environment
 
-    template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text(
-        encoding='utf-8'
-    )
+    template = (ROOT / 'app/templates/artifact_registry/partials/_analytics_section.html').read_text(encoding='utf-8')
     # Verify the real owning template parses, without requiring a live Registry provider.
     Environment().parse(template)
     capacity = template.split("{% elif analytics.active_tab == 'capacity' %}", 1)[1].split(
