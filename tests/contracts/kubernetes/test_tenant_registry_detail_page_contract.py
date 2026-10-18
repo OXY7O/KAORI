@@ -260,6 +260,61 @@ def test_release_handoff_inventory_is_structured_with_full_on_demand_identifiers
     assert '<form ' not in handoff
 
 
+def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile():
+    detail = read(DETAIL)
+    Environment().parse(detail)
+    release = detail.split('id="tenant-release-governance"', 1)[1].split(
+        'id="tenant-native-handback"', 1
+    )[0]
+
+    # Step 1 keeps its full-width evidence surface and responsive primary CTA;
+    # Step 2 is an evidence-only inventory with no mutation forms.
+    stage_one = release.split('id="tenant-release-stage-inventory"', 1)[0]
+    stage_two = release.split('id="tenant-release-stage-inventory"', 1)[1].split(
+        "{% elif tenant_release_step == 'approval' %}", 1
+    )[0]
+    assert 'aria-label="Committed Release review status"' in stage_one
+    assert 'w-full shrink-0 sm:w-auto' in stage_one
+    assert '<form ' not in stage_two
+
+    forms = re.findall(r'<form\b.*?</form>', release, flags=re.DOTALL)
+    assert len(forms) == 20
+    assert 'tenant.review_tenant_release_route' in forms[0]
+    for form in forms[1:]:
+        opening = form.split('>', 1)[0]
+        assert re.search(r'class="w-full max-w-(?:xl|2xl) ', opening)
+        button = re.search(r'<button type="submit"\s+class="([^"]+)"', form)
+        assert button is not None
+        assert 'w-full sm:w-auto' in button.group(1)
+        assert 'hx-post=' in form
+        assert 'name="csrf_token"' in form
+        assert 'name="tenant_release_step"' in form
+
+    # Short input forms use the narrower preset, while confirmation panels
+    # retain adequate space for complete permission and provider scope copy.
+    prepare = next(
+        form for form in forms if 'tenant.prepare_tenant_release_handoff_route' in form
+    )
+    assert 'w-full max-w-xl' in prepare.split('>', 1)[0]
+    assert 'name="successor_owner"' in prepare
+    assert 'name="change_reference"' in prepare
+    for route in (
+        'tenant.accept_native_successor_handoff_route',
+        'tenant.execute_native_release_handoff_route',
+        'tenant.finalize_verified_native_release_route',
+        'tenant.finalize_verified_capsule_release_route',
+    ):
+        form = next(item for item in forms if route in item)
+        assert 'w-full max-w-2xl' in form.split('>', 1)[0]
+
+    # The Step 4 flex-column fallback CTA must not stretch on desktop.
+    fallback = next(
+        form for form in forms if 'tenant.release_tenant_governance_route' in form
+    )
+    assert 'w-full sm:w-auto self-start' in fallback
+    assert 'id="tenant-release-stage-finalize"' in release
+
+
 def test_release_step_three_separates_plan_review_external_claim_and_platform_admin():
     detail = read(DETAIL)
     approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(

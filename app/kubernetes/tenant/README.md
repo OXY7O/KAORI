@@ -527,6 +527,20 @@ detail. The shared component owns responsive separators, metrics/icon
 layout and light/dark styles. Runtime browser Visual QA and quality gates
 remain pending.
 
+**Release wizard responsive action density (#2390; DevContainer review):**
+The four-step Release Governance flow keeps committed evidence full-width:
+Step 1 readiness/blockers, Step 2 provider scope and exact resource IDs,
+Step 3 review/consent/read-back evidence, and Step 4 verification checkpoints.
+Step 2 does not submit a provider operation. The actionable forms in Steps
+3/4 now have bounded responsive widths (`max-w-xl` for short reference inputs,
+`max-w-2xl` for guarded confirmation/execution/recovery/finalization panels).
+Inputs fill only their bounded form; buttons remain full-width on phones but
+natural-width on desktop. Step 1 Review Release already follows that pattern.
+All CSRF/HTMX form data, permissions, required confirmations, provider
+guards and evidence semantics are unchanged. Validate desktop/mobile,
+light/dark and permission/blocked/recovery states through human Visual QA;
+source review is not runtime PASS. Official gates and deployment HOLD.
+
 **Release Scope and Step 2–4 guidance refinement (#1144; current presentation):**
 Release Step 1 now keeps preflight evidence, the single original Review Release action, and three coverage dimensions together in one full-width responsive card. All exact blockers remain available via `View recorded conditions`; no-blockers is not handoff approval. Step 2 (Provider Scope), Step 3 (Approval & Handoff), and Step 4 (Verify & Finalize) reuse the same read-only guidance note presentation for their contextual not-reviewed/no-handoff/permission/blocked states. The common inline note does not perform an action or replace authoritative provider and committed audit evidence. Existing HTMX wizard URLs, form security/confirmation, role checks, provider-side behavior and audit remain unchanged. DevContainer human visual review pending; CI/CD, tests/gates, staging/main and deployment HOLD.
 

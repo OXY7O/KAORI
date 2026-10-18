@@ -963,6 +963,32 @@ server-side approval policy is changed. This is a DevContainer source
 presentation refinement, not completed Capsule Release UAT or an approved
 provider mutation.
 
+## Tenant Release wizard responsive action density (#2390; review presentation)
+
+The four-stage Release Governance wizard retains full-width **committed evidence**
+and provider inventory: Step 1 readiness status and recorded blockers, Step 2
+Native/Capsule resource list and exact UID/resourceVersion disclosures, Step 3
+approval/read-back evidence, and Step 4 verification checkpoints remain
+unconstrained. Provider authority and immutable audit facts are unchanged.
+
+Only **action forms** are width-constrained on desktop using existing KAORI
+responsive utilities: the Successor owner / Change record and external
+reference inputs use `max-w-xl`; confirmation/recovery/handoff/finalization
+forms use `max-w-2xl`. Their inputs fill the constrained form, while CTA
+buttons are `w-full` on phones and `sm:w-auto` on larger screens. The
+Step 4 flex-column Release Governance fallback also aligns its button to
+the start rather than stretching it. The Step 1 Review Release CTA already
+uses responsive sizing, and Step 2 remains strictly read-only. No new CSS
+component, form field, permission branch, POST route, CSRF/HTMX behavior,
+confirmation requirement, provider mutation or step navigation was introduced.
+
+Local review acceptance requires desktop/mobile and light/dark visual checks
+covering clear/blocked preflight, authorized requester/reviewer states,
+Native/Capsule, expired plans, recovery and verified finalization. This
+layout-only work is on `kaori/review/staging-uat` path pending human
+DevContainer review; official Developer Check, Full Admission, staging/main,
+deployment and release remain HOLD until specifically authorized.
+
 ## Release Review Scope and step prerequisites (#1144; current visual refinement)
 
 The four-step Tenant Release wizard keeps its original one-active-step HTMX/URL navigation, fail-closed backend guards, exact Review Release POST and committed provider evidence. Step 1 now uses a single full-width status/action/coverage surface: the recorded preflight status and exact blocker count, one prominent Review Release button, and three compact review dimensions (provider resources, allocation ownership, governance dependencies). Exact source blocker messages are retained in the native accessible `View recorded conditions` disclosure; no-clear-blockers does not assert provider acceptance.
