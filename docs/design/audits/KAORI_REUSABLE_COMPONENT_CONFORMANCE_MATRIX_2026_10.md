@@ -489,6 +489,19 @@ Use existing `tests/ui/visual_audit.py`, `tests/ui/conftest.py`, Registry focuse
 
 **Validation status:** GitHub source/file enumeration, approved docs and issue history inspection **DONE**. **NOT RUN:** automated pytest/djlint/pyright/Prettier, Dev Container browser, six-viewports × light/dark, assistive tech, screenshots, human acceptance and provider test. No product source is modified in this audit. Official Developer Check/Full Admission, `kaori/staging`, `main`, deployment/tag/release remain **HOLD**.
 
+
+## 3.8 Artifact Registry Capacity table remediation checkpoint — 2026-10-18 (#2422)
+
+**Historical audit preservation:** C184 and C195 remain pinned as source-`D` observations on `f73c28fde4287cb3da7b376d35d1066c27da46e4`. They represent **one bounded source drift** in two audit viewpoints, not two separate defects. The subsequent corrective code is tracked below; do not rewrite original evidence or claim browser PASS.
+
+| Issue / source rows | Scoped remediation integrated for Dev Container review | GitHub evidence | Post-merge source validation | Runtime / human status |
+| --- | --- | --- | --- | --- |
+| [#2422](https://github.com/OXY7O/KAORI/issues/2422), C184/C195 | Artifact Registry → Analytics → Capacity → Project quota outlook: existing `table_ui` table/head/header/body/row/cell primitives replace local Tailwind class bundles; five `scope="col"` headers; existing five-column labels, five-forecast-row cap, all numeric/status values, and original no-qualified-forecast copy retained; existing horizontal scroll and approved `min-w-[760px]` pattern used | [PR #2426](https://github.com/OXY7O/KAORI/pull/2426) merged into **temporary** `kaori/review/staging-uat` at `805a684bdec1118ec1d3c2c97c7c24869ca3d889` | **Source fixed**. Two changed files: owning Capacity template and existing `test_registry_analytics_intelligence_contract.py`. Static structural checks passed; Capacity content preserved and surrounding seven-tab template branches unchanged. | **NOT RUN:** pytest/Jinja render, browser, responsive/light-dark, keyboard/screen reader, human acceptance |
+
+**Review handoff:** in a running Dev Container, visit Artifact Registry → Analytics → Capacity. Test qualified forecasts with **0, 1 and 5 rows** and absent/partial evidence (must remain N/A/unknown, never manufactured zero). Inspect five headers and status badges, long project names, horizontal **table-only** scrolling at **360×800/390×844** and desktop/tablet, light/dark, focus/screenreader, no page-level horizontal overflow. Confirm provider/time-range selector and HTMX readiness still work and Alerts sibling UI did not regress. Record exact SHA, fixtures, screenshots/traces and explicit human acceptance before closing issue #2422.
+
+**Quality/release boundary:** GitHub exact-file source comparison and holding readback **PASS**; actual `pytest`, `djlint`, `verify_ui_style.py`, `verify_ui_reuse.py`, Playwright, Developer Check, Full Admission, and deployed UAT **NOT RUN**. Neither the current Holding branch nor this document checkpoint authorizes official `kaori/staging`, `main`, image/deploy/tag/release. **HOLD** pending human acceptance.
+
 ## 4. Visual QA execution plan — existing harness only
 
 ### 4.1 Environment preflight (NOT EXECUTED)
