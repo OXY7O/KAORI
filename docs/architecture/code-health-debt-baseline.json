@@ -244,7 +244,7 @@
     "app/kubernetes/tenant/registry_context.py": 1240,
     "app/kubernetes/tenant/release_handoff_approval.py": 817,
     "app/kubernetes/tenant/routes.py": 2537,
-    "app/kubernetes/tenant/service.py": 965,
+    "app/kubernetes/tenant/service.py": 947,
     "app/platform_operations/data_lifecycle/retention/service.py": 826,
     "app/reports/generate/service.py": 820,
     "app/reports/generated/service.py": 1655,
@@ -252,6 +252,6 @@
     "app/reports/report_templates/service.py": 942,
     "app/reports/schedules/service.py": 900,
     "app/reports/storage/service.py": 988,
-    "app/storage/object_storage/inventory/presentation.py": 1108
+    "app/storage/object_storage/inventory/presentation.py": 1100
   }
 }
