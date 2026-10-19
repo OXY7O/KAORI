@@ -118,10 +118,14 @@ def test_public_exposure_clean_state_names_committed_inventory_evidence() -> Non
     presentation = read('app/storage/object_storage/inventory/presentation.py')
 
     assert (
-        'No committed asset is currently classified as public in the latest Object Storage inventory evidence.'
+        'No assets classified public.'
         in presentation
     )
     assert 'No committed asset is currently classified as public.' not in presentation
+    assert "'Exposure Not Assessed' if exposure_assessed == 0 else 'Exposure Partially Assessed'" in presentation
+    assert "exposure_tone = 'unknown' if exposure_assessed == 0 else 'warning'" in presentation
+    assert 'No committed assets to assess.' in presentation
+    assert 'No public assets observed;' in presentation
 
 
 def test_object_storage_inventory_matches_registry_grouped_visual_hierarchy() -> None:
