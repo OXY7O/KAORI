@@ -89,8 +89,8 @@ def main() -> int:
         )
         require(
             re.search(
-                rf'<span\\s+id="{status_id}"\\s+class="htmx-indicator sr-only"'
-                r'\\s+role="status"\\s+aria-live="polite"',
+                rf'<span\s+id="{status_id}"\s+class="htmx-indicator sr-only"'
+                r'\s+role="status"\s+aria-live="polite"',
                 source,
             )
             is not None,
