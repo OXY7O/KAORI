@@ -448,7 +448,7 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
     # This is an outbound side effect, never a prerequisite for committing job failure.
     # Delivery reads the same committed identity in an independent maintenance task.
     try:
-        from app.platform_operations.jobs.tasks import dispatch_failed_job_notification
+        from app.platform_operations.jobs.notification_delivery_task import dispatch_failed_job_notification
 
         cast(Task, dispatch_failed_job_notification).apply_async(
             args=[job.id],

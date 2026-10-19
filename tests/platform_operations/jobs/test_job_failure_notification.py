@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.platform_operations.jobs import notifications, tasks
+from app.platform_operations.jobs import notification_delivery_task, notifications
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -63,11 +63,11 @@ def test_delivery_task_reloads_committed_failure_and_skips_nonfailed(
         calls.append(identifier)
         return job
 
-    monkeypatch.setattr(tasks, 'db', SimpleNamespace(session=SimpleNamespace(get=get_job)))
-    monkeypatch.setattr(tasks, 'dispatch_failed_job_event', lambda _job: {'successful': 1})
-    assert tasks.dispatch_failed_job_notification.run(14) == {'status': 'completed', 'successful': 1}
+    monkeypatch.setattr(notification_delivery_task, 'db', SimpleNamespace(session=SimpleNamespace(get=get_job)))
+    monkeypatch.setattr(notification_delivery_task, 'dispatch_failed_job_event', lambda _job: {'successful': 1})
+    assert notification_delivery_task.dispatch_failed_job_notification.run(14) == {'status': 'completed', 'successful': 1}
     job.status = 'succeeded'
-    assert tasks.dispatch_failed_job_notification.run(14)['status'] == 'skipped'
+    assert notification_delivery_task.dispatch_failed_job_notification.run(14)['status'] == 'skipped'
     assert calls == [14, 14]
 
 
