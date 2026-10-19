@@ -92,7 +92,8 @@ def test_reveal_pagination_is_scoped_to_its_partial_owner() -> None:
     approvals = read('app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html')
 
     assert "'kubernetes_operations.reveal_secret_status'" in request_status
-    assert "'#secret-reveal-request-status'" in request_status
+    assert 'data-reveal-poll-target="#secret-reveal-request-status"' in request_status
+    assert "table_registry.footer('kubernetes_operations.reveal_secret'" in request_status
     assert "'kubernetes_operations.reveal_secret_approvals'" in approvals
     assert "'#pending-secret-reveal-approvals'" in approvals
 
