@@ -280,7 +280,7 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
     assert 'tenant.review_tenant_release_route' in forms[0]
     for form in forms[1:]:
         opening = form.split('>', 1)[0]
-        assert re.search(r'class="w-full max-w-(?:xl|2xl) ', opening)
+        assert re.search(r'class="[^"]*\bw-full\b', opening)
         button = re.search(r'<button type="submit"\s+class="([^"]+)"', form)
         assert button is not None
         assert 'w-full sm:w-auto' in button.group(1)
@@ -294,14 +294,14 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
     assert 'w-full max-w-xl' in prepare.split('>', 1)[0]
     assert 'name="successor_owner"' in prepare
     assert 'name="change_reference"' in prepare
-    for route in (
-        'tenant.accept_native_successor_handoff_route',
-        'tenant.execute_native_release_handoff_route',
-        'tenant.finalize_verified_native_release_route',
-        'tenant.finalize_verified_capsule_release_route',
+    for route, expected_layout in (
+        ('tenant.accept_native_successor_handoff_route', 'w-full mt-3 space-y-3'),
+        ('tenant.execute_native_release_handoff_route', 'lg:w-3/5'),
+        ('tenant.finalize_verified_native_release_route', 'max-w-4xl'),
+        ('tenant.finalize_verified_capsule_release_route', 'max-w-2xl'),
     ):
         form = next(item for item in forms if route in item)
-        assert 'w-full max-w-2xl' in form.split('>', 1)[0]
+        assert expected_layout in form.split('>', 1)[0]
 
     # The Step 4 flex-column fallback CTA must not stretch on desktop.
     fallback = next(form for form in forms if 'tenant.release_tenant_governance_route' in form)
