@@ -112,9 +112,7 @@ def test_delivery_matcher_preserves_report_only_boundary_even_for_stale_policy()
     assert not service._channel_matches_event(
         channel, domain='artifact_registry', event_type='alert_ops.firing', severity='warning'
     )
-    assert service._channel_matches_event(
-        channel, domain='registry', event_type='alert_ops.firing', severity='warning'
-    )
+    assert service._channel_matches_event(channel, domain='registry', event_type='alert_ops.firing', severity='warning')
     assert not service._channel_matches_event(
         channel, domain='registry', event_type='report.generated', severity='warning'
     )
