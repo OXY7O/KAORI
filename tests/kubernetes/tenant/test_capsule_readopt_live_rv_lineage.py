@@ -52,6 +52,8 @@ def _stub_capsule_discovery(monkeypatch):
         'observe_capsule_tenant_allocation',
         lambda *_args, **_kw: {
             'control_state': 'observed',
+            'allocation_authority': 'none_observed',
+            'shared_quota': {},
             'correlated_namespaces': [],
         },
     )
