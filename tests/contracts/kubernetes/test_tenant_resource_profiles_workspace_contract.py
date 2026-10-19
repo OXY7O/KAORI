@@ -1077,7 +1077,10 @@ def test_resource_profile_revision_preserves_fixed_preset_values_and_dependency_
     assert 'profile_version = int(profile.version or 1)' in service
 
     assert 'def rollout_resource_profile_to_tenant_committed(' in service
-    assert 'def _resource_profile_rollout_targets(' in service
+    rollout_context = read('app/kubernetes/tenant/resource_profile_rollout_context.py')
+    facade = read('app/kubernetes/tenant/service.py')
+    assert 'def _resource_profile_rollout_targets(' in rollout_context
+    assert '_resource_profile_rollout_targets = _registry_context._resource_profile_rollout_targets' in facade
     assert 'change_native_namespace_allocation_committed(' in service
     assert "'profile_rollout_targets': profile_rollout_targets" in service
     assert 'A blocked Namespace stays on its previous committed version.' not in service
