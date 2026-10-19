@@ -197,9 +197,13 @@
 
     document.addEventListener('htmx:beforeSwap', hideActive)
     window.addEventListener('resize', hideActive)
-    window.addEventListener('scroll', (event) => {
-        // Scrolling a long popover is interaction with the Guide, not dismissal.
-        if (active?.preview && event.target instanceof Node && active.preview.contains(event.target)) return
-        hideActive()
-    }, true)
+    window.addEventListener(
+        'scroll',
+        (event) => {
+            // Scrolling a long popover is interaction with the Guide, not dismissal.
+            if (active?.preview && event.target instanceof Node && active.preview.contains(event.target)) return
+            hideActive()
+        },
+        true
+    )
 })()
