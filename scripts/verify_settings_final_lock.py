@@ -151,7 +151,7 @@ def main() -> int:
     )
     require('loading_bar.render(' not in general_page, 'General Settings must not render a loading bar', errors)
     require(
-        'id="general-settings-loading" class="htmx-indicator sr-only"' in general_page,
+        re.search(r'id="general-settings-loading"\s+class="htmx-indicator sr-only"', general_page) is not None,
         'General Settings nonvisual HTMX status missing',
         errors,
     )
@@ -280,7 +280,7 @@ def main() -> int:
     )
     require('loading_bar.render(' not in account_page, 'Account Settings must not render a loading bar', errors)
     require(
-        'id="account-settings-loading" class="htmx-indicator sr-only"' in account_page,
+        re.search(r'id="account-settings-loading"\s+class="htmx-indicator sr-only"', account_page) is not None,
         'Account nonvisual HTMX status missing',
         errors,
     )
