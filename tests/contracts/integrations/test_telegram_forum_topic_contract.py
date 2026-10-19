@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -87,4 +88,4 @@ def test_telegram_uses_section_title_guide_and_one_desktop_input_row() -> None:
     assert 'portal.appendChild(preview)' in javascript
     assert "addEventListener('focusin'" in javascript
     assert "addEventListener('keydown'" in javascript
-    assert "addEventListener('scroll'" in javascript
+    assert re.search(r"window\.addEventListener\(\s*['\"]scroll['\"]", javascript) is not None

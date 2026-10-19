@@ -668,9 +668,9 @@ def test_create_profile_resource_sections_are_collapsed_native_disclosures() -> 
 def test_resource_profile_registry_offline_css_covers_both_layout_modes() -> None:
     source = read('frontend/styles.css')
     compiled = read('app/static/css/output.css')
-    marker = '[data-kaori-responsive-registry="resource-profiles"]'
+    marker = re.compile(r"\[data-kaori-responsive-registry=['\"]resource-profiles['\"]\]")
     for css in (source, compiled):
-        assert marker in css
+        assert marker.search(css) is not None
         assert 'display: table-header-group' in css
         assert 'display: table-row-group' in css
         assert 'grid-template-columns: repeat(2, minmax(0, 1fr))' in css
