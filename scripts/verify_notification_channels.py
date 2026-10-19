@@ -74,7 +74,8 @@ def main() -> int:
         and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
         and journal_order in delivery_registry
         and 'rows, pagination = paginate_query(query, page=page, per_page=per_page)' in delivery_registry
-        and "'delivery_pagination': delivery_pagination" in service
+        and 'delivery_rows, delivery_window = _delivery_registry_page(' in service
+        and "'delivery_pagination': delivery_window" in service
         and 'payload.delivery_pagination' in delivery_template
         and 'No Notification Deliveries Recorded' in delivery_template,
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
