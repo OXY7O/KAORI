@@ -115,7 +115,7 @@ def main() -> int:
             for token in (
                 'Lifecycle Boundary',
                 'Hot + Archive',
-                'Recent records in PostgreSQL; archived evidence in Data Lifecycle.',
+                'Hot PostgreSQL; verified Data Lifecycle archive.',
             )
         ),
         'Activity summary must expose hot/archive boundary',
