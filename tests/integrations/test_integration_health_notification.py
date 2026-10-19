@@ -82,7 +82,7 @@ def test_only_persisted_canonical_unhealthy_observation_can_be_emitted(
 
 def test_notification_enqueue_is_after_source_commit_and_delivery_refuses_stale_instance() -> None:
     repository = (ROOT / 'app/integrations/runtime/repository.py').read_text()
-    task = (ROOT / 'app/integrations/runtime/tasks.py').read_text()
+    task = (ROOT / 'app/integrations/runtime/notification_delivery_task.py').read_text()
     config = (ROOT / 'app/config/default.py').read_text()
     assert repository.index('db.session.commit()\n    if integration_instance_id') < repository.index(
         'cast(Task, dispatch_integration_health_notification).apply_async('

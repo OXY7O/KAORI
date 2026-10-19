@@ -67,7 +67,7 @@ def persist_runtime_state(
     if integration_instance_id is not None and is_health_degradation(prior, row):
         # Provider observation is already durable; a delivery outage must not roll it back.
         try:
-            from app.integrations.runtime.tasks import dispatch_integration_health_notification
+            from app.integrations.runtime.notification_delivery_task import dispatch_integration_health_notification
 
             cast(Task, dispatch_integration_health_notification).apply_async(
                 args=[row.id],
