@@ -6,7 +6,9 @@ ROOT = Path(__file__).resolve().parents[4]
 def test_reveal_registries_use_one_canonical_sql_paging_policy() -> None:
     source = (ROOT / 'app/kubernetes/operations/secrets/reveal_service.py').read_text()
     body = source.split('def get_reveal_page_context(', 1)[1].split('def create_reveal_request(', 1)[0]
-    assert 'pending_per_page: int = 5' in body
+    assert 'pending_pagination: PendingRevealPagination = PendingRevealPagination()' in body
+    assert 'class PendingRevealPagination:' in source
+    assert 'per_page: int = 5' in source
     assert 'my_requests, my_window = paginate_query(' in body
     assert 'pending_requests, pending_window = paginate_query(' in body
     assert 'build_pagination_window(' in body
@@ -19,7 +21,8 @@ def test_reveal_registries_use_one_canonical_sql_paging_policy() -> None:
 def test_reveal_route_preserves_separate_htmx_windows() -> None:
     routes = (ROOT / 'app/kubernetes/operations/secrets/reveal_routes.py').read_text()
     assert "my_per_page=request.args.get('my_per_page', 5, type=int) or 5" in routes
-    assert "pending_per_page=request.args.get('pending_per_page', 5, type=int) or 5" in routes
+    assert 'pending_pagination=PendingRevealPagination(' in routes
+    assert "per_page=request.args.get('pending_per_page', 5, type=int) or 5" in routes
 
 
 def test_review7_my_requests_uses_sql_filters_with_requester_isolation() -> None:
