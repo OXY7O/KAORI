@@ -136,7 +136,7 @@ def test_security_registry_actions_use_shared_style_and_leading_header_clear() -
     assert 'security.pagination.per_page' in filter_form
 
     shared = read('app/templates/components/table_primitives.html')
-    assert 'macro action_classes(destructive=false)' in shared
+    assert "macro action_classes(destructive=false, size='row')" in shared
     assert template.count('class="{{ table_ui.action_classes() }}"') >= 3
     assert template.count('View More') >= 2
     assert 'data-kaori-dialog-open' in template
