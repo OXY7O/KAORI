@@ -67,7 +67,7 @@ def test_registry_alert_intelligence_handoff_and_notification_policy_are_explici
     assert 'return next((case for case in rows if case.public_id == requested), None)' in service
     assert "payload.get('selected_case') is None" in route_support
     assert "return ('Alert case not found.', 404)" in route_support
-    assert "if 'registry' in config.domains:" in routing
+    assert "if 'registry' in normalized_domains and set(config.channel_ids) != valid_channels:" in routing
     assert "if case.domain == 'registry':" in routing
     assert "if case.domain == 'registry':" in notifications
     assert "'domain': case.domain, 'asset': case.asset_key, 'case': case.public_id" in notifications
