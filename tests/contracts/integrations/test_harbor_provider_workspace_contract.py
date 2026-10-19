@@ -315,7 +315,7 @@ def test_registry_domain_exposes_parent_context_guidance() -> None:
     assert 'Registry Authority and Evidence' in workspace
     assert 'Registry providers remain authoritative for repositories, artifacts, native policies' in workspace
     assert 'Harbor is the first qualified Registry provider' in workspace
-    assert 'provider-neutral Registry contracts' in workspace
+    assert 'KAORI correlates committed inventory, security, governance, analytics, and audit evidence.' in workspace
     assert "'integration-' ~ domain.key ~ '-workspace-guidance'" in workspace
 
 
