@@ -529,10 +529,12 @@ def test_tenant_contribution_scroll_frame_and_fixed_evidence_footer() -> None:
     assert 'tabindex="0"' in swapped_body
     assert '<ol class="space-y-3"' in swapped_body
     assert 'shrink-0 flex-wrap items-center justify-between gap-2 border-t border-outline-subtle' in footer
-    assert 'bg-surface-elevated px-4 py-3 sm:px-6' in footer
+    assert 'bg-surface-elevated px-4 py-2.5 sm:px-6' in footer
     assert 'aria-label="Tenant Contributions evidence footer"' in footer
     assert 'Read-only committed allocation evidence' in footer
-    assert '{{ allocation_tenant_matches }} of {{ allocation_tenant_total }} Tenants' in footer
+    assert '{{ allocation_tenant_matches }} of {{ allocation_tenant_total }} Tenants' not in footer
+    assert 'aria-label="Close Tenant Contributions"' in footer
+    assert 'Close' in footer
 
     # The count updates inside the same HTMX-swapped body as search and scroll.
     assert 'hx-target="#{{ contributions_body_id }}"' in swapped_body
@@ -556,8 +558,8 @@ def test_tenant_contributions_header_has_title_label_and_right_aligned_registry_
     header = dialog.split('<header ', 1)[1].split('</header>', 1)[0]
     title_line = header.split('id="{{ contributions_dialog_id }}-title"', 1)[1].split('</div>', 1)[0]
     closing_control = header.split('data-kaori-dialog-close', 1)[1].split('</button>', 1)[0]
-    description_row = header.split('class="mt-2 flex min-w-0 flex-wrap items-center justify-between', 1)[1]
-    description = description_row.split('id="{{ contributions_dialog_id }}-description"', 1)[1].split('</p>', 1)[0]
+    description = header.split('id="{{ contributions_dialog_id }}-description"', 1)[1].split('</p>', 1)[0]
+    description_row = header.split('aria-label="Tenant Contributions context"', 1)[1]
     registry_link = description_row.split('<a href=', 1)[1].split('</a>', 1)[0]
 
     assert 'Tenant Contributions' in title_line
@@ -570,7 +572,7 @@ def test_tenant_contributions_header_has_title_label_and_right_aligned_registry_
     assert '<a href=' not in closing_control
     assert 'data-kaori-dialog-close' in header
     assert header.count('aria-label="Open Tenant Registry"') == 1
-    assert dialog.count('data-kaori-dialog-close') == 1
+    assert dialog.count('data-kaori-dialog-close') == 2
     assert 'id="{{ contributions_body_id }}"' in dialog
     assert 'aria-label="Scroll through Tenant contributions"' in dialog
 

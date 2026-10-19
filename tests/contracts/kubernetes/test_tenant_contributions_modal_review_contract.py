@@ -31,10 +31,8 @@ def test_contributions_header_labels_and_footer_close_contract() -> None:
         'aria-label="Tenant Contributions context"'
     )
     assert "table_label.metadata_label('Committed scope', icon='layers-3')" in header
-    assert (
-        "table_label.metadata_label((allocation_overview.cluster.name ~ ' · ' ~ (allocation_overview.cluster.environment|title)), icon='server', wrap=true)"
-        in header
-    )
+    assert "allocation_overview.cluster.name ~ ' · ' ~ (allocation_overview.cluster.environment|title)" in header
+    assert "icon='server', wrap=true" in header
     assert 'Governed Namespace requests; Capsule shared quota counted once per Tenant.' in header
     assert 'Tenant Registry' in header
     assert 'Committed Allocation Evidence</p>' not in header
