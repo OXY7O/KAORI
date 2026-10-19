@@ -360,8 +360,7 @@ def test_uat6_user_edit_copy_balances_context_specific_credential_text() -> None
     # Credential Detail is the long, authoritative two-line explanation in
     # User Detail; the narrower violet edit card has a separate short caption.
     assert (
-        "'KAORI stores the local password hash and manages resets through its governed, audited workflow.'"
-        in directory
+        "'KAORI stores the local password hash and manages resets through its governed, audited workflow.'" in directory
     )
     assert '"KAORI owns local password hashes and resets." if user.auth_source == "database"' in form
     assert 'else identity_context.credential_detail' in form
