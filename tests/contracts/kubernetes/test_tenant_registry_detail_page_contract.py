@@ -283,7 +283,7 @@ def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile(
         assert re.search(r'class="[^"]*\bw-full\b', opening)
         button = re.search(r'<button type="submit"\s+class="([^"]+)"', form)
         assert button is not None
-        assert 'w-full sm:w-auto' in button.group(1)
+        assert {'w-full', 'sm:w-auto'}.issubset(button.group(1).split())
         assert 'hx-post=' in form
         assert 'name="csrf_token"' in form
         assert 'name="tenant_release_step"' in form
