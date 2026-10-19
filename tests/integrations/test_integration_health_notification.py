@@ -85,7 +85,7 @@ def test_notification_enqueue_is_after_source_commit_and_delivery_refuses_stale_
     task = (ROOT / 'app/integrations/runtime/tasks.py').read_text()
     config = (ROOT / 'app/config/default.py').read_text()
     assert repository.index('db.session.commit()\n    if integration_instance_id') < repository.index(
-        'dispatch_integration_health_notification.apply_async('
+        'cast(Task, dispatch_integration_health_notification).apply_async('
     )
     assert "instance.lifecycle_status != 'active'" in task
     assert 'or not instance.enabled' in task
