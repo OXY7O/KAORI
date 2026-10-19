@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -480,7 +481,7 @@ def test_access_user_and_reset_password_fields_keep_explicit_labels() -> None:
                 'class="mb-1.5 block text-sm font-semibold text-content-primary">'
                 f'{label}</label>'
             )
-            assert template.count(expected) == 1
+            assert len(re.findall(re.escape(expected).replace(r'\ ', r'\s+'), template)) == 1
 
     user_form = read('app/templates/access/users/form.html')
     reset_form = read('app/templates/access/users/reset_password.html')
