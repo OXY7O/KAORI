@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -98,7 +99,7 @@ def test_settings_query_tabs_delegate_to_shared_htmx_tab_authority() -> None:
     ):
         page = read(f'app/templates/settings/{section}/partials/_page_content.html')
         assert 'loading_bar.render(' not in page
-        assert f'id="{status_id}" class="htmx-indicator sr-only"' in page
+        assert re.search(rf'id="{status_id}"\s+class="htmx-indicator sr-only"', page) is not None
         assert 'role="status"' in page
         for partial in partials:
             source = read(f'app/templates/settings/{section}/partials/{partial}')
