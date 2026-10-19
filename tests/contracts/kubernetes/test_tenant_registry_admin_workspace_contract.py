@@ -1659,7 +1659,8 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'data-tenant-allocation-metric-key="{{ key }}"' in cutover_ui
     assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in cutover_ui
     assert 'Control Unavailable' in cutover_ui
-    assert 'Namespace lifecycle ownership stays adopted.' in cutover_ui
+    assert 'KAORI Managed · Only after verified cutover' in cutover_ui
+    assert 'For legacy Adopted / Observed allocation only:' in cutover_ui
 
     assert 'Managed Contract Comparison' in allocation_change
     assert 'Select managed Namespace' in allocation_change
@@ -1800,7 +1801,7 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert 'Canonical GlobalResourceQuota allocation bridge' in capsule_architecture
     assert 'never copied into every correlated Namespace' in capsule_architecture
     assert 'Capsule GlobalResourceQuota governance:' in readme
-    assert 'Legacy Capsule Tenant quota — **estimasi** case:' in readme
+    assert 'Capsule Tenant quota — **estimasi** authority:' in readme
 
 
 def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_native_bypass() -> None:
@@ -1882,7 +1883,9 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'Tenant.spec.resourceQuotas' in cutover_ui
     assert 'Take Over Governance' in cutover_ui
     assert 'Change Allocation' in cutover_ui
-    assert 'Native ResourceQuota' in cutover_ui
+    assert 'Namespace LimitRange constraints remain external observed evidence unless they are the selected allocation authority.' in cutover_ui
+    assert 'Native cutover path must never bypass Capsule ownership.' in readme
+    assert 'No path may fall back to namespaced Native ResourceQuota mutation.' in readme
     assert 'data-tenant-quota-allocation-form' in script
     assert 'data-tenant-quota-managed-form' in script
 
@@ -1895,8 +1898,8 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
 
     assert 'Capsule Tenant resource-quota authority' in architecture
     assert 'Tenant Sync performs no provider write' in architecture
-    assert 'Legacy Capsule Tenant quota — **estimasi** case:' in readme
-    assert 'Legacy Capsule Tenant quota — **partner** case:' in readme
+    assert 'Capsule Tenant quota — **estimasi** authority:' in readme
+    assert 'Capsule Tenant quota — **partner** evidence case:' in readme
     assert 'Capsule Tenant quota bidirectional recovery:' in readme
 
 
