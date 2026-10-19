@@ -345,7 +345,7 @@ def test_review6_modal_has_context_metadata_and_single_native_provider_select() 
     assert 'form_channel.domains if form_channel else []' in source
     assert 'form_channel.event_types if form_channel else []' in source
     assert 'form_channel.enabled' in source
-    assert 'grid gap-2 sm:grid-cols-2 xl:grid-cols-3' in source
+    assert 'grid gap-3 sm:grid-cols-2 xl:grid-cols-3' in source
     assert '{% include provider_option.form_partial %}' in source
     assert 'name="csrf_token"' in source
 
