@@ -75,7 +75,7 @@ def test_canonical_terminal_commit_precedes_outbound_enqueue() -> None:
     source = (ROOT / 'app/platform_operations/jobs/service.py').read_text()
     block = source.split('def mark_job_failed(', 1)[1].split('def request_job_cancel(', 1)[0]
     assert block.index('db.session.commit()\n    # This is an outbound side effect') < block.index(
-        'dispatch_failed_job_notification.apply_async('
+        'cast(Task, dispatch_failed_job_notification).apply_async('
     )
     config = (ROOT / 'app/config/default.py').read_text()
     assert "'app.platform_operations.jobs.tasks.dispatch_failed_job_notification'" in config
