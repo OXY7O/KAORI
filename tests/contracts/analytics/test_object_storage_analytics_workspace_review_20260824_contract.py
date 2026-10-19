@@ -136,7 +136,10 @@ def test_object_storage_evidence_copy_stays_compact_and_factual() -> None:
     assert 'Metrics Source ALERTS provides narrower rule-state evidence.' in alert_records
 
     assert 'Provider conditions require review.' in system_posture
-    assert 'Provider readiness and committed inventory coverage for the active Object Storage Systems scope.' in system_posture
+    assert (
+        'Provider readiness and committed inventory coverage for the active Object Storage Systems scope.'
+        in system_posture
+    )
     assert 'worker query succeeded but found no samples' in evidence
     assert 'missing samples are not zero usage.' in evidence
     assert 'currently reports no active alerts for this Object Storage system.' in alert_projection
