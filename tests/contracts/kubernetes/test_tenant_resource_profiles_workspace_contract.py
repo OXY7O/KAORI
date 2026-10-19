@@ -668,14 +668,16 @@ def test_create_profile_resource_sections_are_collapsed_native_disclosures() -> 
 def test_resource_profile_registry_offline_css_covers_both_layout_modes() -> None:
     source = read('frontend/styles.css')
     compiled = read('app/static/css/output.css')
-    marker = re.compile(r"\[data-kaori-responsive-registry=['\"]resource-profiles['\"]\]")
+    # Tailwind's production minifier can remove selector quotes and CSS whitespace.
+    # Check the same scoped behavior in both authored and compiled CSS.
     for css in (source, compiled):
-        assert marker.search(css) is not None
-        assert 'display: table-header-group' in css
-        assert 'display: table-row-group' in css
-        assert 'grid-template-columns: repeat(2, minmax(0, 1fr))' in css
-        assert 'data-kaori-registry-empty' in css
-        assert '@media (max-width: 639px)' in css
+        compact = re.sub(r'\s+', '', css).replace("'", '').replace('"', '')
+        assert '[data-kaori-responsive-registry=resource-profiles]' in compact
+        assert 'display:table-header-group' in compact
+        assert 'display:table-row-group' in compact
+        assert 'grid-template-columns:repeat(2,minmax(0,1fr))' in compact
+        assert 'data-kaori-registry-empty' in compact
+        assert re.search(r'@media\([^)]*639px[^)]*\)', compact) is not None
 
 
 def test_resource_profile_registry_reflows_without_forced_horizontal_scrolling() -> None:
