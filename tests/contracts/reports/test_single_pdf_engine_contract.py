@@ -85,7 +85,7 @@ def test_security_patched_runtime_pins_stay_aligned() -> None:
         assert pin in requirements_input
         assert pin in requirements_lock
 
-    assert 'aiohttp==3.14.3' in requirements_lock
+    assert 'aiohttp==3.14.4' in requirements_lock
 
 
 def test_pdf_templates_use_the_canonical_local_analytics_publication() -> None:
