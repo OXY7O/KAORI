@@ -31,13 +31,19 @@ def test_general_and_account_share_loading_and_action_feedback_contracts() -> No
     account_tabs = read('app/templates/settings/account/partials/_tabs.html')
     password = read('app/templates/settings/account/partials/_change_password.html')
 
-    assert 'components/loading_bar.html' in general_page
+    assert 'components/loading_bar.html' not in general_page
+    assert 'class="htmx-indicator sr-only"' in general_page
+    assert 'role="status"' in general_page
+    assert 'aria-live="polite"' in general_page
     assert 'general-settings-loading' in general_page
     assert "hx_indicator='#general-settings-loading'" in general_tabs
     assert 'components/action_button.html' in timezone
     assert 'components/action_button.html' in regional
 
-    assert 'components/loading_bar.html' in account_page
+    assert 'components/loading_bar.html' not in account_page
+    assert 'class="htmx-indicator sr-only"' in account_page
+    assert 'role="status"' in account_page
+    assert 'aria-live="polite"' in account_page
     assert 'account-settings-loading' in account_page
     assert "hx_indicator='#account-settings-loading'" in account_tabs
     assert 'hx-indicator="#account-settings-loading"' in password
