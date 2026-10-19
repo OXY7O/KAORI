@@ -113,7 +113,9 @@ def test_connection_registry_shared_header_preserves_filter_actions() -> None:
 
 def test_additional_table_workspaces_use_filtered_results_badges() -> None:
     cases = {
-        'integrations/delivery/notification_channels/partials/_channels_workspace.html': 'payload.summary.total',
+        'integrations/delivery/notification_channels/partials/_channels_workspace.html': (
+            'payload.channel_pagination.total_items'
+        ),
         'reports/overview/partials/_recent_reports.html': 'payload.recent_reports|length',
         'intelligence/partials/_catalog_results.html': 'payload.pagination.total_items',
         'intelligence/partials/_recommendations_results.html': 'payload.pagination.total_items',
