@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -77,16 +78,25 @@ def main() -> int:
         'Shared HTMX loading bar must keep the canonical thin h-1 loading indicator',
         errors,
     )
-    require(
-        'components/loading_bar.html' in general and 'general-settings-loading' in general,
-        'General Settings must use the shared HTMX loading bar',
-        errors,
-    )
-    require(
-        'components/loading_bar.html' in account and 'account-settings-loading' in account,
-        'Account Settings must use the shared HTMX loading bar',
-        errors,
-    )
+    for source, status_id, label in (
+        (general, 'general-settings-loading', 'General Settings'),
+        (account, 'account-settings-loading', 'Account Settings'),
+    ):
+        require(
+            'components/loading_bar.html' not in source and 'loading_bar.render(' not in source,
+            f'{label} must not render a visual HTMX loading bar',
+            errors,
+        )
+        require(
+            re.search(
+                rf'<span\\s+id="{status_id}"\\s+class="htmx-indicator sr-only"'
+                r'\\s+role="status"\\s+aria-live="polite"',
+                source,
+            )
+            is not None,
+            f'{label} must preserve its accessible nonvisual HTMX status',
+            errors,
+        )
     require(
         '@media (prefers-reduced-motion: reduce)' in styles
         and '.kaori-loading-bar-segment' in styles
