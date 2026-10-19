@@ -1883,7 +1883,10 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'Tenant.spec.resourceQuotas' in cutover_ui
     assert 'Take Over Governance' in cutover_ui
     assert 'Change Allocation' in cutover_ui
-    assert 'Namespace LimitRange constraints remain external observed evidence unless they are the selected allocation authority.' in cutover_ui
+    assert (
+        'Namespace LimitRange constraints remain external observed evidence unless they are the selected allocation authority.'
+        in cutover_ui
+    )
     assert 'Native cutover path must never bypass Capsule ownership.' in readme
     assert 'No path may fall back to namespaced Native ResourceQuota mutation.' in readme
     assert 'data-tenant-quota-allocation-form' in script
