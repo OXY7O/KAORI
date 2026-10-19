@@ -82,4 +82,10 @@ def test_closed_case_dispatch_requires_successful_firing_evidence() -> None:
     assert 'had_successful_firing' in text
     assert "NotificationDelivery.event_type == 'alert_ops.firing'" in text
     assert "NotificationDelivery.status == 'sent'" in text
-    assert "AlertCase.domain != 'registry'" in text
+    assert "AlertCase.source_type == 'recommendation'" in text
+    assert "AlertCase.domain != 'registry'" not in text
+    resolved = inspect.getsource(notifications._dispatch_resolved)
+    assert "case.domain == 'registry' and not registry_case_route_eligible(case)" in resolved
+    assert 'policy_allows_resolved(case, channel_id)' in resolved
+    firing = inspect.getsource(notifications._dispatch_firing)
+    assert 'routes = firing_routes(case)' in firing
