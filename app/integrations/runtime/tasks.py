@@ -17,5 +17,3 @@ from app.integrations.runtime.notification_delivery_task import (
 def refresh_integration_runtime(self) -> dict[str, object]:
     """Celery entrypoint for the canonical integration runtime dispatcher."""
     return dispatch_integration_runtime_refresh()
-
-

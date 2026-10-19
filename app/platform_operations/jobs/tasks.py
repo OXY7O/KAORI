@@ -27,5 +27,3 @@ def dispatch_scheduled_jobs() -> dict[str, object]:
 def reconcile_stale_jobs() -> dict[str, int]:
     """Release canonical job slots abandoned by stopped or lost workers."""
     return recover_stale_jobs()
-
-
