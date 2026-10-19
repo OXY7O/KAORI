@@ -20,7 +20,7 @@ def test_warning_or_error_outcome_precedes_secondary_activity_and_metadata() -> 
     assert "item.failure_type != 'Operational Failure'" in detail
     assert 'Recorded Outcome' in detail
     assert 'item.message != item.failure_summary' in detail
-    assert '{% if not item.failure_summary %}' in detail
+    assert '{% if item.detail and item.detail != item.message and item.detail != item.failure_summary %}' in detail
 
 
 def test_absent_or_present_failure_context_does_not_invent_blockers() -> None:
