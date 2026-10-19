@@ -22,6 +22,10 @@ from app.integrations.delivery.notification_channels.contracts import Notificati
         ('artifact_registry', 'alert_intelligence.active_alert', False),
         ('artifact_registry', 'automation.execution_failed', False),
         ('registry', 'report.generated', False),
+        ('registry', 'alert_ops.firing', True),
+        ('registry', 'alert_ops.resolved', True),
+        ('registry', 'alert_intelligence.active_alert', True),
+        ('registry', 'automation.execution_failed', False),
         ('artifact_registry', 'unknown.event', False),
     ],
 )
@@ -37,7 +41,11 @@ def test_registry_report_delivery_is_advertised_with_accurate_scope() -> None:
         'hint': 'Report Ready only',
     }
     assert {'kubernetes', 'object_storage'}.issubset(options)
-    assert 'registry' not in options
+    assert options['registry'] == {
+        'value': 'registry',
+        'label': 'Registry Alerts',
+        'hint': 'Governed AlertCases only',
+    }
 
 
 def _channel_input(*, domains: tuple[str, ...], events: tuple[str, ...]) -> NotificationChannelFormInput:
@@ -104,9 +112,17 @@ def test_delivery_matcher_preserves_report_only_boundary_even_for_stale_policy()
     assert not service._channel_matches_event(
         channel, domain='artifact_registry', event_type='alert_ops.firing', severity='warning'
     )
+    assert service._channel_matches_event(
+        channel, domain='registry', event_type='alert_ops.firing', severity='warning'
+    )
+    assert not service._channel_matches_event(
+        channel, domain='registry', event_type='report.generated', severity='warning'
+    )
+    channel.domains = ['artifact_registry']
     assert not service._channel_matches_event(
         channel, domain='registry', event_type='alert_ops.firing', severity='warning'
     )
+    channel.domains = ['artifact_registry', 'registry']
     channel.enabled = False
     assert not service._channel_matches_event(
         channel, domain='artifact_registry', event_type='report.generated', severity='info'
