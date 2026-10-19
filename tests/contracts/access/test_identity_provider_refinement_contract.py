@@ -188,7 +188,7 @@ def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selec
     from jinja2 import Environment
 
     selector = read('app/templates/access/identity_providers/partials/_provider_selector.html')
-    script = read('app/static/js/identity_provider_form.js')
+    provider_js = read('app/static/js/identity_provider_form.js')
     forms = read('app/access/identity_providers/forms.py')
     catalog = read('app/access/authentication/identity_provider/catalog.py')
     definitions = read('app/definitions/catalogs/access/authentication/identity_provider/providers.yaml')
@@ -209,17 +209,17 @@ def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selec
     assert 'data-provider-display-icon' in read(
         'app/templates/access/identity_providers/partials/_sso_configuration.html'
     )
-    assert 'input[type="radio"][data-provider-option]' in script
-    assert 'option?.dataset.providerOptionIcon' in script
-    assert '\'[data-configuration-panel="browser_client"] [data-provider-display-icon]\'' in script
-    assert "form.querySelector('[data-provider-icon]')" not in script
-    assert 'lucide.createIcons()' in script
+    assert 'input[type="radio"][data-provider-option]' in provider_js
+    assert 'option?.dataset.providerOptionIcon' in provider_js
+    assert '\'[data-configuration-panel="browser_client"] [data-provider-display-icon]\'' in provider_js
+    assert "form.querySelector('[data-provider-icon]')" not in provider_js
+    assert 'lucide.createIcons()' in provider_js
     assert 'peer-checked:border-kaori-primary/30 peer-checked:text-kaori-primary' not in selector
-    assert "status.textContent = selected ? 'Selected' : 'Select'" in script
-    assert "input.nextElementSibling?.querySelector('[data-provider-option-badge]')" in script
-    assert "input.addEventListener('change', syncProvider)" in script
-    assert 'const visible = panel.dataset.configurationPanel === profile' in script
-    assert 'setControlsEnabled(panel, visible)' in script
+    assert "status.textContent = selected ? 'Selected' : 'Select'" in provider_js
+    assert "input.nextElementSibling?.querySelector('[data-provider-option-badge]')" in provider_js
+    assert "input.addEventListener('change', syncProvider)" in provider_js
+    assert 'const visible = panel.dataset.configurationPanel === profile' in provider_js
+    assert 'setControlsEnabled(panel, visible)' in provider_js
     assert 'configurable_provider_definitions()' in catalog
     assert 'configurable_provider_choices()' in forms
     assert 'provider_key: ldap_directory' in definitions
