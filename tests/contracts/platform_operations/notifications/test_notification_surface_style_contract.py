@@ -23,15 +23,21 @@ def test_notification_progress_surfaces_share_one_height_contract() -> None:
     assert 'mt-3 h-1.5 w-24 overflow-hidden rounded-full' in operational_toast
 
 
-def test_htmx_loading_bar_is_a_separate_thin_loading_contract() -> None:
+def test_shared_loading_bar_contract_remains_separate_from_settings_status() -> None:
     loading = read('app/templates/components/loading_bar.html')
     general = read('app/templates/settings/general/partials/_page_content.html')
     account = read('app/templates/settings/account/partials/_page_content.html')
 
     assert 'mt-4 h-1 overflow-hidden rounded-full' in loading
-    assert 'components/loading_bar.html' in general
+    assert 'components/loading_bar.html' not in general
+    assert 'class="htmx-indicator sr-only"' in general
+    assert 'role="status"' in general
+    assert 'aria-live="polite"' in general
     assert 'general-settings-loading' in general
-    assert 'components/loading_bar.html' in account
+    assert 'components/loading_bar.html' not in account
+    assert 'class="htmx-indicator sr-only"' in account
+    assert 'role="status"' in account
+    assert 'aria-live="polite"' in account
     assert 'account-settings-loading' in account
     assert 'verify_notification_surface_style.py' in read('scripts/quality_gate.sh')
 
