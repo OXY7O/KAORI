@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -149,4 +150,4 @@ def test_kubernetes_inventory_network_and_configuration_filters_have_associated_
                 assert "table_ui.search_field('search', search," in card
                 assert f"id='{control_id}')" in card
             else:
-                assert f'<select id="{control_id}" name="{query_name}"' in card
+                assert re.search(rf'<select\s+id="{control_id}"\s+name="{query_name}"', card) is not None
