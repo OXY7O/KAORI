@@ -11,9 +11,12 @@ def read(path: str) -> str:
 
 def test_rollout_read_model_reuses_exact_service_predicate_without_provider_calls() -> None:
     registry = read('app/kubernetes/tenant/registry_context.py')
+    rollout = read('app/kubernetes/tenant/resource_profile_rollout_context.py')
     service = read('app/kubernetes/tenant/service.py')
     controls = read('app/kubernetes/tenant/resource_profile_controls.py')
 
+    assert 'from app.kubernetes.tenant.resource_profile_rollout_context import _resource_profile_rollout_targets' in registry
+    assert '_resource_profile_rollout_targets = _registry_context._resource_profile_rollout_targets' in service
     assert 'def namespace_allocation_is_current(' in controls
     for field in (
         'resource_profile_version',
@@ -23,17 +26,17 @@ def test_rollout_read_model_reuses_exact_service_predicate_without_provider_call
     ):
         assert field in controls
 
-    assert 'namespace_allocation_is_current(record, profile, *desired)' in registry
+    assert 'namespace_allocation_is_current(record, profile, *desired)' in rollout
     assert '_resource_profile_controls.namespace_allocation_is_current(' in service
-    assert 'namespace_allocation_values(profile)' in registry
+    assert 'namespace_allocation_values(profile)' in rollout
     assert '_resource_profile_controls.namespace_allocation_values(profile)' in service
-    assert 'load_only(' in registry
-    assert 'TenantNamespace.resource_profile_id.in_(profile_ids)' in registry
-    assert "target['already_current'] = (" in registry
-    assert "target['eligible'] and target['pending'] == 0" in registry
+    assert 'load_only(' in rollout
+    assert 'TenantNamespace.resource_profile_id.in_(profile_ids)' in rollout
+    assert "target['already_current'] = target['eligible'] and target['pending'] == 0" in rollout
+    assert "target['eligible'] and target['pending'] == 0" in rollout
     assert (
         'tenant_workspace_connection_available('
-        not in registry.split('def _resource_profile_rollout_targets(', 1)[1].split('_ALLOWED_PAGE_SIZES', 1)[0]
+        not in rollout.split('def _resource_profile_rollout_targets(', 1)[1]
     )
 
 
