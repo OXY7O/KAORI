@@ -65,7 +65,10 @@ def test_delivery_task_reloads_committed_failure_and_skips_nonfailed(
 
     monkeypatch.setattr(notification_delivery_task, 'db', SimpleNamespace(session=SimpleNamespace(get=get_job)))
     monkeypatch.setattr(notification_delivery_task, 'dispatch_failed_job_event', lambda _job: {'successful': 1})
-    assert notification_delivery_task.dispatch_failed_job_notification.run(14) == {'status': 'completed', 'successful': 1}
+    assert notification_delivery_task.dispatch_failed_job_notification.run(14) == {
+        'status': 'completed',
+        'successful': 1,
+    }
     job.status = 'succeeded'
     assert notification_delivery_task.dispatch_failed_job_notification.run(14)['status'] == 'skipped'
     assert calls == [14, 14]
