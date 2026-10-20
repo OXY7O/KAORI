@@ -129,7 +129,7 @@ def test_release_surface_coverage_output_distinguishes_registration_from_executi
     assert "'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py'" in quality_gate
     assert quality_gate.count("'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py'") == 1
     assert 'RELEASE_SURFACE_COVERAGE_LOG="$log_file"' in quality_gate
-    assert "if [[ \"$group\" == 'Domain & Capability Contracts' ]]" in quality_gate
+    assert 'if [[ "$group" == \'Domain & Capability Contracts\' ]]' in quality_gate
     assert 'Registered capability evidence (not per-capability test PASS)' in quality_gate
     assert "sed -n '/^  EVIDENCE REGISTERED ONLY/,$p'" in quality_gate
 
