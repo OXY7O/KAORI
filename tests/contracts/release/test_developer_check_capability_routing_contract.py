@@ -11,7 +11,8 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from developer_check_plan import build_plan  # noqa: E402
-from verify_release_surface_coverage import _contract_test_modules  # noqa: E402
+from release_surface_registry import SURFACES  # noqa: E402
+from verify_release_surface_coverage import ROOT, _contract_test_modules  # noqa: E402
 
 
 def test_artifact_registry_changes_select_their_own_contracts() -> None:
@@ -124,9 +125,6 @@ def test_release_evidence_file_must_be_a_test_module(tmp_path: Path) -> None:
 
 def test_release_surface_coverage_output_distinguishes_registration_from_execution() -> None:
     """Registered contracts and optional verifiers must not imply a domain test PASS."""
-    from release_surface_registry import SURFACES
-    from verify_release_surface_coverage import ROOT
-
     quality_gate = (ROOT / 'scripts/quality_gate.sh').read_text(encoding='utf-8')
     assert "'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py'" in quality_gate
 
