@@ -48,7 +48,7 @@ def test_registered_domain_evidence_is_reused_at_domain_boundary_not_reexecuted(
 
     assert 'CAPABILITY_COVERAGE_REPORT="$log_file"' in capture
     assert 'cat "$log_file"' not in capture
-    assert "if [[ \"$group\" == 'Domain & Capability Contracts' ]]" in group
+    assert 'if [[ "$group" == \'Domain & Capability Contracts\' ]]' in group
     assert '[[ -z "$CAPABILITY_COVERAGE_REPORT" || ! -s "$CAPABILITY_COVERAGE_REPORT" ]]' in group
     assert 'return 1' in group
     assert 'cat "$CAPABILITY_COVERAGE_REPORT"' in group
