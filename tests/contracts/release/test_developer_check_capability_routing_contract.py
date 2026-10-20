@@ -11,7 +11,8 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from developer_check_plan import build_plan  # noqa: E402
-from verify_release_surface_coverage import _contract_test_modules  # noqa: E402
+from release_surface_registry import SURFACES  # noqa: E402
+from verify_release_surface_coverage import ROOT, _contract_test_modules  # noqa: E402
 
 
 def test_artifact_registry_changes_select_their_own_contracts() -> None:
@@ -120,3 +121,29 @@ def test_release_evidence_file_must_be_a_test_module(tmp_path: Path) -> None:
     test_module = tmp_path / 'test_contract.py'
     test_module.write_text('def test_contract(): pass\n', encoding='utf-8')
     assert _contract_test_modules(test_module) == [test_module]
+
+
+def test_release_surface_coverage_output_distinguishes_registration_from_execution() -> None:
+    """Registered contracts and optional verifiers must not imply a domain test PASS."""
+    quality_gate = (ROOT / 'scripts/quality_gate.sh').read_text(encoding='utf-8')
+    assert "'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py'" in quality_gate
+    assert quality_gate.count("'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py'") == 1
+    assert 'RELEASE_SURFACE_COVERAGE_LOG="$log_file"' in quality_gate
+    assert 'if [[ "$group" == \'Domain & Capability Contracts\' ]]' in quality_gate
+    assert 'Registered capability evidence (not per-capability test PASS)' in quality_gate
+    assert "sed -n '/^  EVIDENCE REGISTERED ONLY/,$p'" in quality_gate
+
+    source = (ROOT / 'scripts/verify_release_surface_coverage.py').read_text(encoding='utf-8')
+    assert 'EVIDENCE REGISTERED ONLY' in source
+    assert 'REGISTERED — {surface.title}' in source
+    assert 'none (contract tests only)' in source
+    assert 'surface.lock_state' in source
+
+    surfaces = {surface.key: surface for surface in SURFACES}
+    assert surfaces['artifact_registry'].contract_paths
+    assert surfaces['artifact_registry'].verifiers == ()
+    assert surfaces['tenant'].contract_paths
+    assert surfaces['tenant'].verifiers == ()
+    assert surfaces['object_storage_inventory'].verifiers
+    assert surfaces['analytics'].verifiers
+    assert surfaces['integrations'].verifiers

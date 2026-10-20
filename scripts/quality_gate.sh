@@ -7,6 +7,7 @@ cd "$ROOT"
 phase="${1:---all}"
 TEST_OUTPUT_DIR="tmp/ci-artifacts/test-output"
 STATIC_OUTPUT_DIR="tmp/ci-artifacts/static-output"
+RELEASE_SURFACE_COVERAGE_LOG=""
 
 status_icon() {
     case "$1" in
@@ -138,10 +139,10 @@ run_command_capture() {
     printf '⏳ %s — %s\n' "$group" "$label"
 
     if "$@" >"$log_file" 2>&1; then
-        # Ownership coverage is the one concise successful static report that
-        # needs domain-by-domain visibility; other checks retain quiet PASS.
+        # Retain verified release-surface evidence for the Domain & Capability
+        # Contracts rollup; avoid printing it under Foundation & Governance.
         if [[ "$label" == 'Release Surface Coverage' ]]; then
-            cat "$log_file"
+            RELEASE_SURFACE_COVERAGE_LOG="$log_file"
         fi
         # Profile the measured Static bottleneck without logging every verifier.
         # Keep each command's full stdout/stderr in its existing diagnostic file.
@@ -191,6 +192,19 @@ run_static_group() {
             return "$status"
         fi
     done
+
+    if [[ "$group" == 'Domain & Capability Contracts' ]]; then
+        # Reuse the registered evidence from the already successful Foundation
+        # verifier. This is a capability inventory, not additional PASS checks.
+        if [[ -z "$RELEASE_SURFACE_COVERAGE_LOG" || ! -f "$RELEASE_SURFACE_COVERAGE_LOG" ]] || \
+           ! grep -q '^  EVIDENCE REGISTERED ONLY' "$RELEASE_SURFACE_COVERAGE_LOG" || \
+           ! grep -q '^  REGISTERED —' "$RELEASE_SURFACE_COVERAGE_LOG"; then
+            printf '❌ Domain capability evidence missing from Release Surface Coverage output\n' >&2
+            return 1
+        fi
+        printf '📋 %s — Registered capability evidence (not per-capability test PASS)\n' "$group"
+        sed -n '/^  EVIDENCE REGISTERED ONLY/,$p' "$RELEASE_SURFACE_COVERAGE_LOG"
+    fi
 
     local elapsed=$(( $(date +%s) - group_started ))
     printf '✅ %s · %s checks · ⏱ %dm %02ds\n' "$group" "$group_pass_count" $((elapsed / 60)) $((elapsed % 60))

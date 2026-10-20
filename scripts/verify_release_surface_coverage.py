@@ -255,8 +255,14 @@ def verify() -> None:
         raise SystemExit(1)
 
     print(f'PASS — KAORI Release Coverage · {navigation_count} links / {blueprint_count} blueprints')
+    print('  EVIDENCE REGISTERED ONLY — not a test execution result or UAT acceptance')
     for surface in SURFACES:
-        print(f'  COVERED — {surface.title}: {len(contract_modules_by_surface[surface.title])} contract test module(s)')
+        verifiers = ', '.join(Path(path).name for path in surface.verifiers) or 'none (contract tests only)'
+        print(
+            f'  REGISTERED — {surface.title} [{surface.lock_state}]: '
+            f'{len(contract_modules_by_surface[surface.title])} contract test module(s); '
+            f'static verifier(s): {verifiers}'
+        )
 
 
 if __name__ == '__main__':
