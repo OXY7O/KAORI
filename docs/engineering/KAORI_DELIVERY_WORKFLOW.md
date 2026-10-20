@@ -196,6 +196,18 @@ A Pull Request to `main` is a governed promotion only when its source is exactly
 
 `kaori/working` is retired only after issue #10 proves all required commits are represented in `kaori/staging`.
 
+
+### Temporary DevContainer review workbench (#2227)
+
+The existing `kaori/review/staging-uat` branch is an explicitly governed **temporary, non-release workbench** for combining issue-owned changes and collecting exploratory DevContainer UAT evidence. It is **not** a third official long-lived integration, release, or promotion authority: `kaori/staging` remains the only source of comprehensive admission and staging integration; `main` remains the governed production lineage. Workbench acceptance never substitutes for Ready Developer Check, all five Full Admission lanes, CI Admission, Security/DAST, staging Fast Smoke, immutable release evidence, or human acceptance of the deployed candidate.
+
+- **Separate workstream ownership:** UAT review PRs retain their own issue/branch and target `kaori/review/staging-uat` only while on hold. An approved workbench merge is not approval to promote its full tree. Independent CI, operations and performance fixes still flow through normal issue-scoped PRs to `kaori/staging`.
+- **One-way synchronization:** after an accepted staging change, inspect both refs, commit ancestry and open review-target PRs before syncing **staging → review**. If review has no unique commits, use fast-forward with `force=false` and a verified expected head; if diverged, use an explicit reviewed merge commit into review instead. Never reset/force-push/rebase a shared review branch, alter pending PR heads, or reverse-sync unaccepted review commits to staging.
+- **Later promotion:** reconcile only the specifically reviewed and human-accepted issue scope on a branch from *current* `kaori/staging`, then use ordinary Draft → Ready → Full Admission → staging integration. Never use the temporary review branch as a staging-to-main promotion shortcut.
+- **Evidence boundary:** for each exploratory DevContainer session record exact checkout SHA, environment, configured provider/instance identity, scenario, runner/tester, actual positive/negative results and screenshots/traces where captured, and explicit human decision. When an external Kubernetes provider, RBAC, migration, hosted ingress, TLS, deployment, recovery or real infrastructure evidence is unavailable, mark that scenario **NOT RUN** or **BLOCKED**, not PASS. The DevContainer is not a stand-in for the production-like UAT host.
+
+This exception remains under #2227 until an explicit documented review retires it; it does not replace the canonical two-branch delivery workflow. Current review branch and pending PR inventory must be rechecked at execution time instead of relying on historical head SHAs or PR counts.
+
 ## Project Status Model
 
 GitHub Project `Status` is the lifecycle authority:
