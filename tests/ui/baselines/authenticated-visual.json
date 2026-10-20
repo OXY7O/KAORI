@@ -46,12 +46,12 @@
   },
   "welcome-light-mobile": {
     "height": 844,
-    "visual_sha256": "1a3de9cd8a89d1286149af2ef8fb3212f74daeec39544a77d086ad69601ce5e2",
+    "visual_sha256": "4b454b4ed683c7eee2ef0f41a2c94f341a30588469df59110b247dc1625c2f80",
     "width": 390
   },
   "welcome-light-small-mobile": {
     "height": 800,
-    "visual_sha256": "82c5e55323f047e541225937c798a97b17681aa11663104e1cbe873e0102fb3a",
+    "visual_sha256": "d7aa002e3fae923823a375507be147a8f4122ca59b2487f7a6c6bf8414f681ea",
     "width": 360
   },
   "welcome-light-tablet": {
