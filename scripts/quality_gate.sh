@@ -7,6 +7,7 @@ cd "$ROOT"
 phase="${1:---all}"
 TEST_OUTPUT_DIR="tmp/ci-artifacts/test-output"
 STATIC_OUTPUT_DIR="tmp/ci-artifacts/static-output"
+CAPABILITY_COVERAGE_REPORT=""
 
 status_icon() {
     case "$1" in
@@ -138,10 +139,10 @@ run_command_capture() {
     printf '⏳ %s — %s\n' "$group" "$label"
 
     if "$@" >"$log_file" 2>&1; then
-        # Ownership coverage is the one concise successful static report that
-        # needs domain-by-domain visibility; other checks retain quiet PASS.
+        # Reuse verified ownership evidence inside Domain & Capability Contracts.
+        # Do not rerun the verifier or mistake module registration for pytest PASS.
         if [[ "$label" == 'Release Surface Coverage' ]]; then
-            cat "$log_file"
+            CAPABILITY_COVERAGE_REPORT="$log_file"
         fi
         # Profile the measured Static bottleneck without logging every verifier.
         # Keep each command's full stdout/stderr in its existing diagnostic file.
@@ -177,6 +178,15 @@ run_static_group() {
     local group_pass_count=0
     local group_started
     group_started="$(date +%s)"
+
+    if [[ "$group" == 'Domain & Capability Contracts' ]]; then
+        if [[ -z "$CAPABILITY_COVERAGE_REPORT" || ! -s "$CAPABILITY_COVERAGE_REPORT" ]]; then
+            printf '❌ Domain & Capability Contracts — release ownership evidence is missing\\n' >&2
+            return 1
+        fi
+        printf '📋 Registered domain evidence (not test-execution results)\\n'
+        cat "$CAPABILITY_COVERAGE_REPORT"
+    fi
 
     while (( "$#" )); do
         local label="$1"
