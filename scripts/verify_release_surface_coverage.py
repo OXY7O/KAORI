@@ -139,8 +139,7 @@ def _coverage_evidence_line(surface: ReleaseSurface, module_count: int) -> str:
     """Report registered ownership without claiming executable test success."""
     static_owner = f'{len(surface.verifiers)} verifier(s)' if surface.verifiers else 'none (test evidence only)'
     return (
-        f'  REGISTERED — {surface.title} [{surface.lock_state}] · '
-        f'static: {static_owner} · test modules: {module_count}'
+        f'  REGISTERED — {surface.title} [{surface.lock_state}] · static: {static_owner} · test modules: {module_count}'
     )
 
 
