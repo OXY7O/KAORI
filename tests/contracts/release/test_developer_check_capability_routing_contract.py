@@ -120,3 +120,27 @@ def test_release_evidence_file_must_be_a_test_module(tmp_path: Path) -> None:
     test_module = tmp_path / 'test_contract.py'
     test_module.write_text('def test_contract(): pass\n', encoding='utf-8')
     assert _contract_test_modules(test_module) == [test_module]
+
+
+def test_release_surface_coverage_output_distinguishes_registration_from_execution() -> None:
+    """Registered contracts and optional verifiers must not imply a domain test PASS."""
+    from release_surface_registry import SURFACES
+    from verify_release_surface_coverage import ROOT
+
+    quality_gate = (ROOT / 'scripts/quality_gate.sh').read_text(encoding='utf-8')
+    assert "'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py'" in quality_gate
+
+    source = (ROOT / 'scripts/verify_release_surface_coverage.py').read_text(encoding='utf-8')
+    assert 'EVIDENCE REGISTERED ONLY' in source
+    assert 'REGISTERED — {surface.title}' in source
+    assert 'none (contract tests only)' in source
+    assert 'surface.lock_state' in source
+
+    surfaces = {surface.key: surface for surface in SURFACES}
+    assert surfaces['artifact_registry'].contract_paths
+    assert surfaces['artifact_registry'].verifiers == ()
+    assert surfaces['tenant'].contract_paths
+    assert surfaces['tenant'].verifiers == ()
+    assert surfaces['object_storage_inventory'].verifiers
+    assert surfaces['analytics'].verifiers
+    assert surfaces['integrations'].verifiers
