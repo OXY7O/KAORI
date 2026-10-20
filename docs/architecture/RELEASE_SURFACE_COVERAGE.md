@@ -6,7 +6,26 @@ This registry answers one release question: **is every operator-visible menu, ne
 
 The current baseline contains **74 navigation links** across the authenticated application shell and **30 registered blueprints**. A new menu link, workspace capability, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
-Each declared release-evidence directory must contain at least one executable `test_*.py` module, not only a placeholder directory or `__init__.py`. `scripts/verify_release_surface_coverage.py` enforces this rule using the existing release-surface registry. Successful **Static & Governance → Release Surface Coverage** output enumerates the registered surfaces and their contract-module counts, making Artifact Registry, Object Storage Inventory, provider integrations, and other domains observable in CI logs. Counts prove that executable test modules are registered; **they do not prove behavioral correctness or UAT PASS**. Functional execution remains under the existing Contract & Migration Safety / Functional / Security / Runtime & DAST admission lanes.
+Each declared release-evidence directory must contain at least one executable `test_*.py` module, not only a placeholder directory or `__init__.py`. `scripts/verify_release_surface_coverage.py` enforces this rule using the existing release-surface registry. Successful **Static & Governance → Foundation & Governance → Release Surface Coverage** generates the release ownership evidence once; the canonical quality gate **reuses that exact successful output under Domain & Capability Contracts**. Each registered surface is enumerated with its lock state, dedicated static-verifier count (including explicit *none — test evidence only*) and executable test-module count. This makes Artifact Registry, Object Storage Inventory, Integrations/providers, Tenant, and other registered surfaces visible in the group operators inspect. The report says **REGISTERED**, not contract PASS: these counts prove that executable test modules are registered, **not that tests executed, passed, or completed UAT**. Functional execution remains under the existing Contract & Migration Safety / Functional / Security / Runtime & DAST admission lanes.
+
+## CI Domain & Capability Coverage Output
+
+`scripts/quality_gate.sh --static` runs the existing Release Surface Coverage verifier once in Foundation & Governance. Its captured successful output is displayed once at the beginning of **Domain & Capability Contracts**, before domain verifiers. If that validated evidence is missing, the group fails closed instead of silently omitting the registry. No domain verifier or pytest suite is rerun to print the inventory.
+
+Representative excerpt (counts are illustrative, not claimed CI evidence):
+
+```text
+📋 Registered domain evidence (not test-execution results)
+PASS — KAORI Release Coverage · 74 links / 30 blueprints
+REGISTERED EVIDENCE — ownership/test modules only; no contract-test PASS or UAT claim
+  REGISTERED — Object Storage Inventory [LOCKED] · static: 1 verifier(s) · test modules: 3
+  REGISTERED — Artifact Registry [BASELINE LOCKED] · static: none (test evidence only) · test modules: 14
+  REGISTERED — Tenant [BASELINE LOCKED] · static: none (test evidence only) · test modules: 3
+```
+
+A static-verifier count means only that the script is **registered and wired**, not that the owning static check already ran. Registered test modules are not per-capability execution summaries. The subsequent actual verifier/Contract & Migration Safety results, independent Functional/Security/Runtime & DAST gates, overall CI Admission, and human UAT determine PASS/acceptance. Preserve `BASELINE LOCKED` status until its separate authority accepts the capability.
+
+**Storage boundary:** `Integrations → Storage → Object Storage` (currently MinIO) is provider-facing and covered under Integrations, Object Storage Inventory, Analytics and operational Dashboard surfaces retain their separate committed-state owners, and `Artifact Registry` is the provider-neutral committed registry surface. The internal `ArtifactStorageBackend` (`local` / `s3`, e.g. AWS S3 or MinIO runtime) is **not** an operator-visible Object Storage integration or standalone release surface. Its storage behavior is validated by the existing Reports storage/back-end consumer checks; #570 governs future generic S3 qualification and tests. Do not create a second integration/release domain to list an internal backend or infer full backend qualification from this report.
 
 ## Navigation and Surface Matrix
 
