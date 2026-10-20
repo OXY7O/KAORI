@@ -181,10 +181,10 @@ run_static_group() {
 
     if [[ "$group" == 'Domain & Capability Contracts' ]]; then
         if [[ -z "$CAPABILITY_COVERAGE_REPORT" || ! -s "$CAPABILITY_COVERAGE_REPORT" ]]; then
-            printf '❌ Domain & Capability Contracts — release ownership evidence is missing\\n' >&2
+            printf '❌ Domain & Capability Contracts — release ownership evidence is missing\n' >&2
             return 1
         fi
-        printf '📋 Registered domain evidence (not test-execution results)\\n'
+        printf '📋 Registered domain evidence (not test-execution results)\n'
         cat "$CAPABILITY_COVERAGE_REPORT"
     fi
 
