@@ -38,9 +38,9 @@ def test_activity_audit_uses_availability_posture_without_treating_warning_event
     assert 'Actor Evidence' in summary
     assert 'Hot Evidence Scope' in summary
     assert 'Notification-backed' in summary
-    assert 'Authorized access to committed KAORI activity evidence.' in summary
+    assert 'Authorized Notification-backed activity.' in summary
     assert 'System-Wide Scope' not in summary
-    assert 'Actor identity, role, and authentication source preserved at commit.' in summary
+    assert 'Actor, role and source recorded at commit.' in summary
     assert 'Immutable' in summary
     assert 'Hot + Archive' in summary
     assert "'posture_label': 'Available'" in queries
@@ -167,7 +167,7 @@ def test_activity_hot_register_is_explicit_about_archive_lifecycle_boundary() ->
     queries = read('app/platform_operations/notifications/queries.py')
     retention_domain = read('app/platform_operations/data_lifecycle/retention/domains/operational_activity.py')
 
-    assert 'Recent records in PostgreSQL; archived evidence in Data Lifecycle.' in summary
+    assert 'Hot PostgreSQL; verified Data Lifecycle archive.' in summary
     assert 'This register reads hot PostgreSQL records.' not in summary
     assert 'hot-record time range' in card
     assert "('all', 'All Hot Records')" in queries
@@ -467,3 +467,15 @@ def test_activity_audit_framed_tabs_and_canonical_administrative_filters() -> No
     assert "if selected_audit_tab == 'administrative' and not has_administrative_sources:" in routes
     for param in ('admin_search', 'admin_outcome', 'admin_time_range', 'admin_per_page'):
         assert f"request.args.get('{param}'" in routes or f"_request_int('{param}'" in routes
+
+
+def test_uat_administrative_evidence_uses_shared_title_result_count() -> None:
+    administrative = read('app/templates/access/activity_audit/partials/_administrative_evidence.html')
+    header = administrative.split('</header>', 1)[0]
+    assert header.index('>Administrative Source Evidence</h2>') < header.index(
+        'table_label.result_count(administrative_evidence.pagination.total_items)'
+    )
+    assert header.count('table_label.result_count(') == 1
+    assert '{{ administrative_evidence.pagination.total_items }} Recorded' not in header
+    assert 'registry_ui.clear_filters_action(' in header
+    assert "loading_bar.render('administrative-activity-loading'" in header

@@ -15,16 +15,17 @@
      class="overflow-hidden bg-surface-card">
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
+            <caption class="sr-only">Active alert cases and operational review actions</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }}">Alert</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Severity</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Source</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Workflow</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Owner</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Age</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Delivery</th>
-                    <th class="{{ table_ui.header_cell_classes(true) }}">Action</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Alert</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Severity</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Workflow</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Owner</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Age</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Delivery</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Action</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">

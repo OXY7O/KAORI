@@ -100,3 +100,20 @@ Object Storage visibility does not inherit the Kubernetes read permissions. Cano
 - `object_storage_analytics.view` — Object Storage Analytics.
 
 `storage.sync` depends on `object_storage_inventory.view` and `jobs.execute`. The 2026-08-14 RBAC split migration preserves existing role access by copying legacy `inventory.view` and `analytics.view` role assignments to the new Object Storage permissions before routes begin enforcing them.
+
+## Role Permission Matrix descriptive copy (#2308)
+
+The authoritative `app/definitions/catalogs/access/rbac/access.yaml`
+retains **two distinct textual purposes** for each permission:
+`description` is canonical RBAC registry metadata synchronized by governed
+`seed-rbac` operations, while `matrix_description` is the richer,
+source-controlled operator-facing explanation displayed **only** in the
+Roles Permission Matrix. The loader validates that every permission supplies
+its own non-empty `matrix_description` and publishes the
+`PERMISSION_MATRIX_DESCRIPTIONS` keyed mapping. These UI descriptions do
+**not** enter `DEFAULT_PERMISSIONS`, the database or drift reconciliation;
+permission keys, modules, actions, dependencies, grants and enforcement
+remain unchanged. Database-only permission records use their existing
+persisted description as the read-only fallback. When introducing a
+permission, author a truthful action-and-scope UI description alongside the
+existing canonical RBAC description, then exercise existing contracts.

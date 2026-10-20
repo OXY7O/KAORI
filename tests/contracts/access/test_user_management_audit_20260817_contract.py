@@ -58,7 +58,7 @@ def test_user_access_summary_detects_rbac_identity_and_invalid_break_glass_findi
     assert "'invalid_external_super_admins': invalid_external_super_admins" in summary
     assert "'access_review': access_review" in summary
     assert "summary['access_review']" in overview
-    assert 'active Local Database' in overview
+    assert 'active Local DB break-glass admin' in overview
 
 
 def test_ldap_administrative_projection_requires_short_lived_signed_directory_evidence() -> None:

@@ -213,3 +213,30 @@ the browser never starts a DB operation.
 | Integration | **N/A** — this presentation lock adds no provider, persistence, LDAP, OAuth/OIDC, or external-runtime integration boundary |
 
 Future Authentication Surface work requires a concrete defect, security requirement, or approved product change. Cosmetic redesign alone does not reopen this baseline.
+
+## Website Brand Alignment — UAT Candidate (#2408)
+
+Status: **HOLD — local Dev Container UAT / human visual acceptance pending**.
+
+The approved login composition and the intentional `Operate with Clarity.`
+heading remain unchanged. The left-side, `lg+` brand panel now references
+the first-party, locally hosted `kaori-website-capabilities.webp` asset, based
+on the KAORI website illustration: Visibility, Control, Intelligence, Assurance.
+The previous six-node operations-fabric artwork and redundant capability chips
+are not rendered in the login panel.
+
+The supporting description is exactly:
+
+> Unified visibility and governed infrastructure operations.
+
+This sentence remains one visible line at canonical `lg+` viewports. On
+tablet/mobile, the entire left-hand brand panel remains hidden while the
+form-first layout and mobile KAORI identity retain ownership. Light/dark visual
+hierarchy, authentication semantics, SSO, CSRF, session handling, 44 px controls,
+and all pre-existing security/accessibility requirements are unchanged.
+
+The scoped regression test is
+`tests/ui/test_login_website_brand_alignment.py`. Current visual-baseline
+hashes are **not** silently updated: accept the revised screenshot in local
+human UAT first, then regenerate/review baseline evidence through the approved
+process. This addendum is not an admission or release approval.

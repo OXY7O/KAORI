@@ -17,18 +17,18 @@
                             class="text-base font-semibold text-content-primary">Capsule Tenant Quota Governance</h2>
                         {{ info_tip.render('capsule-tenant-quota-tip',
                                                 'Capsule Tenant quota',
-                                                'KAORI preserves Capsule authority and changes only Tenant.spec.resourceQuotas after explicit governance cutover.',
+                                                'Legacy Adopted / Observed Tenant quota only; KAORI changes Tenant.spec.resourceQuotas through admitted Capsule authority.',
                                                 [
                                                 'Tenant and Namespace quota scopes retain their provider semantics during capacity admission.',
                                                 'Provider UID/resourceVersion and the served Tenant CR schema are revalidated before mutation.',
                                                 'Namespace LimitRange constraints remain external observed evidence unless they are the selected allocation authority.',
                                                 'Every write requires provider read-back before KAORI commits effective state.'
-                                                ], placement='right') }}
+                                                ], placement='right', variant='guide') }}
                     </span>
                     {{ table_label.special_label('Tenant.spec.resourceQuotas', 'info', 'shield-check') }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">
-                    Govern an admitted Capsule Tenant quota directly through the authoritative Tenant CR without Native ResourceQuota bypass.
+                    For legacy Adopted / Observed allocation only: govern an admitted Capsule Tenant.spec.resourceQuotas contract; new Managed-on-Adopt needs no second cutover.
                 </p>
             </div>
         </div>

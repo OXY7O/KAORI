@@ -13,14 +13,16 @@ def _read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def test_login_brand_panel_uses_operations_fabric_visual() -> None:
+def test_login_brand_panel_uses_approved_website_capabilities_visual() -> None:
     source = _read(TEMPLATES / '_brand_panel.html')
 
-    assert 'images/kaori-login-operations-fabric.svg' in source
+    assert 'images/kaori-website-capabilities.webp' in source
+    assert 'data-kaori-login-website-artwork' in source
+    assert 'KAORI connects Visibility, Control, Intelligence and Assurance.' in source
     assert 'kaori-operations-fabric' in source
     assert 'Operate with <span class="kaori-login-brand__clarity">Clarity</span>.' in source
     assert 'Infrastructure Operations Platform' in source
-    assert 'Unified visibility and governed operations' in source
+    assert 'Unified visibility and governed infrastructure operations.' in source
     assert 'Knowledge · Automation · Operations · Resilience · Intelligence' in source
     assert 'Governed Operations · Observable Evidence · Accountable Access' in source
     assert 'kaori-brand-network' not in source

@@ -213,3 +213,98 @@ User Directory keeps its **inline expandable row** (not a new modal). Its commit
 ## User Directory canonical registry interaction
 
 User Directory retains `#users-page-content` for mutation feedback, domain summary and out-of-band Hero/toast refresh. The standalone `#user-directory` surface owns only search, account state, identity source, role, Clear Filters, Rows and pagination via the approved `table_registry.filter_form`, `clear_filters_link`, and `footer` macros. These registry GETs return only the directory fragment, preserving the canonical latest-request-wins synchronization, loading indicator, query history, default five rows and 5/10/25/50 options. `per_page` is not duplicated in the Rows form. HTMX history restore and ordinary browser navigation return a full page; user lifecycle HTMX actions continue to refresh the full users-page-content and OOB Hero/toast. User detail expansion, action permission guards, CSRF and soft deletion remain unchanged.
+
+### UAT-1(1) Access copy review — #2251
+
+Shared Access summaries, role detail bands and User Management posture cards now use shorter presentation-only helper sentences to reduce avoidable desktop wrapping. Role/permission identity, inherited dependencies, role guard/permission constraints, source-scoped Activity Audit, verified Data Lifecycle archive and break-glass authority remain authoritative and unchanged. This human review supersedes older literal helper-copy expectations (including the formerly fixed inactive-role phrase) but does not supersede authorization or semantic contracts. Responsive/mobile and light/dark browser UAT remains NOT RUN until executed.
+
+### UAT-1(1) count badge placement — #2252
+
+Permission Registry, Role Coverage, and Administrative Source Evidence use the same shared `table_label.result_count` next to each table title, based on the current filtered result total. Tab navigation labels remain without counts. Filter actions, page size 5 and optional 10/25/50, HTMX and source permissions are unchanged; browser accessibility/visual review pending.
+
+### UAT-1(1) lifecycle card alignment — #2253
+
+The Add/Edit User `Lifecycle & Administrative Controls` section reuses the existing Super Admin card's Violet header geometry for Assigned Role, Active Account and eligible Super Admin, with concise descriptions that wrap naturally at phone/zoom widths. Actual role selection, account active state, Super Admin eligibility, unavailable branch, same-account restrictions, and last-active-Local-Super-Admin safeguards have not changed. Functional/browser UAT remains NOT RUN.
+
+
+
+### UAT-1(2) Access Boundaries section hierarchy — #2257
+
+Access Overview now places its **Access Boundaries** heading and supporting explanation above the existing read-only boundary grid, using the shared `section_intro` and `operational_section.shell_classes` primitives in the same outer section rhythm as Authorization Flow. The boundary titles/statuses, permission-scoped domain composition, responsive grid and zero-boundary omission are unchanged. Screenshot-based laptop/mobile/light-dark human acceptance remains pending.
+
+
+### UAT-1(3) Identity Governance — #1335
+
+Four Identity Governance descriptions are shortened for the Firefox Lenovo L13 sidebar-open layout. Provider ownership, external secrets and KAORI authorization remain authoritative. Only copy is changed; no truncation or forced nowrap. Mobile and zoom may wrap naturally. Browser acceptance is pending.
+
+
+### UAT-1(4) Access modal header/footer — #2261
+
+Access detail dialogs keep the existing `resource_detail_modal.host` chrome and their own body/width. User/Role destructive confirmations opt into a matching surface-card header with close control and contextual footer, preserving original body, dimensions, safe cancellation and protected confirmation actions. No default change applies to destructive confirmations elsewhere. Focus, keyboard, mobile/light-dark and destructive negative UAT are pending.
+
+### UAT-1(4) Add User copy refinement — #2253
+
+On the create-user page, remove the redundant Display Name default helper and Assigned Role post-login helper (without removing the field or conditional administrator-role restriction). Shorten password/identity-owner guidance, provider-admission steps and the three Administrative Boundary descriptions to reduce laptop side-rail wrapping while retaining Local Database-only break-glass and last-active-Super-Admin protections. Input values, validation, authorization and identity-provider workflow are unchanged; live Firefox/browser UAT remains pending.
+
+
+### UAT-1(5) modal header reference — #2261
+
+The newly supplied reference screenshot is **Permission Detail / `users.delete`** (title `Delete Users`, Canonical state, identity/dependency description and Access/permission/delegation badges), not the Delete User confirmation. Role Detail and Activity Detail retain their own authoritative data but now use the same header information order: icon, title with real status, description, metadata. Only Access destructive confirmations opt into matching header organization, using `Confirmation Required` and existing scope/action rather than mislabeling destructive operations as Canonical. The shared Permission Detail host footer defines the footer standard; the cropped screenshot itself does not display a footer. Body, modal dimensions, mutation buttons and permission controls remain unchanged. Executable and browser UAT, responsive Visual QA, focus restoration and human acceptance are pending.
+
+### REVIEW(2) Access Overview User count text — #2251
+
+The User Management posture caption in the read-only Access Overview uses
+the same authoritative `build_user_access_summary()` counts and active
+Local Database break-glass coverage. Only the human-facing text is shortened
+to a correctly pluralized `accounts · active Local DB break-glass admin(s)`
+statement, preserving all zero-active, no-admin and admission-warning
+precedence branches. This is a Firefox L13 one-line **target**, not a claimed
+browser PASS; actual responsive/zoom/light-dark and human UAT remains pending.
+No persistence, aggregation or provider calls are added.
+
+## REVIEW(4) — Role form text and Guide (#2307)
+
+Firefox Lenovo L13 operator review shortens the Assignment Availability
+caption while retaining an explicit deactivation/effective-access
+consequence and the visible active/inactive status badge. The Access
+Guardrails rail keeps four role policy boundaries as readable, natural
+two-line desktop captions, including source-controlled dependencies,
+effective delegation and Local Database-only Super Admin separation.
+Static Role Slug and Display Name helper guidance is consolidated in the
+canonical title-adjacent `info_tip` Guide in **Role Identity**. Labels,
+input values, audit-sensitive errors, role lifecycle/CSRF, default-role
+protection and backend authorization enforcement remain unchanged.
+Desktop 1-/2-line targets are not guaranteed by a static copy budget;
+actual Dev Container Firefox visual, accessibility and human acceptance
+evidence remains PENDING. Official admission is HOLD.
+
+## REVIEW(4) — Permission Matrix description rhythm (#2308)
+
+The Roles permission-card description region reserves two ordinary lines of
+vertical space using existing Tailwind `min-h-10` and `leading-5` rhythm.
+Cards continue to show the complete authoritative `Permission.description`
+without rewriting canonical RBAC or database metadata. Longer explanations
+wrap fully at laptop, mobile, or zoom; shorter ones remain unchanged, with
+no invented policy text or ellipsis. This is a *minimum two-line space*, not
+a claim that every permission description comprises exactly two written
+lines. Firefox Visual QA, source/registry integrity, and human acceptance
+remain pending. Official admission remains HOLD.
+
+## REVIEW(4) follow-up — descriptive content, not only two-line height (#2308)
+
+The operator's Manage Integrations screenshot clarifies that the purpose is
+**meaningfully descriptive copy for each of the 64 Permission Matrix
+capabilities**, normally about two natural lines at Firefox Lenovo L13
+width, not merely reserving `min-h-10` vertical space. Every permission's
+source-owned `matrix_description` in the existing RBAC catalog describes
+the specific allowed action and its target/scope. Role Editor reads this
+copy from the committed catalog through `build_role_form_context()`, with
+original persisted descriptions retained as fallback for unexpected
+non-canonical/database-only records. Search also includes the richer copy.
+The old `min-h-10` line-height rhythm remains, with natural wrapping and
+no clipping. **Canonical RBAC descriptions, seeding, authorization, grants,
+dependencies, Permission Catalog and database contents are unchanged.**
+Real Firefox two-line appearance is a visual target rather than a source
+PASS. Local focused pytest/Jinja, responsive/light-dark/zoom/browser
+accessibility, negative RBAC and human acceptance remain pending. Official
+staging admission, deployment and release are HOLD.

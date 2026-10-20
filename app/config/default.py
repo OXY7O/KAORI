@@ -5,6 +5,7 @@ from pathlib import Path
 from celery.schedules import crontab
 from dotenv import dotenv_values
 
+from app.config.storage_helpers import _normalize_storage_backend, _resolve_path
 from app.integrations.delivery.notification_channels.config import build_notification_beat_schedule
 from app.intelligence.alert_signals.config import build_alert_signal_beat_schedule
 
@@ -132,16 +133,6 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
             },
         }
     return schedule
-
-
-def _normalize_storage_backend(value: str | None) -> str:
-    backend = (value or 'local').strip().lower()
-    return backend if backend in {'local', 's3'} else 'local'
-
-
-def _resolve_path(value: str | None, default: Path) -> str:
-    path = Path((value or str(default)).strip())
-    return str(path if path.is_absolute() else BASE_DIR / path)
 
 
 def _object_storage_usage_stats_mode() -> str:
@@ -360,8 +351,10 @@ class Config:
             'app.kubernetes.tenant.tasks',
             'app.platform_operations.data_lifecycle.retention.tasks',
             'app.integrations.runtime.tasks',
+            'app.integrations.runtime.notification_delivery_task',
             'app.integrations.validation.tasks',
             'app.platform_operations.jobs.tasks',
+            'app.platform_operations.jobs.notification_delivery_task',
             'app.reports.schedules.tasks',
             'app.reports.jobs.tasks',
             'app.reports.storage.tasks',
@@ -419,6 +412,9 @@ class Config:
             'app.integrations.runtime.tasks.refresh_integration_runtime': {
                 'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
             },
+            'app.integrations.runtime.tasks.dispatch_integration_health_notification': {
+                'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
+            },
             'app.integrations.validation.tasks.validate_integration_instance': {
                 'queue': INTEGRATION_VALIDATION_CELERY_QUEUE,
             },
@@ -429,6 +425,9 @@ class Config:
                 'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,
             },
             'app.platform_operations.jobs.tasks.reconcile_stale_jobs': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.platform_operations.jobs.tasks.dispatch_failed_job_notification': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.platform_operations.notifications.alert_delivery.tasks.dispatch_alert_intelligence_notifications': {

@@ -15,6 +15,7 @@ from app.integrations.delivery.notification_channels.lifecycle import (
     delete_channel,
 )
 from app.integrations.delivery.notification_channels.service import (
+    DeliveryPagination,
     create_channel,
     get_channel,
     get_notification_channels_payload,
@@ -42,8 +43,13 @@ def index() -> ResponseReturnValue:
     payload = get_notification_channels_payload(
         channel_page=request.args.get('channel_page', default=1, type=int),
         channel_per_page=request.args.get('channel_per_page', default=5, type=int),
-        delivery_page=request.args.get('delivery_page', default=1, type=int),
-        delivery_per_page=request.args.get('delivery_per_page', default=5, type=int),
+        channel_search=request.args.get('channel_search', ''),
+        channel_provider=request.args.get('channel_provider', ''),
+        channel_state=request.args.get('channel_state', ''),
+        delivery_pagination=DeliveryPagination(
+            page=request.args.get('delivery_page', default=1, type=int),
+            per_page=request.args.get('delivery_per_page', default=5, type=int),
+        ),
         delivery_event_key=request.args.get('delivery_event_key', ''),
         can_view_reports=current_user.has_permission('reports.view'),
     )

@@ -126,7 +126,7 @@
     "app/kubernetes/tenant/decommission_service.py::execute_tenant_decommission": 33,
     "app/kubernetes/tenant/discovery_adoption.py::_require_re_adoption_handback_for_managed_release": 53,
     "app/kubernetes/tenant/discovery_adoption.py::attach_discovered_capsule_namespace_committed": 54,
-    "app/kubernetes/tenant/discovery_service.py::get_tenant_adoption_preflight_context": 35,
+    "app/kubernetes/tenant/discovery_service.py::get_tenant_adoption_preflight_context": 34,
     "app/kubernetes/tenant/discovery_service.py::get_tenant_discovery_context": 104,
     "app/kubernetes/tenant/external_access_observation.py::normalize_capsule_access_spec": 39,
     "app/kubernetes/tenant/external_native_access_observation.py::normalize_native_role_binding": 31,
@@ -161,7 +161,7 @@
     "app/storage/object_storage/inventory/system_presentation.py::_system_row": 31
   },
   "function_line_limits": {
-    "app/access/overview/presentation.py::build_access_overview": 199,
+    "app/access/overview/presentation.py::build_access_overview": 192,
     "app/artifact_registry/correlation.py::refresh_registry_workload_bindings": 179,
     "app/artifact_registry/governance_tasks.py::sync_all_registry_governance_task": 161,
     "app/artifact_registry/presentation_topology.py::build_dependency_topology": 252,
@@ -201,7 +201,7 @@
     "app/kubernetes/tenant/capsule_release_finalizer.py::release_verified_capsule_tenant_committed": 188,
     "app/kubernetes/tenant/capsule_successor_handback.py::handback_capsule_successor_governance_committed": 374,
     "app/kubernetes/tenant/decommission_service.py::execute_tenant_decommission": 207,
-    "app/kubernetes/tenant/discovery_service.py::get_tenant_adoption_preflight_context": 181,
+    "app/kubernetes/tenant/discovery_service.py::get_tenant_adoption_preflight_context": 167,
     "app/kubernetes/tenant/discovery_service.py::get_tenant_discovery_context": 349,
     "app/kubernetes/tenant/native_handoff_executor.py::execute_native_handoff_committed": 205,
     "app/kubernetes/tenant/native_release_readiness.py::project_native_release_readiness": 322,
@@ -224,8 +224,7 @@
     "app/artifact_registry/presentation_runtime.py": 807,
     "app/artifact_registry/routes.py": 950,
     "app/artifact_registry/security/presentation.py": 907,
-    "app/config/default.py": 801,
-    "app/integrations/delivery/notification_channels/service.py": 1005,
+    "app/integrations/delivery/notification_channels/service.py": 1002,
     "app/integrations/observability/metrics_source/query_profiles/kubernetes_v1.py": 1309,
     "app/integrations/routes.py": 818,
     "app/integrations/service.py": 876,
@@ -240,12 +239,12 @@
     "app/kubernetes/tenant/capacity_governance.py": 924,
     "app/kubernetes/tenant/capsule_allocation_governance.py": 812,
     "app/kubernetes/tenant/credential_service.py": 865,
-    "app/kubernetes/tenant/discovery_adoption.py": 1022,
-    "app/kubernetes/tenant/discovery_service.py": 1027,
-    "app/kubernetes/tenant/registry_context.py": 1301,
+    "app/kubernetes/tenant/discovery_adoption.py": 1015,
+    "app/kubernetes/tenant/discovery_service.py": 992,
+    "app/kubernetes/tenant/registry_context.py": 1240,
     "app/kubernetes/tenant/release_handoff_approval.py": 817,
     "app/kubernetes/tenant/routes.py": 2537,
-    "app/kubernetes/tenant/service.py": 965,
+    "app/kubernetes/tenant/service.py": 947,
     "app/platform_operations/data_lifecycle/retention/service.py": 826,
     "app/reports/generate/service.py": 820,
     "app/reports/generated/service.py": 1655,
@@ -253,6 +252,6 @@
     "app/reports/report_templates/service.py": 942,
     "app/reports/schedules/service.py": 900,
     "app/reports/storage/service.py": 988,
-    "app/storage/object_storage/inventory/presentation.py": 1108
+    "app/storage/object_storage/inventory/presentation.py": 1100
   }
 }

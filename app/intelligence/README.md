@@ -72,7 +72,7 @@ Locked current-state contracts:
   first validated Object Storage provider. Current forecast recommendations also consume current worker-materialized Object Storage forecast snapshots.
 - **Rule Catalog** exposes canonical definitions. Rules that do not yet have a validated
   provider/evaluator path remain **Reserved Plan**.
-- **Alert Intelligence** supports committed recommendation-origin AlertCase browsing for Kubernetes, Object Storage, and **Artifact Registry** (selected enabled/active Registry IntegrationInstance only). Unknown, disabled, or blocked Registry scopes fail closed rather than widening into another domain or all assets. Registry AlertCase browsing is not the same as Registry provider-native alert collection: Alertmanager-first/Metrics Source fallback materialization into Registry Analytics remains a separate workstream (#952). Kubernetes/Object Storage provider alert-source selection continues to prefer Alertmanager with bounded Metrics Source fallback. Committed Recommendations and Rule Catalog definitions provide contextual enrichment without asserting causal correlation. **Registry notification routing and delivery remain explicitly disabled** pending a separately approved policy and security/UAT evidence. A global Alert Intelligence Summary remains visible while one tabbed workspace uses the shared KAORI Content Tabs (server-owned link mode) for Alert Records, Correlation & Guidance, Notification Delivery, and Evidence & Ownership. Tabs appear before a compact shared Operational Context (domain/asset/source), while Alert Records owns its own auto-refreshing search/severity/state filters and Reset Filters action with no Apply button. Active section content stays inside the same workspace surface. Server and HCI enrichment remain **Reserved Plan**.
+- **Alert Intelligence** supports committed recommendation-origin AlertCase browsing for Kubernetes, Object Storage, and **Artifact Registry** (selected enabled/active Registry IntegrationInstance only). Unknown, disabled, or blocked Registry scopes fail closed rather than widening into another domain or all assets. Registry AlertCase browsing is not the same as Registry provider-native alert collection: Alertmanager-first/Metrics Source fallback materialization into Registry Analytics remains a separate workstream (#952). Kubernetes/Object Storage provider alert-source selection continues to prefer Alertmanager with bounded Metrics Source fallback. Committed Recommendations and Rule Catalog definitions provide contextual enrichment without asserting causal correlation. **Registry notification routing is available only through a dedicated, explicitly configured AlertRoutingPolicy with a validated Registry-scoped channel**. The previous implicit default/broadcast path stays disabled, and blocked/disabled/foreign Registry IntegrationInstances are refused. Dev Container UAT and human security acceptance remain pending; this is not official admission. A global Alert Intelligence Summary remains visible while one tabbed workspace uses the shared KAORI Content Tabs (server-owned link mode) for Alert Records, Correlation & Guidance, Notification Delivery, and Evidence & Ownership. Tabs appear before a compact shared Operational Context (domain/asset/source), while Alert Records owns its own auto-refreshing search/severity/state filters and Reset Filters action with no Apply button. Active section content stays inside the same workspace surface. Server and HCI enrichment remain **Reserved Plan**.
 - **Notification Channels** is owned by Integrations, not Intelligence. Alert Intelligence consumes the platform delivery contract while Alertmanager remains the raw alert routing/receiver authority.
 - **Automation Control** is an application-layer orchestration surface. Validated System Runbook activation, deterministic environment bindings, candidate review, decision approval/rejection, deployment-policy configuration, safety controls, readiness evidence, and ordered rollout configuration are governance operations and remain available while infrastructure execution is disabled. Custom runbook authoring is intentionally not production-supported yet. The resolver boundary is independently fail-closed behind `AUTOMATION_EXECUTION_ENABLED=false`; authorization and the worker both enforce it. Execution/verification lifecycle events and decision-governance events are delivered asynchronously through the Integrations-owned Notification Channels contract. Dead-letter executions are immutable and are never replayed with consumed one-time authorization; a retry requires fresh evidence and a new candidate/decision lifecycle.
 
@@ -109,6 +109,22 @@ Dashboard explicitly requests `domain='kubernetes'`, preventing Object Storage f
 into a Kubernetes-only surface. Object Storage Analytics recommendation tabs consume the same Intelligence finding source rather than
 re-implementing these rule conditions.
 
+## Dashboard recommendation action copy
+
+The canonical Intelligence rule catalog may declare an optional `dashboard_action` alongside
+its complete `recommended_action`. This is **authored operational microcopy per rule**,
+not a character-trim, generic action mapping, or a new recommendation evaluator.
+Object Storage and Artifact Registry dashboards display `dashboard_action` when defined,
+falling back to the complete action for unmapped or older findings. Kubernetes retains
+its existing action descriptions.
+
+Write short, specific steps that retain provider/source authority, approval requirements,
+evidence refresh, and necessary conditional wording. Do not turn a conditional policy
+recommendation into an unconditional mutation instruction. The full `recommended_action`,
+impact, detailed evidence and remediation remain owned by Intelligence and available
+through the existing linked Recommendations detail. Shared dashboard card geometry and
+status/priority/ranking/asset scopes stay unchanged.
+
 ## Object Storage Rule Catalog coverage
 
 Rule Catalog now records Object Storage definitions as canonical `object_storage.*` rules with explicit
@@ -123,7 +139,7 @@ artifacts can coexist without making one backend the Intelligence schema owner.
 
 Firing/resolved delivery evaluates only candidate durable recommendation AlertCases in keyset batches. Closed cases lacking successful prior firing delivery do not qualify for resolved dispatch, even if their per-case completion marker is unset. The resolved completion marker is committed only once every eligible destination from successful prior firing evidence has a successful resolved delivery. A failed channel remains retryable by the same idempotent channel/event key without re-delivering to channels already sent. Previously stranded failed rows can re-enter candidate selection; historical successful resolved cases remain out of the normal dispatch scan.
 
-Channel defaults are permitted only when **no explicit governed routing policy covers the case domain**. A configured but nonmatching/disabled policy must not trigger a broader default broadcast. Registry delivery remains disabled irrespective of read-only AlertCase visibility. The delivery ledger remains authoritative for retry success and channel suppression; no webhook listener is introduced.
+Channel defaults are permitted only when **no explicit governed routing policy covers the case domain**. A configured but nonmatching/disabled policy must not trigger a broader default broadcast. Registry AlertCase delivery is policy-only: no domain-default fallback, no cross-domain policies, and no delivery from invalid/disabled/blocked Registry providers. Delivery requires a current, validated Registry-scoped channel. Local UAT and human acceptance remain pending. The delivery ledger remains authoritative for retry success and channel suppression; no webhook listener is introduced.
 
 ## Alert Intelligence notification delivery
 

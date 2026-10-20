@@ -9,7 +9,7 @@ from typing import Any
 from flask import current_app
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
-from sqlalchemy import or_, text
+from sqlalchemy import func, or_, text
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload
@@ -316,20 +316,50 @@ def get_reveal_target_context(
     }
 
 
+@dataclass(frozen=True, slots=True)
+class PendingRevealPagination:
+    page: int = 1
+    per_page: int = 5
+
+
 def get_reveal_page_context(
     *,
     user_id: int,
     can_approve: bool,
     my_page: int = 1,
     my_per_page: int = 5,
-    pending_page: int = 1,
-    pending_per_page: int = 5,
+    my_search: str = '',
+    my_status: str = '',
+    my_sort: str = 'newest',
+    pending_pagination: PendingRevealPagination = PendingRevealPagination(),
 ) -> dict[str, Any]:
     _expire_stale_requests()
 
-    my_query = SecretRevealRequest.query.filter_by(
-        requester_user_id=user_id,
-    ).order_by(SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc())
+    # Restrict to the requester first; filtering is SQL-backed and never reads Secret values.
+    search = str(my_search or '').strip()[:120]
+    allowed_statuses = {'pending', 'approved', 'revealed', 'denied', 'expired'}
+    state_filter = str(my_status or '').strip().lower()
+    if state_filter not in allowed_statuses:
+        state_filter = ''
+    ordering = 'oldest' if my_sort == 'oldest' else 'newest'
+
+    my_query = SecretRevealRequest.query.filter_by(requester_user_id=user_id)
+    if search:
+        search_term = search.lower()
+        my_query = my_query.filter(
+            or_(
+                func.lower(SecretRevealRequest.secret_name).contains(search_term, autoescape=True),
+                func.lower(SecretRevealRequest.key_name).contains(search_term, autoescape=True),
+                func.lower(SecretRevealRequest.namespace).contains(search_term, autoescape=True),
+                func.lower(SecretRevealRequest.ticket_reference).contains(search_term, autoescape=True),
+            )
+        )
+    if state_filter:
+        my_query = my_query.filter(SecretRevealRequest.status == state_filter)
+    if ordering == 'oldest':
+        my_query = my_query.order_by(SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc())
+    else:
+        my_query = my_query.order_by(SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc())
     my_requests, my_window = paginate_query(my_query, page=my_page, per_page=my_per_page)
     # Preserve the existing Reveal template keys without keeping a separate
     # page-size policy or a second hand-written pagination algorithm.
@@ -349,18 +379,18 @@ def get_reveal_page_context(
         )
         pending_requests, pending_window = paginate_query(
             pending_query,
-            page=pending_page,
-            per_page=pending_per_page,
+            page=pending_pagination.page,
+            per_page=pending_pagination.per_page,
         )
     else:
         pending_window = pagination_payload(
             build_pagination_window(
                 total_items=0,
-                page=pending_page,
-                per_page=pending_per_page,
+                page=pending_pagination.page,
+                per_page=pending_pagination.per_page,
             )
         )
-    pending_pagination = {
+    pending_pagination_payload = {
         **pending_window,
         'total': pending_window['total_items'],
         'pages': pending_window['total_pages'],
@@ -378,8 +408,9 @@ def get_reveal_page_context(
         'clusters': get_reveal_clusters(),
         'my_reveal_requests': my_requests,
         'my_reveal_pagination': my_pagination,
+        'my_reveal_filters': {'search': search, 'status': state_filter, 'sort': ordering},
         'pending_reveal_requests': pending_requests,
-        'pending_reveal_pagination': pending_pagination,
+        'pending_reveal_pagination': pending_pagination_payload,
         'reveal_policies': REVEAL_NAMESPACE_POLICIES,
         'reveal_window_seconds': int(current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15)),
     }

@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -62,8 +63,8 @@ def test_user_management_posture_matches_permission_registry_overview_structure(
         assert label in summary
     for label in ('Local Database', 'Directory', 'SSO Providers', 'Deleted & Restore'):
         assert label in summary
-    assert 'Restore returns Deleted → Inactive' in summary
-    assert 'never reactivates access' in summary
+    assert 'Restore: Deleted → Inactive' in summary
+    assert 'manual activation' in summary
     assert "'deleted': int(deleted_users or 0)" in directory
 
 
@@ -241,12 +242,252 @@ def test_reset_password_reuses_shared_security_surface_authority() -> None:
     assert 'Minimum 12 characters' in template
     assert 'data-operation-submit' in template
     assert 'data-loading-label="Resetting password..."' in template
-    assert 'existing sessions are revoked through the credential session generation' in template
-    assert (
-        'Role assignment, active state, Super Admin status, and external identity links remain unchanged.' in template
-    )
+    assert 'sessions revoked on next request' in template
+    assert 'Activity Audit logged' in template
+    assert 'Role, active state, Super Admin, and external identity links unchanged.' in template
     assert 'Use the recovery workflow owned by the authoritative identity source.' in template
     assert "Use Google's account-recovery process." in template
     assert 'Recover access through GitHub.' in template
     assert 'xl:sticky xl:top-5' in template
     assert template_path not in baseline['files']
+
+
+def test_reset_password_laptop_copy_density_preserves_security_semantics() -> None:
+    import re
+
+    from jinja2 import Environment
+
+    template = read('app/templates/access/users/reset_password.html')
+    Environment().parse(template)
+    expected = (
+        ('Use 12+ characters, a unique passphrase, and no default passwords.', 72),
+        (
+            'Hash replaced; sessions revoked on next request; Activity Audit logged. '
+            'Role, active state, Super Admin, and external identity links unchanged.',
+            150,
+        ),
+        ('KAORI owns local password hashes and audited resets.', 70),
+        ('Sessions and remembered sign-ins are invalidated on next request.', 80),
+        (
+            'Reset at the authoritative directory. KAORI stores identity links '
+            'and authorization, not external passwords.',
+            115,
+        ),
+        ('RBAC role and admin tier remain; hash and session generation change.', 75),
+    )
+    for copy, budget in expected:
+        assert len(copy) <= budget
+        assert template.count(copy) == 1
+        caption = re.search(r'<p class="([^"]+)">\s*' + re.escape(copy), template)
+        assert caption, copy
+        assert 'text-xs leading-5' in caption.group(1)
+        assert not any(token in caption.group(1) for token in ('whitespace-nowrap', 'truncate', 'line-clamp'))
+
+    for preserved in (
+        'Minimum 12 characters',
+        'form.hidden_tag()',
+        "operational_callout.semantic_surface_classes('warning')",
+        "operational_callout.semantic_surface_classes('normal')",
+        'Revoked on Next Request',
+        'Reset Password',
+        "Use Google's account-recovery process.",
+        'Recover access through GitHub.',
+    ):
+        assert preserved in template
+
+
+def test_uat_user_lifecycle_controls_use_shared_protected_header_geometry() -> None:
+    form = read('app/templates/access/users/form.html')
+    scope = form.split('Lifecycle & Administrative Controls', 1)[1].split(
+        "{% if mode == 'edit' and user and user.is_super_admin %}", 1
+    )[0]
+    assert scope.count('rounded-lg border border-brand-outline bg-kaori-soft px-3.5') == 3
+    assert 'for="{{ form.role_id.id }}"' in scope
+    assert '{{ form.role_id(class=' in scope
+    assert '{{ form.is_active(class=' in scope
+    assert '{{ form.is_super_admin(class=' in scope
+    assert 'can_manage_admin_fields and super_admin_eligible' in scope
+    assert 'Super Admin unavailable' in scope
+    for copy in (
+        'Admin roles require Super Admin.',
+        'Allows sign-in when the provider is ready; disabling retains the account.',
+        'Local Database break-glass authority; the last active Super Admin stays protected.',
+    ):
+        assert copy in scope
+    assert 'Role, active state, and administrative tier are presented with the same control structure.' not in scope
+    assert 'bg-surface-elevated px-3.5' not in scope
+    assert 'text-kaori-strong' in scope
+    # Shared violet geometry must not change actual super-admin eligibility or safeguards.
+    assert "mode == 'edit' and user and user.is_super_admin" in form
+    assert 'Protected Super Admin Account' in form
+    assert 'last active Local Database super admin remains protected' in form
+
+
+def test_uat4_user_create_copy_is_compact_and_canonical() -> None:
+    form = read('app/templates/access/users/form.html')
+    assert 'Optional; defaults to username.' not in form
+    assert 'Assigns post-login RBAC permissions.' not in form
+    assert '12+ characters; use a unique passphrase.' not in form
+    assert 'KAORI owns local passwords; Directory and SSO use provider-owned admission.' in form
+    assert "Use the provider's admission workflow." in form
+    assert 'Identity and authorization stay separate.' in form
+    assert 'Provider sign-in; KAORI governs roles and lifecycle.' in form
+    assert (
+        '<strong class="font-semibold text-content-secondary">Assigned Role</strong> sets KAORI permissions after sign-in.'
+        in form
+    )
+    assert (
+        '<strong class="font-semibold text-content-secondary">Active Account</strong> gates Local, Directory and SSO access.'
+        in form
+    )
+    assert (
+        '<strong class="font-semibold text-content-secondary">Super Admin</strong> is Local Database-only, never Directory/SSO; keep one active.'
+        in form
+    )
+    assert 'if not can_manage_admin_fields' in form
+    assert 'Admin roles require Super Admin.' in form
+    assert 'can_manage_admin_fields and super_admin_eligible' in form
+    assert '{{ form.role_id(class=' in form
+    assert '{{ form.display_name(class=' in form
+    assert '{{ form.is_super_admin(class=' in form
+    assert 'whitespace-nowrap' not in form
+
+
+def test_uat6_user_edit_copy_balances_context_specific_credential_text() -> None:
+    form = read('app/templates/access/users/form.html')
+    directory = read('app/access/users/directory.py')
+
+    # Credential Detail is the long, authoritative two-line explanation in
+    # User Detail; the narrower violet edit card has a separate short caption.
+    assert (
+        "'KAORI stores the local password hash and manages resets through its governed, audited workflow.'" in directory
+    )
+    assert '"KAORI owns local password hashes and resets." if user.auth_source == "database"' in form
+    assert 'else identity_context.credential_detail' in form
+    assert '{{ identity_context.credential_detail }}' in form
+
+    # Edit User: two-line-friendly link/boundary and 01/02 step descriptions.
+    assert 'Review account state, source and role.' in form
+    assert 'KAORI owns Local Database credentials, audited resets, and the account access lifecycle.' in form
+    assert (
+        'Identity profile</strong> updates username, display name and contact email without changing credential ownership.'
+        in form
+    )
+    assert (
+        'Assigned Role</strong> changes KAORI RBAC permissions without modifying upstream identity or authentication credentials.'
+        in form
+    )
+    assert 'Identity profile updates the KAORI display name' not in form
+    assert 'Assigned Role</strong> changes RBAC permissions without changing the upstream identity.' not in form
+
+    # Do not relax the unchanged edit guards, projection/read authority or URL.
+    assert "identity_context.source_family == 'directory'" in form
+    assert "current_user.has_permission('identity_providers.view')" in form
+    assert "user.auth_source == 'database'" in form
+    assert "url_for('users.index')" in form
+    assert 'can_manage_admin_fields and super_admin_eligible' in form
+    assert 'whitespace-nowrap' not in form
+
+
+def test_uat_review2_user_form_guide_and_delete_copy() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/access/users/form.html')
+    users = read('app/templates/access/users/index.html')
+    Environment().parse(form)
+    Environment().parse(users)
+
+    assert '{% import "components/info_tip.html" as info_tip %}' in form
+    assert "info_tip.render('add-user-credential-guide'," in form
+    assert "variant='guide'" in form
+    assert "placement='right'" in form
+    assert "if mode == 'create'" in form
+    assert 'Use at least 12 characters and a unique passphrase.' in form
+    assert 'Confirm the initial password exactly before creating the account.' in form
+    assert '12+ characters; use a unique passphrase.</p>' not in form
+    assert 'Repeat the initial password exactly before submitting the account.</p>' not in form
+    assert 'autocomplete="new-password"' in form
+    assert 'form.confirm_password(' in form
+    assert 'Minimum 12 characters' in form
+    assert 'form.password(' in form
+    assert 'KAORI changes enter Activity Audit.' in form
+    assert 'Manage external identity providers and admission.' in form
+    assert 'Login access will be disabled while Activity Audit history remains retained.' not in users
+    assert 'Deletion disables login but retains Activity Audit.' in users
+    assert 'Restore returns the account to Inactive; activation remains separate.' in users
+    assert "destructive_confirmation.render('delete-user-modal'," in users
+
+
+def test_uat_review2_edit_profile_guide_and_user_registry_copy() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/access/users/form.html')
+    users = read('app/templates/access/users/index.html')
+    Environment().parse(form)
+    Environment().parse(users)
+    assert 'Review account state, source and role.' in form
+    assert 'KAORI owns Local Database credentials, audited resets, and the account access lifecycle.' in form
+    assert "info_tip.render('edit-user-self-access-guide'," in form
+    assert 'Own access controls are locked.' in form
+    assert 'Profile metadata may be updated, but your own role, active state' in form
+    assert "variant='guide'" in form
+    assert '{% if is_self_edit %}' in form
+    assert "notice='Soft delete; restoration is governed.'" in users
+    assert 'Deletion disables login but retains Activity Audit.' in users
+    assert 'Restore returns the account to Inactive; activation remains separate.' in users
+    assert 'whitespace-nowrap' not in users
+
+
+def test_review3_local_database_credential_boundary_targets_two_desktop_lines() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/access/users/form.html')
+    Environment().parse(template)
+    boundary = 'KAORI owns Local Database credentials, audited resets, and the account access lifecycle.'
+    assert template.count(boundary) == 1
+    assert "user.auth_source == 'database'" in template
+    assert "related_page_card.render('User Registry'" in template
+    assert 'whitespace-nowrap' not in template
+    assert len(boundary) >= 75
+
+
+def test_access_user_and_reset_password_fields_keep_explicit_labels() -> None:
+    from jinja2 import Environment
+
+    entries = (
+        (
+            'app/templates/access/users/form.html',
+            (
+                ('Username', 'username'),
+                ('Email', 'email'),
+                ('Display Name', 'display_name'),
+                ('Initial Password', 'password'),
+                ('Confirm Password', 'confirm_password'),
+            ),
+        ),
+        (
+            'app/templates/access/users/reset_password.html',
+            (
+                ('New password', 'password'),
+                ('Confirm password', 'confirm_password'),
+            ),
+        ),
+    )
+    for path, labels in entries:
+        template = read(path)
+        Environment().parse(template)
+        for label, field_name in labels:
+            expected = (
+                f'<label for="{{{{ form.{field_name}.id }}}}" '
+                'class="mb-1.5 block text-sm font-semibold text-content-primary">'
+                f'{label}</label>'
+            )
+            assert len(re.findall(re.escape(expected).replace(r'\ ', r'\s+'), template)) == 1
+
+    user_form = read('app/templates/access/users/form.html')
+    reset_form = read('app/templates/access/users/reset_password.html')
+    assert 'for="{{ form.role_id.id }}"' in user_form
+    assert 'form.hidden_tag()' in user_form
+    assert 'form.hidden_tag()' in reset_form
+    assert 'data-operation-submit' in user_form
+    assert 'data-operation-submit' in reset_form

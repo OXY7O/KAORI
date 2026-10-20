@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from sqlalchemy import case, func, or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import joinedload
 
 from app.common.pagination import paginate_query
@@ -19,6 +19,7 @@ from app.kubernetes.tenant.resource_profile_controls import (
     _tenant_capability_statuses,
     evaluate_resource_profile_advanced_controls,
 )
+from app.kubernetes.tenant.resource_profile_rollout_context import _resource_profile_rollout_targets
 from app.kubernetes.tenant.service_contracts import (
     _ALLOWED_ENVIRONMENTS,
     _ALLOWED_PROFILE_CLASSES,
@@ -149,68 +150,6 @@ def get_namespace_provisioning_support_context() -> dict[str, Any]:
             for environment in environment_options
         },
     }
-
-
-def _resource_profile_rollout_targets(profile_ids: list[int]) -> dict[int, list[dict[str, Any]]]:
-    if not profile_ids:
-        return {}
-
-    rows = (
-        db.session.query(
-            TenantNamespace.resource_profile_id,
-            Tenant.id,
-            Tenant.name,
-            Tenant.provider_key,
-            func.count(TenantNamespace.id),
-            func.sum(
-                case(
-                    (
-                        or_(
-                            TenantNamespace.resource_profile_version.is_(None),
-                            TenantNamespace.resource_profile_version != TenantResourceProfile.version,
-                        ),
-                        1,
-                    ),
-                    else_=0,
-                )
-            ),
-        )
-        .join(TenantEnvironment, TenantEnvironment.id == TenantNamespace.tenant_environment_id)
-        .join(Tenant, Tenant.id == TenantEnvironment.tenant_id)
-        .join(TenantResourceProfile, TenantResourceProfile.id == TenantNamespace.resource_profile_id)
-        .filter(
-            TenantNamespace.resource_profile_id.in_(profile_ids),
-            TenantNamespace.provisioning_status.notin_(
-                (
-                    TenantNamespaceProvisioningStatus.DEPROVISIONED.value,
-                    TenantNamespaceProvisioningStatus.RELEASED.value,
-                )
-            ),
-        )
-        .group_by(
-            TenantNamespace.resource_profile_id,
-            Tenant.id,
-            Tenant.name,
-            Tenant.provider_key,
-        )
-        .order_by(Tenant.name.asc())
-        .all()
-    )
-
-    result: dict[int, list[dict[str, Any]]] = {profile_id: [] for profile_id in profile_ids}
-    for profile_id, tenant_id, tenant_name, provider_key, count, outdated in rows:
-        if profile_id is None:
-            continue
-        result.setdefault(int(profile_id), []).append(
-            {
-                'tenant_id': str(tenant_id),
-                'tenant_name': str(tenant_name),
-                'provider_key': str(provider_key),
-                'namespaces': int(count or 0),
-                'outdated': int(outdated or 0),
-            }
-        )
-    return result
 
 
 _ALLOWED_PAGE_SIZES = (5, 10, 25, 50)

@@ -158,3 +158,182 @@ def test_identity_provider_form_family_reuses_shared_surface_and_semantic_author
         'data-admission-policy',
     ):
         assert hook in selector
+
+
+def test_uat_review2_idp_guidance_preserves_provider_authority_with_concise_copy() -> None:
+    from jinja2 import Environment
+
+    google = read('app/templates/access/identity_providers/providers/google/_guidance.html')
+    guidance = read('app/templates/access/identity_providers/partials/_provider_guidance.html')
+    overview = read('app/templates/access/identity_providers/partials/_overview.html')
+
+    for source in (google, guidance, overview):
+        Environment().parse(source)
+
+    assert "note='Google signs in; KAORI governs access.'" in google
+    assert 'Google authenticates identity; KAORI retains local authorization' not in google
+    assert 'Register this exact URL with the provider.' in guidance
+    assert 'Register this exact scheme, host, path, and provider instance key' not in guidance
+    assert 'data-browser-callback' in guidance
+    assert 'data-callback-key' in guidance
+    assert 'request.url_root.rstrip' in guidance
+    assert "'Provider / Adapter Boundary', 'Distinct Contracts'," in overview
+    assert "'Providers own identity; adapters run sign-in.'" in overview
+    for source in (google, guidance):
+        assert 'whitespace-nowrap' not in source
+        assert 'truncate' not in source
+
+
+def test_uat_review2_ldap_provider_choice_exposes_native_radio_and_visible_selected_feedback() -> None:
+    from jinja2 import Environment
+
+    selector = read('app/templates/access/identity_providers/partials/_provider_selector.html')
+    provider_js = read('app/static/js/identity_provider_form.js')
+    forms = read('app/access/identity_providers/forms.py')
+    catalog = read('app/access/authentication/identity_provider/catalog.py')
+    definitions = read('app/definitions/catalogs/access/authentication/identity_provider/providers.yaml')
+
+    Environment().parse(selector)
+    assert 'type="radio"' in selector
+    assert 'class="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"' in selector
+    assert 'class="peer sr-only"' not in selector
+    assert 'peer-checked:border-kaori-primary' in selector
+    assert 'peer-focus-visible:ring-2' in selector
+    assert 'id="provider-key-{{ definition.provider_key }}"' in selector
+    assert 'for="provider-key-{{ definition.provider_key }}"' in selector
+    assert 'data-provider-option' in selector
+    assert 'data-provider-option-badge' in selector
+    assert 'data-provider-option-status' in selector
+    assert 'data-provider-option-icon="{{ definition.icon }}"' in selector
+    assert 'data-provider-icon="{{ definition.icon }}"' not in selector
+    assert 'data-provider-display-icon' in read(
+        'app/templates/access/identity_providers/partials/_sso_configuration.html'
+    )
+    assert 'input[type="radio"][data-provider-option]' in provider_js
+    assert 'option?.dataset.providerOptionIcon' in provider_js
+    assert '\'[data-configuration-panel="browser_client"] [data-provider-display-icon]\'' in provider_js
+    assert "form.querySelector('[data-provider-icon]')" not in provider_js
+    assert 'lucide.createIcons()' in provider_js
+    assert 'peer-checked:border-kaori-primary/30 peer-checked:text-kaori-primary' not in selector
+    assert "status.textContent = selected ? 'Selected' : 'Select'" in provider_js
+    assert "input.nextElementSibling?.querySelector('[data-provider-option-badge]')" in provider_js
+    assert "input.addEventListener('change', syncProvider)" in provider_js
+    assert 'const visible = panel.dataset.configurationPanel === profile' in provider_js
+    assert 'setControlsEnabled(panel, visible)' in provider_js
+    assert 'configurable_provider_definitions()' in catalog
+    assert 'configurable_provider_choices()' in forms
+    assert 'provider_key: ldap_directory' in definitions
+    assert (
+        'configurable: true'
+        in definitions.split('provider_key: ldap_directory', 1)[1].split('provider_key: google', 1)[0]
+    )
+    assert 'configuration_profile: ldap' in definitions
+    assert 'validate_tls_mode' in forms
+    assert 'Enabled LDAP providers require server, base DN, bind DN, and secret reference.' in forms
+
+
+def test_review3_provider_header_guides_replace_static_input_helpers() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/access/identity_providers/form.html')
+    ldap = read('app/templates/access/identity_providers/partials/_ldap_configuration.html')
+    sso = read('app/templates/access/identity_providers/partials/_sso_configuration.html')
+
+    for template, count in ((form, 1), (ldap, 2), (sso, 2)):
+        Environment().parse(template)
+        assert template.count('info_tip.render(') == count
+        assert template.count("variant='guide'") == count
+        assert template.count("placement='right'") == count
+        assert 'components/info_tip.html' in template
+        assert '{{ helper }}' not in template
+
+    for header in ('Provider Identity and State',):
+        assert header in form
+    for header in ('LDAP Adapter Connection', 'Directory Identity Mapping'):
+        assert header in ldap
+    for header in ('Admission and JIT Provisioning', 'data-browser-title'):
+        assert header in sso
+
+    assert 'data-enabled-copy' in form
+    assert 'form.key.errors' in form and 'form.display_name.errors' in form
+    assert 'form.enabled.errors' in form
+    assert 'form.tls_mode.errors' in ldap
+    assert 'for error in field.errors' in ldap
+    assert 'form.client_id.errors' in sso
+    assert 'form.client_secret_env.errors' in sso
+    assert 'data-admission-help' in sso
+    assert 'data-jit-off-note' in sso
+    assert 'form.jit_enabled.errors' in sso
+    assert 'form.admission_values.errors' in sso
+    assert 'KAORI resolves the secret at runtime' in sso
+    assert '{query} is escaped before substitution' in ldap
+    assert 'plaintext LDAP is blocked' in ldap
+    for source in (form, ldap, sso):
+        assert 'whitespace-nowrap' not in source
+
+
+def test_review3_provider_guidance_steps_and_authority_notes() -> None:
+    from jinja2 import Environment
+
+    github = read('app/templates/access/identity_providers/providers/github/_guidance.html')
+    google = read('app/templates/access/identity_providers/providers/google/_guidance.html')
+    ldap = read('app/templates/access/identity_providers/providers/ldap_directory/_guidance.html')
+    for source in (github, google, ldap):
+        Environment().parse(source)
+        assert 'info_flow.render(' in source
+        assert "note_icon='shield-check'" in source
+        assert 'whitespace-nowrap' not in source
+
+    assert 'Register the exact KAORI callback URL as the authorized OAuth callback' in github
+    assert 'authorized Google redirect URI' in google
+    assert 'runtime environment reference.' in github
+    assert 'runtime environment reference.' in google
+    assert 'non-admin KAORI role' in github and 'approved external subjects' in github
+    assert 'non-admin KAORI role' in google and 'verified email domains' in google
+    assert "note='Directory owns credentials; KAORI governs access.'" in ldap
+    assert "note='Google signs in; KAORI governs access.'" in google
+    assert "note='GitHub signs in; KAORI governs access.'" in github
+    assert 'LDAP' not in github
+
+
+def test_review4_ldap_mapping_example_placeholders_do_not_become_create_defaults() -> None:
+    from jinja2 import Environment
+
+    template = read('app/templates/access/identity_providers/partials/_ldap_configuration.html')
+    forms = read('app/access/identity_providers/forms.py')
+    Environment().parse(template)
+    assert '{% if field == form.user_filter %}sm:col-span-2{% endif %}' not in template
+    assert 'class="block min-w-0"' in template
+    assert 'User Search Filter' in forms and 'TLS Mode' in forms
+    assert 'sm:grid-cols-2' in template
+    samples = {
+        'username_attribute': 'sAMAccountName',
+        'email_attribute': 'mail',
+        'display_name_attribute': 'displayName',
+        'stable_id_attribute': 'objectGUID',
+    }
+    for field, example in samples.items():
+        declaration = next(line for line in forms.splitlines() if line.strip().startswith(f'{field} = StringField('))
+        assert 'default=' not in declaration
+        assert f"(form.{field}, '{example}')" in template
+        assert f"form.{field}.data = config.get('{field}')" in forms
+        assert 'self._require_ldap_attribute(field,' in forms
+    assert 'def validate_tls_mode' in forms
+    assert "if definition.configuration_profile == 'ldap':" in forms
+
+
+def test_review4_provider_guidance_title_descriptions_are_compact() -> None:
+    from jinja2 import Environment
+
+    captions = (
+        ('ldap_directory', 'Directory sign-in; KAORI grants access.'),
+        ('github', 'GitHub sign-in; KAORI grants access.'),
+        ('google', 'Google sign-in; KAORI grants access.'),
+    )
+    for provider, caption in captions:
+        source = read(f'app/templates/access/identity_providers/providers/{provider}/_guidance.html')
+        Environment().parse(source)
+        assert source.count(caption) == 1
+        assert len(caption) <= 42
+        assert 'info_flow.render(' in source
+        assert 'whitespace-nowrap' not in source

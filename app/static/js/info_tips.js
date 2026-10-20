@@ -5,6 +5,23 @@
     const viewportMargin = 12
     const triggerGap = 8
     let active = null
+    let pendingHide = null
+
+    const cancelPendingHide = () => {
+        if (pendingHide !== null) {
+            window.clearTimeout(pendingHide)
+            pendingHide = null
+        }
+    }
+
+    const scheduleHide = () => {
+        cancelPendingHide()
+        // Bridge the trigger-to-portal gap so long Guide content stays scrollable.
+        pendingHide = window.setTimeout(() => {
+            pendingHide = null
+            if (!active?.pinned) hideActive()
+        }, 150)
+    }
 
     const canHover = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches
 
@@ -26,6 +43,7 @@
     }
 
     const hideActive = () => {
+        cancelPendingHide()
         if (!active) return
         restorePreview(active)
         active = null
@@ -59,6 +77,7 @@
 
     const showPreview = (root, { pinned = false } = {}) => {
         if (!(root instanceof HTMLElement)) return
+        cancelPendingHide()
 
         if (active?.root === root) {
             active.pinned = active.pinned || pinned
@@ -80,7 +99,11 @@
             pinned,
         }
 
-        document.body.appendChild(preview)
+        // A modal <dialog> is in the browser top layer. Portal inside that
+        // layer rather than behind it; non-modal Info Tips keep the body portal.
+        const openDialog = root.closest('dialog[open]')
+        const portal = openDialog instanceof HTMLDialogElement ? openDialog : document.body
+        portal.appendChild(preview)
         preview.classList.remove('hidden')
         preview.setAttribute('aria-hidden', 'false')
         preview.style.visibility = 'hidden'
@@ -92,6 +115,10 @@
 
     document.addEventListener('pointerover', (event) => {
         if (!canHover()) return
+        if (event.target instanceof Element && event.target.closest(previewSelector) === active?.preview) {
+            cancelPendingHide()
+            return
+        }
         const root = event.target.closest?.(rootSelector)
         if (!(root instanceof HTMLElement)) return
         if (event.relatedTarget instanceof Node && root.contains(event.relatedTarget)) return
@@ -107,7 +134,7 @@
             if (related instanceof Node && (active.root.contains(related) || active.preview.contains(related))) {
                 return
             }
-            hideActive()
+            scheduleHide()
             return
         }
 
@@ -115,7 +142,7 @@
             if (related instanceof Node && (active.preview.contains(related) || active.root.contains(related))) {
                 return
             }
-            hideActive()
+            scheduleHide()
         }
     })
 
@@ -141,6 +168,8 @@
     document.addEventListener('click', (event) => {
         const trigger = event.target.closest?.(triggerSelector)
         if (trigger instanceof HTMLElement) {
+            // Buttons in a <summary> must open guidance, not toggle the accordion.
+            if (trigger.closest('summary')) event.preventDefault()
             const root = trigger.closest(rootSelector)
             if (!(root instanceof HTMLElement)) return
 
@@ -168,5 +197,13 @@
 
     document.addEventListener('htmx:beforeSwap', hideActive)
     window.addEventListener('resize', hideActive)
-    window.addEventListener('scroll', hideActive, true)
+    window.addEventListener(
+        'scroll',
+        (event) => {
+            // Scrolling a long popover is interaction with the Guide, not dismissal.
+            if (active?.preview && event.target instanceof Node && active.preview.contains(event.target)) return
+            hideActive()
+        },
+        true
+    )
 })()

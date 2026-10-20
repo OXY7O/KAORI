@@ -38,6 +38,11 @@ def test_domain_info_tip_is_owned_by_registry_and_consumer_bindings_parent_heade
     assert "'integration-' ~ domain.key ~ '-workspace-guidance'" in parent_slice
     assert 'domain_guidance_title' in parent_slice
     assert "placement='right'" in parent_slice
+    assert "variant='guide'" in parent_slice
+    # Regression: a title-level section must not silently fall back to the
+    # field-level circle-help trigger. Keep the shared Info Tip controller.
+    assert 'components/info_tip.html' in workspace
+    assert 'info_tip.render(' in parent_slice
 
     binding_header = workspace.split('Consumer Binding Filters', 1)[1].split(
         'Search asset-to-source contracts',

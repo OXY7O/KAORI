@@ -39,7 +39,7 @@ def test_alert_context_filters_submit_one_canonical_form_state() -> None:
     assert 'scoped_cases = [] if scope_invalid else _case_rows(' in service
     assert 'get_case(requested)' not in service
     assert 'Select an Active Registry Provider' in workspace
-    assert "payload.domain == 'registry' and payload.tab == 'routing'" in workspace
+    assert "{% elif payload.tab == 'routing' %}" in workspace
 
 
 def test_registry_alert_intelligence_handoff_and_notification_policy_are_explicit() -> None:
@@ -59,13 +59,15 @@ def test_registry_alert_intelligence_handoff_and_notification_policy_are_explici
     assert 'scope_invalid = selected_asset_key == _INVALID_REGISTRY_SCOPE' in service
     assert '{% if payload.scope_invalid %}' in workspace
     assert 'Select an Active Registry Provider' in workspace
-    assert "payload.domain == 'registry' and payload.tab == 'routing'" in workspace
-    assert 'Registry Notification Routing Is Not Enabled' in workspace
+    assert "{% elif payload.tab == 'routing' %}" in workspace
+    assert "if 'registry' in normalized_domains and len(normalized_domains) != 1:" in routing
+    assert 'return []  # Registry requires an explicit enabled policy; never default-broadcast.' in routing
+    assert "not domain_event_allowed('registry', 'alert_ops.firing')" in routing
     assert 'get_case(requested)' not in service
     assert 'return next((case for case in rows if case.public_id == requested), None)' in service
     assert "payload.get('selected_case') is None" in route_support
     assert "return ('Alert case not found.', 404)" in route_support
-    assert "if 'registry' in config.domains:" in routing
+    assert "if 'registry' in normalized_domains and set(config.channel_ids) != valid_channels:" in routing
     assert "if case.domain == 'registry':" in routing
     assert "if case.domain == 'registry':" in notifications
     assert "'domain': case.domain, 'asset': case.asset_key, 'case': case.public_id" in notifications

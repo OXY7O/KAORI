@@ -5,6 +5,7 @@
 {% if items %}
     <div class="hidden lg:block">
         <table class="w-full table-fixed text-left text-sm text-content-secondary">
+            <caption class="sr-only">Intelligence recommendations, evidence and alert handling</caption>
             <colgroup>
                 <col class="w-[30%]">
                 <col class="w-[19%]">
@@ -15,12 +16,12 @@
             </colgroup>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }}">Recommendation</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Affected Scope</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Evidence</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Alert Handling</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Priority</th>
-                    <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Recommendation</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Affected Scope</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Evidence</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Alert Handling</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Priority</th>
+                    <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">

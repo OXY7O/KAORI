@@ -368,3 +368,40 @@ def test_permission_effective_usage_excludes_inactive_role_assignments() -> None
     }
     assert _role_impact([active_role], enabled_jit_providers_by_role={})['active_user_count'] == 1
     assert _role_impact([], enabled_jit_providers_by_role={})['active_user_count'] == 0
+
+
+def test_uat_role_coverage_result_count_matches_permission_registry_title_placement() -> None:
+    registry = read('app/templates/access/permissions/partials/_registry.html')
+    coverage = read('app/templates/access/permissions/partials/_coverage.html')
+    for source, title in ((registry, 'Permission Registry'), (coverage, 'Role Coverage')):
+        header = source.split('</header>', 1)[0]
+        assert header.index(f'>{title}</h2>') < header.index('table_label.result_count(matching_count)')
+        assert header.index('table_label.result_count(matching_count)') < header.index(
+            'table_ui.block_description_classes()'
+        )
+        assert header.count('table_label.result_count(matching_count)') == 1
+    assert "matching_count ~ ' Matching '" not in coverage
+    workspace = read('app/templates/access/permissions/partials/_workspace.html')
+    assert 'result_count(' not in workspace
+
+
+def test_uat_laptop_permission_overview_descriptions_fit_compact_cards() -> None:
+    source = read('app/templates/access/permissions/index.html')
+    metric_copy = (
+        'Code-owned authorization contracts.',
+        'Source-owned control modules.',
+        'Local Database Super Admin-only delegation.',
+        'Code/database drift needs review.',
+    )
+    boundary_copy = (
+        'Code owns permissions and delegation.',
+        'Code-owned dependencies auto-expand.',
+        'Server-side guards enforce access.',
+    )
+    for phrase in (*metric_copy, *boundary_copy):
+        assert phrase in source
+        assert len(phrase) <= 48
+    assert 'summary.unused_contracts' in source
+    assert 'summary.access_administration_contracts' in source
+    assert 'summary.drift_count' in source
+    assert 'whitespace-nowrap' not in source

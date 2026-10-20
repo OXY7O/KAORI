@@ -55,10 +55,11 @@ def _user_supporting_text(summary: dict[str, Any]) -> str:
             f'{summary["access_review"]} account admission issue(s) require review across RBAC, '
             'external identity, or emergency-access state.'
         )
-    return (
-        f'{summary["total"]} registered account(s) with {summary["active_super_admins"]} active Local Database '
-        'break-glass super admin(s).'
-    )
+    total = summary['total']
+    admin_count = summary['active_super_admins']
+    account_suffix = '' if total == 1 else 's'
+    admin_suffix = '' if admin_count == 1 else 's'
+    return f'{total} account{account_suffix} · {admin_count} active Local DB break-glass admin{admin_suffix}.'
 
 
 def _identity_provider_supporting_text(summary: dict[str, Any]) -> str:
@@ -85,7 +86,7 @@ def _role_supporting_text(summary: dict[str, Any]) -> str:
             f'{summary["inactive_assigned_users"]} user assignment(s) point to inactive roles '
             'and therefore fail closed.'
         )
-    return 'Protected defaults match the source-controlled baseline; custom role delegation remains ceiling-bound.'
+    return 'Protected defaults aligned; delegation capped.'
 
 
 def _permission_supporting_text(summary: dict[str, Any]) -> str:
@@ -147,7 +148,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Identity Lifecycle',
-                'description': 'User Management owns account state, role assignment, and break-glass authority.',
+                'description': 'Users owns state, roles and break-glass authority.',
                 'status_label': users['posture_label'],
                 'status_tone': users['posture_tone'],
             }
@@ -177,9 +178,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Authentication Sources',
-                'description': (
-                    'Identity Providers owns external source configuration, admission policy, and projection.'
-                ),
+                'description': ('Identity Providers governs external sign-in and admission.'),
                 'status_label': providers['posture_label'],
                 'status_tone': providers['posture_tone'],
             }
@@ -232,9 +231,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Authorization Policy',
-                'description': (
-                    'Roles assign code-owned permissions; inactive roles fail closed and registry drift is explicit.'
-                ),
+                'description': ('Roles enforce code permissions; inactive roles deny access.'),
                 'status_label': 'Review Required' if authorization_review else 'Current',
                 'status_tone': 'warning' if authorization_review else 'normal',
             }
@@ -266,10 +263,7 @@ def build_access_overview() -> dict[str, Any]:
         boundaries.append(
             {
                 'title': 'Audit Evidence',
-                'description': (
-                    'Activity Audit preserves Notification-backed Activity Register evidence and its actor snapshots; '
-                    'other administrative sources retain their own scope and permissions.'
-                ),
+                'description': ('Audit actor snapshots; other sources stay gated.'),
                 'status_label': activity['posture_label'],
                 'status_tone': activity['posture_tone'],
             }

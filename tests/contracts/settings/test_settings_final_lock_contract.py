@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -82,6 +83,28 @@ def test_settings_query_tabs_delegate_to_shared_htmx_tab_authority() -> None:
     assert "hx_target='#account-authentication-page'" in account
     assert "hx_indicator='#account-settings-loading'" in account
     assert "hx_sync='#account-authentication-page:replace'" in account
+
+    # Superseding UAT-1: no Settings loading bars anywhere in Account/General.
+    for section, status_id, partials in (
+        (
+            'general',
+            'general-settings-loading',
+            ('_time_locale.html', '_regional_format.html', '_system_information.html', '_compatibility_versions.html'),
+        ),
+        (
+            'account',
+            'account-settings-loading',
+            ('_profile_cards.html', '_recent_login_activity.html', '_change_password.html'),
+        ),
+    ):
+        page = read(f'app/templates/settings/{section}/partials/_page_content.html')
+        assert 'loading_bar.render(' not in page
+        assert re.search(rf'id="{status_id}"\s+class="htmx-indicator sr-only"', page) is not None
+        assert 'role="status"' in page
+        for partial in partials:
+            source = read(f'app/templates/settings/{section}/partials/{partial}')
+            assert 'components/loading_bar.html' not in source
+            assert 'loading_bar.render(' not in source
 
     assert "workspace_tabs = read('app/templates/components/workspace_tabs.html')" in verifier
     assert 'render_query_tabs' in verifier

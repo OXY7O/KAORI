@@ -466,3 +466,37 @@ def test_generate_report_runtime_updates_lucide_svg_classes_safely() -> None:
     assert 'previewEligibilityIcon.className =' not in runtime
     assert "statusIcon.setAttribute(\n                    'class'," in runtime
     assert "readinessSummaryIcon.setAttribute(\n                    'class'," in runtime
+
+
+def test_wizard_footer_actions_compose_shared_button_variants_and_keep_js_visibility() -> None:
+    from jinja2 import Environment
+
+    template = read(TEMPLATE)
+    runtime = read(RUNTIME)
+    Environment().parse(template)
+    assert '{% import "components/action_button.html" as action_button %}' in template
+    footer = template.split('<footer class="flex flex-col gap-3 border-t', 1)[1].split('</footer>', 1)[0]
+    assert "action_button.classes('secondary')" in footer
+    assert footer.count("action_button.classes('secondary')") == 2
+    assert footer.count("action_button.classes('primary')") == 2
+    assert 'class="hidden {{ action_button.classes(' in footer
+    for marker in (
+        'wizard-back-button',
+        'wizard-next-button',
+        'generate-report-button',
+        'data-operation-submit',
+        'data-loading-label="Queueing report..."',
+        'initial_request_ready',
+        'disabled',
+    ):
+        assert marker in footer
+    for token in (
+        "wizardBackButton.classList.toggle('hidden'",
+        "wizardBackButton.classList.toggle('inline-flex'",
+        "wizardNextButton.classList.toggle('hidden'",
+        "wizardNextButton.classList.toggle('inline-flex'",
+        "generateButton.classList.toggle('hidden'",
+        "generateButton.classList.toggle('inline-flex'",
+    ):
+        assert token in runtime
+    assert 'min-h-9 items-center justify-center' not in footer

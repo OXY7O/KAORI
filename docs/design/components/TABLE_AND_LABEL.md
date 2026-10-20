@@ -133,7 +133,7 @@ A compact icon + border treatment is an explicit exception for a special posture
 
 Labels remain brief, such as `Ready`, `Degraded`, `Pending`, `Not Observed`, or `Disabled`. Longer evidence belongs outside the label.
 
-For registries with a shared status vocabulary, keep each row to the semantic label and explain the vocabulary once with the existing `info_tip` in the **block header action area**. Do not repeat generic `Details`/info controls beside every status label. This keeps status columns scannable and keeps tooltip content outside the table scroll container. A row-level detail action is reserved for genuinely row-specific operational evidence that cannot be represented by the shared status glossary.
+For registries with a shared status vocabulary, keep each row to the semantic label and explain the vocabulary once with the shared `info_tip` **immediately beside the registry title** through the header `title_extra` slot (`variant='guide'`). Header action areas remain for operational controls, not help. Do not repeat generic `Details`/info controls beside every status label. This keeps status columns scannable and keeps tooltip content outside the table scroll container. A row-level detail action is reserved for genuinely row-specific operational evidence that cannot be represented by the shared status glossary.
 
 ## 10. Table actions
 
@@ -155,6 +155,8 @@ Standard:
 Examples: `Open`, `View Details`, `Edit`, `Retry Sync`, `Run Now`, `Approve`, `Deny`, and `Archive`.
 
 All ordinary non-CRUD table actions share one neutral utility appearance and the same hover, focus, disabled, and active behavior. Do not assign different colors to `Open`, `View Details`, `Manage`, `Retry`, `Validate`, or similar routine controls merely to distinguish their labels.
+
+Artifact Registry Security provides reviewed reference actions: `View More` inside vulnerability rows and `Open Runtime Usage` in the registry block header both use `table_ui.action_classes()`. The header action remains in the shared `inventory_block_header(..., header_actions=...)` group, while the row action retains its modal/navigation semantics. They reference the existing shared primitive; consumers must not copy their classes into page templates. In the same registry, conditional `Clear Filters` leads the header actions and the contextual `Guide` belongs beside the registry title through `title_extra`.
 
 CRUD actions may use semantic treatment when needed: `Create` normally belongs at block or page level; `Edit` may remain neutral or use the standard mutation treatment; `Delete` uses Critical styling. The geometry must remain consistent across all variants.
 
@@ -265,3 +267,15 @@ The table standard is a consistency system, not a requirement to decorate every 
 ### Dense action groups
 
 When a registry row exposes several icon-only actions, do not rely on `flex-wrap` because the controls can fall into asymmetric layouts as column width changes. Use the shared `table_ui.action_grid_classes(2)` primitive for a compact two-column action block. Keep individual controls on `table_ui.action_classes()` so size, border, hover, focus, disabled, and destructive states remain canonical.
+
+## REVIEW(6) — Compact provider-card action exception (#2328)
+
+Provider-card Guide and Configure are **compact disclosure/configuration
+launchers**, not primary workflow completion buttons. They use the existing
+`table_primitives.action_classes(size='header')` semantic utility family:
+36px minimum height (matching the Channel Registry Add Channel launcher),
+soft Violet hover, visible focus, icon-first and readable labels. The
+existing default `action_classes()` continues to own 32px row utilities,
+and the global 40px `action_button.classes` primary/secondary contract is
+unchanged. This is a bounded compact utility exception, not a global
+relaxation of dark-mode primary-action contrast.

@@ -66,8 +66,11 @@ def test_released_history_is_excluded_from_active_counters_and_discovery() -> No
     assert 'TenantNamespaceProvisioningStatus.RELEASED.value' in context
     assert "'decommissioned', 'released'" in summary
     assert "'deprovisioned', 'released'" in summary
-    assert "('deprovisioned', 'released')" in discovery
-    assert "('decommissioned', 'released')" in discovery
+    assert (
+        'TenantNamespaceProvisioningStatus.DEPROVISIONED.value, TenantNamespaceProvisioningStatus.RELEASED.value'
+        in discovery
+    )
+    assert 'TenantLifecycleStatus.DECOMMISSIONED.value, TenantLifecycleStatus.RELEASED.value' in discovery
 
 
 def test_released_history_is_excluded_from_capacity_and_inventory_sync() -> None:

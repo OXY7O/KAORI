@@ -177,7 +177,7 @@ def test_release_evidence_is_readable_full_width_without_nested_scroll():
     for label in (
         'Scope readiness',
         'Provider handoff scope',
-        'Independent approval and handoff',
+        'Independent Approval and Handoff',
         "('finalize', 'Verify & Finalize', 'Read-back & Release')",
         'aria-label="Release blockers"',
         'aria-label="Provider handoff inventory"',
@@ -260,13 +260,108 @@ def test_release_handoff_inventory_is_structured_with_full_on_demand_identifiers
     assert '<form ' not in handoff
 
 
+def test_release_wizard_actions_are_compact_on_desktop_and_full_width_on_mobile():
+    detail = read(DETAIL)
+    Environment().parse(detail)
+    release = detail.split('id="tenant-release-governance"', 1)[1].split('id="tenant-native-handback"', 1)[0]
+
+    # Step 1 keeps its full-width evidence surface and responsive primary CTA;
+    # Step 2 is an evidence-only inventory with no mutation forms.
+    stage_one = release.split('id="tenant-release-stage-inventory"', 1)[0]
+    stage_two = release.split('id="tenant-release-stage-inventory"', 1)[1].split(
+        "{% elif tenant_release_step == 'approval' %}", 1
+    )[0]
+    assert 'aria-label="Committed Release review status"' in stage_one
+    assert 'w-full shrink-0 sm:w-auto' in stage_one
+    assert '<form ' not in stage_two
+
+    forms = re.findall(r'<form\b.*?</form>', release, flags=re.DOTALL)
+    assert len(forms) == 20
+    assert 'tenant.review_tenant_release_route' in forms[0]
+    for form in forms[1:]:
+        opening = form.split('>', 1)[0]
+        assert re.search(r'class="[^"]*\bw-full\b', opening)
+        button = re.search(r'<button type="submit"\s+class="([^"]+)"', form)
+        assert button is not None
+        assert {'w-full', 'sm:w-auto'}.issubset(button.group(1).split())
+        assert 'hx-post=' in form
+        assert 'name="csrf_token"' in form
+        assert 'name="tenant_release_step"' in form
+
+    # Short input forms use the narrower preset, while confirmation panels
+    # retain adequate space for complete permission and provider scope copy.
+    prepare = next(form for form in forms if 'tenant.prepare_tenant_release_handoff_route' in form)
+    assert 'w-full max-w-xl' in prepare.split('>', 1)[0]
+    assert 'name="successor_owner"' in prepare
+    assert 'name="change_reference"' in prepare
+    for route, expected_layout in (
+        ('tenant.accept_native_successor_handoff_route', 'w-full mt-3 space-y-3'),
+        ('tenant.execute_native_release_handoff_route', 'lg:w-3/5'),
+        ('tenant.finalize_verified_native_release_route', 'max-w-4xl'),
+        ('tenant.finalize_verified_capsule_release_route', 'max-w-2xl'),
+    ):
+        form = next(item for item in forms if route in item)
+        assert expected_layout in form.split('>', 1)[0]
+
+    # The Step 4 flex-column fallback CTA must not stretch on desktop.
+    fallback = next(form for form in forms if 'tenant.release_tenant_governance_route' in form)
+    assert 'w-full sm:w-auto self-start' in fallback
+    assert 'id="tenant-release-stage-finalize"' in release
+
+
+def test_release_step_three_preparation_uses_balanced_governance_panels():
+    detail = read(DETAIL)
+    Environment().parse(detail)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    preparation = approval.split("{% if row.release_handoff_preparation_state == 'available'", 1)[1].split(
+        '{% else %}', 1
+    )[0]
+
+    # Match the existing Step 4 3:2 panel pattern without constraining other
+    # approved, blocked, expired or provider-recovery evidence branches.
+    assert approval.count('data-release-handoff-preparation-layout') == 1
+    assert 'data-release-handoff-preparation-layout' in preparation
+    assert 'lg:grid-cols-5' in preparation
+    assert 'lg:col-span-3' in preparation
+    assert 'lg:col-span-2' in preparation
+    assert preparation.count('<section ') == 2
+    assert 'aria-labelledby="tenant-release-preparation-heading"' in preparation
+    assert 'id="tenant-release-preparation-heading"' in preparation
+    assert 'aria-labelledby="tenant-release-approval-boundaries-heading"' in preparation
+    assert 'id="tenant-release-approval-boundaries-heading"' in preparation
+    assert 'aria-label="Handoff approval sequence"' in preparation
+
+    # The right panel is read-only guidance, never another authorization path,
+    # implicit approval checkbox or invented provider-completion indicator.
+    boundaries = preparation.split('id="tenant-release-approval-boundaries-heading"', 1)[1]
+    assert boundaries.count('<li ') == 3
+    assert '<form ' not in boundaries
+    assert '<button ' not in boundaries
+    assert 'A separate authorized operator must approve this exact plan.' in boundaries
+    assert 'does not verify consent or transfer provider ownership.' in boundaries
+    assert 'Release remains gated by committed verification' in boundaries
+
+    # Original submission stays intact, bounded at desktop and touch-friendly
+    # on mobile; no changes to the requester identity/CSRF/HTMX contract.
+    assert preparation.count('<form ') == 1
+    assert 'tenant.prepare_tenant_release_handoff_route' in preparation
+    assert 'name="csrf_token"' in preparation
+    assert 'name="successor_owner"' in preparation
+    assert 'name="change_reference"' in preparation
+    assert 'w-full max-w-xl mt-3 space-y-2' in preparation
+    assert 'w-full sm:w-auto' in preparation
+    assert 'Prepare Handoff' in preparation
+
+
 def test_release_step_three_separates_plan_review_external_claim_and_platform_admin():
     detail = read(DETAIL)
     approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
         "{% elif tenant_release_step == 'finalize' %}", 1
     )[0]
     Environment().parse(detail)
-    assert 'Independent approval and handoff' in approval
+    assert 'Independent Approval and Handoff' in approval
     assert 'aria-label="Governed handoff workflow"' in approval
     assert 'data-release-handoff-approval' in approval
     assert 'One active plan per Tenant.' in approval
@@ -274,6 +369,19 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
 
     # An acknowledged plan is locked without inventing approval or provider transfer.
     assert re.search(r'role="status"\s+aria-label="Active handoff plan"', approval)
+    assert 'data-release-plan-review-cards' in approval
+    # A previous two-card redesign dropped the enclosing Jinja endif and
+    # broke every Tenant detail GET with TemplateSyntaxError on the next elif.
+    # Environment().parse(detail) above must compile the complete template.
+    assert re.search(
+        r'{%\s*endif\s*%}\s*</div>\s*{%\s*endif\s*%}\s*{%\s*if handoff_plan\s*%}'
+        r'\s*<dl class="flex min-w-0 flex-wrap',
+        approval,
+    )
+    assert 'md:grid-cols-2' in approval
+    assert 'aria-label="Independent review status"' in approval
+    assert 'aria-label="Planned Handoff Record"' in approval
+    assert 'Scope locked to this plan.' in approval
     assert "row.release_handoff_preparation_state == 'acknowledged'" in approval
     assert "row.release_handoff_preparation_state == 'expired'" in approval
     assert 'governed restart' in approval
@@ -284,6 +392,46 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert '{{ handoff_plan.plan_sha256 }}' in approval
     assert 'break-all font-mono' in approval
     assert 'Plan SHA-256' in approval
+
+    # Approved Native handoff uses two responsive peer surfaces without
+    # forced equal-height whitespace; Capsule retains full-width approval.
+    assert 'data-release-accepted-handoff-workspace' in approval
+    assert 'data-release-accepted-handoff-actions' in approval
+    assert 'data-release-accepted-handoff-evidence' in approval
+    assert 'lg:grid-cols-5' in approval
+    assert 'lg:col-span-3' in approval
+    assert 'lg:col-span-2' in approval
+    assert 'aria-label="External handoff and provider read-back"' in approval
+    assert 'External Handoff &amp; Read-Back' in approval
+    assert 'Evidence Boundaries' in approval
+    # Actions and evidence must be peer surfaces, not stacked bordered cards.
+    assert 'items-start gap-4 lg:grid-cols-5' in approval
+    assert 'Handoff Actions' in approval
+    assert 'Complete governed actions only when eligible.' in approval
+    assert 'class="w-full mt-3 space-y-3"' in approval
+    assert 'class="w-full mt-3 space-y-3 border-t border-outline-subtle pt-3"' in approval
+    assert 'aria-label="Independent Platform Admin required"' in approval
+    assert 'You prepared this plan. A different authorized Platform Admin must verify and accept it.' in approval
+    assert 'aria-label="External read-back prerequisites"' in approval
+    assert 'mt-4 flex min-w-0 items-start gap-2.5 rounded-lg bg-surface-elevated/50 p-3' in approval
+    assert 'External Handoff &amp; Read-Back' in approval
+    assert approval.count('data-release-accepted-handoff-evidence') == 1
+    assert approval.count('External Handoff Inspection Unavailable') == 1
+    assert (
+        approval.index('data-release-accepted-handoff-workspace')
+        < approval.index('data-release-accepted-handoff-evidence')
+        < approval.index(
+            "{% if tenant.provider_key == 'capsule' %}", approval.index('data-release-accepted-handoff-workspace')
+        )
+    )
+    assert 'I reviewed the successor, change record, and provider evidence; no transfer occurred.' in approval
+    for heading in (
+        'Approval Boundaries',
+        'Prepare Handoff Plan',
+        'Planned Handoff Record',
+        'Independent Approval and Handoff',
+    ):
+        assert heading in approval
 
     # Recorded independent review does not imply verified successor acceptance.
     assert 'Independent review recorded. External owner acceptance' in approval
@@ -296,7 +444,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
 
     # Exact platform-admin permission/identity action is preserved verbatim.
     assert 'aria-label="Platform Admin provider verification"' in approval
-    assert 'Platform Admin verification' in approval
+    assert 'Platform Admin Verification' in approval
     assert 'registered Kubernetes X.509 connection' in approval
     assert 'tenant.accept_native_successor_handoff_route' in approval
     assert 'name="confirm_successor_acceptance"' in approval
@@ -354,7 +502,7 @@ def test_native_platform_admin_acceptance_requires_verified_cluster_tls_in_ui():
     assert 'name="confirm_successor_acceptance"' in approval
 
     # Step 4 action explains the same canonical connection requirement.
-    assert 'Next required action' in final
+    assert 'Next Required Action' in final
     assert 'Verified TLS Required' in final
     assert 'Test Connection and complete Full Validation' in final
     assert "url_for('cluster.edit_cluster', cluster_id=row.cluster.id)" in final
@@ -402,11 +550,118 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'native_cycle.stages' in step
     assert '{{ checkpoint.label }}' in step
     assert 'checkpoint.display_status' in step
-    assert 'Next required action' in step
+    assert 'Next Required Action' in step
+
+    # Verification Required is now informative for each committed readiness
+    # state; the same Step 3 navigation remains read-only and role-aware.
+    verification = step.split('data-release-next-action-verification', 1)[1].split(
+        '{% endif %}\n                                        </section>', 1
+    )[0]
+    assert 'aria-label="Native handoff verification next action"' in step
+    assert 'Required Next Steps' in verification
+    assert 'aria-label="Native handoff verification steps"' in verification
+    assert 'verify_steps' in verification
+    for message in (
+        'Independent Platform Admin Required',
+        'Verify Provider & Accept as Platform Admin',
+        'Complete Native Provider Handoff',
+        'Complete Release Finalization',
+        'Review Exact Plan',
+        'Verify Provider Access',
+        'Record Acceptance',
+        'Preview Native Transfer',
+        'Execute Accepted Handoff',
+        'Verify Read-Back',
+        'Finalize Authorized Release',
+    ):
+        assert message in step
+    assert 'Open Handoff Controls' in verification
+    assert 'hx-get=' in verification
+    assert '<form ' not in verification
+    assert 'data-release-next-action-pending' in step
+    assert 'aria-label="Independent approval required"' in step
+    assert 'Remaining Approval Path' in step
+    assert 'aria-label="Remaining Release approval gates"' in step
+    assert 'The requester cannot self-approve;' in step
+    assert 'Open Approval &amp; Handoff' in step
+    # Match the existing Step 3 Approval boundaries numbered-list pattern,
+    # without the previous three-card grid or additional approval forms.
+    approval_pending = step.split('{% elif not native_cycle.approval_complete %}', 1)[1].split(
+        '{% elif not row.cluster or not row.cluster.kubernetes_connection', 1
+    )[0]
+    approval_list = approval_pending.split('data-release-approval-path-list', 1)[1].split('</ol>', 1)[0]
+    assert 'divide-y divide-outline-subtle' in approval_pending
+    assert 'xl:grid-cols-3' not in approval_pending
+    assert approval_list.count('<li class=') == 3
+    for title, sentence in (
+        ('Independent Review', 'A separate authorized operator reviews the exact plan and evidence.'),
+        ('Provider Acceptance', 'An authorized Platform Admin verifies and records successor acceptance.'),
+        ('Verify &amp; Finalize', 'Verify provider handoff and read-back before Release.'),
+    ):
+        assert title in approval_list
+        assert sentence in approval_list
+    assert 'hx-get=' in approval_pending
+    assert '<form ' not in approval_pending
     assert re.search(r'role="status"\s+aria-label="Expired handoff recovery"', step)
     assert 'native_cycle.approval_expired' in step
     assert 'native_cycle.review_expired' in step
+    # A stale provider preflight needs actionable read-only guidance, not a
+    # nearly empty action panel or a misleading implicit Release approval.
+    review_expired = step.split('{% elif native_cycle.review_expired %}', 1)[1].split(
+        '{% elif not native_cycle.approval_complete %}', 1
+    )[0]
+    assert 'data-release-next-action-review-expired' in review_expired
+    assert 'aria-label="Expired provider review next action"' in review_expired
+    assert 'Refresh the Provider Review' in review_expired
+    assert 'Required Next Steps' in review_expired
+    assert 'aria-label="Expired provider review recovery steps"' in review_expired
+    for instruction in (
+        'Run Review Release',
+        'Inspect Committed Evidence',
+        'Revalidate Handoff Approval',
+    ):
+        assert instruction in review_expired
+    assert 'does not approve the handoff, transfer ownership or authorize Release.' in review_expired
+    assert "tenant_release_step_urls['scope']" in review_expired
+    assert 'hx-get=' in review_expired
+    assert '<form ' not in review_expired
     assert 'native_cycle.restart_blocked_by_readback' in step
+    # Expired approval is one clean ordered recovery list, with the original
+    # requester-only restart and blocked-by-read-back guards unchanged.
+    expired_action = step.split('{% elif native_cycle.approval_expired %}', 1)[1].split(
+        '{% elif native_cycle.review_expired %}', 1
+    )[0]
+    assert 'data-release-next-action-approval-expired' in expired_action
+    assert 'aria-label="Expired handoff recovery"' in expired_action
+    assert 'Renew Independent Approval' in expired_action
+    # The recovery list already has a bottom divider. A second border on
+    # the requester form or alternative guidance created duplicate rules.
+    assert 'Expired approval is audit-only; it cannot authorize acceptance or Release.' in expired_action
+    assert 'divide-y divide-outline-subtle border-y border-outline-subtle' in expired_action
+    assert 'border-t border-outline-subtle' not in expired_action
+    assert 'class="w-full mt-3 space-y-3"' in expired_action
+    for role_message in (
+        'native_cycle.restart_blocked_by_readback',
+        'row.release_handoff_plan.requested_by == current_user.id',
+        'row.release_handoff_plan.requested_by != current_user.id',
+        'Restart requires the original requester with both Tenant and Integrations management permissions',
+    ):
+        assert role_message in expired_action
+    assert 'aria-label="Expired handoff approval recovery steps"' in expired_action
+    assert expired_action.count('<li class=') == 3
+    for instruction in (
+        'Verify Provider Ownership',
+        'Restart the Expired Plan',
+        'Request Governed Recovery',
+        'Obtain Independent Approval',
+    ):
+        assert instruction in expired_action
+    assert 'native_cycle.restart_blocked_by_readback' in expired_action
+    assert 'native_cycle.restart_required' in expired_action
+    assert 'row.release_handoff_plan.requested_by == current_user.id' in expired_action
+    assert 'name="confirm_handoff_restart"' in expired_action
+    assert 'Restart Expired Handoff Plan' in expired_action
+    assert expired_action.count('<form ') == 1
     assert 'native_cycle.restart_required' in step
     assert 'native_cycle.restart_zero_transfer_recheck_required' in step
     assert 'Last committed read-back classified zero transferred resources' in step
@@ -552,8 +807,8 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert 'readback_status.external_reference_current' in approval
     assert 'readback_status.dry_run_passed' in approval
     assert 'aria-label="External read-back prerequisites"' in approval
-    assert 'External handoff inspection is unavailable' in approval
-    assert 'The original requester must restart it' in approval
+    assert 'External Handoff Inspection Unavailable' in approval
+    assert 'The original requester must restart with a new SHA' in approval
     assert "tenant_release_step_urls['finalize']" in approval
     assert 'View recovery steps' in approval
     assert 'A historical Dry-Run Passed receipt' not in approval
@@ -564,8 +819,8 @@ def test_external_readback_discloses_stale_requirements_before_read_only_inspect
     assert 'name="confirm_native_handoff_readback"' in approval
     assert 'tenant.inspect_native_external_handoff_route' in approval
     assert 'Historical / Not Current' in approval
-    assert 'Last recorded read-back:' in approval
-    assert 'This historical observation does not verify external acceptance' in approval
+    assert 'Last read-back:' in approval
+    assert 'Historical evidence does not verify external acceptance' in approval
 
     assert "_checked_recently((successor_claim or {}).get('recorded_at'))" in readiness
     assert 'external_readback_prerequisites_current' in readiness
@@ -833,6 +1088,14 @@ def test_release_is_permanent_and_other_governance_sections_remain_accessible():
     assert '<summary' not in release.split('aria-label="Release wizard steps"', 1)[0]
     assert 'data-lucide="clipboard-check" class="h-5 w-5"' in release
     assert 'aria-label="Release Governance"' in release
+    assert 'info_tip.render(' in release
+    assert "'tenant-release-governance-help'" in release
+    assert 'Independent plan approval is not external successor acceptance.' in release
+    assert 'KAORI-mutated Namespace provider controls' in release
+    assert 'KAORI-linked allocation ownership' in release
+    assert 'Independent external handoff approval required.' in release
+    assert 'Approve external handoff and verify provider state.' in release
+    assert 'Exact recorded reason' in release
     assert detail.count('name="tenant-governance"') == len(names)
     assert detail.count('tenant_detail_open_section ==') == len(names) + 1
     assert detail.count('group-open:rotate-180') == len(names) + 1
@@ -965,3 +1228,98 @@ def test_release_review_scope_is_one_unified_committed_evidence_surface():
     assert review.count('hx-post=') == 1
     assert 'for blocker in row.release_preflight.blockers' in review
     assert 'row.release_preflight.status' in review
+
+
+def test_tenant_description_value_has_no_template_indentation() -> None:
+    detail = read(DETAIL)
+    overview = detail.split('id="tenant-detail-snapshot"', 1)[1].split('aria-label="Tenant management sections"', 1)[0]
+    # Jinja whitespace trimming leaves the user's own multiline text unchanged.
+    assert 'whitespace-pre-wrap break-words' in overview
+    assert "{{- tenant.description or 'No Tenant description has been recorded.' -}}" in overview
+    assert "{{ tenant.description or 'No Tenant description has been recorded.' }}" not in overview
+    Environment().parse(detail)
+
+
+def test_release_heading_uses_canonical_title_level_guide() -> None:
+    detail = read(DETAIL)
+    release_header = detail.split('id="tenant-release-governance"', 1)[1].split('aria-label="Release wizard steps"', 1)[
+        0
+    ]
+    title = '<h2 class="text-lg font-semibold text-content-primary">Release Governance</h2>'
+    guide_id = "'tenant-release-governance-help'"
+    assert release_header.count(title) == 1
+    assert release_header.count('info_tip.render(') == 1
+    assert release_header.count(guide_id) == 1
+    guide = release_header.split(guide_id, 1)[1].split(') }}', 1)[0]
+    assert release_header.index(title) < release_header.index(guide_id)
+    assert "placement='left'," in guide
+    assert "variant='guide'" in guide
+    assert 'Independent plan approval is not external successor acceptance.' in guide
+    assert 'Provider handoff, verified read-back' in guide
+
+
+def test_expired_release_review_has_compact_responsive_single_sentence() -> None:
+    detail = read(DETAIL)
+    expired = detail.split('data-release-next-action-review-expired', 1)[1].split(
+        'aria-label="Expired provider review recovery steps"', 1
+    )[0]
+    copy = 'Kubernetes review expired; scope and fingerprint are stale for Release.'
+    assert detail.count(copy) == 1
+    assert copy in expired
+    assert len(copy) <= 75
+    assert copy.count('.') == 1
+    assert 'The previous Kubernetes inventory review has expired.' not in detail
+    assert 'whitespace-nowrap' not in expired
+    assert 'Refresh the Provider Review' in expired
+    assert 'Review Expired' in expired
+    Environment().parse(detail)
+
+
+def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
+    detail = read(DETAIL)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split('id="tenant-release-stage-finalize"', 1)[
+        0
+    ]
+    final = detail.split('id="tenant-release-stage-finalize"', 1)[1]
+
+    # Content hierarchy: concise status rows, unstretched peers, aligned actions.
+    assert 'items-start gap-4 lg:grid-cols-5' in approval
+    assert 'data-release-accepted-handoff-actions' in approval
+    assert 'data-release-accepted-handoff-evidence' in approval
+    assert 'sm:grid-cols-[auto_minmax(0,1fr)]' in approval
+    assert 'Kubeconfig and scoped access verified through' in approval
+    assert 'provider ownership remains unchanged.' in approval
+    assert 'lg:w-3/5' in approval
+    assert 'External Handoff Inspection Unavailable' in approval
+
+    # A visual redesign never weakens native dry-run, mutation or finalization.
+    for route in (
+        'dry_run_native_release_handoff_route',
+        'execute_native_release_handoff_route',
+        'inspect_native_external_handoff_route',
+    ):
+        assert route in approval
+    for required_field in (
+        'confirm_native_handoff_dry_run',
+        'confirm_native_handoff_execution',
+        'confirm_native_handoff_readback',
+    ):
+        assert f'name="{required_field}"' in approval
+    assert 'Partial failure requires recovery.' in approval
+    assert 'No successor token or private key is required.' in approval
+    assert 'historical Dry-Run Passed receipt may be expired' in approval
+
+    release = final.split('tenant.finalize_verified_native_release_route', 1)[1]
+    release = release.split('</form>', 1)[0]
+    assert 'mx-auto mt-5 w-full max-w-4xl' in release
+    assert 'Verified Native Transfer · Ready for Governance Release' in release
+    assert 'confirm_native_release_finalization' in release
+    assert 'Fresh provider read-back must preserve every Namespace' in release
+    assert 'zero dependencies' in release
+    assert 'Preserve all external Kubernetes resources.' in release
+
+    # Entire page retains its existing privilege-gated mutation contracts.
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23
+    Environment().parse(detail)

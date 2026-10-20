@@ -3,8 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from app.extensions.db import db
+from app.integrations.delivery.notification_channels.catalog import domain_event_allowed
 from app.integrations.delivery.notification_channels.providers import get_notification_provider
 from app.models.alert_ops import AlertCase, AlertRoutingPolicy
+from app.models.integration import IntegrationInstance
 from app.models.notification_channel import NotificationChannel
 
 KAORI_ALERT_SOURCE_TYPE = 'recommendation'
@@ -81,9 +84,31 @@ def notification_channel_options() -> list[dict[str, Any]]:
                 'destination': channel.destination or '-',
                 'status': channel.display_status,
                 'eligible': bool(channel.enabled and channel.configured and channel.test_status == 'success'),
+                'registry_eligible': bool(
+                    channel.enabled
+                    and channel.configured
+                    and channel.test_status == 'success'
+                    and 'registry' in (channel.domains or [])
+                    and (
+                        'alert_ops.firing' in (channel.event_types or [])
+                        or 'alert_intelligence.active_alert' in (channel.event_types or [])
+                    )
+                ),
             }
         )
     return result
+
+
+def _route_channel_eligible(channel: NotificationChannel, *, registry_scoped: bool) -> bool:
+    if not (channel.enabled and channel.configured and channel.test_status == 'success'):
+        return False
+    if registry_scoped:
+        event_types = channel.event_types or []
+        if 'registry' not in (channel.domains or []) or not (
+            'alert_ops.firing' in event_types or 'alert_intelligence.active_alert' in event_types
+        ):
+            return False
+    return True
 
 
 def upsert_routing_policy(
@@ -95,9 +120,11 @@ def upsert_routing_policy(
     normalized_name = str(config.name or '').strip()
     if not normalized_name:
         raise ValueError('Routing policy name is required.')
-    if 'registry' in config.domains:
-        raise ValueError('Registry notification routing is not enabled.')
-    normalized_domains = sorted({value for value in config.domains if value in {'kubernetes', 'object_storage'}})
+    normalized_domains = sorted(
+        {value for value in config.domains if value in {'kubernetes', 'object_storage', 'registry'}}
+    )
+    if 'registry' in normalized_domains and len(normalized_domains) != 1:
+        raise ValueError('Registry AlertCases require a dedicated domain routing policy.')
     normalized_severities = sorted(
         {value for value in config.severities if value in {'critical', 'warning', 'info', 'unknown'}}
     )
@@ -112,8 +139,10 @@ def upsert_routing_policy(
     valid_channels = {
         row.id
         for row in NotificationChannel.query.filter(NotificationChannel.id.in_(config.channel_ids)).all()
-        if row.enabled and row.configured and row.test_status == 'success'
+        if _route_channel_eligible(row, registry_scoped='registry' in normalized_domains)
     }
+    if 'registry' in normalized_domains and set(config.channel_ids) != valid_channels:
+        raise ValueError('Select only validated Registry-scoped alert channels.')
     if not valid_channels:
         raise ValueError('Select at least one validated Notification Channel.')
     interval = max(5, min(int(config.repeat_interval_minutes or 60), 1440))
@@ -138,10 +167,25 @@ def upsert_routing_policy(
     return row
 
 
+def registry_case_route_eligible(case: AlertCase) -> bool:
+    """Fail closed for stale/foreign Registry identities before external delivery."""
+    if case.domain != 'registry':
+        return True
+    key = str(getattr(case, 'asset_key', '') or '')
+    if len(key) > 18 or not key.isascii() or not key.isdecimal() or int(key) <= 0:
+        return False
+    integration = db.session.get(IntegrationInstance, int(key))
+    return bool(
+        integration is not None
+        and integration.integration_type == 'registry'
+        and integration.enabled
+        and integration.lifecycle_status == 'active'
+        and integration.readiness_status in {'ready', 'degraded'}
+    )
+
+
 def matching_routing_policies(case: AlertCase) -> list[AlertRoutingPolicy]:
-    if case.domain == 'registry':
-        return []  # Registry notification routing remains unapproved.
-    if case.source_type != KAORI_ALERT_SOURCE_TYPE:
+    if case.source_type != KAORI_ALERT_SOURCE_TYPE or not registry_case_route_eligible(case):
         return []
     policies = AlertRoutingPolicy.query.filter_by(enabled=True).order_by(AlertRoutingPolicy.id.asc()).all()
     return [policy for policy in policies if _policy_matches(policy, case)]
@@ -149,7 +193,9 @@ def matching_routing_policies(case: AlertCase) -> list[AlertRoutingPolicy]:
 
 def firing_routes(case: AlertCase) -> list[FiringRoute]:
     """Return independent route/channel schedules; never collapse cadence across channels."""
-    if case.domain == 'registry' or case.source_state != 'firing' or case.routing_state != 'enabled':
+    if case.source_state != 'firing' or case.routing_state != 'enabled':
+        return []
+    if case.domain == 'registry' and not registry_case_route_eligible(case):
         return []
     policies = matching_routing_policies(case)
     if policies:
@@ -164,8 +210,12 @@ def firing_routes(case: AlertCase) -> list[FiringRoute]:
                     send_resolved=bool(policy.send_resolved),
                 )
                 for channel_id in (policy.channel_ids_json or [])
+                if case.domain != 'registry' or _registry_policy_channel_eligible(channel_id)
             )
         return routes
+
+    if case.domain == 'registry':
+        return []  # Registry requires an explicit enabled policy; never default-broadcast.
 
     # Channel defaults apply only when no explicit governed policy owns this
     # domain. A configured rule that does not match severity/matchers must not
@@ -189,6 +239,21 @@ def firing_routes(case: AlertCase) -> list[FiringRoute]:
     ]
 
 
+def _registry_policy_channel_eligible(channel_id: int) -> bool:
+    channel = db.session.get(NotificationChannel, channel_id)
+    return bool(
+        channel is not None
+        and channel.enabled
+        and channel.configured
+        and channel.test_status == 'success'
+        and 'registry' in (channel.domains or [])
+        and (
+            'alert_ops.firing' in (channel.event_types or [])
+            or 'alert_intelligence.active_alert' in (channel.event_types or [])
+        )
+    )
+
+
 def acknowledgement_timeout_for_case(case: AlertCase) -> int:
     policies = matching_routing_policies(case)
     if policies:
@@ -197,9 +262,11 @@ def acknowledgement_timeout_for_case(case: AlertCase) -> int:
 
 
 def policy_allows_resolved(case: AlertCase, channel_id: int) -> bool:
-    if case.domain == 'registry':
-        return False
     policies = matching_routing_policies(case)
+    if case.domain == 'registry':
+        return any(
+            policy.send_resolved and channel_id in (policy.channel_ids_json or []) for policy in policies
+        )  # No legacy default for Registry.
     if not policies:
         # Default delivery is valid only where no matching domain policy was
         # ever configured; do not retroactively authorize resolved delivery.
@@ -215,6 +282,11 @@ def _policy_matches(policy: AlertRoutingPolicy, case: AlertCase) -> bool:
         return False
     source_types = policy.source_types_json or [KAORI_ALERT_SOURCE_TYPE]
     if case.source_type not in source_types:
+        return False
+    if case.domain == 'registry' and (
+        not domain_event_allowed('registry', 'alert_ops.firing')
+        or not any(_registry_policy_channel_eligible(channel_id) for channel_id in (policy.channel_ids_json or []))
+    ):
         return False
     labels = case.labels_json or {}
     for key, expected in (policy.matchers_json or {}).items():

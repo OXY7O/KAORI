@@ -17,6 +17,7 @@ INTEGRATION_TAXONOMY = ROOT / 'app' / 'definitions' / 'catalogs' / 'integrations
 INTEGRATION_DOMAIN_HERO = TEMPLATES / 'integrations' / 'domain.html'
 INTEGRATION_OVERVIEW = TEMPLATES / 'integrations' / 'overview.html'
 INTEGRATION_OVERVIEW_HERO = TEMPLATES / 'integrations' / 'partials' / '_hero.html'
+NOTIFICATION_CHANNELS_HERO = TEMPLATES / 'integrations' / 'delivery' / 'notification_channels' / 'index.html'
 REPORTS_UNAVAILABLE_HERO = TEMPLATES / 'reports' / '_unavailable.html'
 REPORTS_WEB = ROOT / 'app' / 'reports' / 'web.py'
 REPORTS_PAGE_SUBTITLE_HEROES = {
@@ -962,6 +963,34 @@ def _verify_analytics_metadata_ownership() -> None:
         raise AssertionError('Object Storage Analytics metadata must not depend on observation time')
 
 
+def _verify_bounded_hero_metadata(source: str, *, owner: str, expected_slots: int = 3) -> None:
+    """Reject unbounded metadata in a three-slot compatibility Hero consumer."""
+    match = re.search(
+        r'<div class="\{\{\s*page_hero\.metadata_row_classes\(\)\s*\}\}">(?P<items>.*?)</div>',
+        source,
+        flags=re.DOTALL,
+    )
+    if match is None:
+        raise AssertionError(f'{owner}: missing canonical metadata row')
+    items = match.group('items')
+    if re.search(r'{%\s*(?:for|if|elif)\b', items):
+        raise AssertionError(f'{owner}: unbounded/conditional metadata is not an approved three-slot role')
+    count = len(re.findall(r'{{\s*page_hero\.meta_label\(', items))
+    if count != expected_slots:
+        raise AssertionError(f'{owner}: expected {expected_slots} stable Hero metadata slots, got {count}')
+
+
+def _verify_notification_channels_hero_metadata() -> None:
+    source = _read(NOTIFICATION_CHANNELS_HERO)
+    owner = str(NOTIFICATION_CHANNELS_HERO.relative_to(ROOT))
+    _verify_bounded_hero_metadata(source, owner=owner)
+    if (
+        '{% for provider in payload.providers %}' not in source
+        or 'notification_subsection(provider.label' not in source
+    ):
+        raise AssertionError(f'{owner}: complete provider catalog must remain in the Delivery Providers workspace')
+
+
 def _verify_operational_metadata_state_contract() -> None:
     hero = _read(HERO)
     _require_tokens(
@@ -1208,6 +1237,7 @@ def verify() -> None:
     _verify_blocked_context_ownership()
     _verify_registry_blocked_hero_actions()
     _verify_analytics_metadata_ownership()
+    _verify_notification_channels_hero_metadata()
     _verify_operational_metadata_state_contract()
 
     active_templates = '\n'.join(path.read_text(encoding='utf-8') for path in TEMPLATES.rglob('*.html') if path != HERO)

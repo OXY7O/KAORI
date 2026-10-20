@@ -21,16 +21,18 @@
             Operate with <span class="kaori-login-brand__clarity">Clarity</span>.
         </h1>
         <p class="kaori-login-brand__description mt-2 max-w-md leading-5 text-brand-foreground-muted">
-            Unified visibility and governed operations across your infrastructure estate.
+            Unified visibility and governed infrastructure operations.
         </p>
     </div>
     <div class="relative z-10 mt-5 flex min-h-0 flex-1 flex-col justify-center">
-        <figure class="kaori-operations-fabric" aria-hidden="true">
-            <img src="{{ url_for('static', filename='images/kaori-login-operations-fabric.svg') }}"
-                 alt=""
+        <figure class="kaori-operations-fabric" data-kaori-login-website-artwork>
+            <img src="{{ url_for('static', filename='images/kaori-website-capabilities.webp') }}"
+                 alt="KAORI connects Visibility, Control, Intelligence and Assurance."
+                 width="650"
+                 height="413"
+                 decoding="async"
                  class="block h-auto w-full" />
         </figure>
-        {% include "access/authentication/partials/_feature_cards.html" %}
     </div>
     <div class="kaori-login-brand__footer relative z-10 mt-5 flex items-center gap-2 font-medium text-brand-foreground-muted">
         <span class="h-1.5 w-1.5 rounded-full bg-kaori-accent shadow-sm shadow-kaori-accent"

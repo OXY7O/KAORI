@@ -2,8 +2,9 @@
 {% import "components/page_hero.html" as page_hero %}
 {% block title %}{{ requested_page_title }}{% endblock title %}
 {% block dashboard_content %}
+    {% set is_overview_workspace = requested_page_title == 'Operations Overview' %}
     {% set is_configmap_workspace = 'ConfigMap' in requested_page_title %}
-    {% set blocked_page_icon = 'file-cog' if is_configmap_workspace else 'key-round' %}
+    {% set blocked_page_icon = 'layout-dashboard' if is_overview_workspace else ('file-cog' if is_configmap_workspace else 'key-round') %}
     <div class="grid gap-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -12,7 +13,11 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ requested_page_title }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ requested_page_description }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {% if is_configmap_workspace %}
+                            {% if is_overview_workspace %}
+                                {{ page_hero.meta_label('boxes', 'No Cluster Registered') }}
+                                {{ page_hero.meta_label('shield-check', 'Permission-Gated Operations') }}
+                                {{ page_hero.meta_label('scan-search', 'Target Validation Pending') }}
+                            {% elif is_configmap_workspace %}
                                 {{ page_hero.meta_label('database', 'ConfigMaps Not Collected') }}
                                 {{ page_hero.meta_label('boxes', 'Namespaces Not Collected') }}
                                 {{ page_hero.meta_label('lock-keyhole', 'Immutable State Unknown') }}

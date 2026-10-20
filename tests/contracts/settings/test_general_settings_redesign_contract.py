@@ -147,9 +147,9 @@ def test_system_information_is_explicitly_read_only_and_traceable() -> None:
     assert 'open:bg-surface-subtle' not in main
     assert 'for highlight in system_information.release_highlights' in main
     source = read('app/settings/system_information.py')
-    assert 'Clearer integration ownership for Kubernetes' in source
-    assert 'Governed jobs, data lifecycle, notifications' in source
-    assert 'Stronger release traceability, identity boundaries' in source
+    assert 'Kubernetes, metrics, alerts and MinIO have clear ownership.' in source
+    assert 'Shared evidence for jobs, lifecycle, delivery and analytics.' in source
+    assert 'Release tracing, identity, runtime safety and testing.' in source
     assert 'for group in system_information.feature_groups' in main
     assert 'for feature in group.features' in main
     assert '<details' in main
@@ -318,3 +318,49 @@ def test_browser_timezone_redetection_reuses_canonical_operational_toast_without
     assert 'kaori:notifications-changed' not in runtime
     assert 'Activity Audit' not in runtime
     assert 'Detect Again' in settings_docs
+
+
+def test_uat_general_copy_is_concise_without_truncating_provider_contracts() -> None:
+    timezone = read('app/templates/settings/general/partials/_time_locale.html')
+    system = read('app/templates/settings/general/partials/_system_information.html')
+    definition = read('app/definitions/catalogs/integrations/compatibility.yaml')
+    catalog = read('app/settings/system_information.py')
+    for phrase in (
+        'KAORI workspaces and reports display timestamps in your selected timezone.',
+        'UTC records and explicit job/report scheduling timezones stay unchanged.',
+        'Kubernetes, monitoring, databases, and provider settings stay unchanged.',
+    ):
+        assert phrase in timezone
+        assert len(phrase) <= 80
+    assert 'Secrets, credentials, database/Redis URLs, and internal endpoints.' in system
+    for phrase in (
+        'Kubernetes, metrics, alerts and MinIO have clear ownership.',
+        'Shared evidence for jobs, lifecycle, delivery and analytics.',
+        'Release tracing, identity, runtime safety and testing.',
+    ):
+        assert phrase in catalog
+        assert len(phrase) <= 80
+    assert 'older qualified lines: KAORI Extended' in definition
+    assert 'Current: v0.42.x' in definition
+    assert 'Current: v0.34.x' in definition
+    assert 'Community archived; qualified release evidence retained.' in catalog
+    assert 'Live S3 checks decide readiness; unqualified MinIO releases degrade, not block by version alone.' in catalog
+    # Phone layouts must wrap naturally, never hide any evidence.
+    assert 'truncate' not in timezone
+    assert 'text-ellipsis' not in system
+
+
+def test_uat_compatibility_policy_columns_share_four_balanced_rows() -> None:
+    template = read('app/templates/settings/general/partials/_compatibility_versions.html')
+    assert 'data-compatibility-policy-reference="disclosure"' in template
+    assert 'data-compatibility-policy-layout="structured-reference"' in template
+    assert template.count('lg:grid lg:grid-rows-4') == 2
+    assert template.count('lg:min-h-20') == 5
+    assert 'data-compatibility-policy-guide="numbered"' in template
+    assert '<ol class=' in template and '<dl class=' in template
+    assert 'Contracts change only for breaking API behavior.' in template
+    assert 'Provider APIs, RBAC, metrics and bindings determine readiness.' in template
+    assert 'Contracts advance for breaking API or capability changes.' in template
+    assert 'Before the window: End of Life; future: Unverified.' in template
+    assert 'EOL, missing capabilities, invalid identity or failed checks block.' in template
+    assert 'truncate' not in template and 'whitespace-nowrap' not in template

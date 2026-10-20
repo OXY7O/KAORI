@@ -416,10 +416,52 @@ external-reference status and audit lineage are preserved. No live
 provider fetch in normal UI; no automatic mutation. DevContainer Visual
 QA pending and every CI/CD/admission gate remains HOLD.
 
-**Tenant Release Step 3 — independent approval evidence (#1089; current UI):**
+**Dev Container feedback: Step 3 single-surface actions and Step 4 Approval Expired list (#2401):**
+For an acknowledged Native plan, Step 3 now uses one surface for
+**Handoff Actions** (successor reference and any authorized Platform Admin
+action), with a single separator and inline requester-ineligible note,
+beside one **External Handoff & Read-Back** evidence surface. The expired
+inspection warning is presented inline instead of an additional bordered
+card. Original reference, consent, inspection and provider handoff actions,
+actor restrictions and CSRF/HTMX routes are preserved without new state.
+The paired surfaces stretch equally on desktop and stack on mobile.
+
+In Step 4, the existing `native_cycle.approval_expired` branch is now
+a concise **Renew Independent Approval** summary with three sequential
+recovery steps; it visibly distinguishes governed recovery when transfer
+or read-back evidence blocks restart, requester-only restart with the same
+required confirmation and plan SHA, and non-requester/access instructions.
+Historical approval, provider evidence and exact plan review remain
+authoritative. No extra automated checks, provider calls, approval bypass,
+staging promotion, release or deployment. Focused Tenant source contracts
+updated; Dev Container tests and Visual QA require execution. CI/CD HOLD.
+
+**Release Governance Step 3–4 approved-pattern layout refresh (#2401; Dev Container candidate):**
+Step 3 uses Title Case headings for Independent Approval and Handoff,
+Prepare Handoff Plan, Approval Boundaries and Planned Handoff Record.
+The reviewer checkbox retains its required `confirm_handoff_approval`
+authorization but reads: "I reviewed the successor, change record, and
+provider evidence; no transfer occurred." The acknowledged Native plan
+now places external-reference and permitted Platform Admin verification
+in the left 3/5 workspace and existing external handoff inspection/read-back
+evidence in the right 2/5. Mobile stacks the same controls; Native, Capsule,
+actor and expired states are still isolated by their original conditions.
+The original inspection form/status is moved, not duplicated or authorized
+automatically. No new provider API access or action.
+
+Step 4 **Verification Required** is now a status-and-steps panel with
+role-aware text and a short numbered list for outstanding successor
+acceptance, Native handoff or verified finalization. The original
+`Open Handoff Controls` HTMX link remains navigation only. Existing
+expirations, security permissions, recovery priority, forms, CSRF and
+provider-preserving Release gates remain intact. Existing contract test
+assertions are expanded; browser/runtime QA and official CI/CD remain HOLD.
+
+**Tenant Release Step 3 — independent approval evidence (#1089, #2401; current UI):**
 In the four-step Native/Capsule Release wizard, the independent-approval
-step now separates a compact locked-plan state and original Successor owner /
-Change record from an untruncated monospace Plan SHA-256, the
+step now presents the locked-plan review status and original Successor owner /
+Change record in **two responsive cards** (stacked on mobile), followed by
+an untruncated monospace Plan SHA-256, the
 independent-review acknowledgement, and the **External Reference Unverified**
 claim. A standalone focused Platform Admin verification form retains
 existing X.509 registered Kubernetes connection, permission proof and
@@ -429,7 +471,58 @@ handoff and read-back as **different states**; none are inferred from a
 plain-text reference. Preserve native/Capsule gating, original requester
 restart, audit, all Step 3 POST endpoints, 14 CSRF/HTMX forms, global toast,
 and provider-authoritative checks. The change is visual hierarchy and copy
-only. Tests/DevContainer human QA are pending; CI/CD admission stays HOLD.
+only. The **Prepare Handoff** state additionally uses the existing Step 4
+responsive 3:2 two-panel geometry: the original successor/change reference
+form remains on the left, while a read-only **Approval boundaries** panel
+explains independent review, provider consent/ownership and Release
+verification without presenting any of these as completed. The panels stack
+on narrow screens, retain #2390's bounded form and responsive button, and
+leave active, blocked, expired and recovery states untouched. Tests/DevContainer
+human QA are pending; CI/CD admission stays HOLD.
+
+**Tenant Release Step 4 — Approval Pending path list (#2401 follow-up):**
+The three `Remaining Approval Path` tiles in the Step 4 **Next Required Action**
+pending state are now one compact vertical numbered list, matching existing
+Step 3 **Approval boundaries** semantics: **Independent Review**,
+**Provider Acceptance**, and **Verify & Finalize**, each with one short
+operator-readable sentence. Numbered rows use canonical Violet status tokens,
+one shared border and dividers, and remain naturally wrapping on mobile.
+The pending-status explanation is a single sentence; the original **Open
+Approval & Handoff** HTMX navigation, permission checks, readiness projection
+and provider-preserving authority remain unchanged. This is guidance only,
+not three automatically completed workflow states. Contract regression
+assertions added; Dev Container Visual QA and official gates remain HOLD.
+
+**Tenant Release Step 4 expired review next action (#2401; Dev Container candidate):**
+The `Next Required Action` header now uses Title Case. For the existing
+`native_cycle.review_expired` branch only, the former short status/CTA
+becomes a bounded, responsive evidence-first workspace: **Review Expired**,
+**Refresh the Provider Review**, and three explicit read-only instructions:
+run the actual **Review Release** preflight in Step 1, inspect committed
+provider identity/dependency/blocker evidence, and revalidate the exact
+plan and independent approval. The original HTMX **Open Review Scope**
+navigation stays unchanged, and the guidance explicitly distinguishes
+navigation/refreshed evidence from approval, provider transfer and Release.
+This does not add a server mutation, freshness override, extra form,
+permission change or implicit clearance. Other recovery/action branches
+retain their own priority and controls. Contract test enforces the unique
+expired-review panel and exact navigation semantics; browser Visual QA,
+runtime checks and official admission remain HOLD.
+
+**Tenant Release guidance and pending action clarity (#2401):**
+The permanent Release Governance header uses the existing keyboard/touch/hover
+`info_tip` control for a short explanation of independent approval versus
+successor acceptance, provider read-back and Release. Step 1 translates the two
+verbose Namespace provider mutation / KAORI-linked allocation blockers into
+short operator-friendly condition cards without altering their canonical audit
+evidence or the **Exact recorded reason** expansion. Step 3 preserves the
+pending/acknowledged/expired predicates and existing reviewer/consent form.
+Step 4's **Approval Pending** state makes the distinct review, acceptance and
+provider verification gates readable in the formerly mostly empty action card
+and retains its original read-only navigation to Step 3. No other readiness
+branch, route, permission, CSRF/HTMX action or provider operation changes.
+Focused source contracts are updated; execution, browser Visual QA, Developer
+Check, Full Admission and staging promotion remain HOLD.
 
 **Managed allocation blocker/admission copy compatibility (#1085 corrective):**
 The longer Resource Profile-linked allocation message from
@@ -526,6 +619,20 @@ Do not mix fleet-wide Tenant/Credential/Finding counts into one-Tenant
 detail. The shared component owns responsive separators, metrics/icon
 layout and light/dark styles. Runtime browser Visual QA and quality gates
 remain pending.
+
+**Release wizard responsive action density (#2390; DevContainer review):**
+The four-step Release Governance flow keeps committed evidence full-width:
+Step 1 readiness/blockers, Step 2 provider scope and exact resource IDs,
+Step 3 review/consent/read-back evidence, and Step 4 verification checkpoints.
+Step 2 does not submit a provider operation. The actionable forms in Steps
+3/4 now have bounded responsive widths (`max-w-xl` for short reference inputs,
+`max-w-2xl` for guarded confirmation/execution/recovery/finalization panels).
+Inputs fill only their bounded form; buttons remain full-width on phones but
+natural-width on desktop. Step 1 Review Release already follows that pattern.
+All CSRF/HTMX form data, permissions, required confirmations, provider
+guards and evidence semantics are unchanged. Validate desktop/mobile,
+light/dark and permission/blocked/recovery states through human Visual QA;
+source review is not runtime PASS. Official gates and deployment HOLD.
 
 **Release Scope and Step 2–4 guidance refinement (#1144; current presentation):**
 Release Step 1 now keeps preflight evidence, the single original Review Release action, and three coverage dimensions together in one full-width responsive card. All exact blockers remain available via `View recorded conditions`; no-blockers is not handoff approval. Step 2 (Provider Scope), Step 3 (Approval & Handoff), and Step 4 (Verify & Finalize) reuse the same read-only guidance note presentation for their contextual not-reviewed/no-handoff/permission/blocked states. The common inline note does not perform an action or replace authoritative provider and committed audit evidence. Existing HTMX wizard URLs, form security/confirmation, role checks, provider-side behavior and audit remain unchanged. DevContainer human visual review pending; CI/CD, tests/gates, staging/main and deployment HOLD.
@@ -814,7 +921,22 @@ Observation evidence still records `provenance=adopted_observed` and `provider_m
 
 ### Managed Adoption and Legacy Allocation Governance Cutover
 
-#777 is the current contract for new human-confirmed adoption. Existing **Adopted / Observed** records created under the earlier #768 behavior remain valid historical state and continue to use the #769 explicit allocation-control transition when an operator chooses to govern them:
+**Current authority (#777):** New human-confirmed adoption uses **Adopt & Manage** only when the exact provider allocation authority and capability are admitted. Preflight is read-only; the confirmed action rechecks live UID/resourceVersion, capacity, ownership and supported dimensions, performs an equivalent write **through the authoritative provider**, then requires read-back before recording managed allocation. A blocked candidate stays **Discovered / Control Unavailable**; there is no automatic **Adopt as Observed** fallback. Native Namespace lifecycle can remain **Adopted** while its allocation is **KAORI Managed**.
+
+**Legacy authority (#762/#768/#769):** Existing committed **Adopted / Observed** records remain valid and are not silently upgraded. Use the explicit matching **Governance Cutover** workflow *only if* the operator wants KAORI to manage their allocation. A successful new Managed-on-Adopt action does **not** need a second cutover. Already managed allocation uses **Allocation Change**, while externally changed managed intent uses **Drift & Reconcile** (no automatic provider mutation during Sync). Tenant Resource Profile editability and allocation ownership remain separate.
+
+| Current allocation state / authority | Operator action | Provider effect |
+| --- | --- | --- |
+| Discovered, uniquely admitted Native/Capsule allocation | **Review Adoption → Adopt & Manage** | Equivalent authoritative write + verified read-back before KAORI Managed |
+| Existing legacy **Adopted / Observed** Native allocation | **Adopted Native Governance Cutover** | Native ResourceQuota / supported LimitRange write after admission |
+| Existing legacy **Adopted / Observed** Capsule Tenant quota | **Capsule Tenant Quota Governance** | Patch only authoritative `Tenant.spec.resourceQuotas` after admission |
+| Existing legacy **Adopted / Observed** Capsule shared quota | **Capsule Shared Allocation Governance** | Update only the single authoritative GlobalResourceQuota after admission |
+| Already **KAORI Managed** | **Managed Allocation Change**, or **Drift & Reconcile** if Drifted | Explicit guarded action; Sync itself observes only |
+| Capsule with only `native_namespaced` quota, ambiguous or unavailable Capsule capability | **Control Unavailable** — inspect provider authority | **No managed adoption/cutover; never bypass Capsule with a Native write** |
+
+The reference Capsule Tenant `kaori-adopt-lab-v2` has `Tenant.spec.resourceQuotas=null`, no GlobalResourceQuota and an existing Namespace ResourceQuota. Its observed authority is `native_namespaced` and therefore **not** an admitted Capsule quota source. Do not create a competing quota, force adoption or retry a provider write simply to satisfy UAT.
+
+#777 is the current contract for new adoption. The following explicit transition describes **legacy committed observed allocation**, not the default new-adoption result:
 
 ```text
 Adopted Namespace
@@ -827,7 +949,12 @@ The takeover is available only when allocation authority is proven and supported
 
 For Native Kubernetes, KAORI adopts control of the single authoritative ResourceQuota / Container LimitRange without taking Namespace lifecycle ownership. Existing legacy resource names are preserved when safely identifiable. Missing allocation resources may be materialized using the canonical KAORI resource names. Foreign-manager resources, multiple competing sources, unsupported LimitRange semantics, stale provider evidence, or read-back mismatch fail closed.
 
-For Capsule, #771 admits one explicit shared allocation path: exactly one authoritative `GlobalResourceQuota` with healthy Capsule reconciliation authority, served v1beta2 API, and committed `shared_global_quota=available` capability evidence. The cutover uses the existing #124 CustomObjects executor, preserves the provider selectors and identity, performs shared Tenant-level capacity admission, verifies UID/resourceVersion before mutation, and requires provider read-back before the allocation becomes **KAORI Managed**. The shared quota is counted once for the Tenant rather than once per correlated Namespace. `Tenant.spec.resourceQuotas` and ambiguous/unsupported Capsule authority remain **Control Unavailable**. KAORI never bypasses Capsule authority with a direct Native quota write.
+For Capsule, **two distinct authoritative cutover paths are implemented**, each requiring pre-existing legacy Adopted / Observed evidence and its own healthy admitted capability:
+
+- **#771 — Capsule Shared Allocation Governance:** exactly one authoritative `GlobalResourceQuota`, served `capsule.clastix.io/v1beta2`, committed `shared_global_quota=available`, stable source UID/resourceVersion and unambiguous selector. The guarded CustomObjects path performs Tenant-level capacity admission, provider write and read-back; the shared quota is counted once per Tenant rather than once per Namespace.
+- **#773 — Capsule Tenant Quota Governance:** observed authority `capsule_tenant_resource_quotas` over supported `Tenant.spec.resourceQuotas` on a healthy Capsule Tenant CR with committed `tenant_resource_quotas=available`, recognized scope/items, source identity/UID/resourceVersion and no unsupported or ambiguous authoritative dimensions. Cutover patches only the Tenant CR quota field and verifies the provider's effective state; Namespace-generated policies remain external/mirrored evidence.
+
+These workflows are **not interchangeable**: a Tenant CR quota must not use GlobalResourceQuota cutover, and a GlobalResourceQuota must not use Tenant CR cutover. Both fail closed for degraded/stale/unsupported/conflicting authority. **Capsule `native_namespaced` ResourceQuota is not a substitute**, and the Native cutover path must never bypass Capsule ownership.
 
 After successful cutover, normal governed allocation changes can operate on that allocation contract while the Namespace itself remains `ownership_status=adopted`. A provider failure before verification preserves the prior allocation-control state and records failure evidence for later drift/reconciliation review.
 
@@ -867,6 +994,51 @@ Tenant does not own a second Intelligence engine or export subsystem.
 - PDF, XLSX, and CSV publication is routed through the canonical Reports publication lifecycle from #655.
 - Missing/stale evidence remains explicit; absence of provider/capacity evidence is never converted into a healthy or zero value.
 
+**Blocked preflight UX alignment (#2463 human evidence, 2026-10-18):**
+For the observed `kaori-adopt-lab-v2` preflight, the technical authority key is
+`native_namespaced` and correlated Namespace `kaori-adopt-lab-v2-app` has
+nonempty resource quotas. This does **not** establish a Capsule Tenant or
+GlobalResourceQuota mutation authority. In the blocked state, the decision,
+after-adoption outcome, proposed mapping, prospective provenance and provider
+mutation summary now consistently communicate **Not Eligible · Control
+Unavailable**, **No adoption committed**, and **Not permitted — managed
+adoption blocked**. Correlated provider quotas are explicitly **Observed
+Baseline**, not an already committed adopted baseline. Shared Tenant quota
+absence is distinct from Namespace quota absence. Existing allowed-adoption
+paths continue advertising governed provider cutover when actually admitted.
+No retry, provider mutation, or observed-only fallback occurs from these UI
+changes; gather live Capsule CR/GRQ/correlation evidence separately.
+
+## Capsule Managed Adoption Authority Admission (#2463)
+
+A Capsule Tenant shown as **Discovered** is not necessarily eligible for
+**Adopt & Manage**. The current approved managed-on-adopt path requires either
+a unique, supported `Tenant.spec.resourceQuotas` or `GlobalResourceQuota`
+source with available matching Capsule capability, or a genuinely quota-absent
+Tenant. A Capsule-controlled Tenant with only namespaced Native
+ResourceQuota/LimitRange must **not** be treated as managed-adoption eligible:
+`control_state=observed` alone does not establish a Capsule source-write
+authority. Ambiguous, unsupported, degraded, or unproven authority also fails
+closed.
+
+Deep **Review Adoption** now shows **Managed Adoption Blocked**, the actual
+authority reason and disabled **Adopt & Manage** when that admission is
+missing, while leaving provider observation and technical evidence visible.
+Submit recomputes the same authority predicate from live identity,
+UID/resourceVersion, quota and capability observations **before constructing
+governance records or calling the Capsule cutover**. The original backend
+cutover/read-back gates are unchanged; no Native quota fallback is allowed.
+This is not an implicit **Adopted / Observed** workflow or provider fix.
+Resolve the Capsule authority with the owning infrastructure team and
+re-run a fresh preflight before further UAT.
+
+This does not prove whether a previous submission mutated provider state.
+The route's generic may-have-written warning is conservative; verify the
+Capsule Tenant, any GlobalResourceQuota and correlated Namespace quotas
+against the last known live evidence before retrying. Capture rejected and
+admitted preflight screenshots and fresh server/provider evidence. Official
+CI/CD and human acceptance remain HOLD until instructed.
+
 ## Final UAT boundary
 
 Native-provider acceptance is mandatory. Final UAT must exercise, as applicable:
@@ -884,18 +1056,18 @@ Native-provider acceptance is mandatory. Final UAT must exercise, as applicable:
 11. Native Tenant decommission end-to-end: freeze mutations, revoke credentials/grants/memberships, remove managed state, observe each namespace absent (including a controlled Terminating/finalizer blocker case), verify final provider cleanup, and recreate the same cluster+slug as a new generation while historical evidence remains queryable.
 12. Baseline Capsule decommission: create a KAORI-managed Capsule Tenant with no namespace/access/provider residue, request Decommission, verify the authoritative Capsule Tenant CR is deleted by Capsule authority and observed absent, then confirm the historical KAORI Tenant reaches Decommissioned. Also prove adopted/degraded/residue-bearing Capsule cases remain blocked.
 13. Managed Namespace provider-loss recovery: delete a KAORI-managed Namespace directly in Kubernetes, confirm Discovery shows **Provider Missing**, collect fresh Inventory + run Tenant sync to commit **Drifted**, verify sync itself does not recreate anything, then use **Operations → Drift & Reconcile → Reconcile** to restore Namespace + ResourceQuota + LimitRange from committed intent.
-14. Legacy Native allocation governance cutover: discover/adopt an existing Namespace with provider-owned ResourceQuota / LimitRange, verify **Adopted Baseline · Observed** preserves source UID/resourceVersion and has no KAORI desired hash, select a governed Resource Profile, prove capacity/ownership preflight, mutate through Native authority, read back the effective allocation, and only then verify allocation control becomes **KAORI Managed** while Namespace lifecycle ownership remains **Adopted**. Repeat with stale/out-of-band provider evidence and prove cutover fails closed without changing KAORI desired intent.
-15. Legacy Capsule allocation cutover boundary: adopt a compatible Capsule Tenant and verify allocation authority is identified from admitted Capsule/native evidence. When no admitted Capsule mutation path exists, the UI remains **Control Unavailable** and KAORI performs no Native quota bypass.
+14. Legacy Native allocation governance cutover: start with an existing committed **Adopted / Observed** Namespace (historical #768 baseline or supported fixture), verify **Adopted Baseline · Observed** preserves source UID/resourceVersion and has no KAORI desired hash, select a governed Resource Profile, prove capacity/ownership preflight, mutate through Native authority, read back the effective allocation, and only then verify allocation control becomes **KAORI Managed** while Namespace lifecycle ownership remains **Adopted**. Repeat with stale/out-of-band provider evidence and prove cutover fails closed without changing KAORI desired intent.
+15. Legacy Capsule allocation cutover boundary: start with an existing committed **Adopted / Observed** Capsule Tenant and verify allocation authority is identified from admitted Capsule/native evidence. When no admitted Capsule mutation path exists, the UI remains **Control Unavailable** and KAORI performs no Native quota bypass.
 16. Native managed-allocation drift: after a Native allocation is **KAORI Managed**, change ResourceQuota and/or Container LimitRange directly in Kubernetes while KAORI is not performing the mutation. Run Tenant Sync and verify the Namespace becomes **Drifted**, the last KAORI intent and current provider observation are both retained, dimension-level differences are visible, and sync performs no corrective provider write.
 17. Bidirectional allocation recovery: use the reference legacy Tenant/project **API** with existing owner/principal **APE** after allocation control is KAORI Managed. Change the live allocation manually during a simulated KAORI outage, run Tenant Sync, then verify **Reapply KAORI Intent** uses the current live provider allocation as the capacity-preflight current state, rechecks provider freshness before mutation, writes through Native authority, and clears drift only after read-back verification. Repeat the scenario and verify **Accept Provider State** performs policy/capacity/ownership validation, performs no redundant provider write, commits the live values as new desired/effective intent with provenance, and clears drift. Change the provider again between sync and either action and prove the action fails closed as stale.
-18. Capsule GlobalResourceQuota governance: adopt the reference **API / APE** Capsule Tenant with exactly one authoritative `GlobalResourceQuota`, healthy Capsule authority, served `capsule.clastix.io/v1beta2`, and committed `shared_global_quota=available`. Verify the shared quota is counted once across correlated Namespaces, Cut Over Governance mutates only the authoritative GlobalResourceQuota, provider UID/resourceVersion and selector/tenant correlation remain preserved, and provider read-back is required before the shared allocation becomes **KAORI Managed**.
+18. Capsule GlobalResourceQuota governance: start with the reference **API / APE** legacy **Adopted / Observed** Capsule Tenant with exactly one authoritative `GlobalResourceQuota`, healthy Capsule authority, served `capsule.clastix.io/v1beta2`, and committed `shared_global_quota=available`. Verify the shared quota is counted once across correlated Namespaces, Cut Over Governance mutates only the authoritative GlobalResourceQuota, provider UID/resourceVersion and selector/tenant correlation remain preserved, and provider read-back is required before the shared allocation becomes **KAORI Managed**.
 19. Capsule shared-allocation drift: after GlobalResourceQuota governance is managed, change the GlobalResourceQuota directly during a simulated KAORI outage, run Tenant Sync, and verify committed **Drifted** evidence retains KAORI intent plus provider observation. Prove **Reapply KAORI Intent** and **Accept Provider State** both use Capsule authority, apply shared-capacity admission, reject stale provider observations, and never write namespaced Native ResourceQuota as a substitute.
 20. Capsule GlobalResourceQuota unsupported-authority boundary: repeat adoption with multiple/ambiguous GlobalResourceQuota sources, degraded `shared_global_quota`, unsupported selectors/dimensions, or an unsupported served API version. Verify the allocation remains **Control Unavailable**, no provider mutation occurs, and the reason is explicit.
-21. Legacy Capsule Tenant quota — **estimasi** case: discover/adopt an existing Capsule Tenant whose authoritative allocation is `Tenant.spec.resourceQuotas` with no proven Namespace correlation and `scope=Tenant`. Verify Adoption Preflight is decision-first: **Adoption Decision**, **Adoption Impact**, **Allocation Overview**, **Namespace Coverage**, and **Technical Evidence** make the read-only boundary explicit. The primary action is **Adopt as Observed** and must state **No provider mutation**. **Observed · Read Only** is shown only when the live served Tenant CRD schema proves `spec.resourceQuotas` and the capability is available. Adopt without provider mutation, then perform explicit governance cutover, capacity admission, Tenant CR resourceVersion check, patch only `spec.resourceQuotas`, provider read-back, and confirm allocation becomes **KAORI Managed** while Tenant ownership remains **Adopted**.
-22. Legacy Capsule Tenant quota — **partner** case: adopt a Tenant with correlated Namespace `partner-pgnpartner-development`, authoritative `Tenant.spec.resourceQuotas`, and a Capsule-generated `PersistentVolumeClaim` LimitRange. Verify KAORI maps the PVC LimitRange as a known **PVC Storage Constraint** with Namespace, LimitRange identity, provider UID/resourceVersion, and supported storage min/max evidence when present. It must appear under **Provider Constraints** as **Observed · Preserved**, must not be reported as a raw unsupported `type=PersistentVolumeClaim`, must not become Tenant-quota authority, and must remain untouched while the admitted Tenant quota is cut over and later changed through KAORI.
+21. Capsule Tenant quota — **estimasi** authority: for **new** eligible Tenant CR adoption, verify the selected live preflight displays `Tenant.spec.resourceQuotas` authority, provider identity, supported scope/items, capacity and capability evidence, then **Adopt & Manage** performs an equivalent Capsule-authoritative write and verified read-back (never `Adopt as Observed` or an automatic second cutover). **Separately**, for an existing legacy committed **Adopted / Observed** `estimasi`-style Tenant, use **Capsule Tenant Quota Governance** to compare observed vs selected profile, revalidate Tenant CR UID/resourceVersion, patch only `spec.resourceQuotas`, read back, and commit KAORI Managed. Neither route substitutes a Native ResourceQuota write.
+22. Capsule Tenant quota — **partner** evidence case: inspect a Tenant with correlated Namespace `partner-pgnpartner-development`, authoritative `Tenant.spec.resourceQuotas`, and a Capsule-generated `PersistentVolumeClaim` LimitRange. Verify KAORI maps the PVC LimitRange as a known **PVC Storage Constraint** with Namespace, LimitRange identity, provider UID/resourceVersion, and supported storage min/max evidence when present. It must appear under **Provider Constraints** as **Observed · Preserved**, must not be reported as a raw unsupported `type=PersistentVolumeClaim`, must not become Tenant-quota authority, and must remain untouched while the admitted Tenant quota is cut over and later changed through KAORI.
 23. Capsule Tenant quota bidirectional recovery: after #773 allocation control is **KAORI Managed**, change `Tenant.spec.resourceQuotas` directly during a simulated KAORI outage. Run Tenant Sync and prove it performs no write, commits **Drifted** evidence with desired/provider values plus Tenant UID/resourceVersion, then exercise **Reapply KAORI Intent** and **Accept Provider State** separately. Reapply must use fresh live allocation for capacity admission and require provider read-back; Accept must perform no provider write and commit the live quota/scope with `provenance=accepted_provider_state`. Change the Tenant CR again between Sync and either action and prove stale resourceVersion/hash fails closed.
 24. Capsule Tenant quota safety boundaries: prove non-empty `scopes` / `scopeSelector`, unsupported authoritative hard dimensions, ambiguous duplicated quota dimensions, competing allocation authority, degraded Capsule, missing `spec.resourceQuotas` CRD schema, and incompatible API versions remain **Control Unavailable**. No path may fall back to namespaced Native ResourceQuota mutation.
-25. Discovery performance boundary: open, filter, and paginate **Tenant Discovery** and verify the registry performs candidate enumeration only; ResourceQuota/LimitRange, Capsule allocation authority, GlobalResourceQuota, and Capsule CRD capability inspection must not run per visible row. Click **Review Adoption** and verify exactly that selected candidate receives the deep live HTMX preflight, with a visible fail-closed error state if revalidation fails. Submit **Adopt as Observed** and verify adoption performs a new live provider/conflict revalidation instead of trusting the preflight response.
+25. Discovery performance and current Managed-on-Adopt boundary: open, filter, and paginate **Tenant Discovery** and verify the registry enumerates candidates without per-row quota/capability inspection. **Review Adoption** must lazy-load only the selected candidate's deep live preflight. For an admitted Native/Capsule authority, **Adopt & Manage** must re-read live provider identity, ownership, capability and quota before any equivalent write/read-back; inspect a verified KAORI Managed outcome. For a Capsule Tenant with `native_namespaced`, ambiguous or unavailable authority, confirm **Control Unavailable**, the blocked explanation, and a disabled submit; there must be **no** fallback to `Adopt as Observed`, provider write or adoption success claim.
 26. Offline committed-read boundary: complete at least one Tenant sync, record the committed snapshot cutoff/coverage, then make the Kubernetes API unreachable. Open **Tenants**, **Resource Profiles**, **Namespace Provisioning**, and **Operations** and verify committed KAORI content still renders immediately. **Tenant Collection Snapshot** must retain the last committed evidence, any explicit Live Provider Connectivity probe (via its existing supported endpoint) must report its own reachability state, independent of the committed snapshot; child pages must have no probe panel or action, Resource Profile/capacity committed evidence must remain visible for registered clusters, and provider-backed mutations must continue to fail closed. Repeat with no successful Tenant sync and prove **Not Collected** is distinct from provider connectivity failure.
 27. Light/dark, responsive, loading/empty/error/degraded, keyboard/focus, and normal KAORI not-found behavior for unsupported Tenant URLs.
 

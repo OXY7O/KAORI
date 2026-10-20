@@ -1,4 +1,5 @@
 {% import "components/table_primitives.html" as table_ui %}
+{% import "components/action_button.html" as action_button %}
 {% set global_control = payload.global_control %}
 <div data-kaori-detail-variant="modal" class="min-w-0">
     <section data-kaori-detail-shell class="min-w-0 bg-surface-card">
@@ -100,7 +101,7 @@
                         </div>
                         <button type="submit"
                                 {% if not payload.clusters or not payload.registry_rows %}disabled aria-disabled="true"{% endif %}
-                                class="inline-flex min-h-10 min-w-[14rem] items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover disabled:opacity-50"><i data-lucide="save" class="h-4 w-4"></i>Save Deployment Policy</button>
+                                class="{{ action_button.classes('primary') }} min-w-[14rem] whitespace-nowrap"><i data-lucide="save" class="h-4 w-4"></i>Save Deployment Policy</button>
                     </div>
                 </div>
             </form>
@@ -169,8 +170,7 @@
                 <div class="space-y-3 border-t border-outline-subtle bg-surface-card px-4 py-3">
                     <div class="rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3 py-2 text-xs leading-5 text-content-secondary">Global Kill Switch applies only at Global scope. Cluster controls may set maintenance, concurrency, rate, and circuit-breaker thresholds.</div>
                     <div class="flex justify-end">
-                        <button type="submit"
-                                class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="shield-check" class="h-4 w-4"></i>Save Safety Control</button>
+                        <button type="submit" class="{{ action_button.classes('primary') }}"><i data-lucide="shield-check" class="h-4 w-4"></i>Save Safety Control</button>
                     </div>
                 </div>
             </form>

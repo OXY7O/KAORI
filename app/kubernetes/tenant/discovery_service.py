@@ -11,7 +11,6 @@ from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.adapter import runtime_adapter
 from app.kubernetes.tenant.allocation_observation import (
-    capsule_namespace_authority_present,
     observe_native_namespace_allocation,
 )
 from app.kubernetes.tenant.capsule_allocation_observation import (
@@ -23,6 +22,14 @@ from app.kubernetes.tenant.capsule_namespace_attachment_authority import (
     validate_capsule_namespace_attachment,
 )
 from app.kubernetes.tenant.capsule_provider import discover_capsule
+from app.kubernetes.tenant.discovery_presentation import (
+    _capsule_phase,
+    _managed_capsule_map,
+    _namespace_phase,
+    _native_management,
+    _tone,
+    _unclaimed_provider_ownership_reason,
+)
 from app.models import Cluster
 from app.models.kubernetes import KubernetesConnection
 from app.models.tenant import (
@@ -34,87 +41,8 @@ from app.models.tenant import (
     TenantNamespaceProvisioningStatus,
 )
 
-_SYSTEM_NAMESPACES = frozenset({'default', 'kube-system', 'kube-public', 'kube-node-lease'})
 _CAPSULE_GROUP = 'capsule.clastix.io'
 _CAPSULE_VERSIONS = ('v1beta2', 'v1beta1')
-
-
-def _namespace_phase(item: Any) -> str:
-    metadata = getattr(item, 'metadata', None)
-    status = getattr(item, 'status', None)
-    if getattr(metadata, 'deletion_timestamp', None):
-        return 'Terminating'
-    return str(getattr(status, 'phase', None) or 'Present')
-
-
-def _capsule_phase(item: dict[str, Any]) -> str:
-    metadata = item.get('metadata') if isinstance(item, dict) else {}
-    status = item.get('status') if isinstance(item, dict) else {}
-    if isinstance(metadata, dict) and metadata.get('deletionTimestamp'):
-        return 'Terminating'
-    if isinstance(status, dict):
-        for key in ('state', 'phase'):
-            value = status.get(key)
-            if value:
-                return str(value)
-        conditions = status.get('conditions')
-        if isinstance(conditions, list):
-            for condition in conditions:
-                if not isinstance(condition, dict):
-                    continue
-                if condition.get('status') == 'True' and condition.get('type'):
-                    return str(condition['type'])
-    return 'Observed'
-
-
-def _tone(status: str) -> str:
-    normalized = status.strip().lower()
-    if normalized in {'active', 'ready', 'observed', 'present'}:
-        return 'normal'
-    if normalized in {'terminating', 'degraded', 'failed', 'error'}:
-        return 'critical'
-    return 'warning'
-
-
-def _unclaimed_provider_ownership_reason(*, labels: Mapping[str, Any], resource_kind: str) -> str | None:
-    """Reject orphaned KAORI labels and foreign managers before any provider takeover."""
-    manager = str(labels.get('app.kubernetes.io/managed-by') or '').strip()
-    reserved_claims = (
-        'kaori.io/tenant-id',
-        'kaori.io/tenant-generation',
-        'kaori.io/environment',
-        'kaori.io/resource-profile',
-    )
-    if manager.lower() == 'kaori' or any(key in labels for key in reserved_claims):
-        return (
-            f'{resource_kind} has KAORI ownership markers without active governance; '
-            'inspect provider residue and recover the prior Tenant before adoption.'
-        )
-    if manager:
-        return f'{resource_kind} declares external manager {manager}.'
-    return None
-
-
-def _native_management(
-    *,
-    namespace: str,
-    labels: dict[str, str],
-    managed_record: TenantNamespace | None,
-    owner_references: Any = None,
-) -> tuple[str, str]:
-    if managed_record is not None:
-        return 'Managed', 'Already governed by KAORI.'
-    if namespace in _SYSTEM_NAMESPACES:
-        return 'Blocked', 'Kubernetes system namespaces are not Tenant adoption candidates.'
-    if capsule_namespace_authority_present(
-        labels=labels,
-        owner_references=owner_references,
-    ):
-        return 'Blocked', 'Namespace remains correlated to Capsule Tenant authority; use Capsule governance.'
-    ownership_reason = _unclaimed_provider_ownership_reason(labels=labels, resource_kind='Namespace')
-    if ownership_reason:
-        return 'Blocked', ownership_reason
-    return 'Discovered', 'Candidate for governed adoption preflight; no provider mutation has occurred.'
 
 
 def _managed_namespace_map(cluster_ids: list[str]) -> dict[tuple[str, str], TenantNamespace]:
@@ -130,22 +58,6 @@ def _managed_namespace_map(cluster_ids: list[str]) -> dict[tuple[str, str], Tena
         .all()
     )
     return {(str(item.cluster_id), item.namespace): item for item in rows}
-
-
-def _managed_capsule_map(cluster_ids: list[str]) -> dict[tuple[str, str], Tenant]:
-    if not cluster_ids:
-        return {}
-    rows = Tenant.query.filter(
-        Tenant.cluster_id.in_(cluster_ids),
-        Tenant.provider_key == 'capsule',
-        Tenant.lifecycle_status.notin_(('decommissioned', 'released')),
-    ).all()
-    result: dict[tuple[str, str], Tenant] = {}
-    for tenant in rows:
-        for reference in {str(tenant.provider_reference or '').strip(), tenant.slug, tenant.name}:
-            if reference:
-                result[(str(tenant.cluster_id), reference)] = tenant
-    return result
 
 
 def _capsule_items(client) -> tuple[str | None, list[dict[str, Any]]]:
@@ -207,6 +119,47 @@ def _apply_capsule_allocation_capability_state(
     )
     allocation['admitted_capability'] = capability if not preview_only else None
     allocation['capability_preview'] = capability if preview_only else None
+
+
+_CAPSULE_MANAGED_ADOPTION_CAPABILITIES = {
+    'capsule_global_resource_quota': 'shared_global_quota',
+    'capsule_tenant_resource_quotas': 'tenant_resource_quotas',
+}
+
+
+def capsule_managed_adoption_blocker(
+    allocation: Mapping[str, Any],
+    *,
+    preview_only: bool,
+) -> str | None:
+    """Admit only proven Capsule-owned quota for mutation-capable adoption.
+
+    Native Namespace ResourceQuota/LimitRange may be observed beneath Capsule
+    but is never a substitute for a Capsule Tenant/GRQ write authority.
+    """
+    authority = str(allocation.get('allocation_authority') or '')
+    if allocation.get('error'):
+        return 'Capsule allocation observation failed; review current provider evidence before adoption.'
+    if allocation.get('authority_unsupported_dimensions') or allocation.get('authority_ambiguous_dimensions'):
+        return 'Capsule quota fields or competing authorities need review before managed adoption.'
+    if authority == 'none_observed' and not allocation.get('shared_quota'):
+        return None
+    if authority == 'native_namespaced':
+        return (
+            'Only namespaced quota/policy is observed; a Capsule-managed Tenant needs one admitted '
+            'Tenant.spec.resourceQuotas or GlobalResourceQuota authority. Native quota cannot substitute.'
+        )
+    required_capability = _CAPSULE_MANAGED_ADOPTION_CAPABILITIES.get(authority)
+    if not required_capability:
+        return 'Capsule allocation authority is unproven or ambiguous; managed adoption is blocked.'
+
+    capability_key = 'capability_preview' if preview_only else 'admitted_capability'
+    if allocation.get('control_state') != 'observed' or allocation.get(capability_key) != required_capability:
+        return (
+            f'Capsule quota authority {authority} requires an available {required_capability} '
+            'capability and supported provider evidence before managed adoption.'
+        )
+    return None
 
 
 def get_tenant_discovery_context(
@@ -560,6 +513,32 @@ def get_tenant_discovery_context(
     }
 
 
+def _native_adoption_environment_options(normalized_cluster: str, normalized_provider: str) -> list[dict[str, Any]]:
+    if normalized_provider != 'native_kubernetes':
+        return []
+    candidates = (
+        TenantEnvironment.query.join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
+        .filter(
+            Tenant.cluster_id == normalized_cluster,
+            Tenant.provider_key == 'native_kubernetes',
+            Tenant.provider_state == 'native',
+            Tenant.reconciliation_authority == 'native_kubernetes',
+            Tenant.lifecycle_status == 'ready',
+        )
+        .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
+        .all()
+    )
+    return [
+        {
+            'id': environment.id,
+            'tenant_id': environment.tenant_id,
+            'tenant_name': environment.tenant.name,
+            'environment': environment.environment,
+        }
+        for environment in candidates
+    ]
+
+
 def get_tenant_adoption_preflight_context(
     *,
     cluster_id: str,
@@ -690,6 +669,13 @@ def get_tenant_adoption_preflight_context(
             capability_evidence=capsule_capability_evidence,
             preview_only=True,
         )
+        adoption_management_blocker = capsule_managed_adoption_blocker(
+            allocation,
+            preview_only=True,
+        )
+        if adoption_management_blocker:
+            allocation['control_state'] = 'control_unavailable'
+            allocation['control_reason'] = adoption_management_blocker
         metadata = item.get('metadata') or {}
         row = {
             'cluster': cluster,
@@ -710,31 +696,10 @@ def get_tenant_adoption_preflight_context(
             'provider_api_version': capsule_version,
             'allocation_preflight': allocation,
             'capsule_capability_preflight': capsule_capability_evidence,
+            'adoption_management_blocker': adoption_management_blocker,
         }
 
-    existing_tenant_environments: list[dict[str, Any]] = []
-    if normalized_provider == 'native_kubernetes':
-        candidates = (
-            TenantEnvironment.query.join(Tenant, TenantEnvironment.tenant_id == Tenant.id)
-            .filter(
-                Tenant.cluster_id == normalized_cluster,
-                Tenant.provider_key == 'native_kubernetes',
-                Tenant.provider_state == 'native',
-                Tenant.reconciliation_authority == 'native_kubernetes',
-                Tenant.lifecycle_status == 'ready',
-            )
-            .order_by(Tenant.name.asc(), TenantEnvironment.environment.asc())
-            .all()
-        )
-        existing_tenant_environments = [
-            {
-                'id': environment.id,
-                'tenant_id': environment.tenant_id,
-                'tenant_name': environment.tenant.name,
-                'environment': environment.environment,
-            }
-            for environment in candidates
-        ]
+    existing_tenant_environments = _native_adoption_environment_options(normalized_cluster, normalized_provider)
 
     return {
         'tenant_adoption_row': row,

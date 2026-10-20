@@ -183,3 +183,88 @@ def test_role_form_routes_semantic_borders_through_shared_authority() -> None:
     assert "operational_callout.semantic_border_classes('critical')" in form
     assert 'border-status-warning-border' not in form
     assert 'border-status-critical-border' not in form
+
+
+def test_uat_roles_dependency_boundary_uses_short_caption() -> None:
+    source = read('app/templates/access/roles/index.html')
+    assert 'Code-owned dependencies expand as needed.' in source
+    assert "'Permission Dependencies', 'Catalog-Owned'" in source
+    assert 'whitespace-nowrap' not in source
+
+
+def test_review4_role_identity_guide_and_access_guardrail_density() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/access/roles/form.html')
+    Environment().parse(source)
+    assert '{% import "components/info_tip.html" as info_tip %}' in source
+    assert "info_tip.render('role-identity-fields-guide'," in source
+    assert "variant='guide'" in source
+    assert "placement='right'" in source
+    assert 'Normalized to lowercase underscores and used as the stable backend identifier.</span>' not in source
+    assert 'Shown in User Management, role assignment, and identity projection.</span>' not in source
+    assert 'form.name(' in source and 'form.display_name(' in source
+    assert 'form.errors' in source
+    assert 'form.is_active(' in source
+    assert 'data-role-state-preview' in source
+    assert 'data-role-permission-matrix' in source
+    assert 'Active roles serve user and provider assignments; deactivation removes role-derived access.' in source
+    guardrails = (
+        'Compose reusable roles around operational duties rather than individual user accounts.',
+        'Permission dependencies are code-owned and expand automatically when required.',
+        'Delegation stays within effective access; Local Database Super Admin is the exception.',
+        'Super Admin is a Local Database-only flag, never inherited through role composition.',
+    )
+    for copy in guardrails:
+        assert source.count(copy) == 1
+        assert 70 <= len(copy) <= 100
+    assert 'whitespace-nowrap' not in source
+
+
+def test_review4_role_permission_card_description_uses_two_line_minimum() -> None:
+    from jinja2 import Environment
+
+    source = read('app/templates/access/roles/form.html')
+    Environment().parse(source)
+    assert 'mt-1.5 block min-h-10 text-xs leading-5 text-content-muted' in source
+    assert 'permission_matrix_descriptions.get(permission.key, permission.description or' in source
+    assert 'data-role-permission-card' in source
+    assert 'data-role-permission' in source
+    # Preserve canonical RBAC text; never clip longer permission descriptions.
+    assert 'line-clamp-2' not in source
+
+
+def test_permission_matrix_has_descriptive_copy_for_every_canonical_permission() -> None:
+    import yaml
+    from jinja2 import Environment
+
+    from app.access.rbac.defaults import DEFAULT_PERMISSIONS, PERMISSION_MATRIX_DESCRIPTIONS
+
+    catalog = yaml.safe_load(read('app/definitions/catalogs/access/rbac/access.yaml'))
+    canonical = {item[0]: item[3] for item in DEFAULT_PERMISSIONS}
+    records = {item['key']: item for item in catalog['permissions']}
+    descriptions = PERMISSION_MATRIX_DESCRIPTIONS
+
+    assert canonical  # New canonical permissions must receive matrix copy automatically.
+    assert set(records) == set(canonical) == set(descriptions)
+    assert all(records[key]['description'] == description for key, description in canonical.items())
+    assert all(records[key]['matrix_description'] == descriptions[key] for key in canonical)
+    assert all(80 <= len(value) <= 160 for value in descriptions.values())
+    assert len(set(descriptions.values())) == len(descriptions)
+    assert descriptions['integrations.manage'] == (
+        'Manage integration provider registration, bindings, validation, runtime configuration, and delivery channels.'
+    )
+    assert 'without exposing' in descriptions['kubernetes_secrets.replace']
+    assert 'approve or reject' in descriptions['kubernetes_secrets.approve_reveal'].lower()
+    assert 'Local Database' in descriptions['users.reset_password']
+
+    role_form = read('app/templates/access/roles/form.html')
+    presentation = read('app/access/roles/presentation.py')
+    Environment().parse(role_form)
+    assert 'PERMISSION_MATRIX_DESCRIPTIONS' in presentation
+    assert "'permission_matrix_descriptions': PERMISSION_MATRIX_DESCRIPTIONS" in presentation
+    assert 'permission_matrix_descriptions.get(permission.key,' in role_form
+    assert 'data-role-permission-card' in role_form
+    assert 'min-h-10' in role_form
+    assert 'line-clamp-2' not in role_form
+    assert 'permission.description' in role_form  # DB-only registry entries retain their fallback

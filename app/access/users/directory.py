@@ -67,7 +67,9 @@ def build_user_identity_context(user: User) -> dict[str, Any]:
 
     if user.auth_source == 'database':
         credential_owner = 'KAORI'
-        credential_detail = 'KAORI stores the password hash and owns the password reset workflow.'
+        credential_detail = (
+            'KAORI stores the local password hash and manages resets through its governed, audited workflow.'
+        )
     elif source['family'] == AuthProviderFamily.DIRECTORY.value:
         credential_owner = identity_provider.display_name if identity_provider is not None else 'LDAP directory'
         credential_detail = (

@@ -738,7 +738,135 @@ non-destructive preservation. The original long blocker remains in the
 explicit trusted-reason allowlist for historical plan compatibility only; new
 reviews produce the shorter reason.
 
-## Tenant Release Step 3 — structured independent approval evidence (#1089; current presentation authority)
+## Dev Container UI follow-up — cohesive approval surfaces and expired recovery (#2401)
+
+After human screenshots of the acknowledged Native plan, Step 3 now keeps
+**Handoff Actions** in a single unbroken Violet surface (reference form
+and conditional authorized Platform Admin action or requester-only note).
+The external read-back area remains one companion surface. Its unavailable
+state is inline under the same header, not an extra card inside a card.
+Both columns stretch to a common workspace height on desktop and stack
+naturally on narrow screens. The read-back prerequisite branch, owner
+permissions, exact plan SHA and provider verification POST remain original
+authorities; UI spacing never implies eligibility or transfers ownership.
+
+Step 4 **Approval Expired** is now an unboxed semantic recovery sequence
+with three ordered steps, driven by the same read-back guard: verify
+ownership, request governed recovery **instead of restart when blocked**
+(or restart only as the original requester when safe), then obtain fresh
+independent approval for a newly prepared plan SHA. Historical approval
+remains audit evidence, never current authorization. The existing CSRF
+and explicit requester-only restart form, conditional no-transfer note,
+and role-restricted alternative instructions remain intact. Native
+provider-effect recovery always overrides restart. Source contract tests
+check Jinja structure, conditional branches and unchanged forms; runtime
+Dev Container tests/visual acceptance are still outstanding. Official
+CI/CD admission remains HOLD.
+
+## Release Governance Step 3–4 approval layout and verification guidance (#2401; 2026-10-18)
+
+The Step 3 governed workflow now uses Title Case for **Independent Approval and
+Handoff**, **Prepare Handoff Plan**, **Approval Boundaries**, and **Planned
+Handoff Record**. The independent reviewer consent text is shortened to
+"I reviewed the successor, change record, and provider evidence; no transfer
+occurred." Its required checkbox, same-Plan-SHA confirmation and backend
+authorization rules remain unchanged.
+
+For an independently acknowledged Native plan, the external successor
+reference action and the role-gated Platform Admin verification now occupy
+a responsive 3:2 actions/evidence workspace rather than narrow form cards
+followed by a full-width inspection warning. The original external
+read-back inspection form or conditional unavailable/stale prerequisite
+status is **moved unchanged** to the evidence column; on mobile the columns
+stack. This preserves all current plan/SHA, actor, trusted X.509, checked
+provider permissions, HTMX, CSRF, independent approval, and exact provider
+read-back gates. Capsule/expired/other roles keep their separate conditional
+scope. Reference evidence never creates consent; read-back never transfers
+ownership by inspection. No provider mutation was introduced by layout.
+
+Step 4 **Next Required Action → Verification Required** uses the same Violet
+status/ordered-list/navigation pattern already approved for review expiry
+and pending approval. Its short checklist is conditionally derived from
+committed successor acceptance and provider transfer projections, with
+requester versus independent Platform Admin wording retained. Ineligible
+actions remain excluded; the existing Step 3 HTMX navigation is not an
+approval or Release endpoint. Provider recovery, approval expiry, TLS failure
+and review expiry retain higher priority; admission and human UAT stay HOLD.
+
+## Tenant Adoption vs Allocation Cutover — Current Authority (#777, #762, #769, #771, #773, #2481)
+
+**Authority precedence:** #777's human-approved **Managed-on-Adopt** contract governs
+new eligible adoption. #762/#768/#769 describe **legacy committed
+Adopted / Observed** records and their explicit subsequent allocation
+cutover; their original observation-first adoption language is historical,
+**not an alternate automatic fallback for new adoption**. The current
+Native/Capsule cutover services decide eligibility, not the label of a
+Resource Profile or an available CRD field.
+
+Two independently governed ownership dimensions must never be conflated:
+- **Tenant/Namespace lifecycle:** a Namespace can remain
+  `ownership_status=adopted` after KAORI manages its quota.
+- **Allocation control:** `adopted_observed` means recorded provider evidence
+  without KAORI mutation authority; `kaori_managed` requires successful
+  admitted authoritative write + provider read-back; **Drifted** requires an
+  explicit reconciliation decision, never an automatic mutation on Sync.
+
+| Entry condition | Appropriate workflow | Provider authority / outcome |
+| --- | --- | --- |
+| New Discovered Native or Capsule with admitted, unambiguous allocation | Review Adoption → **Adopt & Manage** | Recheck live authority/UID/resourceVersion, capacity + ownership; equivalent provider write/read-back before allocation becomes Managed |
+| Previously committed legacy **Adopted / Observed** Native Namespace | **Adopted Native Governance Cutover** | Supported Native ResourceQuota / Container LimitRange; Namespace lifecycle stays adopted |
+| Previously committed legacy **Adopted / Observed** Capsule Tenant CR quota | **Capsule Tenant Quota Governance** (#773) | `Tenant.spec.resourceQuotas` with admitted `tenant_resource_quotas`; write only authoritative Tenant CR |
+| Previously committed legacy **Adopted / Observed** Capsule shared quota | **Capsule Shared Allocation Governance** (#771) | Exactly one admitted `GlobalResourceQuota` with `shared_global_quota`; do not multiply shared quota by Namespace |
+| Allocation already **KAORI Managed** | Managed Allocation Change, or explicit Drift & Reconcile | No repeated cutover; Sync observes only |
+| Capsule owner with only namespaced Native ResourceQuota, absent/unhealthy/multiple/unsupported Capsule quota authority | **Control Unavailable**; preserve evidence and stop | No Capsule-managed adoption, no Native cutover bypass, no automatic observed-only adoption |
+
+**Capsule authority is capability-first, source-specific.** The Tenant CR observation key is `capsule_tenant_resource_quotas` and the distinct shared quota key is `capsule_global_resource_quota`. Serving the
+`Tenant.spec.resourceQuotas` schema is necessary but not sufficient.
+Tenant CR quotas and GlobalResourceQuota have **separate** governance
+services/commit paths; selecting the wrong quota path must be disabled
+rather than substituted. A namespaced ResourceQuota label referencing a
+Capsule Tenant proves correlation, not a supported Tenant/GRQ write path.
+The observed `kaori-adopt-lab-v2` has no Tenant CR quota and no
+GlobalResourceQuota but has a namespaced ResourceQuota: correctly blocked
+as `native_namespaced`. Never create competing provider quota solely
+to pass UAT.
+
+**Failure semantics:** preflight is read-only; mutation-capable submit
+revalidates fresh provider and admission evidence. A failed/unverified
+provider attempt must not be represented as a completed cutover.
+Explicit legacy cutover and new managed adoption both require provider
+read-back before committing managed allocation. Provider drift remains
+committed observed evidence until separately accepted/reapplied by an
+authorized operator. The current service contracts and tests, not older
+issue text, are authoritative when wording differs. No new mode or
+permission is added by this documentation clarification.
+
+## Capsule Managed Adoption Authority Preflight (#2463, 2026-10-18)
+
+The approved **Adopt & Manage** path is a mutation-capable governance cutover,
+not a read-only adoption. Capsule quota ownership must be proven before that
+action is offered. Capability-first preflight uses the same predicate as
+commit-time validation: one supported Capsule Tenant.spec.resourceQuotas or
+GlobalResourceQuota source with matching available served capability and no
+unresolved authoritative dimension conflict; genuinely absent quota may
+retain the existing empty-source behavior. A Native namespaced quota under
+Capsule management does not grant KAORI a Capsule source-write path, even if
+its observation would otherwise report `observed`.
+
+**Fail-closed flow:** Discovery → selected live deep preflight → classify
+authority + capability + unsupported/ambiguous fields → show
+**Control Unavailable** and a disabled managed-adoption submit for
+unadmitted paths → fresh submit-side identity and authority recheck →
+existing provider-specific cutover/read-back only when admitted.
+The UI exposes blockers and technical evidence without offering
+implicit provider writes. The submit service validates before allocating
+KAORI governance rows; provider remains authoritative and there is no
+Native fallback or silent observed-only mode. Failure of the server-side
+predicate is not approval to retry; user must inspect actual provider
+evidence and repeat a fresh preflight. Protected approval/CSRF/HTMX
+mechanics and existing committed-read surfaces are unchanged.
+
+## Tenant Release Step 3 — structured independent approval evidence (#1089, #2401; current presentation authority)
 
 Human DevContainer review of Release wizard **Step 3: Independent approval and handoff**
 found an acknowledged plan, external reference, long SHA-256, and Platform Admin
@@ -746,11 +874,11 @@ verification stacked as nearly equal paragraphs. The canonical Step 3 now
 has a compact KAORI icon/title, a separation-of-duties note, and distinct
 committed evidence regions:
 
-- **Active handoff plan** is a single compact locked-plan status panel showing
-  the original pending/acknowledged/not-replaceable state, successor owner,
-  and change-record reference. It explains plan immutability and governed
-  restart without implying Release is authorized. Expired plans still
-  distinguish original requester and required fresh preflight.
+- **Active handoff plan** now uses two adjacent responsive evidence cards (#2401):
+  the read-only locked-plan review state and the planned successor owner /
+  change record. Cards stack on narrow screens. The same pending/acknowledged/
+  expired conditionals and original-requester fresh preflight requirement are
+  preserved; neither card claims provider ownership has transferred.
 - The exact **Plan SHA-256** remains visible in a wrap-safe monospace value
   directly beneath the plan; it is not ellipsized or substituted with a
   status chip. A short acknowledgement line makes the outstanding external
@@ -765,6 +893,17 @@ committed evidence regions:
   required explicit checkbox authorization (plan SHA and exact resources),
   and the unchanged submit action.
 
+For the **eligible Prepare Handoff** state, Step 3 reuses Step 4's
+responsive **3:2 two-panel** presentation: a compact successor/change-reference
+form on the left and a read-only **Approval boundaries** sequence on the
+right. The sequence explains independent reviewer separation, external
+provider consent/ownership authority, and the separate committed checks
+before Release. At smaller breakpoints the panels stack; the existing
+desktop-bounded/mobile-full-width form and button contract from #2390
+remains unchanged. It is guidance, not a recorded review, live provider
+status, or extra approval control. Existing locked, expired, blocked and
+provider recovery states keep their previously approved presentation.
+
 The same committed plan/approval/claim attributes, requester/reviewer
 separation, endpoint actions, one-active-plan policy, successor identity
 checks, CSRF/HTMX, approval/dry-run/executor/read-back/restart conditionals
@@ -773,6 +912,49 @@ provider-side operation, identity mapping, credential or approval engine.
 The outer Release wizard continues to own one active URL-scoped step, while
 this content stays committed-state driven. All **10 Step 3 conditional forms**
 and **14 Tenant forms** remain present in source.
+
+**Step 4 Approval Pending — compact numbered list (#2401 follow-up):**
+Within the unchanged `not native_cycle.approval_complete` branch of
+**Next Required Action**, replace the horizontal 3-card approval path with
+the existing Step 3 `Approval boundaries` vertical ordered-list pattern:
+numbered Violet tokens, divided shared surface, title, and one concise
+sentence per action. Row meanings remain independent-review approval,
+external successor acceptance by an authorized Platform Admin, and later
+provider handoff/read-back before Release. These are guidance milestones
+only, not committed approvals. The single-sentence role-separation status
+and original Step 3 HTMX CTA remain; no new backend, provider calls, forms,
+permissions, or implicit admission. Preserve mobile wrapping, keyboard,
+light/dark and existing recovery/expiry precedence. Source contract tests
+were updated; runtime and browser UAT are pending under CI/CD HOLD.
+
+**Release Step 4 Review Expired action content (#2401 follow-up; presentation only):**
+The `native_cycle.review_expired` conditional now displays the Title Case
+**Next Required Action** header and a balanced Violet action region with
+current recorded **Review Expired** status, the need for fresh authoritative
+provider preflight, three sequential read-only instructions and its
+original Step 1 HTMX link. The instructions explicitly require inspection
+of refreshed committed identities, dependencies and blockers, then
+revalidation of exact plan/independent approval freshness. They are
+guidance, **not** automatic provider refresh, successor consent,
+re-review, restarts or Release authorization. Existing priority order
+(provider handoff recovery → approval expired → review expired →
+approval pending → TLS → other verification) and all original permission,
+CSRF, navigation and action contracts remain unchanged. Source contracts
+are updated; runtime and Dev Container visual acceptance are pending.
+
+**Release Governance contextual guidance / Step 4 pending action (#2401):**
+The shared `components/info_tip.html` provides pointer, keyboard and touch
+guidance alongside the permanent Release Governance heading. It distinguishes
+committed review, independently approved plan, external successor consent,
+provider handoff/read-back and authorized finalization. The Step 1 condition
+cards use shortened operator summaries for Namespace provider mutation and
+KAORI-linked allocation ownership; the exact original provider/governance
+reason stays accessible under **Exact recorded reason** and remains unchanged
+in committed evidence. In Step 4 only the `approval_complete == false` action
+branch gains a structured status and three not-yet-complete gates (review,
+successor acceptance, provider verification), followed by the same HTMX
+navigation CTA. Expiry, provider recovery, TLS and other branches are untouched.
+No approval evidence, provider mutation or Release state is synthesized.
 
 This supersedes *only* Step 3 presentation from the earlier #1075/#1077
 four-step wizard, not its admission/security rules. Browser Visual QA for
@@ -962,6 +1144,32 @@ gating, existing CSRF/HTMX routes, ownership handoff/read-back checks nor
 server-side approval policy is changed. This is a DevContainer source
 presentation refinement, not completed Capsule Release UAT or an approved
 provider mutation.
+
+## Tenant Release wizard responsive action density (#2390; review presentation)
+
+The four-stage Release Governance wizard retains full-width **committed evidence**
+and provider inventory: Step 1 readiness status and recorded blockers, Step 2
+Native/Capsule resource list and exact UID/resourceVersion disclosures, Step 3
+approval/read-back evidence, and Step 4 verification checkpoints remain
+unconstrained. Provider authority and immutable audit facts are unchanged.
+
+Only **action forms** are width-constrained on desktop using existing KAORI
+responsive utilities: the Successor owner / Change record and external
+reference inputs use `max-w-xl`; confirmation/recovery/handoff/finalization
+forms use `max-w-2xl`. Their inputs fill the constrained form, while CTA
+buttons are `w-full` on phones and `sm:w-auto` on larger screens. The
+Step 4 flex-column Release Governance fallback also aligns its button to
+the start rather than stretching it. The Step 1 Review Release CTA already
+uses responsive sizing, and Step 2 remains strictly read-only. No new CSS
+component, form field, permission branch, POST route, CSRF/HTMX behavior,
+confirmation requirement, provider mutation or step navigation was introduced.
+
+Local review acceptance requires desktop/mobile and light/dark visual checks
+covering clear/blocked preflight, authorized requester/reviewer states,
+Native/Capsule, expired plans, recovery and verified finalization. This
+layout-only work is on `kaori/review/staging-uat` path pending human
+DevContainer review; official Developer Check, Full Admission, staging/main,
+deployment and release remain HOLD until specifically authorized.
 
 ## Release Review Scope and step prerequisites (#1144; current visual refinement)
 

@@ -36,7 +36,11 @@ far-right header action corner.
 
 For a form/card section, place the trigger **immediately beside the section title** so the same visual grammar is used across Tenant, Operations, Governance, Integrations, and future domains. The owning surface must permit visible overflow for the desktop hover preview; do not trap the preview inside an `overflow-hidden` card. Rounded visual containment should be preserved by the card/header geometry rather than by clipping the Info Tip.
 
+For Kubernetes Secret Operations, the selected Secret heading on the replacement content form is also a title-level owner: render its contextual replacement guide with `variant='guide'`. Keep actual secret type, namespace/key count, write scope, validation and hidden-value safeguards visible outside the popover; do not change field-specific icon help or operational behavior.
+
 For a canonical registry with shared status or lifecycle vocabulary, place one **Guide label** Info Tip **beside the registry title** through the shared table-header `title_extra` slot. The registry card opts into visible overflow while the table itself stays inside its dedicated `overflow-x-auto` container. Header actions remain reserved for operational actions such as Clear Filters, Add, Create, or navigation.
+
+For **Kubernetes Tenant**, title-level guidance in Tenant Setup, Discovery, Membership, Access, Credentials, Resource Profiles, Capacity Policy/Budget and Namespace Provisioning/Allocation sections uses the same compact Guide label; field-specific owner/principal/selection help and row-specific reconciliation evidence remain icon-only. The four Resource Profile resource-group disclosures render their Guide beside the heading **inside the summary**, never as a detached `Section help` row below it. Activating that Guide must not toggle the disclosure; the chevron and summary area still operate normally. Preserve required inline status/error guidance outside popovers.
 
 ## Interaction and responsive behavior
 
@@ -47,7 +51,7 @@ Info Tip uses **one non-modal anchored popover** for every input method.
 - **click/touch** toggles the same popover;
 - **Escape**, outside click, HTMX replacement, resize, or scroll closes it.
 
-The shared `info_tips.js` controller temporarily portals the popover to `document.body`, positions it from the trigger, flips above when needed, and clamps it to the viewport. The same element is therefore used on desktop and touch/keyboard paths, and ordinary card/table overflow cannot clip it.
+The hover controller briefly defers dismissal when the pointer crosses the small trigger-to-panel gap, allowing long glossary panels to be reached and scrolled without pinning. Guide buttons inside disclosure summaries intercept the summary activation default, while the summary itself stays keyboard-operable. The shared `info_tips.js` controller temporarily portals the popover to `document.body` for ordinary pages, or into the closest open native `<dialog>` when its trigger belongs to a modal top layer. It positions the preview from the trigger, flips above when needed, and clamps it to the viewport. This keeps field-level help visible inside Notification Channel dialogs without adding a second tooltip implementation. The same element supports desktop, touch, and keyboard paths; ordinary card/table overflow does not clip the preview.
 
 Info Tip is deliberately non-modal: it never traps focus and never owns confirmation or workflow actions. If content requires a form, destructive acknowledgement, security decision, or long interactive workflow, use the relevant KAORI dialog/callout pattern instead.
 

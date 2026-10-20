@@ -73,3 +73,61 @@ def test_access_overview_explains_permission_scoped_control_boundaries() -> None
     ):
         assert boundary in presentation
     assert "'boundaries': boundaries" in presentation
+
+
+def test_uat_14_inch_access_overview_card_copy_is_concise() -> None:
+    source = read('app/access/overview/presentation.py')
+    assert "return 'Protected defaults aligned; delegation capped.'" in source
+    assert "'Audit actor snapshots; other sources stay gated.'" in source
+    assert "summary['baseline_drift_count']" in source
+    assert "summary['inactive_assigned_users']" in source
+    assert 'get_activity_audit_summary()' in source
+    # These are display-only copy changes; no presentation truncation.
+    template = read('app/templates/access/overview/index.html')
+    assert '{{ workspace.supporting_text }}' in template
+    assert '{{ boundary.description }}' in template
+    assert 'whitespace-nowrap' not in template
+
+
+def test_uat_access_boundaries_intro_precedes_one_accessible_card() -> None:
+    template = read('app/templates/access/overview/index.html')
+    assert '{% import "components/section_intro.html" as section_intro %}' in template
+    anchor = template.split('{% if access_overview.boundaries %}', 1)[1]
+    assert "section_intro.render('Access Boundaries'," in anchor
+    assert "id='access-boundaries-heading'" in anchor
+    assert 'aria-labelledby="access-boundaries-heading"' in anchor
+    assert 'operational_section.shell_classes()' in anchor
+    assert anchor.index("section_intro.render('Access Boundaries'") < anchor.index(
+        '<section class="{{ operational_section.shell_classes() }}"'
+    )
+    assert "'Access Boundaries'" not in anchor.split('<section class=', 1)[1]
+    assert "operational_section.render(\n                'Access Boundaries'" not in anchor
+    assert '{% for boundary in access_overview.boundaries %}' in anchor
+    assert 'table_label.status_indicator_label(boundary.status_label, boundary.status_tone)' in anchor
+    assert 'xl:grid-cols-4' in anchor
+    assert anchor.count('<h2') == 0
+
+
+def test_uat_review2_user_account_counts_keep_dynamic_break_glass_evidence() -> None:
+    import ast
+    from typing import Any
+
+    source = read('app/access/overview/presentation.py')
+    module = ast.parse(source)
+    function = next(
+        node for node in module.body if isinstance(node, ast.FunctionDef) and node.name == '_user_supporting_text'
+    )
+    namespace: dict[str, Any] = {'Any': Any}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), '<user-posture>', 'exec'), namespace)
+    supporting_text = namespace['_user_supporting_text']
+
+    baseline = {'active': 2, 'total': 2, 'active_super_admins': 1, 'access_review': 0}
+    assert supporting_text(baseline) == '2 accounts · 1 active Local DB break-glass admin.'
+    assert len(supporting_text(baseline)) < 55
+    assert supporting_text({**baseline, 'total': 1, 'active_super_admins': 2}) == (
+        '1 account · 2 active Local DB break-glass admins.'
+    )
+    assert 'No active break-glass super admin' in supporting_text({**baseline, 'active_super_admins': 0})
+    assert 'account admission issue(s)' in supporting_text({**baseline, 'access_review': 3})
+    assert 'No active user account' in supporting_text({**baseline, 'active': 0})
+    assert 'registered account(s) with' not in source

@@ -163,7 +163,12 @@ def test_capsule_new_tenant_adoption_rejects_namespace_owned_by_another_tenant(m
     monkeypatch.setattr(
         module,
         'observe_capsule_tenant_allocation',
-        lambda *_args, **_kwargs: {'correlated_namespaces': [{'name': 'claimed-ns'}]},
+        lambda *_args, **_kwargs: {
+            'allocation_authority': 'none_observed',
+            'control_state': 'observed',
+            'shared_quota': {},
+            'correlated_namespaces': [{'name': 'claimed-ns'}],
+        },
     )
     monkeypatch.setattr(
         module,
@@ -322,3 +327,101 @@ def test_native_discovery_accepts_namespaces_without_capsule_authority():
         owner_references=[SimpleNamespace(kind='ReplicaSet', api_version='apps/v1')],
     )
     assert state == 'Discovered'
+
+
+@pytest.mark.parametrize(
+    ('authority', 'capability', 'preview_only', 'eligible'),
+    [
+        ('none_observed', None, True, True),
+        ('none_observed', None, False, True),
+        ('native_namespaced', None, True, False),
+        ('native_namespaced', None, False, False),
+        ('ambiguous', None, True, False),
+        ('capsule_tenant_resource_quotas', 'tenant_resource_quotas', True, True),
+        ('capsule_tenant_resource_quotas', 'tenant_resource_quotas', False, True),
+        ('capsule_global_resource_quota', 'shared_global_quota', True, True),
+        ('capsule_global_resource_quota', 'shared_global_quota', False, True),
+        ('capsule_global_resource_quota', None, True, False),
+        ('capsule_tenant_resource_quotas', None, False, False),
+        ('capsule_tenant_resource_quotas', 'shared_global_quota', False, False),
+    ],
+)
+def test_capsule_managed_adoption_requires_the_correct_quota_capability(
+    authority: str, capability: str | None, preview_only: bool, eligible: bool
+):
+    from app.kubernetes.tenant.discovery_service import capsule_managed_adoption_blocker
+
+    allocation = {
+        'allocation_authority': authority,
+        'control_state': 'observed',
+        'shared_quota': {} if authority == 'none_observed' else {'limits.cpu': '4'},
+        'authority_unsupported_dimensions': [],
+        'authority_ambiguous_dimensions': [],
+        'capability_preview': capability if preview_only else None,
+        'admitted_capability': capability if not preview_only else None,
+    }
+    reason = capsule_managed_adoption_blocker(allocation, preview_only=preview_only)
+    assert (reason is None) is eligible
+    if authority == 'native_namespaced':
+        assert 'Native quota cannot substitute' in reason
+
+
+@pytest.mark.parametrize('field', ['authority_unsupported_dimensions', 'authority_ambiguous_dimensions'])
+def test_capsule_adoption_blocks_unsupported_or_competing_authority(field: str):
+    from app.kubernetes.tenant.discovery_service import capsule_managed_adoption_blocker
+
+    allocation = {
+        'allocation_authority': 'capsule_tenant_resource_quotas',
+        'control_state': 'observed',
+        'admitted_capability': 'tenant_resource_quotas',
+        field: ['unsupported evidence'],
+    }
+    assert capsule_managed_adoption_blocker(allocation, preview_only=False) is not None
+
+
+def test_capsule_managed_adoption_rejects_namespaced_only_quota_before_records(monkeypatch):
+    from app.kubernetes.tenant import discovery_adoption as module
+
+    context = SimpleNamespace(
+        cluster=SimpleNamespace(id='cluster-a'),
+        client=SimpleNamespace(),
+        resource_name='kaori-adopt-lab-v2',
+        expected_provider_uid='provider-uid',
+        expected_provider_resource_version='18',
+    )
+    monkeypatch.setattr(module, '_managed_capsule_map', lambda _: {})
+    monkeypatch.setattr(
+        module,
+        '_read_capsule_tenant',
+        lambda *_: (
+            'v1beta2',
+            {
+                'metadata': {
+                    'name': 'kaori-adopt-lab-v2',
+                    'uid': 'provider-uid',
+                    'resourceVersion': '18',
+                    'labels': {},
+                },
+            },
+        ),
+    )
+    monkeypatch.setattr(
+        module,
+        'observe_capsule_tenant_allocation',
+        lambda *_args, **_kwargs: {
+            'allocation_authority': 'native_namespaced',
+            'control_state': 'observed',
+            'shared_quota': {},
+            'authority_unsupported_dimensions': [],
+            'authority_ambiguous_dimensions': [],
+        },
+    )
+    monkeypatch.setattr(module, 'qualify_capsule_tenant_adoption', lambda **_: ('capsule', {}))
+
+    def must_not_create(*_args, **_kwargs):
+        pytest.fail('Unadmitted quota must fail before allocating governance rows or provider writes.')
+
+    monkeypatch.setattr(module, '_capsule_namespace_records', must_not_create)
+    monkeypatch.setattr(module, '_managed_namespace_map', must_not_create)
+    with pytest.raises(ValueError, match='Native quota cannot substitute'):
+        module._adopt_capsule(context)

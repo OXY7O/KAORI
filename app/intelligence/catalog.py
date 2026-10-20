@@ -86,6 +86,8 @@ def _load_catalog() -> list[dict[str, object]]:
             rule['provider_keys'] = list(string_tuple(raw.get('provider_keys'), f'{path}.provider_keys'))
         if 'catalog_summary' in raw:
             rule['catalog_summary'] = require_str(raw, 'catalog_summary', path)
+        if 'dashboard_action' in raw:
+            rule['dashboard_action'] = require_str(raw, 'dashboard_action', path)
         rule['risk_exception'] = _normalize_risk_exception(raw.get('risk_exception'), path=path)
         if 'severity_bands' in raw:
             bands = require_list(raw.get('severity_bands'), f'{path}.severity_bands')

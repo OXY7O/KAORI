@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -109,3 +110,44 @@ def test_service_export_uses_canonical_backend_and_endpoint_fields() -> None:
         'Load Balancer Addresses',
     ):
         assert label in standard
+
+
+def test_kubernetes_inventory_network_and_configuration_filters_have_associated_labels() -> None:
+    """Each visible filter label binds to the canonical select/search input ID."""
+    filters_by_resource = {
+        'services': {
+            'services-cluster-filter': 'cluster_id',
+            'services-namespace-filter': 'namespace',
+            'services-type-filter': 'type',
+            'services-search-filter': 'search',
+        },
+        'ingresses': {
+            'ingresses-cluster-filter': 'cluster_id',
+            'ingresses-namespace-filter': 'namespace',
+            'ingresses-class-filter': 'class',
+            'ingresses-tls-filter': 'tls',
+            'ingresses-search-filter': 'search',
+        },
+        'configuration': {
+            'configuration-cluster-filter': 'cluster_id',
+            'configuration-namespace-filter': 'namespace',
+            'configuration-type-filter': 'type',
+            'configuration-search-filter': 'search',
+        },
+    }
+
+    shared = read('app/templates/components/table_primitives.html')
+    assert 'macro search_field(name, value, placeholder, id=None)' in shared
+    assert '{% if id %}id="{{ id }}"{% endif %}' in shared
+
+    for resource, filter_controls in filters_by_resource.items():
+        card = read(f'app/templates/kubernetes/inventory/{resource}/partials/_table_card.html')
+        assert f"url_for('inventory.{resource}')" in card
+        assert 'name="partial_mode" value="page_workspace"' in card
+        for control_id, query_name in filter_controls.items():
+            assert f'for="{control_id}"' in card
+            if query_name == 'search':
+                assert "table_ui.search_field('search', search," in card
+                assert f"id='{control_id}')" in card
+            else:
+                assert re.search(rf'<select\s+id="{control_id}"\s+name="{query_name}"', card) is not None

@@ -22,7 +22,7 @@ def test_object_storage_requested_wording_is_concise_and_locked() -> None:
     detail = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
 
     assert 'Committed inventory is available; snapshot or provider conditions need review.' in system_presentation
-    assert 'Used size and object count are optional usage evidence.' in presentation
+    assert 'Usage metrics are optional.' in presentation
     assert 'Latest committed inventory observation.' in summary
     assert (
         'Usage is collected separately from quota. Prefer provider_metrics; '
@@ -151,3 +151,86 @@ def test_inventory_tables_keep_canonical_scope_refresh_and_pagination_ownership(
         assert 'components/states/_empty_state.html' in rows
 
     assert presentation.count('per_page: int = 5') >= 2
+
+
+def test_object_storage_concise_descriptions_cover_all_reviewed_surfaces() -> None:
+    systems = read('app/templates/storage/object_storage/inventory/systems/partials/_summary_cards.html')
+    bucket = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    system = read('app/templates/storage/object_storage/inventory/systems/partials/_system_detail_content.html')
+    copy_by_surface = (
+        (
+            systems,
+            (
+                'Systems matching active filters.',
+                'Provider-ready inventory systems.',
+                'Systems with committed snapshots.',
+                'Provider conditions require review.',
+            ),
+        ),
+        (
+            bucket,
+            (
+                'Bucket identity and location.',
+                'Snapshot source and freshness.',
+                'Quota and collected usage.',
+                'Observed protection controls.',
+                'Lifecycle and access posture.',
+                'Provider metadata and endpoint.',
+            ),
+        ),
+        (
+            system,
+            (
+                'System identity and release.',
+                'Endpoint and validation status.',
+                'Committed snapshot and coverage.',
+            ),
+        ),
+    )
+    for source, descriptions in copy_by_surface:
+        for copy in descriptions:
+            assert source.count(copy) == 1
+            assert len(copy) <= 39
+
+    fleet = read('app/storage/object_storage/inventory/presentation.py')
+    for copy in (
+        'No committed assets to assess.',
+        'Quota assessed;',
+        'need quota evidence.',
+        'Review flags;',
+        'No flags;',
+        'All assets have protection evidence.',
+        'Public exposure flagged;',
+        'No public assets observed;',
+        'No assets classified public.',
+        'Usage metrics are optional.',
+        'No committed assets for usage.',
+    ):
+        assert copy in fleet
+
+    # State classification and snapshot authority still own the metric values.
+    for token in (
+        'quota_title, quota_tone',
+        'protection_title, protection_tone',
+        'exposure_title, exposure_tone',
+        "'quota_assessed': quota_assessed",
+        "'protection_assessed': protection_assessed",
+        "'exposure_assessed': exposure_assessed",
+        "'usage_collected': usage_collected",
+    ):
+        assert token in fleet
+
+
+def test_legacy_minio_bucket_metadata_gets_display_only_compact_copy() -> None:
+    presentation = read('app/storage/object_storage/inventory/presentation.py')
+    client = read('app/integrations/storage/object_storage/providers/minio/client.py')
+    bucket = read('app/templates/storage/object_storage/inventory/buckets/partials/_bucket_detail_content.html')
+    old = 'Provider-native S3 configuration evidence collected by Object Storage Inventory Sync.'
+    assert old in presentation
+    assert old not in client
+    assert "title == 'MinIO Bucket Configuration'" in presentation
+    assert "normalized_description = 'Collected MinIO S3 settings.'" in presentation
+    assert "'description': normalized_description" in presentation
+    assert "'description': 'Collected MinIO S3 settings.'" in client
+    assert 'section.description' in bucket
+    assert 'bucket.provider_detail_sections' in bucket

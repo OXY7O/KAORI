@@ -636,7 +636,10 @@ def test_create_profile_resource_sections_are_collapsed_native_disclosures() -> 
         assert 'data-tenant-resource-section' in opening
         assert f'aria-labelledby="{heading}"' in opening
         assert '<summary ' in section
-        assert section.index('<summary ') < section.index('Section help')
+        summary = section.split('</summary>', 1)[0]
+        assert "variant='guide'" in summary
+        assert 'info_tip.render(' in summary
+        assert 'Section help' not in section
         assert f'id="{heading}"' in section
         assert f'>{title}</h3>' in section
         assert 'group-open:rotate-180' in section
@@ -662,6 +665,46 @@ def test_create_profile_resource_sections_are_collapsed_native_disclosures() -> 
     assert '<details ' in controls
 
 
+def test_resource_profile_registry_offline_css_covers_both_layout_modes() -> None:
+    source = read('frontend/styles.css')
+    compiled = read('app/static/css/output.css')
+    # Tailwind's production minifier can remove selector quotes and CSS whitespace.
+    # Check the same scoped behavior in both authored and compiled CSS.
+    for css in (source, compiled):
+        compact = re.sub(r'\s+', '', css).replace("'", '').replace('"', '')
+        assert '[data-kaori-responsive-registry=resource-profiles]' in compact
+        assert 'display:table-header-group' in compact
+        assert 'display:table-row-group' in compact
+        assert 'grid-template-columns:repeat(2,minmax(0,1fr))' in compact
+        assert 'data-kaori-registry-empty' in compact
+        assert re.search(r'@media\([^)]*639px[^)]*\)', compact) is not None
+
+
+def test_resource_profile_registry_reflows_without_forced_horizontal_scrolling() -> None:
+    registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
+    assert 'data-kaori-responsive-registry="resource-profiles"' in registry
+    assert 'overflow-x-auto' not in registry
+    assert 'min-w-[1150px]' not in registry
+    assert "table_ui.table_classes('block w-full xl:table xl:!table-fixed')" in registry
+    assert 'hidden xl:table-header-group' in registry
+    assert 'xl:table-row-group' in registry
+    assert 'grid min-w-0 grid-cols-1' in registry
+    assert 'sm:grid-cols-2 xl:table-row' in registry
+    assert 'col-span-full min-w-0' in registry
+    assert registry.count('xl:table-cell') >= 6
+    for label in ('Contract', 'Allocation', 'Usage'):
+        assert f'xl:hidden">{label}</span>' in registry
+    assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
+    # The desktop Manage action follows the same 16px right inset as the
+    # shared Kubernetes Inventory action column and this table's Action header.
+    action_cell = registry.split('<td class="{{ table_ui.cell_classes(action=true) }}', 1)[1].split('</td>', 1)[0]
+    assert 'xl:!px-4' in action_cell
+    assert 'xl:!px-2' not in action_cell
+    assert 'colspan="5" class="block p-0 xl:table-cell"' in registry
+    assert 'data-kaori-registry-empty' in registry
+    assert registry.count('data-kaori-profile-column-label') == 3
+
+
 def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() -> None:
     registry = read('app/templates/kubernetes/tenant/partials/_resource_profile_registry.html')
     service = tenant_service_source()
@@ -679,7 +722,7 @@ def test_resource_profile_registry_uses_canonical_htmx_filters_and_pagination() 
     assert 'Allocation' in registry
     assert 'Usage' in registry
     assert '>Action</th>' in registry
-    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
+    assert "table_ui.table_classes('block w-full xl:table xl:!table-fixed')" in registry
     assert 'resource-profile-manage-' in registry
     assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
     assert 'Versioned Controls' in registry
@@ -716,7 +759,7 @@ def test_resource_profile_registry_shows_compact_identity_and_full_detail_in_man
     # Shared table geometry, HTMX, default pagination and actual Manage action stay intact.
     assert "title_cell(name, supporting_text='', icon='', supporting_content=None)" in table
     assert 'table_primitives.title_cell(name, supporting_text, icon, supporting_content)' in table
-    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
+    assert "table_ui.table_classes('block w-full xl:table xl:!table-fixed')" in registry
     assert 'registry_ui.footer' in registry
     assert 'data-dialog-target="resource-profile-manage-{{ profile.id }}"' in registry
 
@@ -739,9 +782,9 @@ def test_resource_profile_workspace_redesign_preserves_governance_and_modal_work
     dialogs = read('app/templates/kubernetes/tenant/partials/_resource_profile_management_dialogs.html')
 
     # One coherent fixed-column contract; no truncated resource evidence.
-    for label, width in [('Profile', 29), ('Contract', 21), ('Allocation', 26), ('Usage', 15), ('Action', 9)]:
+    for label, width in [('Profile', 28), ('Contract', 19), ('Allocation', 25), ('Usage', 16), ('Action', 12)]:
         assert f'w-[{width}%]">{label}' in registry
-    assert "table_ui.table_classes('min-w-[1150px] !table-fixed')" in registry
+    assert "table_ui.table_classes('block w-full xl:table xl:!table-fixed')" in registry
     assert 'grid grid-cols-2 gap-x-3 gap-y-2' in registry
     assert "('CPU', profile.quota_hard_json.get('requests.cpu') or 'Not Managed')" in registry
     assert "('Memory', profile.quota_hard_json.get('requests.memory') or 'Not Managed')" in registry
@@ -899,8 +942,9 @@ def test_capacity_governance_uses_canonical_cluster_budget_table() -> None:
     assert 'placeholder="2048"' not in capacity
     assert 'for="tenant-storage-budget-gib"' in capacity
     assert 'id="tenant-storage-budget-gib"' in capacity
-    assert 'aria-describedby="tenant-storage-budget-help"' in capacity
-    assert 'Optional. Enter a value and save to govern storage; blank means Not Governed.' in capacity
+    assert 'aria-describedby="tenant-storage-budget-help"' not in capacity
+    assert 'tenant-storage-budget-help' not in capacity
+    assert 'Blank means Not Governed.' in capacity
     assert '2048 GiB = 2 TiB' in capacity
     assert 'Compute evidence required' in capacity
     assert 'Logical storage governed' in capacity
@@ -1033,7 +1077,10 @@ def test_resource_profile_revision_preserves_fixed_preset_values_and_dependency_
     assert 'profile_version = int(profile.version or 1)' in service
 
     assert 'def rollout_resource_profile_to_tenant_committed(' in service
-    assert 'def _resource_profile_rollout_targets(' in service
+    rollout_context = read('app/kubernetes/tenant/resource_profile_rollout_context.py')
+    facade = read('app/kubernetes/tenant/service.py')
+    assert 'def _resource_profile_rollout_targets(' in rollout_context
+    assert '_resource_profile_rollout_targets = _registry_context._resource_profile_rollout_targets' in facade
     assert 'change_native_namespace_allocation_committed(' in service
     assert "'profile_rollout_targets': profile_rollout_targets" in service
     assert 'A blocked Namespace stays on its previous committed version.' not in service
@@ -1478,6 +1525,59 @@ def test_allocation_change_all_title_info_tips_are_adjacent_not_corner_actions()
         assert template.count('type="submit"') >= 1, filename
 
 
+def test_adoption_and_legacy_cutover_guidance_match_approved_current_authority() -> None:
+    """#2481: do not conflate #777 Managed-on-Adopt with legacy #762 cutover."""
+    from jinja2 import Environment
+
+    templates = {
+        '_allocation_cutover.html': (
+            'For legacy Adopted / Observed allocation only',
+            'Native ResourceQuota / LimitRange',
+        ),
+        '_capsule_tenant_quota_cutover.html': (
+            'For legacy Adopted / Observed allocation only',
+            'Tenant.spec.resourceQuotas',
+        ),
+        '_capsule_shared_allocation_cutover.html': (
+            'For legacy Adopted / Observed Capsule allocation only',
+            'GlobalResourceQuota',
+        ),
+    }
+    for filename, (legacy_copy, provider_authority) in templates.items():
+        source = read('app/templates/kubernetes/tenant/partials/' + filename)
+        Environment(autoescape=True).parse(source)
+        assert legacy_copy in source, filename
+        assert provider_authority in source, filename
+        assert 'Managed-on-Adopt' in source, filename
+        assert source.count('info_tip.render(') == 1, filename
+        assert source.count('name="csrf_token"') >= 1, filename
+        assert source.count('type="submit"') >= 1, filename
+
+    operator = read('app/kubernetes/tenant/README.md')
+    architecture = read('docs/architecture/kubernetes-tenant-domain.md')
+    assert '### Managed Adoption and Legacy Allocation Governance Cutover' in operator
+    assert '## Tenant Adoption vs Allocation Cutover — Current Authority' in architecture
+    assert '**Adopt & Manage**' in operator
+    assert 'New human-confirmed adoption uses **Adopt & Manage**' in operator
+    for authority in (
+        'capsule_tenant_resource_quotas',
+        'Tenant.spec.resourceQuotas',
+        'GlobalResourceQuota',
+        'native_namespaced',
+        'Adopted / Observed',
+        'KAORI Managed',
+        'Drift & Reconcile',
+    ):
+        assert authority in operator
+        assert authority in architecture
+    assert 'The primary action is **Adopt as Observed**' not in operator
+    assert 'Submit **Adopt as Observed**' not in operator
+    assert 'Tenant.spec.resourceQuotas` and ambiguous/unsupported Capsule authority remain' not in operator
+    assert 'Capsule Tenant Quota Governance' in operator
+    assert 'Capsule Shared Allocation Governance' in operator
+    assert 'Adopted Native Governance Cutover' in operator
+
+
 def test_adopted_native_cutover_reuses_committed_allocation_comparison() -> None:
     from jinja2 import Environment
 
@@ -1825,3 +1925,87 @@ def test_capacity_operator_limit_exposure_remains_separate_from_request_commitme
     assert 'quota_vector_factory=quota_limit_vector' in backend
     assert 'def _operator_limit_ratio(' in backend
     assert "down_revision = '20261012_capsule_handback_guard'" in migration
+
+
+def test_capacity_policy_reuses_info_tips_without_inline_helper_copy() -> None:
+    from jinja2 import Environment
+
+    form = read('app/templates/kubernetes/tenant/partials/_capacity_governance.html')
+    Environment(autoescape=True).parse(form)
+
+    for help_id in (
+        'tenant-cpu-limit-ratio-help',
+        'tenant-memory-limit-ratio-help',
+        'tenant-storage-budget-help',
+    ):
+        assert help_id not in form
+
+    for input_name in ('cpu_limit_ratio', 'memory_limit_ratio', 'tenant_storage_budget_gib'):
+        assert f'name="{input_name}"' in form
+        assert f'data-capacity-policy-field="{input_name}"' in form
+
+    assert 'tenant-limit-exposure-policy-tip' in form
+    assert 'tenant-capacity-storage-budget-tip' in form
+    assert 'Blank means Not Governed.' in form
+    assert 'CPU ratio multiplies the governed Tenant CPU budget' in form
+    assert 'Memory defaults to 1.00' in form
+    assert 'Logical budget only.' in form
+    assert 'name="csrf_token"' in form
+
+
+def test_tenant_allocation_guidance_has_single_title_tip_and_budget_formula() -> None:
+    from jinja2 import Environment
+
+    overview = read('app/templates/kubernetes/tenant/partials/_tenant_allocation_overview.html')
+    Environment(autoescape=True).parse(overview)
+
+    exposure = overview.split('id="tenant-limit-exposure-heading"', 1)[1].split('</section>', 1)[0]
+    assert 'components/info_tip.html' in overview
+    assert '<section class="overflow-visible rounded-xl' in overview
+    assert exposure.count('info_tip.render(') == 1
+    assert "'tenant-limit-exposure-guide-tip'" in exposure
+    assert exposure.count("placement='right', variant='guide'") == 1
+    assert exposure.index('CPU &amp; Memory Limit Exposure') < exposure.index('info_tip.render(')
+    assert exposure.index('info_tip.render(') < exposure.index('<div class="overflow-x-auto">')
+    assert 'tenant-limit-exposure-assessment-tip' not in exposure
+    assert 'tenant-limit-exposure-governance-boundary-tip' not in exposure
+    assert 'Exposure assessment</span>' not in exposure
+    assert 'Governance boundary</span>' not in exposure
+    assert 'exposure.reason,' in exposure  # Tooltip displays actual committed reasoning.
+    assert '{{ exposure.reason }}' in exposure  # Only risk reasons remain persistent.
+    assert "exposure.state in ['Unknown', 'Near Capacity', 'Overcommitted']" in exposure
+    assert 'role="status"' in exposure
+    assert 'operational_callout.semantic_border_classes(exposure_tone' in exposure
+    assert 'bg-status-critical-soft text-status-critical-text' in exposure
+    assert 'bg-status-warning-soft text-status-warning-text' in exposure
+    assert "exposure.mode == 'observe'" in exposure
+    assert 'Observe never blocks Resource Profile admission.' in exposure
+    assert 'Enforce adds a Limits admission check.' in exposure
+    assert 'Request Commitment above remains the admission baseline.' in exposure
+    assert 'Ratios multiply the governed Tenant budget' in exposure
+    assert 'grid gap-3 border-t' not in exposure
+    assert 'sm:grid-cols-2' not in exposure
+
+    budget = overview.split('How allocation budgets work', 1)[1].split('</details>', 1)[0]
+    assert budget.index('Request budget formula') < budget.index('Logical storage policy')
+    assert budget.index('Logical storage policy') < budget.index('ResourceQuota boundary')
+    assert 'tenant-allocation-budget-formula-heading' in budget
+    assert 'data-lucide="calculator"' in budget
+    assert 'font-mono' in budget
+    assert 'border-kaori-primary/15 bg-kaori-soft' in budget
+    for term in (
+        'Tenant Budget',
+        'Ready-worker allocatable',
+        'platform reserve',
+        'safety headroom',
+        'unmanaged commitment',
+    ):
+        assert term in budget
+    assert 'Operator-governed requests.storage ceiling; not backend physical free space.' in budget
+    assert 'ResourceQuota enforces limits but does not reserve resources on Kubernetes nodes.' in budget
+    assert 'data-lucide="database"' in budget
+    assert 'sm:grid-cols-2' in budget
+    assert 'group-open:rotate-180' in overview
+    assert 'allocation_overview.bars' in overview
+    assert "exposure.display[field ~ '_committed']" in overview
+    assert "exposure.display[field ~ '_threshold']" in overview

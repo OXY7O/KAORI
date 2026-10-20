@@ -6,6 +6,28 @@ domains:
     label: Kubernetes
   object_storage:
     label: Object Storage
+  artifact_registry:
+    label: Artifact Registry
+    hint: Report Ready only
+    allowed_events:
+      - report.generated
+  integrations:
+    label: Integrations
+    hint: Provider Health Degraded only
+    allowed_events:
+      - integrations.health_degraded
+  platform_operations:
+    label: Platform Operations
+    hint: Failed Jobs only
+    allowed_events:
+      - jobs.execution_failed
+  registry:
+    label: Registry Alerts
+    hint: Governed AlertCases only
+    allowed_events:
+      - alert_intelligence.active_alert
+      - alert_ops.firing
+      - alert_ops.resolved
 
 events:
   alert_intelligence.active_alert:
@@ -20,6 +42,12 @@ events:
   report.generated:
     label: Scheduled Reports · Report Ready
     severity_scoped: false
+  integrations.health_degraded:
+    label: Integrations · Provider Health Degraded
+    severity_scoped: true
+  jobs.execution_failed:
+    label: Jobs & Executions · Failed
+    severity_scoped: true
   automation.approval_required:
     label: Automation Control · Approval Required
     severity_scoped: false

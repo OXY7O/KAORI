@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.integrations.delivery.notification_channels.catalog import (
+    domain_event_allowed,
     domain_label,
     domain_options,
     event_severity_scoped,
@@ -34,6 +35,14 @@ from app.integrations.delivery.notification_channels.providers import (
     get_notification_provider,
     provider_catalog,
     provider_labels,
+)
+from app.integrations.delivery.notification_channels.service_helpers import (
+    DeliveryPagination,
+    _credential_map,
+    _encode_credentials,
+    _minimum_severity_label,
+    _normalize_severity,
+    _reset_channel_validation,
 )
 from app.models.notification_channel import NotificationChannel, NotificationDelivery
 from app.models.report import Report
@@ -175,16 +184,29 @@ def get_notification_channels_payload(
     *,
     channel_page: int = 1,
     channel_per_page: int = 5,
-    delivery_page: int = 1,
-    delivery_per_page: int = 5,
+    channel_search: str = '',
+    channel_provider: str = '',
+    channel_state: str = '',
+    delivery_pagination: DeliveryPagination = DeliveryPagination(),
     delivery_event_key: str = '',
     can_view_reports: bool = False,
 ) -> dict[str, Any]:
-    channel_rows, channel_pagination = _channel_registry_page(page=channel_page, per_page=channel_per_page)
+    normalized_channel_search = str(channel_search or '').strip()[:160]
+    normalized_provider = str(channel_provider or '').strip().lower()
+    normalized_provider = normalized_provider if normalized_provider in _PROVIDER_LABELS else ''
+    normalized_state = str(channel_state or '').strip().lower()
+    normalized_state = normalized_state if normalized_state in {'enabled', 'disabled'} else ''
+    channel_rows, channel_pagination = _channel_registry_page(
+        page=channel_page,
+        per_page=channel_per_page,
+        search=normalized_channel_search,
+        provider=normalized_provider,
+        state=normalized_state,
+    )
     normalized_delivery_key = str(delivery_event_key or '').strip()[:255]
-    delivery_rows, delivery_pagination = _delivery_registry_page(
-        page=delivery_page,
-        per_page=delivery_per_page,
+    delivery_rows, delivery_window = _delivery_registry_page(
+        page=delivery_pagination.page,
+        per_page=delivery_pagination.per_page,
         event_key=normalized_delivery_key,
         can_view_reports=can_view_reports,
     )
@@ -211,8 +233,13 @@ def get_notification_channels_payload(
         'posture': {'label': summary['label'], 'tone': summary['tone']},
         'channels': channel_rows,
         'channel_pagination': channel_pagination,
+        'channel_filters': {
+            'search': normalized_channel_search,
+            'provider': normalized_provider,
+            'state': normalized_state,
+        },
         'deliveries': delivery_rows,
-        'delivery_pagination': delivery_pagination,
+        'delivery_pagination': delivery_window,
         'delivery_filter': normalized_delivery_key,
         'providers': providers,
         'domain_options': domain_options(),
@@ -239,8 +266,19 @@ def get_notification_channels_payload(
     }
 
 
-def _channel_registry_page(*, page: int, per_page: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    query = NotificationChannel.query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())
+def _channel_registry_page(
+    *, page: int, per_page: int, search: str = '', provider: str = '', state: str = ''
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    query = NotificationChannel.query
+    if search:
+        query = query.filter(func.lower(NotificationChannel.name).contains(search.lower(), autoescape=True))
+    if provider:
+        query = query.filter(NotificationChannel.provider_key == provider)
+    if state == 'enabled':
+        query = query.filter(NotificationChannel.enabled.is_(True))
+    elif state == 'disabled':
+        query = query.filter(NotificationChannel.enabled.is_(False))
+    query = query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc())
     rows, pagination = paginate_query(query, page=page, per_page=per_page)
     usage_map = channel_usage_map([channel.id for channel in rows])
     return [_channel_view(channel, usage=usage_map.get(channel.id)) for channel in rows], pagination
@@ -289,16 +327,6 @@ def _report_source_url(delivery: NotificationDelivery, report_lookup: dict[int, 
     if report_id is None or report_id not in report_lookup:
         return None
     return url_for('reports.generated_report_detail', report_id=report_id)
-
-
-def _reset_channel_validation(channel: NotificationChannel) -> None:
-    channel.test_status = 'not_tested'
-    channel.test_message = 'Destination, credentials, or transport configuration changed. Validate the channel again.'
-    channel.last_tested_at = None
-    channel.last_delivery_status = 'never'
-    channel.last_delivery_message = None
-    channel.last_delivery_attempt_at = None
-    channel.last_delivery_at = None
 
 
 def _provider_label(provider_key: str) -> str:
@@ -420,7 +448,9 @@ def list_event_channel_options(
     options: list[dict[str, Any]] = []
     for channel in channels:
         supports_event = event_type in (channel.event_types or [])
-        supports_domain = domain is None or domain in (channel.domains or [])
+        supports_domain = domain is None or (
+            domain in (channel.domains or []) and domain_event_allowed(domain, event_type)
+        )
         supports_severity = (
             severity is None
             or not event_severity_scoped(event_type)
@@ -746,6 +776,7 @@ def _channel_matches_event(
         and channel.configured
         and channel.test_status == 'success'
         and domain in (channel.domains or [])
+        and domain_event_allowed(domain, event_type)
         and event_type in allowed_events
     ):
         return False
@@ -969,37 +1000,3 @@ def _alert_message(
         action_url=action_url,
         action_label='Open Alert Intelligence',
     )
-
-
-def _encode_credentials(credentials: dict[str, str]) -> str:
-    return json.dumps(credentials, separators=(',', ':'), sort_keys=True)
-
-
-def _credential_map(channel: NotificationChannel) -> dict[str, str]:
-    raw = str(channel.credential_payload or '').strip()
-    if not raw:
-        return {}
-    try:
-        payload = json.loads(raw)
-    except (TypeError, ValueError):
-        return {}
-    if not isinstance(payload, dict):
-        return {}
-    return {str(key): str(value) for key, value in payload.items() if value is not None}
-
-
-def _normalize_severity(value: Any) -> str:
-    normalized = str(value or '').strip().lower()
-    if normalized in {'critical', 'error', 'fatal', 'p1'}:
-        return 'critical'
-    if normalized in {'warning', 'warn', 'p2'}:
-        return 'warning'
-    return 'info'
-
-
-def _minimum_severity_label(value: str) -> str:
-    return {
-        'critical': 'Critical only',
-        'warning': 'Warning and Critical',
-        'info': 'Info and above',
-    }.get(value, 'Warning and Critical')

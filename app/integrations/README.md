@@ -493,3 +493,95 @@ explicit ntfy internal network/CA tests, Flask permission/CSRF checks,
 responsive/light-dark/keyboard Visual QA, and permitted sandbox Test Delivery
 on authorized destinations. Do not advance staging/main promotion or claim
 human acceptance without evidence.
+
+### REVIEW(5) — Configured Channels registry (#2318)
+
+The notification channel registry now follows canonical `table_registry.filter_form`
+with live HTMX search by channel name, provider and enabled/disabled state,
+conditional `clear_filters_link`, server-side filters before pagination, default
+Rows 5, and query-preserving footer. Filtered empty results differ from a
+truly unconfigured channel inventory. Native GET remains the non-HTMX fallback.
+Name filtering deliberately avoids encrypted provider credentials, destination
+secrets and arbitrary provider calls. The existing read-only channel table,
+permission-gated Edit/Test/Delete actions, status computation, source-owned
+provider catalog and Activity Audit remain authoritative.
+
+### REVIEW(5) — Delivery Activity canonical filter (#2319)
+
+Delivery Activity already has persisted rows, status/evidence columns,
+loading and pagination. The Exact Event Key filter now uses existing
+`table_registry.filter_form` auto-apply HTMX after input changes and
+`clear_filters_link` for active filters instead of the bespoke Find
+Deliveries submit button. Scoped `notification-delivery-registry` swaps,
+loading indicator, latest-request-wins synchronization and tab/Rows
+preservation follow the shared component, retaining native GET fallback.
+The **exact event-key** match and permissioned Report source links remain
+unchanged. Delivery history remains provider evidence, not extra authored
+Activity Audit. Firefox/Dev Container and human acceptance remain pending.
+
+### REVIEW(5) — Provider controls and modal header (#2320)
+
+Provider cards now use canonical secondary action-button geometry for
+Guide and Configure (icon-first, 40px, hover/focus/active), with
+provider-specific accessible names. Existing Alpine/native dialog behavior
+is unchanged. Provider Setup Guide has a shared 'Guided Setup' metadata
+label beside its title. No changes to provider adapter, credentials,
+permissions or outbound delivery; Dev Container browser UAT pending.
+
+### REVIEW(5) — Add Notification Channel modal and setup guidance (#2321)
+
+Create Channel displays the canonical `New Destination` header label and a
+catalog-driven selection gallery for all six supported transports (Discord,
+Slack, ntfy, Telegram, Email/SMTP and Microsoft Teams). Choosing a card sets
+the existing Alpine-bound native Provider selector and exposes the
+unchanged adapter-owned destination/credential form. Edit Channel retains
+its immutable provider and actual saved state; CSRF, form validation and
+encryption of secrets are unchanged. Prior to selection, existing credential
+and activation boundaries are visible instead of a sparse, obsolete prompt.
+
+Provider-owned Setup Guide sequences, credential security boundaries and
+Test Delivery interpretations are now concise action-and-purpose sentences.
+The complete ntfy allowed origin/CA/network requirements, Telegram topic
+and separate GitHub notifier boundaries, Slack/Discord HTTPS constraints,
+SMTP TLS/password safeguards and Teams Anyone trigger requirement stay
+explicit. A two-line display is a Firefox Lenovo L13 review target, **not**
+a forced clamp or a runtime PASS; narrower viewports may wrap further.
+Focused local provider and Jinja contracts, real browser Visual QA and
+human acceptance remain pending; official gates/deployment HOLD.
+
+### REVIEW(6) — Modal simplification and delivery policy (#2329)
+
+Provider selection is now **single-source via the existing native Provider
+dropdown**, with no duplicate six-card gallery. Add/Edit and Setup Guide
+modal headers show contextual metadata immediately below their descriptive
+subtitles. The redundant Minimum Alert Severity helper sentence is removed
+from the UI while its catalog-owned `severity_scoped` backend logic stays
+unchanged. Delivery Domains show a compact full-width row of actual
+source-supported routing domains; Allowed Uses use a responsive 2-/3-column
+checkbox grid instead of a tall narrow rail. Preserve all selected values,
+server form validation, CSRF, current provider form partials, enabled-state
+contract and accessibility. The baseline catalog authorized Kubernetes and Object Storage. Review-only
+#2342 adds the published Reports domain **Artifact Registry**
+(`artifact_registry`) with `report.generated` as its sole qualified event.
+This is distinct from Alert Intelligence's `registry` domain, whose
+firing/resolved routing remains denied under #1186/#1512. Existing
+Kubernetes/Object Storage event policy stays unchanged; all further
+new-domain routing still requires producer/authority audit #2331, not
+a fabricated UI-only checkbox.
+No official admission until Dev Container functional/visual UAT and human
+acceptance are captured.
+
+### REVIEW(6) — Setup Guide copy density (#2330)
+
+The source-owned security and Test Delivery notes for all six provider
+adapters now use concise explanatory statements rather than multi-sentence
+paragraphs. Discord and Slack still require official HTTPS and forbid
+redirect/proxy relaxation; ntfy retains approved origins, CA bundle,
+verified TLS and egress limits; Telegram preserves separate GitHub Actions
+ownership, credentials and forum topic caveats; Email retains
+STARTTLS/SMTPS/trusted relay; Teams retains the Anyone trigger and secret
+Workflow URL handling. Test Delivery indicates provider acknowledgement,
+not guaranteed human reading. The long ntfy origin instruction is shortened
+without losing its required environment variable or app/worker scope.
+Actual two-line text wrapping depends on browser/viewport; real Firefox
+Visual QA and human acceptance remain pending, with no forced line clamp.

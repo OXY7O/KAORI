@@ -44,6 +44,22 @@ Fetched details retain resource-specific server rendering. The modal extracts:
 
 Page templates must not recreate modal geometry or loading states.
 
+## Row-action appearance
+
+The shared `resource_detail_modal.detail_button(...)` launcher is a normal
+**table-row utility action**. Its classes come directly from
+`components/table_primitives.html::action_classes()`, matching the compact
+neutral `View More` button in Artifact Registry Security. Icon (14px) precedes
+the text label without a separate elevated/boxed icon tile. A page may pass
+`class_name` for layout only, not to introduce its own geometry, colors,
+shadows or interaction states.
+
+This is an additive visual alignment: `data-resource-detail-toggle`, the
+detail identity and URL attributes, accessibility semantics, focus management
+and the existing JS-controlled modal/drawer host remain authoritative.
+Changing the launcher must not change the loaded evidence or route permissions.
+
+
 ## URL contract
 
 The active detail is represented by:

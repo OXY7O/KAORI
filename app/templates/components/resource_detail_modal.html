@@ -1,3 +1,4 @@
+{% import "components/table_primitives.html" as table_ui %}
 {% macro detail_button(item_id, detail_url, resource_name, resource_type, class_name='', label='View Details', icon='panel-top-open', controls='resource-detail-modal') -%}
     <button type="button"
             data-resource-detail-toggle
@@ -7,11 +8,8 @@
             data-detail-type="{{ resource_type }}"
             aria-haspopup="dialog"
             aria-controls="{{ controls }}"
-            class="group inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1 {{ class_name }}">
-        <span class="flex h-6 w-6 items-center justify-center rounded-md bg-surface-hover text-content-muted transition-colors group-hover:bg-surface-card group-hover:text-kaori-primary"
-              aria-hidden="true">
-            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-        </span>
+            class="{{ table_ui.action_classes() }} {{ class_name }}">
+        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
         {% if label == 'View Details' %}
             <span>View Details</span>
         {% else %}

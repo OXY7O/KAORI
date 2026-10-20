@@ -640,10 +640,18 @@ def main() -> int:
         errors.append('Secret Reveal Namespace Policies pagination must include the visible Rows label')
 
     request_status = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
-    if "{{ 'Request' if my_reveal_pagination.total == 1 else 'Requests' }}" not in request_status:
+    table_registry = read('app/templates/components/table_registry.html')
+    if (
+        "table_registry.footer('kubernetes_operations.reveal_secret'" not in request_status
+        or "resource_label='Requests'" not in request_status
+        or 'pagination_ui.resource_name(resource_label, pagination.total_items)' not in table_registry
+    ):
         errors.append('Protected Reveal pagination must use Title Case Request/Requests')
-    if 'aria-label="Rows Per Page"' not in request_status:
-        errors.append('Protected Reveal pagination must use Title Case Rows Per Page accessibility copy')
+    if (
+        "rows_aria_label='Reveal requests per page'" not in request_status
+        or 'aria-label="{{ rows_aria_label }}"' not in table_registry
+    ):
+        errors.append('Protected Reveal pagination must use descriptive Rows Per Page accessibility copy')
     if 'uppercase tracking-wide' in request_status or 'hover:bg-kaori-soft' in request_status:
         errors.append('Protected Reveal request registry must remain Title Case and neutral-first in dark mode')
 

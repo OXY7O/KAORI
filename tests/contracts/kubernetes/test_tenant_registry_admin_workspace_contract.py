@@ -583,7 +583,7 @@ def test_kaori_info_tip_uses_shared_anchored_popover_for_all_input_modes() -> No
     assert 'h-6 w-6' in component
     assert 'circle-help' in component
 
-    assert 'document.body.appendChild(preview)' in controller
+    assert 'portal.appendChild(preview)' in controller
     assert "event.key === 'Escape'" in controller
     assert "document.addEventListener('htmx:beforeSwap'" in controller
 
@@ -1485,7 +1485,7 @@ def test_info_tip_uses_title_level_registry_guidance_and_viewport_portal() -> No
     layout = read('app/templates/layouts/app.html')
     positioning = read('app/static/js/info_tips.js')
     assert "filename='js/info_tips.js'" in layout
-    assert 'document.body.appendChild(preview)' in positioning
+    assert 'portal.appendChild(preview)' in positioning
     assert 'getBoundingClientRect()' in positioning
     assert 'window.innerWidth' in positioning
     assert 'window.innerHeight' in positioning
@@ -1659,7 +1659,8 @@ def test_adopted_allocation_cutover_is_explicit_provider_verified_and_separate_f
     assert 'data-tenant-allocation-metric-key="{{ key }}"' in cutover_ui
     assert "('Min PVC Size', 'min'), ('Max PVC Size', 'max')" in cutover_ui
     assert 'Control Unavailable' in cutover_ui
-    assert 'Namespace lifecycle ownership stays adopted.' in cutover_ui
+    assert 'KAORI Managed · Only after verified cutover' in cutover_ui
+    assert 'For legacy Adopted / Observed allocation only:' in cutover_ui
 
     assert 'Managed Contract Comparison' in allocation_change
     assert 'Select managed Namespace' in allocation_change
@@ -1800,7 +1801,7 @@ def test_capsule_global_resource_quota_joins_canonical_allocation_governance() -
     assert 'Canonical GlobalResourceQuota allocation bridge' in capsule_architecture
     assert 'never copied into every correlated Namespace' in capsule_architecture
     assert 'Capsule GlobalResourceQuota governance:' in readme
-    assert 'Legacy Capsule Tenant quota — **estimasi** case:' in readme
+    assert 'Capsule Tenant quota — **estimasi** authority:' in readme
 
 
 def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_native_bypass() -> None:
@@ -1882,7 +1883,12 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
     assert 'Tenant.spec.resourceQuotas' in cutover_ui
     assert 'Take Over Governance' in cutover_ui
     assert 'Change Allocation' in cutover_ui
-    assert 'Native ResourceQuota' in cutover_ui
+    assert (
+        'Namespace LimitRange constraints remain external observed evidence unless they are the selected allocation authority.'
+        in cutover_ui
+    )
+    assert 'Native cutover path must never bypass Capsule ownership.' in readme
+    assert 'No path may fall back to namespaced Native ResourceQuota mutation.' in readme
     assert 'data-tenant-quota-allocation-form' in script
     assert 'data-tenant-quota-managed-form' in script
 
@@ -1895,8 +1901,8 @@ def test_capsule_tenant_resource_quotas_are_bidirectionally_governed_without_nat
 
     assert 'Capsule Tenant resource-quota authority' in architecture
     assert 'Tenant Sync performs no provider write' in architecture
-    assert 'Legacy Capsule Tenant quota — **estimasi** case:' in readme
-    assert 'Legacy Capsule Tenant quota — **partner** case:' in readme
+    assert 'Capsule Tenant quota — **estimasi** authority:' in readme
+    assert 'Capsule Tenant quota — **partner** evidence case:' in readme
     assert 'Capsule Tenant quota bidirectional recovery:' in readme
 
 
@@ -1916,3 +1922,30 @@ def test_tenant_decommission_steps_use_one_divided_sequence_container() -> None:
     )
     assert 'li class="min-w-0 bg-surface-card p-4"' in modal
     assert 'li class="min-w-0 rounded-xl border border-outline-subtle bg-surface-card p-4"' not in modal
+
+
+def test_credential_and_grant_dialog_mutations_use_canonical_workflow_actions() -> None:
+    action = read('app/templates/components/action_button.html')
+    assert "variant == 'critical'" in action
+    assert 'bg-status-critical' in action
+    assert 'h-10' in action
+    for filename, expected_routes in (
+        (
+            '_credential_registry.html',
+            ('renew_credential_route', 'suspend_credential_route', 'revoke_credential_route'),
+        ),
+        ('_access_grant_registry.html', ('reconcile_access_grant_route', 'revoke_access_grant_route')),
+    ):
+        registry = read(f'app/templates/kubernetes/tenant/partials/{filename}')
+        assert '{% import "components/action_button.html" as action_button %}' in registry
+        assert 'class="{{ action_button.classes(\'secondary\', full=true) }}"' in registry
+        assert 'class="{{ action_button.classes(\'critical\', full=true) }}"' in registry
+        assert 'class="{{ table_ui.action_classes(true) }} w-full' not in registry
+        assert 'hx-target="#tenant-admin-workspace"' in registry
+        assert 'hx-disabled-elt="find button"' in registry
+        assert 'name="csrf_token"' in registry
+        assert 'data-kaori-native-dialog' in registry
+        for route in expected_routes:
+            assert route in registry
+        # Compact registry More launchers intentionally stay table action buttons.
+        assert 'table_ui.action_classes()' in registry

@@ -392,9 +392,13 @@ physical or usable backend capacity.
 
 The **View More** dialog uses one resource-first comparison rather than
 three dense parallel cards. Its header has one left-aligned hierarchy: a shared
-icon, Allocation Budget eyebrow, cluster title beside its actual capacity-state
-label, environment context and a right-aligned native Close action. This avoids
-the off-center title/status placement seen in earlier DevContainer feedback.
+40px Violet icon and **cluster title + authoritative capacity-state** badge
+inline, matching the human-approved **Manage Identity Providers** modal
+header reference. The next line is the environment and meaningful budget
+description, followed by compact **Allocation Budget** and **Request
+commitment** metadata labels. The top-right native Close is unchanged.
+This avoids the extra eyebrow/status stack that displaced the description
+in the previous DevContainer screenshot.
 
 Four resource rows—CPU Requests, Memory Requests, Pod Slots and Logical
 Storage—show authoritative Budget, Committed and Headroom display values in
@@ -411,10 +415,13 @@ percentage is unavailable along with the canonical reason.
 
 At desktop widths the common column header remains aligned with metric rows;
 narrower screens place the three labelled metric values beneath the resource
-name in one three-column grid, without horizontal scrolling. A small note below
-the comparison retains governed Namespace count and the logical-storage
-boundary. The redundant lower Close footer was removed; the accessible Close
-action remains in the top-right header.
+name in one three-column grid, without horizontal scrolling. The governed
+Namespace count and logical-storage boundary now live in a separate
+**non-scrolling informational footer** after the scrollable comparison, beside
+a shared 32px **Close** utility. That footer wraps on narrow viewports and
+remains reachable without scrolling through a tall metric list; it supersedes
+the prior decision to omit the bottom Close action. The top-right header Close
+remains available as an alternate keyboard/pointer control.
 
 The dialog retains `data-kaori-native-dialog`, labelled heading/description,
 close control, existing access semantics, light/dark tokens and responsive
@@ -447,13 +454,40 @@ platform reserve − safety headroom − unmanaged commitment**. Logical
 storage availability. `ResourceQuota` enforces Kubernetes quota and never
 constitutes a physical node-resource reservation.
 
+
+**Visual UAT guidance hierarchy (#2371, #2382, human correction):** The
+CPU/Memory Limit Exposure table retains committed limits, thresholds, mode and
+state badges. Exactly **one canonical Guide Info Tip sits beside the
+CPU & Memory Limit Exposure heading**, rather than in a separate footer. That
+single on-demand popover contains the exact committed `exposure.reason`, the
+mode-aware Observe/Enforce explanation, the continuing Request Commitment
+admission baseline and the governed ratio semantics. Neither Exposure assessment
+nor Governance boundary appears as a secondary visible help label or footer.
+For **Unknown, Near Capacity or Overcommitted**, the exact committed reason
+also remains persistently visible as a semantic warning/critical status line
+below the table; essential risk evidence must not be hover-only. Healthy
+state produces no guidance footer. Hover, focus, touch, Escape and viewport
+positioning reuse the shared Info Tip component/controller without page-specific
+JavaScript or any change to admission or provider evidence.
+The existing accessible **How allocation budgets work** disclosure
+separates one Violet-emphasized **request budget formula** (CPU/Memory/Pods)
+from distinct **logical storage policy** and **ResourceQuota boundary**
+explanations. Visual hierarchy uses existing semantic tokens and Lucide icons;
+the cluster selector, committed values, provider-read boundary and admission
+logic remain unchanged. Verify light/dark, compact-width wrapping, keyboard
+summary toggling, stale evidence reasons, and Observe/Enforce display in
+Dev Container before human acceptance; official CI/CD remains HOLD.
+
 **Tenant Contributions is detail on demand:** the overview shows the committed
 Tenant count and opens the canonical native KAORI dialog. After DevContainer
 visual feedback, this detail workspace uses **one visual hierarchy**: concise
-cluster header with a **Read-only** label beside the modal title, and a
-lightweight **Tenant Registry** navigation link pushed to the far right of the
-helper-description row (wrapping to its own right-aligned line on narrow screens).
-The top-right header corner contains only **Close**. Four summary metrics
+header aligned to the human-approved **Manage Identity Providers** modal reference:
+40px Violet icon at left, **Tenant Contributions** and its **Read-only** status
+inline, then the governed Namespace/Capsule deduplication description immediately
+below. The next compact context row holds **Committed scope** and the actual
+cluster/environment metadata labels plus the lightweight **Tenant Registry**
+navigation action, which wraps without horizontal overflow. The top-right
+header corner contains only the icon **Close**. Four summary metrics
 appear without any enclosing or per-metric cards, separated **only between
 columns** by full-height vertical rules that reach the summary strip edges
 (no stray right-edge divider or floating row-gap). The grid remains
@@ -462,8 +496,11 @@ responsive, vertically scrollable list of Tenant records.
 Each Tenant record has a single readable outline, without nested cards or shadows.
 This modal intentionally has **no Rows selector or pagination controls**:
 a compact read-only evidence footer stays visible beneath a separately framed
-scrolling viewport. The footer reports matching versus total Tenant counts
-and is updated with the search inside the existing HTMX-swapped body.
+scrolling viewport. The footer now keeps the read-only committed-evidence note
+on the left and exposes a shared-style **Close** action on the right, with
+compact padding to fit the 32px action height. Filtered matching versus total
+Tenant counts remain in the search status line, updated with the search inside
+the existing HTMX-swapped body; they are no longer duplicated in the footer.
 Each record groups Tenant name, ownership badge, stable ID, provider/authority,
 and a keyboard-accessible Namespace disclosure. Four governed requests use an
 unboxed two-column definition grid with one dividing rule at desktop widths.

@@ -10,15 +10,15 @@
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ detail_ui.expanded_workspace_icon_classes() }}"
                       aria-hidden="true"><i data-lucide="{{ item.event_icon }}" class="h-5 w-5"></i></span>
-                <div class="min-w-0">
+                <div class="min-w-0 flex-1">
                     {% call detail_ui.header_identity_row() %}
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</h3>
-                        {{ table_label.metadata_label(item.category_label, item.category_icon) }}
                         {{ table_label.status_label(item.status_label, item.status, none, 'detail') }}
                     {% endcall %}
-                    {% if not item.failure_summary %}
-                        <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.message }}</p>
-                    {% endif %}
+                    <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ 'Review recorded failure and committed evidence.' if item.failure_summary else item.message }}</p>
+                    <div class="mt-2 flex min-w-0 flex-wrap items-center gap-1.5">
+                        {{ table_label.metadata_label(item.category_label, item.category_icon) }}
+                    </div>
                 </div>
             </div>
             {# Keep identity, provenance and time in the same modal header, not a second card. #}

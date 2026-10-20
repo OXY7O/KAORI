@@ -25,6 +25,26 @@ TITLE_GUIDE_TEMPLATES = (
     'storage/object_storage/inventory/systems/partials/_table_card.html',
     'storage/object_storage/inventory/buckets/partials/_table_card.html',
     'artifact_registry/partials/_inventory_workspace.html',
+    'access/identity_providers/form.html',
+    'access/identity_providers/partials/_sso_configuration.html',
+    'access/identity_providers/partials/_ldap_configuration.html',
+    'artifact_registry/partials/_security_workspace.html',
+    'integrations/partials/_domain_workspace.html',
+    'kubernetes/tenant/partials/_tenant_discovery.html',
+    'kubernetes/tenant/partials/_tenant_form.html',
+    'kubernetes/tenant/partials/_tenant_memberships_workspace.html',
+    'kubernetes/tenant/partials/_tenant_access_grants_workspace.html',
+    'kubernetes/tenant/partials/_tenant_credentials_workspace.html',
+    'kubernetes/tenant/partials/_tenant_namespace_access_workspace.html',
+    'kubernetes/tenant/partials/_namespace_form.html',
+    'kubernetes/tenant/partials/_capacity_decisions.html',
+    'kubernetes/tenant/partials/_capacity_governance.html',
+    'kubernetes/tenant/partials/_allocation_change.html',
+    'kubernetes/tenant/partials/_allocation_cutover.html',
+    'kubernetes/tenant/partials/_capsule_shared_allocation_cutover.html',
+    'kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html',
+    'kubernetes/tenant/partials/_resource_profile_form.html',
+    'kubernetes/tenant/partials/_resource_profile_advanced_controls.html',
     'kubernetes/tenant/partials/_tenant_registry.html',
     'kubernetes/tenant/partials/_group_registry.html',
     'kubernetes/tenant/partials/_membership_registry.html',
@@ -63,5 +83,5 @@ def test_guide_variant_keeps_inline_field_help_default_icon() -> None:
     assert 'data-kaori-info-tip-trigger' in component
     assert 'data-kaori-info-tip-preview' in component
     assert 'aria-controls="{{ id }}-tooltip"' in component
-    assert 'document.body.appendChild(preview)' in script
+    assert 'portal.appendChild(preview)' in script
     assert "document.addEventListener('htmx:beforeSwap'" in script
