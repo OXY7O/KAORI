@@ -174,6 +174,20 @@ The server deployment then validates production configuration, infrastructure he
 
 Public edge publication is a separate infrastructure responsibility and is not required for KAORI application deployment success.
 
+
+### Exact-candidate UAT handover
+
+After a governed UAT deploy, retain the handover in the owning GitHub issue, official workflow runs, release metadata, and committed server release state. Do **not** create a second mutable release register. The operator records:
+
+1. **Candidate identity:** intentional RC tag, accepted source SHA, immutable OCI digest, GitHub Release and RC evidence run. Separate source-branch HEAD from the actually deployed candidate.
+2. **Machine evidence:** exact-SHA Ready Full Admission (all mandatory lanes and guards), staging push Fast Smoke/CI Admission, RC publication and attestations, and terminal UAT `Release Evidence` and `Deploy Staging` outcomes. Reference the pre-migration backup and migration, internal runtime, queues/Beat and access evidence; report a missing or failed required step as **BLOCKED**, not PASS.
+3. **Independent public publication:** record `Reconcile Public Publication` separately, with DNS, HTTP-to-HTTPS, trusted TLS, public readiness and certificate renewal evidence. Internal deployment may succeed before edge reconciliation is finished.
+4. **Human acceptance:** link executed scenario IDs, UAT environment, browser/light-dark/responsive/keyboard and protected paths, negative/permission cases, provider read-back, findings and retests to existing Visual QA/UAT issue authority. Mark unexecuted checks **NOT RUN** and unmet prerequisites **BLOCKED**. The human reviewer alone accepts residual risk or the candidate; CI SUCCESS is not Human Acceptance.
+
+**Later staging commits do not rewrite UAT history.** If `kaori/staging` advances beyond the last deployed RC SHA, including a documentation/CI-only merge, retain the RC tag, SHA, digest and actual UAT receipt as the observed deployment identity. Compare the later change to the accepted scope; do not claim the newer staging SHA is deployed, silently reuse an old UAT acceptance for a different source, or automatically dispatch another deployment. Any subsequently chosen deployment or promotion must follow existing exact-SHA admission, new intentional immutable RC, governed UAT evidence and human acceptance.
+
+For the **2026-10-20** [#1710 technical receipt](https://github.com/OXY7O/KAORI/issues/1710), the UAT release was [v0.3.0-rc.11](https://github.com/OXY7O/KAORI/releases/tag/v0.3.0-rc.11) at `8b5b365f6d41724d146743fa329800d955ee9740`, proven by [Staging Deploy #39351114282](https://github.com/OXY7O/KAORI/actions/runs/39351114282). The later CI-governance-only staging merge [PR #2577](https://github.com/OXY7O/KAORI/pull/2577), at `9f98ed45af621d00e432ea08449d514c1068ac29`, is **not** that UAT deployment identity. The disposable-UAT restore-rehearsal exception [#2206](https://github.com/OXY7O/KAORI/issues/2206) remains **not a restore PASS**; the database-role cutover [#1439](https://github.com/OXY7O/KAORI/issues/1439) remains separate.
+
 ## Continuous Deployment boundary
 
 KAORI does not automatically promote arbitrary source changes to production.
