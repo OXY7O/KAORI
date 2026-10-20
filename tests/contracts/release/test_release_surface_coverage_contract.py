@@ -10,6 +10,7 @@ if str(SCRIPTS) not in sys.path:
 
 from release_surface_registry import SURFACES, blueprint_vars, navigation_endpoints  # noqa: E402
 from verify_final_release import SHORT_LABELS  # noqa: E402
+from verify_release_surface_coverage import _coverage_evidence_line  # noqa: E402
 
 
 def read(relative: str) -> str:
@@ -37,6 +38,30 @@ def test_release_registry_closes_navigation_and_blueprint_inventory() -> None:
     assert next(surface for surface in SURFACES if surface.key == 'welcome').navigation_source == (
         'app/common/workspace_navigation.py'
     )
+
+
+def test_registered_capability_evidence_shows_missing_static_verifier_without_false_pass() -> None:
+    registry = next(surface for surface in SURFACES if surface.key == 'artifact_registry')
+    tenant = next(surface for surface in SURFACES if surface.key == 'tenant')
+    storage = next(surface for surface in SURFACES if surface.key == 'object_storage_inventory')
+    integrations = next(surface for surface in SURFACES if surface.key == 'integrations')
+
+    registry_row = _coverage_evidence_line(registry, 14)
+    assert 'REGISTERED — Artifact Registry [BASELINE LOCKED]' in registry_row
+    assert 'static: none (test evidence only)' in registry_row
+    assert 'test modules: 14' in registry_row
+    assert 'PASS' not in registry_row
+
+    assert 'REGISTERED — Tenant [BASELINE LOCKED]' in _coverage_evidence_line(tenant, 1)
+    assert 'static: 1 verifier(s)' in _coverage_evidence_line(storage, 3)
+    assert 'REGISTERED — Integrations [LOCKED]' in _coverage_evidence_line(integrations, 2)
+
+
+def test_release_coverage_report_keeps_registration_separate_from_execution() -> None:
+    coverage = read('scripts/verify_release_surface_coverage.py')
+    assert 'REGISTERED EVIDENCE — ownership/test modules only; no contract-test PASS or UAT claim' in coverage
+    assert 'print(_coverage_evidence_line(surface, len(contract_modules_by_surface[surface.title])))' in coverage
+    assert "errors.append(f'{surface.title}: release evidence has no test modules: {contract_path}')" in coverage
 
 
 def test_general_release_titles_stay_short() -> None:
