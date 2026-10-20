@@ -7,7 +7,7 @@ import ast
 import re
 from pathlib import Path
 
-from release_surface_registry import SURFACES, blueprint_vars, navigation_endpoints
+from release_surface_registry import SURFACES, ReleaseSurface, blueprint_vars, navigation_endpoints
 
 ROOT = Path(__file__).resolve().parents[1]
 NAVIGATION_DIR = ROOT / 'app/templates/components/navigation'
@@ -135,6 +135,15 @@ def _registered_blueprint_vars() -> set[str]:
     raise AssertionError('app/bootstrap/blueprints.py: registered blueprint tuple was not found')
 
 
+def _coverage_evidence_line(surface: ReleaseSurface, module_count: int) -> str:
+    """Report registered ownership without claiming executable test success."""
+    static_owner = f'{len(surface.verifiers)} verifier(s)' if surface.verifiers else 'none (test evidence only)'
+    return (
+        f'  REGISTERED — {surface.title} [{surface.lock_state}] · '
+        f'static: {static_owner} · test modules: {module_count}'
+    )
+
+
 def verify() -> None:
     errors: list[str] = []
     contract_modules_by_surface: dict[str, set[Path]] = {}
@@ -255,8 +264,9 @@ def verify() -> None:
         raise SystemExit(1)
 
     print(f'PASS — KAORI Release Coverage · {navigation_count} links / {blueprint_count} blueprints')
+    print('REGISTERED EVIDENCE — ownership/test modules only; no contract-test PASS or UAT claim')
     for surface in SURFACES:
-        print(f'  COVERED — {surface.title}: {len(contract_modules_by_surface[surface.title])} contract test module(s)')
+        print(_coverage_evidence_line(surface, len(contract_modules_by_surface[surface.title])))
 
 
 if __name__ == '__main__':
