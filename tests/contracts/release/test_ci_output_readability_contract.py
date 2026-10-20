@@ -41,6 +41,22 @@ def test_static_operator_rollup_uses_kaori_architecture_level_categories() -> No
     assert "run_static_group 'Code Quality & Type Safety'" not in source
 
 
+def test_registered_domain_evidence_is_reused_at_domain_boundary_not_reexecuted() -> None:
+    source = QUALITY_GATE.read_text(encoding='utf-8')
+    capture = source.split('run_command_capture() {', 1)[1].split('run_static_group() {', 1)[0]
+    group = source.split('run_static_group() {', 1)[1].split('run_contract_migration_gate() {', 1)[0]
+
+    assert 'CAPABILITY_COVERAGE_REPORT="$log_file"' in capture
+    assert 'cat "$log_file"' not in capture
+    assert "if [[ \"$group\" == 'Domain & Capability Contracts' ]]" in group
+    assert '[[ -z "$CAPABILITY_COVERAGE_REPORT" || ! -s "$CAPABILITY_COVERAGE_REPORT" ]]' in group
+    assert 'return 1' in group
+    assert 'cat "$CAPABILITY_COVERAGE_REPORT"' in group
+    assert 'Registered domain evidence (not test-execution results)' in group
+    assert source.count("'Release Surface Coverage' 'python scripts/verify_release_surface_coverage.py'") == 1
+    assert source.count("'Domain & Capability Contracts'") == 2
+
+
 def test_admission_summary_uses_same_architecture_level_coverage_categories() -> None:
     workflow = WORKFLOW.read_text(encoding='utf-8')
 
