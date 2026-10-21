@@ -79,13 +79,14 @@ def test_security_patched_runtime_pins_stay_aligned() -> None:
 
     for pin in (
         'cryptography==50.0.0',
-        'pillow==12.3.0',
+        'pillow==13.0.0',
         'weasyprint==70.0',
     ):
         assert pin in requirements_input
         assert pin in requirements_lock
 
     assert 'aiohttp==3.14.4' in requirements_lock
+    assert 'certifi==2026.10.19' in requirements_lock
 
 
 def test_pdf_templates_use_the_canonical_local_analytics_publication() -> None:
