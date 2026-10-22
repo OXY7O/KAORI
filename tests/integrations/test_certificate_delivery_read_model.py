@@ -1,0 +1,147 @@
+"""Committed Vault PKI ↔ Kubernetes TLS overlap uses source-owned ORM evidence."""
+
+from datetime import UTC, datetime, timedelta
+
+import pytest
+from cryptography.fernet import Fernet
+from flask import Flask
+
+from app.extensions.db import db
+from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
+from app.models.cluster import Cluster
+from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
+from app.models.integration import IntegrationInstance
+from app.models.secrets_pki_stored_certificates import (
+    PKIStoredCertificateCollectionState, PKIStoredCertificateObservation,
+)
+from app.models.vault import VaultInstance
+from app.secrets_pki.certificate_delivery_read_model import build_certificate_delivery_overlap
+
+AT = datetime(2026, 10, 22, 11, 0, tzinfo=UTC)
+FP = 'a' * 64
+
+
+@pytest.fixture
+def committed_sources():
+    app = Flask(__name__)
+    app.config.update(
+        SECRET_KEY='test-fixture-only', SQLALCHEMY_DATABASE_URI='sqlite://',
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        INTEGRATION_CREDENTIAL_KEY=Fernet.generate_key().decode('ascii'),
+    )
+    db.init_app(app)
+    with app.app_context():
+        tables = [
+            Cluster.__table__, IntegrationInstance.__table__, VaultInstance.__table__,
+            PKIStoredCertificateCollectionState.__table__,
+            PKIStoredCertificateObservation.__table__,
+            TLSCertificateCollectionState.__table__, TLSCertificateInventory.__table__,
+        ]
+        db.Model.metadata.create_all(bind=db.engine, tables=tables)
+        provider = IntegrationInstance(
+            integration_type='secrets_pki', provider_key='vault',
+            adapter_key='vault_http_v1', name='test-provider', environment='testing',
+            enabled=True, readiness_status='ready', lifecycle_status='active',
+        )
+        cluster = Cluster(name='cluster-correlation-fixture', environment='testing')
+        db.session.add_all([provider, cluster])
+        db.session.flush()
+        vault = VaultInstance(
+            integration_instance_id=provider.id,
+            endpoint='https://vault.invalid', auth_mount='approle',
+            role_id='test-only', secret_id='not-a-credential', timeout=5,
+            verify_ssl=True, pki_mounts=['pki'], pki_stored_certs_enabled=True,
+        )
+        db.session.add_all([
+            vault,
+            PKIStoredCertificateCollectionState(
+                integration_instance_id=provider.id, provider_namespace='', mount='pki',
+                status='ready', observed_stored_certificate_count=1,
+                last_observed_at=AT, last_committed_at=AT,
+            ),
+            PKIStoredCertificateObservation(
+                integration_instance_id=provider.id, provider_namespace='', mount='pki',
+                serial_hex='65', fingerprint_sha256=FP,
+                valid_from=AT-timedelta(days=4),
+                valid_until=AT+timedelta(days=90), observation_status='observed',
+                last_observed_at=AT,
+            ),
+            TLSCertificateCollectionState(
+                cluster_id=cluster.id, secret_collection_status=TLS_COLLECTION_COLLECTED,
+                ingress_mapping_status=TLS_COLLECTION_COLLECTED, collected_at=AT,
+            ),
+            TLSCertificateInventory(
+                cluster_id=cluster.id,
+                namespace='private-namespace', secret_name='private-tls-secret',
+                fingerprint_sha256=FP, status='healthy',
+                not_before=AT-timedelta(days=4), not_after=AT+timedelta(days=90),
+                collected_at=AT,
+            ),
+        ])
+        db.session.commit()
+        try:
+            yield provider.id, cluster.id
+        finally:
+            db.session.remove()
+            db.Model.metadata.drop_all(bind=db.engine, tables=list(reversed(tables)))
+
+
+def _read():
+    return build_certificate_delivery_overlap(
+        authorized_to_view_kubernetes_tls=True, now=AT + timedelta(minutes=2),
+    )
+
+
+def test_two_committed_public_certificate_sources_identify_candidate_overlap(committed_sources):
+    result = _read()
+    assert result['status'] == 'overlap_observed'
+    assert result['source_certificates'] == 1
+    assert result['overlapping_certificates'] == 1
+    assert result['matching_kubernetes_tls_secrets'] == 1
+    assert result['delivery_proven'] is False
+    assert result['endpoint_serving_verified'] is False
+    assert 'private-tls-secret' not in repr(result)
+    assert 'private-namespace' not in repr(result)
+
+
+def test_kubernetes_source_failure_cannot_claim_delivery_overlap(committed_sources):
+    cluster_id = committed_sources[1]
+    state = db.session.get(TLSCertificateCollectionState, cluster_id)
+    state.secret_collection_status = 'failed'
+    db.session.commit()
+    result = _read()
+    assert result['status'] == 'source_unknown'
+    assert result['matching_kubernetes_tls_secrets'] is None
+    assert result['delivery_proven'] is False
+
+
+def test_old_or_noncommitted_vault_source_does_not_prove_a_mismatch(committed_sources):
+    provider_id = committed_sources[0]
+    state = PKIStoredCertificateCollectionState.query.filter_by(
+        integration_instance_id=provider_id,
+    ).one()
+    state.last_committed_at = AT-timedelta(days=3)
+    db.session.commit()
+    result = _read()
+    assert result['status'] == 'source_unknown'
+    assert result['overlapping_certificates'] is None
+
+
+def test_revoked_enumeration_opt_in_removes_active_correlation_scope(committed_sources):
+    provider_id = committed_sources[0]
+    instance = VaultInstance.query.filter_by(integration_instance_id=provider_id).one()
+    instance.pki_stored_certs_enabled = False
+    db.session.commit()
+    result = _read()
+    assert result['status'] == 'not_configured'
+    assert result['overlapping_certificates'] is None
+
+
+def test_same_serial_not_same_fingerprint_is_not_delivery_evidence(committed_sources):
+    tls = TLSCertificateInventory.query.one()
+    tls.fingerprint_sha256 = 'b' * 64
+    db.session.commit()
+    result = _read()
+    assert result['status'] == 'no_overlap_observed'
+    assert result['overlapping_certificates'] == 0
+    assert result['endpoint_serving_verified'] is False
