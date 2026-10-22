@@ -23,6 +23,7 @@ def overview() -> ResponseReturnValue:
         active_tab=normalize_operational_tab(request.args.get('tab')),
         can_view_intelligence=current_user.has_permission('intelligence.view'),
         can_view_reports=current_user.has_permission('reports.view'),
+        can_manage_integrations=current_user.has_permission('integrations.manage'),
     )
 
 
