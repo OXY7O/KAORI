@@ -53,6 +53,7 @@ def store():
             integration_instance_id=identity.id, endpoint='https://vault.internal.invalid',
             auth_mount='approle', role_id='metadata-only', secret_id='test-only',
             timeout=5, verify_ssl=True, pki_mounts=['pki'],
+            pki_stored_certs_enabled=True,
         ))
         db.session.commit()
         try:
@@ -174,3 +175,13 @@ def test_nonqualified_coverage_or_duplicate_evidence_rejected(store):
         commit_stored_pki_certificates(
             store, replace(source, certificates=source.certificates + source.certificates),
         )
+
+
+def test_stored_cert_opt_in_revocation_blocks_collector_and_commit(store):
+    provider = VaultInstance.query.filter_by(integration_instance_id=store).one()
+    provider.pki_stored_certs_enabled = False
+    db.session.commit()
+    assert stored_pki_certificate_readiness(instance=provider)['state'] == 'not_configured'
+    with pytest.raises(ValueError, match='not eligible'):
+        commit_stored_pki_certificates(store, _snapshot())
+    assert PKIStoredCertificateObservation.query.count() == 0
