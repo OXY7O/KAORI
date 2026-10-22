@@ -8,8 +8,8 @@ from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.dashboards.common.operational import normalize_operational_tab
-from app.secrets_pki.presentation import build_secrets_pki_operational_summary
 from app.secrets_pki.pki_presentation import pki_public_readiness
+from app.secrets_pki.presentation import build_secrets_pki_operational_summary
 
 secrets_pki_bp = Blueprint('secrets_pki', __name__, url_prefix='/secrets-pki')
 
