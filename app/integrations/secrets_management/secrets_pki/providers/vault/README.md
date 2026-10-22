@@ -99,13 +99,24 @@ sanitized error and must never be treated as an empty successful collection.
 Path segments are strictly normalized and percent-encoded before sending;
 unsupported path characters are an explicit capability limitation.
 
-**Current readiness:** this is the lower-level API/normalization slice only.
-It is not yet connected to canonical `JobExecution`, scheduled collection,
-committed storage, or the Secrets & PKI Inventory UI. Do not expose it as
+**Current readiness:** API/normalization plus a provider-neutral committed
+metadata schema and transactionally guarded reconciliation service have been
+authored under HV-02. ORM models are in `app/models/secrets_pki.py`; migration
+`20261022_secrets_pki_inventory` adds Secret identity/representation/version
+and per-mount collection state. `app/integrations/secrets_management/secrets_pki/commit_inventory.py`
+persists a complete observed generation, retains historical versions and
+marks missing representations `not_observed` rather than deleting them.
+An unexpectedly empty scan cannot replace a previously nonempty snapshot.
+Sensitive Vault paths are scoped metadata; a digest indexes the provider path,
+**not a Secret value**. Historical evidence restricts deletion of its parent
+integration registration.
+
+It is **not yet connected to canonical `JobExecution`, scheduled collection,
+a privileged inventory sync entrypoint or the Secrets & PKI Inventory UI**.
+ Do not expose it as
 `Available`, call it from an HTTP read route, or persist its unredacted
 in-memory objects in Celery results, logs, notifications or exports. Next
-bounded slices of HV-02 must implement durable canonical identities,
-per-mount committed generation/freshness, job admission/worker ownership,
-positive and negative persistence tests and real-Vault UAT. The dedicated
-test file is `tests/integrations/test_vault_kv2_inventory.py`; pytest/ruff,
+bounded slices of HV-02 must implement job admission/worker ownership,
+permission-safe Inventory read projections and real-Vault UAT. Focused tests are `tests/integrations/test_vault_kv2_inventory.py` and
+`tests/integrations/test_vault_kv2_committed_inventory.py`; pytest/ruff,
 Alembic, actual Vault and security gates remain unverified until run.
