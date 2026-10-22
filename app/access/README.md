@@ -308,3 +308,22 @@ Real Firefox two-line appearance is a visual target rather than a source
 PASS. Local focused pytest/Jinja, responsive/light-dark/zoom/browser
 accessibility, negative RBAC and human acceptance remain pending. Official
 staging admission, deployment and release are HOLD.
+
+## Resource Scoped Grant Lifecycle (review implementation)
+
+The #724 accepted architecture uses a dedicated Access-owned storage model
+`app/models/scope_access.py` (#2723) and backend-only governed transition
+service `app/access/scoped_grants.py` (#2724). It reuses canonical RBAC
+and `stage_operational_activity` with `commit=False` so a draft, approval
+or revocation **and** its mandatory audit event persist in one transaction
+or both roll back. High-sensitivity grants require a different requestor
+and approver, a current policy revision, an active human with qualified
+Access admin permissions, active subject Role→Permission and exact approved
+IntegrationInstance/Vault mount identity.
+
+No UI/API/workers have been wired; do not call this service as a Secret access
+decision, use it as a general RBAC bypass or treat schema arrival as grant
+activation. Source-scoped decisions, IdP principals and migration cutover
+remain in #2725/#2726. Run approved DevContainer schema upgrade via
+the dedicated `db-bootstrap --upgrade-only` service, **not** by running
+`flask db upgrade` as kaori_runtime.
