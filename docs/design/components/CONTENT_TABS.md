@@ -136,12 +136,22 @@ route navigator, Integration-style framed parent card, or a new tab family.
   Only the authorized Secret Reveal execution path performs runtime checks.
 - Existing Namespace Policy table/pagination semantics, OOB posture updates,
   CSRF and permission boundaries remain separate authorities.
-- **Namespace policy editing** uses an explicit per-row native disclosure in the
-  canonical KAORI table. Its policy selector and compact Save action are hidden
-  until an operator chooses **Edit Policy**; no five always-visible mutation
-  forms. The native disclosure remains keyboard-accessible without JavaScript.
-  This is presentation only: existing CSRF, readiness and live-state option
-  restrictions, HTMX update, and audit/security authorities are unchanged.
+- **Namespace policy editing** uses the canonical row action to reveal a
+  separate full-width companion editor row. The action retains a compact
+  **Edit Policy** label, shared action geometry, and accessible `aria-controls`
+  and `aria-expanded` state. The editor preserves a single-row editing
+  boundary, stable default row heights, and a labeled policy selector with
+  neutral **Cancel** / **Save Policy** actions. It is Alpine-controlled like
+  the existing KAORI operational workspace; keyboard and visual behavior
+  require browser UAT.
+- **Live Source** provenance and manual source **Refresh** belong to one
+  right-aligned utility block above the canonical Namespace Policies table.
+  Table **Clear Filters** remains a visible shared registry action. The only
+  table loading bar is table-owned, immediately beneath the header and before
+  filters, within a reserved-height track.
+- This is a presentation-only refinement. Existing CSRF, readiness and
+  live-state option restrictions, HTMX mutation/update, and audit/security
+  authorities remain unchanged.
 
 ## Review Checklist
 
