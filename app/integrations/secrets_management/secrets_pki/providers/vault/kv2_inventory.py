@@ -88,6 +88,21 @@ def _version_number(value: object) -> int:
     return number
 
 
+def _safe_timestamp(value: object) -> str | None:
+    """Normalize provider timestamps; never persist arbitrary provider strings."""
+    if value is None or value == '':
+        return None
+    if not isinstance(value, str) or len(value) > 80:
+        raise VaultProviderError('Malformed KV v2 metadata timestamp.')
+    try:
+        parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+    except ValueError as exc:
+        raise VaultProviderError('Malformed KV v2 metadata timestamp.') from exc
+    if parsed.tzinfo is None:
+        raise VaultProviderError('KV v2 metadata timestamp lacks timezone.')
+    return parsed.astimezone(UTC).isoformat()
+
+
 def _safe_metadata(
     *,
     mount: str,
@@ -109,8 +124,8 @@ def _safe_metadata(
             raise VaultProviderError('KV v2 version evidence is malformed.')
         normalized.append(KV2VersionEvidence(
             version=version,
-            created_time=str(row['created_time'])[:80] if row.get('created_time') else None,
-            deletion_time=str(row['deletion_time'])[:80] if row.get('deletion_time') else None,
+            created_time=_safe_timestamp(row.get('created_time')),
+            deletion_time=_safe_timestamp(row.get('deletion_time')),
             destroyed=row.get('destroyed') is True,
         ))
     normalized.sort(key=lambda item: item.version)
