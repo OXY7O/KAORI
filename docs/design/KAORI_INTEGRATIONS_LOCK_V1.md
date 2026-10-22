@@ -430,3 +430,14 @@ schedule references are server-enforced. Retired channels cannot be
 edited, tested, hard deleted, or restored through current routes.
 Server audit events cover success and blocked retirement. Delivery
 eligibility and Archived Channels UI are separate child workstreams.
+
+## Retired Channel Delivery Eligibility (#2750)
+
+Retired channels are excluded from operational posture and all selectable
+consumer/provider destinations, not merely hidden in the registry.
+Direct governed-event dispatch, alert dispatch, operator test/preview,
+provider adapter send, and queued/failed recovery paths guard terminal
+lifecycle state. In-progress retry records may be marked `skipped`
+with an explicit retirement reason; committed historical sent/failed
+evidence is never deleted. Source-linked historical journal remains
+accessible. A retired channel is not reinstated by setting `enabled`.

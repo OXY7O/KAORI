@@ -64,6 +64,7 @@ def get_channel(channel_id: int) -> NotificationChannel | None:
 
 def create_channel(data: NotificationChannelFormInput, *, user_id: int | None) -> NotificationChannel:
     channel = NotificationChannel()
+    channel.lifecycle_state = 'active'
     channel.name = data.name
     channel.provider_key = data.provider_key
     channel.enabled = data.enabled
@@ -92,6 +93,8 @@ def update_channel(
         or data.destination != str(channel.destination or '')
         or dict(data.provider_config) != dict(channel.provider_config or {})
     )
+    if channel.lifecycle_state != 'active':
+        raise ValueError('Retired channels cannot be modified.')
     channel.name = data.name
     channel.enabled = data.enabled
     if data.credential_changed:
@@ -109,6 +112,8 @@ def update_channel(
 
 
 def test_channel(channel: NotificationChannel, *, base_url: str = '') -> DeliveryResult:
+    if channel.lifecycle_state != 'active':
+        return DeliveryResult(False, 'Retired channels cannot be tested.')
     if not channel.configured:
         result = DeliveryResult(False, f'{_provider_label(channel.provider_key)} configuration is incomplete.')
     else:
@@ -135,7 +140,7 @@ def test_channel(channel: NotificationChannel, *, base_url: str = '') -> Deliver
 
 def send_channel_preview_message(channel: NotificationChannel, message: NotificationMessage) -> DeliveryResult:
     """Send an operator-requested preview without changing channel validation state."""
-    if not channel.enabled or not channel.configured or channel.test_status != 'success':
+    if channel.lifecycle_state != 'active' or not channel.enabled or not channel.configured or channel.test_status != 'success':
         return DeliveryResult(
             False, 'Notification Channel must be enabled, configured, and validated before Send Test.'
         )
@@ -143,7 +148,7 @@ def send_channel_preview_message(channel: NotificationChannel, message: Notifica
 
 
 def notification_channel_summary() -> dict[str, Any]:
-    channels = NotificationChannel.query.order_by(NotificationChannel.id.asc()).all()
+    channels = NotificationChannel.query.filter_by(lifecycle_state='active').order_by(NotificationChannel.id.asc()).all()
     enabled = [channel for channel in channels if channel.enabled]
     eligible = [channel for channel in enabled if channel.configured and channel.test_status == 'success']
     operational = [channel for channel in eligible if channel.last_delivery_status == 'success']
@@ -403,7 +408,7 @@ def dispatch_alert_notification(
     """Deliver one first-seen active alert per channel/event identity."""
     severity = _normalize_severity(alert.get('severity'))
     event_key = _event_key(domain=domain, asset_key=asset_key, alert=alert)
-    channels = NotificationChannel.query.filter_by(enabled=True).order_by(NotificationChannel.id.asc()).all()
+    channels = NotificationChannel.query.filter_by(enabled=True, lifecycle_state='active').order_by(NotificationChannel.id.asc()).all()
     stats = {'eligible': 0, 'sent': 0, 'failed': 0, 'retried': 0, 'duplicate': 0, 'skipped': 0}
     max_attempts = notification_delivery_max_attempts()
     for channel in channels:
@@ -483,7 +488,7 @@ def dispatch_matching_notification_event(*, event: NotificationEvent) -> dict[st
     """Deliver one governed event to every validated channel that explicitly allows it."""
     channel_ids = [
         channel.id
-        for channel in NotificationChannel.query.filter_by(enabled=True).order_by(NotificationChannel.id.asc()).all()
+        for channel in NotificationChannel.query.filter_by(enabled=True, lifecycle_state='active').order_by(NotificationChannel.id.asc()).all()
         if _channel_matches_event(
             channel,
             domain=event.domain,
@@ -501,7 +506,7 @@ def list_event_channel_options(
     severity: str | None = None,
 ) -> list[dict[str, Any]]:
     """Return configured channel instances for one consumer event contract."""
-    channels = NotificationChannel.query.order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc()).all()
+    channels = NotificationChannel.query.filter_by(lifecycle_state='active').order_by(NotificationChannel.name.asc(), NotificationChannel.id.asc()).all()
     options: list[dict[str, Any]] = []
     for channel in channels:
         supports_event = event_type in (channel.event_types or [])
@@ -791,6 +796,13 @@ def recover_notification_deliveries(*, limit: int = 25) -> dict[str, int]:
         if delivery is None:
             break
         channel = delivery.channel
+        if channel.lifecycle_state != 'active':
+            delivery.status = 'skipped'
+            delivery.error_message = 'Replay suppressed: notification channel has been retired.'
+            delivery.updated_at = datetime.now(UTC)
+            db.session.commit()
+            totals['skipped'] += 1
+            continue
         if delivery.attempt_count >= max_attempts:
             delivery.status = 'failed'
             delivery.error_message = 'Delivery attempts exhausted; last provider outcome may be unknown.'
@@ -829,7 +841,8 @@ def _channel_matches_event(
     if event_type in {'alert_ops.firing', 'alert_ops.resolved'} and 'alert_intelligence.active_alert' in allowed_events:
         allowed_events.add(event_type)
     if not (
-        channel.enabled
+        channel.lifecycle_state == 'active'
+        and channel.enabled
         and channel.configured
         and channel.test_status == 'success'
         and domain in (channel.domains or [])
@@ -984,6 +997,8 @@ def _channel_view(
 
 
 def _deliver(channel: NotificationChannel, message: NotificationMessage) -> DeliveryResult:
+    if channel.lifecycle_state != 'active':
+        return DeliveryResult(False, 'Provider delivery is forbidden for retired notification channels.')
     adapter = get_notification_provider(channel.provider_key)
     if adapter is None:
         return DeliveryResult(False, f'Unsupported notification provider: {channel.provider_key}.')
