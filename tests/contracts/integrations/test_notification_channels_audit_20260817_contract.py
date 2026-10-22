@@ -478,7 +478,7 @@ def test_review6_channel_registry_loading_follows_header_before_filters() -> Non
     footer = registry.index("table_registry.footer('notification_channels.index'")
     assert header < filters < table < footer
     assert "loading_bar.render(loading_id, label=loading_label)" in table_macro
-    assert registry.count("'notification-channel-loading'") == 2
+    assert "loading_bar.render('notification-channel-loading'" not in registry
     assert "header_actions=channel_clear_action" in registry
     assert "table_block.inventory_filter_bar_classes()" in registry
 
