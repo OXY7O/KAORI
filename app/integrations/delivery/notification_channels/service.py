@@ -64,6 +64,7 @@ def get_channel(channel_id: int) -> NotificationChannel | None:
 
 def create_channel(data: NotificationChannelFormInput, *, user_id: int | None) -> NotificationChannel:
     channel = NotificationChannel()
+    channel.lifecycle_state = 'active'
     channel.name = data.name
     channel.provider_key = data.provider_key
     channel.enabled = data.enabled
