@@ -77,3 +77,24 @@ def test_review7_reveal_target_empty_cluster_status_not_below_form() -> None:
     assert 'KUBERNETES_SECRET_REVEAL_ENABLED=true' in page
     assert 'selection_error' in page
     assert "info_id='secret-reveal-target-guidance-tip'" in page
+
+
+def test_review7_reveal_guidance_copy_stays_compact() -> None:
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    # Preserve policy semantics while fitting each guidance sentence on one
+    # line where the existing context rail has sufficient width.
+    for copy in (
+        'Approval and step-up follow Namespace policy.',
+        'My Requests: track, step up, reveal once.',
+        'Safeguards apply through one-time reveal.',
+        'TLS/SSH private keys cannot be revealed.',
+        'Requesters cannot approve their own requests.',
+        'Step up before using an approved request.',
+        'Audit records context, never secret values.',
+    ):
+        assert copy in page
+
+    assert 'No eligible cluster. Review readiness or policy.' not in page
+    assert 'No eligible protected cluster' in page
+    assert "info_id='secret-reveal-target-guidance-tip'" in page
+    assert 'selection_error' in page
