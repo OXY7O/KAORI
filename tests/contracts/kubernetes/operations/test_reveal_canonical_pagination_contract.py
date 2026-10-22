@@ -120,7 +120,8 @@ def test_my_reveal_request_actions_preserve_approval_and_one_time_security() -> 
     assert 'table_ui.action_classes()' in source
     assert 'macro classes(' in actions
     assert 'macro action_classes(' in shared_table
-    assert 'href="#reveal-session-step-up"' in source
+    assert 'data-reveal-step-up-trigger' in source
+    assert "reveal_view='mine', _anchor='reveal-session-step-up'" in source
     assert 'Expires {{ item.expires_at|user_datetime }}' in source
     assert 'No action available' in source
     assert 'item.ticket_reference or' in source
