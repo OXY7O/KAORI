@@ -388,3 +388,13 @@ schedules, and only hard-delete when both dependencies are zero.
 Previously committed evidence remains authoritative; do not delete
 history to clear the guard. No hard-delete override, new archive
 semantics, data migration or bypass of RBAC/CSRF is authorized here.
+
+## Responsive Channel Inventory Table Fit (#2734, 2026-10-23)
+
+The accepted #2735 work establishes a row-wise capability policy dialog and a
+native **Why locked?** deletion dependency dialog. Retain those authoritative
+components. Channel Inventory uses a full-width fixed six-column table on
+desktop rather than forcing a 1100px minimum; a smaller 980px table minimum
+is reserved for narrow viewports where horizontal scrolling is intentional.
+The existing deletion guard remains authoritative. For committed delivery
+evidence, deactivate the channel through Edit rather than purging history.
