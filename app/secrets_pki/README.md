@@ -178,3 +178,18 @@ private keys, credentials and raw provider bodies are not exposed by this
 aggregate. No additional Vault API call, migration, worker or permission.
 Tests authored in tests/integrations/test_vault_pki_validity_posture.py;
 real provider, PostgreSQL, exact-SHA CI, Visual QA and human UAT pending.
+
+## Vault Secret Registry source-scope admission (#2689)
+
+`registry_scope.py` supplies a pure deny-by-default qualification contract
+for later per-source read models. It requires the global view permission,
+**independently enforced** #724 resource scope, an explicit allowed
+IntegrationInstance ID, fresh complete source evidence and bounded records.
+It returns only count/status and **never** enables detail disclosure, Vault
+path/name exposure, broad registry routes, grants, API calls or Secret values.
+Until a canonical #724 scope policy is genuinely enforced, all attempts
+must remain `scope_denied`; passing `scope_policy_enforced=True` without
+an authoritative authorization decision is prohibited. The caller must
+independently validate the queried committed record collection rather than
+trust unscoped client arguments. Tests are located at
+`tests/contracts/secrets_pki/test_registry_scope_contract.py`.
