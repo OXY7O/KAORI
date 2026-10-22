@@ -49,7 +49,7 @@
                   hx-swap="outerHTML"
                   hx-indicator="#secret-reveal-cluster-loading"
                   class="w-full min-w-0">
-                <input type="hidden" name="view" value="{{ secret_reveal_view }}">
+                <input type="hidden" name="view" value="{{ secret_reveal_view }}" :value="activeTab">
                 <input type="hidden" name="refresh_namespace" value="1">
                 <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
                 <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
@@ -76,7 +76,7 @@
         </div>
     </header>
     <div class="mt-4">
-    {{ content_tabs.render_controlled_links(
+        {{ content_tabs.render_controlled_links(
         'secret-reveal-management',
         [
             ('prerequisites', 'Cluster Prerequisites', 'shield-check', none, url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='prerequisites', cluster_id=selected_cluster.id if selected_cluster else none, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, per_page=namespace_pagination.per_page)),
@@ -94,8 +94,7 @@
          aria-labelledby="secret-reveal-management-tab-prerequisites"
          :hidden="activeTab !== 'prerequisites'"
          {% if secret_reveal_view != 'prerequisites' %}hidden{% endif %}>
-    <section id="secret-reveal-readiness-section" class="min-w-0" aria-label="Cluster Prerequisites">
-
+        <section id="secret-reveal-readiness-section" class="min-w-0" aria-label="Cluster Prerequisites">
             {% if selected_cluster %}
                 <form method="post"
                       action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_readiness', cluster_id=selected_cluster.id) }}"
@@ -238,11 +237,11 @@
                 </div>
             {% endif %}
         </section>
-
     </div>
     <div id="secret-reveal-management-panel-policies"
          role="tabpanel"
          aria-labelledby="secret-reveal-management-tab-policies"
+         class="min-w-0"
          :hidden="activeTab !== 'policies'"
          {% if secret_reveal_view != 'policies' %}hidden{% endif %}>
         {% if selected_cluster %}
