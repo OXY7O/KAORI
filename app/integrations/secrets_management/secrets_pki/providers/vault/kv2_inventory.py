@@ -127,6 +127,25 @@ def _safe_metadata(
     )
 
 
+def parse_approved_kv2_mounts(raw: str) -> tuple[str, ...]:
+    """Parse an administrator's explicit, bounded mount allowlist."""
+    if len(raw) > 1500:
+        raise VaultProviderError('KV v2 mount configuration is too long.')
+    values = [entry.strip().strip('/') for entry in raw.split(',') if entry.strip()]
+    if len(values) > 8:
+        raise VaultProviderError('A Vault instance supports at most eight approved KV v2 mounts.')
+    mounts: list[str] = []
+    for value in values:
+        segments = _segments(value, required=True)
+        normalized = '/'.join(segments)
+        if len(normalized) > 160:
+            raise VaultProviderError('A KV v2 mount name is too long.')
+        if normalized in mounts:
+            raise VaultProviderError('KV v2 mount configuration contains duplicates.')
+        mounts.append(normalized)
+    return tuple(mounts)
+
+
 def collect_kv2_metadata(
     client: VaultClient, *,
     mount: str,
