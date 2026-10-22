@@ -186,7 +186,7 @@
         {% endcall %}
         </div>
         <div class="overflow-x-auto overscroll-x-contain">
-            <table class="{{ table_ui.table_classes('min-w-[1100px] table-fixed') }}">
+            <table class="{{ table_ui.table_classes('min-w-[1100px]') }}">
                 <caption class="sr-only">Configured notification channels with delivery readiness, routing policy, allowed uses and provider evidence.</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
@@ -275,7 +275,7 @@
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
                                 {% if can_manage %}
-                                    <div class="flex flex-nowrap justify-end gap-1.5">
+                                    <div class="flex flex-wrap justify-end gap-1.5">
                                         <a href="{{ url_for('notification_channels.index',
                                                     tab='channels', edit=channel.id, configure=1,
                                                     channel_search=payload.channel_filters.search,
