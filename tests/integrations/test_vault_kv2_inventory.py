@@ -173,3 +173,11 @@ def test_missing_security_posture_does_not_default_to_false(field):
         data['data']['versions']['1'].pop('destroyed')
     with pytest.raises(VaultProviderError):
         _safe_metadata(mount='kv', path='secret', body=data)
+
+
+@pytest.mark.parametrize('bad_value', [True, 1.5, '1.5', '٢', -1, 2**31, '9'*20])
+def test_invalid_kv2_version_number_never_truncates_or_overflows(bad_value):
+    data = _detail()
+    data['data']['current_version'] = bad_value
+    with pytest.raises(VaultProviderError, match='Invalid KV v2 version evidence'):
+        _safe_metadata(mount='kv', path='secret', body=data)
