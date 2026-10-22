@@ -8,8 +8,8 @@ from app.integrations.secrets_management.secrets_pki.sync_jobs import (
     enqueue_vault_inventory_sync,
 )
 from app.models.job import JobExecution, JobPolicy
-from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.models.vault import VaultInstance
+from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.policies.presentation import present_interval
 
