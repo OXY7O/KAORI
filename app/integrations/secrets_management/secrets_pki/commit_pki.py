@@ -100,7 +100,7 @@ def commit_pki_public_issuers(
         provider = db.session.execute(
             select(VaultInstance)
             .where(VaultInstance.integration_instance_id == integration_instance_id)
-            .with_for_update()
+            .with_for_update(of=VaultInstance)
         ).scalar_one_or_none()
         if (
             identity is None or provider is None
