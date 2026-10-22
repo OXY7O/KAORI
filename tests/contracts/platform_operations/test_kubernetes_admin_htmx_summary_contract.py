@@ -242,6 +242,26 @@ def test_kubernetes_admin_controls_have_inventory_section_intro_and_operational_
     assert 'components/action_button.html' in rows
     assert "action_button.classes('primary')" in rows
     assert "setTab('{{ control.workspace_tab }}')" in rows
-    assert 'Readiness &amp; Evidence' in rows
+    assert 'Configuration Snapshot' in rows
+    assert 'Runtime Verification' in rows
     assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
     assert 'platform_operations/kubernetes/_administration_control_rows.html' in oob
+
+
+def test_managed_controls_split_configuration_from_runtime_verification() -> None:
+    rows = (ROOT / 'app/templates/platform_operations/kubernetes/_administration_control_rows.html').read_text()
+
+    # Keep the source-owned capability/action distinct from configured metrics
+    # and execution-time authorization, using only approved KAORI primitives.
+    assert 'lg:grid-cols-12' in rows
+    assert 'lg:col-span-5' in rows
+    assert 'lg:col-span-7' in rows
+    assert 'lg:border-l' in rows
+    assert 'sm:grid-cols-2' in rows
+    assert rows.index('Configuration Snapshot') < rows.index('Runtime Verification')
+    assert rows.index('control.metrics') < rows.index('control.status_detail')
+    assert 'Recorded KAORI state' in rows
+    assert 'control.evidence_label' in rows
+    assert "action_button.classes('primary')" in rows
+    assert 'setTab(\'{{ control.workspace_tab }}\')' in rows
+    assert 'No Administrative Control Available' in rows
