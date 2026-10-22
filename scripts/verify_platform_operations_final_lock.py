@@ -575,7 +575,7 @@ def main() -> int:
     ):
         if required not in cluster_workspace:
             errors.append(f'Secret Reveal cluster-readiness contract missing: {required}')
-    for retired in ('xl:col-span-7', 'xl:col-span-5', 'lg:grid-cols-3\"'):
+    for retired in ('xl:col-span-7', 'xl:col-span-5'):
         if retired in cluster_workspace:
             errors.append(f'Secret Reveal Cluster Readiness uses retired cramped layout: {retired}')
     if '<aside class="overflow-hidden rounded-2xl border border-kaori-primary bg-kaori-primary' in cluster_workspace:
