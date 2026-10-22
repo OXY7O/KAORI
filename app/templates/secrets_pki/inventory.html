@@ -84,6 +84,33 @@
                 </p>
             {% endif %}
         {% endcall %}
+        {% call section_card.render('KV v2 Version Lifecycle Posture',
+            'Read-only classification of current-generation committed Vault KV v2 metadata; not rotation or consumer verification.',
+            'history') %}
+            <div role="status" class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm font-semibold text-content-primary">{{ kv2_version_posture.label }}</p>
+                    <p class="text-xs text-content-muted">Observed versions:
+                        <span class="font-semibold text-content-primary">{{ kv2_version_posture.observed_versions if kv2_version_posture.observed_versions is not none else 'Not Qualified' }}</span>
+                    </p>
+                </div>
+                {% if kv2_version_posture.status in ('ready', 'observed_empty') %}
+                    <dl class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3 xl:grid-cols-5">
+                        <div><dt class="text-content-muted">Available</dt><dd class="mt-1 font-semibold text-content-primary">{{ kv2_version_posture.available }}</dd></div>
+                        <div><dt class="text-content-muted">Scheduled Deletion</dt><dd class="mt-1 font-semibold text-content-primary">{{ kv2_version_posture.scheduled_deletion }}</dd></div>
+                        <div><dt class="text-content-muted">Soft Deleted</dt><dd class="mt-1 font-semibold text-content-primary">{{ kv2_version_posture.soft_deleted }}</dd></div>
+                        <div><dt class="text-content-muted">Destroyed</dt><dd class="mt-1 font-semibold text-content-primary">{{ kv2_version_posture.destroyed }}</dd></div>
+                        <div><dt class="text-content-muted">Unknown</dt><dd class="mt-1 font-semibold text-content-primary">{{ kv2_version_posture.unknown }}</dd></div>
+                    </dl>
+                {% else %}
+                    <p class="text-xs text-status-warning-text">No current lifecycle counts can be qualified. Missing or stale evidence is not proof of zero versions or completed rotation.</p>
+                {% endif %}
+                <p class="text-xs leading-5 text-content-muted">
+                    Counts cover only fresh, approved, fully committed metadata observations.
+                    Version deletion/destruction is not credential revocation, Secret rotation success, consumer cutover or current endpoint adoption.
+                </p>
+            </div>
+        {% endcall %}
         {{ section_intro.render(
             'Additional Evidence Domains',
             'PKI issuers, issued certificates, leases and consumer mappings require independent committed-source contracts.',

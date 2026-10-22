@@ -9,6 +9,7 @@ from flask_login import current_user
 from app.access.rbac.decorators import permission_required
 from app.dashboards.common.operational import normalize_operational_tab
 from app.secrets_pki.certificate_delivery_read_model import build_certificate_delivery_overlap
+from app.secrets_pki.kv2_version_posture import build_kv2_version_posture
 from app.secrets_pki.pki_presentation import pki_public_readiness
 from app.secrets_pki.pki_stored_presentation import stored_pki_certificate_readiness
 from app.secrets_pki.presentation import build_secrets_pki_operational_summary
@@ -36,6 +37,7 @@ def inventory() -> ResponseReturnValue:
         'secrets_pki/inventory.html',
         summary=build_secrets_pki_operational_summary(),
         pki_readiness=pki_public_readiness(),
+        kv2_version_posture=build_kv2_version_posture(),
         stored_cert_readiness=stored_pki_certificate_readiness(),
         delivery_overlap=build_certificate_delivery_overlap(
             authorized_to_view_kubernetes_tls=current_user.has_permission('tls_certificates.view'),

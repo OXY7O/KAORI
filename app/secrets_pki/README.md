@@ -120,3 +120,24 @@ It reuses existing Kubernetes TLS Governance `used_by` and
 Source read permissions and freshness are independent. Those figures are
 **not proof** of Vault delivery, Ingress controller loading or current
 endpoint TLS serving. See `CERTIFICATE_DELIVERY_CORRELATION.md`.
+
+## Current-generation KV v2 Version Lifecycle aggregate (#2674)
+
+The Secrets & PKI Inventory page now has a bounded, source-owned **aggregate-only**
+version posture. It reuses the HV-04 `classify_kv2_version` semantics for
+available, scheduled deletion, soft deleted, destroyed and unknown.
+Full readiness requires approved enabled active Vault KV v2 sources, recent
+(24h) ready committed mount scans, matching source generation and observed
+representation counts, with strict record/version budgets. Historical
+`not_observed` Secret representations and version rows not refreshed in the
+current committed generation are excluded. Missing coverage, stale and
+schema-not-ready states display Not Qualified, **never zero**; a qualified
+committed empty mount may display genuine zero.
+
+No provider read, Vault path/Secret name, value hash, raw ID, Secret data,
+private key, auth material, mutation, new migration, Lease enumeration or
+new scheduler is involved. A version destruction/soft-delete is Vault
+material history, not verified revocation, rotation or consumer adoption.
+Tests: `tests/integrations/test_vault_kv2_version_posture.py`.
+Exact-SHA Ruff/Pyright/pytest, runtime PostgreSQL, RBAC and browser UAT still
+need Developer Check/Full Admission; a review merge is not PASS.
