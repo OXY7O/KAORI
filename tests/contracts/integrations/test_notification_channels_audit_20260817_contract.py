@@ -558,8 +558,9 @@ def test_notification_channel_layout_and_protected_delete_are_discoverable() -> 
     service = read('app/integrations/delivery/notification_channels/service.py')
     lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
 
-    assert "table_ui.table_classes('min-w-[1100px] table-fixed')" in channels
+    assert "table_ui.table_classes('min-w-[1100px]')" in channels
     assert 'min-w-[1280px]' not in channels
+    assert 'flex flex-wrap justify-end gap-1.5' in channels
     assert channels.count('scope="col"') == 6
     for width in ('w-[21%]', 'w-[12%]', 'w-[14%]', 'w-[18%]', 'w-[19%]', 'w-[16%]'):
         assert width in channels
