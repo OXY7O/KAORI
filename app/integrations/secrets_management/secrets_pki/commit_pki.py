@@ -211,7 +211,15 @@ def mark_pki_public_issuers_failed(integration_instance_id: int, mount: str) -> 
         if len(configured) != 1:
             return
         provider = VaultInstance.query.filter_by(integration_instance_id=integration_instance_id).first()
-        if provider is None or mount not in parse_approved_pki_mounts(','.join(provider.pki_mounts or ())):
+        if provider is None:
+            return
+        try:
+            approved = parse_approved_pki_mounts(','.join(provider.pki_mounts or ()))
+        except ValueError:
+            # Concurrent configuration invalidation must not raise from the
+            # sanitized worker failure-recording path.
+            return
+        if mount not in approved:
             return
         namespace = provider.namespace or ''
         state = PKIIssuerCollectionState.query.filter_by(
