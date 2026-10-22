@@ -512,7 +512,7 @@ def test_channel_inventory_symmetric_policy_and_visible_deletion_blockers() -> N
     assert 'channel.report_schedule_names' in blockers
     assert 'Use Edit to disable this channel' in blockers
     assert 'Remove this channel from the referencing report schedules' in blockers
-    assert "'report_schedule_names': usage.report_schedule_names" in service
+    assert "'report_schedule_names': list(usage.report_schedule_names)" in service
     assert 'if usage.blocked:' in lifecycle
     assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
 
