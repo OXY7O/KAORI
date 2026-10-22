@@ -62,7 +62,7 @@ def _segments(value: str, *, required: bool) -> tuple[str, ...]:
         raise VaultProviderError('KV v2 path exceeds the supported bound.')
     parts = tuple(raw.split('/'))
     if any(
-        not part or part in {'.', '..'} or '%' in part or '\\' in part
+        not part or part in {'.', '..'} or any(char in part for char in '%?#') or '\\' in part
         or any(ord(char) < 32 or ord(char) == 127 for char in part)
         for part in parts
     ):
