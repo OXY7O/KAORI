@@ -111,12 +111,43 @@ Sensitive Vault paths are scoped metadata; a digest indexes the provider path,
 **not a Secret value**. Historical evidence restricts deletion of its parent
 integration registration.
 
-It is **not yet connected to canonical `JobExecution`, scheduled collection,
-a privileged inventory sync entrypoint or the Secrets & PKI Inventory UI**.
+The source contract now dispatches through canonical **Jobs & Executions**:
+registered `secrets_pki.inventory.sync`, default schedule **disabled**, manual
+execution requiring `jobs.execute` and `integrations.manage`, inventory
+worker registration/preflight, bounded per-instance approved mount scope,
+canonical `JobExecutionContext` progress and sanitized partial/failure
+outcomes. The provider registration form exposes an explicit comma-separated
+KV v2 mount allowlist (maximum eight); empty means **no inventory eligible**.
+Changed mount configuration invalidates existing Full Validation. Workers
+read configured scope and AppRole SecretID from secure server-side state,
+not Redis task arguments. Collection error marks scoped collection
+`stale`/`failed` while preserving the last complete committed evidence.
+
+It is **not yet exposed through the provider-neutral Secrets & PKI Inventory
+workspace**; sensitive reference listing/search/exports remain unimplemented
+until the #2597/#2591 scoped RBAC and UI review. Real Vault and Postgres
+upgrade/downgrade acceptance is not yet available.
  Do not expose it as
 `Available`, call it from an HTTP read route, or persist its unredacted
 in-memory objects in Celery results, logs, notifications or exports. Next
-bounded slices of HV-02 must implement job admission/worker ownership,
-permission-safe Inventory read projections and real-Vault UAT. Focused tests are `tests/integrations/test_vault_kv2_inventory.py` and
+bounded slices of HV-02 must implement resource-scoped inventory read projections,
+security and negative-path tests, and real-Vault UAT. Focused tests are `tests/integrations/test_vault_kv2_inventory.py` and
 `tests/integrations/test_vault_kv2_committed_inventory.py`; pytest/ruff,
 Alembic, actual Vault and security gates remain unverified until run.
+
+
+### HV-02 focused checks (not yet attested)
+
+```bash
+python -m pytest tests/integrations/test_vault_provider.py tests/integrations/test_vault_kv2_inventory.py tests/integrations/test_vault_kv2_committed_inventory.py -q
+python -m ruff check app/models/secrets_pki.py app/integrations/secrets_management/secrets_pki tests/integrations/test_vault_kv2_*.py
+```
+
+DevContainer sequence: apply Alembic migrations using the repository's standard
+initialization; register an approved Vault AppRole; specify only explicitly
+authorized KV v2 mounts; Test Connection then Full Validation; start/restart
+the `inventory` worker; open Jobs & Executions → Secrets & PKI Inventory Sync,
+run manually and review source-state freshness. The Vault API may return 403
+when list/read permissions on metadata are not granted. A successful provider
+health check does not imply inventory permissions. Do not claim a passing
+migration, worker check or Vault UAT until actually observed.
