@@ -75,3 +75,44 @@ unmigrated sources, unprivileged Viewer and Kubernetes TLS permission denials,
 empty committed scans, matching/unmatching SHA-256, and no secret-name
 disclosure. Real Kubernetes and Vault UAT plus human acceptance remain
 pending. No CI PASS has been claimed by authoring these contracts.
+
+
+## Ingress TLS reference and declared host identity (HV-05 follow-up)
+
+This source extension uses `TLSCertificateInventory.used_by` and
+`coverage_state` from **existing** Kubernetes TLS Certificate Governance.
+The Ingress mapping source must independently report `collected` and
+the TLS Secret source must be fresh; each matching Secret must have a
+source-validated structured reference list. Empty is a valid zero only
+when the collection actually completed. Invalid/missing references are
+unknown, not proof of absence.
+
+After a *matching public certificate SHA-256* and qualified Ingress
+source, KAORI may report:
+- number of matching Kubernetes TLS Secrets **referenced by a declared
+  Ingress TLS Secret reference**;
+- subset whose declared hosts are fully covered by the certificate
+  hostname/SAN identity, where host count is nonzero.
+
+These are Kubernetes configuration facts only. Ingress hosts matching a
+certificate do not prove that a controller accepted the configuration,
+loaded the Secret, routed traffic, reached a backend, served the expected
+certificate to a TLS client, or obtained it from Vault.
+
+No Ingress/Secret/DNS names or per-resource identities are emitted in the
+Secrets & PKI aggregate cross-domain presentation; the existing
+`tls_certificates.view` permission remains required **before** querying
+Kubernetes Governance. Direct access and non-HTML HTMX behavior must be
+UAT-tested with allowed and denied roles.
+
+Future proof layers must be owned by authorized controller reconciliation
+and external endpoint TLS readback sources with timestamp, TLS trust/route
+context, provenance and policy-controlled destinations. No endpoint scanning
+is added by this implementation. Existing collected Ingress mapping cannot
+stand in for those missing source adapters.
+
+Focused tests authored but not executed:
+`tests/contracts/secrets_pki/test_certificate_ingress_assurance_contract.py`
+and `tests/integrations/test_certificate_delivery_read_model.py`.
+Run standard KAORI quality gates and human DevContainer Visual QA at the
+exact reviewed commit.
