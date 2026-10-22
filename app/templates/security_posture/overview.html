@@ -4,39 +4,66 @@
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/resource_posture_grid.html" as posture_grid %}
+{% import "components/operational_signal_overview.html" as signal_overview %}
+{% import "components/operational_metric_card.html" as metric_card %}
 {% block title %}Security Overview · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div id="security-posture-overview" class="space-y-6">
-    <section class="{{ page_hero.shell_classes() }}">
-        <div class="{{ page_hero.layout_classes() }}">
-            <div class="{{ page_hero.content_classes() }}">
-                {% call page_hero.intro('shield-alert', 'Security', 'shield-check') %}
-                    <h1 class="{{ page_hero.title_classes() }}">Security Overview</h1>
-                    <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Correlate committed security evidence across KAORI domains, without duplicating provider scanners.
-                        Registry and Kubernetes are the first qualified evidence path.
-                    </p>
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        {{ page_hero.meta_label('database', posture.sources ~ ' Authorized Registry Sources') }}
-                        {{ page_hero.meta_label('package-search', posture.affected_artifacts ~ ' Affected Artifacts') }}
-                        {{ page_hero.meta_label('shield-alert', posture.pagination.total_items ~ ' CVE Findings') }}
-                    </div>
-                {% endcall %}
-            </div>
-            {{ page_hero.context_card(
-                'Cross-Domain Evidence', 'Security Posture',
-                'Registry Scanner Coverage', posture.scan_status.label, posture.scan_status.tone,
-                [
-                  ('database', 'Usable Scans', posture.scanned_artifacts ~ ' / ' ~ posture.artifacts_total, 'Committed artifacts only'),
-                  ('waypoints', 'Runtime Correlation', posture.runtime_status.status, 'Kubernetes input freshness')
-                ],
-                'Open Findings', url_for('security_posture.findings'), action_icon='shield-alert'
-            ) }}
-        </div>
-    </section>
+    {% set registry_ready = posture.authorized_registry and posture.sources > 0 %}
+    {% set security_scope = 'All Authorized Registry Sources' if registry_ready else 'No Eligible Registry Source' %}
+    {% set setup_action_label = 'Open Registry Integrations' if can_manage_integrations else 'Review Registry Security' %}
+    {% set setup_action_href = url_for('integrations.registry') if can_manage_integrations else url_for('artifact_registry.security') if posture.authorized_registry else url_for('security_posture.findings') %}
+    {{ page_hero.operational_dashboard(
+        'Security Posture', 'shield-alert', 'Security Overview',
+        'Review committed vulnerability findings and Kubernetes runtime correlation.',
+        [
+            ('database-zap', 'Registry Scan Evidence'),
+            ('waypoints', 'Runtime Correlation'),
+            ('shield-alert', 'CVE Findings')
+        ],
+        security_scope, setup_action_label, setup_action_href,
+        action_icon='settings-2' if can_manage_integrations else 'shield-check',
+        data_authority='Committed Evidence',
+        state='normal' if registry_ready else 'blocked',
+        blocked_title='Security Evidence Unavailable',
+        blocked_info='Connect a Registry source with committed inventory and grant authorized domain access.'
+    ) }}
 
+    {% if not registry_ready %}
+        {% call section_card.render('Security Evidence Prerequisites',
+            'No eligible authorized committed Registry source is available for cross-domain correlation.',
+            'shield-alert') %}
+            <p class="text-sm text-content-secondary">
+                Review Registry integration and permission coverage. Missing evidence does not imply a clean security posture.
+            </p>
+        {% endcall %}
+    {% else %}
+    {% set scope_context %}
+        <a href="{{ url_for('security_posture.findings') }}"
+           class="inline-flex text-sm font-semibold text-kaori-primary hover:underline">Review CVE Findings</a>
+    {% endset %}
     {% call dashboard_workspace.controller(active_tab, 'security-posture-overview') %}
+        {% call signal_overview.render(
+            'Authorized committed Registry scanner evidence and Kubernetes runtime readiness.',
+            '3 Indicators', security_scope, 'shield-alert',
+            posture.scan_status.label, posture.scan_status.tone,
+            posture.scan_updated_label, scope_context
+        ) %}
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {{ metric_card.render('Usable Scanner Evidence',
+                    posture.scanned_artifacts ~ ' / ' ~ posture.artifacts_total,
+                    'Committed scans within authorized Registry scope.',
+                    'scan-search', source_label='Registry Scan', scope_label='Active Scope') }}
+                {{ metric_card.render('Affected Artifact Digests',
+                    posture.affected_artifacts if posture.scanned_artifacts else 'Not Collected',
+                    'Distinct digests observed by the latest usable scanner snapshots.',
+                    'package-search', source_label='Registry Security', scope_label='Active Scope') }}
+                {{ metric_card.render('Runtime Correlation',
+                    posture.runtime_status.status,
+                    'Freshness of committed Kubernetes binding generation.',
+                    'waypoints', source_label='Registry × Kubernetes', scope_label='Active Scope') }}
+            </div>
+        {% endcall %}
         {{ dashboard_workspace.navigation('security-posture-overview', 'Security Overview Sections') }}
         <div class="mt-5 space-y-5">
             {% call dashboard_workspace.panel('overview', active_tab, 'security-posture-overview') %}
@@ -44,14 +71,6 @@
                     'Provider findings and their runtime correlation are separate sources of authority.',
                     'shield-alert', action_href=url_for('security_posture.findings'),
                     action_label='Review Findings') %}
-                    {{ posture_grid.render([
-                        ('scan-search', 'Usable Scanner Evidence', posture.scanned_artifacts ~ ' / ' ~ posture.artifacts_total,
-                         'Committed Registry scans · ' ~ posture.scan_status.label, posture.scan_status.tone),
-                        ('package-search', 'Affected Artifact Digests', posture.affected_artifacts,
-                         'Scanner-observed latest usable findings', 'warning' if posture.affected_artifacts else 'unknown'),
-                        ('waypoints', 'Runtime Correlation', posture.runtime_status.status,
-                         'Kubernetes committed input-generation readiness', posture.runtime_status.tone)
-                    ], columns=3) }}
                     {% if not posture.has_complete_security_evidence %}
                         <p role="status" class="mt-4 text-sm text-content-secondary">
                             Coverage or runtime correlation is incomplete, stale, or unauthorized. Counts represent observed evidence,
@@ -119,5 +138,6 @@
             {% endcall %}
         </div>
     {% endcall %}
+    {% endif %}
 </div>
 {% endblock dashboard_content %}
