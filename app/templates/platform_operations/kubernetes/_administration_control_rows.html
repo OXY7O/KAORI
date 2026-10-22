@@ -1,59 +1,77 @@
-{# Source-owned control rows are shared by Overview and HTMX OOB state updates. #}
+{# Source-owned control rows shared by Overview and HTMX OOB updates. #}
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
 {% for control in administration_controls %}
-    <article id="kubernetes-admin-control-{{ control.key }}"
-             class="min-w-0 px-5 py-5 sm:px-6 sm:py-6">
-        <div class="grid min-w-0 gap-5 lg:grid-cols-12 lg:gap-6">
-            <div class="flex min-w-0 flex-col items-start lg:col-span-5">
+    <article id="kubernetes-admin-control-{{ control.key }}" class="min-w-0">
+        {# Control identity and operator action: the first scannable decision. #}
+        <div class="border-b border-outline-subtle bg-surface-hover px-5 py-5 sm:px-6">
+            <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                           aria-hidden="true">
                         <i data-lucide="{{ control.icon }}" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2.5">
-                            <h3 class="text-sm font-semibold text-content-primary">{{ control.label }}</h3>
+                        <p class="text-xs font-semibold tracking-wide text-kaori-primary">Managed Control {{ loop.index }}</p>
+                        <div class="mt-1 flex flex-wrap items-center gap-2.5">
+                            <h3 class="text-base font-semibold text-content-primary">{{ control.label }}</h3>
                             {{ table_label.status_indicator_label(control.status_label, control.status_tone) }}
                         </div>
-                        <p class="mt-2 text-sm leading-6 text-content-secondary">{{ control.description }}</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ control.description }}</p>
                     </div>
                 </div>
                 <button type="button"
                         @click="setTab('{{ control.workspace_tab }}')"
-                        class="{{ action_button.classes('primary') }} mt-5 w-full sm:w-auto lg:mt-auto"
+                        class="{{ action_button.classes('primary') }} w-full shrink-0 sm:w-auto"
                         aria-label="{{ control.action_label }} for {{ control.label }}">
                     {{ control.action_label }}
                     <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
                 </button>
             </div>
-            <div class="min-w-0 lg:col-span-7 lg:border-l lg:border-outline-subtle lg:pl-6">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h4 class="text-xs font-semibold text-content-primary">Configuration Snapshot</h4>
-                    <span class="text-xs text-content-muted">Recorded KAORI state</span>
+        </div>
+
+        {# One continuous evidence journey, not independent readiness KPI cards. #}
+        <div class="min-w-0 px-5 py-5 sm:px-6 sm:py-6">
+            <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div class="min-w-0">
+                    <h4 class="text-sm font-semibold text-content-primary">Control Readiness Path</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Configuration evidence is recorded; live access is authorized at execution.</p>
                 </div>
-                <dl class="mt-3 grid min-w-0 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
-                    {% for icon, label, value in control.metrics %}
-                        <div class="min-w-0 bg-surface-hover px-4 py-3">
-                            <dt class="flex items-center gap-2 text-xs font-medium leading-5 text-content-muted">
-                                <i data-lucide="{{ icon }}"
-                                   class="h-4 w-4 shrink-0 text-kaori-primary"
-                                   aria-hidden="true"></i>
-                                <span>{{ label }}</span>
-                            </dt>
-                            <dd class="mt-1 text-xl font-semibold tracking-tight tabular-nums text-content-primary">{{ value }}</dd>
+                {{ table_label.metadata_label('Recorded KAORI State', icon='clipboard-check') }}
+            </div>
+            <ol class="grid min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover sm:grid-cols-3 sm:divide-x sm:divide-outline-subtle">
+                {% for icon, label, value in control.metrics %}
+                    <li class="min-w-0 border-b border-outline-subtle px-4 py-4 sm:border-b-0">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-semibold tabular-nums text-kaori-primary"
+                                  aria-hidden="true">{{ loop.index }}</span>
+                            <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
                         </div>
-                    {% endfor %}
-                </dl>
-                <div class="mt-3 flex min-w-0 items-start gap-3 border-t border-outline-subtle pt-3">
-                    <i data-lucide="{{ 'shield-check' if control.status_tone == 'normal' else 'shield-alert' }}"
-                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
-                       aria-hidden="true"></i>
-                    <div class="min-w-0">
-                        <h4 class="text-xs font-semibold text-content-primary">Runtime Verification</h4>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ control.status_detail }}</p>
-                        <p class="mt-2 text-xs leading-5 text-content-muted">{{ control.evidence_label }}</p>
+                        <p class="mt-3 text-xs font-semibold leading-5 text-content-secondary">{{ label }}</p>
+                        <p class="mt-1 text-2xl font-semibold tracking-tight tabular-nums text-content-primary">{{ value }}</p>
+                        <p class="mt-1 text-xs text-content-muted">Recorded coverage</p>
+                    </li>
+                {% endfor %}
+                <li class="min-w-0 bg-surface-card px-4 py-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-outline-default bg-surface-hover text-xs font-semibold tabular-nums text-content-secondary"
+                              aria-hidden="true">{{ control.metrics|length + 1 }}</span>
+                        <i data-lucide="shield-alert" class="h-4 w-4 text-content-muted" aria-hidden="true"></i>
                     </div>
+                    <p class="mt-3 text-xs font-semibold leading-5 text-content-secondary">Runtime Authorization</p>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">At Execution</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Live provider checks remain authoritative</p>
+                </li>
+            </ol>
+            <div class="mt-4 flex min-w-0 items-start gap-3 rounded-lg border border-outline-subtle border-l-4 border-l-kaori-primary bg-surface-card px-4 py-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="shield-alert" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h4 class="text-xs font-semibold text-content-primary">Execution Boundary &amp; Evidence</h4>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ control.status_detail }}</p>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">{{ control.evidence_label }}</p>
                 </div>
             </div>
         </div>

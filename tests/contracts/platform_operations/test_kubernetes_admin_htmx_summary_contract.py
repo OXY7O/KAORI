@@ -174,7 +174,7 @@ def test_kubernetes_admin_controls_heading_is_inside_shared_card() -> None:
     # The approved section header (title, short copy and dynamic badge) belongs
     # INSIDE the shared Operational Section Card, not above a second shell.
     start = overview.index("'Managed Administration Controls',")
-    description = overview.index('Configure implemented controls and review their security posture.', start)
+    description = overview.index('Trace configured safeguards, execution boundaries and next actions.', start)
     badge = overview.index('header_badge=controls_badge', description)
     contents = overview.index('id="kubernetes-admin-controls-list"', badge)
     close = overview.index('{% endcall %}', contents)
@@ -242,26 +242,58 @@ def test_kubernetes_admin_controls_have_inventory_section_intro_and_operational_
     assert 'components/action_button.html' in rows
     assert "action_button.classes('primary')" in rows
     assert "setTab('{{ control.workspace_tab }}')" in rows
-    assert 'Configuration Snapshot' in rows
-    assert 'Runtime Verification' in rows
+    assert 'Control Readiness Path' in rows
+    assert 'Execution Boundary &amp; Evidence' in rows
     assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
     assert 'platform_operations/kubernetes/_administration_control_rows.html' in oob
 
 
-def test_managed_controls_split_configuration_from_runtime_verification() -> None:
+def test_managed_controls_expose_evidence_first_readiness_journey() -> None:
     rows = (ROOT / 'app/templates/platform_operations/kubernetes/_administration_control_rows.html').read_text()
+    overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
+    oob = (ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html').read_text()
 
-    # Keep the source-owned capability/action distinct from configured metrics
-    # and execution-time authorization, using only approved KAORI primitives.
-    assert 'lg:grid-cols-12' in rows
-    assert 'lg:col-span-5' in rows
-    assert 'lg:col-span-7' in rows
-    assert 'lg:border-l' in rows
-    assert 'sm:grid-cols-2' in rows
-    assert rows.index('Configuration Snapshot') < rows.index('Runtime Verification')
-    assert rows.index('control.metrics') < rows.index('control.status_detail')
-    assert 'Recorded KAORI state' in rows
-    assert 'control.evidence_label' in rows
+    # Changed information architecture: operator action -> recorded evidence path
+    # -> execution boundary. Do not regress to the former two-column KPI layout.
+    control = rows.index('control.label')
+    action = rows.index('control.action_label')
+    path = rows.index('Control Readiness Path')
+    metric = rows.index('for icon, label, value in control.metrics')
+    runtime = rows.index('Runtime Authorization')
+    boundary = rows.index('Execution Boundary &amp; Evidence')
+    detail = rows.index('control.status_detail')
+    assert control < action < path < metric < runtime < boundary < detail
+    assert '<ol ' in rows and 'sm:grid-cols-3' in rows
+    assert 'control.metrics|length + 1' in rows
+    assert "table_label.metadata_label('Recorded KAORI State'" in rows
+    assert 'At Execution' in rows
+    assert 'Live provider checks remain authoritative' in rows
+    assert rows.count('control.status_detail') == 1
+    assert rows.count('control.evidence_label') == 1
+    assert 'lg:grid-cols-12' not in rows
+    assert 'Configuration Snapshot' not in rows
+    assert 'Recorded KAORI state; runtime authorization' not in rows
+
+    # Shared primitives, HTMX updates, empty state, and navigation are retained.
     assert "action_button.classes('primary')" in rows
-    assert 'setTab(\'{{ control.workspace_tab }}\')' in rows
+    assert "setTab('{{ control.workspace_tab }}')" in rows
+    assert 'table_label.status_indicator_label(control.status_label, control.status_tone)' in rows
     assert 'No Administrative Control Available' in rows
+    assert "components/operational_section_card.html" in overview
+    assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
+    assert 'platform_operations/kubernetes/_administration_control_rows.html' in oob
+
+
+def test_managed_controls_evidence_path_does_not_pre_authorize_runtime() -> None:
+    rows = (ROOT / 'app/templates/platform_operations/kubernetes/_administration_control_rows.html').read_text()
+    presentation = (ROOT / 'app/platform_operations/kubernetes/presentation.py').read_text()
+
+    # Source-owned counts are not interpolated into an invented success verdict.
+    assert '{{ value }}' in rows
+    assert '{{ control.status_detail }}' in rows
+    assert '{{ control.evidence_label }}' in rows
+    assert 'Runtime Authorization' in rows
+    assert 'At Execution' in rows
+    assert 'Verification Required' in presentation
+    assert "'status_tone': status_tone" in presentation
+    assert 'Live Namespace presence, Kubernetes RBAC, and Secret identity' in presentation
