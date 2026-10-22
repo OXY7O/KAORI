@@ -562,10 +562,15 @@ def main() -> int:
         'Cluster Credential',
         'selected_cluster_readiness.credential_configured',
         'All three cluster prerequisites must be satisfied.',
-        'section_intro.render(',
+        'operational_section.shell_classes()',
         'secret-reveal-cluster-readiness-heading',
-        'operational_section.render(',
-        "'Cluster Prerequisites',",
+        'content_tabs.render_controlled_links(',
+        'embedded=true',
+        'secret-reveal-management-panel-prerequisites',
+        'secret-reveal-management-panel-policies',
+        'secret-reveal-readiness-section',
+        'Cluster Access Configuration',
+        ':value="activeTab"',
         'sm:grid-cols-2 lg:grid-cols-3',
         'aria-labelledby="secret-reveal-kubernetes-boundary-heading"',
         "action_button.classes('primary')",
@@ -575,7 +580,7 @@ def main() -> int:
     ):
         if required not in cluster_workspace:
             errors.append(f'Secret Reveal cluster-readiness contract missing: {required}')
-    for retired in ('xl:col-span-7', 'xl:col-span-5'):
+    for retired in ('xl:col-span-7', 'xl:col-span-5', 'section_intro.render('):
         if retired in cluster_workspace:
             errors.append(f'Secret Reveal Cluster Readiness uses retired cramped layout: {retired}')
     if '<aside class="overflow-hidden rounded-2xl border border-kaori-primary bg-kaori-primary' in cluster_workspace:
