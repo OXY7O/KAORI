@@ -22,18 +22,24 @@ def test_administration_mutations_refresh_hero_overview_and_posture():
         'kubernetes-admin-overview-metric-2',
         'kubernetes-admin-overview-metric-3',
         'kubernetes-admin-overview-metric-4',
-    ):
+        'kubernetes-admin-overview-metric-1',
+        'kubernetes-admin-control-count',
+        'kubernetes-admin-controls-list',
+    )
         if fragment.startswith('kubernetes-admin-overview-metric-'):
             assert 'id="kubernetes-admin-overview-metric-{{ loop.index }}"' in overview
         else:
             assert 'id="' + fragment + '"' in (page + overview)
         assert 'id="' + fragment + '"' in partial
-    assert partial.count('hx-swap-oob="innerHTML"') == 9
+    assert partial.count('hx-swap-oob="innerHTML"') == 12
 
 
 def test_admin_overview_tab_navigation_preserves_current_url_parameters():
     page = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
-    assert "setTab('secret-reveal')" in page
+    rows = (ROOT / 'app/templates/platform_operations/kubernetes/_administration_control_rows.html').read_text()
+    presentation = (ROOT / 'app/platform_operations/kubernetes/presentation.py').read_text()
+    assert "setTab('{{ control.workspace_tab }}')" in rows
+    assert "'workspace_tab': 'secret-reveal'" in presentation
     assert 'history.replaceState(null' not in page
 
 
@@ -49,12 +55,18 @@ def test_kubernetes_admin_operational_hierarchy_keeps_authoritative_summary() ->
     assert 'workspace_tabs.render(' in page
     assert 'kubernetes:load-secret-reveal from:window once' in page
     assert 'kubernetes-administration-overview-title' not in page
-    assert 'Administration Readiness' in overview
-    assert 'Configuration Checks' in overview
-    assert 'Configure Secret Reveal' in overview
+    assert 'Administration Coverage' in overview
+    assert 'Managed Administration Controls' in overview
+    assert 'Administration Readiness' not in overview
+    assert 'Configuration Checks' not in overview
+    assert 'administration_controls' in (ROOT / 'app/platform_operations/kubernetes/presentation.py').read_text()
+    assert 'Configure Secret Reveal' in (ROOT / 'app/platform_operations/kubernetes/presentation.py').read_text()
     for obsolete in ('Administration Capability Catalog', 'Recommended Administration Domains', 'Recommended Roadmap'):
         assert obsolete not in overview + page
-    assert 'administration_status_detail' in overview
+    rows = (ROOT / 'app/templates/platform_operations/kubernetes/_administration_control_rows.html').read_text()
+    assert 'control.status_detail' in rows
+    assert 'control.status_tone' in rows
+    assert 'control.metrics' in rows
     assert 'Secret Reveal Configuration' in config
     assert 'Deployment-managed. Read-only here.' in config
     assert 'do not prove live access' in config
@@ -126,3 +138,28 @@ def test_kubernetes_admin_integrated_tabs_have_explicit_panel_labels() -> None:
     assert 'workspace_tabs.render(' in page
     assert 'role="tablist"' not in page
     assert 'kubernetes:load-secret-reveal from:window once' in page
+
+
+def test_administration_control_projection_scales_without_placeholder_roadmap() -> None:
+    source = (ROOT / 'app/platform_operations/kubernetes/presentation.py').read_text()
+    overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
+    rows = (ROOT / 'app/templates/platform_operations/kubernetes/_administration_control_rows.html').read_text()
+    oob = (ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html').read_text()
+
+    # Capability-first, only authorized implemented administration controls;
+    # their source-owned states are not duplicated by a static Jinja catalog.
+    assert "'administration_controls': controls" in source
+    assert "'administration_control_count': len(controls)" in source
+    assert "'key': 'secret-reveal'" in source
+    assert "'status_label': status_label" in source
+    assert "'status_tone': status_tone" in source
+    assert "'eligible_policy_count'" in source
+    assert "for control in administration_controls" in rows
+    assert "administration_control_count" in overview
+    assert "id=\"kubernetes-admin-controls-list\"" in overview
+    assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
+    assert 'platform_operations/kubernetes/_administration_control_rows.html' in overview
+    assert 'platform_operations/kubernetes/_administration_control_rows.html' in oob
+    for obsolete in ('Recommended Roadmap', 'Configuration Checks', "'1 Managed Control'"):
+        assert obsolete not in overview + rows
+    assert 'Live access is verified at execution.' in overview
