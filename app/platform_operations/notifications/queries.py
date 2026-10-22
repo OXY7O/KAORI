@@ -216,9 +216,31 @@ def get_activity_center_context(
     ):
         raise RuntimeError('Secret Reveal approval Work Inbox provider returned an invalid projection.')
 
+    requester_inbox_provider = current_app.extensions.get('kaori_secret_reveal_requester_work_inbox')
+    if not callable(requester_inbox_provider):
+        raise RuntimeError('Secret Reveal requester Work Inbox provider is not registered.')
+    secret_reveal_requester_inbox = requester_inbox_provider(user_id=user_id)
+    if (
+        not isinstance(secret_reveal_requester_inbox, dict)
+        or not isinstance(secret_reveal_requester_inbox.get('items'), list)
+        or not isinstance(secret_reveal_requester_inbox.get('ready_count'), int)
+        or not isinstance(secret_reveal_requester_inbox.get('total_count'), int)
+    ):
+        raise RuntimeError('Secret Reveal requester Work Inbox provider returned an invalid projection.')
+
+    # Actionable work is derived from committed request state; it is not
+    # historical notification unread state and does not create another decision.
     notification_inbox_unread_count = inbox_unread_count
-    inbox_unread_count += tenant_approval_inbox['pending_count'] + secret_reveal_inbox['pending_count']
-    inbox_total_count += tenant_approval_inbox['total_count'] + secret_reveal_inbox['total_count']
+    inbox_unread_count += (
+        tenant_approval_inbox['pending_count']
+        + secret_reveal_inbox['pending_count']
+        + secret_reveal_requester_inbox['ready_count']
+    )
+    inbox_total_count += (
+        tenant_approval_inbox['total_count']
+        + secret_reveal_inbox['total_count']
+        + secret_reveal_requester_inbox['total_count']
+    )
 
     presented_jobs = [present_job_execution(job) for job in active_jobs]
     queued_jobs = [job for job in presented_jobs if job['status'] == 'queued']
@@ -238,6 +260,7 @@ def get_activity_center_context(
         'inbox_items': inbox_items,
         'tenant_approval_inbox_items': tenant_approval_inbox['items'],
         'secret_reveal_approval_inbox_items': secret_reveal_inbox['items'],
+        'secret_reveal_requester_inbox_items': secret_reveal_requester_inbox['items'],
         'active_jobs': presented_jobs,
         'active_count': active_count,
         'attention_count': attention_count,

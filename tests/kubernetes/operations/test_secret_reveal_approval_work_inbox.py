@@ -152,3 +152,110 @@ def test_secret_reveal_inbox_uses_tenant_style_composition_and_shared_deck():
     assert "SecretRevealRequest.expires_at > datetime.now(UTC)" in source
     assert 'Secret value' not in panel
     assert 'from app.kubernetes.operations.secrets' not in queries
+
+
+
+def test_requester_sees_only_committed_approved_unexpired_own_work(monkeypatch):
+    queue = _configure(monkeypatch, allowed=True)
+    record = queue.row
+    record.approver = SimpleNamespace(display_label='Independent Reviewer')
+    record.expires_at = datetime.now(UTC)
+    record.decided_at = datetime.now(UTC)
+    # Replace the role check with the requester-specific capability.
+    viewer = SimpleNamespace(
+        is_active=True,
+        account_is_active=True,
+        deleted_at=None,
+        has_permission=lambda key: key == 'kubernetes_secrets.reveal',
+    )
+
+    class UserQuery:
+        def filter_by(self, **kwargs):
+            assert kwargs == {'id': 42}
+            return self
+
+        def first(self):
+            return viewer
+
+    monkeypatch.setattr(approval_inbox, 'User', SimpleNamespace(query=UserQuery()))
+    monkeypatch.setattr(
+        approval_inbox, 'url_for',
+        lambda endpoint, **kw: '/reveal?reveal_view=' + kw['reveal_view'] + '&my_request_id=' + kw['my_request_id'],
+    )
+    queue_model = approval_inbox.SecretRevealRequest
+    queue_model.decided_at = Field('decided_at')
+    result = approval_inbox.get_secret_reveal_requester_work_inbox(user_id=42)
+
+    assert result['ready_count'] == result['total_count'] == 1
+    assert result['items'][0]['request_id'] == 'review-101'
+    assert result['items'][0]['state'] == 'Ready to Reveal'
+    assert result['items'][0]['approved_by'] == 'Independent Reviewer'
+    assert result['items'][0]['action_url'].endswith('my_request_id=review-101')
+    assert result['items'][0]['expires_at'] == record.expires_at
+    assert 'secret_value' not in result['items'][0]
+    assert 'key_name' not in result['items'][0]
+    assert ('requester_user_id', 'eq', 42) in queue.conditions
+    assert ('policy', 'eq', 'approval_required') in queue.conditions
+    assert ('status', 'eq', 'approved') in queue.conditions
+    assert len([c for c in queue.conditions if c[0] == 'expires_at' and c[1] == 'gt']) == 1
+    assert queue.order == ('decided_at:desc', 'id:desc')
+    assert queue.limit_value == 8
+
+
+def test_requester_without_reveal_permission_or_active_account_has_no_inbox_work(monkeypatch):
+    for allowed, active, deleted in (
+        (False, True, False),
+        (True, False, False),
+        (True, True, True),
+    ):
+        queue = _configure(monkeypatch, allowed=False)
+        viewer = SimpleNamespace(
+            is_active=active,
+            account_is_active=active,
+            deleted_at=datetime.now(UTC) if deleted else None,
+            has_permission=lambda key: allowed and key == 'kubernetes_secrets.reveal',
+        )
+
+        class UserQuery:
+            def filter_by(self, **kwargs):
+                assert kwargs == {'id': 42}
+                return self
+
+            def first(self):
+                return viewer
+
+        monkeypatch.setattr(approval_inbox, 'User', SimpleNamespace(query=UserQuery()))
+        assert approval_inbox.get_secret_reveal_requester_work_inbox(user_id=42) == {
+            'items': [], 'ready_count': 0, 'total_count': 0,
+        }
+        assert queue.conditions == ()
+
+
+def test_requester_work_inbox_uses_shared_notification_deck_and_no_reveal_mutation():
+    boot = (ROOT / 'app/bootstrap/blueprints.py').read_text(encoding='utf-8')
+    queries = (ROOT / 'app/platform_operations/notifications/queries.py').read_text(encoding='utf-8')
+    panel = (
+        ROOT / 'app/templates/platform_operations/notifications/partials/_notification_deck_inbox.html'
+    ).read_text(encoding='utf-8')
+    source = (ROOT / 'app/kubernetes/operations/secrets/approval_inbox.py').read_text(encoding='utf-8')
+    routes = (ROOT / 'app/kubernetes/operations/secrets/reveal_routes.py').read_text(encoding='utf-8')
+
+    assert "app.extensions['kaori_secret_reveal_requester_work_inbox'] = get_secret_reveal_requester_work_inbox" in boot
+    assert "current_app.extensions.get('kaori_secret_reveal_requester_work_inbox')" in queries
+    assert "secret_reveal_requester_inbox = requester_inbox_provider(user_id=user_id)" in queries
+    assert "secret_reveal_requester_inbox['ready_count']" in queries
+    assert "'secret_reveal_requester_inbox_items': secret_reveal_requester_inbox['items']" in queries
+    assert "center.get('secret_reveal_requester_inbox_items', [])" in panel
+    assert 'My approved Secret Reveal requests' in panel
+    assert 'Ready to Reveal' in panel
+    assert 'Open My Request' in panel
+    assert 'hx-boost="false"' in panel
+    assert "SecretRevealRequest.requester_user_id == user_id" in source
+    assert "SecretRevealRequest.status == 'approved'" in source
+    assert "SecretRevealRequest.policy == 'approval_required'" in source
+    assert "viewer.has_permission('kubernetes_secrets.reveal')" in source
+    assert 'my_request_id=record.id' in source
+    assert 'Secret value' not in panel
+    assert 'from app.kubernetes.operations.secrets' not in queries
+    assert "@permission_required('kubernetes_secrets.reveal')" in routes
+    assert "secret_reveal_requester_items" in panel.split('No assigned work', 1)[0]
