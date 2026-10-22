@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.extensions.db import db
+from app.integrations.compatibility import evaluate_compatibility
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.runtime.scoring import calculate_health
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultClient, VaultProviderError
@@ -56,13 +57,18 @@ class VaultRuntimeAdapter:
         instance.capabilities = ['health', 'approle', 'token_lookup'] + (
             ['mount_metadata'] if capability['mount_metadata'] == 'available' else []
         )
+        compatibility = evaluate_compatibility('vault', connection['version'], instance.capabilities)
+        instance.compatibility_status = compatibility.status
+        instance.compatibility_profile = compatibility.profile_key
         instance.capability_profile = _CAPABILITY_PROFILE
         instance.validation_summary = {
             'health_status': connection['health_status'],
             'mount_metadata': capability['mount_metadata'],
+            'compatibility_status': compatibility.status,
+            'support_level': compatibility.support_level,
         }
-        instance.validation_message = 'Vault API and AppRole identity validated; optional metadata access is recorded separately.'
-        instance.readiness_status = 'ready'
+        instance.validation_message = compatibility.message
+        instance.readiness_status = compatibility.readiness
         instance.last_status = 'connected'
         instance.last_error = None
         instance.last_checked_at = now
@@ -70,7 +76,8 @@ class VaultRuntimeAdapter:
         instance.last_response_time_ms = int(connection['response_time_ms'])
         db.session.commit()
         return {
-            'connected': True, 'readiness_status': 'ready', 'version': instance.detected_version,
+            'connected': True, 'readiness_status': compatibility.readiness, 'version': instance.detected_version,
+            'compatibility_status': compatibility.status, 'compatibility_profile': compatibility.profile_key,
             'capabilities': instance.capabilities, 'capability_profile': _CAPABILITY_PROFILE,
             'reason': instance.validation_message,
         }
@@ -97,8 +104,9 @@ class VaultRuntimeAdapter:
         health_status = str((instance.validation_summary or {}).get('health_status') or 'unknown')
         ready = instance.readiness_status == 'ready'
         available = health_status in {'active', 'standby', 'performance_standby'}
+        unknown = health_status == 'unknown'
         health = calculate_health((
-            HealthFactor('provider_health', 'Provider Health', 'success' if available else 'failed', 50, 100 if available else 0),
+            HealthFactor('provider_health', 'Provider Health', 'success' if available else ('unknown' if unknown else 'failed'), 50, 100 if available else (50 if unknown else 0)),
             HealthFactor('validation', 'Full Validation', 'success' if ready else 'warning', 50, 100 if ready else 50),
         ))
         return RuntimeState(
@@ -117,10 +125,10 @@ class VaultRuntimeAdapter:
             ),),
             snapshot=CapabilitySnapshot(
                 profile=instance.capability_profile,
-                compatibility_profile=None,
+                compatibility_profile=instance.compatibility_profile,
                 capabilities=tuple(instance.capabilities or ()),
                 observed_at=instance.last_validated_at or now,
-                metadata={'version': instance.detected_version, 'vault_state': health_status},
+                metadata={'version': instance.detected_version, 'vault_state': health_status, 'compatibility_status': instance.compatibility_status},
             ),
             last_success_at=instance.last_checked_at if available else None,
             last_failure_at=instance.last_checked_at if not available else None,
