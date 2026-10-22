@@ -61,6 +61,7 @@ def register_blueprints(app: Flask) -> None:
     from app.platform_operations.jobs.routes import bp as jobs_bp
     from app.platform_operations.notifications.routes import notifications_bp
     from app.reports.routes import reports_bp
+    from app.secrets_pki.routes import secrets_pki_bp
     from app.security_posture.routes import security_posture_bp
     from app.settings import bp as settings_bp
     from app.storage.object_storage.dashboard.routes import object_storage_dashboard_bp
@@ -104,6 +105,7 @@ def register_blueprints(app: Flask) -> None:
         access_bp,
         artifact_registry_bp,
         security_posture_bp,
+        secrets_pki_bp,
         welcome_bp,
         kubernetes_dashboard_bp,
         object_storage_dashboard_bp,
