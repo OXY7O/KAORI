@@ -231,3 +231,21 @@ A bounded reference integrity scan is dispatched through canonical report-storag
 - **Artifact Registry Inventory (#1612):** rows distinguish `entity_type` = project, repository, or artifact. Projects without repositories and repositories without artifacts remain visible with blank digest and artifact-only fields. Artifact counts continue to count real artifact rows only. Use the shared Inventory CSV/XLSX profile and never reuse the CSV control header `record_type` as a profile column.
 - **Object Storage Analysis (#1613):** manual/scheduled report collectors pin exactly one committed Analytics snapshot for Overview, Performance and Alerts during a generation. They must not request provider metrics or enqueue materialization refresh as a side effect of artifact rendering. Snapshot expiry/missing data fails with explicit unavailable evidence; stale-but-usable evidence is flagged as stale with its own generated-at timestamp. The primary Analytics data cut-off comes from the committed Analytics generation, not current wall time or an unrelated inventory timestamp. Inventory and independent forecast cut-offs remain separately attributable.
 - These boundaries are source requirements, not runtime UAT acceptance. Validate cross-format scope/value parity, negative states and real artifact fidelity in the controlled DevContainer before any staging promotion.
+
+
+## Planned Secrets & PKI coverage (HV-15, #2694)
+
+The definition-owned `secrets_pki` coverage domain lists six **Planned**
+report candidates in `app/definitions/catalogs/reports/coverage.yaml`.
+The Reports Overview uses the existing coverage projection; the Secrets & PKI
+Operational Dashboard Reporting tab uses the same source-controlled candidates
+only for actors with `reports.view`. This is **not** a report type in
+`reports/catalog.yaml` and cannot be generated, scheduled, exported or
+archived. Existing Reporting workers/renderers are unchanged.
+
+No Vault path/name, Secret material, private key, AppRole SecretID, provider
+token or unqualified per-source counts may appear in exports. Each future
+executable report requires committed data, resource-scoped #724 authorization
+enforced before counts and rows, report-specific collection/retention, Full
+Admission, security checks and actual DevContainer/Vault UAT. Never treat
+a planned candidate or a healthy Vault connection as a published report.
