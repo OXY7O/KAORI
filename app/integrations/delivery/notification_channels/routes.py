@@ -51,6 +51,10 @@ def index() -> ResponseReturnValue:
             per_page=request.args.get('delivery_per_page', default=5, type=int),
         ),
         delivery_event_key=request.args.get('delivery_event_key', ''),
+        delivery_provider=request.args.get('delivery_provider', ''),
+        delivery_domain=request.args.get('delivery_domain', ''),
+        delivery_severity=request.args.get('delivery_severity', ''),
+        delivery_status=request.args.get('delivery_status', ''),
         can_view_reports=current_user.has_permission('reports.view'),
     )
     form_channel = get_channel_form_view(get_channel(edit_id)) if edit_id else None
