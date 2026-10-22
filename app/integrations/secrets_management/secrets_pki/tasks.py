@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from billiard.exceptions import SoftTimeLimitExceeded
 from celery import shared_task
 
 from app.extensions.db import db
@@ -83,6 +84,18 @@ def sync_vault_inventory_task(
             except JobCancellationRequested:
                 db.session.rollback()
                 raise
+            except SoftTimeLimitExceeded:
+                db.session.rollback()
+                if instance_id and current_mount:
+                    mark_kv2_inventory_failed(instance_id, current_mount)
+                context.fail(
+                    'Vault inventory exceeded its bounded worker time; committed evidence retained.',
+                    error_code='vault_inventory_timeout',
+                )
+                return {
+                    'status': 'failed', 'synced_instances': succeeded,
+                    'failed_scopes': failed + 1, 'committed_mounts': committed_mounts,
+                }
             except Exception:
                 # Provider exceptions may contain URLs, paths or other secrets.
                 # Never serialize, log or notify the raw exception.
