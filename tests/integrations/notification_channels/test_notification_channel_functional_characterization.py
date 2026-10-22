@@ -287,6 +287,36 @@ def test_notification_channel_delete_guard_preserves_auditable_dependencies(
     assert session.commits == 0
 
 
+def test_retire_channel_preserves_history_and_blocks_schedules(monkeypatch: pytest.MonkeyPatch) -> None:
+    channel = _validated_channel()
+    channel.lifecycle_state = 'active'
+    session = SessionStub(channel=channel)
+    monkeypatch.setattr(lifecycle, 'db', SimpleNamespace(session=session))
+    monkeypatch.setattr(lifecycle, 'get_channel_usage', lambda _id: lifecycle.NotificationChannelUsage(
+        delivery_records=26, report_schedules=0, report_schedule_names=(),
+    ))
+    lifecycle.retire_channel(channel, reason='Destination replaced with managed operations bot', user_id=19)  # type: ignore[arg-type]
+    assert channel.lifecycle_state == 'retired'
+    assert channel.enabled is False
+    assert channel.retirement_reason == 'Destination replaced with managed operations bot'
+    assert channel.retired_by_user_id == 19
+    assert channel.retired_at is not None
+    assert session.deleted == []
+    assert session.commits == 1
+
+    with pytest.raises(lifecycle.NotificationChannelRetirementBlocked):
+        lifecycle.retire_channel(channel, reason='Repeat retirement is forbidden', user_id=19)  # type: ignore[arg-type]
+    assert session.commits == 1
+
+    channel.lifecycle_state = 'active'
+    monkeypatch.setattr(lifecycle, 'get_channel_usage', lambda _id: lifecycle.NotificationChannelUsage(
+        delivery_records=26, report_schedules=1, report_schedule_names=('Weekly Ops',),
+    ))
+    with pytest.raises(lifecycle.NotificationChannelRetirementBlocked):
+        lifecycle.retire_channel(channel, reason='Destination replaced', user_id=19)  # type: ignore[arg-type]
+    assert session.commits == 1
+
+
 def test_disabled_channel_still_cannot_delete_committed_delivery_evidence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

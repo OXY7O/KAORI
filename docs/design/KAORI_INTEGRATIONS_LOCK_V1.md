@@ -417,3 +417,16 @@ change a report reference or satisfy the hard-delete guard. The underlying
 `NotificationChannelDeletionBlocked` rule remains authoritative; only
 a channel with both dependency counts zero can be hard deleted. Do not add
 a delete override, cascade, credential exposure or new modal framework.
+
+## Terminal Notification Channel Retirement — Persistence (#2748 / #2749)
+
+An approved operational retirement is an irreversible `active → retired`
+transition stored on the existing Notification Channel identity. It commits
+`lifecycle_state`, `retired_at`, `retired_by_user_id`,
+`retirement_reason`, and `enabled=false` while retaining all
+`NotificationDelivery` rows and the provider/destination identity.
+A required 8–500-character operator reason and removal of all report
+schedule references are server-enforced. Retired channels cannot be
+edited, tested, hard deleted, or restored through current routes.
+Server audit events cover success and blocked retirement. Delivery
+eligibility and Archived Channels UI are separate child workstreams.
