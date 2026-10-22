@@ -45,12 +45,15 @@ def test_review7_my_requests_uses_canonical_filter_loading_table_and_footer() ->
     routes = (ROOT / 'app/kubernetes/operations/secrets/reveal_routes.py').read_text()
     assert "table_registry.filter_form('kubernetes_operations.reveal_secret'" in source
     assert "table_registry.footer('kubernetes_operations.reveal_secret'" in source
-    assert "table_registry.clear_filters_link('kubernetes_operations.reveal_secret'" in source
+    assert "table_registry.clear_filters_link(" in source
+    assert "'kubernetes_operations.reveal_secret'," in source
     assert 'table_ui.table_classes(' in source
     assert 'table_ui.head_classes()' in source
     assert 'table_ui.body_classes()' in source
     assert 'table_ui.row_classes()' in source
-    assert "loading_bar.render('my-secret-reveal-loading'" in source
+    assert "table_ui.inventory_block_header(" in source
+    assert "'my-secret-reveal-loading'," in source
+    assert 'loading_bar.render(' not in source
     assert 'scope="col"' in source
     assert 'No Matching Reveal Requests' in source
     assert 'name="my_status"' in source
@@ -63,3 +66,62 @@ def test_review7_my_requests_uses_canonical_filter_loading_table_and_footer() ->
     assert 'value="mine"' in source
     assert "my_search=request.args.get('my_search', '')" in routes
     assert "my_status=request.args.get('my_status', '')" in routes
+
+
+
+def test_my_reveal_requests_use_approved_header_loading_filter_and_result_count() -> None:
+    source = (ROOT / 'app/templates/kubernetes/operations/secrets/_reveal_request_status.html').read_text()
+    table = (ROOT / 'app/templates/components/table.html').read_text()
+    registry = (ROOT / 'app/templates/components/table_registry.html').read_text()
+
+    assert 'components/table.html' in source
+    assert 'components/table_primitives.html' not in source
+    assert 'table_ui.inventory_block_header(' in source
+    assert "result_count=my_reveal_pagination.total_items" in source
+    assert 'components/loading_bar.html' not in source
+    assert 'loading_bar.render(loading_id, label=loading_label)' in table
+    assert 'table_registry.clear_filters_link(' in source
+    assert "my_reveal_filters.search or my_reveal_filters.status or my_reveal_filters.sort != 'newest'" in source
+    assert source.index('table_registry.clear_filters_link(') < source.index('table_ui.inventory_block_header(')
+    assert source.index('table_ui.inventory_block_header(') < source.index('table_registry.filter_form(')
+    assert source.count('table_registry.clear_filters_link(') == 1
+    assert "macro clear_filters_link(" in registry
+
+    assert "table_ui.table_classes('min-w-[920px]')" in source
+    assert 'table_ui.title_cell(item.secret_name' in source
+    assert 'table_ui.cell_classes(action=true)' in source
+    assert 'table_ui.header_cell_classes(action=true)' in source
+    assert 'aria-label="My Reveal Requests"' in source
+    assert 'aria-label="Filter my protected reveal requests"' in source
+    assert "page_param='my_page'" in source
+    assert "per_page_param='my_per_page'" in source
+    assert "table_registry.footer('kubernetes_operations.reveal_secret'" in source
+    assert 'No Matching Reveal Requests' in source
+
+
+def test_my_reveal_request_actions_preserve_approval_and_one_time_security() -> None:
+    source = (ROOT / 'app/templates/kubernetes/operations/secrets/_reveal_request_status.html').read_text()
+    actions = (ROOT / 'app/templates/components/action_button.html').read_text()
+    shared_table = (ROOT / 'app/templates/components/table.html').read_text()
+
+    assert 'step_up_active' in source
+    assert "item.status == 'approved'" in source
+    assert "item.status == 'expired'" in source
+    assert "item.status == 'pending'" in source
+    assert "item.status == 'revealed'" in source
+    assert "item.status == 'denied'" in source
+    assert "url_for('kubernetes_operations.reveal_secret_value', request_id=item.id)" in source
+    assert "url_for('kubernetes_operations.reveal_secret', cluster_id=item.cluster_id" in source
+    assert 'hx-post="{{ url_for(' in source
+    assert 'hx-target="#reveal-value-output"' in source
+    assert 'hx-disabled-elt="this"' in source
+    assert 'name="csrf_token"' in source
+    assert 'action_button.classes(\'primary\')' in source
+    assert 'table_ui.action_classes()' in source
+    assert 'macro classes(' in actions
+    assert 'macro action_classes(' in shared_table
+    assert 'href="#reveal-session-step-up"' in source
+    assert 'Expires {{ item.expires_at|user_datetime }}' in source
+    assert 'No action available' in source
+    assert 'item.ticket_reference or' in source
+    assert 'item.cluster.name ~' in source
