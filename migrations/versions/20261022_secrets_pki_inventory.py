@@ -14,6 +14,7 @@ depends_on = None
 
 
 def upgrade() -> None:
+    op.add_column('vault_instances', sa.Column('kv2_mounts', sa.JSON(), nullable=True))
     op.create_table(
         'secrets_pki_secret_identities',
         sa.Column('id', sa.String(length=36), primary_key=True),
@@ -82,6 +83,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_column('vault_instances', 'kv2_mounts')
     op.drop_index('ix_secrets_pki_inventory_collection_states_integration_instance_id',
                   table_name='secrets_pki_inventory_collection_states')
     op.drop_table('secrets_pki_inventory_collection_states')
