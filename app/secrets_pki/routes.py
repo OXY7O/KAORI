@@ -23,10 +23,12 @@ secrets_pki_bp = Blueprint('secrets_pki', __name__, url_prefix='/secrets-pki')
 @permission_required('secrets_pki.view')
 def overview() -> ResponseReturnValue:
     can_view_reports = current_user.has_permission('reports.view')
-    coverage = next(
-        (item for item in REPORT_COVERAGE_DOMAINS if item.key == 'secrets_pki'),
-        None,
-    ) if can_view_reports else None
+    coverage = None
+    if can_view_reports:
+        coverage = next(
+            (item for item in REPORT_COVERAGE_DOMAINS if item.key == 'secrets_pki'),
+            None,
+        )
     return render_template(
         'secrets_pki/overview.html',
         summary=build_secrets_pki_operational_summary(),

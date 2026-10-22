@@ -1,5 +1,7 @@
 """Secrets & PKI reporting candidates must never become executable by catalog accident."""
 
+import pytest
+
 from app.reports.catalog import (
     REPORT_COVERAGE_DOMAINS,
     REPORT_TYPE_SPECS,
@@ -32,9 +34,5 @@ def test_reports_overview_includes_candidates_only_not_executable():
 
 
 def test_nonexistent_secrets_pki_report_type_is_rejected():
-    try:
+    with pytest.raises(ReportContractError):
         get_report_type_spec('secrets_pki_inventory')
-    except ReportContractError:
-        pass
-    else:
-        raise AssertionError('Planned candidate was incorrectly published as executable report')
