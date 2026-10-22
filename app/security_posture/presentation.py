@@ -16,7 +16,7 @@ from app.artifact_registry.correlation_sync_jobs import correlation_prerequisite
 from app.artifact_registry.presentation_runtime import _runtime_snapshot_state
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.artifact_registry.security.presentation import _aware_datetime, _providers
-from app.common.pagination import paginate_query, positive_int
+from app.common.pagination import paginate_query, paginate_sequence, positive_int
 from app.models.registry import (
     RegistryArtifact,
     RegistryProject,
@@ -60,7 +60,29 @@ def build_security_posture(
     per_page: int = 5,
 ) -> dict[str, Any]:
     """Paginated cross-domain read projection; never a scanner or global all-clear."""
-    sources = _providers() if can_view_registry else []
+    if not can_view_registry:
+        _, pagination = paginate_sequence([], page=page, per_page=per_page)
+        return {
+            'rows': [],
+            'pagination': pagination,
+            'search': search,
+            'severity': '',
+            'severity_options': tuple(_SEVERITY_RANK),
+            'sources': 0,
+            'authorized_registry': False,
+            'affected_artifacts': 0,
+            'artifacts_total': 0,
+            'scanned_artifacts': 0,
+            'last_scan': None,
+            'scan_status': {'label': 'No Authorized Sources', 'tone': 'unknown'},
+            'runtime_status': {
+                'status': 'Not Collected',
+                'tone': 'unknown',
+                'description': 'No authorized committed Registry source.',
+            },
+            'has_complete_security_evidence': False,
+        }
+    sources = _providers()
     source_ids = [int(source.id) for source in sources]
     q = str(search or '').strip().upper()[:100]
     severity_value = str(severity or '').strip().lower()
