@@ -17,7 +17,7 @@
                 <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
             </tr>
         </thead>
-        <tbody class="{{ table_ui.body_classes() }}">
+        <tbody class="{{ table_ui.body_classes() }}" x-data="{ openEditor: null }">
             {% for row in namespace_rows %}
                 {% set policy_tone = 'maintenance' if row.policy in ['approval_required', 'step_up'] else 'unknown' %}
                 {% set live_label = 'Available' if row.live_state == 'available' else 'Missing' if row.live_state == 'missing' else 'Unknown' %}
@@ -31,57 +31,78 @@
                         {{ table_label.status_label(reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') | title), policy_tone) }}
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
-                        <details class="group ml-auto w-full max-w-[270px] text-left"
-                                 data-kaori-namespace-policy-editor>
-                            <summary class="{{ table_ui.action_classes() }} ml-auto list-none [&::-webkit-details-marker]:hidden"
-                                     aria-label="Edit reveal policy for {{ row.namespace }}">
-                                <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
-                                Edit Policy
-                                <i data-lucide="chevron-down"
-                                   class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
-                                   aria-hidden="true"></i>
-                            </summary>
-                            <form method="post"
-                                  action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
-                                  hx-post="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
-                                  hx-target="#secret-reveal-cluster-workspace"
-                                  hx-swap="outerHTML show:none"
-                                  hx-indicator="#secret-reveal-namespace-loading"
-                                  hx-disabled-elt="button[type='submit']"
-                                  x-data="{ initial: '{{ row.policy }}', current: '{{ row.policy }}' }"
-                                  class="mt-3 min-w-0 rounded-lg border border-outline-subtle bg-surface-hover p-3">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="view" value="policies">
-                                <input type="hidden" name="namespace" value="{{ row.namespace }}">
-                                <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
-                                <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
-                                <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
-                                <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
-                                <label for="secret-reveal-policy-{{ loop.index }}"
-                                       class="{{ table_ui.filter_label_classes() }}">New Reveal Policy</label>
-                                <select id="secret-reveal-policy-{{ loop.index }}"
-                                        name="policy"
-                                        x-model="current"
-                                        aria-label="Reveal policy for {{ row.namespace }}"
-                                        class="{{ table_ui.filter_select_classes() }}">
-                                    {% for value, label in reveal_policy_choices.items() %}
-                                        {% set enable_option_blocked = value != 'disabled' and (not selected_cluster_ready or row.live_state != 'available') %}
-                                        <option value="{{ value }}"
-                                                {% if row.policy == value %}selected{% endif %}
-                                                {% if enable_option_blocked %}disabled{% endif %}>{{ label }}</option>
-                                    {% endfor %}
-                                </select>
-                                <div class="mt-3 flex items-center justify-end">
+                        <button type="button"
+                                class="{{ table_ui.action_classes() }} ml-auto"
+                                data-kaori-namespace-policy-editor
+                                aria-controls="secret-reveal-policy-editor-{{ loop.index }}"
+                                aria-label="Edit reveal policy for {{ row.namespace }}"
+                                :aria-expanded="openEditor === {{ loop.index }}"
+                                @click="openEditor = openEditor === {{ loop.index }} ? null : {{ loop.index }}">
+                            <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
+                            Edit Policy
+                            <i data-lucide="chevron-down"
+                               class="h-3.5 w-3.5 transition-transform"
+                               :class="openEditor === {{ loop.index }} ? 'rotate-180' : ''"
+                               aria-hidden="true"></i>
+                        </button>
+                    </td>
+                </tr>
+                <tr id="secret-reveal-policy-editor-{{ loop.index }}"
+                    x-show="openEditor === {{ loop.index }}"
+                    x-cloak
+                    class="bg-surface-hover">
+                    <td colspan="4" class="border-t border-outline-subtle px-4 py-4">
+                        <form method="post"
+                              action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
+                              hx-post="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
+                              hx-target="#secret-reveal-cluster-workspace"
+                              hx-swap="outerHTML show:none"
+                              hx-indicator="#secret-reveal-namespace-loading"
+                              hx-disabled-elt="button[type='submit']"
+                              x-data="{ initial: '{{ row.policy }}', current: '{{ row.policy }}' }"
+                              class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-4 py-4">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="view" value="policies">
+                            <input type="hidden" name="namespace" value="{{ row.namespace }}">
+                            <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
+                            <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
+                            <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
+                            <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
+                            <div class="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                                <div class="min-w-0 lg:max-w-sm lg:flex-1">
+                                    <h4 class="text-sm font-semibold text-content-primary">Edit Namespace Policy</h4>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Namespace: <strong>{{ row.namespace }}</strong></p>
+                                    <label for="secret-reveal-policy-{{ loop.index }}"
+                                           class="{{ table_ui.filter_label_classes() }} mt-3">New Reveal Policy</label>
+                                    <select id="secret-reveal-policy-{{ loop.index }}"
+                                            name="policy"
+                                            x-model="current"
+                                            aria-label="Reveal policy for {{ row.namespace }}"
+                                            class="{{ table_ui.filter_select_classes() }}">
+                                        {% for value, label in reveal_policy_choices.items() %}
+                                            {% set enable_option_blocked = value != 'disabled' and (not selected_cluster_ready or row.live_state != 'available') %}
+                                            <option value="{{ value }}"
+                                                    {% if row.policy == value %}selected{% endif %}
+                                                    {% if enable_option_blocked %}disabled{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                                    <button type="button"
+                                            class="{{ table_ui.action_classes() }}"
+                                            @click="openEditor = null">
+                                        Cancel
+                                    </button>
                                     <button type="submit"
                                             title="Save {{ row.namespace }} policy"
                                             :disabled="current === initial"
                                             class="{{ table_ui.action_classes() }}">
                                         <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
-                                        Save
+                                        Save Policy
                                     </button>
                                 </div>
-                            </form>
-                        </details>
+                            </div>
+                        </form>
                     </td>
                 </tr>
             {% else %}

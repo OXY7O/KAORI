@@ -464,7 +464,7 @@ def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() ->
     assert namespace.count('id="secret-reveal-namespace-loading"') == 1
     for primitive in ('block_classes()', 'block_header_classes()', 'block_icon_classes()',
                       'block_title_classes()', 'block_description_classes()',
-                      'loading_bar_classes()', 'filter_bar_classes()', 'action_classes()'):
+                      'loading_bar_classes()', 'filter_bar_classes()', "action_classes(size='header')"):
         assert 'table_ui.' + primitive in namespace
     assert 'registry_ui.clear_filters_action(' in namespace
     assert 'hx-target="#secret-reveal-namespace-table-content"' in namespace
@@ -493,18 +493,22 @@ def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() ->
     assert 'pagination_ui.numeric_pages(' in table
 
 
-def test_namespace_policy_editor_is_compact_accessible_and_explicitly_opened() -> None:
+def test_namespace_policy_editor_uses_full_width_companion_row() -> None:
     section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
     table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
     shared = (ROOT / 'app/templates/components/table.html').read_text()
 
-    # Policy changes use native keyboard-accessible disclosure, rather than
-    # an always-visible select and submit pair across every namespace row.
-    assert '<details ' in table
+    # Action controls remain in regular-height rows. One at a time opens an
+    # independent full-width editor, never a growing form inside a table cell.
+    assert 'x-data="{ openEditor: null }"' in table
     assert 'data-kaori-namespace-policy-editor' in table
-    assert '<summary class="{{ table_ui.action_classes() }}' in table
-    assert 'Edit Policy' in table
-    assert 'aria-label="Edit reveal policy for {{ row.namespace }}"' in table
+    assert 'aria-controls="secret-reveal-policy-editor-{{ loop.index }}"' in table
+    assert ':aria-expanded="openEditor === {{ loop.index }}"' in table
+    assert '@click="openEditor = openEditor === {{ loop.index }} ? null : {{ loop.index }}"' in table
+    assert 'x-show="openEditor === {{ loop.index }}"' in table
+    assert '<td colspan="4" class="border-t border-outline-subtle px-4 py-4">' in table
+    assert '<details ' not in table
+    assert 'Edit Namespace Policy' in table
     assert 'New Reveal Policy' in table
     assert 'for="secret-reveal-policy-{{ loop.index }}"' in table
     assert 'id="secret-reveal-policy-{{ loop.index }}"' in table
@@ -521,14 +525,32 @@ def test_namespace_policy_editor_is_compact_accessible_and_explicitly_opened() -
     assert 'name="per_page"' in table
     assert 'min-w-[280px]' not in table
     assert 'min-w-[980px]' in table
-    assert table.count('table_ui.action_classes()') >= 2
+    assert table.count('table_ui.action_classes()') >= 3
     assert 'macro action_classes(' in shared
     assert 'data-kaori-table-header-actions' in section
     assert 'table_label.result_count(namespace_summary.total)' in section
-    assert 'table_label.metadata_label(selected_cluster.name' not in section
     assert 'id="secret-reveal-live-source"' in section
     assert 'id="secret-reveal-namespace-loading"' in section
     assert 'hx-target="#secret-reveal-namespace-table-content"' in section
+
+
+def test_namespace_live_source_refresh_and_clear_filters_have_distinct_owners() -> None:
+    section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    source = section.index('id="secret-reveal-live-source"')
+    block = section.index('id="secret-reveal-namespace-section"')
+    loading = section.index('id="secret-reveal-namespace-loading"', block)
+    filters = section.index('table_ui.filter_bar_classes()', loading)
+    assert source < block < loading < filters
+    assert 'class="mb-4 flex min-w-0 justify-end"' in section
+    assert 'refresh_namespace=1' in section[source:block]
+    assert 'hx-target="#secret-reveal-cluster-workspace"' in section[source:block]
+    assert 'table_ui.action_classes(size=\'header\')' in section[source:block]
+    assert 'refresh_namespace=1' not in section[block:]
+    assert "registry_ui.clear_filters_action(" in section[block:loading]
+    assert "{% if namespace_filters.query or namespace_filters.policy != 'all' %}" not in section
+    assert 'class="relative h-2 bg-surface-card"' in section
+    assert 'role="progressbar"' in section
+    assert section.count('id="secret-reveal-namespace-loading"') == 1
 
 
 def test_secret_reveal_view_survives_url_loading_saves_and_table_navigation() -> None:
