@@ -125,3 +125,93 @@ def test_my_reveal_request_actions_preserve_approval_and_one_time_security() -> 
     assert 'No action available' in source
     assert 'item.ticket_reference or' in source
     assert 'item.cluster.name ~' in source
+
+
+
+def test_pending_approval_table_uses_full_canonical_registry_and_permission_scope() -> None:
+    template = (ROOT / 'app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html').read_text()
+    shared = (ROOT / 'app/templates/components/table.html').read_text()
+    registry = (ROOT / 'app/templates/components/table_registry.html').read_text()
+    service = (ROOT / 'app/kubernetes/operations/secrets/reveal_service.py').read_text()
+    routes = (ROOT / 'app/kubernetes/operations/secrets/reveal_routes.py').read_text()
+
+    assert 'table_ui.inventory_block_header(' in template
+    assert "result_count=pending_reveal_pagination.total_items" in template
+    assert "'pending-secret-reveal-loading'" in template
+    assert "loading_bar.render(loading_id, label=loading_label)" in shared
+    assert 'loading_bar.render(' not in template
+    assert "table_registry.filter_form(" in template
+    assert "table_registry.clear_filters_link(" in template
+    assert 'pending_reveal_filters.search or pending_reveal_filters.sort != \'oldest\'' in template
+    assert template.index("table_registry.clear_filters_link(") < template.index('table_ui.inventory_block_header(')
+    assert template.index('table_ui.inventory_block_header(') < template.index('table_registry.filter_form(')
+    assert 'table_ui.search_field(' in template
+    assert "name=\"pending_sort\"" in template
+    assert 'table_ui.title_cell(item.secret_name' in template
+    assert 'table_ui.header_cell_classes(action=true)' in template
+    assert 'table_ui.cell_classes(action=true)' in template
+    assert 'table_ui.table_classes(' in template
+    assert 'components/states/_empty_state.html' in template
+    assert 'No Pending Approvals' in template
+    assert "table_registry.footer(" in template
+    assert "page_param='pending_page'" in template
+    assert "per_page_param='pending_per_page'" in template
+    assert 'my_page' in template and 'my_per_page' in template
+    assert 'my_search' in template and 'my_status' in template and 'my_sort' in template
+    assert "macro filter_form(" in registry
+    assert "macro footer(" in registry
+
+    # The filtered data remains permissioned by the backend, not client labels.
+    assert "if can_approve:" in service
+    assert "SecretRevealRequest.query.filter_by(status='pending')" in service
+    assert "pending_search_value = str(pending_search or '').strip()[:120]" in service
+    assert "pending_ordering = 'newest' if pending_sort == 'newest' else 'oldest'" in service
+    assert "func.lower(SecretRevealRequest.secret_name).contains(pending_term, autoescape=True)" in service
+    assert "func.lower(SecretRevealRequest.namespace).contains(pending_term, autoescape=True)" in service
+    assert "func.lower(SecretRevealRequest.key_name).contains(pending_term, autoescape=True)" in service
+    assert "func.lower(SecretRevealRequest.ticket_reference).contains(pending_term, autoescape=True)" in service
+    assert "SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc()" in service
+    assert "SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc()" in service
+    assert "'pending_reveal_filters': {'search': pending_search_value, 'sort': pending_ordering}" in service
+    assert "@permission_required('kubernetes_secrets.approve_reveal')" in routes
+    assert "pending_search=request.args.get('pending_search', '')" in routes
+    assert "pending_sort=request.args.get('pending_sort', 'oldest')" in routes
+
+
+def test_pending_decision_editor_preserves_security_and_prevents_poll_loss() -> None:
+    template = (ROOT / 'app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html').read_text()
+    poller = (ROOT / 'app/static/js/secret_reveal_workspace.js').read_text()
+    detail = (ROOT / 'app/static/js/detail_rows.js').read_text()
+    routes = (ROOT / 'app/kubernetes/operations/secrets/reveal_routes.py').read_text()
+
+    assert "item.requester_user_id == current_user.id" in template
+    assert "item.requester_user_id != current_user.id" in template
+    assert 'Another approver required' in template
+    assert 'data-detail-toggle' in template
+    assert 'data-detail-row="pending-approval-editor-{{ item.id }}"' in template
+    assert 'data-detail-target="pending-approval-decision-{{ item.id }}"' in template
+    assert 'data-detail-group="pending-reveal-approvals"' in template
+    assert 'class="hidden bg-surface-hover"' in template
+    assert 'data-detail-static="true"' in template
+    assert 'data-approval-decision-editor' in template
+    assert 'data-open="false"' in template
+    assert 'aria-expanded="false"' in template
+    assert 'closeGroup(button.dataset.detailGroup' in detail
+    assert "row.classList.add('hidden')" in detail
+    assert "row.classList.remove('hidden')" in detail
+    assert "owner.querySelector?.('[data-approval-decision-editor][data-open=\"true\"]')" in poller
+    assert "window.htmx.ajax('GET', url, { target, swap: 'outerHTML' })" in poller
+    assert 'name="csrf_token"' in template
+    assert 'name="decision_note"' in template
+    assert 'maxlength="500"' in template
+    assert 'name="decision"' in template
+    assert 'value="deny"' in template and 'value="approve"' in template
+    assert "table_ui.action_classes(destructive=true)" in template
+    assert "action_button.classes('primary')" in template
+    assert "url_for('kubernetes_operations.decide_secret_reveal_request', request_id=item.id)" in template
+    assert "def decide_secret_reveal_request(request_id: str)" in routes
+    assert "_validate_secret_operation_csrf()" in routes
+    assert "approver_user_id=current_user.id" in routes
+    assert "if decision not in {'approve', 'deny'}:" in routes
+    assert 'secret_value' not in template
+

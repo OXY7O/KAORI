@@ -13,6 +13,9 @@
         const url = owner?.dataset.revealPollUrl
         const target = owner?.dataset.revealPollTarget
         if (!url || !target || !window.htmx) return
+        // Do not discard an in-progress approval decision form during the
+        // regular read-only poll. Resume automatically after the editor closes.
+        if (owner.querySelector?.('[data-approval-decision-editor][data-open="true"]')) return
         window.htmx.ajax('GET', url, { target, swap: 'outerHTML' })
     }
 

@@ -332,6 +332,8 @@ def get_reveal_page_context(
     my_status: str = '',
     my_sort: str = 'newest',
     pending_pagination: PendingRevealPagination = PendingRevealPagination(),
+    pending_search: str = '',
+    pending_sort: str = 'oldest',
 ) -> dict[str, Any]:
     _expire_stale_requests()
 
@@ -372,11 +374,31 @@ def get_reveal_page_context(
         'page_sizes': PER_PAGE_OPTIONS,
     }
 
+    # The approval permission boundary precedes all searches/pagination.
+    # Only request metadata is queried; never Secret payloads.
+    pending_search_value = str(pending_search or '').strip()[:120]
+    pending_ordering = 'newest' if pending_sort == 'newest' else 'oldest'
     pending_requests: list[SecretRevealRequest] = []
     if can_approve:
-        pending_query = SecretRevealRequest.query.filter_by(status='pending').order_by(
-            SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc()
-        )
+        pending_query = SecretRevealRequest.query.filter_by(status='pending')
+        if pending_search_value:
+            pending_term = pending_search_value.lower()
+            pending_query = pending_query.filter(
+                or_(
+                    func.lower(SecretRevealRequest.secret_name).contains(pending_term, autoescape=True),
+                    func.lower(SecretRevealRequest.namespace).contains(pending_term, autoescape=True),
+                    func.lower(SecretRevealRequest.key_name).contains(pending_term, autoescape=True),
+                    func.lower(SecretRevealRequest.ticket_reference).contains(pending_term, autoescape=True),
+                )
+            )
+        if pending_ordering == 'newest':
+            pending_query = pending_query.order_by(
+                SecretRevealRequest.requested_at.desc(), SecretRevealRequest.id.desc()
+            )
+        else:
+            pending_query = pending_query.order_by(
+                SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc()
+            )
         pending_requests, pending_window = paginate_query(
             pending_query,
             page=pending_pagination.page,
@@ -411,6 +433,7 @@ def get_reveal_page_context(
         'my_reveal_filters': {'search': search, 'status': state_filter, 'sort': ordering},
         'pending_reveal_requests': pending_requests,
         'pending_reveal_pagination': pending_pagination_payload,
+        'pending_reveal_filters': {'search': pending_search_value, 'sort': pending_ordering},
         'reveal_policies': REVEAL_NAMESPACE_POLICIES,
         'reveal_window_seconds': int(current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15)),
     }
