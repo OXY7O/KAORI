@@ -176,8 +176,7 @@ def test_verify_session_link_focuses_step_up_after_htmx_replacement(page: Page) 
 
 def test_verify_session_does_not_overscroll_kaori_main_viewport(page: Page) -> None:
     """The action must not shift an already visible Step-Up or overscroll the shell."""
-    page.set_content(
-        """
+    html = """
         <!doctype html><html><head><style>
           html, body { height: 100%; margin: 0; overflow: hidden; }
           [data-kaori-main-scroll] { height: 380px; overflow-y: auto; }
@@ -202,7 +201,11 @@ def test_verify_session_does_not_overscroll_kaori_main_viewport(page: Page) -> N
           </main>
         </body></html>
         """
+    page.route(
+        "http://kaori.test/**",
+        lambda route: route.fulfill(status=200, content_type="text/html", body=html),
     )
+    page.goto("http://kaori.test/reveal?reveal_view=mine")
     page.add_script_tag(path=str(ROOT / "app/static/js/secret_reveal_workspace.js"))
     page.evaluate(
         """() => {
