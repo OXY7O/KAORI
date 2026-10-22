@@ -88,3 +88,16 @@ Inventory shows only a bounded aggregate coverage counter, not those
 identifiers. The UID does not prove distribution from Vault, controller
 adoption, Ingress controller activation or endpoint serving. A source-owned
 controller receipt and separate admitted match process remain pending.
+
+
+## Kubernetes controller owner reference is a *candidate* (#2589)
+
+Owning-domain TLS Governance may now commit a bounded typed controller
+`ownerReferences` UID for ExternalSecret/cert-manager Certificate resources.
+The reference is not a Secret source identity, controller sync receipt,
+source binding, PKI issuance proof or readback of Kubernetes Secret content.
+It is not an eligible `controller_uid` *confirmed* edge by itself; use it
+as candidate identity for future controller-specific readback. A confirmed
+Secret→materialization edge requires independent source-bound controller
+evidence and exact current Kubernetes Secret UID and fingerprint, with
+effective date, expiry/conflict and authorization checks.

@@ -41,6 +41,9 @@ class TLSCertificateInventory(db.Model):
     # Nullable for legacy snapshots and clusters where UID was not observed.
     secret_uid: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
+    # Source-owned controller UID candidates, not delivery proof. NULL = unknown.
+    controller_owner_refs: Mapped[list[dict[str, str]] | None] = mapped_column(JSON, nullable=True)
+
     secret_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     common_name: Mapped[str | None] = mapped_column(String(255), nullable=True)

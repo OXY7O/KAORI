@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from uuid import UUID
 from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID
 
 from kubernetes.client import V1Ingress, V1Secret
 
@@ -13,6 +13,7 @@ from app.integrations.kernel.registry import get_integration
 from app.integrations.orchestration.container_orchestrator.adapters.kubernetes_api.resolver import (
     connection_for_cluster,
 )
+from app.kubernetes.governance.tls_certificates.controller_evidence import normalize_tls_controller_owner
 from app.kubernetes.governance.tls_certificates.certificate import (
     TLSValidityPolicy,
     decode_secret_data,
@@ -287,6 +288,7 @@ def parse_tls_secret(
         'namespace': namespace,
         'secret_name': name,
         'secret_uid': _qualified_secret_uid(secret),
+        'controller_owner_refs': normalize_tls_controller_owner(metadata),
         'secret_type': secret.type,
         'common_name': None,
         'issuer': None,

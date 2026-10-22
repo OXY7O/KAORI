@@ -9,8 +9,8 @@ certificate serials, Vault mount paths, SAN/CN, raw PEM or resource IDs.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
@@ -19,6 +19,7 @@ from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
     parse_approved_pki_mounts,
 )
+from app.kubernetes.governance.tls_certificates.controller_evidence import validate_committed_controller_owners
 from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
 from app.kubernetes.governance.tls_certificates.readiness import (
     check_tls_governance_schema_readiness,
@@ -56,6 +57,8 @@ def _blocked(label: str, *, state: str = 'blocked') -> dict[str, Any]:
         'overlapping_certificates': None,
         'matching_kubernetes_tls_secrets': None,
         'matching_tls_secrets_with_object_uid': None,
+        'controller_owner_reference_status': 'not_qualified',
+        'matching_tls_secrets_with_controller_owner': None,
         'object_identity_status': 'not_qualified',
         'ingress_reference_status': 'unknown',
         'ingress_mapping_state': 'not_collected',
@@ -110,7 +113,8 @@ def _schema_ready() -> bool:
             return False
         vault_columns = {str(column['name']) for column in inspector.get_columns('vault_instances')}
         tls_columns = {str(col['name']) for col in inspector.get_columns('tls_certificate_inventory')}
-        return 'pki_stored_certs_enabled' in vault_columns and 'secret_uid' in tls_columns
+        return ('pki_stored_certs_enabled' in vault_columns
+                and {'secret_uid', 'controller_owner_refs'}.issubset(tls_columns))
     except SQLAlchemyError:
         return False
 
@@ -234,6 +238,8 @@ def build_certificate_delivery_overlap(
             mapping_state = 'ready'
         tls_fps: tuple[str, ...] = ()
         uid_count = 0
+        controller_owner_count = 0
+        controller_owner_unknown = False
         ingress_matches: tuple[IngressTLSReference, ...] = ()
         if public_fps and ready_clusters:
             # SQL predicate restricts to approved fingerprint and collected
@@ -241,6 +247,7 @@ def build_certificate_delivery_overlap(
             tls_rows = TLSCertificateInventory.query.with_entities(
                 TLSCertificateInventory.fingerprint_sha256,
                 TLSCertificateInventory.secret_uid,
+                TLSCertificateInventory.controller_owner_refs,
                 TLSCertificateInventory.cluster_id,
                 TLSCertificateInventory.used_by,
                 TLSCertificateInventory.coverage_state,
@@ -256,17 +263,26 @@ def build_certificate_delivery_overlap(
                 return _blocked('Kubernetes TLS Fingerprint Overlap Exceeds Limit')
             tls_fps = tuple(row[0] for row in tls_rows)
             uid_count = sum(1 for row in tls_rows if _has_canonical_object_uid(row[1]))
+            for row in tls_rows:
+                if not _has_canonical_object_uid(row[1]):
+                    controller_owner_unknown = True
+                    continue
+                owner_refs = validate_committed_controller_owners(row[2])
+                if owner_refs is None:
+                    controller_owner_unknown = True
+                elif owner_refs:
+                    controller_owner_count += 1
             # Authoritative Kubernetes Ingress mapping supplies the reference;
             # no association is inferred from DNS, serial or matching cert.
             if mapping_state == 'ready':
                 ingress_matches = tuple(
                     IngressTLSReference(
-                        has_ingress_reference=_qualified_ingress_reference(row[3]),
-                        coverage_state=row[4],
-                        declared_host_count=row[5],
-                        covered_host_count=row[6],
+                        has_ingress_reference=_qualified_ingress_reference(row[4]),
+                        coverage_state=row[5],
+                        declared_host_count=row[6],
+                        covered_host_count=row[7],
                     )
-                    for row in tls_rows if row[2] in ingress_ready
+                    for row in tls_rows if row[3] in ingress_ready
                 )
         assessment = assess_certificate_overlap(
             vault_fingerprints=public_fps,
@@ -298,6 +314,20 @@ def build_certificate_delivery_overlap(
                 uid_count if assessment.status in {'overlap_observed', 'no_overlap_observed'}
                 and source_state == 'ready' and kubernetes_state == 'ready'
                 and (uid_count > 0 or assessment.matching_kubernetes_tls_secrets == 0)
+                else None
+            ),
+            'controller_owner_reference_status': (
+                'not_qualified' if assessment.status not in {'overlap_observed', 'no_overlap_observed'}
+                or source_state != 'ready' or kubernetes_state != 'ready'
+                else 'not_applicable' if not assessment.matching_kubernetes_tls_secrets
+                else 'partial' if controller_owner_unknown
+                else 'candidate_observed' if controller_owner_count
+                else 'not_observed'
+            ),
+            'matching_tls_secrets_with_controller_owner': (
+                controller_owner_count if not controller_owner_unknown
+                and assessment.status in {'overlap_observed', 'no_overlap_observed'}
+                and source_state == 'ready' and kubernetes_state == 'ready'
                 else None
             ),
             'object_identity_status': (
