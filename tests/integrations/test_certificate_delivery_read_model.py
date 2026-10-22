@@ -75,6 +75,10 @@ def committed_sources():
                 namespace='private-namespace', secret_name='private-tls-secret',
                 fingerprint_sha256=FP, status='healthy',
                 secret_uid='12345678-1234-4234-8234-123456789abc',
+                controller_owner_refs=[
+                    {'kind': 'ExternalSecret', 'api_group': 'external-secrets.io',
+                     'uid': '12345678-1234-4234-8234-123456789abd'},
+                ],
                 not_before=AT-timedelta(days=4), not_after=AT+timedelta(days=90),
                 used_by=[{'namespace': 'private-namespace', 'name': 'private-ingress', 'hosts': ['internal.example']}],
                 coverage_state='fully_covered', declared_host_count=1,
@@ -253,3 +257,51 @@ def test_kubernetes_secret_recreation_changes_uid_without_identity_carryover(com
     assert changed['matching_tls_secrets_with_object_uid'] == 1
     assert first['delivery_proven'] is False and changed['delivery_proven'] is False
     # The prior object's UID cannot be reused as controller materialization proof.
+
+
+def test_supported_owner_evidence_is_candidate_only(committed_sources):
+    result = _read()
+    assert result['controller_owner_reference_status'] == 'candidate_observed'
+    assert result['matching_tls_secrets_with_controller_owner'] == 1
+    assert result['delivery_proven'] is False
+    assert result['vault_to_controller_proven'] is False
+    assert result['endpoint_serving_verified'] is False
+    assert 'external-secrets.io' not in repr(result)
+
+
+def test_unmanaged_tls_secret_has_observed_zero_owner_candidates(committed_sources):
+    record = TLSCertificateInventory.query.one()
+    record.controller_owner_refs = []
+    db.session.commit()
+    result = _read()
+    assert result['controller_owner_reference_status'] == 'not_observed'
+    assert result['matching_tls_secrets_with_controller_owner'] == 0
+    assert result['status'] == 'overlap_observed'
+
+
+def test_legacy_or_corrupt_owner_reference_is_partial_not_fabricated_zero(committed_sources):
+    record = TLSCertificateInventory.query.one()
+    record.controller_owner_refs = None
+    db.session.commit()
+    result = _read()
+    assert result['controller_owner_reference_status'] == 'partial'
+    assert result['matching_tls_secrets_with_controller_owner'] is None
+    record.controller_owner_refs = [{'kind': 'ExternalSecret', 'uid': 'noncanonical'}]
+    db.session.commit()
+    result = _read()
+    assert result['controller_owner_reference_status'] == 'partial'
+    assert result['matching_tls_secrets_with_controller_owner'] is None
+    assert 'noncanonical' not in repr(result)
+
+
+def test_owner_reference_with_old_secret_uid_is_not_materialization_proof(committed_sources):
+    old = _read()
+    record = TLSCertificateInventory.query.one()
+    record.secret_uid = '12345678-1234-4234-8234-123456789abe'
+    db.session.commit()
+    new = _read()
+    assert old['controller_owner_reference_status'] == 'candidate_observed'
+    assert new['controller_owner_reference_status'] == 'candidate_observed'
+    assert new['delivery_proven'] is False
+    # Receiver identity changed; a future source receipt must reference this
+    # new exact Secret UID, never the previous object at the same name.
