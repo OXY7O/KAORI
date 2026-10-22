@@ -2,6 +2,7 @@
     const rootSelector = '[data-secret-reveal-workspace]'
     const panelSelector = '[data-secret-reveal-panel]'
     const stepUpTriggerSelector = '[data-reveal-step-up-trigger]'
+    const submittedNavigationKey = 'kaori:secret-reveal:request-navigation'
     const approvedRequestsTriggerSelector = '[data-reveal-approved-requests-trigger]'
     let pollTimer = null
 
@@ -108,6 +109,37 @@
         result.focus({ preventScroll: true })
     }
 
+    // The request form performs a full POST/redirect. Mark navigation only,
+    // never form fields or Secret material, so the redirected workspace does
+    // not restore the previous long New Request scroll position.
+    const markRequestNavigation = (event) => {
+        if (!(event.target instanceof HTMLFormElement)) return
+        if (!event.target.matches('[data-reveal-request-submit-form]')) return
+        try {
+            window.sessionStorage.setItem(submittedNavigationKey, 'mine')
+        } catch (_) {
+            // Storage-disabled browsers continue with normal server POST.
+        }
+    }
+
+    const restoreSubmittedWorkspacePosition = () => {
+        let targetView = null
+        try {
+            targetView = window.sessionStorage.getItem(submittedNavigationKey)
+            window.sessionStorage.removeItem(submittedNavigationKey)
+        } catch (_) {
+            return
+        }
+        if (targetView !== 'mine') return
+        const view = new URL(window.location.href).searchParams.get('reveal_view')
+        if (view !== 'mine') return
+        // Await the Alpine-selected tab and the browser's own scroll restore.
+        window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+            const main = document.querySelector('[data-kaori-main-scroll]')
+            main?.scrollTo({ top: 0, behavior: 'auto' })
+        }))
+    }
+
     const schedulePolling = (root) => {
         if (pollTimer) window.clearInterval(pollTimer)
         pollTimer = null
@@ -128,12 +160,17 @@
     })
     document.addEventListener('click', navigateToStepUp)
     document.addEventListener('click', navigateToApprovedRequest)
+    document.addEventListener('submit', markRequestNavigation)
     document.addEventListener('htmx:afterSwap', focusRevealResult)
     document.addEventListener('htmx:load', (event) => boot(event.detail?.elt || document))
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => boot())
+        document.addEventListener('DOMContentLoaded', () => {
+            boot()
+            restoreSubmittedWorkspacePosition()
+        })
     } else {
         boot()
+        restoreSubmittedWorkspacePosition()
     }
 })()

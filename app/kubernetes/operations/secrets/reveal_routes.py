@@ -287,7 +287,6 @@ def request_secret_reveal():
             action_url=url_for(
                 'kubernetes_operations.reveal_secret',
                 reveal_view='mine',
-                _anchor='my-secret-reveal-requests',
             ),
             action_label='Open Protected Secret Reveal',
             metadata=result.metadata,

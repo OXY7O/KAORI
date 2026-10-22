@@ -151,6 +151,17 @@ requests disappear automatically. No Secret payload is read or persisted
 by this projection. Notification fanout remains advisory and does not
 assign approval to a fixed recipient.
 
+**Submit and approver navigation:** New Request submission uses the canonical
+server POST/redirect to My Requests and a navigation-only sessionStorage
+marker to reset the KAORI main-scroll viewport; no request form data or
+Secret material enters browser storage. Work Inbox already projects pending
+approval-required requests from committed SecretRevealRequest state for each
+currently active user with `kubernetes_secrets.approve_reveal`, excluding the
+requester. Notifications are sent separately to eligible approvers; inbox
+links open the filtered Approvals view without a native tall-card anchor.
+The Approve/Deny controls already use shared KAORI table row actions, preserve
+CSRF, and cannot authorize self-approval.
+
 **Pending Approvals registry (approver-only):** The separate Pending Approval
 workspace now uses the same KAORI table header, transient loader, source-backed
 filter, conditional Clear Filters, and five-row pagination. Search is capped at

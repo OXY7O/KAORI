@@ -63,7 +63,6 @@ def get_secret_reveal_approval_work_inbox(*, user_id: int) -> dict[str, Any]:
                 'kubernetes_operations.reveal_secret',
                 reveal_view='approvals',
                 pending_search=record.ticket_reference,
-                _anchor='pending-secret-reveal-approvals',
             ),
         }
         for record in requests
