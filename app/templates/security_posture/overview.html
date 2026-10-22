@@ -4,6 +4,7 @@
 {% import "components/operational_section_card.html" as section_card %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
 {% block title %}Security Overview · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div id="security-posture-overview" class="space-y-6">
@@ -43,25 +44,14 @@
                     'Provider findings and their runtime correlation are separate sources of authority.',
                     'shield-alert', action_href=url_for('security_posture.findings'),
                     action_label='Review Findings') %}
-                    <div class="grid gap-4 sm:grid-cols-3">
-                        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                            <p class="text-xs text-content-muted">Scanner coverage</p>
-                            <p class="mt-1 text-xl font-semibold text-content-primary">
-                                {{ posture.scanned_artifacts }} / {{ posture.artifacts_total }}
-                            </p>
-                            {{ table_label.status_indicator_label(posture.scan_status.label, posture.scan_status.tone) }}
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                            <p class="text-xs text-content-muted">Affected artifact digests</p>
-                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ posture.affected_artifacts }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Latest usable scan per digest</p>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                            <p class="text-xs text-content-muted">Runtime correlation</p>
-                            <p class="mt-1">{{ table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) }}</p>
-                            <p class="mt-1 text-xs text-content-muted">No global all-clear from missing bindings</p>
-                        </div>
-                    </div>
+                    {{ posture_grid.render([
+                        ('scan-search', 'Usable Scanner Evidence', posture.scanned_artifacts ~ ' / ' ~ posture.artifacts_total,
+                         'Committed Registry scans · ' ~ posture.scan_status.label, posture.scan_status.tone),
+                        ('package-search', 'Affected Artifact Digests', posture.affected_artifacts,
+                         'Scanner-observed latest usable findings', 'warning' if posture.affected_artifacts else 'unknown'),
+                        ('waypoints', 'Runtime Correlation', posture.runtime_status.status,
+                         'Kubernetes committed input-generation readiness', posture.runtime_status.tone)
+                    ], columns=3) }}
                     {% if not posture.has_complete_security_evidence %}
                         <p role="status" class="mt-4 text-sm text-content-secondary">
                             Coverage or runtime correlation is incomplete, stale, or unauthorized. Counts represent observed evidence,
