@@ -47,6 +47,12 @@
                     <p class="mt-1 text-xs text-content-muted">Read-only public issuer certificates and fingerprint evidence. Maximum four PKI mounts. Empty disables PKI collection; the Vault AppRole must have explicit issuer LIST and public certificate read permissions.</p>
                     {% for error in form.pki_mounts.errors %}<p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>{% endfor %}
                 </div>
+                <label class="flex items-start gap-3 rounded-xl border border-outline-subtle p-4 text-sm text-content-primary sm:col-span-2">
+                    {{ form.pki_stored_certs_enabled(class_="mt-1 h-4 w-4 accent-kaori-primary") }}
+                    <span><span class="font-semibold">Enable Stored PKI Certificate Collection (explicit opt-in)</span>
+                        <span class="mt-1 block text-xs text-content-muted">Adds optional authenticated LIST /certs reads for approved PKI mounts, up to 64 stored certificates each. Excludes no_store/imported certificates and may expose sensitive infrastructure metadata. Default off; requires retest and Full Validation.</span>
+                    </span>
+                </label>
                 <div class="sm:col-span-2">
                     <label for="{{ form.description.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.description.label.text }}</label>
                     {{ form.description(class_="min-h-20 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary") }}
