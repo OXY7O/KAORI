@@ -1,7 +1,7 @@
 """Record Kubernetes TLS Secret object UID for lineage provenance (#2589).
 
 Revision ID: 20261022_tls_object_uid
-Revises: 20261022_vault_stored_certificates
+Revises: 20261022_vault_stored_certs
 
 Existing TLS inventory rows intentionally remain NULL; namespace/name is
 not an immutable source ID. Successful Kubernetes TLS collection populates
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = '20261022_tls_object_uid'
-down_revision = '20261022_vault_stored_certificates'
+down_revision = '20261022_vault_stored_certs'
 branch_labels = None
 depends_on = None
 

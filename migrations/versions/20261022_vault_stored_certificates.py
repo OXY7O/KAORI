@@ -1,13 +1,13 @@
 """Track bounded Vault PKI stored-certificate evidence; excludes no_store certs (#2587).
 
-Revision ID: 20261022_vault_stored_certificates
+Revision ID: 20261022_vault_stored_certs
 Revises: 20261022_vault_pki_evidence
 """
 
 from alembic import op
 import sqlalchemy as sa
 
-revision = '20261022_vault_stored_certificates'
+revision = '20261022_vault_stored_certs'
 down_revision = '20261022_vault_pki_evidence'
 branch_labels = None
 depends_on = None
