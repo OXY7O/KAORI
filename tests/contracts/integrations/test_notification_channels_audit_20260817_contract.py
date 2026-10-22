@@ -490,6 +490,19 @@ def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> No
     assert 'Test Delivery' in providers
 
 
+def test_channel_inventory_responsive_width_retains_lifecycle_guidance() -> None:
+    rows = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    policy = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
+    blockers = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
+    assert "table_ui.table_classes('w-full min-w-[980px] table-fixed lg:min-w-0')" in rows
+    assert 'min-w-[1100px]' not in rows
+    assert "data-dialog-target=\"notification-channel-delete-blockers-{{ channel.id }}\"" in rows
+    assert 'Why locked?' in rows
+    assert 'sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]' in policy
+    assert 'channel.report_schedule_names' in blockers
+    assert 'Use Edit to disable this channel' in blockers
+
+
 def test_channel_inventory_rows_are_compact_with_native_policy_dialog() -> None:
     page = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     policy = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')

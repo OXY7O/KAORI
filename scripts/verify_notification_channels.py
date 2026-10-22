@@ -149,6 +149,9 @@ def main() -> int:
         and "'delivery_pagination': delivery_window" in service
         and 'payload.delivery_pagination' in delivery_template
         and 'No Notification Deliveries Recorded' in delivery_template,
+        'desktop-fit Channel Inventory and deletion guidance': "table_ui.table_classes('w-full min-w-[980px] table-fixed lg:min-w-0')" in channels_template
+        and 'Why locked?' in channels_template
+        and 'channel.delete_blocked' in channels_template,
         'compact native policy-dialog registry': channels_template.count('scope="col"') == 6
         and "channel.event_type_labels[0]" in channels_template
         and '<details' not in channels_template
