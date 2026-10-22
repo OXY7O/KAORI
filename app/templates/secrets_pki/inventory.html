@@ -120,7 +120,7 @@
                             {{ stored_cert_readiness.committed_mounts if stored_cert_readiness.committed_mounts is not none else 'Not Collected' }}.
                         </p>
                         <p class="mt-2 text-xs text-content-muted">
-                            Coverage limited to Vault certificates stored by approved mounts (`no_store=false`).
+                            Coverage limited to Vault certificates stored by approved mounts (no_store=false).
                             Imported/unretained certificates and actual workload delivery are not covered.
                             Missing certificate ≠ revoked or deleted.
                         </p>
