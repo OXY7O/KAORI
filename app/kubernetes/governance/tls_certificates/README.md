@@ -179,3 +179,30 @@ existing bounded TLS collection after migration. Preserve TLS Secret
 payload-scrubbing and `tls.crt`-only behavior; no extra Kubernetes API
 discovery or mutation is introduced. Tests:
 `tests/kubernetes/governance/test_tls_controller_owner_evidence.py`.
+
+## ESO reconciliation qualification contract (HV-05 child #2666)
+
+Source owner: app/kubernetes/governance/tls_certificates/eso_reconciliation.py.
+This is a pure source normalization and candidate qualification contract, **not**
+an installed or active ESO API adapter, Vault delivery attestation, or UI feature.
+It reads typed ExternalSecret metadata/status only: UID, namespace scope,
+generation, observed generation, Ready condition, refresh and observation times.
+Arbitrary spec/SecretStore references, Vault paths and Secret data are not read
+or retained in its normalized output; internal identities are never presented.
+
+An eligible reconciliation *candidate* requires independent current Kubernetes
+Secret UID corroboration, exact TLS Secret owner UID, coherent status generation,
+fresh controller and TLS source evidence, exact cluster/namespace context and
+a validated public certificate fingerprint. ESO Ready alone has no target
+immutable Secret UID or Vault source/version receipt. Missing ESO observedGeneration,
+permission denied, stale/malformed/ambiguous source, Secret UID recreation and
+unknown current UID are **unknown**, not verified zero or delivery failure.
+Even reconciled_candidate keeps vault_to_controller_proven, delivery_proven
+and endpoint_serving_verified false; no confirmed lineage edges are produced.
+
+No database migration, CRD call, new RBAC scope, worker, presentation change or
+controller mutation is included. Before active collection: explicitly review
+ESO CRD version/support, bounded Kubernetes custom-objects API and permission
+scope, persistence/effective dates, resource-level authorization, separate
+current Secret UID readback, Vault source binding and real source UAT.
+Contract tests: tests/kubernetes/governance/test_eso_reconciliation_contract.py.
