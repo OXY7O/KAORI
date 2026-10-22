@@ -233,7 +233,7 @@ def build_certificate_delivery_overlap(
         else:
             mapping_state = 'ready'
         tls_fps: tuple[str, ...] = ()
-        uid_count: int | None = None
+        uid_count = 0
         ingress_matches: tuple[IngressTLSReference, ...] = ()
         if public_fps and ready_clusters:
             # SQL predicate restricts to approved fingerprint and collected
@@ -302,10 +302,9 @@ def build_certificate_delivery_overlap(
             ),
             'object_identity_status': (
                 'not_qualified' if source_state != 'ready' or kubernetes_state != 'ready'
-                else 'not_observed' if uid_count is None or (
-                    uid_count == 0 and assessment.matching_kubernetes_tls_secrets != 0
-                )
-                else 'partial' if uid_count < (assessment.matching_kubernetes_tls_secrets or 0)
+                else 'not_applicable' if not assessment.matching_kubernetes_tls_secrets
+                else 'not_observed' if uid_count == 0
+                else 'partial' if uid_count < assessment.matching_kubernetes_tls_secrets
                 else 'qualified'
             ),
             'ingress_reference_status': ingress.status,
