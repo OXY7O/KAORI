@@ -18,10 +18,9 @@ KAORI RBAC must:
 A permission check returns false when:
 
 - the user is not Super Admin;
-- no active normalized role grants the key;
-- no compatible legacy default-role fallback grants the key.
+- no active normalized role grants the key, or the user has no assigned active role.
 
-Unknown permission keys are denied for normal users. Super Admin currently returns true for any key, so sensitive new permissions must be reviewed before deployment.
+Unknown permission keys are denied for normal users. The current local-database Super Admin globally overrides `User.has_permission()`; resource-scoped access and break-glass require an **independent** approved #724/#641 policy and must not inherit a silent blanket exemption. There is no runtime legacy default-role fallback.
 
 ## 3. Route enforcement
 
