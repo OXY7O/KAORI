@@ -77,6 +77,10 @@ def main() -> int:
         and "hx_target='#notification-channels-workspace'" in delivery_template
         and "hx_select='#notification-channels-workspace'" in delivery_template
         and delivery_template.count('section_intro.render(') == 3,
+        'notification tabs macro namespace': '{% import "components/workspace_tabs.html" as workspace_tabs %}' in delivery_template
+        and '{% set workspace_tabs =' not in delivery_template
+        and '{% set notification_tab_items = [' in delivery_template
+        and 'workspace_tabs.render_navigation(notification_tab_items,' in delivery_template,
         'delivery journal loading order': delivery_template.index("loading_bar.render('notification-delivery-loading'") < delivery_template.index("table_registry.filter_form('notification_channels.index'"),
         'delivery journal surface': 'query = NotificationDelivery.query' in delivery_registry
         and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
