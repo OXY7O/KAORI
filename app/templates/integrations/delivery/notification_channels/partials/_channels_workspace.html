@@ -344,6 +344,9 @@
                                                         tabindex="-1"
                                                         aria-hidden="true">Confirm Delete</button>
                                                 <button type="button"
+                                                        aria-haspopup="dialog"
+                                                        aria-controls="notification-channel-delete-confirmation"
+                                                        aria-label="Confirm deletion of {{ channel.name }}"
                                                         data-destructive-modal-open
                                                         data-destructive-modal-id="notification-channel-delete-confirmation"
                                                         data-destructive-target="{{ channel.name }}"
