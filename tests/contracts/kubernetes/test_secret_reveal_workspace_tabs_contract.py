@@ -191,3 +191,30 @@ def test_reveal_tab_labels_are_count_free_but_registry_counts_remain() -> None:
     assert "('approvals', 'Approvals', 'user-check', none," in page
     assert 'result_count=my_reveal_pagination.total_items' in my
     assert 'result_count=pending_reveal_pagination.total_items' in pending
+
+
+def test_secret_reveal_submit_uses_tab_selection_without_native_registry_anchor() -> None:
+    route = read('app/kubernetes/operations/secrets/reveal_routes.py')
+    start = route.index('def request_secret_reveal():')
+    end = route.index('def reauthenticate_secret_reveal():', start)
+    block = route[start:end]
+
+    assert "return redirect(url_for('kubernetes_operations.reveal_secret', reveal_view='mine'))" in block
+    assert 'The KAORI app shell' not in block
+    assert "'reveal_view': 'mine'" not in block
+    assert "return redirect(\n            url_for(\n                'kubernetes_operations.reveal_secret',\n                cluster_id=existing.cluster_id" in block
+    assert "action_url=action_url" in block
+    assert "queue_feedback=True" in block
+
+
+def test_short_step_up_guidance_and_canonical_pending_decision_actions() -> None:
+    step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
+    pending = read('app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html')
+    assert 'Session verified. Select Reveal Once on an approved request below.' in step_up
+    assert 'Your session is verified. Choose Reveal Once' not in step_up
+    assert "table_ui.action_classes(destructive=true)" in pending
+    assert 'value="deny"' in pending
+    assert 'value="approve"' in pending
+    assert 'class="{{ table_ui.action_classes() }}"' in pending
+    assert 'name="csrf_token"' in pending
+    assert "action_button.classes('primary')" not in pending
