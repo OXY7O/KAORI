@@ -248,6 +248,8 @@ def _resolved_capability_endpoint(workspace_key: str, tab: WorkspaceCapabilityDe
 
 
 def _workspace_key(endpoint: str) -> str | None:
+    if endpoint.startswith('secrets_pki.'):
+        return 'secrets_pki'
     if endpoint.startswith('security_posture.'):
         return 'security_posture'
     if endpoint.startswith('artifact_registry.'):
@@ -278,6 +280,7 @@ def _workspace_key(endpoint: str) -> str | None:
 
 
 _WORKSPACE_ACTIVE_EXACT: dict[str, dict[str, str]] = {
+    'secrets_pki': {'secrets_pki.overview': 'overview', 'secrets_pki.inventory': 'inventory'},
     'settings': {'settings.account': 'account'},
     'integrations': {
         'integrations.observability': 'observability',

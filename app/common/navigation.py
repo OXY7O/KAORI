@@ -37,6 +37,9 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'object_storage_inventory.system_details': 'System Details',
     'object_storage_inventory.buckets': 'Buckets',
     'object_storage_inventory.bucket_details': 'Bucket Details',
+    # Secrets & PKI
+    'secrets_pki.overview': 'Overview',
+    'secrets_pki.inventory': 'Inventory',
     # Artifact Registry
     'artifact_registry.overview': 'Overview',
     'artifact_registry.inventory': 'Inventory',
@@ -255,6 +258,8 @@ def build_navigation_breadcrumb(
             BreadcrumbItem('Runtime', 'waypoints'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
+    elif endpoint.startswith('secrets_pki.'):
+        items = [BreadcrumbItem('Secrets & PKI', 'key-round'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]
     elif endpoint.startswith('artifact_registry.'):
         items = [
             BreadcrumbItem('Artifact Registry', 'package'),

@@ -1,0 +1,111 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/section_intro.html" as section_intro %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_metric_card.html" as metric_card %}
+{% block title %}Secrets &amp; PKI Inventory · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div id="secrets-pki-inventory" class="min-w-0 space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('boxes', 'Secrets & PKI', 'key-round') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Secret Inventory</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Review committed KV v2 metadata coverage and evidence readiness without revealing Secret values.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('database-zap', 'Committed KAORI Evidence') }}
+                            {{ page_hero.meta_label('shield-check', 'Metadata-Only Collection') }}
+                            {{ page_hero.meta_label('key-round', 'No Plaintext Access') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Inventory evidence context">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('Inventory Readiness', summary.label, 'database-zap') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('server', 'Active Scope', 'Registered Vault Sources', 'Provider-neutral evidence') }}
+                            {{ page_hero.context_metric('clock-3', 'Latest Commit', summary.updated_label, 'Retention and collection state') }}
+                        </div>
+                        {{ page_hero.context_info('lock-keyhole', 'No raw Secret paths, private keys or credential values are displayed.') }}
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {{ section_intro.render(
+            'Committed Inventory Coverage',
+            'Source-owned KV v2 observations are shown only after successful worker reconciliation. Missing evidence does not equal an empty Vault.',
+            supporting='Current scope: enabled Vault integrations; provider-specific navigation remains under Integrations.'
+        ) }}
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {{ metric_card.render('Enabled Vault Sources',
+                summary.provider_count if summary.provider_count is not none else 'Unavailable',
+                'Only enabled active Vault integration identities.', 'server',
+                source_label='Vault Provider') }}
+            {{ metric_card.render('Approved KV v2 Mounts',
+                summary.approved_mount_count if summary.approved_mount_count is not none else 'Unavailable',
+                'Explicit metadata collection scopes; no implicit mount discovery.', 'layers',
+                source_label='Provider Configuration') }}
+            {{ metric_card.render('Committed Mounts',
+                summary.committed_mount_count if summary.committed_mount_count is not none else 'Not Collected',
+                'Scopes with successful retained inventory generations.', 'database-zap',
+                source_label='Committed Inventory') }}
+            {{ metric_card.render('Observed Secret Metadata',
+                summary.observed_secret_count if summary.observed_secret_count is not none else 'Not Collected',
+                'Metadata record counts, never Secret values or inferred consumer coverage.', 'key-round',
+                source_label='KV v2 Metadata') }}
+        </div>
+        {% call section_card.render('Collection Status',
+            'Provider readiness, approved scope, and inventory freshness remain independently verifiable.',
+            'shield-check') %}
+            <div role="status" class="flex flex-wrap items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">{{ summary.label }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        Last committed: {{ summary.last_committed_at|user_datetime if summary.last_committed_at else 'Not Collected' }}.
+                        Data may be incomplete, stale or unavailable independently of Vault API health.
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    {% if can_manage_integrations %}
+                        <a href="{{ url_for('vault.index') }}"
+                           class="text-sm font-semibold text-kaori-primary hover:underline">Open Vault Integrations</a>
+                    {% endif %}
+                    {% if can_execute_inventory %}
+                        <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.inventory.sync') }}"
+                           class="text-sm font-semibold text-kaori-primary hover:underline">Open Inventory Job</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% if summary.state != 'committed' %}
+                <p class="mt-4 text-xs leading-5 text-status-warning-text">
+                    Collection is not fully ready. Do not infer that missing Secrets were deleted or that an uncollected mount is empty.
+                </p>
+            {% endif %}
+        {% endcall %}
+        {{ section_intro.render(
+            'Additional Evidence Domains',
+            'PKI issuers, issued certificates, leases and consumer mappings require independent committed-source contracts.',
+            supporting='Readiness is not inferred from a working Vault connection.'
+        ) }}
+        <div class="grid gap-3 lg:grid-cols-2">
+            {% call section_card.render('Public PKI & Certificates',
+                'PKI source reads and the retained issued-certificate register are separate capabilities.',
+                'certificate') %}
+                <p class="text-sm text-content-secondary">
+                    Public issuer discovery is available as a bounded source collector.
+                    Committed issuer history and certificate delivery verification have not yet been admitted.
+                </p>
+            {% endcall %}
+            {% call section_card.render('Consumers & Rotation Assurance',
+                'Confirmed workload adoption and dependency relationships require cross-domain evidence.',
+                'waypoints') %}
+                <p class="text-sm text-content-secondary">
+                    No dependency or completed rotation is inferred from a Secret version counter.
+                    Consumer correlation and renewal evidence remain pending.
+                </p>
+            {% endcall %}
+        </div>
+    </div>
+{% endblock dashboard_content %}

@@ -178,6 +178,20 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         ),
     ),
     WorkspaceDefinition(
+        key='secrets_pki',
+        label='Secrets & PKI',
+        icon='key-round',
+        section='Infrastructure',
+        capabilities=(
+            WorkspaceCapabilityDefinition(
+                'overview', 'Overview', 'layout-dashboard', 'secrets_pki.overview', ('secrets_pki.view',)
+            ),
+            WorkspaceCapabilityDefinition(
+                'inventory', 'Inventory', 'boxes', 'secrets_pki.inventory', ('secrets_pki.view',)
+            ),
+        ),
+    ),
+    WorkspaceDefinition(
         key='security_posture',
         label='Security',
         icon='shield-alert',
