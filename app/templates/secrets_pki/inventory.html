@@ -93,10 +93,25 @@
             {% call section_card.render('Public PKI & Certificates',
                 'PKI source reads and the retained issued-certificate register are separate capabilities.',
                 'certificate') %}
-                <p class="text-sm text-content-secondary">
-                    Public issuer discovery is available as a bounded source collector.
-                    Committed issuer history and certificate delivery verification have not yet been admitted.
-                </p>
+                <div role="status" class="space-y-3">
+                    <p class="text-sm font-semibold text-content-primary">{{ pki_readiness.label }}</p>
+                    <dl class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
+                        <div><dt class="text-content-muted">Approved PKI Mounts</dt><dd class="mt-1 font-semibold text-content-primary">{{ pki_readiness.approved_mounts if pki_readiness.approved_mounts is not none else 'Unavailable' }}</dd></div>
+                        <div><dt class="text-content-muted">Committed Mounts</dt><dd class="mt-1 font-semibold text-content-primary">{{ pki_readiness.committed_mounts if pki_readiness.committed_mounts is not none else 'Not Collected' }}</dd></div>
+                        <div><dt class="text-content-muted">Observed Public Issuers</dt><dd class="mt-1 font-semibold text-content-primary">{{ pki_readiness.observed_issuers if pki_readiness.observed_issuers is not none else 'Not Collected' }}</dd></div>
+                    </dl>
+                    <p class="text-xs leading-5 text-content-muted">
+                        Last committed: {{ pki_readiness.last_committed_at|user_datetime if pki_readiness.last_committed_at else 'Never' }}.
+                        Fingerprints and validity only. No certificate PEM, subject, SAN, private key or trust verdict.
+                    </p>
+                    {% if pki_readiness.state != 'committed' %}
+                        <p class="text-xs leading-5 text-status-warning-text">Unavailable or stale public issuer evidence is unknown, not proof of missing or revoked certificates.</p>
+                    {% endif %}
+                    {% if can_execute_inventory %}
+                        <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.sync') }}" class="inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open Public PKI Job</a>
+                    {% endif %}
+                    <p class="text-xs text-content-muted">Issued certificate registry and workload certificate delivery assurance remain separate pending capabilities.</p>
+                </div>
             {% endcall %}
             {% call section_card.render('Consumers & Rotation Assurance',
                 'Confirmed workload adoption and dependency relationships require cross-domain evidence.',
