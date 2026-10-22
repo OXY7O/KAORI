@@ -113,11 +113,13 @@ def _safe_metadata(
     if not isinstance(data, dict) or not isinstance(data.get('versions'), dict):
         raise VaultProviderError('KV v2 metadata was absent or malformed.')
     versions = data['versions']
+    if not isinstance(data.get('cas_required'), bool):
+        raise VaultProviderError('KV v2 CAS posture is unavailable or malformed.')
     if len(versions) > MAX_VERSIONS_PER_SECRET:
         raise VaultProviderError('KV v2 version evidence exceeds the bounded scan.')
     normalized: list[KV2VersionEvidence] = []
     for raw_version, row in versions.items():
-        if not isinstance(row, dict):
+        if not isinstance(row, dict) or not isinstance(row.get('destroyed'), bool):
             raise VaultProviderError('KV v2 version evidence is malformed.')
         version = _version_number(raw_version)
         if version < 1:
