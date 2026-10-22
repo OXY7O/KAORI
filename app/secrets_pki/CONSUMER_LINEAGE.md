@@ -63,3 +63,15 @@ the missing provenance/endpoint serving readback is still a candidate.
 Full evidence requirements are in
 `CERTIFICATE_DELIVERY_CORRELATION.md`; no relationship database or
 controller source has been silently added.
+
+
+## Ingress TLS reference evidence — no implicit confirmed lineage
+
+The Vault/Kubernetes overlap read model now consumes existing committed
+Kubernetes TLS Governance `used_by` Ingress references and SAN/host
+coverage counts for matched public certificates. This is evidence of
+**Ingress referencing a Kubernetes TLS Secret** and of declared-host
+identity matching; it is not a confirmed Vault `secret_to_materialization`
+edge, controller synchronization proof, workload adoption or endpoint
+serving. Source freshness and `tls_certificates.view` remain mandatory;
+incomplete/malformed Ingress mapping yields unknown, not negative proof.

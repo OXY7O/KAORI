@@ -108,3 +108,15 @@ No-match is not a failure/verdict; collection unknown/partial/stale and
 schema not migrated are explicit. The current preview is *not* a completed
 Certificate Delivery Assurance feature. See
 `CERTIFICATE_DELIVERY_CORRELATION.md` for source/coverage/UAT details.
+
+
+## Ingress-reference qualification of public certificate overlap (HV-05)
+
+The read-only public certificate overlap section now projects the number
+of committed Kubernetes TLS Secrets actually referenced by a collected
+Ingress mapping, and the subset with fully covered declared Ingress hosts.
+It reuses existing Kubernetes TLS Governance `used_by` and
+`coverage_state`, never provider HTTP calls or a new controller/TSDB.
+Source read permissions and freshness are independent. Those figures are
+**not proof** of Vault delivery, Ingress controller loading or current
+endpoint TLS serving. See `CERTIFICATE_DELIVERY_CORRELATION.md`.
