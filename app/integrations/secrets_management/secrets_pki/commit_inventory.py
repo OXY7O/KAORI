@@ -142,6 +142,8 @@ def commit_kv2_inventory(
                     representation_role='material_authority',
                 )
                 db.session.add(representation)
+            if representation.current_version > record.current_version:
+                raise ValueError('KV v2 current version regressed; source identity requires review.')
             representation.observation_status = 'observed'
             representation.current_version = record.current_version
             representation.oldest_version = record.oldest_version
@@ -155,6 +157,8 @@ def commit_kv2_inventory(
                 if version is None:
                     version = SecretVersionObservation(version=observed_version.version)
                     representation.versions.append(version)
+                elif version.destroyed and not observed_version.destroyed:
+                    raise ValueError('KV v2 destroyed-version evidence cannot reverse.')
                 version.provider_created_time = observed_version.created_time
                 version.provider_deletion_time = observed_version.deletion_time
                 version.destroyed = observed_version.destroyed
