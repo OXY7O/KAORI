@@ -26,8 +26,8 @@ def test_request_form_explains_policy_specific_next_step() -> None:
     assert "selected_namespace_policy == 'approval_required'" in request_form
     assert "table_label.status_label('Approval Required'" in request_form
     assert "table_label.status_label('Step-Up Policy'" in request_form
-    assert 'KAORI records the target, key, reason, ticket, actor, and policy—not Secret values' in request_form
-    assert 'verify your session when approved, then reveal once' in request_form
+    assert 'KAORI records request details, not Secret values.' in request_form
+    assert 'Verify and reveal once in My Requests after approval.' in request_form
 
 
 def test_protected_reveal_flow_matches_backend_policy_order() -> None:
@@ -129,3 +129,27 @@ def test_verify_session_scroll_stays_in_kaori_main_viewport() -> None:
     assert "focusTarget.focus({ preventScroll: true })" in js
     assert "behavior: 'smooth'" not in js
     assert "test_verify_session_does_not_overscroll_kaori_main_viewport" in browser
+
+
+def test_approved_request_cta_uses_bounded_focused_navigation_instead_of_native_hash_scroll() -> None:
+    step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
+    requests = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
+    workspace_js = read('app/static/js/secret_reveal_workspace.js')
+    browser = read('tests/ui/test_browser_smoke.py')
+
+    assert 'data-reveal-approved-requests-trigger' in step_up
+    assert 'href="#my-secret-reveal-requests"' in step_up  # no-JS fallback
+    assert 'tabindex="-1"' in requests
+    assert 'id="my-secret-reveal-requests"' in requests
+    assert 'data-reveal-once-action' in requests
+    assert 'class="{{ table_ui.action_classes() }}"' in requests
+    assert "const approvedRequestsTriggerSelector = '[data-reveal-approved-requests-trigger]'" in workspace_js
+    assert "document.addEventListener('click', navigateToApprovedRequest)" in workspace_js
+    assert "event.target.closest(approvedRequestsTriggerSelector)" in workspace_js
+    assert "panel.querySelector('[data-reveal-once-action]')" in workspace_js
+    assert "panel.querySelector('#my-secret-reveal-requests')" in workspace_js
+    assert "event.preventDefault()" in workspace_js
+    assert "showWithinMainScroll(target)" in workspace_js
+    assert "target.focus({ preventScroll: true })" in workspace_js
+    assert "window.history.replaceState(window.history.state, '', url)" in workspace_js
+    assert "test_continue_to_approved_requests_scrolls_only_main_and_focuses_action" in browser
