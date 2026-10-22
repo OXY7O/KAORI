@@ -30,6 +30,7 @@ def main() -> int:
     channels_template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     channel_policy_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
+    channel_delete_blockers_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
     native_dialogs = read('app/static/js/native_dialogs.js')
     confirmation = read('app/templates/components/destructive_confirmation_modal.html')
     confirmation_script = read('app/static/js/destructive_confirmation_modal.js')
@@ -169,6 +170,16 @@ def main() -> int:
         and 'No Allowed Uses' in channel_policy_dialog
         and 'credential_payload' not in channel_policy_dialog
         and channel_policy_dialog.count('data-kaori-dialog-close') == 2,
+        'balanced policy and discoverable deletion': 'sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]' in channel_policy_dialog
+        and 'grid items-start gap-3 md:grid-cols-2' not in channel_policy_dialog
+        and "table_ui.table_classes('min-w-[1100px] table-fixed')" in channels_template
+        and 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channels_template
+        and 'Why locked?' in channels_template
+        and 'data-kaori-native-dialog' in channel_delete_blockers_dialog
+        and 'for schedule_name in channel.report_schedule_names' in channel_delete_blockers_dialog
+        and "'report_schedule_names': list(usage.report_schedule_names)" in service
+        and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
+        and 'credential_payload' not in channel_delete_blockers_dialog,
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
         'platform ownership copy': 'platform delivery capability' in template.lower(),
         'delivery evidence deletion guard': 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle
