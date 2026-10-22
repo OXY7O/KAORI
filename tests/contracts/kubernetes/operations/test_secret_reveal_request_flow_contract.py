@@ -100,10 +100,32 @@ def test_verify_session_action_focuses_password_after_htmx_table_replacement() -
     assert "link.closest(rootSelector)" in js
     assert "querySelector('#reveal-session-step-up')" in js
     assert "querySelector('[data-reveal-step-up-password]')" in js
-    assert "target.scrollIntoView(" in js
+    assert "target.closest('[data-kaori-main-scroll]')" in js
+    assert "bounds.top >= viewport.top + padding && bounds.bottom <= viewport.bottom - padding) return" in js
+    assert "Math.min(limit, main.scrollTop + bounds.top - viewport.top - padding)" in js
+    assert "main.scrollTo({ top: next, behavior: 'auto' })" in js
+    assert "target.scrollIntoView({ behavior: 'auto', block: 'nearest' })" in js
+    assert "behavior: 'smooth'" not in js
     assert "focusTarget.focus({ preventScroll: true })" in js
     assert "url.searchParams.set('reveal_view', 'mine')" in js
     assert "window.history.replaceState(window.history.state, '', url)" in js
     assert "if (!target || !panel || panel.hidden) return" in js
     assert "window.htmx.ajax('GET', url, { target, swap: 'outerHTML' })" in js
     assert "test_verify_session_link_focuses_step_up_after_htmx_replacement" in browser
+
+
+def test_verify_session_scroll_stays_in_kaori_main_viewport() -> None:
+    js = read('app/static/js/secret_reveal_workspace.js')
+    layout = read('app/templates/layouts/app.html')
+    browser = read('tests/ui/test_browser_smoke.py')
+
+    assert 'data-kaori-main-scroll' in layout
+    assert "target.closest('[data-kaori-main-scroll]')" in js
+    assert "if (bounds.top >= viewport.top + padding && bounds.bottom <= viewport.bottom - padding) return" in js
+    assert "const limit = Math.max(0, main.scrollHeight - main.clientHeight)" in js
+    assert "Math.max(0, Math.min(limit," in js
+    assert "main.scrollTo({ top: next, behavior: 'auto' })" in js
+    assert "target.scrollIntoView({ behavior: 'auto', block: 'nearest' })" in js
+    assert "focusTarget.focus({ preventScroll: true })" in js
+    assert "behavior: 'smooth'" not in js
+    assert "test_verify_session_does_not_overscroll_kaori_main_viewport" in browser

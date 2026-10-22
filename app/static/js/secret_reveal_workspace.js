@@ -20,6 +20,26 @@
         window.htmx.ajax('GET', url, { target, swap: 'outerHTML' })
     }
 
+    // Keep navigation inside the KAORI main scroll surface. Avoid scrolling
+    // visible Step-Up content: browser-wide scrollIntoView can displace the
+    // nested application shell and expose a blank strip below the workspace.
+    const showStepUpWithinMainScroll = (target) => {
+        const main = target.closest('[data-kaori-main-scroll]')
+        const bounds = target.getBoundingClientRect()
+        const viewport = main?.getBoundingClientRect() || { top: 0, bottom: window.innerHeight }
+        const padding = 20
+
+        if (bounds.top >= viewport.top + padding && bounds.bottom <= viewport.bottom - padding) return
+
+        if (main) {
+            const limit = Math.max(0, main.scrollHeight - main.clientHeight)
+            const next = Math.max(0, Math.min(limit, main.scrollTop + bounds.top - viewport.top - padding))
+            main.scrollTo({ top: next, behavior: 'auto' })
+        } else {
+            target.scrollIntoView({ behavior: 'auto', block: 'nearest' })
+        }
+    }
+
     // Delegate the action so it survives HTMX polling and table replacement.
     // A real URL remains on the link for non-JavaScript / failed-load fallback.
     const navigateToStepUp = (event) => {
@@ -40,8 +60,7 @@
         url.hash = 'reveal-session-step-up'
         window.history.replaceState(window.history.state, '', url)
 
-        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true
-        target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+        showStepUpWithinMainScroll(target)
         const password = target.querySelector('[data-reveal-step-up-password]')
         const focusTarget = password && !password.disabled ? password : target
         focusTarget.focus({ preventScroll: true })
