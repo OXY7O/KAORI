@@ -143,6 +143,16 @@ def build_security_posture(
             func.count(func.distinct(RegistryVulnerability.id)).label('finding_count'),
             func.count(func.distinct(RegistryScanSnapshot.artifact_id)).label('artifact_count'),
             func.count(func.distinct(RegistryWorkloadBinding.id)).label('binding_count'),
+            func.count(
+                func.distinct(
+                    case((RegistryWorkloadBinding.match_type == 'digest', RegistryWorkloadBinding.id), else_=None)
+                )
+            ).label('digest_binding_count'),
+            func.count(
+                func.distinct(
+                    case((RegistryWorkloadBinding.match_type != 'digest', RegistryWorkloadBinding.id), else_=None)
+                )
+            ).label('reference_binding_count'),
             func.max(RegistryScanSnapshot.observed_at).label('observed_at'),
         )
         .group_by(all_cve_ids)
@@ -162,6 +172,8 @@ def build_security_posture(
             'finding_count': int(row.finding_count or 0),
             'artifact_count': int(row.artifact_count or 0),
             'binding_count': int(row.binding_count or 0),
+            'digest_binding_count': int(row.digest_binding_count or 0),
+            'reference_binding_count': int(row.reference_binding_count or 0),
             'observed_at': row.observed_at,
         }
         for row in page_rows
