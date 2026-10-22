@@ -77,3 +77,35 @@ do not substitute Developer Check, Full Admission, staging UAT or human acceptan
 
 If no real Vault instance is configured, do not claim connectivity, inventory,
 Analytics or Intelligence has passed UAT.
+
+
+## HV-02 safe KV v2 metadata collector — source-contract slice (#2586)
+
+`kv2_inventory.py` provides a **bounded, in-memory, metadata-only collector** for
+one explicitly selected Vault KV v2 mount. It authenticates through the
+existing AppRole client, calls only Vault `LIST /v1/<mount>/metadata[/prefix]`
+and `GET /v1/<mount>/metadata/<secret-path>`, and normalizes an allowlist
+of version/creation/deletion/destroy facts. It deliberately excludes custom
+metadata, secret values, KV `data` endpoints, raw provider errors, tokens
+and any unknown fields.
+
+The AppRole policy needs the specific KV v2 mount's `metadata` list/read
+rights. The caller must supply the approved mount name; the collector does
+not enumerate all system mounts or claim KV v1 equivalence. This contract is
+limited to **200 secret records**, **200 entries per list response**,
+**100 version records per secret**, and **8 directory levels**. Any denied
+request, missing metadata, malformed list or size/depth breach raises a
+sanitized error and must never be treated as an empty successful collection.
+Path segments are strictly normalized and percent-encoded before sending;
+unsupported path characters are an explicit capability limitation.
+
+**Current readiness:** this is the lower-level API/normalization slice only.
+It is not yet connected to canonical `JobExecution`, scheduled collection,
+committed storage, or the Secrets & PKI Inventory UI. Do not expose it as
+`Available`, call it from an HTTP read route, or persist its unredacted
+in-memory objects in Celery results, logs, notifications or exports. Next
+bounded slices of HV-02 must implement durable canonical identities,
+per-mount committed generation/freshness, job admission/worker ownership,
+positive and negative persistence tests and real-Vault UAT. The dedicated
+test file is `tests/integrations/test_vault_kv2_inventory.py`; pytest/ruff,
+Alembic, actual Vault and security gates remain unverified until run.
