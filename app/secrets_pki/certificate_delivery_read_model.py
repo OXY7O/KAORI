@@ -65,6 +65,26 @@ def _blocked(label: str, *, state: str = 'blocked') -> dict[str, Any]:
     }
 
 
+def _qualified_ingress_reference(value: Any) -> bool:
+    """Only well-formed source-owned references support a negative or positive count.
+
+    Invalid JSON is source uncertainty, not evidence of no Ingress use.
+    Resource names are validated transiently and never returned by this bridge.
+    """
+    if not isinstance(value, list) or len(value) > 128:
+        raise ValueError('Ingress reference evidence is missing or malformed.')
+    for item in value:
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get('name'), str)
+            or not 0 < len(item['name'].strip()) <= 255
+            or not isinstance(item.get('namespace'), str)
+            or not 0 < len(item['namespace'].strip()) <= 255
+        ):
+            raise ValueError('Ingress reference identity is incomplete.')
+    return bool(value)
+
+
 def _schema_ready() -> bool:
     """Avoid UndefinedTable 500 on DevContainer branches not yet migrated."""
     try:
@@ -224,17 +244,7 @@ def build_certificate_delivery_overlap(
             if mapping_state == 'ready':
                 ingress_matches = tuple(
                     IngressTLSReference(
-                        has_ingress_reference=(
-                            isinstance(row[2], list)
-                            and any(
-                                isinstance(usage, dict)
-                                and isinstance(usage.get('name'), str)
-                                and bool(usage['name'].strip())
-                                and isinstance(usage.get('namespace'), str)
-                                and bool(usage['namespace'].strip())
-                                for usage in row[2]
-                            )
-                        ),
+                        has_ingress_reference=_qualified_ingress_reference(row[2]),
                         coverage_state=row[3],
                         declared_host_count=row[4],
                         covered_host_count=row[5],
