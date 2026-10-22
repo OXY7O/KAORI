@@ -6,7 +6,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% block title %}HashiCorp Vault Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
-{% set posture = "Healthy" if registered and ready == registered else ("Attention" if registered else "Not Configured") %}
+{% set posture = "Healthy" if ready and not attention else ("Attention" if attention else ("Inactive" if registered else "Not Configured")) %}
 {% set metrics = [
     {"label": "Registered Connections", "value": registered, "description": "Canonical Vault provider identities", "icon": "server-cog"},
     {"label": "API Ready", "value": ready, "description": "Enabled, active and Full Validation ready", "icon": "badge-check"},
@@ -99,19 +99,19 @@
                         <select id="vault-rows" aria-label="Connections per page" title="Connections per page"
                                 class="{{ pagination_ui.page_size_classes() }}" onchange="window.location.href=this.value">
                             {% for value in pagination.allowed_per_page %}
-                                <option value="{{ url_for('vault.index', per_page=value) }}" {{ "selected" if value == pagination.per_page else "" }}>{{ value }}</option>
+                                <option value="{{ url_for('vault.index', tab='registry', per_page=value) }}" {{ "selected" if value == pagination.per_page else "" }}>{{ value }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <nav aria-label="Vault connections pagination" class="{{ pagination_ui.navigation_group_classes() }}">
                         {% if pagination.has_prev %}
-                        <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', page=pagination.prev_page, per_page=pagination.per_page) }}">Previous</a>
+                        <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', tab='registry', page=pagination.prev_page, per_page=pagination.per_page) }}">Previous</a>
                         {% else %}
                         <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Previous</span>
                         {% endif %}
-                        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, query_params={"per_page": pagination.per_page}) }}
+                        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, query_params={"per_page": pagination.per_page, "tab": "registry"}) }}
                         {% if pagination.has_next %}
-                        <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', page=pagination.next_page, per_page=pagination.per_page) }}">Next</a>
+                        <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', tab='registry', page=pagination.next_page, per_page=pagination.per_page) }}">Next</a>
                         {% else %}
                         <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next</span>
                         {% endif %}
