@@ -110,9 +110,10 @@ Status filtering is limited to known reveal lifecycle values. The requester filt
 applied before all other filters, and approver-only Pending Approvals remains a separate
 permissioned pagination window. HTMX registry navigation preserves a full-page `My Requests`
 URL and the active filter state in refresh/polling. The **Verify Session**
-action on an approved request moves focus to the Step-Up password field and
-scrolls the existing My Requests panel into view, including after HTMX table
-replacement. The action retains a full-page `reveal_view=mine` + Step-Up anchor
+action on an approved request focuses the Step-Up password field.
+When Step-Up is already visible, it does not scroll; otherwise it scrolls
+only the bounded KAORI main container to avoid blank workspace overscroll.
+The delegated action survives HTMX table replacement and retains a full-page `reveal_view=mine` + Step-Up anchor
 fallback; for external identity without a password field it focuses the guidance
 panel. The action is offered only with Reveal capability, and does not submit
 credentials or grant access itself. Approval, Step-Up, one-time reveal, request
