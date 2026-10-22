@@ -381,7 +381,7 @@ A channel with committed delivery evidence or report-schedule
 references cannot be hard-deleted: deletion is server-blocked by
 `NotificationChannelDeletionBlocked` and must not cascade to audit
 evidence. Instead of an inert disabled Delete control, show an accessible
-**Why locked?** native dialog containing the exact count of delivery
+**Locked** native dialog containing the exact count of delivery
 records, count/name of report schedules, and safe next steps: disable
 via existing Edit workflow to stop delivery, detach from report
 schedules, and only hard-delete when both dependencies are zero.
@@ -392,9 +392,28 @@ semantics, data migration or bypass of RBAC/CSRF is authorized here.
 ## Responsive Channel Inventory Table Fit (#2734, 2026-10-23)
 
 The accepted #2735 work establishes a row-wise capability policy dialog and a
-native **Why locked?** deletion dependency dialog. Retain those authoritative
+native **Locked** deletion dependency dialog. Retain those authoritative
 components. Channel Inventory uses a full-width fixed six-column table on
 desktop rather than forcing a 1100px minimum; a smaller 980px table minimum
 is reserved for narrow viewports where horizontal scrolling is intentional.
 The existing deletion guard remains authoritative. For committed delivery
 evidence, deactivate the channel through Edit rather than purging history.
+
+## Channel Deletion Lock Presentation (#2734, 2026-10-23)
+
+The protected deletion action is a **Locked** warning-tone button, never an
+apparently inert Delete button or an unexplained `Why locked?` text action.
+Its native KAORI dialog organizes lifecycle state, committed delivery
+records, report schedule references, and safe next steps in distinct,
+readable sections. The modal responds to the current channel Enabled state:
+when Disabled, it explicitly says automatic delivery is already off but
+retained records **still prevent hard delete**. When Enabled, it provides
+an Edit action to disable future delivery. Counts are real committed
+evidence, not inferred from delivery status badges. Report schedule names
+are shown only when applicable.
+
+Disabling a channel does **not** delete `NotificationDelivery` history,
+change a report reference or satisfy the hard-delete guard. The underlying
+`NotificationChannelDeletionBlocked` rule remains authoritative; only
+a channel with both dependency counts zero can be hard deleted. Do not add
+a delete override, cascade, credential exposure or new modal framework.
