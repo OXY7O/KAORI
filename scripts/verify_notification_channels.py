@@ -27,6 +27,7 @@ def main() -> int:
             read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html'),
         )
     )
+    channels_template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     integration_nav = read('app/templates/components/navigation/integrations_menu.html')
     intelligence_nav = read('app/templates/components/navigation/intelligence_menu.html')
     report_notifications = read('app/reports/notifications.py')
@@ -128,6 +129,17 @@ def main() -> int:
         and "'delivery_pagination': delivery_window" in service
         and 'payload.delivery_pagination' in delivery_template
         and 'No Notification Deliveries Recorded' in delivery_template,
+        'compact expandable channel registry': channels_template.count('scope="col"') == 6
+        and "channel.event_type_labels[:2]" in channels_template
+        and "allowed_use_count > 2" in channels_template
+        and '<details class="group min-w-0">' in channels_template
+        and 'aria-label="Show or hide all {{ allowed_use_count }} allowed uses for {{ channel.name }}"' in channels_template
+        and 'channel.event_type_labels|join(", ")' not in channels_template
+        and 'Delivery Evidence</th>' in channels_template
+        and 'channel.last_tested_at|user_datetime' in channels_template
+        and 'channel.last_delivery_at|user_datetime' in channels_template
+        and 'channel.delete_blocked' in channels_template
+        and 'colspan="6"' in channels_template,
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
         'platform ownership copy': 'platform delivery capability' in template.lower(),
         'delivery evidence deletion guard': 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle
