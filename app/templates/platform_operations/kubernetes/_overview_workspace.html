@@ -1,104 +1,50 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_card.html" as operational_section %}
 <section class="space-y-5" aria-label="Kubernetes Administration Overview">
-    <section class="{{ operational_section.shell_classes() }}"
-             aria-labelledby="kubernetes-admin-readiness-title">
-        <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="shield-check" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <h2 id="kubernetes-admin-readiness-title"
-                        class="text-base font-semibold text-content-primary">Administration Readiness</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Configured coverage from KAORI records; live Kubernetes access is verified at execution.</p>
-                </div>
-            </div>
-            <span id="kubernetes-admin-overview-status">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
-        </header>
+    {% set overview_posture %}
+        <span id="kubernetes-admin-overview-status">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
+    {% endset %}
+    {% call operational_section.render(
+        'Administration Coverage',
+        'Committed Kubernetes prerequisites and protected policy scope. Live access is verified at execution.',
+        'shield-check',
+        header_badge=overview_posture,
+        body_classes='p-0'
+    ) %}
         <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
             {% set metrics = [
-                ('shield-check', 'Managed Controls', '1', 'Protected Secret Reveal'),
-                ('server', 'Registered Clusters', cluster_count, 'Configured cluster inventory'),
-                ('badge-check', 'Prerequisites Configured', ready_cluster_count, 'Credential and attestations'),
+                ('blocks', 'Managed Controls', administration_control_count, 'Implemented administrative capabilities'),
+                ('server', 'Registered Clusters', cluster_count, 'Canonical Kubernetes inventory'),
+                ('badge-check', 'Prerequisites Configured', ready_cluster_count, 'Credential and security attestations'),
                 ('boxes', 'Protected Namespaces', enabled_namespace_count, 'Configured namespace policies')
             ] %}
             {% for icon, label, value, helper in metrics %}
-                <article class="min-w-0 bg-surface-card px-5 py-4">
+                <div class="min-w-0 bg-surface-card px-5 py-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
                             <p id="kubernetes-admin-overview-metric-{{ loop.index }}"
                                class="mt-1 text-xl font-semibold tracking-tight text-content-primary">{{ value }}</p>
                         </div>
-                        <i data-lucide="{{ icon }}"
-                           class="h-4 w-4 shrink-0 text-kaori-primary"
-                           aria-hidden="true"></i>
+                        <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
-                </article>
+                </div>
             {% endfor %}
         </div>
-    </section>
-    <div class="grid gap-4 lg:grid-cols-12">
-        <section class="{{ operational_section.shell_classes() }} min-w-0 lg:col-span-7"
-                 aria-labelledby="kubernetes-admin-control-title">
-            <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                <div class="flex min-w-0 items-center gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="scan-eye" class="h-5 w-5"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <h2 id="kubernetes-admin-control-title"
-                            class="text-base font-semibold text-content-primary">Protected Secret Reveal</h2>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Namespace-scoped, policy-controlled access</p>
-                    </div>
-                </div>
-            </header>
-            <div class="flex flex-col gap-4 p-5 sm:p-6">
-                <p class="text-sm leading-6 text-content-secondary">Configure cluster prerequisites and protected Namespace policies before operators request one-time access.</p>
-                <p class="text-xs leading-5 text-content-muted">{{ administration_status_detail }}</p>
-                <div>
-                    <button type="button"
-                            @click="setTab('secret-reveal')"
-                            class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                        Configure Secret Reveal
-                        <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                    </button>
-                </div>
-            </div>
-        </section>
-        <section class="{{ operational_section.shell_classes() }} min-w-0 lg:col-span-5"
-                 aria-labelledby="kubernetes-admin-checklist-title">
-            <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="list-checks" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <h2 id="kubernetes-admin-checklist-title"
-                        class="text-base font-semibold text-content-primary">Configuration Checks</h2>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Readiness is not proof of live access.</p>
-                </div>
-            </header>
-            <ol class="divide-y divide-outline-subtle px-5 sm:px-6">
-                {% set checks = [
-                    ('Cluster Prerequisites', 'Confirm credential, encryption and audit attestations.'),
-                    ('Namespace Policy', 'Enable only the intended protected Namespace scope.'),
-                    ('Execution Verification', 'Live presence, authorization and Secret identity are checked at reveal time.')
-                ] %}
-                {% for title, detail in checks %}
-                    <li class="flex items-start gap-3 py-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ loop.index }}</span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ detail }}</p>
-                        </div>
-                    </li>
-                {% endfor %}
-            </ol>
-        </section>
-    </div>
+    {% endcall %}
+    {% set controls_badge %}
+        <span id="kubernetes-admin-control-count">{{ table_label.status_label(administration_control_count ~ (' Managed Control' if administration_control_count == 1 else ' Managed Controls'), 'info') }}</span>
+    {% endset %}
+    {% call operational_section.render(
+        'Managed Administration Controls',
+        'Only implemented controls are listed. Each capability owns its posture, policy and authorization boundaries.',
+        'blocks',
+        header_badge=controls_badge,
+        body_classes='p-0'
+    ) %}
+        <div id="kubernetes-admin-controls-list" class="divide-y divide-outline-subtle">
+            {% include "platform_operations/kubernetes/_administration_control_rows.html" %}
+        </div>
+    {% endcall %}
 </section>
