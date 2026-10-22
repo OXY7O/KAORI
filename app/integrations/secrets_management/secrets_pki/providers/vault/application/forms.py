@@ -51,7 +51,7 @@ class VaultConnectionForm(FlaskForm):
 
     def validate_namespace(self, field: StringField) -> None:
         value = str(field.data or '').strip('/')
-        if value and (any(c in value for c in '\\r\\n\\t') or value.startswith('..') or '//' in value):
+        if value and (any(chr(code) in value for code in (9, 10, 13)) or value.startswith('..') or '//' in value):
             raise ValidationError('Vault namespace contains invalid characters.')
 
     def validate_auth_mount(self, field: StringField) -> None:
