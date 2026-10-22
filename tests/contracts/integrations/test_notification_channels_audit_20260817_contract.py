@@ -219,7 +219,7 @@ def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
     assert "'notification-delivery-registry'" in page
     assert "'notification-delivery-loading'" in page
     assert "'delivery_event_key': payload.delivery_filter" in page
-    assert 'Provider delivery does not prove human receipt.' in page
+    assert 'not human receipt or message readership.' in page
     assert 'No Matching Deliveries' in page
     assert 'No committed delivery matches the selected filters.' in page
 
