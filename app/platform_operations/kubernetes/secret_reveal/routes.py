@@ -44,7 +44,10 @@ def _validate_csrf() -> None:
 
 
 def _settings_request_args(cluster_id: str) -> dict[str, Any]:
-    settings_args: dict[str, Any] = {'cluster_id': cluster_id, 'view': 'policies' if request.form.get('view') == 'policies' else 'prerequisites'}
+    settings_args: dict[str, Any] = {
+        'cluster_id': cluster_id,
+        'view': 'policies' if request.form.get('view') == 'policies' else 'prerequisites',
+    }
     for key in ('namespace_q', 'namespace_policy', 'page', 'per_page'):
         value = (request.form.get(key) or '').strip()
         if value:
