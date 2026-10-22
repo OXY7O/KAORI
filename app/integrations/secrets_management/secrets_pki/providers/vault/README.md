@@ -47,11 +47,23 @@ write is permitted through HV-01.
 
 ## DevContainer review
 
-After pulling `kaori/review/staging-uat` once changes are integrated:
+After pulling `kaori/review/staging-uat` once changes are integrated,
+follow `docs/operations/devcontainer-postgres-first-run.md`. Its privileged
+`db-bootstrap` service owns the migration and runtime-grant admission. Never
+run Alembic through application `DATABASE_URL` or on an unreviewed database.
+
+`INTEGRATION_VAULT_ALLOWED_ORIGINS` is blank in the tracked `.env.example`.
+Add the exact approved origin and retain the existing credential key in the ignored
+local `.env` before starting web and workers:
+
 
 ```bash
 # Follow the repository's standard .env / development database initialization.
-bash scripts/init_db.sh --bootstrap-admin
+# From Windows PowerShell on the host: only after reviewing the local
+# schema upgrade and confirming the intended database target.
+docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm db-bootstrap sh scripts/devcontainer/bootstrap-db.sh --upgrade-only
+
+# Inside DevContainer: check provider foundation without live Vault requests.
 python -m pytest tests/integrations/test_vault_provider.py -q
 python -m ruff check app/models/vault.py app/integrations/secrets_management tests/integrations/test_vault_provider.py
 ```
