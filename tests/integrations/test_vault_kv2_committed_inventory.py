@@ -44,7 +44,7 @@ def store():
         connection = VaultInstance(
             integration_instance_id=identity.id, endpoint='https://vault.example.test',
             auth_mount='approle', role_id='reader', secret_id='test-only',
-            timeout=5, verify_ssl=True,
+            timeout=5, verify_ssl=True, kv2_mounts=['secret'],
         )
         db.session.add(connection)
         db.session.commit()
@@ -134,3 +134,15 @@ def test_disabled_vault_connection_cannot_commit_even_with_evidence(store):
     with pytest.raises(ValueError, match='not eligible'):
         commit_kv2_inventory(store, _snapshot(datetime(2026, 10, 22, tzinfo=UTC)))
     assert SecretProviderRepresentation.query.count() == 0
+
+
+def test_revoked_mount_config_cannot_commit_new_evidence(store):
+    now = datetime(2026, 10, 22, tzinfo=UTC)
+    commit_kv2_inventory(store, _snapshot(now))
+    instance = VaultInstance.query.filter_by(integration_instance_id=store).one()
+    instance.kv2_mounts = []
+    db.session.commit()
+    with pytest.raises(ValueError, match='not eligible'):
+        commit_kv2_inventory(store, _snapshot(now + timedelta(minutes=1)))
+    assert SecretInventoryCollectionState.query.one().observed_count == 1
+    assert SecretProviderRepresentation.query.one().observation_status == 'observed'
