@@ -63,8 +63,8 @@ class SourceInstallationIdentity:
         object.__setattr__(self, 'installation_native_id', _provider_id(self.installation_native_id))
 
     @property
-    def key(self) -> tuple[str, str, str, str]:
-        return (*self.host.key, str(self.app_native_id), str(self.installation_native_id))
+    def key(self) -> tuple[str, str, str, str, str]:
+        return (*self.host.key, 'installation', str(self.app_native_id), str(self.installation_native_id))
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,8 +78,8 @@ class SourceAccountIdentity:
         object.__setattr__(self, 'account_native_id', _provider_id(self.account_native_id))
 
     @property
-    def key(self) -> tuple[str, str, str]:
-        return (*self.host.key, str(self.account_native_id))
+    def key(self) -> tuple[str, str, str, str]:
+        return (*self.host.key, 'account', str(self.account_native_id))
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,8 +93,8 @@ class SourceRepositoryIdentity:
         object.__setattr__(self, 'repository_native_id', _provider_id(self.repository_native_id))
 
     @property
-    def key(self) -> tuple[str, str, str]:
-        return (*self.host.key, str(self.repository_native_id))
+    def key(self) -> tuple[str, str, str, str]:
+        return (*self.host.key, 'repository', str(self.repository_native_id))
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,8 +111,8 @@ class SourceRevisionIdentity:
         object.__setattr__(self, 'commit_sha', sha)
 
     @property
-    def key(self) -> tuple[str, str, str, str]:
-        return (*self.repository.key, self.commit_sha)
+    def key(self) -> tuple[str, str, str, str, str, str]:
+        return (*self.repository.key, 'revision', self.commit_sha)
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,5 +134,5 @@ class SourceReferenceIdentity:
         object.__setattr__(self, 'full_ref', ref)
 
     @property
-    def key(self) -> tuple[str, str, str, str]:
-        return (*self.repository.key, self.full_ref)
+    def key(self) -> tuple[str, str, str, str, str, str]:
+        return (*self.repository.key, 'reference', self.full_ref)
