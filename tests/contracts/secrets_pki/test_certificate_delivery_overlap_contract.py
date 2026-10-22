@@ -105,3 +105,15 @@ def test_correlation_limits_do_not_silently_truncate_large_sources():
             tls_fingerprints=(FINGERPRINT_A,) * 1501,
             vault_state='ready', kubernetes_state='ready',
         )
+
+
+def test_all_stale_sources_with_no_recent_sample_are_unknown_not_zero():
+    for vault_state, tls_state in [('stale', 'ready'), ('ready', 'stale')]:
+        result = assess_certificate_overlap(
+            vault_fingerprints=() if vault_state == 'stale' else (FINGERPRINT_A,),
+            tls_fingerprints=() if tls_state == 'stale' else (FINGERPRINT_A,),
+            vault_state=vault_state, kubernetes_state=tls_state,
+        )
+        assert result.status == 'source_unknown'
+        assert result.overlapping_public_certificates is None
+        assert result.matching_kubernetes_tls_secrets is None
