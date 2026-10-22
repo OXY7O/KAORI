@@ -112,6 +112,17 @@ permissioned pagination window. HTMX registry navigation preserves a full-page `
 URL and the active filter state in refresh/polling. Controls for approval, Step-Up,
 one-time reveal, request expiry and CSRF remain governed by their existing routes.
 
+**Pending Approvals registry (approver-only):** The separate Pending Approval
+workspace now uses the same KAORI table header, transient loader, source-backed
+filter, conditional Clear Filters, and five-row pagination. Search is capped at
+120 characters and matches only request metadata (Secret name, Namespace,
+key or ticket); queue order is oldest-first by default with an optional
+newest-first choice. My Requests state remains independent. Decision details
+expand only for a selected row, use the original CSRF-protected approval/denial
+POST and 500-character optional note, and never expose Secret values. Self
+approval remains blocked; background polling pauses while a decision editor
+is open to avoid discarding operator input.
+
 
 ### Delete Secret
 
