@@ -7,6 +7,7 @@ from flask import Flask
 from jinja2 import Environment
 
 from app.common.workspace_navigation import build_sidebar_navigation
+from app.security_posture.presentation import build_security_posture
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -114,3 +115,15 @@ def test_security_posture_is_registered_without_new_sidebar_renderer() -> None:
     assert "endpoint.startswith('security_posture.')" in breadcrumbs
     assert "BreadcrumbItem('Security', 'shield-alert')" in breadcrumbs
     assert 'data-kaori-sidebar-workspace' in read('app/templates/components/navigation/sidebar.html')
+
+
+def test_security_permission_alone_never_queries_registry_evidence(monkeypatch) -> None:
+    def forbidden() -> None:
+        raise AssertionError('Registry provider should not be queried without artifact_registry.view')
+
+    monkeypatch.setattr('app.security_posture.presentation._providers', forbidden)
+    posture = build_security_posture(can_view_registry=False)
+    assert posture['scan_status']['label'] == 'No Authorized Sources'
+    assert posture['rows'] == []
+    assert not posture['has_complete_security_evidence']
+    assert posture['pagination']['per_page'] == 5
