@@ -106,7 +106,14 @@ def main() -> int:
         and "Channel Inventory Guidance" in template
         and "grid gap-4 lg:grid-cols-3" not in template
         and "operational_section_card.render(" in delivery_template
-        and delivery_template.count("integration_ui.interpretation_panel(") == 3
+        and delivery_template.count("integration_ui.interpretation_panel(") == 1
+        and "header_actions=channel_clear_action" in template
+        and "header_actions=delivery_clear_action" in delivery_template
+        and "title_extra=info_tip.render(" in template
+        and "table_block.inventory_block_header(" in template
+        and "table_block.inventory_filter_bar_classes()" in template
+        and "table_block.inventory_filter_bar_classes()" in delivery_template
+        and "table_ui.action_classes() ~ ' ml-auto'" not in delivery_template
         and "variant='guide'" in template
         and delivery_template.index("operational_section_card.render(") < delivery_template.index("section_intro.render('Delivery Journal'") < delivery_template.index("table_block.inventory_block_header(")
         and "table_block.inventory_block_header(" in delivery_template
