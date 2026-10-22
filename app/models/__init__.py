@@ -75,6 +75,12 @@ from app.models.resolver import (
 )
 from app.models.runtime import IntegrationRuntimeObservation
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
+from app.models.secrets_pki import (
+    SecretIdentity,
+    SecretInventoryCollectionState,
+    SecretProviderRepresentation,
+    SecretVersionObservation,
+)
 from app.models.tenant import (
     Tenant,
     TenantAccessGrant,
@@ -252,6 +258,10 @@ __all__ = [
     'ReportTemplate',
     'ReportSchedule',
     'ReportScheduleRun',
+    'SecretIdentity',
+    'SecretInventoryCollectionState',
+    'SecretProviderRepresentation',
+    'SecretVersionObservation',
     'SecretRevealNamespacePolicy',
     'SecretRevealRequest',
     'ResolverDeploymentPolicy',

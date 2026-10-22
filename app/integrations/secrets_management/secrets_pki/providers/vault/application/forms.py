@@ -6,6 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, IntegerField, PasswordField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
+from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import parse_approved_kv2_mounts
 from app.integrations.secrets_management.secrets_pki.providers.vault.transport import (
     validate_auth_mount, validate_vault_endpoint,
 )
@@ -25,6 +26,7 @@ class VaultConnectionInput:
     secret_id: str
     timeout: int
     enabled: bool
+    kv2_mounts: tuple[str, ...] = ()
 
 
 class VaultConnectionForm(FlaskForm):
@@ -38,6 +40,7 @@ class VaultConnectionForm(FlaskForm):
     secret_id = PasswordField('AppRole SecretID', validators=[Length(max=4096)])
     timeout = IntegerField('Request Timeout (seconds)', default=5, validators=[DataRequired(), NumberRange(min=1, max=30)])
     enabled = BooleanField('Enable Provider Connection', default=True)
+    kv2_mounts = StringField('Approved KV v2 Mounts (comma-separated)', validators=[Optional(), Length(max=1500)])
     connection_test_proof = StringField('Connection Test Proof', validators=[Optional()])
 
     def __init__(self, *args, existing: VaultInstance | None = None, **kwargs) -> None:
@@ -46,6 +49,7 @@ class VaultConnectionForm(FlaskForm):
         # Never hydrate a decrypted AppRole SecretID into rendered form data.
         if not self.is_submitted():
             self.secret_id.data = ''
+            self.kv2_mounts.data = ', '.join(existing.kv2_mounts or ()) if existing is not None else ''
 
     def validate_endpoint(self, field: StringField) -> None:
         try:
@@ -61,6 +65,12 @@ class VaultConnectionForm(FlaskForm):
     def validate_auth_mount(self, field: StringField) -> None:
         try:
             field.data = validate_auth_mount(str(field.data or ''))
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+
+    def validate_kv2_mounts(self, field: StringField) -> None:
+        try:
+            field.data = ', '.join(parse_approved_kv2_mounts(str(field.data or '')))
         except ValueError as exc:
             raise ValidationError(str(exc)) from exc
 
@@ -83,4 +93,5 @@ class VaultConnectionForm(FlaskForm):
             secret_id=secret_id,
             timeout=int(self.timeout.data or 5),
             enabled=bool(self.enabled.data),
+            kv2_mounts=parse_approved_kv2_mounts(str(self.kv2_mounts.data or '')),
         )

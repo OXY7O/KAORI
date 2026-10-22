@@ -36,6 +36,12 @@
                 </div>
                 {% endfor %}
                 <div class="sm:col-span-2">
+                    <label for="{{ form.kv2_mounts.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.kv2_mounts.label.text }}</label>
+                    {{ form.kv2_mounts(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="secret, team-kv") }}
+                    <p class="mt-1 text-xs text-content-muted">Explicit KV v2 metadata-only scopes; empty disables Secret inventory collection. Max eight mounts. Require Vault metadata list/read ACL.</p>
+                    {% for error in form.kv2_mounts.errors %}<p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="sm:col-span-2">
                     <label for="{{ form.description.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.description.label.text }}</label>
                     {{ form.description(class_="min-h-20 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary") }}
                 </div>

@@ -343,6 +343,7 @@ class Config:
             'app.kubernetes.cluster.tasks',
             'app.storage.object_storage.inventory.tasks',
             'app.artifact_registry.tasks',
+            'app.integrations.secrets_management.secrets_pki.tasks',
             'app.artifact_registry.security.tasks',
             'app.artifact_registry.governance_tasks',
             'app.artifact_registry.correlation_tasks',
@@ -379,6 +380,7 @@ class Config:
                 'queue': 'inventory',
             },
             'app.artifact_registry.tasks.sync_all_registry': {'queue': 'inventory'},
+            'app.integrations.secrets_management.secrets_pki.tasks.sync_vault_inventory': {'queue': 'inventory'},
             'app.artifact_registry.analytics_tasks.materialize_registry_analytics': {'queue': ANALYTICS_CELERY_QUEUE},
             'app.artifact_registry.security.tasks.sync_all_registry_security': {
                 'queue': REGISTRY_SECURITY_CELERY_QUEUE,

@@ -272,6 +272,8 @@ def configuration_status(job_key: str) -> ResponseReturnValue:
 @permission_required('jobs.configure')
 def update_policy(job_key: str) -> ResponseReturnValue:
     definition = _get_job_definition_or_404(job_key)
+    if not current_user.has_permission(definition.configure_permission):
+        abort(403)
     form = JobPolicyForm()
     if not form.validate_on_submit():
         if _is_htmx():
