@@ -440,7 +440,7 @@ def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> 
     assert 'name="csrf_token"' in workspace
     assert 'name="csrf_token"' in table
     assert 'id="secret-reveal-cluster-loading"' not in workspace
-    assert 'id="secret-reveal-namespace-loading"' in namespace
+    assert "'secret-reveal-namespace-loading'" in namespace
     assert 'secret-reveal-selected-cluster-posture' in workspace
     assert "empty_state_permission = \"clusters.manage\"" in workspace
 
@@ -455,17 +455,16 @@ def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() ->
     assert 'hx-indicator="#secret-reveal-cluster-loading"' not in cluster
     source = namespace.index('id="secret-reveal-live-source"')
     block = namespace.index('id="secret-reveal-namespace-section"')
-    header = namespace.index('table_ui.block_header_classes()', block)
-    loader = namespace.index('id="secret-reveal-namespace-loading"', header)
+    header = namespace.index('table_ui.inventory_block_header(', block)
+    loader = namespace.index("'secret-reveal-namespace-loading'", header)
     filters = namespace.index('table_ui.filter_bar_classes()', loader)
     content = namespace.index('id="secret-reveal-namespace-table-content"', filters)
     assert source < block < header < loader < filters < content
     assert namespace.count('id="secret-reveal-live-source"') == 1
-    assert namespace.count('id="secret-reveal-namespace-loading"') == 1
-    for primitive in ('block_classes()', 'block_header_classes()', 'block_icon_classes()',
-                      'block_title_classes()', 'block_description_classes()',
-                      'loading_bar_classes()', 'filter_bar_classes()', 'action_classes()'):
+    assert namespace.count("'secret-reveal-namespace-loading'") >= 1
+    for primitive in ('block_classes()', 'inventory_block_header(', 'filter_bar_classes()', 'action_classes()'):
         assert 'table_ui.' + primitive in namespace
+    assert "'Loading Namespace Policies'" in namespace
     assert 'registry_ui.clear_filters_action(' in namespace
     assert 'hx-target="#secret-reveal-namespace-table-content"' in namespace
     assert 'hx-target="#secret-reveal-cluster-workspace"' in namespace
@@ -500,12 +499,21 @@ def test_namespace_policy_editor_uses_full_width_companion_row() -> None:
 
     # Action controls remain in regular-height rows. One at a time opens an
     # independent full-width editor, never a growing form inside a table cell.
-    assert 'x-data="{ openEditor: null }"' in table
+    assert 'x-data="{ openEditor: null }"' not in table
+    assert 'data-detail-group="secret-reveal-policy-{{ selected_cluster.id }}"' in table
+    assert 'data-detail-toggle' in table
+    assert 'data-detail-static="true"' in table
+    assert 'data-open="false"' in table
     assert 'data-kaori-namespace-policy-editor' in table
     assert 'aria-controls="secret-reveal-policy-editor-{{ loop.index }}"' in table
-    assert ':aria-expanded="openEditor === {{ loop.index }}"' in table
-    assert '@click="openEditor = openEditor === {{ loop.index }} ? null : {{ loop.index }}"' in table
-    assert 'x-show="openEditor === {{ loop.index }}"' in table
+    assert 'aria-expanded="false"' in table
+    assert 'data-detail-target="secret-reveal-policy-form-{{ loop.index }}"' in table
+    assert 'data-detail-row="secret-reveal-policy-editor-{{ loop.index }}"' in table
+    assert 'data-detail-open-label="Edit Policy"' in table
+    assert 'data-detail-close-label="Close Editor"' in table
+    assert 'class="hidden bg-surface-hover"' in table
+    assert 'x-show="openEditor === {{ loop.index }}"' not in table
+    assert 'x-cloak' not in table
     assert '<td colspan="4" class="border-t border-outline-subtle px-5 py-4 sm:px-6">' in table
     assert '<details ' not in table
     assert 'Edit Namespace Policy' in table
@@ -527,10 +535,10 @@ def test_namespace_policy_editor_uses_full_width_companion_row() -> None:
     assert 'min-w-[980px]' in table
     assert table.count('table_ui.action_classes()') >= 3
     assert 'macro action_classes(' in shared
-    assert 'data-kaori-table-header-actions' in section
-    assert 'table_label.result_count(namespace_summary.total)' in section
+    assert 'header_actions=namespace_policy_header_actions' in section
+    assert 'result_count=namespace_summary.total' in section
     assert 'id="secret-reveal-live-source"' in section
-    assert 'id="secret-reveal-namespace-loading"' in section
+    assert "'secret-reveal-namespace-loading'" in section
     assert 'hx-target="#secret-reveal-namespace-table-content"' in section
 
 
@@ -538,7 +546,7 @@ def test_namespace_live_source_refresh_and_clear_filters_have_distinct_owners() 
     section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
     source = section.index('id="secret-reveal-live-source"')
     block = section.index('id="secret-reveal-namespace-section"')
-    loading = section.index('id="secret-reveal-namespace-loading"', block)
+    loading = section.index("'secret-reveal-namespace-loading'", block)
     filters = section.index('table_ui.filter_bar_classes()', loading)
     assert source < block < loading < filters
     assert 'class="mb-4 min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"' in section
@@ -549,10 +557,11 @@ def test_namespace_live_source_refresh_and_clear_filters_have_distinct_owners() 
     assert "registry_ui.clear_filters_action(" in section[block:loading]
     assert ":hidden=\"!query.trim() && policy === 'all'\"" in section
     assert "{% if not namespace_filters.query and namespace_filters.policy == 'all' %}hidden{% endif %}" in section
-    assert 'class="{{ table_ui.loading_bar_classes() }}"' in section
+    assert 'table_ui.inventory_block_header(' in section
+    assert 'class="{{ table_ui.loading_bar_classes() }}"' not in section
     assert 'relative h-2 bg-surface-card' not in section
-    assert 'role="progressbar"' in section
-    assert section.count('id="secret-reveal-namespace-loading"') == 1
+    assert "'Loading Namespace Policies'" in section
+    assert section.count("'secret-reveal-namespace-loading'") >= 1
 
 
 def test_secret_reveal_view_survives_url_loading_saves_and_table_navigation() -> None:
@@ -666,8 +675,9 @@ def test_secret_reveal_density_uses_source_truth_and_contextual_actions() -> Non
     assert 'hx-target="#secret-reveal-cluster-workspace"' in section
     assert 'refresh_namespace=1' in section
     assert "namespace_pagination.per_page, refresh_namespace=1)" in section
-    assert section.count('id="secret-reveal-namespace-loading"') == 1
-    assert 'class="{{ table_ui.loading_bar_classes() }}"' in section
+    assert section.count("'secret-reveal-namespace-loading'") >= 1
+    assert 'table_ui.inventory_block_header(' in section
+    assert 'class="{{ table_ui.loading_bar_classes() }}"' not in section
     assert 'relative h-2 bg-surface-card' not in section
 
     # Clear Filters uses the existing KAORI action owner and appears only
@@ -695,9 +705,60 @@ def test_secret_reveal_density_uses_source_truth_and_contextual_actions() -> Non
     assert 'Current policy:' in table
     assert 'This change applies only to the selected Namespace.' in table
     assert 'Available choices depend on cluster readiness and live Namespace state.' in table
-    assert '@click="current = initial; openEditor = null"' in table
+    assert 'cancel_workspace_url' in table
+    assert 'hx-target="#secret-reveal-namespace-table-content"' in table
     assert 'name="csrf_token"' in table
     assert 'enable_option_blocked' in table
     assert ':disabled="current === initial"' in table
     assert 'pagination_ui.numeric_pages(' in table
+
+
+
+def test_namespace_policy_row_toggle_uses_existing_detail_controller_and_loading_component() -> None:
+    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+    section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    shared = (ROOT / 'app/templates/components/table.html').read_text()
+    loading = (ROOT / 'app/templates/components/loading_bar.html').read_text()
+    detail_js = (ROOT / 'app/static/js/detail_rows.js').read_text()
+
+    # Server-rendered collapsed state must never depend on Alpine initialization
+    # of an HTMX-replaced <tbody>. Shared detail_rows.js enforces single-open group.
+    assert 'data-detail-toggle' in table
+    assert 'data-detail-row="secret-reveal-policy-editor-{{ loop.index }}"' in table
+    assert 'data-detail-target="secret-reveal-policy-form-{{ loop.index }}"' in table
+    assert 'data-detail-group="secret-reveal-policy-{{ selected_cluster.id }}"' in table
+    assert 'data-detail-static="true"' in table
+    assert 'data-open="false"' in table
+    assert 'class="hidden bg-surface-hover"' in table
+    assert 'aria-expanded="false"' in table
+    assert 'data-detail-toggle-label' in table
+    assert 'data-detail-chevron' in table
+    assert 'x-show="openEditor === {{ loop.index }}"' not in table
+    assert 'x-data="{ openEditor: null }"' not in table
+    assert "const SELECTOR = '[data-detail-toggle]'" in detail_js
+    assert 'closeGroup(button.dataset.detailGroup' in detail_js
+    assert "row.classList.remove('hidden')" in detail_js
+    assert "row.classList.add('hidden')" in detail_js
+    assert "target.dataset.detailStatic === 'true'" in detail_js
+
+    # Use the complete approved table header + loading-bar contract rather
+    # than a free-floating indicator leaving a permanent empty line.
+    assert 'table_ui.inventory_block_header(' in section
+    assert "'secret-reveal-namespace-loading'" in section
+    assert "'Loading Namespace Policies'" in section
+    assert 'loading_bar.render(loading_id, label=loading_label)' in shared
+    assert 'htmx-indicator' in loading
+    assert 'kaori-loading-bar-segment' in loading
+    assert 'class="{{ table_ui.loading_bar_classes() }}"' not in section
+    assert 'relative h-2 bg-surface-card' not in section
+
+    # Cancel is safe and restores the read-only table by GET without mutation.
+    assert 'cancel_workspace_url' in table
+    assert 'hx-get="{{ cancel_workspace_url }}"' in table
+    assert 'hx-target="#secret-reveal-namespace-table-content"' in table
+    assert 'hx-select="#secret-reveal-namespace-table-content"' in table
+    assert 'hx-swap="innerHTML"' in table
+    assert 'name="csrf_token"' in table
+    assert 'enable_option_blocked' in table
+    assert 'hx-post=' in table
 
