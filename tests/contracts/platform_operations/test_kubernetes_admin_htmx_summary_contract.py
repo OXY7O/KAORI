@@ -205,3 +205,43 @@ def test_kubernetes_admin_navigation_uses_inventory_shell_spacing() -> None:
     assert nav < hero
     assert 'moveTab(' in index
     assert 'kubernetes:load-secret-reveal from:window once' in index
+
+def test_kubernetes_admin_controls_have_inventory_section_intro_and_operational_rows() -> None:
+    overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
+    inventory = (ROOT / 'app/templates/kubernetes/inventory/overview/index.html').read_text()
+    rows = (ROOT / 'app/templates/platform_operations/kubernetes/_administration_control_rows.html').read_text()
+    oob = (ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html').read_text()
+
+    # Reuse the same visible external section-intro hierarchy as Inventory,
+    # without relocating the approved shared Operational Section Card header.
+    assert 'components/section_intro.html' in inventory
+    assert 'components/section_intro.html' in overview
+    external_intro = overview.index('section_intro.render(')
+    card = overview.index("'Managed Administration Controls',", external_intro)
+    contents = overview.index('id="kubernetes-admin-controls-list"', card)
+    assert external_intro < card < contents
+    assert 'kubernetes-admin-controls-heading' in overview
+    assert "'Administration Controls'," in overview
+    assert 'kubernetes-admin-controls-section' in overview
+    assert 'header_badge=controls_badge' in overview
+
+    # Capability data and HTMX OOB own the rows, not copied/static cards.
+    assert 'for control in administration_controls' in rows
+    for field in (
+        'control.key',
+        'control.label',
+        'control.description',
+        'control.metrics',
+        'control.status_label',
+        'control.status_tone',
+        'control.status_detail',
+        'control.evidence_label',
+        'control.action_label',
+    ):
+        assert field in rows
+    assert 'components/action_button.html' in rows
+    assert "action_button.classes('primary')" in rows
+    assert "setTab('{{ control.workspace_tab }}')" in rows
+    assert 'Readiness &amp; Evidence' in rows
+    assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
+    assert 'platform_operations/kubernetes/_administration_control_rows.html' in oob
