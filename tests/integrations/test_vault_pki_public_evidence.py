@@ -3,11 +3,11 @@ from __future__ import annotations
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
-import pytest
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import (
     VaultClient, VaultProviderError,
