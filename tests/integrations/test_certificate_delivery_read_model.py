@@ -74,6 +74,7 @@ def committed_sources():
                 cluster_id=cluster.id,
                 namespace='private-namespace', secret_name='private-tls-secret',
                 fingerprint_sha256=FP, status='healthy',
+                secret_uid='12345678-1234-4234-8234-123456789abc',
                 not_before=AT-timedelta(days=4), not_after=AT+timedelta(days=90),
                 used_by=[{'namespace': 'private-namespace', 'name': 'private-ingress', 'hosts': ['internal.example']}],
                 coverage_state='fully_covered', declared_host_count=1,
@@ -208,3 +209,47 @@ def test_unavailable_ingress_results_cannot_disclose_private_names(committed_sou
     assert 'private-ingress' not in repr(result)
     assert 'private-namespace' not in repr(result)
     assert 'internal.example' not in repr(result)
+
+
+def test_uid_qualified_public_certificate_overlap_is_distinct_from_delivery(committed_sources):
+    result = _read()
+    assert result['matching_tls_secrets_with_object_uid'] == 1
+    assert result['object_identity_status'] == 'qualified'
+    assert result['vault_to_controller_proven'] is False
+    assert result['delivery_proven'] is False
+    assert result['endpoint_serving_verified'] is False
+
+
+def test_legacy_tls_inventory_without_uid_does_not_fabricate_provenance(committed_sources):
+    tls = TLSCertificateInventory.query.one()
+    tls.secret_uid = None
+    db.session.commit()
+    result = _read()
+    assert result['status'] == 'overlap_observed'
+    assert result['matching_tls_secrets_with_object_uid'] is None
+    assert result['object_identity_status'] == 'not_observed'
+    assert result['delivery_proven'] is False
+
+
+def test_malformed_committed_object_uid_is_not_qualified(committed_sources):
+    tls = TLSCertificateInventory.query.one()
+    tls.secret_uid = 'private-namespace/private-tls-secret'
+    db.session.commit()
+    result = _read()
+    assert result['matching_tls_secrets_with_object_uid'] is None
+    assert result['object_identity_status'] == 'not_observed'
+    assert 'private-namespace' not in repr(result)
+
+
+def test_kubernetes_secret_recreation_changes_uid_without_identity_carryover(committed_sources):
+    first = _read()
+    tls = TLSCertificateInventory.query.one()
+    previous_uid = tls.secret_uid
+    tls.secret_uid = '12345678-1234-4234-8234-123456789abd'
+    db.session.commit()
+    changed = _read()
+    assert previous_uid != tls.secret_uid
+    assert first['matching_tls_secrets_with_object_uid'] == 1
+    assert changed['matching_tls_secrets_with_object_uid'] == 1
+    assert first['delivery_proven'] is False and changed['delivery_proven'] is False
+    # The prior object's UID cannot be reused as controller materialization proof.
