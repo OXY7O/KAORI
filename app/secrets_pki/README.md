@@ -55,3 +55,26 @@ Use existing Developer Check, Ruff, Djlint, Pytest, Pyright, visual QA, RBAC
 negative checks, PostgreSQL migration tests, Celery worker and actual Vault
 KV2/read ACL UAT. No CI/DevContainer/UAT pass is claimed by the existence of
 this source.
+
+
+## HV-03 public PKI issuer inventory (review candidate)
+
+Approved Vault PKI mounts are configured separately from KV v2 metadata mounts.
+The canonical public PKI collector reads only Vault issuer metadata and the
+`/issuer/<UUID>/json` public-certificate endpoint; `secrets_pki.pki.sync`
+runs through default-disabled canonical JobExecution on the existing inventory
+worker. Its committed models preserve independent per-mount freshness,
+issuer identity and public X.509 fingerprint/validity history; issuer absence
+is `not_observed`, never provider revocation.
+
+The Inventory workspace and Vault integration Runtime workspace display
+aggregate public issuer readiness from committed KAORI database state.
+They do **not** expose Secret paths, certificate subject/SAN, raw PEM, issuer
+labels, private keys or unqualified trust/revocation claims. Public issuer
+history does not establish issued-leaf certificate inventory or delivered
+endpoint certificate assurance.
+
+Implementation and DevContainer acceptance steps:
+`app/integrations/secrets_management/secrets_pki/providers/vault/PKI_PUBLIC_EVIDENCE.md`.
+Migration: `20261022_vault_pki_evidence`. Tests must pass on real PostgreSQL
+and supported Vault PKI mounts before a staging or capability-ready claim.
