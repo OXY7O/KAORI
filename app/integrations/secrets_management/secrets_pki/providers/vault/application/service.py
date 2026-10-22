@@ -77,6 +77,8 @@ def save_connection(values: VaultConnectionInput, *, existing: VaultInstance | N
         identity.last_error = None
         identity.last_checked_at = None
         instance.detected_version = None
+        instance.compatibility_status = None
+        instance.compatibility_profile = None
         instance.capability_profile = None
         instance.capabilities = None
         instance.validation_summary = None
