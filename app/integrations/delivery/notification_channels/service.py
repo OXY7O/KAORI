@@ -990,6 +990,7 @@ def _channel_view(
         'event_type_groups': _channel_event_type_groups(event_type_labels),
         'status': status,
         'tone': tone,
+        'test_status': channel.test_status,
         'test_message': channel.test_message or '',
         'last_tested_at': channel.last_tested_at,
         'last_delivery_status': channel.last_delivery_status,
