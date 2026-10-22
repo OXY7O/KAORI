@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -544,6 +545,7 @@ def _security_vulnerability_page(
                 'id': int(item.id),
                 'artifact_id': int(artifact.id),
                 'vulnerability_id': item.vulnerability_id,
+                'impact_available': bool(re.fullmatch(r'CVE-[0-9]{4}-[0-9]{4,}', item.vulnerability_id.upper())),
                 'severity': str(item.severity or 'unknown').lower(),
                 'severity_label': str(item.severity or 'unknown').replace('_', ' ').title(),
                 'package': item.package or 'Unknown Package',
