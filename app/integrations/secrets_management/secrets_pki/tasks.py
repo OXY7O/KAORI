@@ -292,6 +292,8 @@ def sync_vault_stored_certificates_task(
                     or identity.readiness_status != 'ready'
                 ):
                     raise ValueError('Stored PKI identity is not eligible.')
+                if not provider.pki_stored_certs_enabled:
+                    raise ValueError('Stored PKI certificate enumeration is not approved.')
                 mounts = parse_approved_pki_mounts(','.join(provider.pki_mounts or ()))
                 if not mounts:
                     raise ValueError('Stored PKI mount is not explicitly approved.')
