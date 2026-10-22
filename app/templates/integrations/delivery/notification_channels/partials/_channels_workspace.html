@@ -1,7 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_registry.html" as table_registry %}
-{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table.html" as table_block %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
@@ -99,39 +99,46 @@
             'notification-configured-channels-heading') }}
         <section id="notification-channel-registry"
                  class="{{ integration_ui.section_shell_classes() }}">
-        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="text-base font-semibold leading-6 text-content-primary">Channel Inventory</h3>
-                    {{ info_tip.render(
-                        'notification-channel-inventory-guide',
-                        'Channel Inventory Guidance',
-                        'Validation readiness, feedback, and audit evidence are distinct operational controls.',
-                        items=[
-                            'Validation Gate: Test Delivery must pass after a destination or credential change before automatic use.',
-                            'Operational Feedback: Save/test outcomes use Toast; failures and blocked deletes appear in the Notification Deck.',
-                            'Activity Audit: Create, update, test and deletion outcomes are recorded without provider secrets.'
-                        ],
-                        placement='right',
-                        variant='guide') }}
-                    {{ table_label.result_count(payload.channel_pagination.total_items) }}
-                </div>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Enabled destinations require successful Test Delivery before automatic use.</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 text-xs text-content-muted">
-                <span>{{ payload.summary.total }} total</span>
-                <span class="h-1 w-1 rounded-full bg-outline-strong" aria-hidden="true"></span>
-                <span>{{ payload.summary.eligible }} eligible</span>
-                <span class="h-1 w-1 rounded-full bg-outline-strong" aria-hidden="true"></span>
-                <span>{{ payload.summary.operational }} operational</span>
-            </div>
-        </header>
-        {{ loading_bar.render('notification-channel-loading', label='Loading notification channels') }}
+        {% set channel_clear_action = none %}
+        {% if payload.channel_filters.search or payload.channel_filters.provider or payload.channel_filters.state %}
+            {% set channel_clear_action %}
+                {{ table_registry.clear_filters_link('notification_channels.index',
+                    'notification-channel-registry',
+                    'notification-channel-loading',
+                    payload.channel_pagination.per_page,
+                    table_ui.action_classes(),
+                    label='Clear Filters',
+                    query_params={'tab': 'channels'},
+                    page_param='channel_page',
+                    per_page_param='channel_per_page',
+                    lead=false) }}
+            {% endset %}
+        {% endif %}
+        {{ table_block.inventory_block_header(
+            'send',
+            'Channel Inventory',
+            'Enabled destinations require successful Test Delivery before automatic use.',
+            'notification-channel-loading',
+            'Loading Notification Channels',
+            none,
+            header_actions=channel_clear_action,
+            title_extra=info_tip.render(
+                'notification-channel-inventory-guide',
+                'Channel Inventory Guidance',
+                'Validation readiness, feedback, and audit evidence are distinct operational controls.',
+                items=[
+                    'Validation Gate: Test Delivery must pass after a destination or credential change before automatic use.',
+                    'Operational Feedback: Save/test outcomes use Toast; failures and blocked deletes appear in the Notification Deck.',
+                    'Activity Audit: Create, update, test and deletion outcomes are recorded without provider secrets.'
+                ],
+                placement='right',
+                variant='guide'),
+            result_count=payload.channel_pagination.total_items) }}
+        <div class="{{ table_block.inventory_filter_bar_classes() }}">
         {% call table_registry.filter_form('notification_channels.index',
             'notification-channel-registry',
             'notification-channel-loading',
             payload.channel_pagination.per_page,
-            classes=table_ui.inventory_filter_bar_classes(),
             page_param='channel_page',
             per_page_param='channel_per_page',
             form_id='notification-channel-filter-form',
@@ -168,17 +175,8 @@
                             {% if payload.channel_filters.state == 'disabled' %}selected{% endif %}>Disabled</option>
                 </select>
             </div>
-            {% if payload.channel_filters.search or payload.channel_filters.provider or payload.channel_filters.state %}
-                {{ table_registry.clear_filters_link('notification_channels.index',
-                                'notification-channel-registry',
-                                'notification-channel-loading',
-                                payload.channel_pagination.per_page,
-                                table_ui.action_classes() ,
-                query_params={'tab': 'channels'},
-                page_param='channel_page',
-                per_page_param='channel_per_page') }}
-            {% endif %}
         {% endcall %}
+        </div>
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
                 <thead class="{{ table_ui.head_classes() }}">
