@@ -68,6 +68,8 @@ class ConsumerVersionReadback:
     def __post_init__(self) -> None:
         _uuid(self.consumer_id)
         _aware(self.verified_at)
+        if self.source_kind not in {'controller_readback', 'workload_readback'}:
+            raise ValueError('Rotation readback source is not qualified.')
         if self.adopted_version < 1:
             raise ValueError('Consumer adoption version must be positive.')
 
@@ -183,6 +185,10 @@ class KnownLeaseEvidence:
         _aware(self.observed_at)
         if self.expires_at is not None:
             _aware(self.expires_at)
+        if self.source_kind not in {'qualified_issuance_receipt', 'authorized_known_lease_lookup'}:
+            raise ValueError('Lease observation source is not qualified.')
+        if self.renewable is not None and not isinstance(self.renewable, bool):
+            raise ValueError('Lease renewability must be qualified or unknown.')
         if self.ttl_seconds is not None and not (0 <= self.ttl_seconds <= 315_360_000):
             raise ValueError('Lease TTL exceeds normalized bound.')
 
