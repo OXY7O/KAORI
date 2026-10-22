@@ -61,15 +61,15 @@
                     <span class="text-xs font-medium text-content-muted">{{ channel.event_type_labels|length }} events</span>
                 </div>
                 {% if channel.event_type_groups %}
-                    <div class="grid items-start gap-3 md:grid-cols-2">
+                    <div class="grid auto-rows-[minmax(11rem,1fr)] items-stretch gap-3 md:grid-cols-2">
                         {% for group in channel.event_type_groups %}
-                            <section class="min-w-0 rounded-xl border border-outline-default bg-surface-card p-4"
+                            <section class="flex h-full min-h-0 min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-4"
                                      aria-label="{{ group.label }} allowed event types">
                                 <div class="flex items-center justify-between gap-3 border-b border-outline-subtle pb-2.5">
                                     <h4 class="min-w-0 break-words text-sm font-semibold text-content-primary">{{ group.label }}</h4>
                                     <span class="shrink-0 text-xs font-medium tabular-nums text-content-muted">{{ group.events|length }} event{{ '' if group.events|length == 1 else 's' }}</span>
                                 </div>
-                                <ul class="mt-3 space-y-2">
+                                <ul class="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1" aria-label="{{ group.label }} events">
                                     {% for event_label in group.events %}
                                         <li class="flex min-w-0 items-start gap-2 text-xs leading-5 text-content-secondary">
                                             <i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>

@@ -186,15 +186,15 @@
         {% endcall %}
         </div>
         <div class="overflow-x-auto overscroll-x-contain">
-            <table class="{{ table_ui.table_classes('min-w-[1280px]') }}">
+            <table class="{{ table_ui.table_classes('w-full min-w-[980px] table-fixed lg:min-w-0') }}">
                 <caption class="sr-only">Configured notification channels with delivery readiness, routing policy, allowed uses and provider evidence.</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Channel</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Readiness</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Routing Policy</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Allowed Uses</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Delivery Evidence</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[22%]">Channel</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[11%]">Readiness</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Routing Policy</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[18%]">Allowed Uses</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Delivery Evidence</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Actions</th>
                     </tr>
                 </thead>
@@ -275,7 +275,7 @@
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
                                 {% if can_manage %}
-                                    <div class="flex flex-nowrap justify-end gap-1.5">
+                                    <div class="flex flex-wrap items-center justify-end gap-1.5">
                                         <a href="{{ url_for('notification_channels.index',
                                                     tab='channels', edit=channel.id, configure=1,
                                                     channel_search=payload.channel_filters.search,
@@ -310,12 +310,23 @@
                                             <button type="submit" class="{{ table_ui.action_classes() }}">Test</button>
                                         </form>
                                         {% if channel.delete_blocked %}
-                                            <button type="button"
-                                                    disabled
-                                                    title="{{ channel.delete_reason }}"
-                                                    class="{{ table_ui.action_classes(destructive=true) }} cursor-not-allowed opacity-50">
-                                                Delete
-                                            </button>
+                                            <div class="flex flex-col items-end gap-1">
+                                                <button type="button"
+                                                        disabled
+                                                        aria-describedby="notification-delete-disabled-{{ channel.id }}"
+                                                        class="{{ table_ui.action_classes(destructive=true) }} cursor-not-allowed opacity-50">
+                                                    Delete
+                                                </button>
+                                                <button type="button"
+                                                        id="notification-delete-disabled-{{ channel.id }}"
+                                                        data-kaori-dialog-open
+                                                        data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"
+                                                        aria-haspopup="dialog"
+                                                        aria-controls="notification-channel-delete-blockers-{{ channel.id }}"
+                                                        class="text-xs font-medium text-kaori-primary underline decoration-dotted underline-offset-2 hover:text-kaori-primary-dark">
+                                                    Why disabled?
+                                                </button>
+                                            </div>
                                         {% else %}
                                             <form method="post"
                                                   action="{{ url_for('notification_channels.delete', channel_id=channel.id) }}"
@@ -367,6 +378,9 @@
         {# Native dialogs live outside the table and horizontal scroll area: opening a policy never expands a row. #}
         {% for channel in payload.channels %}
             {% include 'integrations/delivery/notification_channels/partials/_channel_policy_dialog.html' %}
+            {% if channel.delete_blocked %}
+                {% include 'integrations/delivery/notification_channels/partials/_channel_delete_blockers_dialog.html' %}
+            {% endif %}
         {% endfor %}
         {{ table_registry.footer('notification_channels.index',
                 'notification-channel-registry',

@@ -30,6 +30,7 @@ def main() -> int:
     channels_template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     channel_policy_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
+    channel_blocker_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_delete_blockers_dialog.html')
     native_dialogs = read('app/static/js/native_dialogs.js')
     confirmation = read('app/templates/components/destructive_confirmation_modal.html')
     confirmation_script = read('app/static/js/destructive_confirmation_modal.js')
@@ -162,6 +163,16 @@ def main() -> int:
         and 'colspan="6"' in channels_template
         and "def _channel_event_type_groups(" in service
         and "'event_type_groups': _channel_event_type_groups(event_type_labels)" in service,
+        'responsive policy and transparent deletion blockers': 'auto-rows-[minmax(11rem,1fr)]' in channel_policy_dialog
+        and 'flex h-full min-h-0 min-w-0 flex-col' in channel_policy_dialog
+        and 'min-w-[1280px]' not in channels_template
+        and 'table-fixed lg:min-w-0' in channels_template
+        and 'Why disabled?' in channels_template
+        and 'data-kaori-native-dialog' in channel_blocker_dialog
+        and 'channel.delivery_record_count' in channel_blocker_dialog
+        and 'channel.report_schedule_count' in channel_blocker_dialog
+        and 'channel.report_schedule_names' in channel_blocker_dialog
+        and 'NotificationChannelDeletionBlocked' in lifecycle,
         'policy dialog native and secret-safe': 'data-kaori-native-dialog' in channel_policy_dialog
         and 'overflow-y-auto overscroll-contain' in channel_policy_dialog
         and 'channel.event_type_groups' in channel_policy_dialog

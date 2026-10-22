@@ -490,6 +490,33 @@ def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> No
     assert 'Test Delivery' in providers
 
 
+def test_channel_inventory_symmetric_policy_and_visible_deletion_blockers() -> None:
+    channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    policy = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
+    blockers = read('app/templates/integrations/delivery/notification_channels/partials/_channel_delete_blockers_dialog.html')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
+
+    assert "table_ui.table_classes('w-full min-w-[980px] table-fixed lg:min-w-0')" in channels
+    assert "min-w-[1280px]" not in channels
+    assert "grid auto-rows-[minmax(11rem,1fr)] items-stretch" in policy
+    assert 'flex h-full min-h-0 min-w-0 flex-col' in policy
+    assert 'flex-1 space-y-2 overflow-y-auto' in policy
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channels
+    assert 'Why disabled?' in channels
+    assert 'channel.delete_blocked' in channels
+    assert 'data-kaori-native-dialog' in blockers
+    assert 'data-kaori-dialog-close' in blockers
+    assert 'channel.delivery_record_count' in blockers
+    assert 'channel.report_schedule_count' in blockers
+    assert 'channel.report_schedule_names' in blockers
+    assert 'Use Edit to disable this channel' in blockers
+    assert 'Remove this channel from the referencing report schedules' in blockers
+    assert "'report_schedule_names': usage.report_schedule_names" in service
+    assert 'if usage.blocked:' in lifecycle
+    assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
+
+
 def test_channel_inventory_rows_are_compact_with_native_policy_dialog() -> None:
     page = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     policy = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')

@@ -362,3 +362,22 @@ this redesign only improves spacing and visual hierarchy. Edit/Test/Delete,
 destructive confirmation, CSRF, RBAC, HTMX state, OOB operational feedback,
 filter/header loading and pagination contracts remain unchanged. Do not
 use inline row-expanding controls in dense operational inventory tables.
+
+## Symmetric Policy Cards and Deletion Blocker Guidance (#2734, 2026-10-23)
+
+View Policy uses equal-height capability tiles in a responsive two-column grid;
+unequal event counts scroll **within their tile** rather than altering
+adjacent tile height. Every event remains accessible, including with keyboard
+and screen readers. On mobile, capability cards stack in one column.
+
+Channel Inventory no longer forces a 1280px minimum width on desktop.
+Use a full-width fixed table, with a smaller minimum only on narrow
+viewports, while keeping readable cell content and usable row actions.
+
+**Delete blockers are shown, not hidden behind a disabled control.**
+An adjacent `Why disabled?` native dialog explains the precise blockers.
+Committed delivery evidence **must not be purged** to enable deletion;
+operators should disable the channel via Edit to preserve audit history.
+If report schedules reference the channel, remove those references first,
+then reassess blockers. These are lifecycle rules from the existing service,
+not UI-only logic or an exception to the deletion guard.
