@@ -48,6 +48,7 @@ def index() -> ResponseReturnValue:
         channel_search=request.args.get('channel_search', ''),
         channel_provider=request.args.get('channel_provider', ''),
         channel_state=request.args.get('channel_state', ''),
+        channel_lifecycle=request.args.get('channel_lifecycle', 'active'),
         delivery_pagination=DeliveryPagination(
             page=request.args.get('delivery_page', default=1, type=int),
             per_page=request.args.get('delivery_per_page', default=5, type=int),
@@ -194,7 +195,9 @@ def retire(channel_id: int) -> ResponseReturnValue:
         channel_name=channel.name,
         provider_key=channel.provider_key,
     )
-    return redirect(url_for('notification_channels.index', tab='channels', channel_lifecycle='retired', **_channel_return_query()))
+    return redirect(url_for('notification_channels.index', tab='channels', **{
+        **_channel_return_query(), 'channel_lifecycle': 'retired',
+    }))
 
 
 @notification_channels_bp.post('/<int:channel_id>/delete')
@@ -257,6 +260,8 @@ def _channel_return_query() -> dict[str, str | int]:
         value = str(request.form.get(name) or '').strip()[:128]
         if value:
             query[name] = value
+    if request.form.get('channel_lifecycle') == 'retired':
+        query['channel_lifecycle'] = 'retired'
     for name in ('channel_page', 'channel_per_page'):
         value = request.form.get(name, default=0, type=int)
         if value > 0:

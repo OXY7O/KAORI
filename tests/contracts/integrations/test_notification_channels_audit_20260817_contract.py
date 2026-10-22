@@ -503,6 +503,36 @@ def test_channel_inventory_responsive_width_retains_lifecycle_guidance() -> None
     assert 'Channel already disabled' in blockers
 
 
+def test_channel_retirement_registry_filters_and_read_only_dialog() -> None:
+    channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    retire = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
+    policy = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+
+    assert "NotificationChannel.query.filter_by(lifecycle_state=lifecycle)" in service
+    assert "'channel_lifecycle': normalized_lifecycle" in service
+    assert "channel_lifecycle=request.args.get('channel_lifecycle', 'active')" in routes
+    assert "query['channel_lifecycle'] = 'retired'" in routes
+    assert 'aria-label="Channel lifecycle views"' in channels
+    assert "('retired', 'Archived', 'archive')" in channels
+    assert 'name="channel_lifecycle" value="{{ payload.channel_lifecycle }}"' in channels
+    assert "'channel_lifecycle': payload.channel_lifecycle" in channels
+    assert "payload.channel_lifecycle == 'retired'" in channels
+    assert 'Retired · read-only' in channels
+    assert "notification_channels.retire" in retire
+    assert 'name="retirement_reason" required minlength="8" maxlength="500"' in retire
+    assert 'channel.report_schedule_count' in retire
+    assert 'data-kaori-native-dialog' in retire
+    assert 'hx-target="#notification-channels-workspace"' in retire
+    assert "channel.lifecycle_state == 'active' and can_manage" in channels
+    assert 'Retirement Evidence' in policy
+    assert 'channel.retirement_reason' in policy
+    assert 'channel.retired_by_user_id' in policy
+    assert 'credential_payload' not in retire
+    assert 'credential_payload' not in policy
+
+
 def test_channel_inventory_rows_are_compact_with_native_policy_dialog() -> None:
     page = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     policy = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')

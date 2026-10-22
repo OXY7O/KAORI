@@ -29,6 +29,7 @@ def main() -> int:
     )
     channels_template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    channel_retire = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
     channel_policy_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
     channel_delete_blockers_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
     native_dialogs = read('app/static/js/native_dialogs.js')
@@ -191,6 +192,15 @@ def main() -> int:
         and 'table_label.status_label(\'Locked\', \'warning\'' in channel_delete_blockers_dialog
         and 'Automatic delivery is already disabled.' in channel_delete_blockers_dialog
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle,
+        'retired channel lifecycle UI': 'aria-label="Channel lifecycle views"' in channels_template
+        and "'channel_lifecycle': payload.channel_lifecycle" in channels_template
+        and "channel.lifecycle_state == 'active' and can_manage" in channels_template
+        and 'name="retirement_reason" required minlength="8" maxlength="500"' in channel_retire
+        and 'channel.report_schedule_count' in channel_retire
+        and "notification_channels.retire" in channel_retire
+        and "NotificationChannel.query.filter_by(lifecycle_state=lifecycle)" in service
+        and "'channel_lifecycle': normalized_lifecycle" in service
+        and 'Retirement Evidence' in read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html'),
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
         'platform ownership copy': 'platform delivery capability' in template.lower(),
         'delivery evidence deletion guard': 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle

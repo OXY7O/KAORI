@@ -12,6 +12,7 @@
     <input type="hidden" name="channel_search" value="{{ payload.channel_filters.search }}">
     <input type="hidden" name="channel_provider" value="{{ payload.channel_filters.provider }}">
     <input type="hidden" name="channel_state" value="{{ payload.channel_filters.state }}">
+    <input type="hidden" name="channel_lifecycle" value="{{ payload.channel_lifecycle }}">
 {%- endmacro %}
 {% set selected_provider = form_channel.provider_key if form_channel else initial_provider %}
 <div x-data="{ provider: '{{ selected_provider }}', guideProvider: '{{ selected_provider or 'telegram' }}' }"
@@ -102,11 +103,24 @@
         </div>
     </section>
     <section class="space-y-4" aria-labelledby="notification-configured-channels-heading">
-        {{ section_intro.render('Configured Channels',
-            'Manage saved destinations, validation readiness and permitted automatic delivery.',
+        {{ section_intro.render('Archived Channels' if payload.channel_lifecycle == 'retired' else 'Configured Channels',
+            'Read-only retired destinations and committed delivery history.' if payload.channel_lifecycle == 'retired' else 'Manage saved destinations, validation readiness and permitted automatic delivery.',
             'notification-configured-channels-heading') }}
         <section id="notification-channel-registry"
                  class="{{ integration_ui.section_shell_classes() }}">
+        <nav class="flex flex-wrap items-center gap-2 border-b border-outline-subtle bg-surface-card px-4 py-3 sm:px-5"
+             aria-label="Channel lifecycle views">
+            {% for view_id, view_label, view_icon in [('active', 'Active', 'radio-tower'), ('retired', 'Archived', 'archive')] %}
+                {% set view_url = url_for('notification_channels.index', tab='channels', channel_lifecycle=view_id, channel_page=1, channel_per_page=payload.channel_pagination.per_page) %}
+                <a href="{{ view_url }}" hx-get="{{ view_url }}"
+                   hx-target="#notification-channel-registry" hx-select="#notification-channel-registry"
+                   hx-swap="outerHTML" hx-indicator="#notification-channel-loading" hx-push-url="true"
+                   aria-current="{{ 'page' if payload.channel_lifecycle == view_id else 'false' }}"
+                   class="inline-flex min-h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold transition-colors {{ 'bg-kaori-soft text-kaori-primary' if payload.channel_lifecycle == view_id else 'text-content-secondary hover:bg-surface-elevated' }}">
+                    <i data-lucide="{{ view_icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>{{ view_label }}
+                </a>
+            {% endfor %}
+        </nav>
         {% set channel_clear_action = none %}
         {% if payload.channel_filters.search or payload.channel_filters.provider or payload.channel_filters.state %}
             {% set channel_clear_action %}
@@ -116,7 +130,7 @@
                     payload.channel_pagination.per_page,
                     table_ui.action_classes(),
                     label='Clear Filters',
-                    query_params={'tab': 'channels'},
+                    query_params={'tab': 'channels', 'channel_lifecycle': payload.channel_lifecycle},
                     page_param='channel_page',
                     per_page_param='channel_per_page',
                     lead=false) }}
@@ -124,8 +138,8 @@
         {% endif %}
         {{ table_block.inventory_block_header(
             'send',
-            'Channel Inventory',
-            'Enabled destinations require successful Test Delivery before automatic use.',
+            'Archived Channels' if payload.channel_lifecycle == 'retired' else 'Channel Inventory',
+            'Retired destinations remain read-only with committed evidence.' if payload.channel_lifecycle == 'retired' else 'Enabled destinations require successful Test Delivery before automatic use.',
             'notification-channel-loading',
             'Loading Notification Channels',
             none,
@@ -152,6 +166,7 @@
             form_id='notification-channel-filter-form',
             aria_label='Filter configured notification channels') %}
             <input type="hidden" name="tab" value="channels">
+            <input type="hidden" name="channel_lifecycle" value="{{ payload.channel_lifecycle }}">
             <div>
                 <label for="notification-channel-search"
                        class="{{ table_ui.filter_label_classes() }}">Search Channel</label>
@@ -170,6 +185,7 @@
                     {% endfor %}
                 </select>
             </div>
+            {% if payload.channel_lifecycle == 'active' %}
             <div>
                 <label for="notification-channel-state"
                        class="{{ table_ui.filter_label_classes() }}">State</label>
@@ -183,6 +199,7 @@
                             {% if payload.channel_filters.state == 'disabled' %}selected{% endif %}>Disabled</option>
                 </select>
             </div>
+            {% endif %}
         {% endcall %}
         </div>
         <div class="overflow-x-auto overscroll-x-contain">
@@ -219,7 +236,7 @@
                             <td class="{{ table_ui.cell_classes() }}">
                                 <div class="space-y-1.5">
                                     {{ table_label.status_label(channel.status, channel.tone, size='compact') }}
-                                    <p class="text-xs leading-5 text-content-muted">{{ 'Enabled' if channel.enabled else 'Disabled' }}</p>
+                                    <p class="text-xs leading-5 text-content-muted">{{ 'Retired · read-only' if channel.lifecycle_state == 'retired' else ('Enabled' if channel.enabled else 'Disabled') }}</p>
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
@@ -249,12 +266,12 @@
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {% set test_tone = 'normal' if channel.status in ['Ready', 'Operational'] else ('warning' if channel.status in ['Validation Failed', 'Validation Required'] else 'unknown') %}
+                                {% set test_tone = 'normal' if channel.test_status == 'success' else ('warning' if channel.test_status == 'failed' else 'unknown') %}
                                 <dl class="min-w-0 space-y-2">
                                     <div class="space-y-0.5">
                                         <div class="flex items-center justify-between gap-2">
                                             <dt class="text-xs font-medium leading-5 text-content-secondary">Last Test</dt>
-                                            <dd>{{ table_label.status_label('Passed' if channel.status in ['Ready', 'Operational'] else ('Failed' if channel.status == 'Validation Failed' else 'Required'), test_tone, size='compact') }}</dd>
+                                            <dd>{{ table_label.status_label('Passed' if channel.test_status == 'success' else ('Failed' if channel.test_status == 'failed' else 'Required'), test_tone, size='compact') }}</dd>
                                         </div>
                                         <p class="truncate text-xs leading-5 tabular-nums text-content-muted"
                                            title="{{ channel.last_tested_at|user_datetime('Never tested') if channel.last_tested_at else 'Never tested' }}">
@@ -274,7 +291,12 @@
                                 </dl>
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
-                                {% if can_manage %}
+                                {% if payload.channel_lifecycle == 'retired' %}
+                                    <div class="space-y-1 text-right">
+                                        {{ table_label.status_label('Archived', 'unknown', size='compact') }}
+                                        <p class="text-xs text-content-muted">{{ channel.retired_at|user_datetime('Date unavailable') if channel.retired_at else 'Date unavailable' }}</p>
+                                    </div>
+                                {% elif can_manage %}
                                     <div class="flex flex-wrap justify-end gap-1.5">
                                         <a href="{{ url_for('notification_channels.index',
                                                     tab='channels', edit=channel.id, configure=1,
@@ -309,6 +331,14 @@
                                             {{ channel_return_fields() }}
                                             <button type="submit" class="{{ table_ui.action_classes() }}">Test</button>
                                         </form>
+                                        <button type="button"
+                                                data-kaori-dialog-open
+                                                data-dialog-target="notification-channel-retire-{{ channel.id }}"
+                                                aria-haspopup="dialog"
+                                                aria-controls="notification-channel-retire-{{ channel.id }}"
+                                                class="{{ table_ui.action_classes() }}">
+                                            Retire
+                                        </button>
                                         {% if channel.delete_blocked %}
                                             <button type="button"
                                                     data-kaori-dialog-open
@@ -372,7 +402,10 @@
         {# Native dialogs live outside the table and horizontal scroll area: opening a policy never expands a row. #}
         {% for channel in payload.channels %}
             {% include 'integrations/delivery/notification_channels/partials/_channel_policy_dialog.html' %}
-            {% if channel.delete_blocked %}
+            {% if channel.lifecycle_state == 'active' and can_manage %}
+                {% include 'integrations/delivery/notification_channels/partials/_channel_retire_dialog.html' %}
+            {% endif %}
+            {% if channel.lifecycle_state == 'active' and channel.delete_blocked %}
                 {% include 'integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html' %}
             {% endif %}
         {% endfor %}
@@ -380,7 +413,7 @@
                 'notification-channel-registry',
                 'notification-channel-loading',
                 payload.channel_pagination,
-                {'tab': 'channels', 'channel_search': payload.channel_filters.search, 'channel_provider': payload.channel_filters.provider, 'channel_state': payload.channel_filters.state},
+                {'tab': 'channels', 'channel_search': payload.channel_filters.search, 'channel_provider': payload.channel_filters.provider, 'channel_state': payload.channel_filters.state, 'channel_lifecycle': payload.channel_lifecycle},
                 payload.channel_pagination.allowed_per_page,
                 resource_label='Channels',
                 rows_aria_label='Notification channels per page',
