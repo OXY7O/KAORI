@@ -1,0 +1,195 @@
+from __future__ import annotations
+
+import logging
+
+from celery.exceptions import CeleryError
+from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask.typing import ResponseReturnValue
+from flask_login import current_user
+from kombu.exceptions import OperationalError as KombuOperationalError
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.access.rbac.decorators import permission_required
+from app.common.pagination import paginate_sequence
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionForm
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verify_proof
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.service import save_connection, test_connection
+from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultProviderError
+from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
+from app.integrations.validation.web import enqueue_instance_validation, enqueue_runtime_health_refresh
+from app.models.vault import VaultInstance
+from app.platform_operations.notifications.service import get_navigation_notification_context, record_operational_activity
+from app.security.credentials import CredentialEncryptionError
+
+logger = logging.getLogger(__name__)
+vault_bp = Blueprint('vault', __name__, url_prefix='/integrations/secrets-management/secrets-pki/vault')
+
+
+def _instance_or_404(instance_id: int) -> VaultInstance:
+    instance = VaultInstance.query.filter_by(id=instance_id).first()
+    if instance is None:
+        abort(404)
+    return instance
+
+
+def _notification() -> dict:
+    return get_navigation_notification_context(user_id=int(current_user.id))
+
+
+def _evidence(instance: VaultInstance) -> dict:
+    validation_id = get_active_validation_task_id(
+        integration_type='secrets_pki', operation='full_validation',
+        integration_instance_id=instance.integration_instance_id,
+    )
+    runtime_id = get_active_validation_task_id(
+        integration_type='secrets_pki', operation='runtime_refresh',
+        integration_instance_id=instance.integration_instance_id,
+    )
+    return {
+        'validation_job': build_validation_snapshot(validation_id) if validation_id else None,
+        'runtime_job': build_validation_snapshot(runtime_id) if runtime_id else None,
+    }
+
+
+@vault_bp.get('/')
+@permission_required('integrations.manage')
+def index() -> ResponseReturnValue:
+    query = VaultInstance.query.join(VaultInstance.integration_instance).order_by(VaultInstance.id.asc())
+    instances, pagination = paginate_sequence(
+        query.all(), page=request.args.get('page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    return render_template(
+        'integrations/secrets_management/vault/index.html',
+        instances=instances, pagination=pagination,
+        registered=query.count(), ready=query.filter_by(readiness_status='ready').count(),
+        notification_context=_notification(),
+    )
+
+
+@vault_bp.route('/instances/new', methods=['GET', 'POST'])
+@permission_required('integrations.manage')
+def new_instance() -> ResponseReturnValue:
+    form = VaultConnectionForm()
+    message = None
+    proof = request.form.get('connection_test_proof', '')
+    if form.validate_on_submit():
+        values = form.to_input()
+        action = str(request.form.get('action') or 'save')
+        if action == 'test':
+            try:
+                test_connection(values)
+                proof = issue_proof(values, int(current_user.id))
+                message = 'Vault identity and AppRole token lookup verified. Save then run Full Validation.'
+            except (VaultProviderError, ValueError) as exc:
+                message = str(exc)
+                proof = ''
+        elif action == 'save':
+            if not verify_proof(proof, values, int(current_user.id)):
+                message = 'Test this exact connection successfully before saving.'
+            else:
+                try:
+                    instance = save_connection(values)
+                except (SQLAlchemyError, CredentialEncryptionError, ValueError):
+                    logger.exception('Vault registration failed.')
+                    message = 'Vault registration failed; review endpoint, encryption key and connection name.'
+                else:
+                    return redirect(url_for('vault.detail', instance_id=instance.id))
+    return render_template(
+        'integrations/secrets_management/vault/form.html',
+        form=form, proof=proof, instance=None, message=message, notification_context=_notification(),
+    )
+
+
+@vault_bp.route('/instances/<int:instance_id>/edit', methods=['GET', 'POST'])
+@permission_required('integrations.manage')
+def edit_instance(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    form = VaultConnectionForm(existing=instance, obj=instance)
+    proof = request.form.get('connection_test_proof', '')
+    message = None
+    if form.validate_on_submit():
+        values = form.to_input()
+        action = str(request.form.get('action') or 'save')
+        if action == 'test':
+            try:
+                test_connection(values)
+                proof = issue_proof(values, int(current_user.id))
+                message = 'Connection verified. Save the configuration to apply changes.'
+            except (VaultProviderError, ValueError) as exc:
+                proof = ''
+                message = str(exc)
+        elif action == 'save':
+            if not verify_proof(proof, values, int(current_user.id)):
+                message = 'Test this exact configuration successfully before saving.'
+            else:
+                try:
+                    save_connection(values, existing=instance)
+                except (SQLAlchemyError, CredentialEncryptionError, ValueError):
+                    logger.exception('Vault configuration update failed.')
+                    message = 'Could not save Vault configuration; review the required encryption key.'
+                else:
+                    return redirect(url_for('vault.detail', instance_id=instance.id))
+    return render_template(
+        'integrations/secrets_management/vault/form.html', form=form, instance=instance,
+        proof=proof, message=message, notification_context=_notification(),
+    )
+
+
+@vault_bp.get('/instances/<int:instance_id>')
+@permission_required('integrations.manage')
+def detail(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    return render_template(
+        'integrations/secrets_management/vault/detail.html',
+        instance=instance, evidence=_evidence(instance),
+        notification_context=_notification(),
+    )
+
+
+@vault_bp.post('/instances/<int:instance_id>/validate')
+@permission_required('integrations.manage')
+def validate(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    if not instance.enabled:
+        abort(409)
+    try:
+        enqueue_instance_validation(
+            integration_type='secrets_pki', integration_instance_id=instance.integration_instance_id,
+            requested_by_user_id=int(current_user.id),
+        )
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError, ValueError):
+        logger.exception('Vault validation could not be queued.')
+        record_operational_activity(
+            user_id=int(current_user.id), event_type='vault_validation_queue_failed',
+            status='error', title='Vault Validation Not Queued',
+            message='Verify Redis and the integration-validation worker.',
+            detail='No Vault Full Validation job was admitted.',
+            action_url=url_for('vault.detail', instance_id=instance.id),
+            queue_feedback=True,
+        )
+    return redirect(url_for('vault.detail', instance_id=instance.id, _anchor='validation'))
+
+
+@vault_bp.post('/instances/<int:instance_id>/runtime/refresh')
+@permission_required('integrations.manage')
+def runtime_refresh(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    if not instance.enabled:
+        abort(409)
+    try:
+        enqueue_runtime_health_refresh(
+            integration_type='secrets_pki', integration_instance_id=instance.integration_instance_id,
+            requested_by_user_id=int(current_user.id),
+        )
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError, ValueError):
+        logger.exception('Vault runtime refresh could not be queued.')
+        record_operational_activity(
+            user_id=int(current_user.id), event_type='vault_runtime_queue_failed',
+            status='error', title='Vault Runtime Refresh Not Queued',
+            message='Verify Redis and the integration-runtime worker.',
+            detail='No Vault runtime refresh job was admitted.',
+            action_url=url_for('vault.detail', instance_id=instance.id),
+            queue_feedback=True,
+        )
+    return redirect(url_for('vault.detail', instance_id=instance.id, _anchor='runtime'))
