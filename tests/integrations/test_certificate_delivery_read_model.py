@@ -75,6 +75,9 @@ def committed_sources():
                 namespace='private-namespace', secret_name='private-tls-secret',
                 fingerprint_sha256=FP, status='healthy',
                 not_before=AT-timedelta(days=4), not_after=AT+timedelta(days=90),
+                used_by=[{'namespace': 'private-namespace', 'name': 'private-ingress', 'hosts': ['internal.example']}],
+                coverage_state='fully_covered', declared_host_count=1,
+                covered_host_count=1,
                 collected_at=AT,
             ),
         ])
@@ -98,6 +101,10 @@ def test_two_committed_public_certificate_sources_identify_candidate_overlap(com
     assert result['source_certificates'] == 1
     assert result['overlapping_certificates'] == 1
     assert result['matching_kubernetes_tls_secrets'] == 1
+    assert result['ingress_reference_status'] == 'observed'
+    assert result['matching_tls_secrets_referenced_by_ingress'] == 1
+    assert result['matching_tls_secrets_covering_declared_hosts'] == 1
+    assert result['vault_to_controller_proven'] is False
     assert result['delivery_proven'] is False
     assert result['endpoint_serving_verified'] is False
     assert 'private-tls-secret' not in repr(result)
@@ -145,3 +152,59 @@ def test_same_serial_not_same_fingerprint_is_not_delivery_evidence(committed_sou
     assert result['status'] == 'no_overlap_observed'
     assert result['overlapping_certificates'] == 0
     assert result['endpoint_serving_verified'] is False
+
+
+def test_ingress_mapping_failure_retains_overlap_but_no_reference_claim(committed_sources):
+    cluster_id = committed_sources[1]
+    state = db.session.get(TLSCertificateCollectionState, cluster_id)
+    state.ingress_mapping_status = 'collection_failed'
+    db.session.commit()
+    result = _read()
+    assert result['status'] == 'overlap_observed'
+    assert result['ingress_reference_status'] == 'unknown'
+    assert result['matching_tls_secrets_referenced_by_ingress'] is None
+    assert result['matching_tls_secrets_covering_declared_hosts'] is None
+    assert result['endpoint_serving_verified'] is False
+
+
+def test_declared_ingress_reference_with_partial_san_coverage_is_not_full(committed_sources):
+    record = TLSCertificateInventory.query.one()
+    record.coverage_state = 'partial'
+    record.declared_host_count = 3
+    record.covered_host_count = 1
+    db.session.commit()
+    result = _read()
+    assert result['ingress_reference_status'] == 'observed'
+    assert result['matching_tls_secrets_referenced_by_ingress'] == 1
+    assert result['matching_tls_secrets_covering_declared_hosts'] == 0
+    assert result['delivery_proven'] is False
+
+
+def test_source_confirmed_without_ingress_reference_is_valid_observed_zero(committed_sources):
+    record = TLSCertificateInventory.query.one()
+    record.used_by = []
+    record.coverage_state = 'no_declared_hosts'
+    record.declared_host_count = 0
+    record.covered_host_count = 0
+    db.session.commit()
+    result = _read()
+    assert result['ingress_reference_status'] == 'not_observed'
+    assert result['matching_tls_secrets_referenced_by_ingress'] == 0
+    assert result['matching_tls_secrets_covering_declared_hosts'] == 0
+
+
+def test_malformed_persisted_ingress_reference_blocks_correlation_safely(committed_sources):
+    record = TLSCertificateInventory.query.one()
+    record.used_by = [{'name': 'present-without-namespace'}]
+    db.session.commit()
+    result = _read()
+    assert result['status'] == 'blocked'
+    assert result['matching_tls_secrets_referenced_by_ingress'] is None
+    assert 'present-without-namespace' not in repr(result)
+
+
+def test_unavailable_ingress_results_cannot_disclose_private_names(committed_sources):
+    result = _read()
+    assert 'private-ingress' not in repr(result)
+    assert 'private-namespace' not in repr(result)
+    assert 'internal.example' not in repr(result)
