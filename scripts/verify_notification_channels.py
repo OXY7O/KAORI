@@ -165,7 +165,7 @@ def main() -> int:
         'policy dialog native and secret-safe': 'data-kaori-native-dialog' in channel_policy_dialog
         and 'overflow-y-auto overscroll-contain' in channel_policy_dialog
         and 'channel.event_type_groups' in channel_policy_dialog
-        and 'for event_label in group.items' in channel_policy_dialog
+        and 'for event_label in group.events' in channel_policy_dialog
         and 'No Allowed Uses' in channel_policy_dialog
         and 'credential_payload' not in channel_policy_dialog
         and channel_policy_dialog.count('data-kaori-dialog-close') == 2,
