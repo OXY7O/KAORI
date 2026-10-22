@@ -54,7 +54,7 @@ Migration: `20261022_vault_stored_certificates` follows
 - `secrets_pki_stored_cert_collection_states`: independent mount-scoped
   success/failure/coverage/freshness and retained observed count
 
-Only public certificate serial/fingerprint and validity are persisted.
+Only public certificate serial/fingerprint and validity are persisted. Serial spellings are canonicalized by integer value so colon-separated and leading-zero variants cannot create duplicate evidence.
 Public PEM is parsed in worker memory and discarded. No private keys,
 Secret values/hashes, CN/subject, SAN, DNS metadata, source credential,
 provider raw response, URL or certificate Issuer name is stored.
