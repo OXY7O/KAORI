@@ -35,6 +35,8 @@ def test_admission_never_enqueues_mount_paths_or_secret_credentials(monkeypatch)
     assert dispatched['queue_name'] == 'inventory'
     assert dispatched['task_kwargs']['targets'] == [{'integration_instance_id': 15}]
     assert dispatched['dispatch_options'].require_registered_worker is True
+    assert dispatched['dispatch_options'].soft_time_limit_seconds == 1740
+    assert dispatched['dispatch_options'].hard_time_limit_seconds == 1800
     assert dispatched['max_attempts'] == 1
     serialized = repr(dispatched['task_kwargs']) + repr(dispatched['payload'])
     for disallowed in ('secret_id', 'client_token', 'mount', 'path', 'kv2_data'):
