@@ -129,6 +129,7 @@ def build_kv2_version_posture(*, now: datetime | None = None) -> dict[str, Any]:
             and (_utc(row[5]) or datetime.min.replace(tzinfo=UTC)) >= cutoff
             and (_utc(row[6]) or datetime.min.replace(tzinfo=UTC)) >= cutoff
             and (_utc(row[5]) or instant) <= instant
+            and (_utc(row[6]) or instant) <= instant
         }
         if set(ready) != scopes:
             return _blocked('Lifecycle Evidence Incomplete or Stale', 'incomplete_evidence')

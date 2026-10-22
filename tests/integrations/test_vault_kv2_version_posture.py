@@ -187,3 +187,24 @@ def test_missing_source_scan_is_not_a_valid_zero(committed_store):
     db.session.commit()
     assert _read()['status'] == 'incomplete_evidence'
     assert _read()['available'] is None
+
+@pytest.mark.parametrize('field', ['last_committed_at', 'last_observed_at'])
+def test_future_source_timestamp_blocks_empty_snapshot(committed_store, field):
+    _, state = committed_store
+    setattr(state, field, AT + timedelta(hours=1))
+    db.session.commit()
+    result = _read()
+    assert result['status'] == 'incomplete_evidence'
+    assert result['observed_versions'] is None
+    assert result['available'] is None
+
+
+def test_future_commit_cannot_qualify_observed_versions(committed_store):
+    source_id, state = committed_store
+    _add_secret(source_id, state)
+    state.last_committed_at = AT + timedelta(hours=1)
+    db.session.commit()
+    result = _read()
+    assert result['status'] == 'incomplete_evidence'
+    assert result['observed_versions'] is None
+    assert result['destroyed'] is None
