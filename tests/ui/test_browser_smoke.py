@@ -171,3 +171,84 @@ def test_verify_session_link_focuses_step_up_after_htmx_replacement(page: Page) 
     page.get_by_role("link", name="Verify Session").click()
     expect(page.locator("#reveal-session-step-up")).to_be_focused()
     assert page.evaluate("window.stepUpScrollCalls") == 3
+
+
+
+def test_verify_session_does_not_overscroll_kaori_main_viewport(page: Page) -> None:
+    """The action must not shift an already visible Step-Up or overscroll the shell."""
+    page.set_content(
+        """
+        <!doctype html><html><head><style>
+          html, body { height: 100%; margin: 0; overflow: hidden; }
+          [data-kaori-main-scroll] { height: 380px; overflow-y: auto; }
+          .before { height: 54px; }
+          #reveal-session-step-up { height: 185px; }
+          .spacer { height: 900px; }
+        </style></head><body>
+          <main data-kaori-main-scroll>
+            <div data-secret-reveal-workspace>
+              <section data-secret-reveal-panel="mine">
+                <div class="before"></div>
+                <section id="reveal-session-step-up" tabindex="-1">
+                  <label>Password <input data-reveal-step-up-password type="password"></label>
+                </section>
+                <div class="spacer"></div>
+                <a data-reveal-step-up-trigger
+                   href="/reveal?reveal_view=mine#reveal-session-step-up">
+                   Verify Session
+                </a>
+              </section>
+            </div>
+          </main>
+        </body></html>
+        """
+    )
+    page.add_script_tag(path=str(ROOT / "app/static/js/secret_reveal_workspace.js"))
+    page.evaluate(
+        """() => {
+            const main = document.querySelector('[data-kaori-main-scroll]');
+            window.scrollMeasurements = [];
+            const original = main.scrollTo.bind(main);
+            main.scrollTo = (options) => {
+                window.scrollMeasurements.push(options);
+                original(options);
+            };
+        }"""
+    )
+
+    # The Step-Up is already on-screen, so repeated clicks must not move the
+    # dashboard or expose a blank strip below its nested scrolling surface.
+    page.evaluate(
+        """() => document.querySelector('[data-reveal-step-up-trigger]').click()"""
+    )
+    expect(page.locator("[data-reveal-step-up-password]")).to_be_focused()
+    assert page.evaluate("document.querySelector('[data-kaori-main-scroll]').scrollTop") == 0
+    assert page.evaluate("window.scrollMeasurements.length") == 0
+
+    # Move only the main scroll container away from the Step-Up. The handler
+    # must move that container back within its natural min/max scroll bounds.
+    page.evaluate(
+        """() => {
+            const main = document.querySelector('[data-kaori-main-scroll]');
+            main.scrollTop = 750;
+            document.querySelector('[data-reveal-step-up-trigger]').click();
+        }"""
+    )
+    expect(page.locator("[data-reveal-step-up-password]")).to_be_focused()
+    result = page.evaluate(
+        """() => {
+            const main = document.querySelector('[data-kaori-main-scroll]');
+            return {
+                y: main.scrollTop,
+                maxY: main.scrollHeight - main.clientHeight,
+                bodyY: document.documentElement.scrollTop,
+                calls: window.scrollMeasurements
+            };
+        }"""
+    )
+    assert len(result["calls"]) == 1
+    assert result["calls"][0]["behavior"] == "auto"
+    assert 0 <= result["y"] <= result["maxY"]
+    assert result["y"] < 750
+    assert result["bodyY"] == 0
+    assert urlsplit(page.url).fragment == "reveal-session-step-up"
