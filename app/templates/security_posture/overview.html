@@ -9,8 +9,16 @@
 <div id="security-posture-overview" class="space-y-6">
     {% set registry_ready = posture.authorized_registry and posture.sources > 0 %}
     {% set security_scope = 'All Authorized Registry Sources' if registry_ready else 'No Eligible Registry Source' %}
-    {% set setup_action_label = 'Open Registry Integrations' if can_manage_integrations else 'Review Registry Security' %}
-    {% set setup_action_href = url_for('integrations.registry') if can_manage_integrations else url_for('artifact_registry.security') if posture.authorized_registry else url_for('security_posture.findings') %}
+    {% if can_manage_integrations %}
+        {% set setup_action_label = 'Open Registry Integrations' %}
+        {% set setup_action_href = url_for('integrations.registry') %}
+    {% elif posture.authorized_registry %}
+        {% set setup_action_label = 'Review Registry Security' %}
+        {% set setup_action_href = url_for('artifact_registry.security') %}
+    {% else %}
+        {% set setup_action_label = 'Review Security Findings' %}
+        {% set setup_action_href = url_for('security_posture.findings') %}
+    {% endif %}
     {{ page_hero.operational_dashboard(
         'Security Posture', 'shield-alert', 'Security Overview',
         'Review committed vulnerability findings and Kubernetes runtime correlation.',
@@ -79,7 +87,8 @@
                     </p>
                     {% if not posture.has_complete_security_evidence %}
                         <p role="status" class="mt-3 text-sm text-content-secondary">
-                            Coverage or runtime correlation is incomplete, stale, or unauthorized. Counts represent observed evidence,
+                            Coverage or runtime correlation is incomplete, stale, or unauthorized.
+                            Counts represent observed evidence,
                             not all applications or hosts in the organization.
                         </p>
                     {% endif %}
@@ -90,18 +99,28 @@
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div class="rounded-lg border border-outline-subtle p-4">
                             <p class="font-semibold text-content-primary">Artifact Registry / Harbor</p>
-                            <p class="mt-1 text-xs text-content-secondary">Scanner CVEs, packages, versions, digests and scan freshness.</p>
+                            <p class="mt-1 text-xs text-content-secondary">
+                        Scanner CVEs, packages, versions, digests and scan freshness.
+                    </p>
                             {% if posture.authorized_registry %}
-                                <a href="{{ url_for('artifact_registry.security') }}" class="mt-2 inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open source evidence</a>
+                                <a href="{{ url_for('artifact_registry.security') }}"
+                                   class="mt-2 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                                    Open source evidence
+                                </a>
                             {% else %}
                                 <p class="mt-2 text-xs text-content-muted">Source access not authorized.</p>
                             {% endif %}
                         </div>
                         <div class="rounded-lg border border-outline-subtle p-4">
                             <p class="font-semibold text-content-primary">Kubernetes Runtime</p>
-                            <p class="mt-1 text-xs text-content-secondary">Artifact-to-workload binding confidence and observed generation.</p>
+                            <p class="mt-1 text-xs text-content-secondary">
+                        Artifact-to-workload binding confidence and observed generation.
+                    </p>
                             {% if posture.authorized_registry %}
-                                <a href="{{ url_for('artifact_registry.runtime') }}" class="mt-2 inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open runtime evidence</a>
+                                <a href="{{ url_for('artifact_registry.runtime') }}"
+                                   class="mt-2 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                                    Open runtime evidence
+                                </a>
                             {% else %}
                                 <p class="mt-2 text-xs text-content-muted">Source access not authorized.</p>
                             {% endif %}
@@ -114,21 +133,25 @@
                     'Scanner coverage is available; historical cross-domain demand is not yet materialized.',
                     'gauge') %}
                     <p class="text-sm text-content-secondary">
-                        {{ posture.scanned_artifacts }} of {{ posture.artifacts_total }} in-scope artifacts have a usable committed scan.
+                        {{ posture.scanned_artifacts }} of {{ posture.artifacts_total }} in-scope artifacts
+                        have a usable committed scan.
                         This is not an estimate of future risk, application coverage or VM package inventory.
                     </p>
                 {% endcall %}
             {% endcall %}
             {% call dashboard_workspace.panel('signals', active_tab, 'security-posture-overview') %}
                 {% call section_card.render('Signals & Actions',
-                    'Security source domains contribute evidence; central Intelligence owns recommendations and alert lifecycle.',
+                    'Source domains contribute evidence; central Intelligence owns recommendations and alerts.',
                     'bell-ring') %}
                     <p class="text-sm text-content-secondary">
                         Current Registry correlation: {{ posture.runtime_status.status }}.
                         No automatic alert is generated for each scanner CVE.
                     </p>
                     {% if can_view_intelligence %}
-                        <a href="{{ url_for('intelligence.recommendations') }}" class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open central Recommendations</a>
+                        <a href="{{ url_for('intelligence.recommendations') }}"
+                           class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                            Open central Recommendations
+                        </a>
                     {% endif %}
                 {% endcall %}
             {% endcall %}
@@ -136,9 +159,14 @@
                 {% call section_card.render('Security Reporting',
                     'Canonical Reports is the publication owner; this workspace does not invent a reporting engine.',
                     'file-text') %}
-                    <p class="text-sm text-content-secondary">Cross-domain Security reports require independently qualified domain coverage.</p>
+                    <p class="text-sm text-content-secondary">
+                        Cross-domain Security reports require independently qualified domain coverage.
+                    </p>
                     {% if can_view_reports %}
-                        <a href="{{ url_for('reports.overview') }}" class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open Reports</a>
+                        <a href="{{ url_for('reports.overview') }}"
+                           class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                            Open Reports
+                        </a>
                     {% endif %}
                 {% endcall %}
             {% endcall %}
