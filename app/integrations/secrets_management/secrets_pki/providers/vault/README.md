@@ -79,6 +79,80 @@ If no real Vault instance is configured, do not claim connectivity, inventory,
 Analytics or Intelligence has passed UAT.
 
 
+## HV-02 safe KV v2 metadata collector — source-contract slice (#2586)
+
+`kv2_inventory.py` provides a **bounded, in-memory, metadata-only collector** for
+one explicitly selected Vault KV v2 mount. It authenticates through the
+existing AppRole client, calls only Vault `LIST /v1/<mount>/metadata[/prefix]`
+and `GET /v1/<mount>/metadata/<secret-path>`, and normalizes an allowlist
+of version/creation/deletion/destroy facts. It deliberately excludes custom
+metadata, secret values, KV `data` endpoints, raw provider errors, tokens
+and any unknown fields.
+
+The AppRole policy needs the specific KV v2 mount's `metadata` list/read
+rights. The caller must supply the approved mount name; the collector does
+not enumerate all system mounts or claim KV v1 equivalence. This contract is
+limited to **200 secret records**, **200 entries per list response**,
+**100 version records per secret**, and **8 directory levels**. Any denied
+request, missing metadata, malformed list or size/depth breach raises a
+sanitized error and must never be treated as an empty successful collection.
+Path segments are strictly normalized and percent-encoded before sending;
+unsupported path characters are an explicit capability limitation.
+
+**Current readiness:** API/normalization plus a provider-neutral committed
+metadata schema and transactionally guarded reconciliation service have been
+authored under HV-02. ORM models are in `app/models/secrets_pki.py`; migration
+`20261022_secrets_pki_inventory` adds Secret identity/representation/version
+and per-mount collection state. `app/integrations/secrets_management/secrets_pki/commit_inventory.py`
+persists a complete observed generation, retains historical versions and
+marks missing representations `not_observed` rather than deleting them.
+An unexpectedly empty scan cannot replace a previously nonempty snapshot.
+Sensitive Vault paths are scoped metadata; a digest indexes the provider path,
+**not a Secret value**. Historical evidence restricts deletion of its parent
+integration registration.
+
+The source contract now dispatches through canonical **Jobs & Executions**:
+registered `secrets_pki.inventory.sync`, default schedule **disabled**, manual
+execution requiring `jobs.execute` and `integrations.manage`, scheduled
+policy editing requiring both `jobs.configure` and `integrations.manage`, inventory
+worker registration/preflight, bounded per-instance approved mount scope,
+canonical `JobExecutionContext` progress and sanitized partial/failure
+outcomes. The provider registration form exposes an explicit comma-separated
+KV v2 mount allowlist (maximum eight); empty means **no inventory eligible**.
+Changed mount configuration invalidates existing Full Validation. Workers
+read configured scope and AppRole SecretID from secure server-side state,
+not Redis task arguments. Collection error marks scoped collection
+`stale`/`failed` while preserving the last complete committed evidence.
+
+It is **not yet exposed through the provider-neutral Secrets & PKI Inventory
+workspace**; sensitive reference listing/search/exports remain unimplemented
+until the #2597/#2591 scoped RBAC and UI review. Real Vault and Postgres
+upgrade/downgrade acceptance is not yet available.
+ Do not expose it as
+`Available`, call it from an HTTP read route, or persist its unredacted
+in-memory objects in Celery results, logs, notifications or exports. Next
+bounded slices of HV-02 must implement resource-scoped inventory read projections,
+security and negative-path tests, and real-Vault UAT. Focused tests are `tests/integrations/test_vault_kv2_inventory.py` and
+`tests/integrations/test_vault_kv2_committed_inventory.py`; pytest/ruff,
+Alembic, actual Vault and security gates remain unverified until run.
+
+
+### HV-02 focused checks (not yet attested)
+
+```bash
+python -m pytest tests/integrations/test_vault_provider.py tests/integrations/test_vault_kv2_inventory.py tests/integrations/test_vault_kv2_committed_inventory.py tests/integrations/test_vault_inventory_job_contract.py -q
+python -m ruff check app/models/secrets_pki.py app/integrations/secrets_management/secrets_pki tests/integrations/test_vault_kv2_*.py tests/integrations/test_vault_inventory_job_contract.py
+```
+
+DevContainer sequence: apply Alembic migrations using the repository's standard
+initialization; register an approved Vault AppRole; specify only explicitly
+authorized KV v2 mounts; Test Connection then Full Validation; start/restart
+the `inventory` worker; open Jobs & Executions → Secrets & PKI Inventory Sync,
+run manually and review source-state freshness. The Vault API may return 403
+when list/read permissions on metadata are not granted. A successful provider
+health check does not imply inventory permissions. Do not claim a passing
+migration, worker check or Vault UAT until actually observed.
+
 ## HV-03 public PKI issuer evidence — initial source contract (#2587)
 
 `pki_public_evidence.py` implements a bounded, *in-memory* observation
