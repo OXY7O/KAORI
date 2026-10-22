@@ -144,3 +144,31 @@ a controller annotation, namespace/name match, and a certificate fingerprint
 alone may only form candidates. Receiver authorization, source version,
 conflicts and Secret UID replacement require explicit admission review.
 No controller receipt or endpoint probe is implemented here.
+
+
+## Controller owner candidate stage (#2589)
+
+The existing TLS Governance collector now normalizes up to one typed,
+canonical owner reference for a supported ExternalSecret or cert-manager
+Certificate. Secrets & PKI Inventory reports the *aggregate number of
+matching public-certificate TLS Secret observations* with an admissible
+controller owner reference; UID/name/namespace remain hidden.
+
+Proof ladder:
+1. Vault stored public certificate fingerprint and Kubernetes TLS Secret
+   public fingerprint are identical (identity overlap).
+2. Kubernetes API reports a stable TLS Secret object UID.
+3. Kubernetes API reports a supported controller owner reference (candidate).
+4. **NOT IMPLEMENTED:** owning-controller reconciliation receipt and explicit
+   Vault integration source identity, source version, destination Secret UID,
+   fingerprint and observed generation, independently qualified against
+   committed source evidence.
+5. **NOT IMPLEMENTED:** controlled, authenticated endpoint served-TLS readback.
+
+Stages 1–3 do not establish stage 4 or 5. Source collection stale/partial,
+unknown/malformed owner references, unsupported controller policies and
+replaced TLS Secret objects are not confirmation or failed delivery.
+`vault_to_controller_proven`, `delivery_proven` and
+`endpoint_serving_verified` remain False. No ownerReference may be used
+to upgrade a `LineageEdge` to `confirmed` without a source-owning
+controller readback adapter and its admission/security UAT.
