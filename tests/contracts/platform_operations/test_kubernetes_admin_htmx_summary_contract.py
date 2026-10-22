@@ -70,3 +70,45 @@ def test_kubernetes_admin_operational_hierarchy_keeps_authoritative_summary() ->
     assert 'Selected Cluster Readiness' in config
     assert 'Selected Cluster Readiness' in cluster
     assert 'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html' in config
+
+
+def test_kubernetes_admin_hero_is_one_line_and_tabs_use_canonical_workspace_shell() -> None:
+    index = (ROOT / 'app/templates/platform_operations/kubernetes/index.html').read_text()
+    summary = (ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html').read_text()
+    jobs = (ROOT / 'app/templates/platform_operations/jobs/index.html').read_text()
+
+    # The existing Hero primitive owns viewport-dependent typography and wrapping;
+    # shortened non-phone copy must not be forced into a clipped nowrap rule.
+    description = 'Govern Kubernetes access with policy and audit evidence.'
+    assert f'{{{{ page_hero.description_classes() }}}}">{description}</p>' in index
+    assert len(description) <= 60
+    assert 'whitespace-nowrap' not in index
+
+    # Match the reviewed Jobs workspace shell: shared Framed Tabs in a single
+    # bordered surface with padded tab panels, not an unframed gray tab slab.
+    shell = 'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm'
+    assert shell in jobs
+    assert f'class="{shell}"' in index
+    shell_start = index.index('id="kubernetes-administration-workspace-shell"')
+    tab_start = index.index('framed_workspace_tabs.render(', shell_start)
+    content_start = index.index('class="p-5 lg:p-6"', tab_start)
+    overview_start = index.index('id="kubernetes-administration-panel-overview"', content_start)
+    secret_start = index.index('id="kubernetes-administration-panel-secret-reveal"', overview_start)
+    assert shell_start < tab_start < content_start < overview_start < secret_start
+    assert 'kubernetes:load-secret-reveal from:window once' in index
+    assert 'role="tabpanel"' in index
+    assert 'moveTab(' in index
+
+    # Metadata labels must remain byte-identical across initial page and the
+    # source-owned HTMX OOB response after changes to readiness or policy.
+    for key in ('registered', 'configured', 'protected'):
+        marker = f'id="kubernetes-admin-hero-{key}"'
+        assert marker in index
+        assert marker in summary
+    for phrase in (
+        "cluster_count ~ (' Registered Cluster' if cluster_count == 1 else ' Registered Clusters')",
+        "ready_cluster_count ~ (' Configured Cluster' if ready_cluster_count == 1 else ' Configured Clusters')",
+        "enabled_namespace_count ~ (' Protected Namespace' if enabled_namespace_count == 1 else ' Protected Namespaces')",
+    ):
+        assert phrase in index
+        assert phrase in summary
