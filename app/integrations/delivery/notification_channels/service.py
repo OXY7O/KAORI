@@ -192,6 +192,7 @@ def get_notification_channels_payload(
     channel_search: str = '',
     channel_provider: str = '',
     channel_state: str = '',
+    channel_lifecycle: str = 'active',
     delivery_pagination: DeliveryPagination = DeliveryPagination(),
     delivery_event_key: str = '',
     delivery_provider: str = '',
@@ -205,12 +206,16 @@ def get_notification_channels_payload(
     normalized_provider = normalized_provider if normalized_provider in _PROVIDER_LABELS else ''
     normalized_state = str(channel_state or '').strip().lower()
     normalized_state = normalized_state if normalized_state in {'enabled', 'disabled'} else ''
+    normalized_lifecycle = 'retired' if channel_lifecycle == 'retired' else 'active'
+    if normalized_lifecycle == 'retired':
+        normalized_state = ''
     channel_rows, channel_pagination = _channel_registry_page(
         page=channel_page,
         per_page=channel_per_page,
         search=normalized_channel_search,
         provider=normalized_provider,
         state=normalized_state,
+        lifecycle=normalized_lifecycle,
     )
     normalized_delivery_key = str(delivery_event_key or '').strip()[:255]
     normalized_delivery_provider = str(delivery_provider or '').strip().lower()
@@ -264,6 +269,7 @@ def get_notification_channels_payload(
         'posture': {'label': summary['label'], 'tone': summary['tone']},
         'channels': channel_rows,
         'channel_pagination': channel_pagination,
+        'channel_lifecycle': normalized_lifecycle,
         'channel_filters': {
             'search': normalized_channel_search,
             'provider': normalized_provider,
@@ -313,9 +319,10 @@ def get_notification_channels_payload(
 
 
 def _channel_registry_page(
-    *, page: int, per_page: int, search: str = '', provider: str = '', state: str = ''
+    *, page: int, per_page: int, search: str = '', provider: str = '', state: str = '',
+    lifecycle: str = 'active',
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    query = NotificationChannel.query
+    query = NotificationChannel.query.filter_by(lifecycle_state=lifecycle)
     if search:
         query = query.filter(func.lower(NotificationChannel.name).contains(search.lower(), autoescape=True))
     if provider:
@@ -967,6 +974,10 @@ def _channel_view(
         'provider_label': _provider_label(channel.provider_key),
         'provider_icon': adapter.icon if adapter is not None else 'send',
         'enabled': channel.enabled,
+        'lifecycle_state': channel.lifecycle_state,
+        'retired_at': channel.retired_at,
+        'retired_by_user_id': channel.retired_by_user_id,
+        'retirement_reason': channel.retirement_reason or '',
         'configured': channel.configured,
         'destination': channel.destination or '-',
         'destination_label': channel.destination or '-',

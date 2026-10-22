@@ -441,3 +441,16 @@ lifecycle state. In-progress retry records may be marked `skipped`
 with an explicit retirement reason; committed historical sent/failed
 evidence is never deleted. Source-linked historical journal remains
 accessible. A retired channel is not reinstated by setting `enabled`.
+
+## Archived Channels Inventory & Confirmation (#2751)
+
+Channels workspace provides **Active** (default) and **Archived** lifecycle
+views using the existing registry filter/loading/Rows/pagination patterns.
+Archived channels remain read-only and display retirement timestamp,
+operator ID, reason, source-owned policy and committed delivery count
+through the existing native policy dialog. Archive view excludes
+Edit, Test, Delete, and Retire controls. Active channels can open a
+native Retire confirmation with mandatory bounded reason; active Report
+Schedule references disable the confirmation until resolved. Backend
+authorization, transaction and audit remain authoritative. Retiring
+redirects to archived view via the existing HTMX workspace contract.

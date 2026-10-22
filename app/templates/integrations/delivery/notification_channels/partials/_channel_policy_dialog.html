@@ -33,6 +33,22 @@
             </div>
         </header>
         <div class="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-surface-page p-4 sm:p-6">
+            {% if channel.lifecycle_state == 'retired' %}
+                <section class="rounded-xl border border-outline-default bg-surface-card p-4" aria-label="Retirement evidence">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 class="text-sm font-semibold text-content-primary">Retirement Evidence</h3>
+                        {{ table_label.status_label('Archived', 'unknown') }}
+                    </div>
+                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div><dt class="text-xs text-content-muted">Retired At</dt>
+                             <dd class="text-sm text-content-primary">{{ channel.retired_at|user_datetime('Not recorded') if channel.retired_at else 'Not recorded' }}</dd></div>
+                        <div><dt class="text-xs text-content-muted">Retired By (User ID)</dt>
+                             <dd class="text-sm text-content-primary">{{ channel.retired_by_user_id or 'Unavailable' }}</dd></div>
+                    </dl>
+                    <p class="mt-3 break-words text-xs leading-5 text-content-secondary"><span class="font-semibold">Reason:</span> {{ channel.retirement_reason }}</p>
+                    <p class="mt-2 text-xs text-content-muted">{{ channel.delivery_record_count }} committed delivery records retained.</p>
+                </section>
+            {% endif %}
             <section aria-label="Delivery policy summary"
                      class="rounded-xl border border-outline-default bg-surface-card p-4 sm:p-5">
                 <dl class="grid gap-4 sm:grid-cols-3">
