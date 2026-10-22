@@ -15,10 +15,9 @@ KAORI RBAC must:
 
 ## 2. Default deny
 
-A permission check returns false when:
-
-- the user is not Super Admin;
-- no active normalized role grants the key, or the user has no assigned active role.
+For a normal user (without the local-database Super Admin override), a
+permission check returns false when there is no assigned active normalized
+role or when the active role does not grant the requested key.
 
 Unknown permission keys are denied for normal users. The current local-database Super Admin globally overrides `User.has_permission()`; resource-scoped access and break-glass require an **independent** approved #724/#641 policy and must not inherit a silent blanket exemption. There is no runtime legacy default-role fallback.
 
