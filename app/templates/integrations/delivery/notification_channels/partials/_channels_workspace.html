@@ -2,6 +2,7 @@
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_registry.html" as table_registry %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/section_intro.html" as section_intro %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% set selected_provider = form_channel.provider_key if form_channel else initial_provider %}
 <div x-data="{ provider: '{{ selected_provider }}', guideProvider: '{{ selected_provider or 'telegram' }}' }"
@@ -91,15 +92,19 @@
             {% endfor %}
         </div>
     </section>
-    <section id="notification-channel-registry"
-             class="{{ integration_ui.section_shell_classes() }}">
+    <section class="space-y-4" aria-labelledby="notification-configured-channels-heading">
+        {{ section_intro.render('Configured Channels',
+            'Manage saved destinations, validation readiness and permitted automatic delivery.',
+            'notification-configured-channels-heading') }}
+        <section id="notification-channel-registry"
+                 class="{{ integration_ui.section_shell_classes() }}">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-end lg:justify-between">
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold leading-6 text-content-primary">Configured Channels</h2>
+                    <h3 class="text-base font-semibold leading-6 text-content-primary">Channel Inventory</h3>
                     {{ table_label.result_count(payload.channel_pagination.total_items) }}
                 </div>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Only enabled channels with a successful Test Delivery are eligible for automatic platform delivery.</p>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Enabled destinations require successful Test Delivery before automatic use.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2 text-xs text-content-muted">
                 <span>{{ payload.summary.total }} total</span>
@@ -272,6 +277,7 @@
                 control_name='notification-channels',
                 page_param='channel_page',
                 per_page_param='channel_per_page') }}
+    </section>
     </section>
     <section class="grid gap-4 lg:grid-cols-3">
         <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">

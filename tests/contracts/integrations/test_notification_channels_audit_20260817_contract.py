@@ -25,9 +25,15 @@ def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
     assert "hx_target='#notification-channels-workspace'" in page
     assert "hx_select='#notification-channels-workspace'" in page
     assert page.index('workspace_tabs.render_navigation') < page.index('page_hero.shell_classes()')
-    assert page.count('section_intro.render(') == 3
-    for heading in ('Notification Delivery Overview', 'Channel Configuration & Registry', 'Committed Delivery Evidence'):
-        assert heading in page
+    assert page.count('section_intro.render(') == 2
+    assert "('overview', 'Overview', 'layout-dashboard', none," in page
+    assert "('channels', 'Channels', 'send', none," in page
+    assert "('delivery', 'Delivery Activity', 'history', none," in page
+    for obsolete in ('Notification Delivery Overview', 'Channel Configuration & Registry', 'Committed Delivery Evidence'):
+        assert obsolete not in page
+    assert "section_intro.render('Delivery Contract & Ownership'" in page
+    assert "section_intro.render('Delivery Journal'" in page
+    assert "notification-channels-content-title" not in page
     assert page.index("loading_bar.render('notification-delivery-loading'") < page.index(
         "table_registry.filter_form('notification_channels.index'"
     )
@@ -210,9 +216,56 @@ def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
     assert "'notification-delivery-registry'" in page
     assert "'notification-delivery-loading'" in page
     assert "'delivery_event_key': payload.delivery_filter" in page
-    assert 'Delivery attempts and channel retries are provider-delivery evidence' in page
+    assert 'Provider delivery does not prove human receipt.' in page
     assert 'No Matching Deliveries' in page
-    assert 'No committed channel delivery matches this exact event key.' in page
+    assert 'No committed delivery matches the selected filters.' in page
+
+
+def test_notification_delivery_journal_filters_use_committed_sql_and_canonical_table() -> None:
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    shared_table = read('app/templates/components/table_registry.html')
+
+    for key in ('delivery_provider', 'delivery_domain', 'delivery_severity', 'delivery_status'):
+        assert f"request.args.get('{key}', '')" in routes
+        assert f'name="{key}"' in page
+        assert f"'{key}': payload.delivery_filters." in page
+    for predicate in (
+        'NotificationDelivery.channel.has(NotificationChannel.provider_key == provider)',
+        'NotificationDelivery.domain == domain',
+        'NotificationDelivery.severity == severity',
+        'NotificationDelivery.status == status',
+    ):
+        assert predicate in service
+    assert "normalized_delivery_provider in _PROVIDER_LABELS" in service
+    assert "normalized_delivery_domain in {item['value'] for item in domain_options()}" in service
+    assert "normalized_delivery_severity in _SEVERITY_RANK" in service
+    assert "normalized_delivery_status in {'queued', 'sent', 'failed', 'skipped'}" in service
+    assert service.index('if status:', service.index('def _delivery_registry_page(')) < service.index(
+        'rows, pagination = paginate_query(', service.index('def _delivery_registry_page(')
+    )
+    assert "'delivery_filters_active': any(" in service
+    assert 'if payload.delivery_filters_active' in page
+    assert "table_label.result_count(payload.delivery_pagination.total_items)" in page
+    assert "table_registry.footer('notification_channels.index'," in page
+    assert "table_registry.clear_filters_link('notification_channels.index'," in page
+    assert "table_ui.block_header_classes()" in page
+    assert page.index("table_ui.block_header_classes()") < page.index(
+        "loading_bar.render('notification-delivery-loading'"
+    ) < page.index("table_registry.filter_form('notification_channels.index'")
+    assert 'hx-trigger="change, input changed delay:450ms"' in shared_table
+    assert "section_intro.render('Configured Channels'" in channels
+    assert channels.index("section_intro.render('Configured Channels'") < channels.index(
+        'id="notification-channel-registry"'
+    )
+    assert channels.index('id="notification-channel-registry"') < channels.index(
+        "loading_bar.render('notification-channel-loading'"
+    )
+    assert page.count("('Events', payload.delivery_contract.events") == 1
+    assert "section_intro.render('Delivery Contract & Ownership'" in page
+    assert "'Delivery Ownership'," not in page
 
 
 def test_report_delivery_source_link_is_exact_committed_and_permissioned() -> None:
