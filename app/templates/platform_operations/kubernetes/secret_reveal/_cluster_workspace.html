@@ -47,7 +47,6 @@
                       hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
                       hx-target="#secret-reveal-cluster-workspace"
                       hx-swap="outerHTML"
-                      hx-indicator="#secret-reveal-cluster-loading"
                       class="w-full min-w-0">
                     <input type="hidden" name="view" value="{{ secret_reveal_view }}" :value="activeTab">
                     <input type="hidden" name="refresh_namespace" value="1">
@@ -69,10 +68,6 @@
                     </select>
                 </form>
             </div>
-        </div>
-        <div id="secret-reveal-cluster-loading"
-             class="htmx-indicator mt-3 h-1 overflow-hidden rounded-full bg-kaori-soft">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </header>
     <div class="mt-4">
@@ -102,7 +97,6 @@
                       hx-post="{{ url_for('platform_operations.kubernetes.secret_reveal.update_readiness', cluster_id=selected_cluster.id) }}"
                       hx-target="#secret-reveal-cluster-workspace"
                       hx-swap="outerHTML show:none"
-                      hx-indicator="#secret-reveal-cluster-loading"
                       hx-disabled-elt="button[type='submit']">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="view" value="prerequisites">
