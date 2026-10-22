@@ -1,0 +1,212 @@
+"""Bounded read-only bridge between committed Vault and Kubernetes TLS evidence.
+
+This is NOT endpoint polling, Certificate issuance attestation, or a new TLS
+inventory. Kubernetes TLS Governance remains the source owner of TLS Secrets
+and Ingress relationships. This bridge returns counts, never Secret names,
+certificate serials, Vault mount paths, SAN/CN, raw PEM or resource IDs.
+"""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+from sqlalchemy import inspect
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.extensions.db import db
+from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
+    parse_approved_pki_mounts,
+)
+from app.kubernetes.governance.tls_certificates.constants import TLS_COLLECTION_COLLECTED
+from app.kubernetes.governance.tls_certificates.readiness import (
+    check_tls_governance_schema_readiness,
+)
+from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
+from app.models.integration import IntegrationInstance
+from app.models.secrets_pki_stored_certificates import (
+    PKIStoredCertificateCollectionState, PKIStoredCertificateObservation,
+)
+from app.models.vault import VaultInstance
+from app.secrets_pki.certificate_delivery import assess_certificate_overlap
+
+_MAX_VAULT_SOURCES = 25
+_MAX_PKI_SCOPES = 100
+_MAX_TLS_CLUSTERS = 100
+_MAX_CERT_RECORDS = 1500
+_FRESHNESS = timedelta(hours=24)
+
+
+def _utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def _blocked(label: str, *, state: str = 'blocked') -> dict[str, Any]:
+    return {
+        'status': state,
+        'label': label,
+        'source_certificates': None,
+        'overlapping_certificates': None,
+        'matching_kubernetes_tls_secrets': None,
+        'delivery_proven': False,
+        'endpoint_serving_verified': False,
+        'coverage': 'Vault stored certificates vs Kubernetes TLS Secrets (observed sources only)',
+    }
+
+
+def _schema_ready() -> bool:
+    """Avoid UndefinedTable 500 on DevContainer branches not yet migrated."""
+    try:
+        inspector = inspect(db.engine)
+        required = {
+            'secrets_pki_stored_cert_observations',
+            'secrets_pki_stored_cert_collection_states',
+        }
+        if not required.issubset(set(inspector.get_table_names())):
+            return False
+        vault_columns = {str(column['name']) for column in inspector.get_columns('vault_instances')}
+        return 'pki_stored_certs_enabled' in vault_columns
+    except SQLAlchemyError:
+        return False
+
+
+def build_certificate_delivery_overlap(
+    *, authorized_to_view_kubernetes_tls: bool, now: datetime | None = None,
+) -> dict[str, Any]:
+    """Never query cross-domain TLS evidence without both domain permissions.
+
+    The caller already requires secrets_pki.view. The explicit second gate
+    protects Kubernetes governance, including direct HTTP route access.
+    """
+    if not authorized_to_view_kubernetes_tls:
+        return _blocked('Kubernetes TLS View Permission Required', state='permission_required')
+    if not _schema_ready() or not check_tls_governance_schema_readiness().ready:
+        return _blocked('Certificate Evidence Schema Not Ready')
+    instant = _utc(now or datetime.now(UTC))
+    if instant is None:
+        raise ValueError('An evaluation time is required.')
+    cutoff = instant - _FRESHNESS
+    try:
+        sources = (
+            VaultInstance.query.join(VaultInstance.integration_instance)
+            .filter(
+                IntegrationInstance.integration_type == 'secrets_pki',
+                IntegrationInstance.provider_key == 'vault',
+                IntegrationInstance.enabled.is_(True),
+                IntegrationInstance.lifecycle_status == 'active',
+                VaultInstance.pki_stored_certs_enabled.is_(True),
+            )
+            .order_by(VaultInstance.id.asc())
+            .limit(_MAX_VAULT_SOURCES + 1).all()
+        )
+        if len(sources) > _MAX_VAULT_SOURCES:
+            return _blocked('Certificate Source Scope Exceeds Limit')
+        scopes = {
+            (int(provider.integration_instance_id), provider.namespace or '', mount)
+            for provider in sources
+            for mount in parse_approved_pki_mounts(','.join(provider.pki_mounts or ()))
+        }
+        if not scopes:
+            return _blocked('Stored Certificate Source Not Enabled', state='not_configured')
+        if len(scopes) > _MAX_PKI_SCOPES:
+            return _blocked('Certificate Mount Scope Exceeds Limit')
+        ids = [int(provider.integration_instance_id) for provider in sources]
+        state_rows = PKIStoredCertificateCollectionState.query.filter(
+            PKIStoredCertificateCollectionState.integration_instance_id.in_(ids)
+        ).limit(_MAX_PKI_SCOPES + 1).all()
+        if len(state_rows) > _MAX_PKI_SCOPES:
+            return _blocked('Stored Certificate State Exceeds Limit')
+        allowed = {
+            (row.integration_instance_id, row.provider_namespace, row.mount): row
+            for row in state_rows
+            if (row.integration_instance_id, row.provider_namespace, row.mount) in scopes
+        }
+        qualified_sources = {
+            int(row.integration_instance_id)
+            for row in sources if row.integration_instance.readiness_status == 'ready'
+        }
+        ready_scopes = {
+            key for key, row in allowed.items()
+            if key[0] in qualified_sources
+            and row.status == 'ready'
+            and (_utc(row.last_committed_at) or datetime.min.replace(tzinfo=UTC)) >= cutoff
+        }
+        if not ready_scopes:
+            source_state = 'stale' if any(row.last_committed_at is not None for row in allowed.values()) else 'not_collected'
+        elif len(ready_scopes) != len(scopes):
+            source_state = 'partial'
+        else:
+            source_state = 'ready'
+        # A successful empty source is a real observed zero. Historic/nonapproved
+        # rows cannot qualify that zero or participate in a candidate overlap.
+        public_fps: tuple[str, ...] = ()
+        if ready_scopes:
+            source_rows = PKIStoredCertificateObservation.query.filter(
+                PKIStoredCertificateObservation.integration_instance_id.in_(ids),
+                PKIStoredCertificateObservation.observation_status == 'observed',
+                PKIStoredCertificateObservation.last_observed_at >= cutoff,
+            ).limit(_MAX_CERT_RECORDS + 1).all()
+            if len(source_rows) > _MAX_CERT_RECORDS:
+                return _blocked('Vault Certificate Evidence Exceeds Limit')
+            public_fps = tuple(
+                row.fingerprint_sha256 for row in source_rows
+                if (row.integration_instance_id, row.provider_namespace, row.mount) in ready_scopes
+            )
+        tls_states = TLSCertificateCollectionState.query.limit(_MAX_TLS_CLUSTERS + 1).all()
+        if len(tls_states) > _MAX_TLS_CLUSTERS:
+            return _blocked('Kubernetes TLS Source Scope Exceeds Limit')
+        ready_clusters = {
+            row.cluster_id for row in tls_states
+            if row.secret_collection_status == TLS_COLLECTION_COLLECTED
+            and (_utc(row.collected_at) or datetime.min.replace(tzinfo=UTC)) >= cutoff
+        }
+        if not tls_states:
+            kubernetes_state = 'not_collected'
+        elif not ready_clusters:
+            kubernetes_state = 'stale'
+        elif len(ready_clusters) < len(tls_states):
+            kubernetes_state = 'partial'
+        else:
+            kubernetes_state = 'ready'
+        tls_fps: tuple[str, ...] = ()
+        if public_fps and ready_clusters:
+            # SQL predicate restricts to approved fingerprint and collected
+            # clusters before hydrating records (never load TLS Secret names).
+            tls_rows = TLSCertificateInventory.query.with_entities(
+                TLSCertificateInventory.fingerprint_sha256,
+            ).filter(
+                TLSCertificateInventory.cluster_id.in_(ready_clusters),
+                TLSCertificateInventory.fingerprint_sha256.in_(set(public_fps)),
+                TLSCertificateInventory.collected_at >= cutoff,
+                TLSCertificateInventory.status.notin_(['invalid', 'unknown']),
+            ).limit(_MAX_CERT_RECORDS + 1).all()
+            if len(tls_rows) > _MAX_CERT_RECORDS:
+                return _blocked('Kubernetes TLS Fingerprint Overlap Exceeds Limit')
+            tls_fps = tuple(row[0] for row in tls_rows)
+        assessment = assess_certificate_overlap(
+            vault_fingerprints=public_fps,
+            tls_fingerprints=tls_fps,
+            vault_state=source_state,
+            kubernetes_state=kubernetes_state,
+        )
+        label = {
+            'overlap_observed': 'Same Public Certificate Observed',
+            'no_overlap_observed': 'No Overlap in Qualified Observed Sources',
+            'incomplete_evidence': 'Partial or Stale Certificate Correlation',
+            'source_unknown': 'Certificate Source Evidence Not Available',
+        }[assessment.status]
+        return {
+            'status': assessment.status,
+            'label': label,
+            'source_certificates': assessment.observed_source_certificates,
+            'overlapping_certificates': assessment.overlapping_public_certificates,
+            'matching_kubernetes_tls_secrets': assessment.matching_kubernetes_tls_secrets,
+            'delivery_proven': False,
+            'endpoint_serving_verified': False,
+            'coverage': 'Vault stored certificates vs Kubernetes TLS Secrets (observed sources only)',
+        }
+    except (SQLAlchemyError, ValueError):
+        # Do not expose source IDs, mount names or database exception details.
+        return _blocked('Certificate Correlation Source Unavailable')
