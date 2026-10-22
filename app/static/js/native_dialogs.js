@@ -77,7 +77,9 @@
         const target = event.detail?.target || event.target
         if (!(target instanceof HTMLElement)) return
         if (target.id === 'tenant-admin-workspace' || target.id === 'notification-channels-workspace') {
-            openSelectedDialog(target)
+            // outerHTML swaps can expose the detached old target in the event.
+            // Resolve the committed replacement before opening an authorized dialog.
+            openSelectedDialog(document.getElementById(target.id) || target)
         }
     })
 
