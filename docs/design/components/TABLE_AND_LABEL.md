@@ -228,6 +228,14 @@ Pagination follows `docs/design/components/PAGINATION.md`:
 - shared numeric pagination component;
 - footer inside the table surface.
 
+The shared `app/static/js/pagination.js` redraws numeric links after both
+`htmx:afterSwap` and `htmx:afterSettle`. Re-rendering **must be idempotent**:
+preserve the original server-rendered href, HTMX endpoint, target and selection
+attributes when rebuilding links, even after the original child anchors have
+been replaced. Do not generate visible pagination links without a functional
+`href` or `hx-get`. Test repeated HTMX render cycles and a numeric page click,
+not just Jinja macro output or the initial DOM.
+
 ## 15. Responsive behavior
 
 Keep the resource title, primary status, and row action accessible. Lower-priority columns may be hidden at narrow widths. Horizontal scrolling is acceptable for operational tables when hiding data would remove necessary context, but filters and pagination must not create page-level horizontal overflow.
