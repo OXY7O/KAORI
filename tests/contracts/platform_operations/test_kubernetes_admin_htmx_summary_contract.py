@@ -464,7 +464,7 @@ def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() ->
     assert namespace.count('id="secret-reveal-namespace-loading"') == 1
     for primitive in ('block_classes()', 'block_header_classes()', 'block_icon_classes()',
                       'block_title_classes()', 'block_description_classes()',
-                      'loading_bar_classes()', 'filter_bar_classes()', 'action_classes()'):
+                      'loading_bar_classes()', 'filter_bar_classes()', "action_classes(size='header')"):
         assert 'table_ui.' + primitive in namespace
     assert 'registry_ui.clear_filters_action(' in namespace
     assert 'hx-target="#secret-reveal-namespace-table-content"' in namespace
