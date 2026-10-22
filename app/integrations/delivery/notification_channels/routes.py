@@ -85,6 +85,7 @@ def create() -> ResponseReturnValue:
                 tab='channels',
                 configure=1,
                 provider=data.provider_key,
+                **_channel_return_query(),
             )
         )
     channel = create_channel(data, user_id=int(current_user.id))
@@ -96,7 +97,7 @@ def create() -> ResponseReturnValue:
         channel_name=channel.name,
         provider_key=channel.provider_key,
     )
-    return redirect(url_for('notification_channels.index', tab='channels'))
+    return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
 
 
 @notification_channels_bp.post('/<int:channel_id>/update')
@@ -115,6 +116,7 @@ def update(channel_id: int) -> ResponseReturnValue:
                 tab='channels',
                 edit=channel_id,
                 configure=1,
+                **_channel_return_query(),
             )
         )
     update_channel(channel, data, user_id=int(current_user.id))
@@ -126,7 +128,7 @@ def update(channel_id: int) -> ResponseReturnValue:
         channel_name=channel.name,
         provider_key=channel.provider_key,
     )
-    return redirect(url_for('notification_channels.index', tab='channels'))
+    return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
 
 
 @notification_channels_bp.post('/<int:channel_id>/test')
@@ -146,7 +148,7 @@ def test(channel_id: int) -> ResponseReturnValue:
         provider_key=channel.provider_key,
         status='success' if result.success else 'error',
     )
-    return redirect(url_for('notification_channels.index', tab='channels'))
+    return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
 
 
 @notification_channels_bp.post('/<int:channel_id>/delete')
@@ -178,7 +180,7 @@ def delete(channel_id: int) -> ResponseReturnValue:
             queue_feedback=True,
             delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
         )
-        return redirect(url_for('notification_channels.index', tab='channels'))
+        return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
     record_operational_activity(
         user_id=int(current_user.id),
         event_type='integration.notification_channel.deleted',
@@ -197,7 +199,21 @@ def delete(channel_id: int) -> ResponseReturnValue:
         queue_feedback=True,
         delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
     )
-    return redirect(url_for('notification_channels.index', tab='channels'))
+    return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
+
+
+def _channel_return_query() -> dict[str, str | int]:
+    """Preserve bounded channel registry state across POST/redirect and HTMX."""
+    query: dict[str, str | int] = {}
+    for name in ('channel_search', 'channel_provider', 'channel_state'):
+        value = str(request.form.get(name) or '').strip()[:128]
+        if value:
+            query[name] = value
+    for name in ('channel_page', 'channel_per_page'):
+        value = request.form.get(name, default=0, type=int)
+        if value > 0:
+            query[name] = min(value, 1000)
+    return query
 
 
 def _queue_configuration_feedback(errors: list[str], *, provider_key: str) -> None:
