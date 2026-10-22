@@ -296,42 +296,48 @@ def test_managed_control_metrics_do_not_claim_live_authorization() -> None:
     assert 'Live Namespace presence, Kubernetes RBAC, and Secret identity' in presentation
 
 
-def test_cluster_readiness_full_width_recomposition_and_section_intro() -> None:
+def test_secret_reveal_workspace_uses_integrated_header_tabs_and_panels() -> None:
     cluster = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
-    intro = (ROOT / 'app/templates/components/section_intro.html').read_text()
-    card = (ROOT / 'app/templates/components/operational_section_card.html').read_text()
+    namespace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    shared_tabs = (ROOT / 'app/templates/components/content_tabs.html').read_text()
 
-    # Section introduction must live inside the HTMX outerHTML replaceable
-    # workspace but outside the single canonical section card.
+    # Match the canonical Integration domain hierarchy: one enclosing shell,
+    # one workspace header, embedded shared tab strip, one panel at a time.
     shell = cluster.index('id="secret-reveal-cluster-workspace"')
-    intro_call = cluster.index('section_intro.render(', shell)
-    card_call = cluster.index('operational_section.render(', intro_call)
-    selector = cluster.index('id="secret-reveal-cluster"', shell)
-    readiness = cluster.index('Readiness Controls', card_call)
+    heading = cluster.index('id="secret-reveal-cluster-readiness-heading"', shell)
+    selector = cluster.index('id="secret-reveal-cluster"', heading)
+    tabs = cluster.index('content_tabs.render_controlled_links(', selector)
+    prereq_panel = cluster.index('id="secret-reveal-management-panel-prerequisites"', tabs)
+    readiness = cluster.index('id="secret-reveal-readiness-section"', prereq_panel)
     boundary = cluster.index('secret-reveal-kubernetes-boundary-heading', readiness)
-    namespace = cluster.index('platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html')
-    assert shell < selector < intro_call < card_call < readiness < boundary < namespace
-    assert 'components/section_intro.html' in cluster
-    assert 'components/operational_section_card.html' in cluster
+    policy_panel = cluster.index('id="secret-reveal-management-panel-policies"', boundary)
+    policies = cluster.index('platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html', policy_panel)
+    assert shell < heading < selector < tabs < prereq_panel < readiness < boundary < policy_panel < policies
+    assert 'operational_section.shell_classes()' in cluster
+    assert 'Cluster Access Configuration' in cluster
+    assert 'Secret Reveal Workspace' in cluster
+    assert 'embedded=true' in cluster
+    assert 'components/content_tabs.html' in cluster
     assert 'components/action_button.html' in cluster
-    assert "'Cluster Readiness'," in cluster
-    assert "'Cluster Prerequisites'," in cluster
-    assert 'secret-reveal-cluster-readiness-heading' in cluster
-    assert 'secret-reveal-readiness-section' in cluster
-    assert 'aria-labelledby="secret-reveal-cluster-readiness-heading"' in cluster
-    assert 'macro render(' in intro
-    assert 'macro render(' in card
-
-    # Prerequisites get full workspace width instead of a nested 7/12 grid.
+    assert 'data_namespace=' in cluster
+    assert 'content_tabs.render_controlled_links(' in cluster
+    assert 'role="tabpanel"' in cluster
+    assert 'section_intro.render(' not in cluster
+    assert 'operational_section.render(' not in cluster
+    assert cluster.count('rounded-xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm') == 0
+    assert 'secret-reveal-management-panel-prerequisites' in cluster
+    assert 'secret-reveal-management-panel-policies' in cluster
+    assert 'min-w-0 p-4 sm:p-5' in cluster
+    assert 'min-w-0 overflow-hidden rounded-xl border border-outline-subtle' in cluster
     assert 'sm:grid-cols-2 lg:grid-cols-3' in cluster
     assert 'xl:col-span-7' not in cluster
     assert 'xl:col-span-5' not in cluster
-    assert 'lg:grid-cols-12' not in cluster
-    assert 'sm:grid-cols-2' in cluster
-    assert 'min-w-0' in cluster
     assert 'Read-only prerequisite' in cluster
     assert 'Operator attestation' in cluster
     assert "action_button.classes('primary')" in cluster
+    assert 'data-kaori-tab-variant="content-tabs-controlled"' in shared_tabs
+    assert 'rounded-xl border border-outline-subtle bg-surface-card' in namespace
+    assert 'shadow-sm' not in namespace.split('<section id="secret-reveal-namespace-section"', 1)[1].split('>', 1)[0]
 
 
 def test_cluster_readiness_preserves_forms_htmx_scope_and_authorization_boundary() -> None:
@@ -381,7 +387,9 @@ def test_cluster_readiness_preserves_forms_htmx_scope_and_authorization_boundary
 
     # Existing final-lock verifier must reject the retired squeezed nested cards.
     assert "for retired in ('xl:col-span-7', 'xl:col-span-5')" in verifier
-    assert 'section_intro.render(' in verifier
+    assert 'operational_section.shell_classes()' in verifier
+    assert 'content_tabs.render_controlled_links(' in verifier
+    assert 'embedded=true' in verifier
     assert 'secret-reveal-kubernetes-boundary-heading' in verifier
 
 
@@ -414,6 +422,7 @@ def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> 
     assert 'workspace_tabs.render(' in page  # The outer peer navigation is unchanged.
     assert 'id="secret-reveal-cluster-workspace"' in workspace
     assert 'name="view" value="prerequisites"' in workspace
+    assert 'name="view" value="{{ secret_reveal_view }}" :value="activeTab"' in workspace
     assert 'name="view" value="policies"' in namespace
     assert 'name="view" value="policies"' in table
     assert 'hx-swap="outerHTML show:none"' in workspace
