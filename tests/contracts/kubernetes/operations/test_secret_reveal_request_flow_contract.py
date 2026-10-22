@@ -16,8 +16,8 @@ def test_new_request_keeps_step_up_out_of_request_creation() -> None:
 
     assert 'Reveal Session Step-Up' not in new_panel
     assert '_reveal_step_up.html' in mine_panel
-    assert 'Verify identity only when an approved request is ready to be consumed.' in step_up
-    assert 'Step-up is required only before consuming an approved reveal request.' in step_up
+    assert 'Verify your session before consuming an approved request.' in step_up
+    assert 'Approval, identity and single-use access remain separate controls.' in step_up
 
 
 def test_request_form_explains_policy_specific_next_step() -> None:
@@ -66,10 +66,10 @@ def test_reveal_step_up_keeps_password_and_action_on_one_control_baseline() -> N
     step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
 
     assert 'components/form_field.html' in step_up
-    assert 'sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end' in step_up
+    assert 'data-reveal-step-up-workspace' in step_up
     assert 'form_field.label_row(' in step_up and 'Current KAORI Password' in step_up
     assert 'class="{{ form_field.input_classes() }}"' in step_up
-    assert (
-        'form_field.help(' in step_up
-        and 'Step-up is required only before consuming an approved reveal request.' in step_up
-    )
+    assert "action_button.classes('primary')" in step_up
+    assert 'name="password"' in step_up
+    assert 'name="csrf_token"' in step_up
+    assert 'current_user.is_external' in step_up

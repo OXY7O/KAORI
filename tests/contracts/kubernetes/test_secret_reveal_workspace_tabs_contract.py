@@ -95,7 +95,10 @@ def test_reveal_pagination_is_scoped_to_its_partial_owner() -> None:
     assert 'data-reveal-poll-target="#secret-reveal-request-status"' in request_status
     assert "table_registry.footer('kubernetes_operations.reveal_secret'" in request_status
     assert "'kubernetes_operations.reveal_secret_approvals'" in approvals
-    assert "'#pending-secret-reveal-approvals'" in approvals
+    assert 'data-reveal-poll-target="#pending-secret-reveal-approvals"' in approvals
+    assert "'pending-secret-reveal-approvals'," in approvals
+    assert "page_param='pending_page'" in approvals
+    assert "per_page_param='pending_per_page'" in approvals
 
 
 def test_one_time_value_uses_protected_value_panel_and_clearing_script() -> None:
