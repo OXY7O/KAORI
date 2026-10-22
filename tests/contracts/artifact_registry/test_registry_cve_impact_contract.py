@@ -1,10 +1,12 @@
 from pathlib import Path
 
 import pytest
+from flask import Flask, render_template_string
 from jinja2 import Environment
 from werkzeug.exceptions import NotFound
 
 from app.artifact_registry.security.cve_impact import normalize_cve_id
+from app.common.pagination import build_pagination_window, pagination_payload
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -78,3 +80,78 @@ def test_cve_impact_view_is_permissioned_and_uses_existing_registry_navigation()
     assert 'Impact completeness is not verified' in page
     assert 'This does not prove the application fleet is unaffected' in page
     assert "url_for('artifact_registry.runtime', artifact_id=row.artifact_id)" in page
+
+
+def test_cve_impact_footer_renders_required_path_identity_for_rows_and_pages() -> None:
+    """Regression: #2606, a required cve_id previously caused HTTP 500."""
+    app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
+    app.add_url_rule(
+        '/artifact-registry/security/cve/<string:cve_id>/impact',
+        endpoint='artifact_registry.security_cve_impact',
+        view_func=lambda cve_id: cve_id,
+    )
+    page = pagination_payload(build_pagination_window(total_items=12, page=2, per_page=5))
+    with app.test_request_context(
+        '/artifact-registry/security/cve/CVE-2022-1586/impact?finding_page=2&runtime_page=3'
+    ):
+        rendered = render_template_string(
+            """{% import "components/table_registry.html" as registry %}
+{{ registry.footer('artifact_registry.security_cve_impact',
+    'cve-findings', 'cve-loading', page,
+    {'cve_id': 'CVE-2022-1586', 'runtime_page': 3},
+    [5, 10, 25, 50], page_param='finding_page') }}""",
+            page=page,
+        )
+    assert 'action="/artifact-registry/security/cve/CVE-2022-1586/impact"' in rendered
+    assert 'hx-get="/artifact-registry/security/cve/CVE-2022-1586/impact"' in rendered
+    assert 'name="runtime_page" value="3"' in rendered
+    assert 'name="finding_page" value="1"' in rendered
+    assert 'finding_page=1' in rendered
+    assert 'finding_page=3' in rendered
+    assert 'runtime_page=3' in rendered
+
+
+def test_registry_footer_without_route_identity_retains_existing_action() -> None:
+    app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
+    app.add_url_rule(
+        '/artifact-registry/security',
+        endpoint='artifact_registry.security',
+        view_func=lambda: '',
+    )
+    page = pagination_payload(build_pagination_window(total_items=0, page=1, per_page=5))
+    with app.test_request_context('/artifact-registry/security'):
+        rendered = render_template_string(
+            """{% import "components/table_registry.html" as registry %}
+{{ registry.footer('artifact_registry.security', 'registry', 'loading', page, {},
+                   [5, 10, 25, 50]) }}""",
+            page=page,
+        )
+    assert 'action="/artifact-registry/security"' in rendered
+    assert 'hx-get="/artifact-registry/security"' in rendered
+
+
+def test_cve_impact_runtime_footer_keeps_other_table_page() -> None:
+    app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
+    app.add_url_rule(
+        '/artifact-registry/security/cve/<string:cve_id>/impact',
+        endpoint='artifact_registry.security_cve_impact',
+        view_func=lambda cve_id: cve_id,
+    )
+    page = pagination_payload(build_pagination_window(total_items=12, page=3, per_page=5))
+    with app.test_request_context(
+        '/artifact-registry/security/cve/CVE-2022-1586/impact?finding_page=2&runtime_page=3'
+    ):
+        rendered = render_template_string(
+            """{% import "components/table_registry.html" as registry %}
+{{ registry.footer('artifact_registry.security_cve_impact',
+    'cve-runtime', 'cve-runtime-loading', page,
+    {'cve_id': 'CVE-2022-1586', 'finding_page': 2},
+    [5, 10, 25, 50], page_param='runtime_page') }}""",
+            page=page,
+        )
+    assert 'action="/artifact-registry/security/cve/CVE-2022-1586/impact"' in rendered
+    assert 'hx-get="/artifact-registry/security/cve/CVE-2022-1586/impact"' in rendered
+    assert 'name="finding_page" value="2"' in rendered
+    assert 'name="runtime_page" value="1"' in rendered
+    assert 'finding_page=2' in rendered
+    assert 'runtime_page=2' in rendered
