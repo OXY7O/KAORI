@@ -97,8 +97,10 @@
                             <h3 id="vault-inventory-posture-title" class="text-sm font-semibold text-content-primary">KV v2 Inventory Evidence</h3>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Committed metadata only. Vault API readiness does not independently prove permission to list KV v2 metadata.</p>
                         </div>
-                        <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.inventory.sync') }}"
-                           class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
+                        {% if current_user.has_permission('jobs.view') %}
+                            <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.inventory.sync') }}"
+                               class="text-xs font-semibold text-kaori-primary hover:underline">Jobs &amp; Executions</a>
+                        {% endif %}
                     </div>
                     <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <div><dt class="text-xs text-content-muted">Collection State</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ inventory_readiness.state|replace('_', ' ')|title }}</dd></div>
