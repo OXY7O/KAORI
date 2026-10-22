@@ -98,3 +98,30 @@ def test_review7_reveal_guidance_copy_stays_compact() -> None:
     assert 'No eligible protected cluster' in page
     assert "info_id='secret-reveal-target-guidance-tip'" in page
     assert 'selection_error' in page
+
+
+def test_review8_reveal_target_horizontal_alignment_uses_shared_fields() -> None:
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    workspace = read('app/templates/kubernetes/operations/secrets/_reveal_target_workspace.html')
+    form_field = read('app/templates/components/form_field.html')
+
+    # Each of three horizontally adjacent fields reserves the same label-row
+    # height, even though only Secret displays a Live status badge.
+    assert '{{ form_field.label_row("Cluster") }}' in page
+    assert '{{ form_field.label_row("Namespace") }}' in workspace
+    assert '{{ form_field.label_row("Secret", "Live", "normal", "radio") }}' in workspace
+    assert 'flex min-h-6 items-center justify-between gap-2' in form_field
+    assert "table_label.status_label(status_text, status_tone, status_icon)" in form_field
+
+    # Use the same select height, padding, focus ring, and disabled state.
+    assert 'class="{{ form_field.select_classes() }}"' in page
+    assert workspace.count('class="{{ form_field.select_classes() }}"') == 2
+    assert 'mt-2 box-border h-10 min-h-10 w-full' in form_field
+    assert 'class="grid gap-5 lg:grid-cols-3"' in page
+
+    # Preserve the HTMX replacement boundary, live evidence, and safe states.
+    assert 'id="reveal-target-workspace" class="contents"' in workspace
+    assert 'hx-swap-oob="outerHTML"' in workspace
+    assert 'No eligible protected cluster' in page
+    assert 'selection_error' in page
+    assert "info_id='secret-reveal-target-guidance-tip'" in page
