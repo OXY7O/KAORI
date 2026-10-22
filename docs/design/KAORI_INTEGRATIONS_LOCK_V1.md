@@ -315,3 +315,28 @@ Actions retain CSRF and blocked-delete semantics. Wide operational
 tables may scroll horizontally on narrow viewports, using the existing
 KAORI table component; no truncation of the expanded event list or
 policy-data mutation is permitted.
+
+## Notification Channel Lifecycle Action Interaction (#2717, 2026-10-23)
+
+Channel Inventory **Edit**, **Test Delivery**, and **Delete** follow the
+existing KAORI native-dialog, HTMX workspace-refresh and Toast/Notification
+Deck contracts. Edit retrieves the latest authorized form into the existing
+configuration dialog without a full-page navigation, never redisplaying
+encrypted provider credentials; Create/Edit Save and Test Delivery refresh
+the committed Notification Channels workspace after the POST. A plain
+GET/POST with server redirect remains available as fallback when HTMX is
+not used. Active Channel Inventory filters, page and Rows settings are
+preserved through bounded server-side redirect parameters.
+
+**Delete is explicitly confirmed before sending any POST** using the
+existing shared `destructive_confirmation_modal` and delegated handler:
+the selected channel name, irreversible consequence, Cancel/Escape,
+backdrop and focus-restoration apply. With JavaScript unavailable, Delete
+fails closed rather than offering an unconfirmed destructive form. The
+existing server-side deletion guard against committed delivery evidence and
+report-schedule references is authoritative, regardless of UI state or
+confirmation. CSRF, `integrations.manage`, Activity Audit and operational
+feedback remain unchanged. HTMX mutation GET results deliver the existing
+`operation_feedback_oob` Toast with no redundant full-document refresh.
+No new provider API, transport, route policy, or modal implementation is
+introduced.
