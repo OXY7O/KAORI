@@ -121,7 +121,7 @@
                                 </div>
                                 <div class="min-w-0">
                                     <h4 class="text-sm font-semibold text-content-primary">Cluster Credential</h4>
-                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Primary cluster kubeconfig availability, managed from cluster configuration.</p>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Kubeconfig available from cluster configuration.</p>
                                 </div>
                                 <p class="mt-auto text-xs font-medium text-content-muted">Read-only prerequisite</p>
                             </div>
@@ -203,7 +203,7 @@
                     <ul class="mt-4 grid min-w-0 gap-3 border-t border-outline-subtle pt-4 sm:grid-cols-2 xl:grid-cols-4">
                         {% for icon, title, description in [
                             ('eye', 'Secret Get Only', 'Require get permission on the selected Secret.'),
-                            ('shield-ban', 'Avoid List and Watch', 'Avoid broad Secret discovery unless another feature requires it.'),
+                            ('shield-ban', 'Avoid List and Watch', 'Avoid Secret list/watch unless explicitly required.'),
                             ('box', 'Namespace Scope', 'Prefer namespace Role and RoleBinding where practical.'),
                             ('refresh-cw', 'Credential Scope', 'Review kubeconfig access when responsibilities change.')
                         ] %}
