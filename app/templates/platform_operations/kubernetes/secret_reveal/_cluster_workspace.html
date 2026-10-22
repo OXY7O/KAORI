@@ -2,6 +2,7 @@
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/action_button.html" as action_button %}
+{% import "components/content_tabs.html" as content_tabs %}
 {% if workspace_partial | default(false) %}
     <p id="secret-reveal-hero-cluster-name" hx-swap-oob="innerHTML">{{ selected_cluster.name if selected_cluster else 'No cluster selected' }}</p>
 {% endif %}
@@ -21,7 +22,63 @@
     </div>
     <p id="secret-reveal-selected-cluster-summary" hx-swap-oob="innerHTML">{{ selected_cluster.name if selected_cluster else 'Choose a cluster.' }}</p>
 {% endif %}
-<div id="secret-reveal-cluster-workspace" class="space-y-6">
+{% set secret_reveal_view = 'policies' if request.values.get('view') == 'policies' else 'prerequisites' %}
+<div id="secret-reveal-cluster-workspace"
+     class="min-w-0 space-y-5"
+     x-data="{ tabs: ['prerequisites', 'policies'], activeTab: '{{ secret_reveal_view }}', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('view', tab); window.history.pushState({}, '', url); }, moveTab(tab, direction, prefix = 'secret-reveal-management') { const i = this.tabs.indexOf(tab); const next = direction === 'home' ? 0 : direction === 'end' ? this.tabs.length - 1 : (i + direction + this.tabs.length) % this.tabs.length; this.setTab(this.tabs[next]); this.$nextTick(() => document.getElementById(prefix + '-tab-' + this.tabs[next])?.focus()); } }"
+     @popstate.window="activeTab = new URL(window.location.href).searchParams.get('view') === 'policies' ? 'policies' : 'prerequisites'">
+    <div class="flex min-w-0 flex-col gap-3 rounded-xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div class="min-w-0">
+            <label for="secret-reveal-cluster"
+                   class="text-sm font-semibold text-content-primary">Selected Cluster</label>
+            <p class="mt-1 text-xs leading-5 text-content-muted">All readiness and policy changes apply to this Kubernetes connection.</p>
+        </div>
+        <form method="get"
+              action="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal') }}"
+              hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
+              hx-target="#secret-reveal-cluster-workspace"
+              hx-swap="outerHTML"
+              hx-indicator="#secret-reveal-cluster-loading"
+              class="w-full min-w-0 sm:w-80 lg:w-96">
+            <input type="hidden" name="view" value="{{ secret_reveal_view }}">
+            <input type="hidden" name="refresh_namespace" value="1">
+            <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
+            <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
+            <select id="secret-reveal-cluster"
+                    name="cluster_id"
+                    data-kaori-auto-submit
+                    class="h-11 w-full min-w-0 rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                {% if not clusters %}
+                    <option value="">No cluster registered</option>
+                {% endif %}
+                {% for cluster in clusters %}
+                    <option value="{{ cluster.id }}"
+                            {% if selected_cluster and selected_cluster.id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    <div id="secret-reveal-cluster-loading"
+         class="htmx-indicator h-1 overflow-hidden rounded-full bg-kaori-soft">
+        <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+    </div>
+    {{ content_tabs.render_controlled_links(
+        'secret-reveal-management',
+        [
+            ('prerequisites', 'Cluster Prerequisites', 'shield-check', none, url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='prerequisites', cluster_id=selected_cluster.id if selected_cluster else none, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, per_page=namespace_pagination.per_page)),
+            ('policies', 'Namespace Policies', 'boxes', namespace_summary.total if selected_cluster else none, url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id if selected_cluster else none, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.page, per_page=namespace_pagination.per_page))
+        ],
+        secret_reveal_view,
+        'Secret Reveal Configuration Sections',
+        data_namespace='secret-reveal'
+    ) }}
+    <div id="secret-reveal-management-panel-prerequisites"
+         role="tabpanel"
+         aria-labelledby="secret-reveal-management-tab-prerequisites"
+         :hidden="activeTab !== 'prerequisites'"
+         {% if secret_reveal_view != 'prerequisites' %}hidden{% endif %}>
     <section class="space-y-4" aria-labelledby="secret-reveal-cluster-readiness-heading">
         {{ section_intro.render(
             'Cluster Readiness',
@@ -36,42 +93,6 @@
             body_classes='p-0',
             aria_label='Cluster Readiness Configuration'
         ) %}
-            <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
-                <form method="get"
-                      action="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal') }}"
-                      hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
-                      hx-target="#secret-reveal-cluster-workspace"
-                      hx-swap="outerHTML"
-                      hx-indicator="#secret-reveal-cluster-loading"
-                      class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-                    <div class="min-w-0">
-                        <label for="secret-reveal-cluster"
-                               class="text-sm font-semibold text-content-primary">Selected Cluster</label>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Readiness changes apply only to the selected Kubernetes connection.</p>
-                    </div>
-                    <input type="hidden" name="refresh_namespace" value="1">
-                    <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
-                    <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
-                    <input type="hidden" name="page" value="1">
-                    <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
-                    <select id="secret-reveal-cluster"
-                            name="cluster_id"
-                            data-kaori-auto-submit
-                            class="h-11 w-full min-w-0 rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 sm:w-80 lg:w-96">
-                        {% if not clusters %}
-                            <option value="">No cluster registered</option>
-                        {% endif %}
-                        {% for cluster in clusters %}
-                            <option value="{{ cluster.id }}"
-                                    {% if selected_cluster and selected_cluster.id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
-                        {% endfor %}
-                    </select>
-                </form>
-            </div>
-            <div id="secret-reveal-cluster-loading"
-                 class="htmx-indicator h-1 overflow-hidden bg-kaori-soft">
-                <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-            </div>
             {% if selected_cluster %}
                 <form method="post"
                       action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_readiness', cluster_id=selected_cluster.id) }}"
@@ -81,6 +102,7 @@
                       hx-indicator="#secret-reveal-cluster-loading"
                       hx-disabled-elt="button[type='submit']">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="view" value="prerequisites">
                     <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
                     <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
                     <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
@@ -214,7 +236,28 @@
             {% endif %}
         {% endcall %}
     </section>
-    {% if selected_cluster %}
-        {% include "platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html" %}
-    {% endif %}
+    </div>
+    <div id="secret-reveal-management-panel-policies"
+         role="tabpanel"
+         aria-labelledby="secret-reveal-management-tab-policies"
+         :hidden="activeTab !== 'policies'"
+         {% if secret_reveal_view != 'policies' %}hidden{% endif %}>
+        {% if selected_cluster %}
+            {% include "platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html" %}
+        {% else %}
+            <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+                {% set empty_state_icon = "server" %}
+                {% set empty_state_label = "Setup Required" %}
+                {% set empty_state_title = "No Kubernetes Cluster Registered" %}
+                {% set empty_state_description = "Register a Kubernetes connection before configuring namespace-level reveal policies." %}
+                {% set empty_state_action_url = url_for('cluster.add_cluster') %}
+                {% set empty_state_action_label = "Add Cluster" %}
+                {% set empty_state_action_icon = "plus" %}
+                {% set empty_state_permission = "clusters.manage" %}
+                {% set empty_state_show_admin_required = true %}
+                {% set empty_state_min_height = "min-h-[210px]" %}
+                {% include 'components/states/_empty_state.html' %}
+            </section>
+        {% endif %}
+    </div>
 </div>

@@ -386,3 +386,65 @@ def test_cluster_readiness_preserves_forms_htmx_scope_and_authorization_boundary
     assert "for retired in ('xl:col-span-7', 'xl:col-span-5')" in verifier
     assert 'section_intro.render(' in verifier
     assert 'secret-reveal-kubernetes-boundary-heading' in verifier
+
+
+def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> None:
+    workspace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
+    component = (ROOT / 'app/templates/components/content_tabs.html').read_text()
+    page = (ROOT / 'app/templates/platform_operations/kubernetes/index.html').read_text()
+    namespace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+
+    assert 'components/content_tabs.html' in workspace
+    assert 'content_tabs.render_controlled_links(' in workspace
+    assert "('prerequisites', 'Cluster Prerequisites'" in workspace
+    assert "('policies', 'Namespace Policies'" in workspace
+    assert "request.values.get('view') == 'policies'" in workspace
+    assert "view='prerequisites'" in workspace
+    assert "view='policies'" in workspace
+    assert 'secret-reveal-management-panel-prerequisites' in workspace
+    assert 'secret-reveal-management-panel-policies' in workspace
+    assert 'aria-labelledby="secret-reveal-management-tab-prerequisites"' in workspace
+    assert 'aria-labelledby="secret-reveal-management-tab-policies"' in workspace
+    assert ':hidden="activeTab !==' in workspace
+    assert '@popstate.window' in workspace
+    assert 'window.history.pushState' in workspace
+    assert 'role="tabpanel"' in workspace
+    assert "render_controlled_links(" in component
+    assert 'data-kaori-tab-fallback="server-navigation"' in component
+    assert '@keydown.arrow-right.prevent' in component
+    assert '@keydown.home.prevent' in component
+    assert 'workspace_tabs.render(' in page  # The outer peer navigation is unchanged.
+    assert 'id="secret-reveal-cluster-workspace"' in workspace
+    assert 'name="view" value="prerequisites"' in workspace
+    assert 'name="view" value="policies"' in namespace
+    assert 'name="view" value="policies"' in table
+    assert 'hx-swap="outerHTML show:none"' in workspace
+    assert 'hx-swap="outerHTML show:none"' in table
+    assert 'name="csrf_token"' in workspace
+    assert 'name="csrf_token"' in table
+    assert 'id="secret-reveal-cluster-loading"' in workspace
+    assert 'secret-reveal-selected-cluster-posture' in workspace
+    assert "empty_state_permission = \"clusters.manage\"" in workspace
+
+
+def test_secret_reveal_view_survives_url_loading_saves_and_table_navigation() -> None:
+    routes = (ROOT / 'app/platform_operations/kubernetes/secret_reveal/routes.py').read_text()
+    administration = (ROOT / 'app/platform_operations/kubernetes/routes.py').read_text()
+    namespace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+
+    assert "'per_page', 'view'" in administration
+    assert "'view': 'policies' if request.form.get('view') == 'policies' else 'prerequisites'" in routes
+    assert "('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page', 'view')" in routes
+    assert "'view': 'policies' if request.args.get('view') == 'policies' else 'prerequisites'" in routes
+    assert "settings_args[key] = value" in routes
+    assert "response.headers['HX-Push-Url'] = page_url" in routes
+    assert "response.headers['HX-Push-Url'] = url_for(" in routes
+    assert "tab='secret-reveal', view='policies'" in namespace
+    assert "secret_reveal.workspace', view='policies'" in namespace
+    assert "tab='secret-reveal', view='policies'" in table
+    assert "secret_reveal.workspace', view='policies'" in table
+    for template in (namespace, table):
+        assert 'name="view" value="policies"' in template
+    assert 'default 5' not in namespace  # pagination source is unchanged.

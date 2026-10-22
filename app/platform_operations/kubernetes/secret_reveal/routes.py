@@ -44,7 +44,7 @@ def _validate_csrf() -> None:
 
 
 def _settings_request_args(cluster_id: str) -> dict[str, Any]:
-    settings_args: dict[str, Any] = {'cluster_id': cluster_id}
+    settings_args: dict[str, Any] = {'cluster_id': cluster_id, 'view': 'policies' if request.form.get('view') == 'policies' else 'prerequisites'}
     for key in ('namespace_q', 'namespace_policy', 'page', 'per_page'):
         value = (request.form.get(key) or '').strip()
         if value:
@@ -133,7 +133,7 @@ def _record_settings_activity(
 @permission_required('kubernetes_secrets.manage_reveal')
 def index():
     redirect_args: dict[str, Any] = {'tab': 'secret-reveal'}
-    for key in ('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page'):
+    for key in ('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page', 'view'):
         value = (request.args.get(key) or '').strip()
         if value:
             redirect_args[key] = value
@@ -162,6 +162,7 @@ def workspace():
 
     selected_cluster = context.get('selected_cluster')
     push_args: dict[str, Any] = {
+        'view': 'policies' if request.args.get('view') == 'policies' else 'prerequisites',
         'namespace_q': context['namespace_filters']['query'],
         'namespace_policy': context['namespace_filters']['policy'],
         'page': context['namespace_pagination']['page'],

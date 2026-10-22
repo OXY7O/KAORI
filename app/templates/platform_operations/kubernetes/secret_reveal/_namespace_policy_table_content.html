@@ -47,6 +47,7 @@
                               x-data="{ initial: '{{ row.policy }}', current: '{{ row.policy }}' }"
                               class="ml-auto flex w-full items-center justify-end gap-2">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="view" value="policies">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
                             <input type="hidden"
                                    name="namespace_q"
@@ -125,6 +126,7 @@
               hx-indicator="#secret-reveal-namespace-loading"
               class="flex items-center gap-2">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
+            <input type="hidden" name="view" value="policies">
             <input type="hidden"
                    name="namespace_q"
                    value="{{ namespace_filters.query }}">
@@ -146,8 +148,8 @@
     </div>
     <div class="{{ pagination_ui.navigation_group_classes() }}">
         {% if namespace_pagination.has_prev %}
-            {% set prev_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
-            {% set prev_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
+            {% set prev_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
+            {% set prev_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
             <a href="{{ prev_url }}"
                hx-get="{{ prev_partial_url }}"
                hx-target="#secret-reveal-namespace-table-content"
@@ -161,8 +163,8 @@
         {% endif %}
         {{ pagination_ui.numeric_pages(namespace_pagination.page, namespace_pagination.total_pages) }}
         {% if namespace_pagination.has_next %}
-            {% set next_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
-            {% set next_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
+            {% set next_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
+            {% set next_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
             <a href="{{ next_url }}"
                hx-get="{{ next_partial_url }}"
                hx-target="#secret-reveal-namespace-table-content"

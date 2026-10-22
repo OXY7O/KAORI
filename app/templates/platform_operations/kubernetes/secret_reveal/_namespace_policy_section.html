@@ -37,8 +37,8 @@
                 {% endif %}
             </div>
             {% if namespace_filters.query or namespace_filters.policy != 'all' %}
-                {% set namespace_clear_href = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
-                {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
+                {% set namespace_clear_href = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
+                {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
                 {{ registry_ui.clear_filters_action(namespace_clear_href,
                                 table_ui.action_classes() ,
                 hx_get=namespace_clear_url,
@@ -50,8 +50,8 @@
                 marker='secret-reveal-namespaces'
                 ) }}
             {% endif %}
-            <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page) }}"
-               hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page, refresh_namespace=1) }}"
+            <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page) }}"
+               hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page, refresh_namespace=1) }}"
                hx-target="#secret-reveal-cluster-workspace"
                hx-swap="outerHTML show:none"
                hx-indicator="#secret-reveal-namespace-loading"
@@ -89,6 +89,7 @@
           hx-indicator="#secret-reveal-namespace-loading"
           class="{{ table_ui.filter_bar_classes() }}">
         <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
+        <input type="hidden" name="view" value="policies">
         <input type="hidden" name="page" value="1">
         <input type="hidden"
                name="per_page"
