@@ -166,22 +166,42 @@ def test_administration_control_projection_scales_without_placeholder_roadmap() 
     assert 'Live access is verified at execution.' in overview
 
 
-def test_kubernetes_admin_controls_heading_precedes_its_card() -> None:
+def test_kubernetes_admin_controls_heading_is_inside_shared_card() -> None:
     overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
     shared = (ROOT / 'app/templates/components/operational_section_card.html').read_text()
+    oob = (ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html').read_text()
 
-    # The section title and description introduce the managed controls card;
-    # they are not another repeated title row inside its surface.
-    section = overview.index('aria-labelledby="kubernetes-admin-controls-title"')
-    title = overview.index('id="kubernetes-admin-controls-title"', section)
-    description = overview.index('Only implemented controls are listed.', title)
-    card = overview.index('operational_section.shell_classes()', description)
-    rows = overview.index('id="kubernetes-admin-controls-list"', card)
-    assert section < title < description < card < rows
-    assert overview.count('Managed Administration Controls') == 1
-    assert 'controls_badge' in overview[title:card]
-    assert "operational_section.render(\n        'Administration Coverage'," in overview
-    assert 'macro shell_classes' in shared
-    assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in (
-        ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html'
-    ).read_text()
+    # The approved section header (title, short copy and dynamic badge) belongs
+    # INSIDE the shared Operational Section Card, not above a second shell.
+    start = overview.index("{% call operational_section.render(\\n        'Managed Administration Controls',")
+    description = overview.index('Configure implemented controls and review their security posture.', start)
+    badge = overview.index('header_badge=controls_badge', description)
+    contents = overview.index('id="kubernetes-admin-controls-list"', badge)
+    close = overview.index('{% endcall %}', contents)
+    assert start < description < badge < contents < close
+    assert overview.count("'Managed Administration Controls'") == 2  # Title + aria-label
+    assert "body_classes='p-0'" in overview[start:contents]
+    assert 'kubernetes-admin-controls-title' not in overview
+    assert "{% call operational_section.render(\\n        'Administration Coverage'," in overview
+    assert 'macro render(' in shared
+    assert 'header_badge' in shared
+    assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
+
+
+def test_kubernetes_admin_navigation_uses_inventory_shell_spacing() -> None:
+    index = (ROOT / 'app/templates/platform_operations/kubernetes/index.html').read_text()
+    app_shell = (ROOT / 'app/templates/layouts/app.html').read_text()
+    tabs = (ROOT / 'app/templates/components/workspace_tabs.html').read_text()
+
+    # Inventory is server-route navigation; Administration is two Alpine
+    # panels, but both share Tab Style 1 and the same shell rhythm.
+    assert '<div class="mb-4 min-w-0">' in index
+    assert '<div class="mb-4 min-w-0"' in app_shell
+    assert 'workspace_tabs.render_navigation(' in app_shell
+    assert index.count('workspace_tabs.render(') == 1
+    assert 'data-kaori-tab-variant="integrated-workspace"' in tabs
+    nav = index.index('workspace_tabs.render(')
+    hero = index.index('<section class="{{ page_hero.shell_classes() }}">')
+    assert nav < hero
+    assert 'moveTab(' in index
+    assert 'kubernetes:load-secret-reveal from:window once' in index
