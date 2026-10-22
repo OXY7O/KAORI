@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -199,3 +200,27 @@ def test_admin_readiness_projection_reads_committed_state_without_provider_calls
     disabled = vault_inventory_readiness(instance)
     assert disabled['state'] == 'not_configured'
     assert disabled['observed_secret_count'] is None
+
+
+def test_version_counter_regression_does_not_reassign_existing_secret_identity(store):
+    at = datetime(2026, 10, 22, tzinfo=UTC)
+    commit_kv2_inventory(store, _snapshot(at, version=2))
+    identity_id = SecretProviderRepresentation.query.one().secret_identity_id
+    with pytest.raises(ValueError, match='regressed'):
+        commit_kv2_inventory(store, _snapshot(at + timedelta(minutes=1), version=1))
+    representation = SecretProviderRepresentation.query.one()
+    assert representation.secret_identity_id == identity_id
+    assert representation.current_version == 2
+
+
+def test_destroyed_version_evidence_cannot_revert_to_not_destroyed(store):
+    at = datetime(2026, 10, 22, tzinfo=UTC)
+    initial = _snapshot(at)
+    secret = initial.records[0]
+    destroyed = replace(initial, records=(replace(
+        secret, versions=(replace(secret.versions[0], destroyed=True),),
+    ),))
+    commit_kv2_inventory(store, destroyed)
+    with pytest.raises(ValueError, match='cannot reverse'):
+        commit_kv2_inventory(store, _snapshot(at + timedelta(minutes=1)))
+    assert SecretVersionObservation.query.one().destroyed is True
