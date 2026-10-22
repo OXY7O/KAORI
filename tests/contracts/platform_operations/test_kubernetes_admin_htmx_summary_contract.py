@@ -333,7 +333,7 @@ def test_secret_reveal_workspace_uses_integrated_header_tabs_and_panels() -> Non
     assert 'data_namespace=' in cluster
     assert 'content_tabs.render_controlled_links(' in cluster
     assert 'role="tabpanel"' in cluster
-    assert 'section_intro.render(' not in cluster
+    assert cluster.count('section_intro.render(') == 1
     assert 'operational_section.render(' not in cluster
     assert cluster.count('rounded-xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm') == 0
     assert 'secret-reveal-management-panel-prerequisites' in cluster
@@ -956,3 +956,44 @@ def test_numeric_pagination_renderer_keeps_canonical_link_source_on_repeated_htm
     assert 'htmx:afterSwap' in browser_test
     assert 'htmx:afterSettle' in browser_test
 
+
+
+def test_cluster_access_has_external_section_intro_inside_htmx_swap_root() -> None:
+    """The plain shared heading stays outside the card across lazy/HTMX reloads."""
+    cluster = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html'
+    ).read_text()
+    overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
+    intro_component = (ROOT / 'app/templates/components/section_intro.html').read_text()
+
+    assert 'components/section_intro.html' in cluster
+    assert 'components/section_intro.html' in overview
+    assert cluster.count('section_intro.render(') == 1
+    assert "        'Cluster Access'," in cluster
+    assert "        'Manage readiness and protected Namespace policies for the selected cluster.'," in cluster
+    assert "'secret-reveal-cluster-access-intro-heading'" in cluster
+    assert 'macro render(title, description, id=None' in intro_component
+
+    # The heading must be outside the existing operational card but inside
+    # the one root replaced by GET cluster switch / readiness POST / policy POST.
+    root = cluster.index('id="secret-reveal-cluster-workspace"')
+    intro = cluster.index('section_intro.render(', root)
+    shell = cluster.index('operational_section.shell_classes()', intro)
+    card_header = cluster.index('id="secret-reveal-cluster-readiness-heading"', shell)
+    selector = cluster.index('id="secret-reveal-cluster"', card_header)
+    tabs = cluster.index('content_tabs.render_controlled_links(', selector)
+    assert root < intro < shell < card_header < selector < tabs
+    assert 'class="min-w-0 space-y-4"' in cluster
+    assert 'aria-label="Kubernetes Cluster Access Configuration"' in cluster
+    assert 'aria-labelledby="secret-reveal-cluster-readiness-heading"' in cluster
+    assert 'hx-target="#secret-reveal-cluster-workspace"' in cluster
+    assert 'hx-swap="outerHTML"' in cluster
+    assert "activeTab: '{{ secret_reveal_view }}'" in cluster
+    assert "@popstate.window=" in cluster
+
+    # No duplicate card or additional HTMX target after introducing the wrapper.
+    assert cluster.count('id="secret-reveal-cluster-workspace"') == 1
+    assert cluster.count('operational_section.shell_classes()') == 1
+    assert cluster.count('id="secret-reveal-cluster-readiness-heading"') == 1
+    assert cluster.count('id="secret-reveal-cluster-access-intro-heading"') == 0
+    assert cluster.rstrip().endswith('</section>\n</div>')
