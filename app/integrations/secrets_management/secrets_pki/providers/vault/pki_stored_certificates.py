@@ -62,10 +62,11 @@ def collect_pki_stored_certificates(
     if len(keys) > MAX_STORED_CERTIFICATES:
         raise VaultProviderError('Vault stored certificate count exceeds bounded read profile.')
     serials = [_serial(item) for item in keys]
-    if len(set(serials)) != len(serials):
+    canonical = [format(int(serial.replace(':', ''), 16), 'x') for serial in serials]
+    if len(set(canonical)) != len(canonical):
         raise VaultProviderError('Vault stored certificate listing has duplicate serials.')
     observations: list[StoredCertificateEvidence] = []
-    for serial in serials:
+    for serial, normalized in zip(serials, canonical, strict=True):
         response_status, result = client._request(
             f'/v1/{mount_name}/cert/{serial}', token=token,
         )
@@ -75,7 +76,7 @@ def collect_pki_stored_certificates(
         _, parsed = _parse_certificate(cert_data.get('certificate'))
         if int(parsed.serial_hex, 16) != int(serial.replace(':', ''), 16):
             raise VaultProviderError('Vault stored certificate serial differs from public certificate.')
-        observations.append(StoredCertificateEvidence(serial_hex=serial.replace(':', ''), certificate=parsed))
+        observations.append(StoredCertificateEvidence(serial_hex=normalized, certificate=parsed))
     return StoredCertificateCollection(
         mount=mount_name, observed_at=datetime.now(UTC), certificates=tuple(observations),
     )
