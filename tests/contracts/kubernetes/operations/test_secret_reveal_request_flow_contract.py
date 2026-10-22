@@ -26,8 +26,8 @@ def test_request_form_explains_policy_specific_next_step() -> None:
     assert "selected_namespace_policy == 'approval_required'" in request_form
     assert "table_label.status_label('Approval Required'" in request_form
     assert "table_label.status_label('Step-Up Policy'" in request_form
-    assert 'wait for an independent approver' in request_form
-    assert 'verify the current KAORI session' in request_form
+    assert 'KAORI records the target, key, reason, ticket, actor, and policy—not Secret values' in request_form
+    assert 'verify your session when approved, then reveal once' in request_form
 
 
 def test_protected_reveal_flow_matches_backend_policy_order() -> None:

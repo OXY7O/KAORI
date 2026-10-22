@@ -23,7 +23,7 @@
     // Keep navigation inside the KAORI main scroll surface. Avoid scrolling
     // visible Step-Up content: browser-wide scrollIntoView can displace the
     // nested application shell and expose a blank strip below the workspace.
-    const showStepUpWithinMainScroll = (target) => {
+    const showWithinMainScroll = (target) => {
         const main = target.closest('[data-kaori-main-scroll]')
         const bounds = target.getBoundingClientRect()
         const viewport = main?.getBoundingClientRect() || { top: 0, bottom: window.innerHeight }
@@ -60,10 +60,20 @@
         url.hash = 'reveal-session-step-up'
         window.history.replaceState(window.history.state, '', url)
 
-        showStepUpWithinMainScroll(target)
+        showWithinMainScroll(target)
         const password = target.querySelector('[data-reveal-step-up-password]')
         const focusTarget = password && !password.disabled ? password : target
         focusTarget.focus({ preventScroll: true })
+    }
+
+    // Reveal responses are ephemeral; guide the operator to the protected
+    // result in My Requests without moving Secret bytes into toast/history.
+    const focusRevealResult = (event) => {
+        const result = event.detail?.target
+        if (result?.id !== 'reveal-value-output') return
+        if (!result.firstElementChild) return
+        showWithinMainScroll(result)
+        result.focus({ preventScroll: true })
     }
 
     const schedulePolling = (root) => {
@@ -85,6 +95,7 @@
         window.requestAnimationFrame(() => document.querySelectorAll(rootSelector).forEach(schedulePolling))
     })
     document.addEventListener('click', navigateToStepUp)
+    document.addEventListener('htmx:afterSwap', focusRevealResult)
     document.addEventListener('htmx:load', (event) => boot(event.detail?.elt || document))
 
     if (document.readyState === 'loading') {

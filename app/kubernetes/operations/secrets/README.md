@@ -116,8 +116,19 @@ only the bounded KAORI main container to avoid blank workspace overscroll.
 The delegated action survives HTMX table replacement and retains a full-page `reveal_view=mine` + Step-Up anchor
 fallback; for external identity without a password field it focuses the guidance
 panel. The action is offered only with Reveal capability, and does not submit
-credentials or grant access itself. Approval, Step-Up, one-time reveal, request
-expiry and CSRF remain governed by their existing routes.
+credentials or grant access itself. Once the session is verified, the Step-Up
+panel directs the user to an **Approved** row in **My Requests** and its
+**Reveal Once** action. The one-time Secret response is rendered in a
+separate `#reveal-value-output` region **inside My Requests**, above the
+request registry, never in New Request or in a toast. The result is focused
+after HTMX swaps and rendered without an automatic live announcement of the
+Secret payload. HTMX history is disabled for the result; provider output is
+`no-store`, cleared on timeout, document visibility/pagehide, replacement,
+or navigation away from the My Requests tab. Only the temporary response
+shows the value; the request table and audit remain payload-free.
+Approval, Step-Up, one-time reveal, request expiry and CSRF remain governed
+by their existing routes. Tab labels carry no count badges; table headers
+retain source-owned result counts.
 
 **Pending Approvals registry (approver-only):** The separate Pending Approval
 workspace now uses the same KAORI table header, transient loader, source-backed

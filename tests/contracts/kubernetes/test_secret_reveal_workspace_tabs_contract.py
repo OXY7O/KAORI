@@ -22,8 +22,10 @@ def test_protected_reveal_uses_analytics_content_tab_treatment() -> None:
     assert "('new', 'New Request'" in page
     assert "('mine', 'My Requests'" in page
     assert "('approvals', 'Approvals'" in page
-    assert 'my_reveal_pagination.total' in page
-    assert 'pending_reveal_pagination.total' in page
+    assert "('mine', 'My Requests', 'history', none," in page
+    assert "('approvals', 'Approvals', 'user-check', none," in page
+    assert "('mine', 'My Requests', 'history', my_reveal_pagination.total" not in page
+    assert "('approvals', 'Approvals', 'user-check', pending_reveal_pagination.total" not in page
 
 
 def test_reveal_tab_state_uses_canonical_alpine_workspace_controller() -> None:
@@ -113,3 +115,59 @@ def test_one_time_value_uses_protected_value_panel_and_clearing_script() -> None
     assert 'pagehide' in script
     assert 'htmx:beforeSwap' in script
     assert 'clipboard' not in panel.lower()
+
+
+
+def test_one_time_result_is_rendered_only_in_my_requests() -> None:
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    registry = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
+    step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
+    workspace_js = read('app/static/js/secret_reveal_workspace.js')
+    value_js = read('app/static/js/secret_reveal_value.js')
+    result = read('app/templates/kubernetes/operations/secrets/_reveal_value.html')
+    route = read('app/kubernetes/operations/secrets/reveal_routes.py')
+
+    new_panel = page.split('data-secret-reveal-panel="new"', 1)[1].split('data-secret-reveal-panel="mine"', 1)[0]
+    my_panel = page.split('data-secret-reveal-panel="mine"', 1)[1].split('data-secret-reveal-panel="approvals"', 1)[0]
+    assert 'id="reveal-value-output"' not in new_panel
+    assert my_panel.count('id="reveal-value-output"') == 1
+    assert my_panel.index('_reveal_step_up.html') < my_panel.index('id="reveal-value-output"') < my_panel.index('_reveal_request_status.html')
+    assert 'hx-history="false"' in my_panel
+    assert 'aria-label="One-Time Secret Reveal Result"' in my_panel
+    assert 'tabindex="-1"' in my_panel
+    assert 'aria-live="polite"' not in my_panel
+    assert 'hx-target="#reveal-value-output"' in registry
+    assert 'hx-post="{{ url_for(' in registry
+    assert 'name="csrf_token"' in registry
+    assert "item.status == 'approved'" in registry
+    assert 'step_up_active' in registry
+    assert "Continue to Approved Requests" in step_up
+    assert 'href="#my-secret-reveal-requests"' in step_up
+    assert 'Choose Reveal Once on an Approved request below' in step_up
+
+    # Navigation and reveal output remain inside the requester workspace.
+    assert "document.addEventListener('htmx:afterSwap', focusRevealResult)" in workspace_js
+    assert "result?.id !== 'reveal-value-output'" in workspace_js
+    assert "if (!result.firstElementChild) return" in workspace_js
+    assert "showWithinMainScroll(result)" in workspace_js
+    assert "result.focus({ preventScroll: true })" in workspace_js
+    assert "window.addEventListener('secret-reveal:tab-changed'" in value_js
+    assert "if (event.detail?.tab === 'mine') return" in value_js
+    assert 'visibilitychange' in value_js and 'pagehide' in value_js
+    assert 'htmx:beforeSwap' in value_js
+    assert "components/protected_value_panel.html" in result
+    assert "render_template(" in route and "'kubernetes/operations/secrets/_reveal_value.html'" in route
+    assert "response.headers['Cache-Control'] = 'no-store, private, max-age=0'" in route
+    assert "response.headers['Referrer-Policy'] = 'no-referrer'" in route
+    assert "response.headers['X-Content-Type-Options'] = 'nosniff'" in route
+
+
+def test_reveal_tab_labels_are_count_free_but_registry_counts_remain() -> None:
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    my = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
+    pending = read('app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html')
+    assert "('new', 'New Request', 'key-round', none," in page
+    assert "('mine', 'My Requests', 'history', none," in page
+    assert "('approvals', 'Approvals', 'user-check', none," in page
+    assert 'result_count=my_reveal_pagination.total_items' in my
+    assert 'result_count=pending_reveal_pagination.total_items' in pending
