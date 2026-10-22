@@ -12,7 +12,9 @@ from app.integrations.delivery.notification_channels.forms import (
 )
 from app.integrations.delivery.notification_channels.lifecycle import (
     NotificationChannelDeletionBlocked,
+    NotificationChannelRetirementBlocked,
     delete_channel,
+    retire_channel,
 )
 from app.integrations.delivery.notification_channels.service import (
     DeliveryPagination,
@@ -57,7 +59,10 @@ def index() -> ResponseReturnValue:
         delivery_status=request.args.get('delivery_status', ''),
         can_view_reports=current_user.has_permission('reports.view'),
     )
-    form_channel = get_channel_form_view(get_channel(edit_id)) if edit_id else None
+    edit_channel = get_channel(edit_id) if edit_id else None
+    if edit_id and (edit_channel is None or edit_channel.lifecycle_state != 'active'):
+        abort(404)
+    form_channel = get_channel_form_view(edit_channel) if edit_channel else None
     requested_provider = str(request.args.get('provider') or '').strip().lower()
     supported_provider_keys = {str(provider['key']) for provider in payload['providers']}
     initial_provider = requested_provider if requested_provider in supported_provider_keys else ''
@@ -106,6 +111,8 @@ def update(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:
         abort(404)
+    if channel.lifecycle_state != 'active':
+        abort(409)
     data = parse_channel_form(request.form, existing=channel)
     errors = validate_channel_input(data, existing=channel)
     if errors:
@@ -137,6 +144,8 @@ def test(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:
         abort(404)
+    if channel.lifecycle_state != 'active':
+        abort(409)
     base_url = str(current_app.config.get('KAORI_PUBLIC_BASE_URL') or '')
     result = test_channel(channel, base_url=base_url)
     _record_channel_activity(
@@ -151,12 +160,51 @@ def test(channel_id: int) -> ResponseReturnValue:
     return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
 
 
+@notification_channels_bp.post('/<int:channel_id>/retire')
+@permission_required('integrations.manage')
+def retire(channel_id: int) -> ResponseReturnValue:
+    channel = get_channel(channel_id)
+    if channel is None:
+        abort(404)
+    if channel.lifecycle_state != 'active':
+        abort(409)
+    reason = str(request.form.get('retirement_reason') or '')
+    try:
+        retire_channel(channel, reason=reason, user_id=int(current_user.id))
+    except NotificationChannelRetirementBlocked as exc:
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='integration.notification_channel.retirement_blocked',
+            status='warning',
+            title='Notification channel retirement blocked',
+            message=str(exc),
+            action_url=url_for('notification_channels.index', tab='channels'),
+            action_label='Review channel dependencies',
+            action_icon='shield-alert',
+            metadata={'module': 'integrations', 'channel_id': channel_id, 'provider_key': channel.provider_key},
+            queue_feedback=True,
+            delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
+        )
+        return redirect(url_for('notification_channels.index', tab='channels', **_channel_return_query()))
+    _record_channel_activity(
+        channel.id,
+        'retired',
+        'Notification channel retired',
+        f'{channel.name} has been retired; provider delivery is disabled and committed history is retained.',
+        channel_name=channel.name,
+        provider_key=channel.provider_key,
+    )
+    return redirect(url_for('notification_channels.index', tab='channels', channel_lifecycle='retired', **_channel_return_query()))
+
+
 @notification_channels_bp.post('/<int:channel_id>/delete')
 @permission_required('integrations.manage')
 def delete(channel_id: int) -> ResponseReturnValue:
     channel = get_channel(channel_id)
     if channel is None:
         abort(404)
+    if channel.lifecycle_state != 'active':
+        abort(409)
     name = channel.name
     provider_key = channel.provider_key
     try:
