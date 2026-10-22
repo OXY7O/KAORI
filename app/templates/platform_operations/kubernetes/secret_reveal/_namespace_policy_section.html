@@ -3,20 +3,33 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table.html" as table_ui %}
 <div id="secret-reveal-live-source"
-     class="mb-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-1 text-xs text-content-muted"
+     class="mb-4 flex min-w-0 justify-end"
      aria-label="Kubernetes Namespace Source Status">
-    <span class="inline-flex items-center gap-2">
-        <i data-lucide="radio-tower" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-        <span class="font-semibold">Live Source</span>
-        {{ table_label.status_indicator_label('Current' if namespace_source.available else 'Unavailable', 'normal' if namespace_source.available else 'warning') }}
-    </span>
-    {% if namespace_source.available %}
-        <span>Last Refreshed <strong class="font-semibold">{{ namespace_source.last_successful_at }}</strong></span>
-    {% elif namespace_source.has_successful_snapshot %}
-        <span>Last Successful <strong class="font-semibold">{{ namespace_source.last_successful_at }}</strong></span>
-    {% else %}
-        <span>No successful live refresh yet.</span>
-    {% endif %}
+    <div class="flex w-full min-w-0 flex-wrap items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 sm:w-auto sm:justify-end">
+        <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-secondary">
+            <span class="inline-flex items-center gap-2 font-semibold text-content-primary">
+                <i data-lucide="radio-tower" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                Live Source
+            </span>
+            {{ table_label.status_indicator_label('Current' if namespace_source.available else 'Unavailable', 'normal' if namespace_source.available else 'warning') }}
+            {% if namespace_source.available %}
+                <span>Last Refreshed {{ namespace_source.last_successful_at }}</span>
+            {% elif namespace_source.has_successful_snapshot %}
+                <span>Last Successful {{ namespace_source.last_successful_at }}</span>
+            {% else %}
+                <span>No successful live refresh yet</span>
+            {% endif %}
+        </div>
+        <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page) }}"
+           hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page, refresh_namespace=1) }}"
+           hx-target="#secret-reveal-cluster-workspace"
+           hx-swap="outerHTML show:none"
+           hx-indicator="#secret-reveal-namespace-loading"
+           class="{{ table_ui.action_classes(size='header') }} shrink-0">
+            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+            Refresh
+        </a>
+    </div>
 </div>
 <section id="secret-reveal-namespace-section"
          class="{{ table_ui.block_classes() }} shadow-none">
@@ -37,33 +50,28 @@
             </div>
         </div>
         <div class="flex shrink-0 flex-wrap items-center gap-2" data-kaori-table-header-actions>
-                {% if namespace_filters.query or namespace_filters.policy != 'all' %}
-                    {% set namespace_clear_href = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
-                    {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
-                    {{ registry_ui.clear_filters_action(namespace_clear_href,
-                                    table_ui.action_classes(),
-                                    hx_get=namespace_clear_url,
-                                    target='#secret-reveal-namespace-section',
-                                    indicator='#secret-reveal-namespace-loading',
-                                    select='#secret-reveal-namespace-section',
-                                    push_url='true',
-                                    swap='outerHTML',
-                                    marker='secret-reveal-namespaces'
-                    ) }}
-                {% endif %}
-                <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page) }}"
-                   hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page, refresh_namespace=1) }}"
-                   hx-target="#secret-reveal-cluster-workspace"
-                   hx-swap="outerHTML show:none"
-                   hx-indicator="#secret-reveal-namespace-loading"
-                   class="{{ table_ui.action_classes() }} shrink-0">
-                    <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                    Refresh
-                </a>
+            {% set namespace_clear_href = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
+            {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
+            {{ registry_ui.clear_filters_action(
+                namespace_clear_href,
+                table_ui.action_classes(size='header'),
+                hx_get=namespace_clear_url,
+                target='#secret-reveal-namespace-section',
+                indicator='#secret-reveal-namespace-loading',
+                select='#secret-reveal-namespace-section',
+                push_url='true',
+                swap='outerHTML',
+                marker='secret-reveal-namespaces'
+            ) }}
         </div>
     </header>
-    <div id="secret-reveal-namespace-loading" class="{{ table_ui.loading_bar_classes() }}">
-        <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+    <div class="relative h-2 bg-surface-card" aria-label="Namespace Policy Table Loading Region">
+        <div id="secret-reveal-namespace-loading"
+             class="{{ table_ui.loading_bar_classes() }} absolute inset-x-0 top-1 rounded-full"
+             role="progressbar"
+             aria-label="Loading Namespace Policies">
+            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+        </div>
     </div>
     {% if not namespace_source.available %}
         <div class="border-b border-outline-default px-6 py-4">
