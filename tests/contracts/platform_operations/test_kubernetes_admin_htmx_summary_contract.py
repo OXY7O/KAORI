@@ -762,3 +762,67 @@ def test_namespace_policy_row_toggle_uses_existing_detail_controller_and_loading
     assert 'enable_option_blocked' in table
     assert 'hx-post=' in table
 
+
+
+def test_kubernetes_posture_cards_share_operational_section_hierarchy() -> None:
+    overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
+    config = (ROOT / 'app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html').read_text()
+    cluster = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
+    shared = (ROOT / 'app/templates/components/operational_section_card.html').read_text()
+
+    # Overview and Secret Reveal must render through the same approved shell;
+    # do not reintroduce a hand-built header and custom metric typography.
+    assert overview.count('operational_section.render(') == 2
+    assert config.count('operational_section.render(') == 1
+    assert 'components/operational_section_card.html' in overview
+    assert 'components/operational_section_card.html' in config
+    assert "'Administration Coverage'," in overview
+    assert "'Secret Reveal Configuration'," in config
+    assert 'header_badge=overview_posture' in overview
+    assert 'header_badge=global_gate_badge' in config
+    assert "body_classes='p-0'" in config
+    assert "id='secret-reveal-configuration-section'" in config
+    assert 'macro render(' in shared
+    assert 'header_badge' in shared
+
+    # Metric label, value, responsive columns and evidence footer must have
+    # exactly the same layout classes; status semantics remain domain-owned.
+    layout_fragments = (
+        'grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4',
+        'min-w-0 bg-surface-card px-5 py-4 sm:px-6',
+        'flex min-w-0 items-center gap-2 text-xs font-semibold leading-5 text-content-secondary',
+        'mt-2 text-2xl font-semibold tracking-tight',
+        'mt-1 text-xs leading-5 text-content-muted',
+        'border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5',
+    )
+    for fragment in layout_fragments:
+        assert fragment in overview
+        assert fragment in config
+    assert config.count('min-w-0 bg-surface-card px-5 py-4 sm:px-6') == 4
+    assert '<dl class="grid' in config
+    assert 'Global Gate Enabled' in config and 'Global Gate Disabled' in config
+    assert 'text-status-normal-text' in config and 'text-status-warning-text' in config
+    assert 'Deployment-managed. Read-only here.' in config
+    assert 'Configured prerequisites and policies do not prove live access.' in config
+    assert 'Counts represent committed KAORI configuration.' in overview
+
+    # HTMX still updates the actual four summary metrics. The fourth target is
+    # now the entire metric cell, including its status and cluster caption.
+    for key in (
+        'secret-reveal-protected-cluster-count',
+        'secret-reveal-enabled-namespace-count',
+        'secret-reveal-selected-cluster-posture',
+        'secret-reveal-selected-cluster-summary',
+    ):
+        assert f'id="{key}"' in config
+        assert f'id="{key}"' in cluster
+    posture = cluster.split('id="secret-reveal-selected-cluster-posture"', 1)[1].split('{% endif %}', 1)[0]
+    assert 'hx-swap-oob="outerHTML"' in posture
+    assert 'min-w-0 bg-surface-card px-5 py-4 sm:px-6' in posture
+    assert 'Selected Cluster Readiness' in posture
+    assert 'secret-reveal-selected-cluster-summary' in posture
+    assert 'mt-2 text-2xl font-semibold tracking-tight' in posture
+    assert 'hx-swap-oob="innerHTML"' in cluster
+    assert 'Global Reveal Remains Disabled' in config
+    assert 'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html' in config
+
