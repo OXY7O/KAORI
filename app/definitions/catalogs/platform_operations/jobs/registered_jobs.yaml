@@ -101,6 +101,30 @@ jobs:
     operational pages.
   recent_execution_summary: Latest scheduled and manual Artifact Registry reconciliation runs.
   legacy_module: artifact_registry_inventory_sync
+- key: secrets_pki.inventory.sync
+  name: Secrets & PKI Inventory Sync
+  domain: Secrets & PKI
+  description: Reconcile safe metadata from explicitly approved Vault KV v2 mounts.
+  icon: key-round
+  queue_name: inventory
+  workload_class: standard
+  job_type: secrets_pki_inventory
+  operation: sync_secrets_pki_inventory
+  scope_type: secrets_pki_fleet
+  scope_key: all
+  configure_permission: jobs.configure
+  execute_permission: jobs.execute
+  domain_execute_permission: integrations.manage
+  dispatcher_path: app.integrations.secrets_management.secrets_pki.job_adapter:dispatch_vault_inventory_sync
+  context_builder_path: app.integrations.secrets_management.secrets_pki.job_adapter:build_vault_inventory_sync_context
+  configuration_template: platform_operations/jobs/configuration/definitions/secrets_pki_inventory_sync.html
+  default_enabled: false
+  default_interval_minutes: 360
+  minimum_interval_minutes: 60
+  maximum_interval_minutes: 1440
+  safety_summary: Only ready Vault instances with explicitly approved KV v2 mounts are eligible. Provider errors retain committed history.
+  execution_summary: Collect metadata-only Secret versions through canonical inventory workers, without reading values.
+  recent_execution_summary: Latest committed Secrets & PKI metadata reconciliations.
 - key: artifact_registry.security.sync
   name: Artifact Registry Security Sync
   domain: Artifact Registry
