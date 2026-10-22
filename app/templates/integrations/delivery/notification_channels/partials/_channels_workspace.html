@@ -266,12 +266,12 @@
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {% set test_tone = 'normal' if channel.status in ['Ready', 'Operational'] else ('warning' if channel.status in ['Validation Failed', 'Validation Required'] else 'unknown') %}
+                                {% set test_tone = 'normal' if channel.test_status == 'success' else ('warning' if channel.test_status == 'failed' else 'unknown') %}
                                 <dl class="min-w-0 space-y-2">
                                     <div class="space-y-0.5">
                                         <div class="flex items-center justify-between gap-2">
                                             <dt class="text-xs font-medium leading-5 text-content-secondary">Last Test</dt>
-                                            <dd>{{ table_label.status_label('Passed' if channel.status in ['Ready', 'Operational'] else ('Failed' if channel.status == 'Validation Failed' else 'Required'), test_tone, size='compact') }}</dd>
+                                            <dd>{{ table_label.status_label('Passed' if channel.test_status == 'success' else ('Failed' if channel.test_status == 'failed' else 'Required'), test_tone, size='compact') }}</dd>
                                         </div>
                                         <p class="truncate text-xs leading-5 tabular-nums text-content-muted"
                                            title="{{ channel.last_tested_at|user_datetime('Never tested') if channel.last_tested_at else 'Never tested' }}">
