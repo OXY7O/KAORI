@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy import case, func, select
 
 from app.artifact_registry.correlation_sync_jobs import correlation_prerequisites
+from app.artifact_registry.presentation_common import _human_time
 from app.artifact_registry.presentation_runtime import _runtime_snapshot_state
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.artifact_registry.security.presentation import _aware_datetime, _providers
@@ -74,6 +75,7 @@ def build_security_posture(
             'artifacts_total': 0,
             'scanned_artifacts': 0,
             'last_scan': None,
+            'scan_updated_label': 'Not Collected',
             'scan_status': {'label': 'No Authorized Sources', 'tone': 'unknown'},
             'runtime_status': {
                 'status': 'Not Collected',
@@ -200,6 +202,7 @@ def build_security_posture(
         'artifacts_total': artifacts_total,
         'scanned_artifacts': scanned_artifacts,
         'last_scan': last_scan,
+        'scan_updated_label': f'Updated {_human_time(last_scan)}' if last_scan else 'Not Collected',
         'scan_status': scan_status,
         'runtime_status': correlation,
         'has_complete_security_evidence': bool(
