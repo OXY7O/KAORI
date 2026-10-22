@@ -52,11 +52,12 @@ selectors, explicit freshness and retention and their own accepted binding
 validation. A single matching standby gauge is an identity signal, not
 proof of Vault availability or active leadership.
 
-**Not yet delivered:** historical range/retention qualification, source-owned
-metrics history/materialization, Vault-specific Analytics queries, Alert Source
-binding to canonical alert instances, HA/federation profiles and real
-Prometheus/Thanos UAT. None of these optional telemetry gaps can downgrade
-core Vault API readiness. The Vault operational Overview continues to show
+**Not yet delivered:** qualified multi-day/long-term retention,
+source-owned metrics history/materialization, Vault-specific Analytics queries,
+HA/federation profiles, AlertCase enrichment/routing and real Prometheus/Thanos
+UAT. The independently validated recent-hour source probe described below
+must not be mistaken for a materialized historical dataset. None of these
+optional telemetry gaps can downgrade core Vault API readiness. The Vault operational Overview continues to show
 missing metrics as **not bound/not materialized** until approved read models
 exist.
 
@@ -109,3 +110,31 @@ Focused tests:
 `tests/integrations/test_vault_alert_source_binding.py`.
 
 Provider API source: https://github.com/prometheus/alertmanager/blob/main/api/v2/openapi.yaml
+
+
+## Bounded historical query-range qualification — HV-06 #2697
+
+An explicit Vault Metrics Source **Validate Binding** now first qualifies the
+existing exact single-node instant `vault_core_active` identity. If that succeeds,
+the same registered Prometheus-compatible client requests **one** bounded
+`query_range` over the most recent 60 minutes at a 300-second step.
+
+The validator checks exact `vault_instance` identity, one matrix series,
+finite/monotonic timestamp and 0/1 values, endpoint coverage and no gap
+exceeding ten minutes. It retains only sanitized evidence status/count/step:
+`recent_hour_qualified`, `incomplete`, `ambiguous`, `unavailable`, or
+`not_validated`. A qualified recent hour stores
+`retention_coverage=one_hour_observed_only` and **does not establish**
+historical retention beyond that hour, HA topology, continuous workload
+health, Vault API availability, service impact or time-series materialization.
+
+Range unavailable/denied/malformed/missing never upgrades retention, but
+also **does not downgrade** already-qualified instantaneous identity nor core
+Vault provider readiness. No provider tokens, host/metric label values,
+timeseries points or raw response/errors are committed. Prometheus/Thanos
+remains authoritative; no new TSDB/worker/query endpoint is introduced.
+Existing binding validation evidence ownership remains unchanged.
+
+The real Prometheus/Thanos range API, worker/network performance, HA and
+long-term retention require DevContainer/staging UAT. Test source:
+`tests/integrations/test_vault_metrics_binding.py`.

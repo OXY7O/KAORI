@@ -21,6 +21,105 @@ _IDENTITY_LABEL = 'vault_instance'
 _IDENTITY_METRIC = 'vault_core_active'
 _MAX_SAMPLE_AGE_SECONDS = 300
 
+_HISTORY_LOOKBACK_SECONDS = 3600
+_HISTORY_STEP_SECONDS = 300
+_HISTORY_MAX_SAMPLES = 16
+
+
+def _historical_window_assessment(
+    *,
+    client: Any,
+    expression: str,
+    integration_id: int,
+    now_epoch: float,
+) -> dict[str, Any]:
+    """Bounded one-hour query_range; only sanitized summaries are persisted.
+
+    This never qualifies longer historical retention, HA topology, trends or
+    Vault API readiness. Instant binding qualification is separate.
+    """
+    base = {
+        'historical_query_readiness': 'not_validated',
+        'retention_coverage': 'not_validated',
+    }
+    query_range = getattr(client, 'query_range', None)
+    if not callable(query_range):
+        return base
+
+    def unsupported(status: str) -> dict[str, Any]:
+        return {
+            'historical_query_readiness': status,
+            'retention_coverage': 'not_qualified',
+        }
+
+    end = int(now_epoch)
+    start = end - _HISTORY_LOOKBACK_SECONDS
+    try:
+        payload = query_range(
+            expression, str(start), str(end), str(_HISTORY_STEP_SECONDS),
+        )
+    except Exception:
+        # A raw Metrics Source exception may contain URL/credentials/paths.
+        return unsupported('unavailable')
+    if not isinstance(payload, dict) or payload.get('status') != 'success':
+        return unsupported('unavailable')
+    data = payload.get('data')
+    if not isinstance(data, dict) or data.get('resultType') != 'matrix':
+        return unsupported('unavailable')
+    results = data.get('result')
+    if not isinstance(results, list):
+        return unsupported('unavailable')
+    if len(results) > 1:
+        return unsupported('ambiguous')
+    if not results:
+        return unsupported('incomplete')
+    record = results[0]
+    if not isinstance(record, dict):
+        return unsupported('incomplete')
+    labels = record.get('metric')
+    if (
+        not isinstance(labels, dict)
+        or labels.get(_IDENTITY_LABEL) != str(integration_id)
+        or labels.get('__name__') not in {None, _IDENTITY_METRIC}
+    ):
+        return unsupported('ambiguous')
+    values = record.get('values')
+    if not isinstance(values, list) or not 1 <= len(values) <= _HISTORY_MAX_SAMPLES:
+        return unsupported('incomplete')
+    timestamps: list[float] = []
+    for point in values:
+        if not isinstance(point, (list, tuple)) or len(point) != 2:
+            return unsupported('incomplete')
+        try:
+            timestamp, value = float(point[0]), float(point[1])
+        except (TypeError, ValueError, OverflowError):
+            return unsupported('incomplete')
+        if (
+            not math.isfinite(timestamp)
+            or not math.isfinite(value)
+            or value not in {0.0, 1.0}
+            or not start - 60 <= timestamp <= end + 60
+            or (timestamps and timestamp <= timestamps[-1])
+        ):
+            return unsupported('incomplete')
+        timestamps.append(timestamp)
+    if (
+        timestamps[0] > start + _HISTORY_STEP_SECONDS
+        or timestamps[-1] < end - _HISTORY_STEP_SECONDS
+        or any(
+            right - left > 2 * _HISTORY_STEP_SECONDS
+            for left, right in zip(timestamps, timestamps[1:])
+        )
+    ):
+        return unsupported('incomplete')
+    return {
+        'historical_query_readiness': 'recent_hour_qualified',
+        'retention_coverage': 'one_hour_observed_only',
+        'historical_window_seconds': _HISTORY_LOOKBACK_SECONDS,
+        'historical_step_seconds': _HISTORY_STEP_SECONDS,
+        'historical_sample_count': len(timestamps),
+    }
+
 
 def _assessment(status: str, message: str, *, state: str, matched: int = 0) -> BindingValidationAssessment:
     return BindingValidationAssessment(
@@ -117,8 +216,19 @@ def validate_vault_metrics_binding(
     delta = time() - observed_epoch
     if delta < -60 or delta > _MAX_SAMPLE_AGE_SECONDS:
         return _assessment('degraded', 'Vault identity telemetry sample is stale.', state='stale_sample')
-    return _assessment(
+    instant = _assessment(
         'ready',
-        f'{profile.label} matched one time-qualified Vault node identity; historical retention is not yet validated.',
+        f'{profile.label} matched one time-qualified Vault node identity; long-term retention is not validated.',
         state='single_node_confirmed', matched=1,
+    )
+    history = _historical_window_assessment(
+        client=client, expression=expression,
+        integration_id=identity.id, now_epoch=time(),
+    )
+    return BindingValidationAssessment(
+        status=instant.status,
+        message=instant.message,
+        matched_series=instant.matched_series,
+        matched_signal=instant.matched_signal,
+        evidence={**instant.evidence, **history},
     )
