@@ -138,7 +138,7 @@ def assess_rotation(
             for consumer in required
         )
     )
-    if not can_verify:
+    if not can_verify or attested_at is None:
         return RotationAssessment(
             'awaiting_readback' if required else 'not_evaluated',
             None, len(required), len(matched), None,
