@@ -57,7 +57,7 @@ class SessionStub:
     def rollback(self) -> None:
         self.rollbacks += 1
 
-    def get(self, _model: object, _identifier: int) -> object | None:
+    def get(self, _model: object, _identifier: int, **_kwargs: object) -> object | None:
         return self.channel
 
 
@@ -67,6 +67,7 @@ class ChannelStub:
         self.name = ''
         self.provider_key = ''
         self.enabled = False
+        self.lifecycle_state = 'active'
         self.credential_payload: str | None = None
         self.destination: str | None = None
         self.provider_config: dict[str, object] = {}
