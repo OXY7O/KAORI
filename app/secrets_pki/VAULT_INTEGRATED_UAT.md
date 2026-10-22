@@ -29,7 +29,7 @@ Not Implemented must not be treated as waived acceptance.
 | HV-07 #2591 / #2678 / #2683 | Committed Overview/Inventory, prepared unpublished scoped Registry read model, and PKI validity aggregate; full detail/navigation absent | Not Tested |
 | HV-08 #2592 | Governed provider operation pilot | Not Implemented |
 | HV-09 #2593 | UAT protocol; live scenarios not executed | Not Tested |
-| HV-10 #2594 | Historical Secrets & PKI Analytics | Not Implemented |
+| HV-10 #2594 / #2702 | Current-generation public PKI expiration horizon workspace; historical MetricsConsumer datasets/pages absent | Not Tested |
 | HV-11 #2595 | Central Intelligence / Rule Catalog rule coverage | Not Implemented |
 | HV-12 #2596 | Vault-enriched AlertCase investigation | Not Implemented |
 | HV-13 #2597 / #2678 | Base permission catalog and fail-closed internal read contract; canonical #724 policy evaluator still absent | Not Tested |
@@ -112,3 +112,21 @@ Full Admission → real source-specific UAT and Visual QA/DAST where applicable
 Review currently includes unrelated development; do not promote the whole
 review branch merely because Vault source code merged. Reconcile the
 admission boundary separately.
+
+
+## HV-10 PKI expiration snapshot evidence (#2702)
+
+Operator exercises (Not Tested): with approved Vault stored public PKI certificates,
+verify one qualified current-generation collection containing expiry at precisely
+7 days, after 7 through 30 days, after 30 days, already expired and not yet
+valid. Compare the same-source Inventory validity numbers with the Analytics
+horizon and record exact commit/collection generation without recording
+certificates, identities, paths, CN/SAN, or Secret material.
+
+Verify unauthorized actor with only `secrets_pki.view` receives 403 from the
+direct analytics route, as does an actor with only `analytics.view`. No
+shortcut via role-aware link or direct GET. Verify disabled or stale source,
+opt-out, missing schema, count mismatch and generation mismatch display
+Not Qualified rather than zero. Execute Violet light/dark/responsive,
+screen-reader label and error-state Visual QA. This does not complete HV-10
+historical materialization, lease, authentication or cross-domain analytics.

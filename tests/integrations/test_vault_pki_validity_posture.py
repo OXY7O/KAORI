@@ -212,3 +212,77 @@ def test_overbound_observed_count_is_never_partial_healthy(stored_cert_source):
     state.observed_stored_certificate_count = 65
     db.session.commit()
     assert _read()['status'] == 'incomplete'
+
+
+@pytest.mark.parametrize(('days_until_expiry', 'expected'), [
+    (1, 'expires_within_7d'),
+    (7, 'expires_within_7d'),
+    (8, 'expires_8_to_30d'),
+    (30, 'expires_8_to_30d'),
+    (31, 'expires_after_30d'),
+])
+def test_exclusive_pki_expiry_horizons_are_computed_from_qualified_public_metadata(
+    stored_cert_source, days_until_expiry, expected,
+):
+    instant = AT + timedelta(minutes=5)
+    _add_cert(
+        stored_cert_source,
+        valid_from=AT - timedelta(days=1),
+        valid_until=instant + timedelta(days=days_until_expiry),
+    )
+    result = _read()
+    assert result['status'] == 'ready'
+    assert result[expected] == 1
+    assert sum(result[band] for band in (
+        'expires_within_7d', 'expires_8_to_30d', 'expires_after_30d',
+    )) == result['within_validity_window'] == 1
+    assert result['last_observed_at'] is not None
+    assert 'private-issuer-name' not in repr(result)
+    assert 'test-secret-id' not in repr(result)
+    assert 'serial_hex' not in repr(result)
+    assert 'fingerprint_sha256' not in repr(result)
+
+
+def test_unqualified_pki_never_exposes_expiration_band_zeros(stored_cert_source):
+    state = PKIStoredCertificateCollectionState.query.one()
+    state.status = 'failed'
+    db.session.commit()
+    result = _read()
+    assert result['status'] == 'incomplete'
+    assert result['last_observed_at'] is None
+    assert all(result[band] is None for band in (
+        'expires_within_7d', 'expires_8_to_30d', 'expires_after_30d',
+    ))
+
+
+def test_not_yet_valid_and_expired_never_counted_as_upcoming(stored_cert_source):
+    _add_cert(
+        stored_cert_source,
+        valid_from=AT + timedelta(days=1),
+        valid_until=AT + timedelta(days=7),
+    )
+    _add_cert(
+        stored_cert_source,
+        valid_from=AT - timedelta(days=7),
+        valid_until=AT - timedelta(days=1),
+    )
+    result = _read()
+    assert result['not_yet_valid'] == 1
+    assert result['expired'] == 1
+    assert sum(result[band] for band in (
+        'expires_within_7d', 'expires_8_to_30d', 'expires_after_30d',
+    )) == 0
+
+def test_exact_expiry_instant_is_expired_not_upcoming(stored_cert_source):
+    instant = AT + timedelta(minutes=5)
+    _add_cert(
+        stored_cert_source,
+        valid_from=AT - timedelta(days=1),
+        valid_until=instant,
+    )
+    result = _read()
+    assert result['status'] == 'ready'
+    assert result['expired'] == 1
+    assert result['expires_within_7d'] == 0
+    assert result['expires_8_to_30d'] == 0
+    assert result['expires_after_30d'] == 0

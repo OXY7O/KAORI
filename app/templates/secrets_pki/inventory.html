@@ -154,6 +154,13 @@
                 <p class="text-xs leading-5 text-content-muted">
                     Coverage is limited to explicitly opted-in stored public certificates. Within validity does not establish CA trust, revocation status, delivery to a consumer, or active endpoint serving.
                 </p>
+                {% if can_view_analytics %}
+                    <a href="{{ url_for('secrets_pki.certificate_analytics') }}"
+                       class="inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                        Open PKI Expiration Analytics
+                    </a>
+                {% endif %}
+
             </div>
         {% endcall %}
         <div class="grid gap-3 lg:grid-cols-2">
