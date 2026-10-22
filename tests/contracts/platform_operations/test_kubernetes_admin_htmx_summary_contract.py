@@ -506,7 +506,7 @@ def test_namespace_policy_editor_uses_full_width_companion_row() -> None:
     assert ':aria-expanded="openEditor === {{ loop.index }}"' in table
     assert '@click="openEditor = openEditor === {{ loop.index }} ? null : {{ loop.index }}"' in table
     assert 'x-show="openEditor === {{ loop.index }}"' in table
-    assert '<td colspan="4" class="border-t border-outline-subtle px-4 py-4">' in table
+    assert '<td colspan="4" class="border-t border-outline-subtle px-5 py-4 sm:px-6">' in table
     assert '<details ' not in table
     assert 'Edit Namespace Policy' in table
     assert 'New Reveal Policy' in table
@@ -541,14 +541,16 @@ def test_namespace_live_source_refresh_and_clear_filters_have_distinct_owners() 
     loading = section.index('id="secret-reveal-namespace-loading"', block)
     filters = section.index('table_ui.filter_bar_classes()', loading)
     assert source < block < loading < filters
-    assert 'class="mb-4 flex min-w-0 justify-end"' in section
+    assert 'class="mb-4 min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"' in section
     assert 'refresh_namespace=1' in section[source:block]
     assert 'hx-target="#secret-reveal-cluster-workspace"' in section[source:block]
     assert 'table_ui.action_classes()' in section[source:block]
     assert 'refresh_namespace=1' not in section[block:]
     assert "registry_ui.clear_filters_action(" in section[block:loading]
-    assert "{% if namespace_filters.query or namespace_filters.policy != 'all' %}" not in section
-    assert 'class="relative h-2 bg-surface-card"' in section
+    assert ":hidden=\"!query.trim() && policy === 'all'\"" in section
+    assert "{% if not namespace_filters.query and namespace_filters.policy == 'all' %}hidden{% endif %}" in section
+    assert 'class="{{ table_ui.loading_bar_classes() }}"' in section
+    assert 'relative h-2 bg-surface-card' not in section
     assert 'role="progressbar"' in section
     assert section.count('id="secret-reveal-namespace-loading"') == 1
 
@@ -641,4 +643,60 @@ def test_namespace_policy_table_actions_use_public_shared_macro_signature() -> N
     assert 'refresh_namespace=1' in section
     assert 'id="secret-reveal-namespace-section"' in section
     assert 'id="secret-reveal-live-source"' in section
+
+
+
+def test_secret_reveal_density_uses_source_truth_and_contextual_actions() -> None:
+    cluster = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
+    section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+
+    # Copy remains concise without weakening the underlying RBAC checks.
+    assert 'Kubeconfig available from cluster configuration.' in cluster
+    assert 'Avoid Secret list/watch unless explicitly required.' in cluster
+    assert 'Primary cluster kubeconfig availability, managed from cluster configuration.' not in cluster
+    assert 'Avoid broad Secret discovery unless another feature requires it.' not in cluster
+
+    # Live-source provenance is a full-width self-contained utility block.
+    assert 'Live Namespace Source' in section
+    assert 'Kubernetes reports Namespace presence; KAORI governs reveal policies.' in section
+    assert 'Selected cluster: {{ selected_cluster.name }}' in section
+    assert "namespace_source.has_successful_snapshot" in section
+    assert section.index('id="secret-reveal-live-source"') < section.index('id="secret-reveal-namespace-section"')
+    assert 'hx-target="#secret-reveal-cluster-workspace"' in section
+    assert 'refresh_namespace=1' in section
+    assert section.count('id="secret-reveal-namespace-loading"') == 1
+    assert 'class="{{ table_ui.loading_bar_classes() }}"' in section
+    assert 'relative h-2 bg-surface-card' not in section
+
+    # Clear Filters uses the existing KAORI action owner and appears only
+    # when either search or policy filter is actually active.
+    assert "registry_ui.clear_filters_action(" in section
+    assert "namespace_filters.query | tojson" in section
+    assert "namespace_filters.policy | tojson" in section
+    assert 'x-model="query"' in section
+    assert 'x-model="policy"' in section
+    assert ":hidden=\"!query.trim() && policy === 'all'\"" in section
+    assert "{% if not namespace_filters.query and namespace_filters.policy == 'all' %}hidden{% endif %}" in section
+    assert 'hx-target="#secret-reveal-namespace-table-content"' in section
+
+    # Every live/policy state has source-grounded supporting context.
+    assert 'Observed in Kubernetes' in table
+    assert 'Not found in cluster' in table
+    assert 'Live presence unverified' in table
+    assert 'Reveal access disabled' in table
+    assert 'Approval required' in table
+    assert 'Step-up check required' in table
+
+    # Editor keeps row identity, current→new semantics and security boundary
+    # in one responsive band, not another nested or mostly empty card.
+    assert 'lg:grid-cols-12 lg:gap-6' in table
+    assert 'Current policy:' in table
+    assert 'This change applies only to the selected Namespace.' in table
+    assert 'Available choices depend on cluster readiness and live Namespace state.' in table
+    assert '@click="current = initial; openEditor = null"' in table
+    assert 'name="csrf_token"' in table
+    assert 'enable_option_blocked' in table
+    assert ':disabled="current === initial"' in table
+    assert 'pagination_ui.numeric_pages(' in table
 
