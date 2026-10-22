@@ -215,7 +215,6 @@ def test_overbound_observed_count_is_never_partial_healthy(stored_cert_source):
 
 
 @pytest.mark.parametrize(('days_until_expiry', 'expected'), [
-    (0, 'expires_within_7d'),
     (1, 'expires_within_7d'),
     (7, 'expires_within_7d'),
     (8, 'expires_8_to_30d'),
@@ -273,3 +272,17 @@ def test_not_yet_valid_and_expired_never_counted_as_upcoming(stored_cert_source)
     assert sum(result[band] for band in (
         'expires_within_7d', 'expires_8_to_30d', 'expires_after_30d',
     )) == 0
+
+def test_exact_expiry_instant_is_expired_not_upcoming(stored_cert_source):
+    instant = AT + timedelta(minutes=5)
+    _add_cert(
+        stored_cert_source,
+        valid_from=AT - timedelta(days=1),
+        valid_until=instant,
+    )
+    result = _read()
+    assert result['status'] == 'ready'
+    assert result['expired'] == 1
+    assert result['expires_within_7d'] == 0
+    assert result['expires_8_to_30d'] == 0
+    assert result['expires_after_30d'] == 0
