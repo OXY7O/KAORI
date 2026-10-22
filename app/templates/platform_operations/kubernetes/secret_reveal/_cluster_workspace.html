@@ -42,32 +42,32 @@
             <div class="w-full min-w-0 lg:w-80 xl:w-96">
                 <label for="secret-reveal-cluster"
                        class="mb-1.5 block text-xs font-semibold text-content-secondary">Selected Cluster</label>
-            <form method="get"
-                  action="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal') }}"
-                  hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
-                  hx-target="#secret-reveal-cluster-workspace"
-                  hx-swap="outerHTML"
-                  hx-indicator="#secret-reveal-cluster-loading"
-                  class="w-full min-w-0">
-                <input type="hidden" name="view" value="{{ secret_reveal_view }}" :value="activeTab">
-                <input type="hidden" name="refresh_namespace" value="1">
-                <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
-                <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
-                <input type="hidden" name="page" value="1">
-                <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
-                <select id="secret-reveal-cluster"
-                        name="cluster_id"
-                        data-kaori-auto-submit
-                        class="h-10 w-full min-w-0 rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
-                    {% if not clusters %}
-                        <option value="">No cluster registered</option>
-                    {% endif %}
-                    {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}"
-                                {% if selected_cluster and selected_cluster.id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
-                    {% endfor %}
-                </select>
-            </form>
+                <form method="get"
+                      action="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal') }}"
+                      hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
+                      hx-target="#secret-reveal-cluster-workspace"
+                      hx-swap="outerHTML"
+                      hx-indicator="#secret-reveal-cluster-loading"
+                      class="w-full min-w-0">
+                    <input type="hidden" name="view" value="{{ secret_reveal_view }}" :value="activeTab">
+                    <input type="hidden" name="refresh_namespace" value="1">
+                    <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
+                    <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
+                    <input type="hidden" name="page" value="1">
+                    <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
+                    <select id="secret-reveal-cluster"
+                            name="cluster_id"
+                            data-kaori-auto-submit
+                            class="h-10 w-full min-w-0 rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                        {% if not clusters %}
+                            <option value="">No cluster registered</option>
+                        {% endif %}
+                        {% for cluster in clusters %}
+                            <option value="{{ cluster.id }}"
+                                    {% if selected_cluster and selected_cluster.id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
             </div>
         </div>
         <div id="secret-reveal-cluster-loading"
@@ -77,16 +77,16 @@
     </header>
     <div class="mt-4">
         {{ content_tabs.render_controlled_links(
-        'secret-reveal-management',
-        [
-            ('prerequisites', 'Cluster Prerequisites', 'shield-check', none, url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='prerequisites', cluster_id=selected_cluster.id if selected_cluster else none, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, per_page=namespace_pagination.per_page)),
-            ('policies', 'Namespace Policies', 'boxes', namespace_summary.total if selected_cluster else none, url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id if selected_cluster else none, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.page, per_page=namespace_pagination.per_page))
-        ],
-        secret_reveal_view,
-        'Secret Reveal Configuration Sections',
-        embedded=true,
-        data_namespace='secret-reveal'
-    ) }}
+            'secret-reveal-management',
+            [
+                ('prerequisites', 'Cluster Prerequisites', 'shield-check', none, url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='prerequisites', cluster_id=selected_cluster.id if selected_cluster else none, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, per_page=namespace_pagination.per_page)),
+                ('policies', 'Namespace Policies', 'boxes', namespace_summary.total if selected_cluster else none, url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id if selected_cluster else none, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.page, per_page=namespace_pagination.per_page))
+            ],
+            secret_reveal_view,
+            'Secret Reveal Configuration Sections',
+            embedded=true,
+            data_namespace='secret-reveal'
+        ) }}
     </div>
 
     <div id="secret-reveal-management-panel-prerequisites"
