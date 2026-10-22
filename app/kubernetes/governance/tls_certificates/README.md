@@ -152,3 +152,30 @@ controller readback and endpoint serving remain separate proof layers.
 Requires Developer Check, reviewed Alembic PostgreSQL upgrade, new source
 collection, old/new Secret recreation test, role-negative/browser Visual
 QA and human DevContainer/staging UAT before acceptance.
+
+
+## Controller ownerReference candidate evidence (HV-05, #2589)
+
+TLS Governance now additionally extracts **only** a bounded Kubernetes
+`metadata.ownerReferences` controller UID for supported `ExternalSecret`
+(`external-secrets.io`) and `Certificate` (`cert-manager.io`) objects.
+The source-owned committed `controller_owner_refs` column contains at most
+one accepted {kind, api_group, immutable UID} record; resource names,
+annotations, provider paths and arbitrary labels are never stored by this
+contract. Unsupported ownership kinds yield no supported candidate, not a
+negative claim about controllers. Legacy/unqualified/malformed observations
+remain NULL/unknown and do not fail normal TLS inventory or imply no syncing.
+
+**Warning:** `ownerReferences` is *Kubernetes ownership metadata*. It
+does not attest a controller reconciled this Secret, used Vault as its
+SecretStore/issuer, adopted its `tls.crt` bytes, or served them at an
+endpoint. In particular, some controller creation policies do not populate
+ownerReferences. The optional evidence is distinct from controller-specific
+status and readback and must not be reported as Verified Delivery.
+
+Alembic revision `20261022_tls_controller_owner` is nullable and intentionally
+does not backfill old snapshots using names or annotations. Re-run the
+existing bounded TLS collection after migration. Preserve TLS Secret
+payload-scrubbing and `tls.crt`-only behavior; no extra Kubernetes API
+discovery or mutation is introduced. Tests:
+`tests/kubernetes/governance/test_tls_controller_owner_evidence.py`.
