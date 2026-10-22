@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionInput
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultClient
+from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import parse_approved_kv2_mounts
 from app.integrations.secrets_management.secrets_pki.providers.vault.transport import validate_auth_mount, validate_vault_endpoint
 from app.models.integration import IntegrationInstance
 from app.models.vault import VaultInstance
@@ -24,6 +25,7 @@ def test_connection(values: VaultConnectionInput) -> dict:
 def save_connection(values: VaultConnectionInput, *, existing: VaultInstance | None = None) -> VaultInstance:
     endpoint = validate_vault_endpoint(values.endpoint)
     mount = validate_auth_mount(values.auth_mount)
+    approved_mounts = list(parse_approved_kv2_mounts(','.join(values.kv2_mounts)))
     duplicate = IntegrationInstance.query.filter(
         IntegrationInstance.integration_type == 'secrets_pki',
         IntegrationInstance.name == values.name,
@@ -52,6 +54,7 @@ def save_connection(values: VaultConnectionInput, *, existing: VaultInstance | N
         instance.role_id != values.role_id,
         instance.secret_id != values.secret_id,
         instance.timeout != values.timeout,
+        list(instance.kv2_mounts or ()) != approved_mounts,
     ))
     identity.name = values.name
     identity.description = values.description
@@ -70,6 +73,7 @@ def save_connection(values: VaultConnectionInput, *, existing: VaultInstance | N
     instance.role_id = values.role_id
     instance.secret_id = values.secret_id
     instance.timeout = values.timeout
+    instance.kv2_mounts = approved_mounts
     instance.verify_ssl = True
     if changed:
         identity.readiness_status = 'validation_required'
