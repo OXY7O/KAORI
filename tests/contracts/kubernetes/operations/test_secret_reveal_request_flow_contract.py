@@ -191,6 +191,7 @@ def test_requester_approval_notification_opens_exact_owned_request_and_preserves
     assert 'name="csrf_token"' in table
     assert 'name="my_request_id"' in step_up
     assert 'value="{{ my_reveal_focus_id }}"' in step_up
+    assert 'A request from your notification is selected below.' in step_up
     assert "linked_request_id = (request.form.get('my_request_id') or '').strip()" in routes
     assert "if len(linked_request_id) > 80:" in routes
     assert 'return redirect(return_url)' in routes
