@@ -182,3 +182,29 @@ def test_out_of_order_or_conflicting_fingerprint_observations_fail_closed(store)
 def test_invalid_or_overbroad_pki_mount_scope_is_rejected(configured):
     with pytest.raises(ValueError):
         parse_approved_pki_mounts(configured)
+
+
+def test_pki_readiness_uses_only_committed_state_and_honest_zero(store):
+    from app.secrets_pki.pki_presentation import pki_public_readiness
+
+    instance = VaultInstance.query.filter_by(integration_instance_id=store).one()
+    missing = pki_public_readiness(instance=instance)
+    assert missing['state'] == 'not_collected'
+    assert missing['observed_issuers'] is None
+
+    commit_pki_public_issuers(store, _snapshot(empty=True))
+    committed_zero = pki_public_readiness(instance=instance)
+    assert committed_zero['state'] == 'committed'
+    assert committed_zero['observed_issuers'] == 0
+    assert committed_zero['committed_mounts'] == 1
+
+    mark_pki_public_issuers_failed(store, 'pki')
+    stale = pki_public_readiness(instance=instance)
+    assert stale['state'] == 'stale'
+    assert stale['observed_issuers'] == 0
+
+    instance.pki_mounts = []
+    db.session.commit()
+    disabled = pki_public_readiness(instance=instance)
+    assert disabled['state'] == 'not_configured'
+    assert disabled['observed_issuers'] is None
