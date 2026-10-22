@@ -8,6 +8,7 @@ from app.integrations.secrets_management.secrets_pki.sync_jobs import (
     enqueue_vault_inventory_sync,
 )
 from app.models.job import JobExecution, JobPolicy
+from app.platform_operations.jobs.constants import ACTIVE_JOB_STATUSES
 from app.models.vault import VaultInstance
 from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchResult
 from app.platform_operations.jobs.policies.presentation import present_interval
@@ -44,6 +45,13 @@ def build_vault_inventory_sync_context(policy: JobPolicy) -> dict:
     recent = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(5).all()
     registered = VaultInstance.query.count()
     eligible = len(targets)
+    active = jobs.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES), JobExecution.completed_at.is_(None)).order_by(JobExecution.updated_at.desc(), JobExecution.id.desc()).first()
+    state = {
+        'label': 'Execution Active' if active else ('Ready' if eligible else 'Blocked'),
+        'tone': 'pending' if active else ('normal' if eligible else 'warning'),
+        'icon': 'loader-circle' if active else ('circle-check' if eligible else 'shield-alert'),
+        'description': 'Vault metadata reconciliation is active.' if active else ('Approved metadata scopes can be reconciled.' if eligible else 'Configure approved KV v2 mounts on a Ready Vault integration first.'),
+    }
     return {
         'registered_system_count': registered,
         'eligible_system_count': eligible,
@@ -53,4 +61,9 @@ def build_vault_inventory_sync_context(policy: JobPolicy) -> dict:
         'interval_label': present_interval(policy.interval_minutes),
         'latest_job': present_job_execution(recent[0]) if recent else None,
         'recent_jobs': [present_job_execution(job) for job in recent],
+        'active_job': present_job_execution(active) if active else None,
+        'execution_state': state,
+        'configuration_state': {'label': 'Execution Active' if active else ('Enabled' if policy.enabled else 'Manual Only'), 'tone': 'pending' if active else ('normal' if policy.enabled else 'unknown'), 'icon': 'loader-circle' if active else ('circle-check' if policy.enabled else 'mouse-pointer-click')},
+        'scheduler_state': {'label': 'Enabled' if policy.enabled else 'Disabled', 'tone': 'normal' if policy.enabled else 'disabled', 'icon': 'circle-check' if policy.enabled else 'circle-pause', 'description': 'Vault metadata inventory schedule.'},
+        'readiness_state': {'label': 'Sync Eligible' if eligible else 'Blocked', 'tone': 'normal' if eligible else 'warning', 'icon': 'link-2' if eligible else 'shield-alert', 'description': 'Approved Ready Vault scopes.' if eligible else 'No eligible Vault KV v2 metadata mounts.'},
     }
