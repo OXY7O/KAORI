@@ -9,6 +9,7 @@ certificate serials, Vault mount paths, SAN/CN, raw PEM or resource IDs.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 from typing import Any
 
 from sqlalchemy import inspect
@@ -55,6 +56,7 @@ def _blocked(label: str, *, state: str = 'blocked') -> dict[str, Any]:
         'overlapping_certificates': None,
         'matching_kubernetes_tls_secrets': None,
         'matching_tls_secrets_with_object_uid': None,
+        'object_identity_status': 'not_qualified',
         'ingress_reference_status': 'unknown',
         'ingress_mapping_state': 'not_collected',
         'matching_tls_secrets_referenced_by_ingress': None,
@@ -84,6 +86,16 @@ def _qualified_ingress_reference(value: Any) -> bool:
         ):
             raise ValueError('Ingress reference identity is incomplete.')
     return bool(value)
+
+
+def _has_canonical_object_uid(value: object) -> bool:
+    """Legacy NULL or malformed database values are not trusted identities."""
+    if not isinstance(value, str) or len(value) > 64:
+        return False
+    try:
+        return str(UUID(value)) == value
+    except (ValueError, TypeError, AttributeError):
+        return False
 
 
 def _schema_ready() -> bool:
@@ -243,7 +255,7 @@ def build_certificate_delivery_overlap(
             if len(tls_rows) > _MAX_CERT_RECORDS:
                 return _blocked('Kubernetes TLS Fingerprint Overlap Exceeds Limit')
             tls_fps = tuple(row[0] for row in tls_rows)
-            uid_count = sum(1 for row in tls_rows if row[1] is not None)
+            uid_count = sum(1 for row in tls_rows if _has_canonical_object_uid(row[1]))
             # Authoritative Kubernetes Ingress mapping supplies the reference;
             # no association is inferred from DNS, serial or matching cert.
             if mapping_state == 'ready':
@@ -284,7 +296,17 @@ def build_certificate_delivery_overlap(
             'matching_kubernetes_tls_secrets': assessment.matching_kubernetes_tls_secrets,
             'matching_tls_secrets_with_object_uid': (
                 uid_count if assessment.status in {'overlap_observed', 'no_overlap_observed'}
-                and source_state == 'ready' and kubernetes_state == 'ready' else None
+                and source_state == 'ready' and kubernetes_state == 'ready'
+                and (uid_count > 0 or assessment.matching_kubernetes_tls_secrets == 0)
+                else None
+            ),
+            'object_identity_status': (
+                'not_qualified' if source_state != 'ready' or kubernetes_state != 'ready'
+                else 'not_observed' if uid_count is None or (
+                    uid_count == 0 and assessment.matching_kubernetes_tls_secrets != 0
+                )
+                else 'partial' if uid_count < (assessment.matching_kubernetes_tls_secrets or 0)
+                else 'qualified'
             ),
             'ingress_reference_status': ingress.status,
             'ingress_mapping_state': ingress.mapping_state,
