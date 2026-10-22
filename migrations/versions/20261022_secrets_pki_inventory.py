@@ -28,7 +28,8 @@ def upgrade() -> None:
         sa.Column('provider_key', sa.String(length=80), nullable=False),
         sa.Column('provider_namespace', sa.String(length=255), nullable=False),
         sa.Column('mount', sa.String(length=160), nullable=False),
-        sa.Column('path', sa.String(length=512), nullable=False),
+        sa.Column('path', sa.String(length=1024), nullable=False),
+        sa.Column('path_sha256', sa.String(length=64), nullable=False),
         sa.Column('representation_role', sa.String(length=40), nullable=False),
         sa.Column('observation_status', sa.String(length=40), nullable=False),
         sa.Column('current_version', sa.Integer(), nullable=False),
@@ -37,7 +38,7 @@ def upgrade() -> None:
         sa.Column('cas_required', sa.Boolean(), nullable=False),
         sa.Column('last_observed_at', sa.DateTime(timezone=True), nullable=False),
         sa.UniqueConstraint(
-            'integration_instance_id', 'provider_namespace', 'mount', 'path',
+            'integration_instance_id', 'provider_namespace', 'mount', 'path_sha256',
             name='uq_secrets_pki_provider_representation',
         ),
     )
