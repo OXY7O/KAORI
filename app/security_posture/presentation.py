@@ -6,6 +6,7 @@ Provider engines and source-domain evidence remain authoritative.
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -108,6 +109,7 @@ def build_security_posture(
     rows = [
         {
             'cve_id': row.cve_id,
+            'impact_available': bool(re.fullmatch(r'CVE-[0-9]{4}-[0-9]{4,}', row.cve_id or '')),
             'severity': next((key.title() for key, order in _SEVERITY_RANK.items() if order == row.severity_rank), 'Unknown'),
             'finding_count': int(row.finding_count or 0),
             'artifact_count': int(row.artifact_count or 0),
