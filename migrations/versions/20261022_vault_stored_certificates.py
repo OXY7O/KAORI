@@ -14,6 +14,7 @@ depends_on = None
 
 
 def upgrade() -> None:
+    op.add_column('vault_instances', sa.Column('pki_stored_certs_enabled', sa.Boolean(), nullable=False, server_default=sa.false()))
     op.create_table(
         'secrets_pki_stored_cert_observations',
         sa.Column('id', sa.Integer(), primary_key=True),
@@ -54,6 +55,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_column('vault_instances', 'pki_stored_certs_enabled')
     op.drop_index('ix_secrets_pki_stored_cert_collection_states_integration_instance_id',
                   table_name='secrets_pki_stored_cert_collection_states')
     op.drop_table('secrets_pki_stored_cert_collection_states')
