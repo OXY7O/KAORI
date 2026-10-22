@@ -30,6 +30,9 @@ _MAX_CERTS_PER_MOUNT = 64
 _MAX_CERTS = _MAX_SCOPES * _MAX_CERTS_PER_MOUNT
 _FRESHNESS = timedelta(hours=24)
 _STATES = ('within_validity_window', 'not_yet_valid', 'expired', 'unknown')
+_EXPIRY_BANDS = ('expires_within_7d', 'expires_8_to_30d', 'expires_after_30d')
+_EXPIRY_7D = timedelta(days=7)
+_EXPIRY_30D = timedelta(days=30)
 
 
 def _result(
@@ -37,13 +40,18 @@ def _result(
     label: str,
     *,
     counts: Counter[str] | None = None,
+    expiry_counts: Counter[str] | None = None,
     count: int | None = None,
+    last_observed_at: datetime | None = None,
 ) -> dict[str, Any]:
     return {
         'status': status,
         'label': label,
         'observed_stored_certificates': count,
         **{state: (counts.get(state, 0) if counts is not None else None) for state in _STATES},
+        **{band: (expiry_counts.get(band, 0) if expiry_counts is not None else None) for band in _EXPIRY_BANDS},
+        'last_observed_at': last_observed_at,
+        'expiry_band_basis': 'UTC current-generation public X.509 validity only',
         'coverage': 'Opted-in committed Vault PKI stored certificates only',
         'trust_verified': False,
         'revocation_verified': False,
@@ -166,6 +174,7 @@ def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[st
         if any(counts_by_scope.get(scope, 0) != state_by_scope[scope][4] for scope in scopes):
             return _result('incomplete', 'PKI Committed Certificate Count Conflict')
         result: Counter[str] = Counter()
+        expiry: Counter[str] = Counter()
         for row in rows:
             source = state_by_scope[(row[0], row[1], row[2])]
             if _utc(row[5]) != _utc(source[5]):
@@ -179,9 +188,17 @@ def build_stored_pki_validity_posture(*, now: datetime | None = None) -> dict[st
                 result['expired'] += 1
             else:
                 result['within_validity_window'] += 1
+                remaining = valid_until - instant
+                if remaining <= _EXPIRY_7D:
+                    expiry['expires_within_7d'] += 1
+                elif remaining <= _EXPIRY_30D:
+                    expiry['expires_8_to_30d'] += 1
+                else:
+                    expiry['expires_after_30d'] += 1
         return _result(
             'ready', 'Qualified Stored Certificate Validity Windows',
-            counts=result, count=len(rows),
+            counts=result, expiry_counts=expiry, count=len(rows),
+            last_observed_at=max(_utc(row[5]) for row in state_by_scope.values()),
         )
     except (SQLAlchemyError, TypeError, ValueError, AttributeError):
         return _result('unavailable', 'PKI Validity Evidence Unavailable')

@@ -202,3 +202,26 @@ by central Reports Overview. The list is permission-gated by `reports.view`
 and cannot generate/schedule an artifact. No source-level Secret report
 export is admitted while #724/#2688 authorization and HV-15 datasets,
 sanitization, retained evidence and human UAT remain incomplete.
+
+
+## PKI Expiration Analytics — HV-10 #2702
+
+The new GET-only `/secrets-pki/analytics/certificates` view requires **both**
+`secrets_pki.view` and `analytics.view`. Existing source-owned stored public
+PKI certificate readiness (fresh/current generation, count coherence, opt-in,
+approved mounts) now provides disjoint upcoming validity expiry bands: within
+7 days, after 7 through 30 days, and after 30 days. Expired, not-yet-valid
+and unknown chronology remain separate. The Inventory and capacity Dashboard
+link to this view only with the Analytics permission. It reuses shared Violet
+Hero/cards/section components, no live Vault calls and no new tables/jobs.
+
+The new view is a **current-generation snapshot** only. No time-series,
+forecast, revoked/trusted CA finding, Secret identity, owner, per-instance
+drill-down, report export or inferred workload TLS serving is provided.
+Disabled/failed/stale/incomplete source evidence removes **all numeric expiry
+bands**, never replacing missing data with healthy zero. Future resource
+specific drill-down depends on #724/#2688.
+
+Focused tests extend
+`tests/integrations/test_vault_pki_validity_posture.py`. Existing quality
+gates and real Vault/PostgreSQL, RBAC, Visual QA/UAT remain required.

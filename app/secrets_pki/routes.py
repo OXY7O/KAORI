@@ -35,6 +35,7 @@ def overview() -> ResponseReturnValue:
         active_tab=normalize_operational_tab(request.args.get('tab')),
         can_manage_integrations=current_user.has_permission('integrations.manage'),
         can_view_intelligence=current_user.has_permission('intelligence.view'),
+        can_view_analytics=current_user.has_permission('analytics.view'),
         can_view_reports=can_view_reports,
         report_coverage=coverage,
     )
@@ -56,4 +57,16 @@ def inventory() -> ResponseReturnValue:
         can_manage_integrations=current_user.has_permission('integrations.manage'),
         can_execute_inventory=current_user.has_permission('secrets_pki.sync')
         and current_user.has_permission('jobs.execute'),
+        can_view_analytics=current_user.has_permission('analytics.view'),
+    )
+
+
+@secrets_pki_bp.get('/analytics/certificates')
+@permission_required('secrets_pki.view')
+@permission_required('analytics.view')
+def certificate_analytics() -> ResponseReturnValue:
+    """A current-generation public-PKI expiry snapshot, not a time-series."""
+    return render_template(
+        'secrets_pki/analytics/certificates.html',
+        pki_validity=build_stored_pki_validity_posture(),
     )
