@@ -362,3 +362,29 @@ this redesign only improves spacing and visual hierarchy. Edit/Test/Delete,
 destructive confirmation, CSRF, RBAC, HTMX state, OOB operational feedback,
 filter/header loading and pagination contracts remain unchanged. Do not
 use inline row-expanding controls in dense operational inventory tables.
+
+## Channel Inventory Symmetry, Scroll, and Deletion Guidance (#2731, 2026-10-23)
+
+Policy modal uses one consistent full-width horizontal row per event
+capability: left column is capability name/count; right column uses a
+responsive two-column event list. This avoids uneven two-column cards
+when capability event counts vary. Normal narrow/mobile widths stack
+label and events without clipping.
+
+Channel Inventory removes the unconditional 1280px minimum table width
+in favor of a 1100px responsive baseline with wrapped action controls. Preserve six
+functional columns, separate Test/Delivery evidence, and usable
+Edit/Test/Delete actions. Horizontal scrolling is allowed only where
+the available viewport cannot reasonably fit the table.
+
+A channel with committed delivery evidence or report-schedule
+references cannot be hard-deleted: deletion is server-blocked by
+`NotificationChannelDeletionBlocked` and must not cascade to audit
+evidence. Instead of an inert disabled Delete control, show an accessible
+**Why locked?** native dialog containing the exact count of delivery
+records, count/name of report schedules, and safe next steps: disable
+via existing Edit workflow to stop delivery, detach from report
+schedules, and only hard-delete when both dependencies are zero.
+Previously committed evidence remains authoritative; do not delete
+history to clear the guard. No hard-delete override, new archive
+semantics, data migration or bypass of RBAC/CSRF is authorized here.
