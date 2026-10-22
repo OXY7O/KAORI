@@ -52,7 +52,7 @@ def _fingerprint(value: str) -> str:
 
 
 def _validate(evidence: PKIIssuerCollection) -> None:
-    if not evidence.complete or not 0 <= len(evidence.issuers) <= MAX_ISSUERS:
+    if evidence.complete is not True or not 0 <= len(evidence.issuers) <= MAX_ISSUERS:
         raise ValueError('PKI issuer observation is incomplete or outside bounds.')
     _utc(evidence.observed_at)
     if len(parse_approved_pki_mounts(evidence.mount)) != 1:
@@ -194,10 +194,11 @@ def commit_pki_public_issuers(
         state.status = 'ready'
         state.observed_issuer_count = len(observed)
         state.last_observed_at = timestamp
-        state.last_committed_at = datetime.now(UTC)
+        committed_at = datetime.now(UTC)
+        state.last_committed_at = committed_at
         state.last_error = None
         db.session.commit()
-        return PKICommitSummary(len(observed), certificates, missing, state.last_committed_at)
+        return PKICommitSummary(len(observed), certificates, missing, committed_at)
     except Exception:
         db.session.rollback()
         raise
