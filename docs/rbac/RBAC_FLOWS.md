@@ -8,11 +8,12 @@ flask seed-rbac
   -> upsert five default roles
   -> mark default roles system + active
   -> converge each default role to canonical permission set
-  -> backfill missing user.role_id from legacy role slug
   -> commit
 ```
 
 The command is idempotent and must run after migrations during bootstrap or deployment.
+Any historical role-id backfill belongs to a separately reviewed migration,
+not to this current idempotent seeding command.
 
 ## 2. Authorization request
 
@@ -21,10 +22,9 @@ HTTP request
   -> authentication/session validation
   -> permission_required(key)
   -> current_user.has_permission(key)
-       -> Super Admin? allow
-       -> active role contains key? allow
-       -> legacy default-role fallback contains key? allow
-       -> deny
+       -> local-database Super Admin? global RBAC allow
+       -> assigned active role contains key? allow
+       -> otherwise deny
   -> view/service execution OR HTTP 403
 ```
 
@@ -108,7 +108,6 @@ users.manage actor edits user
   -> admin-level target/request checks
   -> last-Super-Admin checks where applicable
   -> set users.role_id
-  -> maintain legacy role slug compatibility
   -> audit user change
 ```
 
@@ -165,7 +164,7 @@ Deletion is permanent. Use deactivation when the role may be needed for recovery
 ## 11. Permission registry change
 
 ```text
-engineer adds permission to app/access/rbac/defaults.py
+engineer updates the code-owned access.yaml Permission Registry and dependencies
   -> add server-side route/service guard
   -> update default-role mapping if required
   -> update navigation visibility
