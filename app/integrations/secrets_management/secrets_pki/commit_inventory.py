@@ -7,6 +7,7 @@ an HTTP route, dispatch its own Celery task, or store provider responses.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -70,7 +71,7 @@ def commit_kv2_inventory(
 
     namespace = instance.namespace or ''
     if len(namespace) > 255 or any(
-        len(row.path) > 512 or row.mount != evidence.mount for row in evidence.records
+        len(row.path) > 1024 or row.mount != evidence.mount for row in evidence.records
     ):
         raise ValueError('KV v2 representation scope exceeds supported bounds.')
 
@@ -113,6 +114,7 @@ def commit_kv2_inventory(
             .all()
         )
         existing = {row.path: row for row in existing_rows}
+        digests = {row.path_sha256: row.path for row in existing_rows}
         if existing_rows and not evidence.records:
             raise ValueError(
                 'An unexpectedly empty KV v2 collection cannot replace prior committed evidence.'
@@ -120,6 +122,11 @@ def commit_kv2_inventory(
 
         versions_count = 0
         for record in evidence.records:
+            path_fingerprint = sha256(record.path.encode('utf-8')).hexdigest()
+            conflicting_path = digests.get(path_fingerprint)
+            if conflicting_path is not None and conflicting_path != record.path:
+                raise ValueError('Conflicting Vault path identity evidence.')
+            digests[path_fingerprint] = record.path
             representation = existing.pop(record.path, None)
             if representation is None:
                 representation = SecretProviderRepresentation(
@@ -129,6 +136,7 @@ def commit_kv2_inventory(
                     provider_namespace=namespace,
                     mount=evidence.mount,
                     path=record.path,
+                    path_sha256=path_fingerprint,
                     representation_role='material_authority',
                 )
                 db.session.add(representation)
