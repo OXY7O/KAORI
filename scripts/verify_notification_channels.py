@@ -28,6 +28,10 @@ def main() -> int:
         )
     )
     channels_template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    native_dialogs = read('app/static/js/native_dialogs.js')
+    confirmation = read('app/templates/components/destructive_confirmation_modal.html')
+    confirmation_script = read('app/static/js/destructive_confirmation_modal.js')
     integration_nav = read('app/templates/components/navigation/integrations_menu.html')
     intelligence_nav = read('app/templates/components/navigation/intelligence_menu.html')
     report_notifications = read('app/reports/notifications.py')
@@ -121,6 +125,20 @@ def main() -> int:
         and "lead=false" in delivery_template
         and "not receipt or readership by a person." in delivery_template
         and "sending a notification does not create an audit event." in delivery_template,
+        'confirmed HTMX channel actions': "data-destructive-modal-open" in template
+        and "destructive_confirmation_modal.render(" in template
+        and "data-destructive-submit-button-id=" in template
+        and "data-destructive-modal-confirm" in confirmation
+        and "submit?.click()" in confirmation_script
+        and 'hx-target="#notification-channels-workspace"' in template
+        and 'hx-select="#notification-channels-workspace"' in template
+        and 'hx-target="#notification-channel-config-dialog"' in template
+        and 'hx-post="{{ url_for(' in channel_modals
+        and "target.id === 'notification-channel-config-dialog'" in native_dialogs
+        and "operation_feedback=load_operational_feedback()" in delivery_template
+        and "components/operation_feedback_oob.html" in delivery_template
+        and "def _channel_return_query()" in routes
+        and "delete_channel(channel)" in routes,
         'delivery journal surface': 'query = NotificationDelivery.query' in delivery_registry
         and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
         and journal_order in delivery_registry
