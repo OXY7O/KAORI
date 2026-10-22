@@ -127,3 +127,29 @@ def test_rejects_invalid_nested_listing_without_logging_secret_path(client, monk
     with pytest.raises(VaultProviderError) as raised:
         collect_kv2_metadata(client, mount='kv')
     assert '../secret' not in str(raised.value)
+
+
+@pytest.mark.parametrize('raw,expected', [
+    ('', ()),
+    ('secret', ('secret',)),
+    ('secret, teams/credentials', ('secret', 'teams/credentials')),
+])
+def test_explicit_kv2_mount_allowlist(raw, expected):
+    from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
+        parse_approved_kv2_mounts,
+    )
+
+    assert parse_approved_kv2_mounts(raw) == expected
+
+
+@pytest.mark.parametrize('raw', [
+    'secret,secret', 'secret?token=x', '../secret', 'secret%2fdata',
+    'one,two,three,four,five,six,seven,eight,nine',
+])
+def test_rejects_unsafe_or_unbounded_kv2_scope(raw):
+    from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
+        parse_approved_kv2_mounts,
+    )
+
+    with pytest.raises(VaultProviderError):
+        parse_approved_kv2_mounts(raw)
