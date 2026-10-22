@@ -128,3 +128,30 @@ def test_registry_footer_without_route_identity_retains_existing_action() -> Non
         )
     assert 'action="/artifact-registry/security"' in rendered
     assert 'hx-get="/artifact-registry/security"' in rendered
+
+
+def test_cve_impact_runtime_footer_keeps_other_table_page() -> None:
+    app = Flask(__name__, template_folder=str(ROOT / 'app/templates'))
+    app.add_url_rule(
+        '/artifact-registry/security/cve/<string:cve_id>/impact',
+        endpoint='artifact_registry.security_cve_impact',
+        view_func=lambda cve_id: cve_id,
+    )
+    page = pagination_payload(build_pagination_window(total_items=12, page=3, per_page=5))
+    with app.test_request_context(
+        '/artifact-registry/security/cve/CVE-2022-1586/impact?finding_page=2&runtime_page=3'
+    ):
+        rendered = render_template_string(
+            """{% import "components/table_registry.html" as registry %}
+{{ registry.footer('artifact_registry.security_cve_impact',
+    'cve-runtime', 'cve-runtime-loading', page,
+    {'cve_id': 'CVE-2022-1586', 'finding_page': 2},
+    [5, 10, 25, 50], page_param='runtime_page') }}""",
+            page=page,
+        )
+    assert 'action="/artifact-registry/security/cve/CVE-2022-1586/impact"' in rendered
+    assert 'hx-get="/artifact-registry/security/cve/CVE-2022-1586/impact"' in rendered
+    assert 'name="finding_page" value="2"' in rendered
+    assert 'name="runtime_page" value="1"' in rendered
+    assert 'finding_page=2' in rendered
+    assert 'runtime_page=2' in rendered
