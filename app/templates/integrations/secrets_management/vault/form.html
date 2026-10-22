@@ -18,7 +18,7 @@
     {% endif %}
     <form method="post" class="grid gap-5 xl:grid-cols-12 xl:items-start" autocomplete="off">
         {{ form.hidden_tag() }}
-        <input type="hidden" name="connection_test_proof" value="{{ proof or '' }}">
+        {{ form.connection_test_proof(value=proof or "", type="hidden") }}
         <section class="{{ integration_ui.section_shell_classes() }} xl:col-span-8">
             <header class="border-b border-outline-subtle p-5 sm:px-6">
                 <h2 class="text-base font-semibold text-content-primary">Connection Configuration</h2>
@@ -51,7 +51,7 @@
                 <li>Only HTTPS endpoints on the approved origin list are accepted.</li>
                 <li>AppRole credentials require a non-root, read-oriented policy.</li>
                 <li>Test Connection confirms AppRole identity but does not establish Full Validation readiness.</li>
-                <li>After Test Connection, re-enter SecretID if the password input is cleared before saving.</li>
+                <li>The encrypted 10-minute test proof permits Save without exposing SecretID again.</li>
                 <li>Single-use SecretIDs cannot be reused for test, save, and worker validation; use an approved reusable/rotated credential for this workflow.</li>
             </ul>
             <div class="mt-5 flex flex-wrap gap-2">
