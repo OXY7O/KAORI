@@ -327,3 +327,23 @@ activation. Source-scoped decisions, IdP principals and migration cutover
 remain in #2725/#2726. Run approved DevContainer schema upgrade via
 the dedicated `db-bootstrap --upgrade-only` service, **not** by running
 `flask db upgrade` as kaori_runtime.
+
+## Exact scoped policy evaluator (HV #2725 — internal only)
+
+`app/access/scope_policy.py` checks the latest persisted policy revision
+from canonical Access state using the active KAORI `User.id` and
+normalized role `secrets_pki.view`, exact IntegrationInstance/Vault source,
+approved namespace and KV v2 mount. Draft/suspended/revoked/expired/unknown
+policy versions deny; an instance-only grant never inherits to the mount.
+The new `read_governed_scoped_secret_registry` is the **only candidate**
+for future web/service adapters. It keeps the policy row locked through
+the existing bounded committed Secret Registry read, writes mandatory
+sanitized Activity Audit in that transaction, and returns rows only after
+successful commit; failure rolls back and returns an uninformative denied page.
+
+The legacy `read_scoped_secret_registry(decision=...)` is a lower-level
+unpublished test/read-model helper and **must never be a route entrypoint**
+because the caller can construct a synthetic decision. No HTTP, HTMX,
+worker, Secret detail or grant-admin UI exposes either function now.
+Future #2726 and security UAT must establish trusted session identity,
+negative tests and request/job enforcement before publication.

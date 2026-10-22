@@ -6,7 +6,7 @@ import pytest
 from cryptography.fernet import Fernet
 from flask import Flask
 
-from app.access import scoped_grants
+from app.access import scope_policy, scoped_grants
 from app.extensions.db import db
 from app.models.integration import IntegrationInstance
 from app.models.notification import Notification
@@ -56,7 +56,7 @@ def scope_store():
         db.session.add_all(actors)
         source = IntegrationInstance(
             integration_type='secrets_pki', provider_key='vault', adapter_key='vault_http_v1',
-            name='Scope Test Vault', enabled=True, lifecycle_status='active',
+            name='Scope Test Vault', enabled=True, lifecycle_status='active', readiness_status='ready',
         )
         db.session.add(source)
         db.session.flush()
@@ -174,3 +174,91 @@ def test_audit_does_not_include_vault_mount_or_provider_secret(scope_store):
     assert 'mount' not in notification.metadata_json
     assert 'vault.invalid' not in rendered
     assert 'test-only' not in rendered
+
+
+def test_exact_evaluator_only_qualifies_current_approved_mount(scope_store):
+    ids = scope_store
+    before = scope_policy.evaluate_exact_vault_scope(
+        actor_user_id=ids['viewer'], instance_id=ids['source'],
+        provider_namespace='', mount='kv',
+    )
+    assert before.status == 'deny'
+    policy = _request(ids)
+    pending = scope_policy.evaluate_exact_vault_scope(
+        actor_user_id=ids['viewer'], instance_id=ids['source'],
+        provider_namespace='', mount='kv',
+    )
+    assert pending.status == 'deny'
+    scoped_grants.approve_scope_grant(
+        policy_id=policy.id, approver_user_id=ids['approver'], expected_revision=1,
+    )
+    admitted = scope_policy.evaluate_exact_vault_scope(
+        actor_user_id=ids['viewer'], instance_id=ids['source'],
+        provider_namespace='', mount='kv',
+    )
+    assert admitted.allowed
+    assert admitted.policy_ref == policy.id and admitted.revision == 2
+    assert not scope_policy.evaluate_exact_vault_scope(
+        actor_user_id=ids['viewer'], instance_id=ids['source'],
+        provider_namespace='foreign', mount='kv',
+    ).allowed
+    assert not scope_policy.evaluate_exact_vault_scope(
+        actor_user_id=ids['viewer'], instance_id=ids['source'],
+        provider_namespace='', mount='other',
+    ).allowed
+    scoped_grants.revoke_scope_grant(
+        policy_id=policy.id, actor_user_id=ids['requester'], expected_revision=2,
+    )
+    assert scope_policy.evaluate_exact_vault_scope(
+        actor_user_id=ids['viewer'], instance_id=ids['source'],
+        provider_namespace='', mount='kv',
+    ).status == 'deny'
+
+
+def test_instance_only_grant_is_not_inherited_to_vault_mount(scope_store):
+    ids = scope_store
+    now = datetime.now(UTC)
+    grant = scoped_grants.request_scope_grant(
+        actor_user_id=ids['requester'], principal_user_id=ids['viewer'],
+        integration_instance_id=ids['source'], scope_level='instance',
+        provider_namespace=None, mount=None,
+        effective_from=now - timedelta(minutes=1),
+        effective_until=now + timedelta(days=1),
+        reason_code='audit_review',
+    )
+    scoped_grants.approve_scope_grant(
+        policy_id=grant.id, approver_user_id=ids['approver'], expected_revision=1,
+    )
+    result = scope_policy.evaluate_exact_vault_scope(
+        actor_user_id=ids['viewer'], instance_id=ids['source'],
+        provider_namespace='', mount='kv',
+    )
+    assert result.status == 'deny'
+
+
+def test_scope_evaluator_rejects_unassigned_superadmin_role(scope_store):
+    ids = scope_store
+    admin = db.session.get(User, ids['requester'])
+    admin.is_super_admin = True
+    admin.role_id = None
+    db.session.commit()
+    result = scope_policy.evaluate_exact_vault_scope(
+        actor_user_id=ids['requester'], instance_id=ids['source'],
+        provider_namespace='', mount='kv',
+    )
+    assert not result.allowed
+
+
+def test_sensitive_registry_uses_only_authoritative_evaluator_and_transaction():
+    from pathlib import Path
+
+    source = (
+        Path(__file__).resolve().parents[2]
+        / 'app/secrets_pki/scoped_registry.py'
+    ).read_text(encoding='utf-8')
+    assert 'def read_governed_scoped_secret_registry(' in source
+    assert 'evaluate_exact_vault_scope(' in source
+    assert 'lock_for_read=True' in source
+    assert 'stage_operational_activity(' in source
+    assert 'db.session.commit()' in source
+    assert 'db.session.rollback()' in source
