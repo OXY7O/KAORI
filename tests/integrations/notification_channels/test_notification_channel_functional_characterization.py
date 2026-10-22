@@ -154,6 +154,42 @@ def _validated_channel() -> ChannelStub:
     return channel
 
 
+def test_channel_action_return_query_preserves_bounded_registry_state() -> None:
+    from flask import Flask
+
+    from app.integrations.delivery.notification_channels.routes import _channel_return_query
+
+    application = Flask(__name__)
+    with application.test_request_context(
+        '/integrations/notification-channels/1/test',
+        method='POST',
+        data={
+            'channel_page': '3',
+            'channel_per_page': '25',
+            'channel_search': 'Telegram Operations',
+            'channel_provider': 'telegram',
+            'channel_state': 'enabled',
+        },
+    ):
+        assert _channel_return_query() == {
+            'channel_page': 3,
+            'channel_per_page': 25,
+            'channel_search': 'Telegram Operations',
+            'channel_provider': 'telegram',
+            'channel_state': 'enabled',
+        }
+
+    with application.test_request_context(
+        '/integrations/notification-channels/1/delete',
+        method='POST',
+        data={'channel_page': '-8', 'channel_per_page': '999999', 'channel_search': 'X' * 500},
+    ):
+        assert _channel_return_query() == {
+            'channel_per_page': 1000,
+            'channel_search': 'X' * 128,
+        }
+
+
 def test_notification_channel_create_commits_policy_and_uses_encrypted_model_type(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -540,6 +540,62 @@ def test_channel_inventory_rows_are_compact_and_allowed_uses_expand_accessibly()
     assert page.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
 
 
+def test_notification_channel_row_actions_confirm_delete_and_refresh_via_htmx() -> None:
+    channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    index = read('app/templates/integrations/delivery/notification_channels/index.html')
+    native = read('app/static/js/native_dialogs.js')
+    shared_confirm = read('app/templates/components/destructive_confirmation_modal.html')
+    confirm_js = read('app/static/js/destructive_confirmation_modal.js')
+    routes = read('app/integrations/delivery/notification_channels/routes.py')
+
+    # Edit is a GET of current permissioned form state into the existing dialog.
+    assert 'hx-get="{{ url_for(' in channels
+    assert 'hx-push-url="false"' in channels
+    assert 'hx-target="#notification-channels-workspace"' in channels
+    assert 'hx-select="#notification-channels-workspace"' in channels
+    assert "target.id === 'notification-channels-workspace'" in native
+    assert 'document.getElementById(target.id) || target' in native
+    assert "data-kaori-dialog-auto-open" in modal
+    assert 'data-kaori-dialog-close' in modal
+
+    # Mutations refresh only the owning workspace; native POST redirects still work.
+    assert "hx-post=\"{{ url_for('notification_channels.test', channel_id=channel.id) }}\"" in channels
+    assert "hx-post=\"{{ url_for('notification_channels.delete', channel_id=channel.id) }}\"" in channels
+    assert 'hx-target="#notification-channels-workspace"' in channels
+    assert 'hx-select="#notification-channels-workspace"' in channels
+    assert 'hx-post="{{ url_for(\'notification_channels.update\'' in modal
+    assert 'hx-disabled-elt="button[type=\'submit\']"' in modal
+    assert 'operation_feedback=load_operational_feedback()' in index
+    assert "components/operation_feedback_oob.html" in index
+    assert "js/destructive_confirmation_modal.js" in index
+
+    # Delete is fail-closed behind the shared accessible confirmation, not window.confirm().
+    assert 'data-destructive-modal-open' in channels
+    assert 'data-destructive-modal-id="notification-channel-delete-confirmation"' in channels
+    assert 'data-destructive-submit-button-id="notification-channel-delete-submit-{{ channel.id }}"' in channels
+    assert 'destructive_confirmation_modal.render(' in channels
+    assert 'data-destructive-modal-confirm' in shared_confirm
+    assert 'data-destructive-modal-close' in shared_confirm
+    assert 'data-destructive-target-name' in shared_confirm
+    assert 'submit?.click()' in confirm_js
+    assert 'channel.delete_blocked' in channels
+    assert 'window.confirm(' not in channels
+
+    # CSRF, server-side lifecycle checks, audit and status feedback are unchanged.
+    assert channels.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in modal
+    assert 'delete_channel(channel)' in routes
+    assert 'NotificationChannelDeletionBlocked' in routes
+    assert "event_type='integration.notification_channel.delete_blocked'" in routes
+    assert "event_type='integration.notification_channel.deleted'" in routes
+    assert 'result = test_channel(channel, base_url=base_url)' in routes
+    assert 'def _channel_return_query()' in routes
+    for key in ('channel_page', 'channel_per_page', 'channel_search', 'channel_provider', 'channel_state'):
+        assert f'name="{key}"' in channels
+        assert key in routes
+
+
 def test_review6_channel_registry_loading_follows_header_before_filters() -> None:
     source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     registry = source.split('id="notification-channel-registry"', 1)[1]
