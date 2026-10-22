@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy import case, func, select
 
 from app.artifact_registry.correlation_sync_jobs import correlation_prerequisites
+from app.artifact_registry.presentation_common import _human_time
 from app.artifact_registry.presentation_runtime import _runtime_snapshot_state
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
 from app.artifact_registry.security.presentation import _aware_datetime, _providers
@@ -28,6 +29,28 @@ from app.models.registry import (
 
 _SCAN_WINDOW = timedelta(hours=24)
 _SEVERITY_RANK = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3, 'negligible': 4}
+
+
+def _scanner_coverage_state(
+    *,
+    source_count: int,
+    artifact_total: int,
+    scanned_artifacts: int,
+    oldest_scan: datetime | None,
+) -> dict[str, str]:
+    """Distinguish missing, partial and stale source evidence without all-clear claims."""
+    observed = _aware_datetime(oldest_scan)
+    if not source_count or observed is None:
+        return {'label': 'Not Collected', 'tone': 'unknown'}
+    recent = observed >= datetime.now(UTC) - _SCAN_WINDOW
+    partial = scanned_artifacts < artifact_total
+    if partial and not recent:
+        return {'label': 'Partial / Stale', 'tone': 'warning'}
+    if partial:
+        return {'label': 'Partial', 'tone': 'warning'}
+    if not recent:
+        return {'label': 'Stale', 'tone': 'warning'}
+    return {'label': 'Observed', 'tone': 'normal'}
 
 
 def _scanner_findings(source_ids: list[int]) -> Any:
@@ -74,6 +97,7 @@ def build_security_posture(
             'artifacts_total': 0,
             'scanned_artifacts': 0,
             'last_scan': None,
+            'scan_updated_label': 'Not Collected',
             'scan_status': {'label': 'No Authorized Sources', 'tone': 'unknown'},
             'runtime_status': {
                 'status': 'Not Collected',
@@ -132,7 +156,9 @@ def build_security_posture(
         {
             'cve_id': row.cve_id,
             'impact_available': bool(re.fullmatch(r'CVE-[0-9]{4}-[0-9]{4,}', row.cve_id or '')),
-            'severity': next((key.title() for key, order in _SEVERITY_RANK.items() if order == row.severity_rank), 'Unknown'),
+            'severity': next(
+                (key.title() for key, order in _SEVERITY_RANK.items() if order == row.severity_rank), 'Unknown'
+            ),
             'finding_count': int(row.finding_count or 0),
             'artifact_count': int(row.artifact_count or 0),
             'binding_count': int(row.binding_count or 0),
@@ -170,16 +196,12 @@ def build_security_posture(
 
     oldest_observed = _aware_datetime(oldest_scan)
     recent = bool(oldest_observed and oldest_observed >= datetime.now(UTC) - _SCAN_WINDOW)
-    if not can_view_registry:
-        scan_status = {'label': 'No Authorized Sources', 'tone': 'unknown'}
-    elif not sources or not last_scan:
-        scan_status = {'label': 'Not Collected', 'tone': 'unknown'}
-    elif not recent:
-        scan_status = {'label': 'Stale', 'tone': 'warning'}
-    elif scanned_artifacts < artifacts_total:
-        scan_status = {'label': 'Partial', 'tone': 'warning'}
-    else:
-        scan_status = {'label': 'Observed', 'tone': 'normal'}
+    scan_status = _scanner_coverage_state(
+        source_count=len(sources),
+        artifact_total=artifacts_total,
+        scanned_artifacts=scanned_artifacts,
+        oldest_scan=oldest_scan,
+    )
 
     # Read the existing signed materialization status; never reimplement its
     # signature, freshness or failure semantics.
@@ -200,6 +222,7 @@ def build_security_posture(
         'artifacts_total': artifacts_total,
         'scanned_artifacts': scanned_artifacts,
         'last_scan': last_scan,
+        'scan_updated_label': f'Updated {_human_time(last_scan)}' if last_scan else 'Not Collected',
         'scan_status': scan_status,
         'runtime_status': correlation,
         'has_complete_security_evidence': bool(

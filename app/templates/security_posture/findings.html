@@ -13,8 +13,7 @@
                 {% call page_hero.intro('shield-alert', 'Security', 'database') %}
                     <h1 class="{{ page_hero.title_classes() }}">Security Findings</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Qualified CVE findings across current committed Registry scans, with evidence-backed Kubernetes exposure.
-                        Logical application and owning Team correlation is not yet available.
+                        Inspect qualified committed CVEs and their Kubernetes runtime exposure.
                     </p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('shield-alert', posture.pagination.total_items ~ ' Matching CVEs') }}
@@ -25,10 +24,13 @@
             </div>
         </div>
     </section>
-    <div role="status" class="rounded-xl border border-outline-subtle bg-surface-hover p-4 text-sm text-content-secondary">
+    <div role="status"
+         class="rounded-xl border border-outline-subtle bg-surface-hover p-4 text-sm text-content-secondary">
         Scanner: {{ table_label.status_indicator_label(posture.scan_status.label, posture.scan_status.tone) }}.
-        Runtime correlation: {{ table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) }}.
-        Missing, partial or stale evidence is not proof of no exposure. Every result is restricted to authorized committed sources.
+        Runtime correlation:
+        {{ table_label.status_indicator_label(posture.runtime_status.status, posture.runtime_status.tone) }}.
+        Missing, partial or stale evidence is not proof of no exposure.
+        Every result is restricted to authorized committed sources.
     </div>
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
              aria-labelledby="security-posture-findings-heading"
@@ -38,7 +40,9 @@
                 'Distinct scanner CVEs, affected artifact digests, and observed runtime bindings.',
                 'security-posture-findings-heading') }}
         </div>
-        <span id="security-posture-findings-loading" class="htmx-indicator sr-only" role="status">Loading security findings</span>
+        <span id="security-posture-findings-loading"
+              class="htmx-indicator sr-only"
+              role="status">Loading security findings</span>
         {% if posture.search or posture.severity %}
             <div class="flex justify-end border-t border-outline-subtle px-5 py-2">
                 {{ registry.clear_filters_link('security_posture.findings', 'security-posture-findings-registry',
@@ -49,7 +53,8 @@
             'security-posture-findings-registry', 'security-posture-findings-loading', posture.pagination.per_page,
             classes='border-y border-outline-subtle bg-surface-hover px-5 py-4') %}
             <div class="min-w-0 flex-1">
-                <label for="security-posture-cve-search" class="{{ table_ui.filter_label_classes() }}">Search CVE</label>
+                <label for="security-posture-cve-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search CVE</label>
                 {{ table_ui.search_field('q', posture.search, 'Search CVE ID…', 'security-posture-cve-search') }}
             </div>
             <label>
@@ -57,14 +62,17 @@
                 <select name="severity" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All severities</option>
                     {% for option in posture.severity_options %}
-                        <option value="{{ option }}" {% if posture.severity == option %}selected{% endif %}>{{ option|title }}</option>
+                        <option value="{{ option }}"
+                                {% if posture.severity == option %}selected{% endif %}>{{ option|title }}</option>
                     {% endfor %}
                 </select>
             </label>
         {% endcall %}
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[58rem]') }}">
-                <caption class="sr-only">Committed CVE findings. This registry does not claim complete organization-wide coverage.</caption>
+                <caption class="sr-only">
+                    Committed CVE findings. This registry does not claim complete organization-wide coverage.
+                </caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }}">CVE / Severity</th>
@@ -98,9 +106,12 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="6" class="p-6 text-sm text-content-secondary">
-                                No CVE records in the current authorized, committed and filtered source scope.
-                                This does not confirm that applications or hosts are unaffected.
+                            <td colspan="6">
+                                {% set empty_state_icon = 'shield-alert' %}
+                                {% set empty_state_label = 'No Matching Evidence' %}
+                                {% set empty_state_title = 'No CVE records in this source scope' %}
+                                {% set empty_state_description = 'No matching CVEs. This does not confirm safety.' %}
+                                {% include "components/states/_empty_state.html" %}
                             </td>
                         </tr>
                     {% endfor %}
