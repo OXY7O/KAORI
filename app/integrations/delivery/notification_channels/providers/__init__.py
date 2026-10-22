@@ -312,7 +312,7 @@ _PROVIDERS = {
             'Optional ntfy access token with minimum publish rights.',
         ),
         setup_steps=(
-            'Allow approved HTTPS origins via NOTIFICATION_NTFY_ALLOWED_ORIGINS on app and worker; restrict egress.',
+            'Allow ntfy HTTPS origins via NOTIFICATION_NTFY_ALLOWED_ORIGINS (app/worker); restrict egress.',
             'For internal PKI, configure NOTIFICATION_NTFY_CA_BUNDLE consistently on the application and worker.',
             'Create a private ntfy topic and issue a publish-scoped access token when authorization is required.',
             'Enter the approved server origin, topic, optional token, and permitted KAORI event/domain policy.',

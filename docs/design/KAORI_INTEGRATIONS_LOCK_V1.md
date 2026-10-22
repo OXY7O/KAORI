@@ -211,3 +211,28 @@ coverage lives in the existing Notification Channels contract test and verifier.
 Review branch / DevContainer UAT only until executable validation, keyboard,
 responsive light/dark checks, and operator acceptance are recorded. No release
 or production provider mutation is implied.
+
+## Notification Channels UAT Density & Journal Controls (#2680, 2026-10-22)
+
+The operator-approved staging-UAT refinement consolidates each Delivery
+Contract & Ownership boundary into a **single concise sentence per ownership
+panel**, retaining Alert Source authority and KAORI's governed transport
+evidence, without verbose duplicated supporting paragraphs.
+
+The **Channel Inventory** header carries one accessible shared `info_tip`
+(popover for pointer/keyboard/touch) documenting validation, operational
+feedback, and secret-safe Activity Audit behavior. The former three static
+guidance cards are not rendered; explanatory workflow information must not
+become an alternate uncontrolled UI component.
+
+The **Delivery Journal** section keeps one concise title/description and
+one shared `operational_callout` stating that provider acceptance is not
+human receipt nor Activity Audit. Its registry uses shared
+`table.inventory_block_header`, which owns the request-scoped
+`loading_bar` inside the table header, followed by shared registry filters,
+table and canonical pagination. The shared `table_registry.clear_filters_link`
+remains backward-compatible with default leading placement; this journal
+explicitly opts into `lead=false` plus trailing alignment, with clear/reset
+still preserving canonical HTMX page size and URL behavior. No synthetic or
+always-active progress bar, provider delivery change or global table layout
+override is permitted.

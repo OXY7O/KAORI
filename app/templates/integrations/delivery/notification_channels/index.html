@@ -5,7 +5,8 @@
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/table_registry.html" as table_registry %}
-{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table.html" as table_block %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% macro notification_section(title, description, icon='send', badge_text='', badge_tone='info') -%}
     <section class="{{ integration_ui.section_shell_classes() }}">
@@ -119,16 +120,10 @@
                             </div>
                             <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-2">
                                 <div class="bg-surface-card p-4 sm:p-5">
-                                    {{ notification_subsection('Consumer Capabilities', 'Emit governed events and choose approved destinations', 'workflow') }}
-                                    <p class="mt-3 text-sm leading-6 text-content-secondary">
-                                        Consumers govern event meaning and destination intent. External alert routing, grouping, inhibition and receiver ownership remain with the authoritative Alert Source.
-                                    </p>
+                                    {{ notification_subsection('Consumer Capabilities', 'Consumers choose destinations; the Alert Source governs alert routing and receivers.', 'workflow') }}
                                 </div>
                                 <div class="bg-surface-card p-4 sm:p-5">
-                                    {{ notification_subsection('Notification Channels', 'Reusable provider delivery infrastructure', 'send') }}
-                                    <p class="mt-3 text-sm leading-6 text-content-secondary">
-                                        KAORI governs encrypted credentials, destination validation, transport adapters, committed delivery evidence, bounded retries and per-event deduplication.
-                                    </p>
+                                    {{ notification_subsection('Notification Channels', 'KAORI governs credentials, validation, delivery evidence, retries and deduplication.', 'send') }}
                                 </div>
                             </div>
                         {% endcall %}
@@ -137,25 +132,21 @@
                     {% include 'integrations/delivery/notification_channels/partials/_channels_workspace.html' %}
                 {% elif active_tab == 'delivery' %}
                     {{ section_intro.render('Delivery Journal',
-                            'Review committed attempts, provider outcomes and retry evidence. Provider delivery does not prove human receipt.',
+                            'Review committed attempts, provider outcomes and retry evidence.',
                             'notification-delivery-heading') }}
+                    {{ operational_callout.render(
+                        'Delivery Evidence Boundary',
+                        'Provider delivery does not prove human receipt. KAORI records transport attempts and outcomes; Activity Audit remains separate.',
+                        icon='info', tone='info', variant='neutral') }}
                     <section class="{{ table_ui.block_classes() }}" aria-labelledby="notification-delivery-heading">
                         <div id="notification-delivery-registry">
-                            <header class="{{ table_ui.block_header_classes() }}">
-                                <div class="flex min-w-0 items-center gap-3">
-                                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                                        <i data-lucide="history" class="h-5 w-5"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <h3 class="{{ table_ui.block_title_classes() }}">Delivery Records</h3>
-                                            {{ table_label.result_count(payload.delivery_pagination.total_items) }}
-                                        </div>
-                                        <p class="{{ table_ui.block_description_classes() }}">Committed provider delivery attempts, statuses and source evidence.</p>
-                                    </div>
-                                </div>
-                            </header>
-                            {{ loading_bar.render('notification-delivery-loading', label='Loading notification delivery activity') }}
+                            {{ table_block.inventory_block_header(
+                                'history', 'Delivery Records',
+                                'Committed provider attempts, statuses and source evidence.',
+                                'notification-delivery-loading',
+                                'Loading notification delivery activity',
+                                none,
+                                result_count=payload.delivery_pagination.total_items) }}
                             {% call table_registry.filter_form('notification_channels.index',
                                 'notification-delivery-registry',
                                 'notification-delivery-loading',
@@ -212,8 +203,9 @@
                                                                         'notification-delivery-registry',
                                                                         'notification-delivery-loading',
                                                                         payload.delivery_pagination.per_page,
-                                                                        table_ui.action_classes() ,
+                                                                        table_ui.action_classes() ~ ' ml-auto',
                                     label='Clear Filters',
+                                    lead=false,
                                     query_params={'tab': 'delivery'},
                                     page_param='delivery_page',
                                     per_page_param='delivery_per_page') }}

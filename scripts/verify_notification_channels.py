@@ -87,7 +87,9 @@ def main() -> int:
         and '{% set workspace_tabs =' not in delivery_template
         and '{% set notification_tab_items = [' in delivery_template
         and 'workspace_tabs.render_navigation(notification_tab_items,' in delivery_template,
-        'delivery journal loading order': delivery_template.index("loading_bar.render('notification-delivery-loading'") < delivery_template.index("table_registry.filter_form('notification_channels.index'"),
+        'delivery journal loading order': 'table_block.inventory_block_header(' in delivery_template
+        and delivery_template.index('table_block.inventory_block_header(') < delivery_template.index("table_registry.filter_form('notification_channels.index'")
+        and "result_count=payload.delivery_pagination.total_items" in delivery_template,
         'canonical delivery journal filters': 'delivery_filters_active' in service
         and "name=\"delivery_provider\"" in delivery_template
         and "name=\"delivery_domain\"" in delivery_template
@@ -97,9 +99,16 @@ def main() -> int:
         and "NotificationDelivery.domain == domain" in service
         and "NotificationDelivery.severity == severity" in service
         and "NotificationDelivery.status == status" in service
-        and "table_label.result_count(payload.delivery_pagination.total_items)" in delivery_template
+        and "result_count=payload.delivery_pagination.total_items" in delivery_template
         and "section_intro.render('Delivery Contract & Ownership'" in delivery_template
         and "section_intro.render('Configured Channels'" in template,
+        'notification guidance and canonical table': "info_tip.render(" in template
+        and "Channel Inventory Guidance" in template
+        and "grid gap-4 lg:grid-cols-3" not in template
+        and "operational_callout.render(" in delivery_template
+        and "table_block.inventory_block_header(" in delivery_template
+        and "lead=false" in delivery_template
+        and "Provider delivery does not prove human receipt." in delivery_template,
         'delivery journal surface': 'query = NotificationDelivery.query' in delivery_registry
         and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
         and journal_order in delivery_registry
