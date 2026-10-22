@@ -174,7 +174,7 @@ def test_kubernetes_admin_controls_heading_is_inside_shared_card() -> None:
     # The approved section header (title, short copy and dynamic badge) belongs
     # INSIDE the shared Operational Section Card, not above a second shell.
     start = overview.index("'Managed Administration Controls',")
-    description = overview.index('Trace configured safeguards, execution boundaries and next actions.', start)
+    description = overview.index('Select a capability to configure its prerequisites and namespace access policies.', start)
     badge = overview.index('header_badge=controls_badge', description)
     contents = overview.index('id="kubernetes-admin-controls-list"', badge)
     close = overview.index('{% endcall %}', contents)
@@ -182,7 +182,7 @@ def test_kubernetes_admin_controls_heading_is_inside_shared_card() -> None:
     assert overview.count("'Managed Administration Controls'") == 2  # Title + aria-label
     assert "body_classes='p-0'" in overview[start:contents]
     assert 'kubernetes-admin-controls-title' not in overview
-    assert "'Administration Coverage'," in overview
+    assert 'Administration Coverage</h3>' in overview
     assert 'macro render(' in shared
     assert 'header_badge' in shared
     assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
@@ -242,58 +242,55 @@ def test_kubernetes_admin_controls_have_inventory_section_intro_and_operational_
     assert 'components/action_button.html' in rows
     assert "action_button.classes('primary')" in rows
     assert "setTab('{{ control.workspace_tab }}')" in rows
-    assert 'Control Readiness Path' in rows
-    assert 'Execution Boundary &amp; Evidence' in rows
+    assert 'Configuration Evidence' in rows
+    assert 'Runtime Authorization' in rows
     assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
     assert 'platform_operations/kubernetes/_administration_control_rows.html' in oob
 
 
-def test_managed_controls_expose_evidence_first_readiness_journey() -> None:
+def test_managed_controls_are_a_compact_operator_brief() -> None:
     rows = (ROOT / 'app/templates/platform_operations/kubernetes/_administration_control_rows.html').read_text()
     overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
     oob = (ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html').read_text()
 
-    # Changed information architecture: operator action -> recorded evidence path
-    # -> execution boundary. Do not regress to the former two-column KPI layout.
-    control = rows.index('control.label')
     action = rows.index('control.action_label')
-    path = rows.index('Control Readiness Path')
-    metric = rows.index('for icon, label, value in control.metrics')
+    evidence = rows.index('Configuration Evidence')
+    metrics = rows.index('for icon, label, value in control.metrics')
     runtime = rows.index('Runtime Authorization')
-    boundary = rows.index('Execution Boundary &amp; Evidence')
     detail = rows.index('control.status_detail')
-    assert control < action < path < metric < runtime < boundary < detail
-    assert '<ol ' in rows and 'sm:grid-cols-3' in rows
-    assert 'control.metrics|length + 1' in rows
-    assert "table_label.metadata_label('Recorded KAORI State'" in rows
-    assert 'At Execution' in rows
-    assert 'Live provider checks remain authoritative' in rows
+    assert action < evidence < metrics < runtime < detail
+    assert 'sm:grid-cols-2' in rows
+    assert "table_label.metadata_label('Committed KAORI State'" in rows
+    assert "table_label.status_label('Checked at Execution', 'warning')" in rows
     assert rows.count('control.status_detail') == 1
     assert rows.count('control.evidence_label') == 1
-    assert 'lg:grid-cols-12' not in rows
-    assert 'Configuration Snapshot' not in rows
-    assert 'Recorded KAORI state; runtime authorization' not in rows
-
-    # Shared primitives, HTMX updates, empty state, and navigation are retained.
+    assert 'Control Readiness Path' not in rows
+    assert '<ol ' not in rows
+    assert 'Managed Control {{ loop.index }}' not in rows
     assert "action_button.classes('primary')" in rows
     assert "setTab('{{ control.workspace_tab }}')" in rows
-    assert 'table_label.status_indicator_label(control.status_label, control.status_tone)' in rows
     assert 'No Administrative Control Available' in rows
-    assert "components/operational_section_card.html" in overview
+
+    # A single shared card contains control management and the fleet coverage
+    # read model, instead of two independent nested metric decks.
+    assert overview.count('operational_section.render(') == 1
+    assert 'components/section_intro.html' in overview
+    assert 'id="kubernetes-admin-controls-list"' in overview
+    assert 'Administration Coverage</h3>' in overview
+    assert overview.index('id="kubernetes-admin-controls-list"') < overview.index('Administration Coverage</h3>')
+    assert 'id="kubernetes-admin-overview-status"' in overview
+    assert 'id="kubernetes-admin-overview-metric-{{ loop.index }}"' in overview
     assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
-    assert 'platform_operations/kubernetes/_administration_control_rows.html' in oob
 
 
-def test_managed_controls_evidence_path_does_not_pre_authorize_runtime() -> None:
+def test_managed_control_metrics_do_not_claim_live_authorization() -> None:
     rows = (ROOT / 'app/templates/platform_operations/kubernetes/_administration_control_rows.html').read_text()
     presentation = (ROOT / 'app/platform_operations/kubernetes/presentation.py').read_text()
-
-    # Source-owned counts are not interpolated into an invented success verdict.
     assert '{{ value }}' in rows
     assert '{{ control.status_detail }}' in rows
     assert '{{ control.evidence_label }}' in rows
     assert 'Runtime Authorization' in rows
-    assert 'At Execution' in rows
+    assert 'Checked at Execution' in rows
     assert 'Verification Required' in presentation
     assert "'status_tone': status_tone" in presentation
     assert 'Live Namespace presence, Kubernetes RBAC, and Secret identity' in presentation
@@ -309,11 +306,11 @@ def test_cluster_readiness_full_width_recomposition_and_section_intro() -> None:
     shell = cluster.index('id="secret-reveal-cluster-workspace"')
     intro_call = cluster.index('section_intro.render(', shell)
     card_call = cluster.index('operational_section.render(', intro_call)
-    selector = cluster.index('id="secret-reveal-cluster"', card_call)
-    readiness = cluster.index('Readiness Controls', selector)
+    selector = cluster.index('id="secret-reveal-cluster"', shell)
+    readiness = cluster.index('Readiness Controls', card_call)
     boundary = cluster.index('secret-reveal-kubernetes-boundary-heading', readiness)
     namespace = cluster.index('platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html')
-    assert shell < intro_call < card_call < selector < readiness < boundary < namespace
+    assert shell < selector < intro_call < card_call < readiness < boundary < namespace
     assert 'components/section_intro.html' in cluster
     assert 'components/operational_section_card.html' in cluster
     assert 'components/action_button.html' in cluster

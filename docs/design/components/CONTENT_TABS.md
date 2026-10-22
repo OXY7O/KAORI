@@ -110,6 +110,29 @@ The reviewed Overview vocabulary is:
 
 Internal identifiers such as `resource-snapshot`, `capacity-snapshot`, or `top-consumers` are runtime metadata and must never be rendered beside those labels.
 
+
+## Kubernetes Administration — Secret Reveal
+
+Within the existing **Overview · Secret Reveal** Integrated Workspace Tabs, the Secret Reveal
+workspace has two subordinate content views: **Cluster Prerequisites** and **Namespace
+Policies**. This is a Content Tabs controller (Tab Style 4), not a second level-3
+route navigator, Integration-style framed parent card, or a new tab family.
+
+- A shared selected-cluster scope control remains visible above these tabs.
+- `render_controlled_links()` owns tab geometry and true full-route `href`
+  fallbacks; the page-owned Alpine controller owns instant switching, roving
+  Arrow/Home/End, URL `view=prerequisites|policies`, back/forward and panel
+  visibility/ARIA. Inactive panels must be hidden from the accessibility tree.
+- Cluster switches and readiness/policy mutations preserve the selected view
+  through the existing HTMX workspace replacement. Namespace search, filter,
+  page size and navigation keep `view=policies`. Initial render must honor the
+  URL so no-JavaScript navigation shows only its requested content view.
+- Credential/attestation configuration is committed KAORI state; configured
+  prerequisites do **not** establish live Kubernetes RBAC or Secret access.
+  Only the authorized Secret Reveal execution path performs runtime checks.
+- Existing Namespace Policy table/pagination semantics, OOB posture updates,
+  CSRF and permission boundaries remain separate authorities.
+
 ## Review Checklist
 
 - Uses `components/content_tabs.html` directly.
