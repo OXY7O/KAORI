@@ -581,3 +581,26 @@ def test_kubernetes_overview_restores_separate_summary_and_operations_blocks() -
     # The summary does not claim live authorization on configured counts.
     assert 'Live access is verified at execution.' in overview
     assert 'selected_cluster.secret_reveal_encryption_verified' not in overview
+
+
+def test_cluster_prerequisites_use_one_responsive_checklist_surface() -> None:
+    workspace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
+    start = workspace.index('Readiness Controls')
+    finish = workspace.index('Kubernetes Boundary', start)
+    readiness = workspace[start:finish]
+
+    assert 'sm:grid-cols-2 lg:grid-cols-3' in readiness
+    assert 'divide' not in readiness or 'border-outline-subtle' in readiness
+    assert readiness.count('rounded-xl border border-outline-subtle bg-surface-card') == 1
+    assert 'Read-only prerequisite' in readiness
+    assert readiness.count('Operator attestation') == 2
+    assert 'Activation Boundary' in readiness
+    assert 'Save Readiness' in readiness
+    assert 'bg-kaori-soft' in readiness
+    assert 'name="encryption_verified"' in readiness
+    assert 'name="audit_verified"' in readiness
+    assert 'name="csrf_token"' in workspace
+    assert 'hx-disabled-elt="button[type=\'submit\']"' in workspace
+    assert 'Least-privilege Kubernetes RBAC remains the final authorization boundary' in workspace
+    assert 'sm:grid-cols-2 xl:grid-cols-4' in workspace
+
