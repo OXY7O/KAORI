@@ -25,7 +25,7 @@ Not Implemented must not be treated as waived acceptance.
 | HV-03 #2587 / #2683 | Opted-in public PKI evidence + qualified aggregate validity windows | Not Tested |
 | HV-04 #2588 / #2674 | KV v2 version lifecycle aggregate; rotation contract only | Not Tested |
 | HV-05 #2589 / #2666 | Fingerprint/Ingress/UID/ESO reconciliation *candidates* only | Not Tested |
-| HV-06 #2590 | Metrics Source and Alert Source qualified bindings | Not Tested |
+| HV-06 #2590 / #2697 | Metrics/Alert Source bindings; bounded recent-hour Vault query-range qualification | Not Tested |
 | HV-07 #2591 / #2678 / #2683 | Committed Overview/Inventory, prepared unpublished scoped Registry read model, and PKI validity aggregate; full detail/navigation absent | Not Tested |
 | HV-08 #2592 | Governed provider operation pilot | Not Implemented |
 | HV-09 #2593 | UAT protocol; live scenarios not executed | Not Tested |
