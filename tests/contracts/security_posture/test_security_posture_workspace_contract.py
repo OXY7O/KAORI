@@ -254,4 +254,5 @@ def test_scanner_coverage_state_reports_missing_partial_stale_and_current() -> N
             oldest_scan=observation,
         )
         assert state['label'] == expected
-        assert state['tone'] == ('normal' if expected == 'Observed' else 'unknown' if expected == 'Not Collected' else 'warning')
+        expected_tone = 'normal' if expected == 'Observed' else 'unknown' if expected == 'Not Collected' else 'warning'
+        assert state['tone'] == expected_tone
