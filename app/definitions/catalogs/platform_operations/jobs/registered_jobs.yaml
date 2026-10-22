@@ -112,7 +112,7 @@ jobs:
   operation: sync_secrets_pki_inventory
   scope_type: secrets_pki_fleet
   scope_key: all
-  configure_permission: jobs.configure
+  configure_permission: integrations.manage
   execute_permission: jobs.execute
   domain_execute_permission: integrations.manage
   dispatcher_path: app.integrations.secrets_management.secrets_pki.job_adapter:dispatch_vault_inventory_sync
