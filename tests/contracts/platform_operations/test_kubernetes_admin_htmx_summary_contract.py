@@ -174,7 +174,7 @@ def test_kubernetes_admin_controls_heading_is_inside_shared_card() -> None:
     # The approved section header (title, short copy and dynamic badge) belongs
     # INSIDE the shared Operational Section Card, not above a second shell.
     start = overview.index("'Managed Administration Controls',")
-    description = overview.index('Select a capability to configure its prerequisites and namespace access policies.', start)
+    description = overview.index('Manage Secret Reveal prerequisites and Namespace access policies.', start)
     badge = overview.index('header_badge=controls_badge', description)
     contents = overview.index('id="kubernetes-admin-controls-list"', badge)
     close = overview.index('{% endcall %}', contents)
@@ -182,7 +182,9 @@ def test_kubernetes_admin_controls_heading_is_inside_shared_card() -> None:
     assert overview.count("'Managed Administration Controls'") == 2  # Title + aria-label
     assert "body_classes='p-0'" in overview[start:contents]
     assert 'kubernetes-admin-controls-title' not in overview
-    assert 'Administration Coverage</h3>' in overview
+    assert "'Administration Coverage'," in overview
+    assert overview.index("'Administration Coverage',") < start
+    assert 'kubernetes-admin-summary-section' in overview
     assert 'macro render(' in shared
     assert 'header_badge' in shared
     assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
@@ -216,12 +218,14 @@ def test_kubernetes_admin_controls_have_inventory_section_intro_and_operational_
     # without relocating the approved shared Operational Section Card header.
     assert 'components/section_intro.html' in inventory
     assert 'components/section_intro.html' in overview
-    external_intro = overview.index('section_intro.render(')
-    card = overview.index("'Managed Administration Controls',", external_intro)
+    overview_intro = overview.index("'Overview',")
+    operations_intro = overview.index("'Kubernetes Operations',", overview_intro)
+    card = overview.index("'Managed Administration Controls',", operations_intro)
     contents = overview.index('id="kubernetes-admin-controls-list"', card)
-    assert external_intro < card < contents
+    assert overview_intro < operations_intro < card < contents
+    assert "'Administration Coverage'," in overview
     assert 'kubernetes-admin-controls-heading' in overview
-    assert "'Administration Controls'," in overview
+    assert "'Kubernetes Operations'," in overview
     assert 'kubernetes-admin-controls-section' in overview
     assert 'header_badge=controls_badge' in overview
 
@@ -271,15 +275,22 @@ def test_managed_controls_are_a_compact_operator_brief() -> None:
     assert "setTab('{{ control.workspace_tab }}')" in rows
     assert 'No Administrative Control Available' in rows
 
-    # A single shared card contains control management and the fleet coverage
-    # read model, instead of two independent nested metric decks.
-    assert overview.count('operational_section.render(') == 1
+    # Fleet-wide Overview summary and operational control management are two
+    # separate canonical cards. The summary must not regress into a footer.
+    assert overview.count('operational_section.render(') == 2
+    assert overview.count('section_intro.render(') == 2
     assert 'components/section_intro.html' in overview
-    assert 'id="kubernetes-admin-controls-list"' in overview
-    assert 'Administration Coverage</h3>' in overview
-    assert overview.index('id="kubernetes-admin-controls-list"') < overview.index('Administration Coverage</h3>')
+    summary = overview.index("'Administration Coverage',")
+    summary_metrics = overview.index('id="kubernetes-admin-overview-metric-{{ loop.index }}"')
+    operations = overview.index("'Kubernetes Operations',")
+    controls = overview.index('id="kubernetes-admin-controls-list"')
+    assert summary < summary_metrics < operations < controls
+    assert 'id="kubernetes-admin-summary-section"' not in overview
+    assert "id='kubernetes-admin-summary-section'" in overview
     assert 'id="kubernetes-admin-overview-status"' in overview
-    assert 'id="kubernetes-admin-overview-metric-{{ loop.index }}"' in overview
+    assert "header_badge=overview_posture" in overview
+    assert 'Counts represent committed KAORI configuration.' in overview
+    assert 'id="kubernetes-admin-control-count"' in overview
     assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
 
 
@@ -454,3 +465,31 @@ def test_secret_reveal_view_survives_url_loading_saves_and_table_navigation() ->
     for template in (namespace, table):
         assert 'name="view" value="policies"' in template
     assert 'default 5' not in namespace  # pagination source is unchanged.
+
+
+def test_kubernetes_overview_restores_separate_summary_and_operations_blocks() -> None:
+    overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
+    summary = (ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html').read_text()
+
+    assert "'Overview'," in overview
+    assert "'Kubernetes Operations'," in overview
+    assert overview.index("'Overview',") < overview.index("'Kubernetes Operations',")
+    assert "'Administration Coverage'," in overview
+    assert "'Managed Administration Controls'," in overview
+    assert overview.index("'Administration Coverage',") < overview.index("'Managed Administration Controls',")
+    assert "id='kubernetes-admin-summary-section'" in overview
+    assert "id='kubernetes-admin-controls-section'" in overview
+    assert overview.count("{% endcall %}") == 2
+    assert overview.count('operational_section.render(') == 2
+
+    # Keep the source-owned summary metric IDs and status for every mutation.
+    assert 'id="kubernetes-admin-overview-metric-{{ loop.index }}"' in overview
+    assert 'id="kubernetes-admin-overview-status"' in overview
+    for metric in range(1, 5):
+        assert f'id="kubernetes-admin-overview-metric-{metric}"' in summary
+    assert 'id="kubernetes-admin-overview-status"' in summary
+    assert 'id="kubernetes-admin-controls-list"' in summary
+
+    # The summary does not claim live authorization on configured counts.
+    assert 'Live access is verified at execution.' in overview
+    assert 'selected_cluster.secret_reveal_encryption_verified' not in overview
