@@ -7,7 +7,7 @@ import requests
 from flask import Flask
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionInput
-from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verify_proof
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verified_secret
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultClient, VaultProviderError
 from app.integrations.secrets_management.secrets_pki.providers.vault.transport import (
     validate_auth_mount, validate_vault_endpoint,
@@ -105,6 +105,7 @@ def test_vault_failure_never_returns_provider_error_body(monkeypatch, approved):
 def test_registration_proof_bound_to_exact_secret_and_user():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'testing-only'
+    app.config['INTEGRATION_CREDENTIAL_KEY'] = 'credential-test-only'
     values = VaultConnectionInput(
         'Vault Prod', 'production', None, 'https://vault.example.internal:8200', None,
         'approle', 'reader', 'never-store-in-proof', 5, True,
@@ -112,7 +113,8 @@ def test_registration_proof_bound_to_exact_secret_and_user():
     with app.app_context():
         proof = issue_proof(values, 42)
         assert 'never-store-in-proof' not in proof
-        assert verify_proof(proof, values, 42)
-        assert not verify_proof(proof, values, 43)
-        assert not verify_proof(proof, replace(values, secret_id='rotated'), 42)
-        assert not verify_proof(proof, replace(values, endpoint='https://elsewhere'), 42)
+        assert verified_secret(proof, replace(values, secret_id=''), 42) == 'never-store-in-proof'
+        assert verified_secret(proof, values, 42) == 'never-store-in-proof'
+        assert verified_secret(proof, values, 43) is None
+        assert verified_secret(proof, replace(values, secret_id='rotated'), 42) is None
+        assert verified_secret(proof, replace(values, endpoint='https://elsewhere'), 42) is None
