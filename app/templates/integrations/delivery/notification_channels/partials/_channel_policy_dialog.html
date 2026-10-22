@@ -67,7 +67,7 @@
                                      aria-label="{{ group.label }} allowed event types">
                                 <div class="flex items-center justify-between gap-3 border-b border-outline-subtle pb-2.5">
                                     <h4 class="min-w-0 break-words text-sm font-semibold text-content-primary">{{ group.label }}</h4>
-                                    {{ table_label.result_count(group.events|length) }}
+                                    <span class="shrink-0 text-xs font-medium tabular-nums text-content-muted">{{ group.events|length }} event{{ '' if group.events|length == 1 else 's' }}</span>
                                 </div>
                                 <ul class="mt-3 space-y-2">
                                     {% for event_label in group.events %}
