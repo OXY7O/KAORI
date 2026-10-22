@@ -16,6 +16,7 @@ from sqlalchemy.orm import selectinload
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
     KV2CollectionEvidence,
+    parse_approved_kv2_mounts,
 )
 from app.models.secrets_pki import (
     SecretIdentity,
@@ -66,8 +67,9 @@ def commit_kv2_inventory(
         or not instance.enabled
         or instance.provider_key != 'vault'
         or instance.readiness_status != 'ready'
+        or evidence.mount not in parse_approved_kv2_mounts(','.join(instance.kv2_mounts or ()))
     ):
-        raise ValueError('The Vault provider is not eligible for committed KV v2 reconciliation.')
+        raise ValueError('The Vault provider and metadata mount are not eligible for committed reconciliation.')
 
     namespace = instance.namespace or ''
     if len(namespace) > 255 or any(
