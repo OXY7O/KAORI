@@ -94,15 +94,16 @@ def test_kubernetes_admin_hero_is_one_line_and_tabs_use_integrated_workspace() -
     assert len(description) <= 60
     assert 'whitespace-nowrap' not in index
 
-    # Tab Style 1 attaches peer views to a divider, without an enclosing
-    # framed card. Other page sections continue using their own shared shells.
+    # KAORI level-3 navigation precedes the Hero (Domain Workspace Navigation).
+    # Style 1 remains shared; both panels stay below the Hero and retain ARIA.
+    tab_start = index.index('workspace_tabs.render(')
+    hero_start = index.index('<section class="{{ page_hero.shell_classes() }}">')
     shell_start = index.index('id="kubernetes-administration-workspace-shell"')
-    tab_start = index.index('workspace_tabs.render(', shell_start)
-    content_start = index.index('class="min-w-0 pt-5"', tab_start)
-    overview_start = index.index('id="kubernetes-administration-panel-overview"', content_start)
+    overview_start = index.index('id="kubernetes-administration-panel-overview"', shell_start)
     secret_start = index.index('id="kubernetes-administration-panel-secret-reveal"', overview_start)
-    assert shell_start < tab_start < content_start < overview_start < secret_start
-    assert 'class="min-w-0"' in index[shell_start:tab_start]
+    assert tab_start < hero_start < shell_start < overview_start < secret_start
+    assert index.count('workspace_tabs.render(') == 1
+    assert 'class="min-w-0"' in index[shell_start:overview_start]
     assert 'framed_workspace_tabs' not in index
     assert 'kubernetes:load-secret-reveal from:window once' in index
     assert 'role="tabpanel"' in index
@@ -163,3 +164,24 @@ def test_administration_control_projection_scales_without_placeholder_roadmap() 
     for obsolete in ('Recommended Roadmap', 'Configuration Checks', "'1 Managed Control'"):
         assert obsolete not in overview + rows
     assert 'Live access is verified at execution.' in overview
+
+
+def test_kubernetes_admin_controls_heading_precedes_its_card() -> None:
+    overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
+    shared = (ROOT / 'app/templates/components/operational_section_card.html').read_text()
+
+    # The section title and description introduce the managed controls card;
+    # they are not another repeated title row inside its surface.
+    section = overview.index('aria-labelledby="kubernetes-admin-controls-title"')
+    title = overview.index('id="kubernetes-admin-controls-title"', section)
+    description = overview.index('Only implemented controls are listed.', title)
+    card = overview.index('operational_section.shell_classes()', description)
+    rows = overview.index('id="kubernetes-admin-controls-list"', card)
+    assert section < title < description < card < rows
+    assert overview.count('Managed Administration Controls') == 1
+    assert 'controls_badge' in overview[title:card]
+    assert "operational_section.render(\n        'Administration Coverage'," in overview
+    assert 'macro shell_classes' in shared
+    assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in (
+        ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html'
+    ).read_text()
