@@ -1,6 +1,7 @@
 """Security Posture MVP contracts: navigation, RBAC, source boundary and reusable UI."""
 
 import re
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import yaml
@@ -9,7 +10,7 @@ from jinja2 import Environment
 
 from app.common.pagination import build_pagination_window, pagination_payload
 from app.common.workspace_navigation import build_sidebar_navigation
-from app.security_posture.presentation import build_security_posture
+from app.security_posture.presentation import _scanner_coverage_state, build_security_posture
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -233,3 +234,24 @@ def test_security_findings_renders_no_source_as_unqualified_not_safe() -> None:
     assert 'No CVE records' in html
     assert 'This does not confirm' in html
     assert '/artifact-registry/security/cve/CVE-2022-1586/impact' not in html
+
+
+def test_scanner_coverage_state_reports_missing_partial_stale_and_current() -> None:
+    now = datetime.now(UTC)
+    cases = [
+        (0, 0, 0, None, 'Not Collected'),
+        (1, 5, 0, None, 'Not Collected'),
+        (1, 5, 3, now - timedelta(hours=1), 'Partial'),
+        (1, 5, 3, now - timedelta(days=2), 'Partial / Stale'),
+        (1, 5, 5, now - timedelta(days=2), 'Stale'),
+        (1, 5, 5, now - timedelta(minutes=5), 'Observed'),
+    ]
+    for count, total, scanned, observation, expected in cases:
+        state = _scanner_coverage_state(
+            source_count=count,
+            artifact_total=total,
+            scanned_artifacts=scanned,
+            oldest_scan=observation,
+        )
+        assert state['label'] == expected
+        assert state['tone'] == ('normal' if expected == 'Observed' else 'unknown' if expected == 'Not Collected' else 'warning')
