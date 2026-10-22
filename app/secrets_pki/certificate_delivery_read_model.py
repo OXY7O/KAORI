@@ -28,7 +28,7 @@ from app.models.secrets_pki_stored_certificates import (
     PKIStoredCertificateCollectionState, PKIStoredCertificateObservation,
 )
 from app.models.vault import VaultInstance
-from app.secrets_pki.certificate_delivery import assess_certificate_overlap
+from app.secrets_pki.certificate_delivery import SourceState, assess_certificate_overlap
 
 _MAX_VAULT_SOURCES = 25
 _MAX_PKI_SCOPES = 100
@@ -133,6 +133,7 @@ def build_certificate_delivery_overlap(
             and row.status == 'ready'
             and (_utc(row.last_committed_at) or datetime.min.replace(tzinfo=UTC)) >= cutoff
         }
+        source_state: SourceState
         if not ready_scopes:
             source_state = 'stale' if any(row.last_committed_at is not None for row in allowed.values()) else 'not_collected'
         elif len(ready_scopes) != len(scopes):
@@ -162,6 +163,7 @@ def build_certificate_delivery_overlap(
             if row.secret_collection_status == TLS_COLLECTION_COLLECTED
             and (_utc(row.collected_at) or datetime.min.replace(tzinfo=UTC)) >= cutoff
         }
+        kubernetes_state: SourceState
         if not tls_states:
             kubernetes_state = 'not_collected'
         elif not ready_clusters:
