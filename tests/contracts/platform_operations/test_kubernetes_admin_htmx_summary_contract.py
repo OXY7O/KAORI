@@ -476,7 +476,7 @@ def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() ->
                       'filter_select_classes()'):
         assert 'table_ui.' + primitive in table
     assert 'table-fixed' not in table
-    assert 'min-w-[1020px]' in table
+    assert 'min-w-[980px]' in table
     assert 'overflow-x-auto' in table
     assert 'scope="col"' in table
     assert 'table_ui.title_cell(row.namespace,' in table
@@ -491,6 +491,44 @@ def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() ->
     assert 'enable_option_blocked' in table
     assert 'pagination_ui.footer_classes()' in table
     assert 'pagination_ui.numeric_pages(' in table
+
+
+def test_namespace_policy_editor_is_compact_accessible_and_explicitly_opened() -> None:
+    section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+    shared = (ROOT / 'app/templates/components/table.html').read_text()
+
+    # Policy changes use native keyboard-accessible disclosure, rather than
+    # an always-visible select and submit pair across every namespace row.
+    assert '<details ' in table
+    assert 'data-kaori-namespace-policy-editor' in table
+    assert '<summary class="{{ table_ui.action_classes() }}' in table
+    assert 'Edit Policy' in table
+    assert 'aria-label="Edit reveal policy for {{ row.namespace }}"' in table
+    assert 'New Reveal Policy' in table
+    assert 'for="secret-reveal-policy-{{ loop.index }}"' in table
+    assert 'id="secret-reveal-policy-{{ loop.index }}"' in table
+    assert 'name="policy"' in table
+    assert 'table_ui.filter_select_classes()' in table
+    assert ':disabled="current === initial"' in table
+    assert 'hx-disabled-elt="button[type=\'submit\']"' in table
+    assert 'enable_option_blocked' in table
+    assert "selected_cluster_ready or row.live_state != 'available'" in table
+    assert 'name="csrf_token"' in table
+    assert 'name="namespace"' in table
+    assert 'name="view" value="policies"' in table
+    assert 'name="page"' in table
+    assert 'name="per_page"' in table
+    assert 'min-w-[280px]' not in table
+    assert 'min-w-[980px]' in table
+    assert table.count('table_ui.action_classes()') >= 2
+    assert 'macro action_classes(' in shared
+    assert 'data-kaori-table-header-actions' in section
+    assert 'table_label.result_count(namespace_summary.total)' in section
+    assert 'table_label.metadata_label(selected_cluster.name' not in section
+    assert 'id="secret-reveal-live-source"' in section
+    assert 'id="secret-reveal-namespace-loading"' in section
+    assert 'hx-target="#secret-reveal-namespace-table-content"' in section
 
 
 def test_secret_reveal_view_survives_url_loading_saves_and_table_navigation() -> None:

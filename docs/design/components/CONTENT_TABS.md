@@ -136,6 +136,12 @@ route navigator, Integration-style framed parent card, or a new tab family.
   Only the authorized Secret Reveal execution path performs runtime checks.
 - Existing Namespace Policy table/pagination semantics, OOB posture updates,
   CSRF and permission boundaries remain separate authorities.
+- **Namespace policy editing** uses an explicit per-row native disclosure in the
+  canonical KAORI table. Its policy selector and compact Save action are hidden
+  until an operator chooses **Edit Policy**; no five always-visible mutation
+  forms. The native disclosure remains keyboard-accessible without JavaScript.
+  This is presentation only: existing CSRF, readiness and live-state option
+  restrictions, HTMX update, and audit/security authorities are unchanged.
 
 ## Review Checklist
 
