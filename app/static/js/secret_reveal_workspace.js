@@ -71,7 +71,7 @@
     const focusRevealResult = (event) => {
         const result = event.detail?.target
         if (result?.id !== 'reveal-value-output') return
-        if (!result.querySelector('[data-protected-value-panel]')) return
+        if (!result.firstElementChild) return
         showWithinMainScroll(result)
         result.focus({ preventScroll: true })
     }
