@@ -1,77 +1,131 @@
 {% extends "layouts/app.html" %}
 {% import "integrations/components/_provider_frontpage.html" as provider_front %}
+{% import "components/integration_workspace_tabs.html" as integration_tabs %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/pagination.html" as pagination_ui %}
 {% block title %}HashiCorp Vault Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
+{% set posture = "Healthy" if registered and ready == registered else ("Attention" if registered else "Not Configured") %}
+{% set metrics = [
+    {"label": "Registered Connections", "value": registered, "description": "Canonical Vault provider identities", "icon": "server-cog"},
+    {"label": "API Ready", "value": ready, "description": "Enabled, active and Full Validation ready", "icon": "badge-check"},
+    {"label": "Needs Attention", "value": attention, "description": "Enabled connections requiring provider validation", "icon": "triangle-alert"},
+    {"label": "Disabled / Retired", "value": disabled, "description": "Not eligible for active provider readiness", "icon": "circle-off"}
+] %}
 <div class="kaori-integration-semantic space-y-6">
-    {{ provider_front.hero("key-round", "shield-check", "HashiCorp Vault Integrations",
-        "Register governed Vault AppRole connections and inspect readiness.",
-        registered, ready, 0, "Ready" if ready else ("Attention" if registered else "Not Configured"),
-        url_for("vault.new_instance"), register_label="Register Connection") }}
-    <section class="{{ integration_ui.section_shell_classes() }}">
-        <div class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-            {{ table_label.metadata_label("Connection Registry", "database") }}
-            <h2 class="mt-2 text-base font-semibold text-content-primary">Vault Instances</h2>
-            <p class="mt-1 text-sm text-content-secondary">Provider validation is independent from Inventory, Metrics Source and Alert Source coverage.</p>
-        </div>
-        {% if instances %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="border-b border-outline-subtle bg-surface-elevated text-content-secondary">
-                    <tr><th scope="col" class="px-5 py-3 font-semibold">Connection</th>
-                        <th scope="col" class="px-5 py-3 font-semibold">Environment</th>
-                        <th scope="col" class="px-5 py-3 font-semibold">Validation</th>
-                        <th scope="col" class="px-5 py-3 font-semibold">Vault Health</th>
-                        <th scope="col" class="px-5 py-3 font-semibold">Action</th></tr>
-                </thead>
-                <tbody class="divide-y divide-outline-subtle">
-                {% for item in instances %}
-                <tr>
-                    <td class="px-5 py-3 font-semibold text-content-primary">{{ item.name }}</td>
-                    <td class="px-5 py-3 text-content-secondary">{{ item.environment or "Unspecified" }}</td>
-                    <td class="px-5 py-3 text-content-secondary">{{ (item.readiness_status or "validation_required")|replace("_", " ")|title }}</td>
-                    <td class="px-5 py-3 text-content-secondary">{{ (item.validation_summary or {}).get("health_status", "Not Observed")|replace("_", " ")|title }}</td>
-                    <td class="px-5 py-3"><a class="font-semibold text-kaori-primary hover:underline" href="{{ url_for('vault.detail', instance_id=item.id) }}">View Details</a></td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="{{ pagination_ui.footer_classes() }}">
-            <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</p>
-            <div class="{{ pagination_ui.summary_group_classes() }}">
-                <div class="{{ pagination_ui.rows_group_classes() }}">
-                    <label for="vault-rows" class="sr-only">Connections per page</label>
-                    <select id="vault-rows" aria-label="Connections per page" title="Connections per page"
-                            class="{{ pagination_ui.page_size_classes() }}" onchange="window.location.href=this.value">
-                        {% for value in pagination.allowed_per_page %}
-                            <option value="{{ url_for('vault.index', per_page=value) }}" {{ "selected" if value == pagination.per_page else "" }}>{{ value }}</option>
-                        {% endfor %}
-                    </select>
+    {{ provider_front.hero(
+        "key-round", "shield-check", "HashiCorp Vault Integrations",
+        "Register approved Vault connections, validate API readiness, and review independent capability coverage.",
+        registered, ready, 0, posture, url_for("vault.new_instance"), register_label="Register Connection"
+    ) }}
+    {{ provider_front.overview(
+        "shield-check", "Vault Integration Overview",
+        "Provider API readiness, committed KV v2 and PKI inventory, Metrics Source, and Alert Source are independent evidence dimensions.",
+        metrics,
+        "HashiCorp Vault API", "HTTPS, least-privilege AppRole, compatibility and required capabilities are qualified by Full Validation.",
+        "Committed Operational Evidence", "Secrets & PKI owns safe stored metadata and downstream correlation; Prometheus/Alertmanager own telemetry and alerts.",
+        "Vault Remains Authoritative", "Vault owns Secret values, issuance, leases and ACLs. KAORI orchestrates normalized evidence and governed operations."
+    ) }}
+    {% call(tab_name) integration_tabs.render("vault", active_tab, registered, registered) %}
+        {% if tab_name == "coverage" %}
+            <div class="space-y-4">
+                <div>
+                    {{ table_label.metadata_label("Integration Coverage", "route") }}
+                    <h2 class="mt-2 text-base font-semibold text-content-primary">Source Qualification Boundaries</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        A healthy Vault API is not proof that Inventory, Metrics Source or Alert Source has qualified evidence.
+                        Validate each source independently before interpreting operational posture.
+                    </p>
                 </div>
-                <nav aria-label="Vault connections pagination" class="{{ pagination_ui.navigation_group_classes() }}">
-                    {% if pagination.has_prev %}
-                    <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', page=pagination.prev_page, per_page=pagination.per_page) }}">Previous</a>
-                    {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Previous</span>
-                    {% endif %}
-                    {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, query_params={"per_page": pagination.per_page}) }}
-                    {% if pagination.has_next %}
-                    <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', page=pagination.next_page, per_page=pagination.per_page) }}">Next</a>
-                    {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next</span>
-                    {% endif %}
-                </nav>
+                <div class="grid gap-3 md:grid-cols-2" role="list" aria-label="Vault integration coverage domains">
+                    {% for item in [
+                        ("shield-check", "Provider API", "Test Connection and Full Validation establish authentication, compatibility and readiness. Runtime Refresh observes current Vault health."),
+                        ("database-zap", "Committed Inventory", "KV v2 and opted-in public PKI collection require approved mounts, worker execution, complete generation and freshness."),
+                        ("chart-no-axes-combined", "Metrics Source", "A canonical Vault instance binding and qualified Prometheus/Thanos telemetry are separate from Vault API readiness."),
+                        ("bell-ring", "Alert Source", "Alertmanager source identity and matching signals are independently qualified; zero matched alerts do not prove provider health.")
+                    ] %}
+                        <article role="listitem" class="min-w-0 rounded-xl border border-outline-subtle bg-surface-elevated p-4">
+                            <div class="flex items-start gap-3">
+                                {{ integration_ui.palette_icon(item[0], 'brand', size='md') }}
+                                <div class="min-w-0">
+                                    <h3 class="text-sm font-semibold text-content-primary">{{ item[1] }}</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+                <p class="text-xs leading-5 text-content-muted">
+                    Scope Policy administration and per-Secret navigation are not enabled by registering a Vault instance.
+                    Access to sensitive metadata requires separate approved resource-scoped authorization.
+                </p>
             </div>
-        </div>
         {% else %}
-        <div class="p-6 text-center">
-            <p class="font-semibold text-content-primary">No Vault Connections Registered</p>
-            <p class="mt-2 text-sm text-content-secondary">Register an approved HTTPS Vault origin and least-privilege AppRole before collecting provider evidence.</p>
-        </div>
+            <div class="overflow-hidden rounded-xl border border-outline-subtle">
+            <div class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                {{ table_label.metadata_label("Connection Registry", "database") }}
+                <h2 class="mt-2 text-base font-semibold text-content-primary">Vault Instances</h2>
+                <p class="mt-1 text-sm text-content-secondary">Provider validation is independent from Inventory, Metrics Source and Alert Source coverage.</p>
+            </div>
+            {% if instances %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="border-b border-outline-subtle bg-surface-elevated text-content-secondary">
+                        <tr><th scope="col" class="px-5 py-3 font-semibold">Connection</th>
+                            <th scope="col" class="px-5 py-3 font-semibold">Environment</th>
+                            <th scope="col" class="px-5 py-3 font-semibold">Validation</th>
+                            <th scope="col" class="px-5 py-3 font-semibold">Vault Health</th>
+                            <th scope="col" class="px-5 py-3 font-semibold">Action</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-subtle">
+                    {% for item in instances %}
+                    <tr>
+                        <td class="px-5 py-3 font-semibold text-content-primary">{{ item.name }}</td>
+                        <td class="px-5 py-3 text-content-secondary">{{ item.environment or "Unspecified" }}</td>
+                        <td class="px-5 py-3 text-content-secondary">{{ (item.readiness_status or "validation_required")|replace("_", " ")|title }}</td>
+                        <td class="px-5 py-3 text-content-secondary">{{ (item.validation_summary or {}).get("health_status", "Not Observed")|replace("_", " ")|title }}</td>
+                        <td class="px-5 py-3"><a class="font-semibold text-kaori-primary hover:underline" href="{{ url_for('vault.detail', instance_id=item.id) }}">View Details</a></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="{{ pagination_ui.footer_classes() }}">
+                <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</p>
+                <div class="{{ pagination_ui.summary_group_classes() }}">
+                    <div class="{{ pagination_ui.rows_group_classes() }}">
+                        <label for="vault-rows" class="sr-only">Connections per page</label>
+                        <select id="vault-rows" aria-label="Connections per page" title="Connections per page"
+                                class="{{ pagination_ui.page_size_classes() }}" onchange="window.location.href=this.value">
+                            {% for value in pagination.allowed_per_page %}
+                                <option value="{{ url_for('vault.index', per_page=value) }}" {{ "selected" if value == pagination.per_page else "" }}>{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <nav aria-label="Vault connections pagination" class="{{ pagination_ui.navigation_group_classes() }}">
+                        {% if pagination.has_prev %}
+                        <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', page=pagination.prev_page, per_page=pagination.per_page) }}">Previous</a>
+                        {% else %}
+                        <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Previous</span>
+                        {% endif %}
+                        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, query_params={"per_page": pagination.per_page}) }}
+                        {% if pagination.has_next %}
+                        <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', page=pagination.next_page, per_page=pagination.per_page) }}">Next</a>
+                        {% else %}
+                        <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next</span>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+            {% else %}
+            <div class="p-6 text-center">
+                <p class="font-semibold text-content-primary">No Vault Connections Registered</p>
+                <p class="mt-2 text-sm text-content-secondary">Register an approved HTTPS Vault origin and least-privilege AppRole before collecting provider evidence.</p>
+            </div>
+            {% endif %}
+            </div>
         {% endif %}
-    </section>
+    {% endcall %}
 </div>
 {% endblock dashboard_content %}
