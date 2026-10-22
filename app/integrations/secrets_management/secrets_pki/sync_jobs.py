@@ -69,5 +69,9 @@ def enqueue_vault_inventory_sync(
         parameters={'scope': 'approved_vault_instances', 'target_count': len(targets)},
         payload={'target_count': len(targets), 'trigger_type': trigger_type},
         max_attempts=1,
-        dispatch_options=JobDispatchOptions(require_registered_worker=True),
+        dispatch_options=JobDispatchOptions(
+            require_registered_worker=True,
+            soft_time_limit_seconds=1740,
+            hard_time_limit_seconds=1800,
+        ),
     )
