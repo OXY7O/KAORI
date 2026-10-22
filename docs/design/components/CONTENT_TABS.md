@@ -118,7 +118,11 @@ workspace has two subordinate content views: **Cluster Prerequisites** and **Nam
 Policies**. This is a Content Tabs controller (Tab Style 4), not a second level-3
 route navigator, Integration-style framed parent card, or a new tab family.
 
-- A shared selected-cluster scope control remains visible above these tabs.
+- Follow the approved Integration domain workspace composition: one shared operational
+  shell owns a compact header, the common selected-cluster scope control,
+  embedded Content Tabs (`embedded=true`), and a padded active panel. Do not
+  render the cluster selector, tab row, and panel as three separate cards, or
+  repeat an external Cluster Readiness intro and a second inner card title.
 - `render_controlled_links()` owns tab geometry and true full-route `href`
   fallbacks; the page-owned Alpine controller owns instant switching, roving
   Arrow/Home/End, URL `view=prerequisites|policies`, back/forward and panel
