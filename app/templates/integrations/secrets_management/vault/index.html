@@ -2,6 +2,7 @@
 {% import "integrations/components/_provider_frontpage.html" as provider_front %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/pagination.html" as pagination_ui %}
 {% block title %}HashiCorp Vault Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
 <div class="kaori-integration-semantic space-y-6">
@@ -38,19 +39,32 @@
                 </tbody>
             </table>
         </div>
-        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle p-4 text-xs text-content-secondary">
-            <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }}</p>
-            <nav aria-label="Vault connections pagination" class="flex items-center gap-3">
-                {% if pagination.has_prev %}<a href="{{ url_for('vault.index', page=pagination.prev_page, per_page=pagination.per_page) }}" class="text-kaori-primary underline">Previous</a>{% endif %}
-                <span>Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
-                {% if pagination.has_next %}<a href="{{ url_for('vault.index', page=pagination.next_page, per_page=pagination.per_page) }}" class="text-kaori-primary underline">Next</a>{% endif %}
-                <label for="vault-page-size">Rows</label>
-                <select id="vault-page-size" aria-label="Rows per page" class="rounded-lg border border-outline-default bg-surface-card px-2 py-1 text-content-primary" onchange="window.location.href=this.value">
-                {% for value in pagination.allowed_per_page %}
-                    <option value="{{ url_for('vault.index', per_page=value) }}" {{ "selected" if value == pagination.per_page else "" }}>{{ value }}</option>
-                {% endfor %}
-                </select>
-            </nav>
+        <div class="{{ pagination_ui.footer_classes() }}">
+            <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</p>
+            <div class="{{ pagination_ui.summary_group_classes() }}">
+                <div class="{{ pagination_ui.rows_group_classes() }}">
+                    <label for="vault-rows" class="sr-only">Connections per page</label>
+                    <select id="vault-rows" aria-label="Connections per page" title="Connections per page"
+                            class="{{ pagination_ui.page_size_classes() }}" onchange="window.location.href=this.value">
+                        {% for value in pagination.allowed_per_page %}
+                            <option value="{{ url_for('vault.index', per_page=value) }}" {{ "selected" if value == pagination.per_page else "" }}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <nav aria-label="Vault connections pagination" class="{{ pagination_ui.navigation_group_classes() }}">
+                    {% if pagination.has_prev %}
+                    <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', page=pagination.prev_page, per_page=pagination.per_page) }}">Previous</a>
+                    {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Previous</span>
+                    {% endif %}
+                    {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, query_params={"per_page": pagination.per_page}) }}
+                    {% if pagination.has_next %}
+                    <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', page=pagination.next_page, per_page=pagination.per_page) }}">Next</a>
+                    {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next</span>
+                    {% endif %}
+                </nav>
+            </div>
         </div>
         {% else %}
         <div class="p-6 text-center">
