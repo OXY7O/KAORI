@@ -224,3 +224,21 @@ def test_destroyed_version_evidence_cannot_revert_to_not_destroyed(store):
     with pytest.raises(ValueError, match='cannot reverse'):
         commit_kv2_inventory(store, _snapshot(at + timedelta(minutes=1)))
     assert SecretVersionObservation.query.one().destroyed is True
+
+
+def test_inactive_provider_identity_is_not_admitted_even_with_stale_ready_metadata(store):
+    identity = db.session.get(IntegrationInstance, store)
+    identity.lifecycle_status = 'retired'
+    db.session.commit()
+    with pytest.raises(ValueError, match='not eligible'):
+        commit_kv2_inventory(store, _snapshot(datetime(2026, 10, 22, tzinfo=UTC)))
+    assert SecretProviderRepresentation.query.count() == 0
+
+
+def test_foreign_provider_cannot_use_vault_inventory_commit_path(store):
+    identity = db.session.get(IntegrationInstance, store)
+    identity.provider_key = 'other'
+    db.session.commit()
+    with pytest.raises(ValueError, match='not eligible'):
+        commit_kv2_inventory(store, _snapshot(datetime(2026, 10, 22, tzinfo=UTC)))
+    assert SecretProviderRepresentation.query.count() == 0
