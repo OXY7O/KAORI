@@ -497,10 +497,10 @@ def test_channel_inventory_responsive_width_retains_lifecycle_guidance() -> None
     assert "table_ui.table_classes('w-full min-w-[980px] table-fixed lg:min-w-0')" in rows
     assert 'min-w-[1100px]' not in rows
     assert "data-dialog-target=\"notification-channel-delete-blockers-{{ channel.id }}\"" in rows
-    assert 'Why locked?' in rows
+    assert 'Locked' in rows
     assert 'sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]' in policy
     assert 'channel.report_schedule_names' in blockers
-    assert 'Use Edit to disable this channel' in blockers
+    assert 'Channel already disabled' in blockers
 
 
 def test_channel_inventory_rows_are_compact_with_native_policy_dialog() -> None:
@@ -587,12 +587,12 @@ def test_notification_channel_layout_and_protected_delete_are_discoverable() -> 
 
     # Blocked Delete is no longer an inert disabled action or unsafe hard delete.
     assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channels
-    assert 'Why locked?' in channels
+    assert 'Locked' in channels
     assert 'data-kaori-native-dialog' in blockers
     assert 'channel.delivery_record_count' in blockers
     assert 'channel.report_schedule_count' in blockers
     assert 'for schedule_name in channel.report_schedule_names' in blockers
-    assert 'Use Edit to disable this channel' in blockers
+    assert 'Channel already disabled' in blockers
     assert 'data-kaori-dialog-close' in blockers
     assert 'credential_payload' not in blockers
     assert "'report_schedule_names': list(usage.report_schedule_names)" in service
@@ -600,6 +600,41 @@ def test_notification_channel_layout_and_protected_delete_are_discoverable() -> 
     assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
     assert "data-destructive-modal-open" in channels
     assert channels.index("</table>") < channels.index("_channel_deletion_blockers_dialog.html")
+
+
+def test_notification_locked_action_and_dialog_explain_disabled_lifecycle() -> None:
+    rows = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
+    lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
+
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in rows
+    assert 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in rows
+    assert 'border-status-warning-border bg-status-warning-soft' in rows
+    assert 'data-lucide="lock-keyhole"' in rows
+    assert 'Why locked?' not in rows
+    assert "table_label.status_label('Locked', 'warning', icon='lock-keyhole')" in dialog
+
+    # The UI must explain why disabling did not unlock deletion.
+    assert "if channel.enabled" in dialog
+    assert 'Channel already disabled' in dialog
+    assert 'Automatic delivery is already disabled.' in dialog
+    assert 'hard delete stays locked' in dialog.lower()
+    assert 'Delete becomes available only when' in dialog
+    assert 'both dependency counts are zero' in dialog
+    assert 'for schedule_name in channel.report_schedule_names' in dialog
+    assert 'credential_payload' not in dialog
+
+    # The CTA uses the same authorized HTMX Edit pattern as the row action.
+    assert "notification_channels.index" in dialog
+    assert 'hx-target="#notification-channels-workspace"' in dialog
+    assert 'hx-select="#notification-channels-workspace"' in dialog
+    assert 'hx-push-url="false"' in dialog
+    assert 'data-kaori-native-dialog' in dialog
+    assert dialog.count('data-kaori-dialog-close') == 2
+
+    # Changing Enabled does not override lifecycle-dependent deletion.
+    assert 'if usage.blocked:' in lifecycle
+    assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
 
 
 def test_notification_channel_row_actions_confirm_delete_and_refresh_via_htmx() -> None:
