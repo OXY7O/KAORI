@@ -56,6 +56,7 @@ as `registry_domain` or root product packages to avoid this boundary.
 | Observability | Alerting | Alertmanager | `app/integrations/observability/alert_source/providers/alertmanager/` | `observability-alerts` |
 | Storage | Object Storage | MinIO | `app/integrations/storage/object_storage/providers/minio/` | `storage-object` |
 | Registry | OCI Registry | Harbor | `app/integrations/registry/providers/harbor/` | `registry-provider` |
+| Secrets Management | Secrets & PKI | HashiCorp Vault | `app/integrations/secrets_management/secrets_pki/providers/vault/` | `secrets-pki-provider` |
 
 Every registered operation has an explicit execution queue. Inline operations
 are construction or state-translation operations that perform no asynchronous
