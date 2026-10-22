@@ -190,6 +190,10 @@ def commit_pki_public_issuers(
         for issuer in existing:
             if issuer.provider_issuer_id not in observed:
                 issuer.observation_status = 'not_observed'
+                # Historical public fingerprints remain durable, but may not
+                # be reported as currently observed after the issuer vanishes.
+                for certificate in issuer.certificates:
+                    certificate.observation_status = 'not_observed'
                 missing += 1
         state.status = 'ready'
         state.observed_issuer_count = len(observed)
