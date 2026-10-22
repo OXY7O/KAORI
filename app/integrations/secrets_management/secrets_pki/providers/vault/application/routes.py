@@ -10,13 +10,14 @@ from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.rbac.decorators import permission_required
-from app.common.pagination import paginate_sequence
+from app.common.pagination import paginate_query
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionForm
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verify_proof
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.service import save_connection, test_connection
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultProviderError
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import enqueue_instance_validation, enqueue_runtime_health_refresh
+from app.models.integration import IntegrationInstance
 from app.models.vault import VaultInstance
 from app.platform_operations.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.security.credentials import CredentialEncryptionError
@@ -55,14 +56,14 @@ def _evidence(instance: VaultInstance) -> dict:
 @permission_required('integrations.manage')
 def index() -> ResponseReturnValue:
     query = VaultInstance.query.join(VaultInstance.integration_instance).order_by(VaultInstance.id.asc())
-    instances, pagination = paginate_sequence(
-        query.all(), page=request.args.get('page', 1, type=int) or 1,
+    instances, pagination = paginate_query(
+        query, page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
     return render_template(
         'integrations/secrets_management/vault/index.html',
         instances=instances, pagination=pagination,
-        registered=query.count(), ready=query.filter_by(readiness_status='ready').count(),
+        registered=query.count(), ready=query.filter(IntegrationInstance.readiness_status == 'ready').count(),
         notification_context=_notification(),
     )
 
