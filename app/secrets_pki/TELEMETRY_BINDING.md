@@ -66,3 +66,46 @@ Focused tests authored:
 Use existing KAORI validation and security gates, including Prometheus/Thanos
 negative tests, per-source label/scope checks, Developer Check and real
 DevContainer UAT. No readiness PASS has yet been observed.
+
+
+## Vault Alert Source / Alertmanager consumer (HV-06 follow-up)
+
+The existing Alertmanager provider owns API v2 alert retrieval, silences,
+routing, grouping and source readiness. The canonical `IntegrationBinding`
+for `vault_instance` uses the `vault-alerts-v1` profile. In the
+Alertmanager Bindings & Consumers workspace, select the canonical Vault
+instance and configure the exact equality matcher:
+
+```text
+vault_instance="<KAORI IntegrationInstance.id>"
+```
+
+Use the **same** `vault_instance` value on the Prometheus/Alertmanager rule
+labels for that Vault deployment. It is not supplied by Vault automatically.
+A healthy Alertmanager API with zero active matching alerts is not evidence
+that Vault has no failures: `identity_observed=false` remains explicit.
+Other Vault instances and global unmatched alerts must not be attributed
+to the selected asset.
+
+The source binding is validated on creation/update and again at runtime.
+Unknown or retired Vault instances, regex/broad/noncanonical selectors
+and foreign alert labels are blocked. The Vault binding stores counts and
+capability flags but suppresses sample alert names, which may themselves
+contain sensitive Secret paths. Provider failure messages are sanitized.
+
+Alertmanager source eligibility is **independent** of the Vault API,
+KV v2 collection state, and Prometheus historical coverage. Binding alone
+does not create new Prometheus alerting rules, AlertCases, enrichment,
+receiver routing, webhook paths or an alert notification engine. Those
+are covered by the existing Central Alert Intelligence and #2596.
+
+Required UAT: register approved Alertmanager source, bind and validate an
+approved Vault instance with no alerts and a representative matching
+alert, reject mismatched identities, confirm per-role direct access
+and ensure provider outage does not mutate Vault readiness. Do not
+declare binding acceptance without those checks.
+
+Focused tests:
+`tests/integrations/test_vault_alert_source_binding.py`.
+
+Provider API source: https://github.com/prometheus/alertmanager/blob/main/api/v2/openapi.yaml
