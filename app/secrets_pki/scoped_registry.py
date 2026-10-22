@@ -229,3 +229,92 @@ def read_scoped_secret_registry(
         )
     except (SQLAlchemyError, ValueError, TypeError, AttributeError):
         return _denied(page=page, per_page=per_page, status='source_unavailable')
+
+
+def read_governed_scoped_secret_registry(
+    *,
+    actor_id: int,
+    instance_id: int,
+    provider_namespace: str,
+    mount: str,
+    page: int = 1,
+    per_page: int = 5,
+    now: datetime | None = None,
+) -> ScopedSecretPage:
+    """Admission-checked, mandatory-audited internal Registry entrypoint.
+
+    The policy row is locked from admission through bounded source read and
+    audit commit, so a concurrent revocation cannot become visible during
+    this protected transaction. No HTTP or worker publishes this function.
+    """
+    from app.access.scope_policy import evaluate_exact_vault_scope
+    from app.platform_operations.notifications.service import stage_operational_activity
+
+    instant = _time(now or datetime.now(UTC))
+    if instant is None or type(page) is not int or page < 1 or type(per_page) is not int or per_page not in _PAGE_SIZES:
+        return _denied(page=1, per_page=5, status='scope_required')
+    try:
+        admission = evaluate_exact_vault_scope(
+            actor_user_id=actor_id,
+            instance_id=instance_id,
+            provider_namespace=provider_namespace,
+            mount=mount,
+            now=instant,
+            lock_for_read=True,
+        )
+        if (
+            not admission.allowed
+            or admission.policy_ref is None or admission.revision is None
+            or admission.expires_at is None
+        ):
+            db.session.rollback()
+            return _denied(page=page, per_page=per_page, status='scope_required')
+        decision = ScopedRegistryDecision(
+            actor_id=actor_id,
+            instance_id=instance_id,
+            provider_namespace=provider_namespace,
+            mount=mount,
+            permission_allowed=True,
+            resource_allowed=True,
+            decision_authority='resource_scope_policy',
+            policy_reference=admission.policy_ref,
+            evaluated_at=instant,
+            expires_at=min(admission.expires_at, instant + timedelta(minutes=10)),
+        )
+        result = read_scoped_secret_registry(
+            decision=decision,
+            actor_id=actor_id,
+            page=page,
+            per_page=per_page,
+            now=instant,
+        )
+        if result.status != 'ready':
+            db.session.rollback()
+            return result
+        # Same transaction: no Secret row/page is returned before audit commit.
+        # Canonical Activity Audit redaction cannot be treated as an async
+        # background toast or best-effort notification for sensitive reads.
+        stage_operational_activity(
+            user_id=actor_id,
+            event_type='access_scope_secret_registry_read',
+            status='success',
+            title='Scoped Secret Registry Read',
+            message='Authorized committed Secret metadata was inspected.',
+            metadata={
+                'actor_user_id': actor_id,
+                'policy_ref': admission.policy_ref,
+                'policy_revision': admission.revision,
+                'permission_key': 'secrets_pki.view',
+                'scope_level': 'vault_mount',
+                'integration_instance_id': instance_id,
+                'audit_contract': 'scoped_policy.v1',
+                'result': 'allow',
+            },
+        )
+        db.session.commit()
+        return result
+    except Exception:
+        # Do not expose source, policy or commit error details; deny and
+        # rollback when mandatory evidence or provider-qualified SQL fails.
+        db.session.rollback()
+        return _denied(page=page, per_page=per_page, status='scope_required')
