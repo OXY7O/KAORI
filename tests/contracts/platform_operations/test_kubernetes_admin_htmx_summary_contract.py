@@ -46,7 +46,7 @@ def test_kubernetes_admin_operational_hierarchy_keeps_authoritative_summary() ->
 
     assert 'Kubernetes Administration</h1>' in page
     assert 'components/page_hero.html' in page
-    assert 'framed_workspace_tabs.render(' in page
+    assert 'workspace_tabs.render(' in page
     assert 'kubernetes:load-secret-reveal from:window once' in page
     assert 'kubernetes-administration-overview-title' not in page
     assert 'Administration Readiness' in overview
@@ -72,11 +72,9 @@ def test_kubernetes_admin_operational_hierarchy_keeps_authoritative_summary() ->
     assert 'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html' in config
 
 
-def test_kubernetes_admin_hero_is_one_line_and_tabs_use_canonical_workspace_shell() -> None:
+def test_kubernetes_admin_hero_is_one_line_and_tabs_use_integrated_workspace() -> None:
     index = (ROOT / 'app/templates/platform_operations/kubernetes/index.html').read_text()
     summary = (ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html').read_text()
-    jobs = (ROOT / 'app/templates/platform_operations/jobs/index.html').read_text()
-
     # The existing Hero primitive owns viewport-dependent typography and wrapping;
     # shortened non-phone copy must not be forced into a clipped nowrap rule.
     description = 'Govern Kubernetes access with policy and audit evidence.'
@@ -84,17 +82,16 @@ def test_kubernetes_admin_hero_is_one_line_and_tabs_use_canonical_workspace_shel
     assert len(description) <= 60
     assert 'whitespace-nowrap' not in index
 
-    # Match the reviewed Jobs workspace shell: shared Framed Tabs in a single
-    # bordered surface with padded tab panels, not an unframed gray tab slab.
-    shell = 'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm'
-    assert shell in jobs
-    assert f'class="{shell}"' in index
+    # Tab Style 1 attaches peer views to a divider, without an enclosing
+    # framed card. Other page sections continue using their own shared shells.
     shell_start = index.index('id="kubernetes-administration-workspace-shell"')
-    tab_start = index.index('framed_workspace_tabs.render(', shell_start)
-    content_start = index.index('class="p-5 lg:p-6"', tab_start)
+    tab_start = index.index('workspace_tabs.render(', shell_start)
+    content_start = index.index('class="min-w-0 pt-5"', tab_start)
     overview_start = index.index('id="kubernetes-administration-panel-overview"', content_start)
     secret_start = index.index('id="kubernetes-administration-panel-secret-reveal"', overview_start)
     assert shell_start < tab_start < content_start < overview_start < secret_start
+    assert 'class="min-w-0"' in index[shell_start:tab_start]
+    assert 'framed_workspace_tabs' not in index
     assert 'kubernetes:load-secret-reveal from:window once' in index
     assert 'role="tabpanel"' in index
     assert 'moveTab(' in index
@@ -113,9 +110,9 @@ def test_kubernetes_admin_hero_is_one_line_and_tabs_use_canonical_workspace_shel
         assert phrase in index
         assert phrase in summary
 
-def test_kubernetes_admin_framed_tabs_have_explicit_panel_labels() -> None:
+def test_kubernetes_admin_integrated_tabs_have_explicit_panel_labels() -> None:
     page = (ROOT / 'app/templates/platform_operations/kubernetes/index.html').read_text()
-    shared = (ROOT / 'app/templates/components/framed_workspace_tabs.html').read_text()
+    shared = (ROOT / 'app/templates/components/workspace_tabs.html').read_text()
 
     # Shared tab owner supplies button IDs, ARIA selection, and keyboard behavior.
     # The page connects each rendered panel to that exact tab ID.
@@ -126,6 +123,6 @@ def test_kubernetes_admin_framed_tabs_have_explicit_panel_labels() -> None:
         assert 'id="{{ prefix }}-tab-{{ tab_key }}"' in shared
         assert 'aria-controls="{{ prefix }}-panel-{{ tab_key }}"' in shared
 
-    assert 'framed_workspace_tabs.render(' in page
+    assert 'workspace_tabs.render(' in page
     assert 'role="tablist"' not in page
     assert 'kubernetes:load-secret-reveal from:window once' in page

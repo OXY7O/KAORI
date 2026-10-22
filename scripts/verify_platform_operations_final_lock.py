@@ -251,8 +251,10 @@ def main() -> int:
             errors.append(f'Kubernetes Administration factual posture contract missing: {required}')
     if 'Control Status: Protected Secret Reveal Available' in k8s_index or 'Available Controls' in k8s_index:
         errors.append('Kubernetes Administration must not hard-code protected administration capability as available')
-    if 'components/framed_workspace_tabs.html' not in k8s_index or 'framed_workspace_tabs.render(' not in k8s_index:
-        errors.append('Kubernetes Administration must use shared Framed Workspace Tabs')
+    if 'components/workspace_tabs.html' not in k8s_index or 'workspace_tabs.render(' not in k8s_index:
+        errors.append('Kubernetes Administration must use shared Integrated Workspace Tabs')
+    if 'components/framed_workspace_tabs.html' in k8s_index or 'framed_workspace_tabs.render(' in k8s_index:
+        errors.append('Kubernetes Administration must not add a framed parent card around peer views')
     for key in ('overview', 'secret-reveal'):
         if key not in k8s_index:
             errors.append(f'Kubernetes Administration tab missing: {key}')
@@ -262,9 +264,9 @@ def main() -> int:
         '@keydown.home.prevent',
         '@keydown.end.prevent',
     ):
-        shared = read('app/templates/components/framed_workspace_tabs.html')
+        shared = read('app/templates/components/workspace_tabs.html')
         if keyboard not in shared:
-            errors.append(f'Framed Workspace Tabs lost keyboard contract: {keyboard}')
+            errors.append(f'Integrated Workspace Tabs lost keyboard contract: {keyboard}')
 
     jobs_index = read('app/templates/platform_operations/jobs/index.html')
     if (
