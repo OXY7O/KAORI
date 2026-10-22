@@ -1,42 +1,36 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
-<div class="w-full">
-    <table class="w-full table-fixed text-content-primary">
+{% import "components/table.html" as table_ui %}
+<div class="w-full overflow-x-auto">
+    <table class="{{ table_ui.table_classes('min-w-[1020px]') }}">
         <colgroup>
-            <col class="w-[38%]">
-            <col class="w-[16%]">
-            <col class="w-[20%]">
-            <col class="w-[26%]">
+            <col class="w-[30%]">
+            <col class="w-[17%]">
+            <col class="w-[18%]">
+            <col class="w-[35%]">
         </colgroup>
-        <thead>
-            <tr class="border-b border-outline-default bg-surface-hover text-xs text-content-secondary">
-                <th class="px-5 py-3 text-left">Namespace</th>
-                <th class="px-5 py-3 text-left">Live Namespace</th>
-                <th class="px-5 py-3 text-left">Current Policy</th>
-                <th class="px-5 py-3 text-right">Set Policy</th>
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Live Namespace</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Current Policy</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Set Policy</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody class="{{ table_ui.body_classes() }}">
             {% for row in namespace_rows %}
                 {% set policy_tone = 'maintenance' if row.policy in ['approval_required', 'step_up'] else 'unknown' %}
                 {% set live_label = 'Available' if row.live_state == 'available' else 'Missing' if row.live_state == 'missing' else 'Unknown' %}
                 {% set live_tone = 'normal' if row.live_state == 'available' else 'warning' if row.live_state == 'missing' else 'unknown' %}
-                <tr class="border-t border-outline-default text-sm transition hover:bg-surface-hover">
-                    <td class="px-5 py-3 align-middle">
-                        <div class="flex max-w-[360px] items-center gap-2.5">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="box" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <div class="truncate font-semibold text-content-primary"
-                                     title="{{ row.namespace }}">{{ row.namespace }}</div>
-                                <div class="mt-0.5 text-xs text-content-muted">Namespace-scoped Secret access</div>
-                            </div>
-                        </div>
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {{ table_ui.title_cell(row.namespace, 'Namespace-scoped Secret access', 'box') }}
                     </td>
-                    <td class="px-5 py-3 text-left align-middle">{{ table_label.status_label(live_label, live_tone) }}</td>
-                    <td class="px-5 py-3 text-left align-middle">
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(live_label, live_tone) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">
                         {{ table_label.status_label(reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') | title), policy_tone) }}
                     </td>
-                    <td class="px-5 py-3 align-middle">
+                    <td class="{{ table_ui.cell_classes(action=true) }}">
                         <form method="post"
                               action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
                               hx-post="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
@@ -45,7 +39,7 @@
                               hx-indicator="#secret-reveal-namespace-loading"
                               hx-disabled-elt="button[type='submit']"
                               x-data="{ initial: '{{ row.policy }}', current: '{{ row.policy }}' }"
-                              class="ml-auto flex w-full items-center justify-end gap-2">
+                              class="ml-auto flex min-w-[280px] items-center justify-end gap-2">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="view" value="policies">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
@@ -62,7 +56,7 @@
                             <select name="policy"
                                     x-model="current"
                                     aria-label="Reveal policy for {{ row.namespace }}"
-                                    class="h-10 min-w-0 flex-1 rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted">
+                                    class="{{ table_ui.filter_select_classes() }} min-w-[145px] flex-1">
                                 {% for value, label in reveal_policy_choices.items() %}
                                     {% set enable_option_blocked = value != 'disabled' and (not selected_cluster_ready or row.live_state != 'available') %}
                                     <option value="{{ value }}"
@@ -73,9 +67,8 @@
                             <button type="submit"
                                     title="Save {{ row.namespace }} policy"
                                     :disabled="current === initial"
-                                    :class="current !== initial ? 'border-kaori-primary bg-kaori-primary text-white shadow-sm hover:border-kaori-primary-hover hover:bg-kaori-primary-hover' : 'border-outline-default bg-surface-card text-content-muted shadow-none'"
-                                    class="inline-flex h-10 w-20 shrink-0 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold outline-none transition focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed">
-                                <i data-lucide="save" class="h-4 w-4"></i>
+                                    class="{{ table_ui.action_classes() }} shrink-0">
+                                <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                                 Save
                             </button>
                         </form>
@@ -83,7 +76,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="4" class="p-0">
+                    <td colspan="4" class="p-0 text-left">
                         {% if namespace_summary.total %}
                             {% set empty_state_icon = "search-x" %}
                             {% set empty_state_label = "No Results" %}

@@ -42,7 +42,7 @@ def test_kubernetes_administration_posture_is_factual_not_hardcoded_available() 
     assert "table_label.status_label('Available', 'normal')" not in overview
     assert "table_label.status_label('1 Available Control', 'info')" not in overview
     assert 'table_label.status_indicator_label(administration_status_label, administration_status_tone)' in overview
-    assert 'Committed Kubernetes prerequisites' in overview
+    assert 'Counts represent committed KAORI configuration.' in overview
 
 
 def test_secret_reveal_readiness_fails_closed_when_canonical_connection_is_missing() -> None:

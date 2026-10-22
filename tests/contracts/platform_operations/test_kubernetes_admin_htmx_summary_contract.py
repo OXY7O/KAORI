@@ -358,7 +358,6 @@ def test_cluster_readiness_preserves_forms_htmx_scope_and_authorization_boundary
     # GET switches the selected cluster; POST only records the two attestations.
     for marker in (
         'id="secret-reveal-cluster-workspace"',
-        'id="secret-reveal-cluster-loading"',
         'id="secret-reveal-cluster"',
         'data-kaori-auto-submit',
         "platform_operations.kubernetes.secret_reveal.workspace",
@@ -440,9 +439,58 @@ def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> 
     assert 'hx-swap="outerHTML show:none"' in table
     assert 'name="csrf_token"' in workspace
     assert 'name="csrf_token"' in table
-    assert 'id="secret-reveal-cluster-loading"' in workspace
+    assert 'id="secret-reveal-cluster-loading"' not in workspace
+    assert 'id="secret-reveal-namespace-loading"' in namespace
     assert 'secret-reveal-selected-cluster-posture' in workspace
     assert "empty_state_permission = \"clusters.manage\"" in workspace
+
+
+
+def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() -> None:
+    cluster = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
+    namespace = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    table = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html').read_text()
+
+    assert 'id="secret-reveal-cluster-loading"' not in cluster
+    assert 'hx-indicator="#secret-reveal-cluster-loading"' not in cluster
+    source = namespace.index('id="secret-reveal-live-source"')
+    block = namespace.index('id="secret-reveal-namespace-section"')
+    header = namespace.index('table_ui.block_header_classes()', block)
+    loader = namespace.index('id="secret-reveal-namespace-loading"', header)
+    filters = namespace.index('table_ui.filter_bar_classes()', loader)
+    content = namespace.index('id="secret-reveal-namespace-table-content"', filters)
+    assert source < block < header < loader < filters < content
+    assert namespace.count('id="secret-reveal-live-source"') == 1
+    assert namespace.count('id="secret-reveal-namespace-loading"') == 1
+    for primitive in ('block_classes()', 'block_header_classes()', 'block_icon_classes()',
+                      'block_title_classes()', 'block_description_classes()',
+                      'loading_bar_classes()', 'filter_bar_classes()', 'action_classes()'):
+        assert 'table_ui.' + primitive in namespace
+    assert 'registry_ui.clear_filters_action(' in namespace
+    assert 'hx-target="#secret-reveal-namespace-table-content"' in namespace
+    assert 'hx-target="#secret-reveal-cluster-workspace"' in namespace
+
+    for primitive in ('table_classes(', 'head_classes()', 'header_cell_classes()',
+                      'header_cell_classes(action=true)', 'body_classes()', 'row_classes()',
+                      'cell_classes()', 'cell_classes(action=true)', 'title_cell(', 'action_classes()',
+                      'filter_select_classes()'):
+        assert 'table_ui.' + primitive in table
+    assert 'table-fixed' not in table
+    assert 'min-w-[1020px]' in table
+    assert 'overflow-x-auto' in table
+    assert 'scope="col"' in table
+    assert 'table_ui.title_cell(row.namespace,' in table
+    assert ':disabled="current === initial"' in table
+    assert ':class="current !== initial' not in table
+    assert 'aria-label="Reveal policy for {{ row.namespace }}"' in table
+    assert 'hx-disabled-elt="button[type=\'submit\']"' in table
+    assert 'name="csrf_token"' in table
+    assert 'name="view" value="policies"' in table
+    assert 'name="namespace"' in table
+    assert 'name="policy"' in table
+    assert 'enable_option_blocked' in table
+    assert 'pagination_ui.footer_classes()' in table
+    assert 'pagination_ui.numeric_pages(' in table
 
 
 def test_secret_reveal_view_survives_url_loading_saves_and_table_navigation() -> None:

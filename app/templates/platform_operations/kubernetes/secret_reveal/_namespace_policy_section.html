@@ -2,17 +2,35 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table.html" as table_ui %}
+<div id="secret-reveal-live-source"
+     class="mb-3 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3 text-xs text-content-secondary"
+     aria-label="Kubernetes Namespace Source Status">
+    <span class="inline-flex items-center gap-2">
+        <i data-lucide="radio-tower" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+        <span class="font-semibold">Live Source</span>
+        {{ table_label.status_indicator_label('Current' if namespace_source.available else 'Unavailable', 'normal' if namespace_source.available else 'warning') }}
+    </span>
+    {% if namespace_source.available %}
+        <span>Last Refreshed <strong class="font-semibold">{{ namespace_source.last_successful_at }}</strong></span>
+    {% elif namespace_source.has_successful_snapshot %}
+        <span>Last Successful <strong class="font-semibold">{{ namespace_source.last_successful_at }}</strong></span>
+    {% else %}
+        <span>No successful live refresh yet.</span>
+    {% endif %}
+</div>
 <section id="secret-reveal-namespace-section"
-         class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-    <div class="border-b border-outline-default px-6 py-5">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-5 w-5"></i></span>
-                <div>
-                    <h2 class="text-base font-semibold text-content-primary">Namespace Policies</h2>
-                    <p class="mt-1 text-sm text-content-muted">Allow protected access only where there is a clear operational requirement.</p>
-                </div>
+         class="{{ table_ui.block_classes() }} shadow-none">
+    <header class="{{ table_ui.block_header_classes() }}">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                <i data-lucide="boxes" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 class="{{ table_ui.block_title_classes() }}">Namespace Policies</h2>
+                <p class="{{ table_ui.block_description_classes() }}">Allow protected Secret access only where there is an operational requirement.</p>
             </div>
+        </div>
+        <div class="flex min-w-0 flex-col items-start gap-2 sm:items-end">
             <div class="flex flex-wrap items-center gap-2">
                 {{ table_label.metadata_label(selected_cluster.name, icon='server') }}
                 {{ table_label.metadata_label(namespace_summary.total ~ ' Total') }}
@@ -20,34 +38,19 @@
                 {% if namespace_summary.missing %}{{ table_label.status_label(namespace_summary.missing ~ ' Missing', 'warning') }}{% endif %}
                 {% if namespace_summary.unknown %}{{ table_label.status_label(namespace_summary.unknown ~ ' Unknown', 'unknown') }}{% endif %}
             </div>
-        </div>
-        <div class="mt-4 flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-content-muted">
-                <span class="inline-flex items-center gap-2">
-                    <i data-lucide="radio-tower" class="h-4 w-4 text-kaori-primary"></i>
-                    <span class="font-semibold text-content-secondary">Live Source</span>
-                    {{ table_label.status_indicator_label('Current' if namespace_source.available else 'Unavailable', 'normal' if namespace_source.available else 'warning') }}
-                </span>
-                {% if namespace_source.available %}
-                    <span>Last Refreshed <strong class="font-semibold text-content-secondary">{{ namespace_source.last_successful_at }}</strong></span>
-                {% elif namespace_source.has_successful_snapshot %}
-                    <span>Last Successful <strong class="font-semibold text-content-secondary">{{ namespace_source.last_successful_at }}</strong></span>
-                {% else %}
-                    <span>No successful live refresh yet.</span>
-                {% endif %}
-            </div>
+            <div class="flex flex-wrap items-center gap-2">
             {% if namespace_filters.query or namespace_filters.policy != 'all' %}
                 {% set namespace_clear_href = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
                 {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
                 {{ registry_ui.clear_filters_action(namespace_clear_href,
-                                table_ui.action_classes() ,
-                hx_get=namespace_clear_url,
-                target='#secret-reveal-namespace-section',
-                indicator='#secret-reveal-namespace-loading',
-                select='#secret-reveal-namespace-section',
-                push_url='true',
-                swap='outerHTML',
-                marker='secret-reveal-namespaces'
+                                table_ui.action_classes(),
+                                hx_get=namespace_clear_url,
+                                target='#secret-reveal-namespace-section',
+                                indicator='#secret-reveal-namespace-loading',
+                                select='#secret-reveal-namespace-section',
+                                push_url='true',
+                                swap='outerHTML',
+                                marker='secret-reveal-namespaces'
                 ) }}
             {% endif %}
             <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page) }}"
@@ -55,15 +58,15 @@
                hx-target="#secret-reveal-cluster-workspace"
                hx-swap="outerHTML show:none"
                hx-indicator="#secret-reveal-namespace-loading"
-               class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-strong hover:bg-surface-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/10">
-                <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+               class="{{ table_ui.action_classes() }} shrink-0">
+                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
                 Refresh
             </a>
+            </div>
         </div>
-        <div id="secret-reveal-namespace-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-        </div>
+    </header>
+    <div id="secret-reveal-namespace-loading" class="{{ table_ui.loading_bar_classes() }}">
+        <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
     </div>
     {% if not namespace_source.available %}
         <div class="border-b border-outline-default px-6 py-4">
