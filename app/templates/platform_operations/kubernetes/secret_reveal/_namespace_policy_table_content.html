@@ -26,9 +26,21 @@
                     <td class="{{ table_ui.cell_classes() }}">
                         {{ table_ui.title_cell(row.namespace, 'Namespace-scoped Secret access', 'box') }}
                     </td>
-                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(live_label, live_tone) }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        {{ table_label.status_label(reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') | title), policy_tone) }}
+                        <div class="flex min-w-0 flex-col items-start gap-1">
+                            {{ table_label.status_label(live_label, live_tone) }}
+                            <span class="text-xs leading-5 text-content-muted">
+                                {{ 'Observed in Kubernetes' if row.live_state == 'available' else 'Not found in cluster' if row.live_state == 'missing' else 'Live presence unverified' }}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <div class="flex min-w-0 flex-col items-start gap-1">
+                            {{ table_label.status_label(reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') | title), policy_tone) }}
+                            <span class="text-xs leading-5 text-content-muted">
+                                {{ 'Reveal access disabled' if row.policy == 'disabled' else 'Approval required' if row.policy == 'approval_required' else 'Step-up check required' if row.policy == 'step_up' else 'Configured KAORI policy' }}
+                            </span>
+                        </div>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
                         <button type="button"
@@ -51,7 +63,7 @@
                     x-show="openEditor === {{ loop.index }}"
                     x-cloak
                     class="bg-surface-hover">
-                    <td colspan="4" class="border-t border-outline-subtle px-4 py-4">
+                    <td colspan="4" class="border-t border-outline-subtle px-5 py-4 sm:px-6">
                         <form method="post"
                               action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
                               hx-post="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
@@ -60,7 +72,7 @@
                               hx-indicator="#secret-reveal-namespace-loading"
                               hx-disabled-elt="button[type='submit']"
                               x-data="{ initial: '{{ row.policy }}', current: '{{ row.policy }}' }"
-                              class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-4 py-4">
+                              class="min-w-0">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="view" value="policies">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
@@ -68,12 +80,18 @@
                             <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
                             <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
                             <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
-                            <div class="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                                <div class="min-w-0 lg:max-w-sm lg:flex-1">
+                            <div class="grid min-w-0 items-end gap-4 lg:grid-cols-12 lg:gap-6">
+                                <div class="min-w-0 lg:col-span-4">
                                     <h4 class="text-sm font-semibold text-content-primary">Edit Namespace Policy</h4>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Namespace: <strong>{{ row.namespace }}</strong></p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        <span class="font-semibold">{{ row.namespace }}</span> · Current policy:
+                                        {{ reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') | title) }}
+                                    </p>
+                                    <p class="mt-2 text-xs leading-5 text-content-muted">This change applies only to the selected Namespace.</p>
+                                </div>
+                                <div class="min-w-0 lg:col-span-5">
                                     <label for="secret-reveal-policy-{{ loop.index }}"
-                                           class="{{ table_ui.filter_label_classes() }} mt-3">New Reveal Policy</label>
+                                           class="{{ table_ui.filter_label_classes() }}">New Reveal Policy</label>
                                     <select id="secret-reveal-policy-{{ loop.index }}"
                                             name="policy"
                                             x-model="current"
@@ -86,11 +104,12 @@
                                                     {% if enable_option_blocked %}disabled{% endif %}>{{ label }}</option>
                                         {% endfor %}
                                     </select>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Available choices depend on cluster readiness and live Namespace state.</p>
                                 </div>
-                                <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                                <div class="flex min-w-0 items-center justify-start gap-2 lg:col-span-3 lg:justify-end">
                                     <button type="button"
                                             class="{{ table_ui.action_classes() }}"
-                                            @click="openEditor = null">
+                                            @click="current = initial; openEditor = null">
                                         Cancel
                                     </button>
                                     <button type="submit"
