@@ -36,6 +36,11 @@
             ('radio-tower', 'Operational', payload.summary.operational, 'Successful automatic delivery')
         ] %}
     <div id="notification-channels-workspace" class="min-w-0 space-y-6">
+        {% if request.headers.get('HX-Request') %}
+            {% with operation_feedback=load_operational_feedback() %}
+                {% include 'components/operation_feedback_oob.html' %}
+            {% endwith %}
+        {% endif %}
         {% set notification_tab_items = [
             ('overview', 'Overview', 'layout-dashboard', none, url_for('notification_channels.index', tab='overview')),
             ('channels', 'Channels', 'send', none, url_for('notification_channels.index', tab='channels')),
@@ -324,3 +329,7 @@
         </section>
     </div>
 {% endblock dashboard_content %}
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
+{% endblock scripts %}
