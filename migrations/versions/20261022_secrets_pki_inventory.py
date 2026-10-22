@@ -24,7 +24,7 @@ def upgrade() -> None:
         'secrets_pki_secret_representations',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('secret_identity_id', sa.String(length=36), sa.ForeignKey('secrets_pki_secret_identities.id', ondelete='RESTRICT'), nullable=False),
-        sa.Column('integration_instance_id', sa.Integer(), sa.ForeignKey('integration_instances.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('integration_instance_id', sa.Integer(), sa.ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False),
         sa.Column('provider_key', sa.String(length=80), nullable=False),
         sa.Column('provider_namespace', sa.String(length=255), nullable=False),
         sa.Column('mount', sa.String(length=160), nullable=False),
@@ -63,7 +63,7 @@ def upgrade() -> None:
     op.create_table(
         'secrets_pki_inventory_collection_states',
         sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('integration_instance_id', sa.Integer(), sa.ForeignKey('integration_instances.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('integration_instance_id', sa.Integer(), sa.ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False),
         sa.Column('provider_namespace', sa.String(length=255), nullable=False),
         sa.Column('mount', sa.String(length=160), nullable=False),
         sa.Column('status', sa.String(length=30), nullable=False),
