@@ -27,11 +27,69 @@ incomplete-by-design enumeration capability (e.g., certificates issued with
 `no_store=true` are absent). Privileged `GET /issuer/<id>`, key exports,
 issuance, revocation, and key management are strictly out of scope.
 
-**Not yet implemented:** approved PKI mount configuration, canonical issuer
-and immutable issued-certificate persistence, per-mount collection/freshness
-state, JobExecution worker, role/scope-safe PKI or Certificate UI and real-Vault
-UAT. This code is source-contract preparation only; do not advertise PKI
-Inventory as Available. Use the dedicated test file
-`tests/integrations/test_vault_pki_public_evidence.py` in existing QA gates.
+## HV-03 committed public issuer inventory — bounded review implementation
+
+The Vault connection form now accepts an explicit approved PKI mount allowlist
+(maximum four safe single-segment mounts); empty means **not eligible**.
+Changing it invalidates provider Full Validation and must be saved through
+the existing AppRole connection test/proof. The new
+`20261022_vault_pki_evidence` Alembic migration adds `vault_instances.pki_mounts`
+and the canonical tables:
+
+- `secrets_pki_issuer_identities`: immutable local issuer ID and separate
+  Vault source issuer UUID, active/not-observed state and source observation time
+- `secrets_pki_public_certificates`: issuer-scoped SHA-256 fingerprint, serial,
+  public validity and CA facts, and bounded chain fingerprint references
+- `secrets_pki_pki_collection_states`: per-authorized mount state/freshness,
+  committed issuer count, and sanitized error classification
+
+**Security/persistence:** The worker may handle PEM transiently for X.509
+parsing. No PEM, DN subject/issuer, SAN, issuer label, private key, key ID,
+provider credential, Secret path, raw lookup payload or user token is
+persisted or queued. Fingerprints are hashes of **public certificates**,
+never hashes of Secret values. Issuer disappearance is `not_observed`,
+not revoked/deleted. A rotated issuer certificate retains its immutable
+historical fingerprint. Missing/stale mounts retain prior committed evidence,
+and unexpectedly empty collection after prior nonempty results fails closed.
+Trust and revocation remain **not evaluated**.
+
+Registered `secrets_pki.pki.sync` runs through canonical Jobs & Executions
+(default **Manual Only**), uses the existing `inventory` worker,
+`secrets_pki.sync` + `jobs.execute` admission, and retains 1740s/1800s
+worker deadlines. Celery carries only canonical integration instance IDs.
+Vault reads remain restricted to `LIST /issuers` and public
+`GET /issuer/<UUID>/json` on approved PKI mounts.
+
+Operational **Inventory** and Vault Admin detail now display aggregate
+approved/committed mounts, public issuer counts and freshness from committed
+database state. A valid zero requires a successful real collection; no web
+GET calls Vault. The pages do not claim that all issued leaf certificates
+were enumerated or deployed to workloads.
+
+**Still NOT implemented:** issued leaf certificate register/purpose,
+PKI issuance/revocation, trust-chain evaluation, endpoint certificate
+delivery, generic Lease enumeration, certificate row-level browser scope,
+staging provider UAT and migration/admission proof. PKI public issuer
+readiness is independent from core Vault API readiness.
+
+### DevContainer checks (not attested)
+
+Use existing PostgreSQL-first bootstrap and the reviewed Alembic migration
+path; do not run migrations using the ordinary app DB role.
+
+```bash
+python -m pytest tests/integrations/test_vault_pki_public_evidence.py tests/integrations/test_vault_pki_committed_inventory.py tests/integrations/test_vault_pki_job_contract.py -q
+python -m ruff check app/models/secrets_pki_pki.py app/integrations/secrets_management/secrets_pki app/secrets_pki/pki_presentation.py tests/integrations/test_vault_pki_*.py
+python -m pyright
+```
+
+After approved migration/restart, configure PKI mounts and a least-privilege
+AppRole, run Full Validation, verify the `inventory` worker advertises the
+new task, and execute `secrets_pki.pki.sync` manually. Record exact
+JobExecution ID, issuer counts, source 403/404/partial/stale behavior,
+negative secret-retention checks, responsive Violet UI/HTMX Visual QA
+and explicit human acceptance. None of those are currently claimed PASS.
+
+See the dedicated collector tests and official Vault PKI API docs.
 See https://developer.hashicorp.com/vault/api-docs/secret/pki for provider
 source API behavior.

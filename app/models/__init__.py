@@ -81,6 +81,7 @@ from app.models.secrets_pki import (
     SecretProviderRepresentation,
     SecretVersionObservation,
 )
+from app.models.secrets_pki_pki import PKIIssuerCollectionState, PKIIssuerIdentity, PKIPublicCertificateObservation
 from app.models.tenant import (
     Tenant,
     TenantAccessGrant,
@@ -258,6 +259,9 @@ __all__ = [
     'ReportTemplate',
     'ReportSchedule',
     'ReportScheduleRun',
+    'PKIIssuerCollectionState',
+    'PKIIssuerIdentity',
+    'PKIPublicCertificateObservation',
     'SecretIdentity',
     'SecretInventoryCollectionState',
     'SecretProviderRepresentation',

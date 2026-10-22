@@ -24,6 +24,7 @@ from app.models.integration import IntegrationInstance
 from app.models.vault import VaultInstance
 from app.platform_operations.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.security.credentials import CredentialEncryptionError
+from app.secrets_pki.pki_presentation import pki_public_readiness
 
 logger = logging.getLogger(__name__)
 vault_bp = Blueprint('vault', __name__, url_prefix='/integrations/secrets-management/secrets-pki/vault')
@@ -177,6 +178,7 @@ def detail(instance_id: int) -> ResponseReturnValue:
         'integrations/secrets_management/vault/detail.html',
         instance=instance, evidence=_evidence(instance),
         inventory_readiness=vault_inventory_readiness(instance),
+        public_pki_readiness=pki_public_readiness(instance=instance),
         runtime_history=history, runtime_history_pagination=history_pagination,
         notification_context=_notification(),
     )

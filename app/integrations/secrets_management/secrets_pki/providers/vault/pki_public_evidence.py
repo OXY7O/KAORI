@@ -26,6 +26,30 @@ MAX_ISSUERS = 24
 MAX_CHAIN_CERTIFICATES = 8
 MAX_CERTIFICATE_PEM_BYTES = 32768
 MAX_DNS_NAMES = 32
+MAX_PKI_MOUNTS = 4
+
+
+def parse_approved_pki_mounts(value: str) -> tuple[str, ...]:
+    """Only explicit bounded PKI mounts. Invalid scopes never broaden discovery."""
+    raw = str(value or '')
+    if not raw.strip():
+        return ()
+    names = raw.split(',')
+    if len(names) > MAX_PKI_MOUNTS:
+        raise ValueError('Vault PKI collection allows at most four approved mounts.')
+    normalized: list[str] = []
+    for item in names:
+        candidate = item.strip()
+        if not candidate or candidate.startswith('/') or candidate.endswith('/'):
+            raise ValueError('Vault PKI mounts must be explicit single segments.')
+        try:
+            mount = validate_auth_mount(candidate)
+        except ValueError as exc:
+            raise ValueError('Vault PKI mount must be a safe single path segment.') from exc
+        if mount in normalized:
+            raise ValueError('Duplicate Vault PKI mounts are not allowed.')
+        normalized.append(mount)
+    return tuple(normalized)
 
 
 @dataclass(frozen=True, slots=True)
