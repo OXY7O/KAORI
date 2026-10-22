@@ -1,0 +1,65 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_provider_registration_hero.html" as registration_hero %}
+{% import "integrations/components/_provider_edit_hero.html" as edit_hero %}
+{% block title %}{{ "Edit" if instance else "Register" }} Vault Connection · KAORI{% endblock title %}
+{% block dashboard_content %}
+<div class="kaori-integration-semantic space-y-6">
+    {% if instance %}
+        {{ edit_hero.render("key-round", "Secrets & PKI", "settings-2", "Edit Vault Connection",
+        "Review AppRole and TLS configuration before revalidation.", "shield-check",
+        "Vault HTTP API", "Connection", instance.name, instance.environment or "Unspecified",
+        instance.readiness_status or "validation_required", url_for("vault.index"), "Vault configuration posture") }}
+    {% else %}
+        {{ registration_hero.render("key-round", "Secrets & PKI", "key-round", "Register Vault Connection",
+        "Configure safe AppRole access and validate the Vault endpoint.", "shield-check",
+        "Vault HTTP API", url_for("vault.index"), "Vault registration workflow",
+        binding_label="Approved HTTPS + AppRole", after_save_description="Run Full Validation after saving") }}
+    {% endif %}
+    <form method="post" class="grid gap-5 xl:grid-cols-12 xl:items-start" autocomplete="off">
+        {{ form.hidden_tag() }}
+        {{ form.connection_test_proof(value=proof or "", type="hidden") }}
+        <section class="{{ integration_ui.section_shell_classes() }} xl:col-span-8">
+            <header class="border-b border-outline-subtle p-5 sm:px-6">
+                <h2 class="text-base font-semibold text-content-primary">Connection Configuration</h2>
+                <p class="mt-1 text-sm text-content-secondary">SecretID is encrypted at rest. Vault access tokens are transient and never stored.</p>
+            </header>
+            <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+                {% if message %}
+                <p class="rounded-lg border border-outline-default bg-surface-elevated p-3 text-sm text-content-secondary sm:col-span-2" role="status">{{ message }}</p>
+                {% endif %}
+                {% for field in [form.name, form.environment, form.endpoint, form.namespace, form.auth_mount, form.role_id, form.secret_id, form.timeout] %}
+                <div class="{{ 'sm:col-span-2' if field.name == 'endpoint' else '' }}">
+                    <label for="{{ field.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
+                    {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
+                    {% for error in field.errors %}<p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+                <div class="sm:col-span-2">
+                    <label for="{{ form.description.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.description.label.text }}</label>
+                    {{ form.description(class_="min-h-20 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary") }}
+                </div>
+                <label class="flex items-center gap-2 text-sm text-content-primary sm:col-span-2">
+                    {{ form.enabled(class_="h-4 w-4 accent-kaori-primary") }} Enable this connection
+                </label>
+            </div>
+        </section>
+        <aside class="{{ integration_ui.section_shell_classes() }} p-5 xl:col-span-4">
+            <h2 class="text-base font-semibold text-content-primary">Validation & Safety</h2>
+            <p class="mt-2 text-sm leading-6 text-content-secondary">Set <code>INTEGRATION_VAULT_ALLOWED_ORIGINS</code> in the app and workers, then trust the approved internal CA.</p>
+            <ul class="mt-4 list-inside list-disc space-y-2 text-xs text-content-secondary">
+                <li>Only HTTPS endpoints on the approved origin list are accepted.</li>
+                <li>AppRole credentials require a non-root, read-oriented policy.</li>
+                <li>Test Connection confirms AppRole identity but does not establish Full Validation readiness.</li>
+                <li>The encrypted 10-minute test proof permits Save without exposing SecretID again.</li>
+                <li>Single-use SecretIDs cannot be reused for test, save, and worker validation; use an approved reusable/rotated credential for this workflow.</li>
+            </ul>
+            <div class="mt-5 flex flex-wrap gap-2">
+                <button name="action" value="test" class="rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover" type="submit">Test Connection</button>
+                <button name="action" value="save" class="rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90" type="submit">{{ "Save Changes" if instance else "Register Connection" }}</button>
+            </div>
+            <p class="mt-4 text-xs leading-5 text-content-muted">Connection tests expire after 10 minutes and are bound to the exact fields and submitting user.</p>
+        </aside>
+    </form>
+</div>
+{% endblock dashboard_content %}

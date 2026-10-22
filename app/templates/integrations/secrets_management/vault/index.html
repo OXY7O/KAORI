@@ -1,0 +1,77 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_provider_frontpage.html" as provider_front %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/pagination.html" as pagination_ui %}
+{% block title %}HashiCorp Vault Integrations · KAORI{% endblock title %}
+{% block dashboard_content %}
+<div class="kaori-integration-semantic space-y-6">
+    {{ provider_front.hero("key-round", "shield-check", "HashiCorp Vault Integrations",
+        "Register governed Vault AppRole connections and inspect readiness.",
+        registered, ready, 0, "Ready" if ready else ("Attention" if registered else "Not Configured"),
+        url_for("vault.new_instance"), register_label="Register Connection") }}
+    <section class="{{ integration_ui.section_shell_classes() }}">
+        <div class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            {{ table_label.metadata_label("Connection Registry", "database") }}
+            <h2 class="mt-2 text-base font-semibold text-content-primary">Vault Instances</h2>
+            <p class="mt-1 text-sm text-content-secondary">Provider validation is independent from Inventory, Metrics Source and Alert Source coverage.</p>
+        </div>
+        {% if instances %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="border-b border-outline-subtle bg-surface-elevated text-content-secondary">
+                    <tr><th scope="col" class="px-5 py-3 font-semibold">Connection</th>
+                        <th scope="col" class="px-5 py-3 font-semibold">Environment</th>
+                        <th scope="col" class="px-5 py-3 font-semibold">Validation</th>
+                        <th scope="col" class="px-5 py-3 font-semibold">Vault Health</th>
+                        <th scope="col" class="px-5 py-3 font-semibold">Action</th></tr>
+                </thead>
+                <tbody class="divide-y divide-outline-subtle">
+                {% for item in instances %}
+                <tr>
+                    <td class="px-5 py-3 font-semibold text-content-primary">{{ item.name }}</td>
+                    <td class="px-5 py-3 text-content-secondary">{{ item.environment or "Unspecified" }}</td>
+                    <td class="px-5 py-3 text-content-secondary">{{ (item.readiness_status or "validation_required")|replace("_", " ")|title }}</td>
+                    <td class="px-5 py-3 text-content-secondary">{{ (item.validation_summary or {}).get("health_status", "Not Observed")|replace("_", " ")|title }}</td>
+                    <td class="px-5 py-3"><a class="font-semibold text-kaori-primary hover:underline" href="{{ url_for('vault.detail', instance_id=item.id) }}">View Details</a></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="{{ pagination_ui.footer_classes() }}">
+            <p>Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} connections</p>
+            <div class="{{ pagination_ui.summary_group_classes() }}">
+                <div class="{{ pagination_ui.rows_group_classes() }}">
+                    <label for="vault-rows" class="sr-only">Connections per page</label>
+                    <select id="vault-rows" aria-label="Connections per page" title="Connections per page"
+                            class="{{ pagination_ui.page_size_classes() }}" onchange="window.location.href=this.value">
+                        {% for value in pagination.allowed_per_page %}
+                            <option value="{{ url_for('vault.index', per_page=value) }}" {{ "selected" if value == pagination.per_page else "" }}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <nav aria-label="Vault connections pagination" class="{{ pagination_ui.navigation_group_classes() }}">
+                    {% if pagination.has_prev %}
+                    <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', page=pagination.prev_page, per_page=pagination.per_page) }}">Previous</a>
+                    {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Previous</span>
+                    {% endif %}
+                    {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, query_params={"per_page": pagination.per_page}) }}
+                    {% if pagination.has_next %}
+                    <a class="{{ pagination_ui.navigation_classes() }}" href="{{ url_for('vault.index', page=pagination.next_page, per_page=pagination.per_page) }}">Next</a>
+                    {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next</span>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+        {% else %}
+        <div class="p-6 text-center">
+            <p class="font-semibold text-content-primary">No Vault Connections Registered</p>
+            <p class="mt-2 text-sm text-content-secondary">Register an approved HTTPS Vault origin and least-privilege AppRole before collecting provider evidence.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock dashboard_content %}

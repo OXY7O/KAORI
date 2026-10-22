@@ -29,6 +29,16 @@ Integrations
     └── Block Storage
 ```
 
+Vault now extends this product taxonomy as `Secrets Management → Secrets & PKI → HashiCorp Vault`.
+Its first provider adapter lives in
+`app/integrations/secrets_management/secrets_pki/providers/vault/` and owns only
+read-only AppRole identity/health/compatibility evidence under #2585.
+KV v2 metadata, PKI, Lease, consumer, Metrics Source, Dashboard, Analytics,
+Intelligence, and governed operations remain separately bounded HV-02–HV-15 workstreams.
+Vault tokens and plaintext Secret/PKI material are never operational committed state.
+Vault authentication relies on approved HTTPS origin/CA, an encrypted AppRole SecretID,
+and independently constrained network egress.
+
 `worker_domain` remains execution metadata and must not be reused as the UI or
 architecture taxonomy. `app/definitions/catalogs/integrations/taxonomy.yaml` is the canonical domain/capability map; `taxonomy.py` is its validated runtime adapter.
 

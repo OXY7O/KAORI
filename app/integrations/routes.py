@@ -127,6 +127,12 @@ def registry() -> ResponseReturnValue:
     return _render_domain_page('registry')
 
 
+@integrations_bp.get('/secrets-management')
+@permission_required('integrations.manage')
+def secrets_management() -> ResponseReturnValue:
+    return _render_domain_page('secrets_management')
+
+
 @integrations_bp.get('/runtime/<string:detail_key>/details')
 @permission_required('integrations.manage')
 def runtime_overview_details(detail_key: str) -> ResponseReturnValue:
