@@ -6,7 +6,7 @@ Only the Vault `metadata` endpoints are permitted. Never request `data` values.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from urllib.parse import quote
 
@@ -34,7 +34,7 @@ class KV2SecretEvidence:
     # Paths are operationally sensitive metadata: never place objects in logs,
     # Celery payloads, URLs, unrestricted exports, or job result summaries.
     mount: str
-    path: str
+    path: str = field(repr=False)
     current_version: int
     oldest_version: int
     max_versions: int
@@ -48,7 +48,7 @@ class KV2CollectionEvidence:
 
     mount: str
     observed_at: datetime
-    records: tuple[KV2SecretEvidence, ...]
+    records: tuple[KV2SecretEvidence, ...] = field(repr=False)
     complete: bool = True
 
 
