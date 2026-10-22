@@ -1,10 +1,30 @@
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def test_protected_reveal_templates_compile_with_jinja() -> None:
+    """Fail fast on malformed Jinja delimiters, including hidden workspace tabs."""
+    env = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+    for relative in (
+        'kubernetes/operations/secrets/reveal.html',
+        'kubernetes/operations/secrets/_reveal_request_form.html',
+        'kubernetes/operations/secrets/_reveal_step_up.html',
+        'kubernetes/operations/secrets/_reveal_request_status.html',
+        'kubernetes/operations/secrets/_reveal_pending_approvals.html',
+        'kubernetes/operations/secrets/_reveal_value.html',
+    ):
+        env.get_template(relative)
+
+    source = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    assert '{% include "kubernetes/operations/secrets/_reveal_request_status.html" %}' in source
+    assert '{% include "kubernetes/operations/secrets/_reveal_request_status.html" %>' not in source
 
 
 def test_protected_reveal_uses_analytics_content_tab_treatment() -> None:
