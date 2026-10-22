@@ -26,6 +26,8 @@ def upgrade() -> None:
         sa.Column('timeout', sa.Integer(), nullable=False, server_default='5'),
         sa.Column('verify_ssl', sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column('detected_version', sa.String(length=64), nullable=True),
+        sa.Column('compatibility_status', sa.String(length=40), nullable=True),
+        sa.Column('compatibility_profile', sa.String(length=120), nullable=True),
         sa.Column('capability_profile', sa.String(length=120), nullable=True),
         sa.Column('capabilities', sa.JSON(), nullable=True),
         sa.Column('validation_summary', sa.JSON(), nullable=True),
