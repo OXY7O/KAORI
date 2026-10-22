@@ -50,7 +50,7 @@ def _state(index, mount='secret', *, count=0, status='ready', committed=True, na
 def _patch_sources(monkeypatch, sources, states):
     monkeypatch.setattr(
         presentation, 'VaultInstance',
-        SimpleNamespace(id=SimpleNamespace(asc=lambda: None), query=_Query(sources)),
+        SimpleNamespace(id=SimpleNamespace(asc=lambda: None), integration_instance=object(), query=_Query(sources)),
     )
     monkeypatch.setattr(
         presentation, 'SecretInventoryCollectionState',
