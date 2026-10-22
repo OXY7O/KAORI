@@ -50,6 +50,7 @@
                     <div><dt class="text-content-muted">TLS Policy</dt><dd class="mt-1 font-medium text-content-primary">Verified HTTPS</dd></div>
                     <div><dt class="text-content-muted">Connection State</dt><dd class="mt-1 font-medium text-content-primary">{{ "Enabled" if instance.enabled else "Disabled" }}</dd></div>
                     <div><dt class="text-content-muted">SecretID</dt><dd class="mt-1 font-medium text-content-primary">Encrypted · Not Displayed</dd></div>
+                    <div><dt class="text-content-muted">Approved KV v2 Mounts</dt><dd class="mt-1 font-medium text-content-primary">{{ (instance.kv2_mounts or [])|length }} configured (metadata only)</dd></div>
                 </dl>
             </div>
             <div id="vault-panel-validation" role="tabpanel" aria-labelledby="vault-tab-validation"
