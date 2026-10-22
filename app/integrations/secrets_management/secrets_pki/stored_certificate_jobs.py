@@ -13,6 +13,7 @@ from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchR
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 from app.platform_operations.jobs.policies.presentation import present_interval
 
+
 def build_stored_certificate_targets() -> list[dict[str, int]]:
     """Separate operator opt-in for certificate enumeration from issuer reads."""
     candidates = build_vault_pki_targets()
