@@ -246,8 +246,17 @@
             {% include "platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html" %}
         {% else %}
             <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <p class="text-sm font-semibold text-content-primary">No Kubernetes Cluster Registered</p>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Register a Kubernetes connection before configuring namespace-level reveal policies.</p>
+                {% set empty_state_icon = "server" %}
+                {% set empty_state_label = "Setup Required" %}
+                {% set empty_state_title = "No Kubernetes Cluster Registered" %}
+                {% set empty_state_description = "Register a Kubernetes connection before configuring namespace-level reveal policies." %}
+                {% set empty_state_action_url = url_for('cluster.add_cluster') %}
+                {% set empty_state_action_label = "Add Cluster" %}
+                {% set empty_state_action_icon = "plus" %}
+                {% set empty_state_permission = "clusters.manage" %}
+                {% set empty_state_show_admin_required = true %}
+                {% set empty_state_min_height = "min-h-[210px]" %}
+                {% include 'components/states/_empty_state.html' %}
             </section>
         {% endif %}
     </div>
