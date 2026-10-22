@@ -555,6 +555,7 @@ def test_notification_channel_row_actions_confirm_delete_and_refresh_via_htmx() 
     assert 'hx-target="#notification-channels-workspace"' in channels
     assert 'hx-select="#notification-channels-workspace"' in channels
     assert "target.id === 'notification-channels-workspace'" in native
+    assert 'document.getElementById(target.id) || target' in native
     assert "data-kaori-dialog-auto-open" in modal
     assert 'data-kaori-dialog-close' in modal
 
