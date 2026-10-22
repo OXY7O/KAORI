@@ -263,3 +263,22 @@ execution with fresh admission.
 This accepted architecture is **not** a currently active authorization system,
 permission change, provider credential, database migration or UAT PASS. Existing
 global RBAC remains in force until the approved per-route cutover.
+
+## 10. Initial policy storage candidate — #2723 review-only
+
+The first implementation slice adds `access_scope_policies` and
+`access_scope_policy_revisions` under the existing canonical Access models
+and Alembic chain. The schema records exact User, permission, IntegrationInstance
+and optionally a namespace/mount child tuple, UTC validity, policy identity,
+revision, approval actor and lifecycle. SQL CHECK constraints reject impossible
+levels, wildcard mounts, nonpositive revisions, invalid intervals, and
+an active row lacking a distinct approver. **It seeds zero grants.**
+
+This remains *persistence only*: the current revision pointer and append-only
+revision semantics require the governed #2724 service; SQL CHECK constraints
+alone do not establish full approval, audit, freshness or grant eligibility.
+No evaluator, worker/HTTP route, Secret Registry or provider identity read is
+turned on. The grant administration, mandatory durable audit, revision/cache
+invalidation and user access migration require #2724–#2726 and exact-SHA
+PostgreSQL/DevContainer security/UAT evidence. Repository source merge is not
+migration execution.
