@@ -45,24 +45,6 @@
     ) %}
         <div id="kubernetes-admin-controls-list" class="divide-y divide-outline-subtle">
             {% include "platform_operations/kubernetes/_administration_control_rows.html" %}
-                    </dl>
-                    <div class="flex min-w-0 flex-col gap-3 lg:col-span-3 lg:items-end">
-                        <button type="button"
-                                @click="setTab('{{ control.workspace_tab }}')"
-                                class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus sm:w-auto">
-                            {{ control.action_label }}
-                            <i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>
-                        </button>
-                        <p class="text-xs leading-5 text-content-muted lg:text-right">{{ control.evidence_label }}</p>
-                    </div>
-                    <p class="text-xs leading-5 text-content-muted lg:col-span-12">{{ control.status_detail }}</p>
-                </article>
-            {% else %}
-                <div class="px-5 py-8 text-center sm:px-6">
-                    <p class="text-sm font-semibold text-content-primary">No Administrative Control Available</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Only implemented and authorized controls appear in this workspace.</p>
-                </div>
-            {% endfor %}
         </div>
     {% endcall %}
 </section>
