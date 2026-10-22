@@ -178,6 +178,20 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
         ),
     ),
     WorkspaceDefinition(
+        key='security_posture',
+        label='Security',
+        icon='shield-alert',
+        section='Assurance',
+        capabilities=(
+            WorkspaceCapabilityDefinition(
+                'overview', 'Overview', 'layout-dashboard', 'security_posture.overview', ('security_posture.view',)
+            ),
+            WorkspaceCapabilityDefinition(
+                'findings', 'Findings', 'shield-alert', 'security_posture.findings', ('security_posture.view',)
+            ),
+        ),
+    ),
+    WorkspaceDefinition(
         key='intelligence',
         label='Intelligence',
         icon='brain-circuit',

@@ -247,6 +247,8 @@ def build_navigation_breadcrumb(
             BreadcrumbItem(integration_owner['provider_label']),
         ]
         items = _append_workflow(items, endpoint)
+    elif endpoint.startswith('security_posture.'):
+        items = [BreadcrumbItem('Security', 'shield-alert'), BreadcrumbItem('Findings' if endpoint == 'security_posture.findings' else 'Overview')]
     elif endpoint.startswith('artifact_registry.runtime'):
         items = [
             BreadcrumbItem('Artifact Registry', 'package'),

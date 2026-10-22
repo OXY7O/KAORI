@@ -113,6 +113,25 @@ This direction includes:
 
 UI visibility is never a substitute for server-side authorization.
 
+### 2.9 Cross-Domain Security Posture
+
+**Security** is the user-facing Assurance parent workspace for the approved
+cross-domain **Security Posture** capability (#721), rather than a new scanner
+or a replacement for source systems. Its responsibility is to correlate
+committed, source-qualified security evidence from existing KAORI domains
+with operational context and transparent freshness/coverage.
+
+The first implemented review/UAT slice (#2610) provides **Overview** and
+**Findings** using authorized Registry vulnerability and Kubernetes runtime
+binding evidence. Cross-domain Service/Team ownership, VM package/runtime
+identification, broader Secrets & PKI / Network exposure, Exceptions, and
+risk analytics remain planned until their owning evidence contracts exist.
+
+Source domains remain authoritative. Central Intelligence owns recommendations,
+accepted risk, escalation and automation decisions; Reports owns publication.
+Navigation only exposes implemented permissioned capabilities, and an empty
+finding list is never represented as proof of global security health.
+
 ## 3. Product and Integration Principles
 
 ### Capability-first, not product-first
