@@ -21,6 +21,8 @@ control_modules:
   label: Object Storage Analytics
 - key: artifact_registry
   label: Artifact Registry
+- key: security_posture
+  label: Security Posture
 - key: integrations
   label: Integrations
 - key: platform_operations
@@ -148,6 +150,11 @@ permissions:
   action: view
   description: View Object Storage capacity, performance, forecast, consumer, and alert analytics.
   matrix_description: Review Object Storage capacity, performance, usage forecasts, consumer insights, and alert analytics.
+- key: security_posture.view
+  module: security_posture
+  action: view
+  description: View the cross-domain Security Posture workspace using authorized committed evidence.
+  matrix_description: Browse cross-domain security overview and findings, with individual source access controlled by owning-domain permissions.
 - key: artifact_registry.view
   module: artifact_registry
   action: view
@@ -424,6 +431,7 @@ system_roles:
   - object_storage_analytics.view
   - object_storage_inventory.view
   - artifact_registry.view
+  - security_posture.view
   - reports.view
   - settings.view
   - tls_certificates.view
@@ -454,6 +462,7 @@ system_roles:
   - object_storage_analytics.view
   - object_storage_inventory.view
   - artifact_registry.view
+  - security_posture.view
   - reports.generate
   - reports.view
   - settings.view
@@ -497,6 +506,7 @@ system_roles:
   - object_storage_analytics.view
   - object_storage_inventory.view
   - artifact_registry.view
+  - security_posture.view
   - reports.generate
   - reports.manage_schedules
   - reports.manage_storage
@@ -549,6 +559,7 @@ system_roles:
   - object_storage_analytics.view
   - object_storage_inventory.view
   - artifact_registry.view
+  - security_posture.view
   - platform_operations.export_data_lifecycle
   - platform_operations.manage_data_lifecycle
   - platform_operations.view_data_lifecycle
@@ -596,6 +607,7 @@ system_roles:
   - object_storage_analytics.view
   - object_storage_inventory.view
   - artifact_registry.view
+  - security_posture.view
   - platform_operations.export_data_lifecycle
   - platform_operations.view_data_lifecycle
   - reports.view
