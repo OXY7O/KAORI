@@ -132,9 +132,9 @@ def main() -> int:
         and "submit?.click()" in confirmation_script
         and 'hx-target="#notification-channels-workspace"' in template
         and 'hx-select="#notification-channels-workspace"' in template
-        and 'hx-target="#notification-channel-config-dialog"' in template
+        and 'hx-get="{{ url_for(' in template
         and 'hx-post="{{ url_for(' in channel_modals
-        and "target.id === 'notification-channel-config-dialog'" in native_dialogs
+        and "target.id === 'notification-channels-workspace'" in native_dialogs
         and "operation_feedback=load_operational_feedback()" in delivery_template
         and "components/operation_feedback_oob.html" in delivery_template
         and "def _channel_return_query()" in routes
