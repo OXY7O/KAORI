@@ -153,3 +153,12 @@ def test_rejects_unsafe_or_unbounded_kv2_scope(raw):
 
     with pytest.raises(VaultProviderError):
         parse_approved_kv2_mounts(raw)
+
+
+@pytest.mark.parametrize('timestamp', ['not-a-timestamp', '2026-10-22T12:00:00', 'secret/path/should-not-persist'])
+def test_invalid_provider_timestamp_rejected_without_raw_value(timestamp):
+    data = _detail()
+    data['data']['versions']['1']['created_time'] = timestamp
+    with pytest.raises(VaultProviderError) as raised:
+        _safe_metadata(mount='kv', path='secret', body=data)
+    assert timestamp not in str(raised.value)
