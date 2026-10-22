@@ -70,6 +70,33 @@ def test_review7_reveal_step_up_shows_equal_height_information_peer() -> None:
     assert 'Protected Session Verified' in step
 
 
+def test_reveal_step_up_uses_shared_button_and_meaningful_session_context() -> None:
+    step = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
+    shared_button = read('app/templates/components/action_button.html')
+    shared_labels = read('app/templates/components/table_label.html')
+
+    assert 'components/action_button.html' in step
+    assert "action_button.classes('primary')" in step
+    assert 'macro classes(variant=' in shared_button
+    assert 'components/table_label.html' in step
+    assert 'table_label.status_indicator_label(' in step
+    assert 'macro status_indicator_label(' in shared_labels
+    assert 'Session Verification' in step
+    assert 'Verification Required' in step
+    assert 'Execution Boundary' in step
+    assert 'does not bypass request approval, expiry, or one-time access checks' in step
+    assert '<ol class="grid min-w-0 gap-3">' in step
+    assert 'Secret values are delivered only through the authorized one-time reveal flow' in step
+    assert 'mt-auto border-t border-outline-subtle' in step
+    assert 'name="password"' in step
+    assert 'autocomplete="current-password"' in step
+    assert 'name="csrf_token"' in step
+    assert 'current_user.is_external' in step
+    assert 'step_up_active' in step
+    assert 'aria-label="Reveal Session Step-Up context"' in step
+    assert 'data-reveal-step-up-peer-grid' in step
+
+
 def test_review7_reveal_target_empty_cluster_status_not_below_form() -> None:
     page = read('app/templates/kubernetes/operations/secrets/reveal.html')
     assert 'No eligible protected cluster' in page
