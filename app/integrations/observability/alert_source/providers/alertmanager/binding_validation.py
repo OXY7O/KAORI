@@ -66,6 +66,18 @@ def validate_binding(
         client = build_client(instance)
         payload = client.get_alerts(filters=filters)
         alerts = payload if isinstance(payload, list) else []
+        if binding.asset_type == 'vault_instance' and any(
+            not isinstance(alert, dict)
+            or not isinstance(alert.get('labels'), dict)
+            or alert['labels'].get('vault_instance') != str(binding.asset_key)
+            for alert in alerts
+        ):
+            return _persist_blocked(
+                binding,
+                profile_key=profile.profile_key,
+                message='Alert Source returned an identity outside the authorized Vault instance selector.',
+                commit=commit,
+            )
         silence_payload = client.get_silences(filters=filters)
         silences = silence_payload if isinstance(silence_payload, list) else []
         matched_alerts = len(alerts)
@@ -97,7 +109,11 @@ def validate_binding(
             )
     except AlertmanagerError as exc:
         binding.validation_status = 'blocked'
-        binding.validation_message = f'Consumer binding validation failed: {exc}'
+        binding.validation_message = (
+            'Vault Alert Source query failed; examine the provider without exposing alert details.'
+            if binding.asset_type == 'vault_instance'
+            else f'Consumer binding validation failed: {exc}'
+        )
         missing_required = tuple(profile.required_capabilities)
         alerts = []
         silences = []
