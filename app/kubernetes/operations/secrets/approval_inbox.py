@@ -1,8 +1,8 @@
-"""Read-only Work Inbox projection for eligible Protected Secret Reveal approvers.
+"""Committed Work Inbox projections for Protected Secret Reveal reviewers and requesters.
 
-Committed SecretRevealRequest state is authoritative. This is not an approval,
-a recipient assignment, or evidence of Secret value access. Eligibility is
-checked against the viewer's *current* active role for every read.
+SecretRevealRequest remains authoritative. These projections never authorize
+an approval or plaintext read; both user eligibility and expiry are rechecked
+on each query without contacting the Kubernetes provider.
 """
 
 from __future__ import annotations
@@ -68,3 +68,55 @@ def get_secret_reveal_approval_work_inbox(*, user_id: int) -> dict[str, Any]:
         for record in requests
     ]
     return {'items': items, 'pending_count': pending_count, 'total_count': pending_count}
+
+
+
+def get_secret_reveal_requester_work_inbox(*, user_id: int) -> dict[str, Any]:
+    """Return approved, unexpired requests awaiting this requester's one-time reveal."""
+    empty: dict[str, Any] = {'items': [], 'ready_count': 0, 'total_count': 0}
+    viewer = User.query.filter_by(id=user_id).first()
+    if (
+        viewer is None
+        or not viewer.is_active
+        or not viewer.account_is_active
+        or viewer.deleted_at is not None
+        or not viewer.has_permission('kubernetes_secrets.reveal')
+    ):
+        return empty
+
+    # The owner and policy are part of the authoritative SQL predicate.
+    # Notification delivery/read flags never imply that reveal is still available.
+    ready_query = SecretRevealRequest.query.filter(
+        SecretRevealRequest.requester_user_id == user_id,
+        SecretRevealRequest.policy == 'approval_required',
+        SecretRevealRequest.status == 'approved',
+        SecretRevealRequest.expires_at > datetime.now(UTC),
+    )
+    ready_count = ready_query.count()
+    requests = (
+        ready_query.order_by(
+            SecretRevealRequest.decided_at.desc(),
+            SecretRevealRequest.id.desc(),
+        )
+        .limit(_DISPLAY_LIMIT)
+        .all()
+    )
+    items = [
+        {
+            'request_id': record.id,
+            'secret_name': record.secret_name,
+            'namespace': record.namespace,
+            'cluster_name': record.cluster.name,
+            'ticket_reference': record.ticket_reference,
+            'approved_by': record.approver.display_label if record.approver is not None else None,
+            'expires_at': record.expires_at,
+            'state': 'Ready to Reveal',
+            'action_url': url_for(
+                'kubernetes_operations.reveal_secret',
+                reveal_view='mine',
+                my_request_id=record.id,
+            ),
+        }
+        for record in requests
+    ]
+    return {'items': items, 'ready_count': ready_count, 'total_count': ready_count}

@@ -164,6 +164,19 @@ requests disappear automatically. No Secret payload is read or persisted
 by this projection. Notification fanout remains advisory and does not
 assign approval to a fixed recipient.
 
+**Requester actionable Work Inbox:** When another authorized user approves an
+`approval_required` Secret Reveal, the requester already receives a historical
+approval/denial notification. Separately, **Assigned Work** now projects each
+currently approved, unexpired, requester-owned request as **Ready to Reveal**,
+with expiry and optional approver identity plus an exact `my_request_id`
+deep-link to the existing My Requests Step-Up/Reveal Once flow. The
+`kubernetes_secrets.reveal` permission and active-account checks are evaluated
+on every read; the SQL predicate requires requester ownership and never reads
+provider Secret values. Its actionable counter is independent of notification
+unread state, and the work item disappears after reveal/expiry or role
+revocation. Historical notification and committed audit remain intact. No
+second approval or reveal action is implemented in Notification Deck.
+
 **Submit and approver navigation:** New Request submission uses the canonical
 server POST/redirect to My Requests and a navigation-only sessionStorage
 marker to reset the KAORI main-scroll viewport; no request form data or

@@ -551,6 +551,44 @@ def test_channel_inventory_rows_are_compact_with_native_policy_dialog() -> None:
 
 
 
+def test_notification_channel_layout_and_protected_delete_are_discoverable() -> None:
+    channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    policy = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
+    blockers = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
+
+    assert "table_ui.table_classes('min-w-[1100px]')" in channels
+    assert 'min-w-[1280px]' not in channels
+    assert 'flex flex-wrap justify-end gap-1.5' in channels
+    assert channels.count('scope="col"') == 6
+    for width in ('w-[21%]', 'w-[12%]', 'w-[14%]', 'w-[18%]', 'w-[19%]', 'w-[16%]'):
+        assert width in channels
+
+    # Full-width capability rows prevent mismatched masonry/card heights.
+    assert 'grid items-start gap-3 md:grid-cols-2' not in policy
+    assert 'sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]' in policy
+    assert 'sm:grid-cols-2 sm:border-l' in policy
+    assert 'for group in channel.event_type_groups' in policy
+    assert 'for event_label in group.events' in policy
+
+    # Blocked Delete is no longer an inert disabled action or unsafe hard delete.
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channels
+    assert 'Why locked?' in channels
+    assert 'data-kaori-native-dialog' in blockers
+    assert 'channel.delivery_record_count' in blockers
+    assert 'channel.report_schedule_count' in blockers
+    assert 'for schedule_name in channel.report_schedule_names' in blockers
+    assert 'Use Edit to disable this channel' in blockers
+    assert 'data-kaori-dialog-close' in blockers
+    assert 'credential_payload' not in blockers
+    assert "'report_schedule_names': list(usage.report_schedule_names)" in service
+    assert 'if usage.blocked:' in lifecycle
+    assert 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
+    assert "data-destructive-modal-open" in channels
+    assert channels.index("</table>") < channels.index("_channel_deletion_blockers_dialog.html")
+
+
 def test_notification_channel_row_actions_confirm_delete_and_refresh_via_htmx() -> None:
     channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     modal = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
