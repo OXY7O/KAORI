@@ -282,3 +282,30 @@ turned on. The grant administration, mandatory durable audit, revision/cache
 invalidation and user access migration require #2724–#2726 and exact-SHA
 PostgreSQL/DevContainer security/UAT evidence. Repository source merge is not
 migration execution.
+
+## 11. Governed grant lifecycle backend candidate — #2724
+
+The Access-owned `app/access/scoped_grants.py` supports **service-only**
+request → independent approval → immediate versioned revocation. The service
+reuses active KAORI User/Role permissions, checks the canonical IntegrationInstance
+and approved Vault KV v2 namespace/mount, requires an existing `secrets_pki.view`
+permission for the principal, and uses **both** existing `roles.manage`
+and `users.manage` for its provisional administrative guard. Neither
+`integrations.manage`, ownership nor `is_super_admin` alone qualifies.
+
+Mutations call the existing `stage_operational_activity` evidence writer
+and commit the revision pointer and sanitized notification in **one database
+transaction**. Failure to stage/write mandatory audit rolls back the policy
+transition, instead of using ordinary nonblocking Activity Audit notification
+delivery. The audit stores opaque policy identity/revision and canonical
+IntegrationInstance ID, not Vault Secret values, mount/path or credentials.
+
+This is **not yet exposed through any UI, public API or worker**. The caller
+must prove the authenticated initiating actor at its future boundary; a
+service method parameter is not itself session authorization. The D1 admin
+permission pair is a bounded existing-taxonomy candidate pending Access
+review, not a public grant-management delegation contract. This service
+does **not** evaluate Secret reads, authorize Vault access, activate external
+IdP groups or replace #641 break-glass. Exact-SHA unit/integration tests,
+database role privileges, review of committed audit atomicity, safe
+notifications and real PostgreSQL/DevContainer UAT are still mandatory.
