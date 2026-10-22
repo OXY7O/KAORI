@@ -42,6 +42,9 @@ class VaultConnectionForm(FlaskForm):
     def __init__(self, *args, existing: VaultInstance | None = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.existing = existing
+        # Never hydrate a decrypted AppRole SecretID into rendered form data.
+        if not self.is_submitted():
+            self.secret_id.data = ''
 
     def validate_endpoint(self, field: StringField) -> None:
         try:
