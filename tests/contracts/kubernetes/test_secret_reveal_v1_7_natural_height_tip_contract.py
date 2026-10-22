@@ -98,3 +98,18 @@ def test_review7_reveal_guidance_copy_stays_compact() -> None:
     assert 'No eligible protected cluster' in page
     assert "info_id='secret-reveal-target-guidance-tip'" in page
     assert 'selection_error' in page
+
+def test_review7_reveal_target_uses_canonical_aligned_field_rows() -> None:
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    target = read('app/templates/kubernetes/operations/secrets/_reveal_target_workspace.html')
+    shared = read('app/templates/components/form_field.html')
+
+    assert 'form_field.label_row("Cluster")' in page
+    assert 'form_field.select_classes()' in page
+    assert 'form_field.label_row("Namespace")' in target
+    assert 'form_field.label_row("Secret", "Live")' in target
+    assert target.count('form_field.select_classes()') == 2
+    assert 'flex min-h-6 items-center justify-between gap-2' in shared
+    assert 'mt-2 box-border h-10 min-h-10 w-full' in shared
+    assert 'No eligible protected cluster' in page
+    assert 'selection_error' in page
