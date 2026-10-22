@@ -38,6 +38,7 @@ class VaultConnectionForm(FlaskForm):
     secret_id = PasswordField('AppRole SecretID', validators=[Length(max=4096)])
     timeout = IntegerField('Request Timeout (seconds)', default=5, validators=[DataRequired(), NumberRange(min=1, max=30)])
     enabled = BooleanField('Enable Provider Connection', default=True)
+    connection_test_proof = StringField('Connection Test Proof', validators=[Optional()])
 
     def __init__(self, *args, existing: VaultInstance | None = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -64,7 +65,7 @@ class VaultConnectionForm(FlaskForm):
             raise ValidationError(str(exc)) from exc
 
     def validate_secret_id(self, field: PasswordField) -> None:
-        if not str(field.data or '') and self.existing is None:
+        if not str(field.data or '') and self.existing is None and not self.connection_test_proof.data:
             raise ValidationError('AppRole SecretID is required.')
 
     def to_input(self) -> VaultConnectionInput:
