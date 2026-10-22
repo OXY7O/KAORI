@@ -7,6 +7,7 @@ from wtforms import BooleanField, IntegerField, PasswordField, SelectField, Stri
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import parse_approved_kv2_mounts
+from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import parse_approved_pki_mounts
 from app.integrations.secrets_management.secrets_pki.providers.vault.transport import (
     validate_auth_mount, validate_vault_endpoint,
 )
@@ -27,6 +28,7 @@ class VaultConnectionInput:
     timeout: int
     enabled: bool
     kv2_mounts: tuple[str, ...] = ()
+    pki_mounts: tuple[str, ...] = ()
 
 
 class VaultConnectionForm(FlaskForm):
@@ -41,6 +43,7 @@ class VaultConnectionForm(FlaskForm):
     timeout = IntegerField('Request Timeout (seconds)', default=5, validators=[DataRequired(), NumberRange(min=1, max=30)])
     enabled = BooleanField('Enable Provider Connection', default=True)
     kv2_mounts = StringField('Approved KV v2 Mounts (comma-separated)', validators=[Optional(), Length(max=1500)])
+    pki_mounts = StringField('Approved PKI Mounts (comma-separated)', validators=[Optional(), Length(max=650)])
     connection_test_proof = StringField('Connection Test Proof', validators=[Optional()])
 
     def __init__(self, *args, existing: VaultInstance | None = None, **kwargs) -> None:
@@ -50,6 +53,7 @@ class VaultConnectionForm(FlaskForm):
         if not self.is_submitted():
             self.secret_id.data = ''
             self.kv2_mounts.data = ', '.join(existing.kv2_mounts or ()) if existing is not None else ''
+            self.pki_mounts.data = ', '.join(existing.pki_mounts or ()) if existing is not None else ''
 
     def validate_endpoint(self, field: StringField) -> None:
         try:
@@ -74,6 +78,12 @@ class VaultConnectionForm(FlaskForm):
         except ValueError as exc:
             raise ValidationError(str(exc)) from exc
 
+    def validate_pki_mounts(self, field: StringField) -> None:
+        try:
+            field.data = ', '.join(parse_approved_pki_mounts(str(field.data or '')))
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+
     def validate_secret_id(self, field: PasswordField) -> None:
         if not str(field.data or '') and self.existing is None and not self.connection_test_proof.data:
             raise ValidationError('AppRole SecretID is required.')
@@ -94,4 +104,5 @@ class VaultConnectionForm(FlaskForm):
             timeout=int(self.timeout.data or 5),
             enabled=bool(self.enabled.data),
             kv2_mounts=parse_approved_kv2_mounts(str(self.kv2_mounts.data or '')),
+            pki_mounts=parse_approved_pki_mounts(str(self.pki_mounts.data or '')),
         )
