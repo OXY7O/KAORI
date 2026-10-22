@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 
 from celery.exceptions import CeleryError
 from flask import Blueprint, abort, redirect, render_template, request, url_for
@@ -12,7 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.rbac.decorators import permission_required
 from app.common.pagination import paginate_query
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionForm
-from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verify_proof
+from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verified_secret
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.service import save_connection, test_connection
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultProviderError
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -83,15 +84,19 @@ def new_instance() -> ResponseReturnValue:
                 test_connection(values)
                 proof = issue_proof(values, int(current_user.id))
                 message = 'Vault identity and AppRole token lookup verified. Save then run Full Validation.'
-            except (VaultProviderError, ValueError) as exc:
+            except (VaultProviderError, ValueError, CredentialEncryptionError) as exc:
                 message = str(exc)
                 proof = ''
         elif action == 'save':
-            if not verify_proof(proof, values, int(current_user.id)):
+            try:
+                credential = verified_secret(proof, values, int(current_user.id))
+            except CredentialEncryptionError:
+                credential = None
+            if credential is None:
                 message = 'Test this exact connection successfully before saving.'
             else:
                 try:
-                    instance = save_connection(values)
+                    instance = save_connection(replace(values, secret_id=credential))
                 except (SQLAlchemyError, CredentialEncryptionError, ValueError):
                     logger.exception('Vault registration failed.')
                     message = 'Vault registration failed; review endpoint, encryption key and connection name.'
@@ -118,15 +123,19 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
                 test_connection(values)
                 proof = issue_proof(values, int(current_user.id))
                 message = 'Connection verified. Save the configuration to apply changes.'
-            except (VaultProviderError, ValueError) as exc:
+            except (VaultProviderError, ValueError, CredentialEncryptionError) as exc:
                 proof = ''
                 message = str(exc)
         elif action == 'save':
-            if not verify_proof(proof, values, int(current_user.id)):
+            try:
+                credential = verified_secret(proof, values, int(current_user.id))
+            except CredentialEncryptionError:
+                credential = None
+            if credential is None:
                 message = 'Test this exact configuration successfully before saving.'
             else:
                 try:
-                    save_connection(values, existing=instance)
+                    save_connection(replace(values, secret_id=credential), existing=instance)
                 except (SQLAlchemyError, CredentialEncryptionError, ValueError):
                     logger.exception('Vault configuration update failed.')
                     message = 'Could not save Vault configuration; review the required encryption key.'
