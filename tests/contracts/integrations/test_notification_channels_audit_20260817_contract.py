@@ -34,9 +34,10 @@ def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
     assert "section_intro.render('Delivery Contract & Ownership'" in page
     assert "section_intro.render('Delivery Journal'" in page
     assert "notification-channels-content-title" not in page
-    assert page.index("loading_bar.render('notification-delivery-loading'") < page.index(
+    assert page.index("table_block.inventory_block_header(") < page.index(
         "table_registry.filter_form('notification_channels.index'"
     )
+    assert "loading_bar.render(loading_id, label=loading_label)" in read('app/templates/components/table.html')
     assert 'id="notification-channels-workspace"' in page
 
 
@@ -185,9 +186,11 @@ def test_notification_channel_feedback_separates_toast_deck_and_activity_audit()
     assert 'queue_feedback=True' in routes
     assert "'channel_name': channel_name" in routes
     assert "'provider_key': provider_key" in routes
-    assert 'Operational Feedback' in workspace
-    assert 'Activity Audit' in workspace
-    assert 'Test failures and blocked deletion remain visible in the Notification Deck.' in workspace
+    assert "info_tip.render(" in workspace
+    assert "Channel Inventory Guidance" in workspace
+    assert "Operational Feedback:" in workspace
+    assert "Activity Audit:" in workspace
+    assert 'grid gap-4 lg:grid-cols-3' not in workspace
     assert 'Provider secrets never appear in Toast, Notification Deck, or Activity Audit metadata.' in modals
 
 
@@ -248,13 +251,14 @@ def test_notification_delivery_journal_filters_use_committed_sql_and_canonical_t
     )
     assert "'delivery_filters_active': any(" in service
     assert 'if payload.delivery_filters_active' in page
-    assert "table_label.result_count(payload.delivery_pagination.total_items)" in page
+    assert "result_count=payload.delivery_pagination.total_items" in page
     assert "table_registry.footer('notification_channels.index'," in page
     assert "table_registry.clear_filters_link('notification_channels.index'," in page
-    assert "table_ui.block_header_classes()" in page
-    assert page.index("table_ui.block_header_classes()") < page.index(
-        "loading_bar.render('notification-delivery-loading'"
-    ) < page.index("table_registry.filter_form('notification_channels.index'")
+    assert "table_block.inventory_block_header(" in page
+    assert page.index("table_block.inventory_block_header(") < page.index(
+        "table_registry.filter_form('notification_channels.index'"
+    )
+    assert "loading_bar.render(loading_id, label=loading_label)" in read('app/templates/components/table.html')
     assert 'hx-trigger="change, input changed delay:450ms"' in shared_table
     assert "section_intro.render('Configured Channels'" in channels
     assert channels.index("section_intro.render('Configured Channels'") < channels.index(
@@ -266,6 +270,36 @@ def test_notification_delivery_journal_filters_use_committed_sql_and_canonical_t
     assert page.count("('Events', payload.delivery_contract.events") == 1
     assert "section_intro.render('Delivery Contract & Ownership'" in page
     assert "'Delivery Ownership'," not in page
+
+
+
+def test_notification_refinement_reuses_header_info_tip_and_trailing_clear_filters() -> None:
+    index = read('app/templates/integrations/delivery/notification_channels/index.html')
+    channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    registry = read('app/templates/components/table_registry.html')
+    table = read('app/templates/components/table.html')
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+
+    assert "table_block.inventory_block_header(" in index
+    assert "loading_bar.render(loading_id, label=loading_label)" in table
+    assert "'notification-delivery-loading'" in index
+    assert "lead=false" in index
+    assert "table_ui.action_classes() ~ ' ml-auto'" in index
+    assert "lead=true) -%}" in registry
+    assert "lead=lead) }}" in registry
+    assert "hx-indicator=\"#{{ loading_id }}\"" in registry
+    assert "info_tip.render(" in channels
+    assert "Channel Inventory Guidance" in channels
+    assert "Validation Gate:" in channels
+    assert "Operational Feedback:" in channels
+    assert "Activity Audit:" in channels
+    assert '<section class="grid gap-4 lg:grid-cols-3">' not in channels
+    assert "operational_callout.render(" in index
+    assert "Provider delivery does not prove human receipt." in index
+    assert "Activity Audit remains separate." in index
+    assert "Consumers choose destinations; the Alert Source governs alert routing and receivers." in index
+    assert "KAORI governs credentials, validation, delivery evidence, retries and deduplication." in index
+    assert "Allow ntfy HTTPS origins via NOTIFICATION_NTFY_ALLOWED_ORIGINS (app/worker); restrict egress." in providers
 
 
 def test_report_delivery_source_link_is_exact_committed_and_permissioned() -> None:
@@ -331,7 +365,7 @@ def test_review5_delivery_activity_auto_htmx_filter_has_no_search_button() -> No
     assert 'hx-trigger="change, input changed delay:450ms"' in canonical
     assert 'hx-indicator="#{{ loading_id }}"' in canonical
     assert 'hx-sync="closest section:replace"' in canonical
-    assert "loading_bar.render('notification-delivery-loading'" in page
+    assert "table_block.inventory_block_header(" in page
     assert 'No Matching Deliveries' in page
     assert "request.args.get('delivery_per_page', default=5, type=int)" in read(
         'app/integrations/delivery/notification_channels/routes.py'

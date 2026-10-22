@@ -3,6 +3,7 @@
 {% import "components/table_registry.html" as table_registry %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/section_intro.html" as section_intro %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% set selected_provider = form_channel.provider_key if form_channel else initial_provider %}
 <div x-data="{ provider: '{{ selected_provider }}', guideProvider: '{{ selected_provider or 'telegram' }}' }"
@@ -102,6 +103,16 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-base font-semibold leading-6 text-content-primary">Channel Inventory</h3>
+                    {{ info_tip.render(
+                        'notification-channel-inventory-guide',
+                        'Channel Inventory Guidance',
+                        'Validation readiness, feedback, and audit evidence are distinct operational controls.',
+                        items=[
+                            'Validation Gate: Test Delivery must pass after a destination or credential change before automatic use.',
+                            'Operational Feedback: Save/test outcomes use Toast; failures and blocked deletes appear in the Notification Deck.',
+                            'Activity Audit: Create, update, test and deletion outcomes are recorded without provider secrets.'
+                        ],
+                        placement='right') }}
                     {{ table_label.result_count(payload.channel_pagination.total_items) }}
                 </div>
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Enabled destinations require successful Test Delivery before automatic use.</p>
@@ -278,38 +289,6 @@
                 page_param='channel_page',
                 per_page_param='channel_per_page') }}
     </section>
-    </section>
-    <section class="grid gap-4 lg:grid-cols-3">
-        <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
-            <div class="flex items-start gap-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true"><i data-lucide="check-check" class="h-3.5 w-3.5"></i></span>
-                <div class="min-w-0">
-                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Validation Gate</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">A saved channel is not automatically eligible. Test Delivery must succeed after destination or credential changes.</p>
-                </div>
-            </div>
-        </article>
-        <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
-            <div class="flex items-start gap-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true"><i data-lucide="bell" class="h-3.5 w-3.5"></i></span>
-                <div class="min-w-0">
-                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Operational Feedback</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Save and test actions use the canonical toast. Test failures and blocked deletion remain visible in the Notification Deck.</p>
-                </div>
-            </div>
-        </article>
-        <article class="rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm">
-            <div class="flex items-start gap-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true"><i data-lucide="scroll-text" class="h-3.5 w-3.5"></i></span>
-                <div class="min-w-0">
-                    <h3 class="text-sm font-semibold leading-5 text-content-primary">Activity Audit</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Create, update, test, blocked delete, and delete outcomes are persisted without storing provider secrets.</p>
-                </div>
-            </div>
-        </article>
     </section>
     {% include 'integrations/delivery/notification_channels/partials/_channel_modals.html' %}
 </div>
