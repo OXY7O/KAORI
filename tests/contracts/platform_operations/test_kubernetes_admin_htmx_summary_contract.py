@@ -297,3 +297,92 @@ def test_managed_controls_evidence_path_does_not_pre_authorize_runtime() -> None
     assert 'Verification Required' in presentation
     assert "'status_tone': status_tone" in presentation
     assert 'Live Namespace presence, Kubernetes RBAC, and Secret identity' in presentation
+
+
+def test_cluster_readiness_full_width_recomposition_and_section_intro() -> None:
+    cluster = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
+    intro = (ROOT / 'app/templates/components/section_intro.html').read_text()
+    card = (ROOT / 'app/templates/components/operational_section_card.html').read_text()
+
+    # Section introduction must live inside the HTMX outerHTML replaceable
+    # workspace but outside the single canonical section card.
+    shell = cluster.index('id="secret-reveal-cluster-workspace"')
+    intro_call = cluster.index('section_intro.render(', shell)
+    card_call = cluster.index('operational_section.render(', intro_call)
+    selector = cluster.index('id="secret-reveal-cluster"', card_call)
+    readiness = cluster.index('Readiness Controls', selector)
+    boundary = cluster.index('secret-reveal-kubernetes-boundary-heading', readiness)
+    namespace = cluster.index('platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html')
+    assert shell < intro_call < card_call < selector < readiness < boundary < namespace
+    assert 'components/section_intro.html' in cluster
+    assert 'components/operational_section_card.html' in cluster
+    assert 'components/action_button.html' in cluster
+    assert "'Cluster Readiness'," in cluster
+    assert "'Cluster Prerequisites'," in cluster
+    assert 'secret-reveal-cluster-readiness-heading' in cluster
+    assert 'secret-reveal-readiness-section' in cluster
+    assert 'aria-labelledby="secret-reveal-cluster-readiness-heading"' in cluster
+    assert 'macro render(' in intro
+    assert 'macro render(' in card
+
+    # Prerequisites get full workspace width instead of a nested 7/12 grid.
+    assert 'sm:grid-cols-2 lg:grid-cols-3' in cluster
+    assert 'xl:col-span-7' not in cluster
+    assert 'xl:col-span-5' not in cluster
+    assert 'lg:grid-cols-12' not in cluster
+    assert 'sm:grid-cols-2' in cluster
+    assert 'min-w-0' in cluster
+    assert 'Read-only prerequisite' in cluster
+    assert 'Operator attestation' in cluster
+    assert "action_button.classes('primary')" in cluster
+
+
+def test_cluster_readiness_preserves_forms_htmx_scope_and_authorization_boundary() -> None:
+    cluster = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html').read_text()
+    verifier = (ROOT / 'scripts/verify_platform_operations_final_lock.py').read_text()
+
+    # GET switches the selected cluster; POST only records the two attestations.
+    for marker in (
+        'id="secret-reveal-cluster-workspace"',
+        'id="secret-reveal-cluster-loading"',
+        'id="secret-reveal-cluster"',
+        'data-kaori-auto-submit',
+        "platform_operations.kubernetes.secret_reveal.workspace",
+        "platform_operations.kubernetes.secret_reveal.update_readiness",
+        'hx-target="#secret-reveal-cluster-workspace"',
+        'hx-swap="outerHTML"',
+        'hx-swap="outerHTML show:none"',
+        'hx-disabled-elt="button[type=\'submit\']"',
+        'name="csrf_token"',
+        'name="refresh_namespace"',
+        'name="namespace_q"',
+        'name="namespace_policy"',
+        'name="page"',
+        'name="per_page"',
+        'name="encryption_verified"',
+        'name="audit_verified"',
+        'for="secret-reveal-encryption-verified"',
+        'for="secret-reveal-audit-verified"',
+        'selected_cluster_readiness.credential_configured',
+        'selected_cluster.secret_reveal_encryption_verified',
+        'selected_cluster.secret_reveal_audit_verified',
+        'selected_cluster_ready',
+        'secret-reveal-selected-cluster-posture',
+        'hx-swap-oob="outerHTML"',
+        "empty_state_permission = \"clusters.manage\"",
+        'components/states/_empty_state.html',
+    ):
+        assert marker in cluster
+    assert cluster.count('method="post"') == 1
+    assert cluster.count('method="get"') == 1
+    assert 'Save Readiness' in cluster
+    assert 'Changes apply to' in cluster
+    assert 'Kubernetes RBAC remains the final authorization boundary' in cluster
+    assert 'Configured readiness does not establish live Secret access.' in cluster
+    for marker in ('Secret Get Only', 'Avoid List and Watch', 'Namespace Scope', 'Credential Scope'):
+        assert marker in cluster
+
+    # Existing final-lock verifier must reject the retired squeezed nested cards.
+    assert "for retired in ('xl:col-span-7', 'xl:col-span-5')" in verifier
+    assert 'section_intro.render(' in verifier
+    assert 'secret-reveal-kubernetes-boundary-heading' in verifier
