@@ -90,11 +90,12 @@
     </div>
 
     <div id="secret-reveal-management-panel-prerequisites"
+         class="min-w-0 p-4 sm:p-5"
          role="tabpanel"
          aria-labelledby="secret-reveal-management-tab-prerequisites"
          :hidden="activeTab !== 'prerequisites'"
          {% if secret_reveal_view != 'prerequisites' %}hidden{% endif %}>
-        <section id="secret-reveal-readiness-section" class="min-w-0" aria-label="Cluster Prerequisites">
+        <section id="secret-reveal-readiness-section" class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle" aria-label="Cluster Prerequisites">
             {% if selected_cluster %}
                 <form method="post"
                       action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_readiness', cluster_id=selected_cluster.id) }}"
@@ -241,7 +242,7 @@
     <div id="secret-reveal-management-panel-policies"
          role="tabpanel"
          aria-labelledby="secret-reveal-management-tab-policies"
-         class="min-w-0"
+         class="min-w-0 p-4 sm:p-5"
          :hidden="activeTab !== 'policies'"
          {% if secret_reveal_view != 'policies' %}hidden{% endif %}>
         {% if selected_cluster %}
