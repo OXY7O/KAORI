@@ -158,3 +158,23 @@ contains an unpublished, fail-closed committed KV v2 read model. It does
 Scope Policy grant. A canonical #724 evaluator, scoped route/HTMX tests,
 Violet registry UI, and human UAT are mandatory prerequisites. Global
 `secrets_pki.view` alone does not permit per-Secret disclosure.
+
+## Stored public PKI certificate validity aggregate (#2683)
+
+The Secrets & PKI Inventory workspace adds read-only UTC validity-window
+counts for **currently observed, explicitly opted-in Vault stored public
+certificates**: within validity, not yet valid, expired, and unknown chronology.
+The derived state requires every approved PKI mount to have current ready
+and complete committed observations (up to 25 instances, 100 mounts and
+64 certificates per mount). Missing/denied/expired collection freshness,
+source opt-out, generation mismatch or count conflict returns Not Qualified,
+not zero. Historical not-observed rows do not enter counts. A committed
+empty collection is a legitimate observed zero, not complete PKI coverage.
+
+No arbitrary expiry-warning horizon, global renewal policy, CA trust,
+revocation verdict, consumer adoption or endpoint serving is implied.
+Serials, public fingerprints, Secret paths, SAN/CN, issuer names, PEM,
+private keys, credentials and raw provider bodies are not exposed by this
+aggregate. No additional Vault API call, migration, worker or permission.
+Tests authored in tests/integrations/test_vault_pki_validity_posture.py;
+real provider, PostgreSQL, exact-SHA CI, Visual QA and human UAT pending.

@@ -116,6 +116,46 @@
             'PKI issuers, issued certificates, leases and consumer mappings require independent committed-source contracts.',
             supporting='Readiness is not inferred from a working Vault connection.'
         ) }}
+        {% call section_card.render('Stored Public Certificate Validity',
+            'Fresh, committed X.509 validity windows from approved Vault PKI stored-certificate observations.',
+            'calendar-clock') %}
+            <div role="status" class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm font-semibold text-content-primary">{{ pki_validity.label }}</p>
+                    <p class="text-xs text-content-muted">
+                        Qualified stored certificates:
+                        <span class="font-semibold text-content-primary">{{ pki_validity.observed_stored_certificates if pki_validity.observed_stored_certificates is not none else 'Not Qualified' }}</span>
+                    </p>
+                </div>
+                {% if pki_validity.status == 'ready' %}
+                    <dl class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+                        <div>
+                            <dt class="text-content-muted">Within Validity Window</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">{{ pki_validity.within_validity_window }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-content-muted">Not Yet Valid</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">{{ pki_validity.not_yet_valid }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-content-muted">Expired</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">{{ pki_validity.expired }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-content-muted">Unknown</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">{{ pki_validity.unknown }}</dd>
+                        </div>
+                    </dl>
+                {% else %}
+                    <p class="text-xs text-status-warning-text">
+                        Complete and fresh PKI evidence is not available. Missing, unsupported, revoked scope or stale observations cannot be interpreted as zero certificates.
+                    </p>
+                {% endif %}
+                <p class="text-xs leading-5 text-content-muted">
+                    Coverage is limited to explicitly opted-in stored public certificates. Within validity does not establish CA trust, revocation status, delivery to a consumer, or active endpoint serving.
+                </p>
+            </div>
+        {% endcall %}
         <div class="grid gap-3 lg:grid-cols-2">
             {% call section_card.render('Public PKI & Certificates',
                 'PKI source reads and the retained issued-certificate register are separate capabilities.',
