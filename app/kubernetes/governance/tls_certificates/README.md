@@ -125,3 +125,30 @@ types, in a `finally` block before fetching the next page. Raw Secret objects
 are not retained in normalized results or audit/job metadata. The provider
 still transmits Secret payloads for LIST; metadata-only discovery requires a
 separate feasibility and permission review.
+
+
+## Immutable Kubernetes Secret object UID evidence (HV-05, #2589)
+
+The existing TLS Governance collector now normalizes `metadata.uid` from
+Kubernetes TLS Secret objects alongside the committed public `tls.crt`
+fingerprint. The identifier is kept **only as source-owned internal state**
+(`TLSCertificateInventory.secret_uid`) and is not exposed in the normal
+Secrets & PKI correlation UI, exports, task summaries, logs or audit.
+
+Migration `20261022_tls_object_uid` is nullable, with **no name-based
+backfill**: historical rows remain `NULL` until the next successful TLS
+collection. Missing/invalid/noncanonical UIDs remain unknown, and a
+recreated Secret with the same namespace/name is a **new** object identity.
+Ordinary certificate collection and Kubernetes TLS Governance availability
+must not become unavailable simply because a UID was omitted.
+
+This does NOT read `tls.key`, deploy a controller, attest source ownership,
+or prove Vault synchronization. The existing bounded LIST and per-page
+Secret payload scrub controls remain unchanged. The follow-up
+`secrets_pki/certificate_delivery_read_model.py` counts only
+source-qualified matching public certificates with a canonical UID;
+controller readback and endpoint serving remain separate proof layers.
+
+Requires Developer Check, reviewed Alembic PostgreSQL upgrade, new source
+collection, old/new Secret recreation test, role-negative/browser Visual
+QA and human DevContainer/staging UAT before acceptance.

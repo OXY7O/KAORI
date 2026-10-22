@@ -75,3 +75,16 @@ identity matching; it is not a confirmed Vault `secret_to_materialization`
 edge, controller synchronization proof, workload adoption or endpoint
 serving. Source freshness and `tls_certificates.view` remain mandatory;
 incomplete/malformed Ingress mapping yields unknown, not negative proof.
+
+
+## Immutable Kubernetes TLS object UID
+
+The existing TLS Governance collector records an optional, canonical,
+immutable Kubernetes Secret object UID for newly collected source rows.
+It is an essential future target-object identity for the confirmed
+`materialization_to_consumer` chain: namespace/name may be reused on
+replacement, and legacy `NULL` means no UID provenance. Cross-domain
+Inventory shows only a bounded aggregate coverage counter, not those
+identifiers. The UID does not prove distribution from Vault, controller
+adoption, Ingress controller activation or endpoint serving. A source-owned
+controller receipt and separate admitted match process remain pending.

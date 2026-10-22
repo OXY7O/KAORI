@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from uuid import UUID
 from datetime import UTC, datetime
 from typing import Any
 
@@ -251,6 +252,23 @@ def _coverage_evidence(
     return state, len(declared_hosts), covered_count, uncovered
 
 
+def _qualified_secret_uid(secret: V1Secret) -> str | None:
+    """Retain only a canonical immutable Kubernetes object UID.
+
+    Absence/invalid UID downgrades provenance to unknown, while ordinary TLS
+    certificate collection remains available. Namespace/name cannot replace
+    this identity, and untrusted metadata strings are never displayed.
+    """
+    raw = getattr(getattr(secret, 'metadata', None), 'uid', None)
+    if not isinstance(raw, str) or len(raw) > 64:
+        return None
+    try:
+        parsed = str(UUID(raw))
+    except (ValueError, TypeError, AttributeError):
+        return None
+    return parsed if raw.lower() == parsed else None
+
+
 def parse_tls_secret(
     secret: V1Secret,
     usage_map: dict[tuple[str, str], dict[str, Any]],
@@ -268,6 +286,7 @@ def parse_tls_secret(
     payload: dict[str, Any] = {
         'namespace': namespace,
         'secret_name': name,
+        'secret_uid': _qualified_secret_uid(secret),
         'secret_type': secret.type,
         'common_name': None,
         'issuer': None,
