@@ -1,6 +1,6 @@
 """Persist terminal Notification Channel retirement without deleting delivery evidence.
 
-Revision ID: 20261023_notification_channel_retire
+Revision ID: 20261023_channel_retire
 Revises: 20261023_scope_policy_storage
 """
 from __future__ import annotations
@@ -8,7 +8,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-revision = '20261023_notification_channel_retire'
+revision = '20261023_channel_retire'
 down_revision = '20261023_scope_policy_storage'
 branch_labels = None
 depends_on = None
