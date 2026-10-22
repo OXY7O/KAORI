@@ -111,7 +111,7 @@ consumer_assets:
   label: Vault Instance
   plural_label: Vault Instances
   icon: key-round
-  selector_label: instance
-  selector_placeholder: vault-production
+  selector_label: vault_instance
+  selector_placeholder: canonical instance ID (e.g. 42)
   model_key: integration_instance
   integration_type: secrets_pki
