@@ -137,6 +137,20 @@ Approval, Step-Up, one-time reveal, request expiry and CSRF remain governed
 by their existing routes. Tab labels carry no count badges; table headers
 retain source-owned result counts.
 
+**Assigned Work / Work Inbox:** Approval Required requests are visible to every
+currently eligible active reviewer through the existing Notification Deck
+Assigned Work view, as a read-only projection of committed
+`SecretRevealRequest` records. Eligibility requires current
+`kubernetes_secrets.approve_reveal` permission and excludes the requester;
+only unexpired Pending records are shown. One request is counted once per
+eligible viewer, independently of notifications; the request remains one
+committed authority even when multiple reviewers can see it. The Work Inbox
+links to the existing Approvals tab; the original CSRF-protected decision
+route determines the first valid approval/denial, and resolved/expired
+requests disappear automatically. No Secret payload is read or persisted
+by this projection. Notification fanout remains advisory and does not
+assign approval to a fixed recipient.
+
 **Pending Approvals registry (approver-only):** The separate Pending Approval
 workspace now uses the same KAORI table header, transient loader, source-backed
 filter, conditional Clear Filters, and five-row pagination. Search is capped at

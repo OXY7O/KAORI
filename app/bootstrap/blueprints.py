@@ -26,6 +26,7 @@ def register_blueprints(app: Flask) -> None:
     from app.kubernetes.governance.routes import governance_bp
     from app.kubernetes.inventory.routes import inventory_bp
     from app.kubernetes.operations.routes import kubernetes_operations_bp
+    from app.kubernetes.operations.secrets.approval_inbox import get_secret_reveal_approval_work_inbox
     from app.kubernetes.tenant.approval_inbox import get_tenant_release_work_inbox
     from app.kubernetes.tenant.capsule_handoff_worklist import build_capsule_handoff_worklist
     from app.kubernetes.tenant.capsule_rbac_bootstrap import (
@@ -71,6 +72,9 @@ def register_blueprints(app: Flask) -> None:
     # Compose the Tenant-owned committed approval projection into the shared
     # Notification Work Inbox once per Flask app; no global mutable registry.
     app.extensions['kaori_tenant_approval_work_inbox'] = get_tenant_release_work_inbox
+    # Project Kubernetes-owned committed Secret Reveal approvals without
+    # importing Kubernetes services into Notifications.
+    app.extensions['kaori_secret_reveal_approval_work_inbox'] = get_secret_reveal_approval_work_inbox
     # Integration presentation invokes Tenant-owned cluster RBAC operations.
     # Keep this wiring application-scoped to prevent reverse domain imports.
     app.extensions['kaori_tenant_capsule_rbac_bootstrap'] = {

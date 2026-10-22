@@ -204,9 +204,21 @@ def get_activity_center_context(
         or not isinstance(tenant_approval_inbox.get('total_count'), int)
     ):
         raise RuntimeError('Tenant approval Work Inbox provider returned an invalid projection.')
+    secret_inbox_provider = current_app.extensions.get('kaori_secret_reveal_approval_work_inbox')
+    if not callable(secret_inbox_provider):
+        raise RuntimeError('Secret Reveal approval Work Inbox provider is not registered.')
+    secret_reveal_inbox = secret_inbox_provider(user_id=user_id)
+    if (
+        not isinstance(secret_reveal_inbox, dict)
+        or not isinstance(secret_reveal_inbox.get('items'), list)
+        or not isinstance(secret_reveal_inbox.get('pending_count'), int)
+        or not isinstance(secret_reveal_inbox.get('total_count'), int)
+    ):
+        raise RuntimeError('Secret Reveal approval Work Inbox provider returned an invalid projection.')
+
     notification_inbox_unread_count = inbox_unread_count
-    inbox_unread_count += tenant_approval_inbox['pending_count']
-    inbox_total_count += tenant_approval_inbox['total_count']
+    inbox_unread_count += tenant_approval_inbox['pending_count'] + secret_reveal_inbox['pending_count']
+    inbox_total_count += tenant_approval_inbox['total_count'] + secret_reveal_inbox['total_count']
 
     presented_jobs = [present_job_execution(job) for job in active_jobs]
     queued_jobs = [job for job in presented_jobs if job['status'] == 'queued']
@@ -225,6 +237,7 @@ def get_activity_center_context(
         'attention_items': attention_items,
         'inbox_items': inbox_items,
         'tenant_approval_inbox_items': tenant_approval_inbox['items'],
+        'secret_reveal_approval_inbox_items': secret_reveal_inbox['items'],
         'active_jobs': presented_jobs,
         'active_count': active_count,
         'attention_count': attention_count,
