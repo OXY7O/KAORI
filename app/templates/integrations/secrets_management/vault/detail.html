@@ -1,0 +1,96 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/framed_workspace_tabs.html" as tabs %}
+{% import "integrations/components/_provider_detail_posture.html" as posture %}
+{% block title %}{{ instance.name }} · Vault Integration · KAORI{% endblock title %}
+{% block dashboard_content %}
+{% set readiness = instance.readiness_status or "validation_required" %}
+{% set summary = instance.validation_summary or {} %}
+<div class="kaori-integration-semantic space-y-6"
+     x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime'], 'configuration', 'vault-detail-tabs')"
+     x-on:hashchange.window="syncTab()" x-on:popstate.window="syncTab()">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro("key-round", "Secrets & PKI Integration", "shield-check") %}
+                    <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">Review Vault connection, capabilities, and runtime evidence.</p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {{ page_hero.meta_label("shield-check", readiness|replace("_"," ")|title) }}
+                        {{ page_hero.meta_label("layers-3", ((instance.capabilities or [])|length|string) ~ " Capabilities") }}
+                        {{ page_hero.meta_label("key-round", instance.environment or "Unspecified") }}
+                    </div>
+                {% endcall %}
+            </div>
+            {{ posture.render("Vault connection posture", "Vault API Readiness",
+               "Ready" if readiness == "ready" else "Attention", "shield-check", "Vault API",
+               readiness|replace("_"," ")|title, "Produced by Full Validation", "layers-3",
+               "Validated Capabilities", (instance.capabilities or [])|length, "Observed provider APIs",
+               url_for('vault.index'), posture_key='vault') }}
+        </div>
+    </section>
+    <section id="vault-detail-tabs" class="{{ integration_ui.section_shell_classes() }}">
+        {{ tabs.render([
+          ("configuration", "Configuration", "settings-2", instance.environment or "Unspecified"),
+          ("validation", "Validation & Capabilities", "scan-search", readiness|replace("_"," ")|title),
+          ("runtime", "Runtime & History", "activity", summary.get("health_status", "Not Observed")|replace("_"," ")|title)
+        ], prefix="vault", aria_label="Vault Connection Domains") }}
+        <div class="p-4 sm:p-5 lg:p-6">
+            <div id="vault-panel-configuration" role="tabpanel" aria-labelledby="vault-tab-configuration"
+                 x-show="activeTab === 'configuration'">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <h2 class="text-base font-semibold text-content-primary">Connection Configuration</h2>
+                    <a href="{{ url_for('vault.edit_instance', instance_id=instance.id) }}" class="rounded-lg border border-outline-default px-3 py-2 text-sm font-semibold text-kaori-primary">Edit Connection</a>
+                </div>
+                <dl class="mt-4 grid gap-4 sm:grid-cols-2 text-sm">
+                    <div><dt class="text-content-muted">Approved Endpoint</dt><dd class="mt-1 font-medium text-content-primary">{{ instance.endpoint }}</dd></div>
+                    <div><dt class="text-content-muted">Namespace</dt><dd class="mt-1 font-medium text-content-primary">{{ instance.namespace or "Root" }}</dd></div>
+                    <div><dt class="text-content-muted">Authentication</dt><dd class="mt-1 font-medium text-content-primary">AppRole ({{ instance.auth_mount }})</dd></div>
+                    <div><dt class="text-content-muted">TLS Policy</dt><dd class="mt-1 font-medium text-content-primary">Verified HTTPS</dd></div>
+                    <div><dt class="text-content-muted">Connection State</dt><dd class="mt-1 font-medium text-content-primary">{{ "Enabled" if instance.enabled else "Disabled" }}</dd></div>
+                    <div><dt class="text-content-muted">SecretID</dt><dd class="mt-1 font-medium text-content-primary">Encrypted · Not Displayed</dd></div>
+                </dl>
+            </div>
+            <div id="vault-panel-validation" role="tabpanel" aria-labelledby="vault-tab-validation"
+                 x-show="activeTab === 'validation'" x-cloak class="space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div><h2 class="text-base font-semibold text-content-primary">Full Validation</h2>
+                        <p class="mt-1 text-sm text-content-secondary">{{ instance.validation_message or "No capability validation has been collected." }}</p></div>
+                    <form action="{{ url_for('vault.validate', instance_id=instance.id) }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" {{ "disabled" if not instance.enabled else "" }} class="rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white">Run Full Validation</button>
+                    </form>
+                </div>
+                <p class="text-sm text-content-secondary">Vault version: {{ instance.detected_version or "Not Detected" }}</p>
+                <p class="text-sm text-content-secondary">Optional mount metadata: {{ summary.get("mount_metadata", "Not Validated")|replace("_"," ")|title }}</p>
+                <div class="flex flex-wrap gap-2">
+                {% for cap in instance.capabilities or [] %}
+                    <span class="rounded-md border border-outline-default bg-surface-elevated px-2 py-1 text-xs font-medium text-content-secondary">{{ cap|replace("_"," ")|title }}</span>
+                {% else %}
+                    <p class="text-sm text-content-muted">Capabilities Not Validated</p>
+                {% endfor %}
+                </div>
+                {% if evidence.validation_job %}<p class="text-xs text-content-muted" role="status">Validation task: {{ evidence.validation_job.get('status', 'pending') }} · {{ evidence.validation_job.get('task_id', '') }}</p>{% endif %}
+            </div>
+            <div id="vault-panel-runtime" role="tabpanel" aria-labelledby="vault-tab-runtime"
+                 x-show="activeTab === 'runtime'" x-cloak class="space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div><h2 class="text-base font-semibold text-content-primary">Runtime & History</h2>
+                        <p class="mt-1 text-sm text-content-secondary">Lightweight health refresh does not rewrite capabilities.</p></div>
+                    <form action="{{ url_for('vault.runtime_refresh', instance_id=instance.id) }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" {{ "disabled" if not instance.enabled else "" }} class="rounded-lg border border-outline-default px-4 py-2 text-sm font-semibold text-content-primary">Refresh Runtime</button>
+                    </form>
+                </div>
+                <dl class="grid gap-4 text-sm sm:grid-cols-2">
+                    <div><dt class="text-content-muted">Observed Vault State</dt><dd class="mt-1 font-semibold text-content-primary">{{ summary.get('health_status', 'Not Observed')|replace("_"," ")|title }}</dd></div>
+                    <div><dt class="text-content-muted">Runtime Status</dt><dd class="mt-1 font-semibold text-content-primary">{{ instance.last_status or "Not Observed" }}</dd></div>
+                </dl>
+                <p class="text-xs text-content-secondary">Health states distinguish active, standby, performance standby, sealed, uninitialized, DR secondary and unavailable.</p>
+                {% if evidence.runtime_job %}<p class="text-xs text-content-muted" role="status">Runtime task: {{ evidence.runtime_job.get('status', 'pending') }} · {{ evidence.runtime_job.get('task_id', '') }}</p>{% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock dashboard_content %}
