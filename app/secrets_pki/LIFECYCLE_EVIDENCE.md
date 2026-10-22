@@ -74,3 +74,15 @@ material history, not verified revocation, rotation or consumer adoption.
 Tests: `tests/integrations/test_vault_kv2_version_posture.py`.
 Exact-SHA Ruff/Pyright/pytest, runtime PostgreSQL, RBAC and browser UAT still
 need Developer Check/Full Admission; a review merge is not PASS.
+
+## Impossible future source timestamps (#2704)
+
+The current-generation KV v2 aggregate now refuses source-owned
+`last_observed_at` **and** `last_committed_at` values later than the UTC
+evaluation instant. A timestamp can appear recent but cannot be valid
+committed provenance when it is in the future. Missing, stale and future
+commit/observation times all produce `incomplete_evidence` and no
+numerical lifecycle values, even when a mount claims an empty or
+otherwise-valid generation. No historical rows are deleted or provider
+data re-read; reconcile and inspect worker clock/time synchronization
+before retrying the source-owned inventory job.
