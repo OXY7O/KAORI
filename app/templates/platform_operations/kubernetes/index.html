@@ -42,10 +42,12 @@
                 <div class="min-w-0">
                     <div id="kubernetes-administration-panel-overview"
                          role="tabpanel"
+                         aria-labelledby="kubernetes-administration-tab-overview"
                          x-show="activeTab === 'overview'"
                          x-cloak>{% include "platform_operations/kubernetes/_overview_workspace.html" %}</div>
                     <div id="kubernetes-administration-panel-secret-reveal"
                          role="tabpanel"
+                         aria-labelledby="kubernetes-administration-tab-secret-reveal"
                          x-show="activeTab === 'secret-reveal'"
                          x-cloak
                          hx-get="{{ secret_reveal_workspace_url }}"
