@@ -31,13 +31,13 @@ MAX_DNS_NAMES = 32
 class PublicCertificateEvidence:
     fingerprint_sha256: str
     serial_hex: str
-    subject: str
-    issuer: str
+    subject: str = field(repr=False)
+    issuer: str = field(repr=False)
     valid_from: datetime
     valid_until: datetime
     is_ca: bool | None
     self_issued: bool
-    dns_names: tuple[str, ...]
+    dns_names: tuple[str, ...] = field(repr=False)
 
 
 @dataclass(frozen=True, slots=True)
