@@ -242,6 +242,14 @@ binding_profiles:
   probes: []
   no_match_message: The selector was accepted, but no qualified Registry identity metrics matched. Verify that the Metrics Source selector isolates the intended Registry deployment and that its provider metrics are scraped.
 - adapter_key: prometheus_http
+  asset_type: vault_instance
+  profile_key: vault-telemetry-v1
+  label: Vault Instance Telemetry v1
+  validation_strategy: custom
+  consumer_family: metrics
+  probes: []
+  no_match_message: No qualified Vault core identity signal matched this Metrics Source binding. Configure the exact vault_instance label equal to the canonical KAORI IntegrationInstance ID on the Prometheus scrape target, and validate node/HA identity.
+- adapter_key: prometheus_http
   asset_type: object_storage_system
   profile_key: object-storage-metrics-v1
   label: Object Storage Metrics v1
