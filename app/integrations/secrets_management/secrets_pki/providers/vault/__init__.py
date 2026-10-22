@@ -38,7 +38,7 @@ integration_module = IntegrationModule(
         'runtime.state': 'inline',
     },
     capability_keys=('health', 'approle', 'token_lookup', 'mount_metadata'),
-    compatibility_profiles=(),
+    compatibility_profiles=('vault-approle-read-v1',),
     runtime_label='Secrets & PKI',
     navigation_endpoint_prefixes=('vault.',),
 )
