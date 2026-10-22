@@ -55,22 +55,22 @@ def test_secret_reveal_v17_keeps_neutral_dark_mode_surfaces() -> None:
     assert 'bg-surface-card' in administration
 
 
-def test_review7_reveal_step_up_shows_equal_height_information_peer() -> None:
+def test_review7_reveal_step_up_uses_one_compact_responsive_panel() -> None:
     step = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
-    assert 'data-reveal-step-up-peer-grid' in step
-    assert 'grid items-stretch gap-4 lg:grid-cols-2' in step
-    assert step.count('flex h-full min-w-0 flex-col') == 2
-    assert 'Step-Up Access Guidance' in step
-    assert 'Approval First' in step
+    assert 'data-reveal-step-up-workspace' in step
+    assert 'grid min-w-0 gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]' in step
+    assert step.count('secret_ui.section_header(') == 1
+    assert 'aria-label="Step-Up Access Guidance"' in step
+    assert 'Approved Request' in step
     assert 'Verified Session' in step
-    assert 'One-Time Access' in step
+    assert 'One-Time Reveal' in step
     assert 'name="password"' in step
     assert 'name="csrf_token"' in step
     assert 'current_user.is_external' in step
     assert 'Protected Session Verified' in step
 
 
-def test_reveal_step_up_uses_shared_button_and_meaningful_session_context() -> None:
+def test_reveal_step_up_uses_shared_button_and_source_driven_session_context() -> None:
     step = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
     shared_button = read('app/templates/components/action_button.html')
     shared_labels = read('app/templates/components/table_label.html')
@@ -83,18 +83,16 @@ def test_reveal_step_up_uses_shared_button_and_meaningful_session_context() -> N
     assert 'macro status_indicator_label(' in shared_labels
     assert 'Session Verification' in step
     assert 'Verification Required' in step
-    assert 'Execution Boundary' in step
-    assert 'does not bypass request approval, expiry, or one-time access checks' in step
-    assert '<ol class="grid min-w-0 gap-3">' in step
-    assert 'Secret values are delivered only through the authorized one-time reveal flow' in step
-    assert 'mt-auto border-t border-outline-subtle' in step
+    assert 'Approval, identity and single-use access remain separate controls.' in step
+    assert '<ol class="mt-4 grid min-w-0 gap-3">' in step
+    assert 'Expiry, policy, authorization and audit still apply.' in step
     assert 'name="password"' in step
     assert 'autocomplete="current-password"' in step
     assert 'name="csrf_token"' in step
     assert 'current_user.is_external' in step
     assert 'step_up_active' in step
-    assert 'aria-label="Reveal Session Step-Up context"' in step
-    assert 'data-reveal-step-up-peer-grid' in step
+    assert 'aria-label="Reveal Session Step-Up and access guidance"' in step
+    assert 'data-reveal-step-up-workspace' in step
 
 
 def test_review7_reveal_target_empty_cluster_status_not_below_form() -> None:
