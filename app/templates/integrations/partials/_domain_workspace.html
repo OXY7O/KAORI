@@ -45,6 +45,10 @@
     stats.bindings
     )
 ] %}
+{# Source Control repository lineage is not an asset Consumer Binding. Do not show an inapplicable tab. #}
+{% if domain.key == 'source_control' %}
+    {% set workspace_tabs = [workspace_tabs[0]] %}
+{% endif %}
 {% set domain_guidance_title = none %}
 {% set domain_guidance_text = none %}
 {% set domain_guidance_items = none %}
@@ -95,7 +99,7 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ domain.label }} Workspace</p>
                     <div class="mt-0.5 flex items-center gap-1.5">
                         <h2 id="domain-workspace-title"
-                            class="text-base font-semibold text-content-primary">Registry and Consumer Bindings</h2>
+                            class="text-base font-semibold text-content-primary">{{ 'Provider Registry' if domain.key == 'source_control' else 'Registry and Consumer Bindings' }}</h2>
                         {% if domain_guidance_title %}
                             {{ info_tip.render('integration-' ~ domain.key ~ '-workspace-guidance',
                                                         domain_guidance_title,
@@ -105,7 +109,7 @@
                                                         variant='guide') }}
                         {% endif %}
                     </div>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider connections and cross-domain consumer bindings for assets in this domain.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ 'Review the Source Control provider boundary; GitHub App onboarding remains planned until validated.' if domain.key == 'source_control' else 'Review provider connections and cross-domain consumer bindings for assets in this domain.' }}</p>
                 </div>
             </div>
             {% if integration_types %}
