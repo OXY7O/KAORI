@@ -76,12 +76,30 @@ def main() -> int:
         and delivery_template.index('workspace_tabs.render_navigation') < delivery_template.index('page_hero.shell_classes()')
         and "hx_target='#notification-channels-workspace'" in delivery_template
         and "hx_select='#notification-channels-workspace'" in delivery_template
-        and delivery_template.count('section_intro.render(') == 3,
+        and delivery_template.count('section_intro.render(') == 2
+        and "('overview', 'Overview', 'layout-dashboard', none," in delivery_template
+        and "('channels', 'Channels', 'send', none," in delivery_template
+        and "('delivery', 'Delivery Activity', 'history', none," in delivery_template
+        and 'Notification Delivery Overview' not in delivery_template
+        and 'Channel Configuration & Registry' not in delivery_template
+        and 'Committed Delivery Evidence' not in delivery_template,
         'notification tabs macro namespace': '{% import "components/workspace_tabs.html" as workspace_tabs %}' in delivery_template
         and '{% set workspace_tabs =' not in delivery_template
         and '{% set notification_tab_items = [' in delivery_template
         and 'workspace_tabs.render_navigation(notification_tab_items,' in delivery_template,
         'delivery journal loading order': delivery_template.index("loading_bar.render('notification-delivery-loading'") < delivery_template.index("table_registry.filter_form('notification_channels.index'"),
+        'canonical delivery journal filters': 'delivery_filters_active' in service
+        and "name=\"delivery_provider\"" in delivery_template
+        and "name=\"delivery_domain\"" in delivery_template
+        and "name=\"delivery_severity\"" in delivery_template
+        and "name=\"delivery_status\"" in delivery_template
+        and "NotificationDelivery.channel.has(NotificationChannel.provider_key == provider)" in service
+        and "NotificationDelivery.domain == domain" in service
+        and "NotificationDelivery.severity == severity" in service
+        and "NotificationDelivery.status == status" in service
+        and "table_label.result_count(payload.delivery_pagination.total_items)" in delivery_template
+        and "section_intro.render('Delivery Contract & Ownership'" in delivery_template
+        and "section_intro.render('Configured Channels'" in template,
         'delivery journal surface': 'query = NotificationDelivery.query' in delivery_registry
         and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
         and journal_order in delivery_registry

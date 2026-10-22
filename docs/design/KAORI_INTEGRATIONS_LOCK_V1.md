@@ -183,11 +183,26 @@ level-3 navigation pattern elsewhere in KAORI. The tab selector, Hero and active
 view share one server-rendered HTMX replacement boundary, retaining ordinary
 anchor fallback and `?tab=` deep links.
 
-Each view uses the canonical `components/section_intro.html` title and concise
-description **outside** its content cards, following the Kubernetes Inventory
-presentation contract. Delivery Activity uses the committed journal and its
-existing loading → filters → table → pagination primitives, not a live provider
-availability check. Transport acceptance must not be presented as human receipt.
+For page-level Notification Channels workspaces, **no generic view title or
+paragraph is inserted immediately after Hero**. The first post-Hero content
+is the substantive workspace block. Contextual **section-level** headings and
+concise descriptions remain valid **above their specific cards**, using the
+canonical `components/section_intro.html` contract when appropriate. This
+distinguishes a meaningful card section title from redundant page introduction
+text; the rule supersedes the earlier per-view generic title arrangement.
+
+Following approved follow-up #2672, the Integrated Workspace Tabs show labels
+only, with **no per-tab numeric badges** (counts remain in their owning table
+headers/results). Delivery Contract and Delivery Ownership share one governed
+card and one contextual section introduction. Configured Channels has its own
+section introduction above the channel table card; Delivery Journal uses a
+specific section heading above a canonical **table header → loading → filters →
+table → pagination** card. The journal filters combine exact event key,
+provider, catalog domain, severity and delivery status, validated by the server
+before SQL-level pagination. Clear Filters and Rows/page links preserve the
+canonical HTMX behavior. Notification delivery records are committed external
+transport evidence, **never proof of human receipt** or a substitute for
+Activity Audit.
 
 This is a **specific, documented exception to the prior Notification Channels
 framed-workspace presentation**, not permission to change other locked

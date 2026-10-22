@@ -189,6 +189,10 @@ def get_notification_channels_payload(
     channel_state: str = '',
     delivery_pagination: DeliveryPagination = DeliveryPagination(),
     delivery_event_key: str = '',
+    delivery_provider: str = '',
+    delivery_domain: str = '',
+    delivery_severity: str = '',
+    delivery_status: str = '',
     can_view_reports: bool = False,
 ) -> dict[str, Any]:
     normalized_channel_search = str(channel_search or '').strip()[:160]
@@ -204,10 +208,32 @@ def get_notification_channels_payload(
         state=normalized_state,
     )
     normalized_delivery_key = str(delivery_event_key or '').strip()[:255]
+    normalized_delivery_provider = str(delivery_provider or '').strip().lower()
+    normalized_delivery_provider = (
+        normalized_delivery_provider if normalized_delivery_provider in _PROVIDER_LABELS else ''
+    )
+    normalized_delivery_domain = str(delivery_domain or '').strip()
+    normalized_delivery_domain = (
+        normalized_delivery_domain
+        if normalized_delivery_domain in {item['value'] for item in domain_options()}
+        else ''
+    )
+    normalized_delivery_severity = str(delivery_severity or '').strip().lower()
+    normalized_delivery_severity = (
+        normalized_delivery_severity if normalized_delivery_severity in _SEVERITY_RANK else ''
+    )
+    normalized_delivery_status = str(delivery_status or '').strip().lower()
+    normalized_delivery_status = (
+        normalized_delivery_status if normalized_delivery_status in {'queued', 'sent', 'failed', 'skipped'} else ''
+    )
     delivery_rows, delivery_window = _delivery_registry_page(
         page=delivery_pagination.page,
         per_page=delivery_pagination.per_page,
         event_key=normalized_delivery_key,
+        provider=normalized_delivery_provider,
+        domain=normalized_delivery_domain,
+        severity=normalized_delivery_severity,
+        status=normalized_delivery_status,
         can_view_reports=can_view_reports,
     )
     summary = notification_channel_summary()
@@ -241,6 +267,21 @@ def get_notification_channels_payload(
         'deliveries': delivery_rows,
         'delivery_pagination': delivery_window,
         'delivery_filter': normalized_delivery_key,
+        'delivery_filters': {
+            'provider': normalized_delivery_provider,
+            'domain': normalized_delivery_domain,
+            'severity': normalized_delivery_severity,
+            'status': normalized_delivery_status,
+        },
+        'delivery_filters_active': any(
+            (
+                normalized_delivery_key,
+                normalized_delivery_provider,
+                normalized_delivery_domain,
+                normalized_delivery_severity,
+                normalized_delivery_status,
+            )
+        ),
         'providers': providers,
         'domain_options': domain_options(),
         'event_type_options': event_type_options(),
@@ -285,11 +326,27 @@ def _channel_registry_page(
 
 
 def _delivery_registry_page(
-    *, page: int, per_page: int, event_key: str = '', can_view_reports: bool = False
+    *,
+    page: int,
+    per_page: int,
+    event_key: str = '',
+    provider: str = '',
+    domain: str = '',
+    severity: str = '',
+    status: str = '',
+    can_view_reports: bool = False,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     query = NotificationDelivery.query
     if event_key:
         query = query.filter(NotificationDelivery.event_key == event_key)
+    if provider:
+        query = query.filter(NotificationDelivery.channel.has(NotificationChannel.provider_key == provider))
+    if domain:
+        query = query.filter(NotificationDelivery.domain == domain)
+    if severity:
+        query = query.filter(NotificationDelivery.severity == severity)
+    if status:
+        query = query.filter(NotificationDelivery.status == status)
     query = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc())
     rows, pagination = paginate_query(query, page=page, per_page=per_page)
     # An exact, permissioned page-local read: no per-delivery report query.
