@@ -131,7 +131,7 @@ def evaluate_exact_vault_scope(
             if (
                 starts is None or ends is None or approved is None
                 or starts > instant or instant >= ends
-                or approved > instant or approved < _timestamp(current.created_at)
+                or approved > instant
             ):
                 continue
             return ScopeAdmission(
