@@ -186,15 +186,15 @@
         {% endcall %}
         </div>
         <div class="overflow-x-auto overscroll-x-contain">
-            <table class="{{ table_ui.table_classes('min-w-[1180px]') }}">
+            <table class="{{ table_ui.table_classes('min-w-[1280px]') }}">
                 <caption class="sr-only">Configured notification channels with delivery readiness, routing policy, allowed uses and provider evidence.</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Channel</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Readiness</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Routing Policy</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[23%]">Channel</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[12%]">Readiness</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[14%]">Routing Policy</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Allowed Uses</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Delivery Evidence</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[17%]">Delivery Evidence</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Actions</th>
                     </tr>
                 </thead>
@@ -228,58 +228,48 @@
                                    title="{{ channel.domain_labels|join(', ') }}">{{ channel.domain_labels|join(', ') if channel.domain_labels else 'No domains selected' }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {% set allowed_use_count = channel.event_type_labels|length %}
-                                <div class="min-w-0 space-y-1.5">
-                                    {{ table_label.metadata_label(allowed_use_count ~ ' Allowed Uses', icon='list-checks') }}
-                                    {% if allowed_use_count %}
-                                        <ul class="space-y-0.5">
-                                            {% for event_label in channel.event_type_labels[:2] %}
-                                                <li class="max-w-[210px] truncate text-xs leading-5 text-content-secondary"
-                                                    title="{{ event_label }}">{{ event_label }}</li>
-                                            {% endfor %}
-                                        </ul>
-                                        {% if allowed_use_count > 2 %}
-                                            <details class="group min-w-0">
-                                                <summary class="{{ table_ui.action_classes() }} mt-1 list-none cursor-pointer"
-                                                         aria-label="Show or hide all {{ allowed_use_count }} allowed uses for {{ channel.name }}">
-                                                    <span class="group-open:hidden">View all {{ allowed_use_count }}</span>
-                                                    <span class="hidden group-open:inline">Hide uses</span>
-                                                    <i data-lucide="chevron-down"
-                                                       class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
-                                                       aria-hidden="true"></i>
-                                                </summary>
-                                                <ul class="mt-2 max-h-48 space-y-1.5 overflow-y-auto border-l-2 border-brand-outline pl-3"
-                                                    aria-label="All allowed uses for {{ channel.name }}">
-                                                    {% for event_label in channel.event_type_labels %}
-                                                        <li class="break-words text-xs leading-5 text-content-secondary">{{ event_label }}</li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </details>
-                                        {% endif %}
-                                    {% else %}
-                                        <p class="text-xs leading-5 text-content-muted">No events allowed</p>
-                                    {% endif %}
-                                    {% if channel.report_schedule_count %}
-                                        <p class="text-xs leading-5 text-content-muted">{{ channel.report_schedule_count }} report schedule reference{{ '' if channel.report_schedule_count == 1 else 's' }}</p>
-                                    {% endif %}
+                                <div class="min-w-0 space-y-2">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        {{ table_label.metadata_label(channel.event_type_labels|length ~ ' Allowed Uses', icon='list-checks') }}
+                                        <button type="button"
+                                                data-kaori-dialog-open
+                                                data-dialog-target="notification-channel-policy-{{ channel.id }}"
+                                                aria-haspopup="dialog"
+                                                aria-controls="notification-channel-policy-{{ channel.id }}"
+                                                aria-label="View allowed uses and routing policy for {{ channel.name }}"
+                                                class="{{ table_ui.action_classes() }}">
+                                            View policy
+                                            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                    <p class="max-w-[225px] truncate text-xs leading-5 text-content-muted"
+                                       title="{{ channel.event_type_labels[0] if channel.event_type_labels else 'No allowed events' }}">
+                                        {{ channel.event_type_labels[0] if channel.event_type_labels else 'No allowed events' }}
+                                    </p>
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {% set test_tone = 'normal' if channel.status in ['Ready', 'Operational'] else ('warning' if channel.status in ['Validation Failed', 'Validation Required'] else 'unknown') %}
-                                <dl class="space-y-2">
-                                    <div>
-                                        <dt class="text-xs font-semibold leading-5 text-content-muted">Last Test</dt>
-                                        <dd class="mt-0.5 flex flex-wrap items-center gap-1.5">
-                                            {{ table_label.status_label('Passed' if channel.status in ['Ready', 'Operational'] else ('Failed' if channel.status == 'Validation Failed' else 'Required') , test_tone, size='compact') }}
-                                            <span class="text-xs leading-5 text-content-muted">{{ channel.last_tested_at|user_datetime("Never tested") if channel.last_tested_at else 'Never tested' }}</span>
-                                        </dd>
+                                <dl class="min-w-0 space-y-2">
+                                    <div class="space-y-0.5">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <dt class="text-xs font-medium leading-5 text-content-secondary">Last Test</dt>
+                                            <dd>{{ table_label.status_label('Passed' if channel.status in ['Ready', 'Operational'] else ('Failed' if channel.status == 'Validation Failed' else 'Required'), test_tone, size='compact') }}</dd>
+                                        </div>
+                                        <p class="truncate text-xs leading-5 tabular-nums text-content-muted"
+                                           title="{{ channel.last_tested_at|user_datetime('Never tested') if channel.last_tested_at else 'Never tested' }}">
+                                            {{ channel.last_tested_at|user_datetime('Never tested') if channel.last_tested_at else 'Never tested' }}
+                                        </p>
                                     </div>
-                                    <div>
-                                        <dt class="text-xs font-semibold leading-5 text-content-muted">Last Delivery</dt>
-                                        <dd class="mt-0.5 flex flex-wrap items-center gap-1.5">
-                                            {{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}
-                                            <span class="text-xs leading-5 text-content-muted">{{ channel.last_delivery_at|user_datetime("No delivery") if channel.last_delivery_at else 'No delivery yet' }}</span>
-                                        </dd>
+                                    <div class="border-t border-outline-subtle pt-1.5">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <dt class="text-xs font-medium leading-5 text-content-secondary">Last Delivery</dt>
+                                            <dd>{{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}</dd>
+                                        </div>
+                                        <p class="truncate text-xs leading-5 tabular-nums text-content-muted"
+                                           title="{{ channel.last_delivery_at|user_datetime('No delivery') if channel.last_delivery_at else 'No delivery yet' }}">
+                                            {{ channel.last_delivery_at|user_datetime('No delivery') if channel.last_delivery_at else 'No delivery yet' }}
+                                        </p>
                                     </div>
                                 </dl>
                             </td>
@@ -374,6 +364,10 @@
                 </tbody>
             </table>
         </div>
+        {# Native dialogs live outside the table and horizontal scroll area: opening a policy never expands a row. #}
+        {% for channel in payload.channels %}
+            {% include 'integrations/delivery/notification_channels/partials/_channel_policy_dialog.html' %}
+        {% endfor %}
         {{ table_registry.footer('notification_channels.index',
                 'notification-channel-registry',
                 'notification-channel-loading',

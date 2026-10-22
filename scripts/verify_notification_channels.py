@@ -29,6 +29,7 @@ def main() -> int:
     )
     channels_template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
+    channel_policy_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
     native_dialogs = read('app/static/js/native_dialogs.js')
     confirmation = read('app/templates/components/destructive_confirmation_modal.html')
     confirmation_script = read('app/static/js/destructive_confirmation_modal.js')
@@ -147,17 +148,27 @@ def main() -> int:
         and "'delivery_pagination': delivery_window" in service
         and 'payload.delivery_pagination' in delivery_template
         and 'No Notification Deliveries Recorded' in delivery_template,
-        'compact expandable channel registry': channels_template.count('scope="col"') == 6
-        and "channel.event_type_labels[:2]" in channels_template
-        and "allowed_use_count > 2" in channels_template
-        and '<details class="group min-w-0">' in channels_template
-        and 'aria-label="Show or hide all {{ allowed_use_count }} allowed uses for {{ channel.name }}"' in channels_template
+        'compact native policy-dialog registry': channels_template.count('scope="col"') == 6
+        and "channel.event_type_labels[0]" in channels_template
+        and '<details' not in channels_template
+        and 'data-dialog-target="notification-channel-policy-{{ channel.id }}"' in channels_template
+        and "table_label.metadata_label(channel.event_type_labels|length ~ ' Allowed Uses'" in channels_template
         and 'channel.event_type_labels|join(", ")' not in channels_template
+        and "partials/_channel_policy_dialog.html' %}" in channels_template
         and 'Delivery Evidence</th>' in channels_template
         and 'channel.last_tested_at|user_datetime' in channels_template
         and 'channel.last_delivery_at|user_datetime' in channels_template
         and 'channel.delete_blocked' in channels_template
-        and 'colspan="6"' in channels_template,
+        and 'colspan="6"' in channels_template
+        and "def _channel_event_type_groups(" in service
+        and "'event_type_groups': _channel_event_type_groups(event_type_labels)" in service,
+        'policy dialog native and secret-safe': 'data-kaori-native-dialog' in channel_policy_dialog
+        and 'overflow-y-auto overscroll-contain' in channel_policy_dialog
+        and 'channel.event_type_groups' in channel_policy_dialog
+        and 'for event_label in group.items' in channel_policy_dialog
+        and 'No Allowed Uses' in channel_policy_dialog
+        and 'credential_payload' not in channel_policy_dialog
+        and channel_policy_dialog.count('data-kaori-dialog-close') == 2,
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
         'platform ownership copy': 'platform delivery capability' in template.lower(),
         'delivery evidence deletion guard': 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle

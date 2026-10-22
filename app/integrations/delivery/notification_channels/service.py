@@ -910,6 +910,16 @@ def _delivery_view(delivery: NotificationDelivery) -> dict[str, Any]:
     }
 
 
+def _channel_event_type_groups(labels: list[str]) -> list[dict[str, Any]]:
+    """Group committed allowed-use labels for display without altering policy."""
+    grouped: dict[str, list[str]] = {}
+    for label in labels:
+        category, separator, event = label.partition(' · ')
+        key = category if separator and category else 'Other'
+        grouped.setdefault(key, []).append(event if separator and event else label)
+    return [{'label': key, 'items': values} for key, values in grouped.items()]
+
+
 def _channel_view(
     channel: NotificationChannel,
     *,
@@ -931,6 +941,7 @@ def _channel_view(
     else:
         tone = 'unknown'
     adapter = get_notification_provider(channel.provider_key)
+    event_type_labels = [event_type_label(value) for value in (channel.event_types or [])]
     last_delivery_label, last_delivery_tone = {
         'success': ('Delivered', 'normal'),
         'failed': ('Failed', 'warning'),
@@ -951,7 +962,8 @@ def _channel_view(
         'domains': list(channel.domains or []),
         'domain_labels': [domain_label(value) for value in (channel.domains or [])],
         'event_types': list(channel.event_types or []),
-        'event_type_labels': [event_type_label(value) for value in (channel.event_types or [])],
+        'event_type_labels': event_type_labels,
+        'event_type_groups': _channel_event_type_groups(event_type_labels),
         'status': status,
         'tone': tone,
         'test_message': channel.test_message or '',
