@@ -149,6 +149,30 @@ jobs:
   safety_summary: Explicitly approved PKI mounts only; missing and failed observations preserve immutable public certificate history.
   execution_summary: Collect Vault public issuer fingerprints and validity without private keys or certificate PEM persistence.
   recent_execution_summary: Latest public PKI issuer evidence reconciliations.
+- key: secrets_pki.pki.stored_certs.sync
+  name: Secrets & PKI Stored Certificates Sync
+  domain: Secrets & PKI
+  description: Collect only stored public certificates exposed by approved Vault PKI mounts; no_store and imported certificates are not enumerable.
+  icon: certificate
+  queue_name: inventory
+  workload_class: standard
+  job_type: secrets_pki_stored_certificates
+  operation: sync_secrets_pki_stored_certificates
+  scope_type: secrets_pki_pki_fleet
+  scope_key: all
+  configure_permission: integrations.manage
+  execute_permission: jobs.execute
+  domain_execute_permission: secrets_pki.sync
+  dispatcher_path: app.integrations.secrets_management.secrets_pki.stored_certificate_jobs:dispatch_stored_certificate_sync
+  context_builder_path: app.integrations.secrets_management.secrets_pki.stored_certificate_jobs:build_stored_certificate_sync_context
+  configuration_template: platform_operations/jobs/configuration/definitions/secrets_pki_stored_cert_sync.html
+  default_enabled: false
+  default_interval_minutes: 360
+  minimum_interval_minutes: 60
+  maximum_interval_minutes: 1440
+  safety_summary: Authenticated LIST certs only within approved PKI mounts. Above 64 serials blocks collection; never imply full issuance, revocation or delivery coverage.
+  execution_summary: Read bounded stored public certificate fingerprints/validity, without PEM or Secret/CA key storage.
+  recent_execution_summary: Latest bounded stored public certificate reconciliations.
 - key: artifact_registry.security.sync
   name: Artifact Registry Security Sync
   domain: Artifact Registry
