@@ -66,8 +66,11 @@ def stored_pki_certificate_readiness(*, instance: VaultInstance | None = None) -
     count = sum(int(row.observed_stored_certificate_count or 0) for row in committed) if committed else None
     unvalidated = any(source.integration_instance.readiness_status != 'ready' for source in sources)
     if not committed:
-        state, label = ('blocked', 'Vault Validation Required') if unvalidated else (
-            'not_collected', 'Stored Certificates Not Collected',
+        state, label = (
+            ('blocked', 'Vault Validation Required') if unvalidated
+            else ('blocked', 'Stored Certificate Collection Failed')
+            if any(item.status == 'failed' for item in matching)
+            else ('not_collected', 'Stored Certificates Not Collected')
         )
     elif unvalidated or any(row.status in {'failed', 'stale'} for row in matching):
         state, label = 'stale', 'Stale Stored Certificate Evidence'
