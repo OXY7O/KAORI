@@ -59,9 +59,12 @@ def assess_certificate_overlap(
         raise ValueError('Certificate correlation source size exceeds bounded read profile.')
     sources = {_fingerprint(fp) for fp in vault_fingerprints}
     targets = tuple(_fingerprint(fp) for fp in tls_fingerprints)
-    if vault_state in {'blocked', 'not_configured', 'not_collected'} or kubernetes_state in {
-        'blocked', 'not_configured', 'not_collected',
-    }:
+    if (
+        vault_state in {'blocked', 'not_configured', 'not_collected'}
+        or kubernetes_state in {'blocked', 'not_configured', 'not_collected'}
+        or (vault_state == 'stale' and not vault_fingerprints)
+        or (kubernetes_state == 'stale' and not tls_fingerprints)
+    ):
         return CertificateDeliveryOverlap(
             'source_unknown', vault_state, kubernetes_state,
             None, None, None, 'stored_vault_certs_vs_committed_kubernetes_tls',
