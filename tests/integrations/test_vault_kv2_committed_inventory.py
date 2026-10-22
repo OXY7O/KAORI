@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
-import pytest
 from cryptography.fernet import Fernet
 from flask import Flask
+import pytest
 
 from app.extensions.db import db
 from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
