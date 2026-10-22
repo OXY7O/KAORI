@@ -13,6 +13,7 @@ from app.integrations.observability.alert_source.providers.alertmanager.binding_
 from app.integrations.observability.alert_source.providers.alertmanager.client_factory import build_client
 from app.integrations.observability.alert_source.providers.alertmanager.exceptions import AlertmanagerError
 from app.integrations.observability.alert_source.providers.alertmanager.probes import discover_payload_capabilities
+from app.integrations.observability.alert_source.providers.alertmanager.vault_scope import require_vault_alert_scope
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding
 
@@ -42,6 +43,17 @@ def validate_binding(
             message='Configure an alert identity selector before validating this consumer binding.',
             commit=commit,
         )
+
+    if binding.asset_type == 'vault_instance':
+        try:
+            require_vault_alert_scope(asset_key=binding.asset_key, selector_json=binding.selector_json)
+        except ValueError:
+            return _persist_blocked(
+                binding,
+                profile_key=profile.profile_key,
+                message='Vault Alert Source binding is missing an eligible canonical instance or exact identity selector.',
+                commit=commit,
+            )
 
     filters = list(selector_filters(binding.selector_json))
     binding.validation_profile = profile.profile_key
@@ -104,7 +116,7 @@ def validate_binding(
         'optional_capabilities': list(profile.optional_capabilities),
         'available_capabilities': sorted(available_capabilities),
         'missing_required_capabilities': list(missing_required),
-        'sample_alert_names': _sample_alert_names(alerts),
+        'sample_alert_names': [] if binding.asset_type == 'vault_instance' else _sample_alert_names(alerts),
         'identity_observed': bool(alerts) if binding.asset_type != 'global' else True,
     }
     binding.last_validated_at = datetime.now(UTC)
