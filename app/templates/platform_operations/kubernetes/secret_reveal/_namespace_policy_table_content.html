@@ -17,7 +17,7 @@
                 <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
             </tr>
         </thead>
-        <tbody class="{{ table_ui.body_classes() }}" x-data="{ openEditor: null }">
+        <tbody class="{{ table_ui.body_classes() }}">
             {% for row in namespace_rows %}
                 {% set policy_tone = 'maintenance' if row.policy in ['approval_required', 'step_up'] else 'unknown' %}
                 {% set live_label = 'Available' if row.live_state == 'available' else 'Missing' if row.live_state == 'missing' else 'Unknown' %}
@@ -46,23 +46,26 @@
                         <button type="button"
                                 class="{{ table_ui.action_classes() }} ml-auto"
                                 data-kaori-namespace-policy-editor
+                                data-detail-toggle
+                                data-detail-target="secret-reveal-policy-form-{{ loop.index }}"
+                                data-detail-row="secret-reveal-policy-editor-{{ loop.index }}"
+                                data-detail-group="secret-reveal-policy-{{ selected_cluster.id }}"
+                                data-detail-open-label="Edit Policy"
+                                data-detail-close-label="Close Editor"
                                 aria-controls="secret-reveal-policy-editor-{{ loop.index }}"
                                 aria-label="Edit reveal policy for {{ row.namespace }}"
-                                :aria-expanded="openEditor === {{ loop.index }}"
-                                @click="openEditor = openEditor === {{ loop.index }} ? null : {{ loop.index }}">
+                                aria-expanded="false">
                             <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
-                            Edit Policy
+                            <span data-detail-toggle-label>Edit Policy</span>
                             <i data-lucide="chevron-down"
+                               data-detail-chevron
                                class="h-3.5 w-3.5 transition-transform"
-                               :class="openEditor === {{ loop.index }} ? 'rotate-180' : ''"
                                aria-hidden="true"></i>
                         </button>
                     </td>
                 </tr>
                 <tr id="secret-reveal-policy-editor-{{ loop.index }}"
-                    x-show="openEditor === {{ loop.index }}"
-                    x-cloak
-                    class="bg-surface-hover">
+                    class="hidden bg-surface-hover">
                     <td colspan="4" class="border-t border-outline-subtle px-5 py-4 sm:px-6">
                         <form method="post"
                               action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
@@ -71,6 +74,9 @@
                               hx-swap="outerHTML show:none"
                               hx-indicator="#secret-reveal-namespace-loading"
                               hx-disabled-elt="button[type='submit']"
+                              id="secret-reveal-policy-form-{{ loop.index }}"
+                              data-detail-static="true"
+                              data-open="false"
                               x-data="{ initial: '{{ row.policy }}', current: '{{ row.policy }}' }"
                               class="min-w-0">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -107,11 +113,15 @@
                                     <p class="mt-1 text-xs leading-5 text-content-muted">Available choices depend on cluster readiness and live Namespace state.</p>
                                 </div>
                                 <div class="flex min-w-0 items-center justify-start gap-2 lg:col-span-3 lg:justify-end">
-                                    <button type="button"
-                                            class="{{ table_ui.action_classes() }}"
-                                            @click="current = initial; openEditor = null">
-                                        Cancel
-                                    </button>
+                                    {% set cancel_page_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.page, per_page=namespace_pagination.per_page) %}
+                                    {% set cancel_workspace_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.page, per_page=namespace_pagination.per_page) %}
+                                    <a href="{{ cancel_page_url }}"
+                                       hx-get="{{ cancel_workspace_url }}"
+                                       hx-target="#secret-reveal-namespace-table-content"
+                                       hx-select="#secret-reveal-namespace-table-content"
+                                       hx-swap="innerHTML"
+                                       hx-indicator="#secret-reveal-namespace-loading"
+                                       class="{{ table_ui.action_classes() }}">Cancel</a>
                                     <button type="submit"
                                             title="Save {{ row.namespace }} policy"
                                             :disabled="current === initial"
