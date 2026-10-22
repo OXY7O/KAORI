@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -140,10 +140,9 @@ def test_secret_reveal_inbox_uses_tenant_style_composition_and_shared_deck():
     assert "current_app.extensions.get('kaori_secret_reveal_approval_work_inbox')" in queries
     assert 'secret_reveal_inbox = secret_inbox_provider(user_id=user_id)' in queries
     assert "secret_reveal_approval_inbox_items" in queries and panel
-    assert (
-        "inbox_unread_count += tenant_approval_inbox['pending_count'] + secret_reveal_inbox['pending_count']"
-        in queries
-    )
+    assert "tenant_approval_inbox['pending_count']" in queries
+    assert "secret_reveal_inbox['pending_count']" in queries
+    assert "secret_reveal_requester_inbox['ready_count']" in queries
     assert 'Protected Secret Reveal approval requests' in panel
     assert 'Review in Protected Secret Reveal' in panel
     assert 'hx-boost="false"' in panel
@@ -159,7 +158,7 @@ def test_requester_sees_only_committed_approved_unexpired_own_work(monkeypatch):
     queue = _configure(monkeypatch, allowed=True)
     record = queue.row
     record.approver = SimpleNamespace(display_label='Independent Reviewer')
-    record.expires_at = datetime.now(UTC)
+    record.expires_at = datetime.now(UTC) + timedelta(minutes=5)
     record.decided_at = datetime.now(UTC)
     # Replace the role check with the requester-specific capability.
     viewer = SimpleNamespace(
@@ -259,3 +258,82 @@ def test_requester_work_inbox_uses_shared_notification_deck_and_no_reveal_mutati
     assert 'from app.kubernetes.operations.secrets' not in queries
     assert "@permission_required('kubernetes_secrets.reveal')" in routes
     assert "secret_reveal_requester_items" in panel.split('No assigned work', 1)[0]
+
+
+def test_requester_active_work_requires_current_approved_owned_unexpired_state(monkeypatch):
+    now = datetime.now(UTC)
+    record = SimpleNamespace(
+        id='review-101',
+        secret_name='safe-test-secret',
+        namespace='testing',
+        cluster=SimpleNamespace(name='Kubernetes Test'),
+        ticket_reference='INC-TEST-101',
+        approver=None,
+        decided_at=now,
+        expires_at=now,
+        requester_user_id=42,
+        policy='approval_required',
+        status='approved',
+    )
+
+    class ScopedQueue(Queue):
+        def _matches(self):
+            for field, operator, value in self.conditions:
+                actual = getattr(self.row, field)
+                if operator == 'eq' and actual != value:
+                    return False
+                if operator == 'gt' and not actual > value:
+                    return False
+            return True
+
+        def count(self):
+            return int(self._matches())
+
+        def all(self):
+            return [self.row] if self._matches() else []
+
+    queue = ScopedQueue(record)
+    names = ['requester_user_id', 'policy', 'status', 'expires_at', 'decided_at', 'id']
+    monkeypatch.setattr(
+        approval_inbox, 'SecretRevealRequest',
+        SimpleNamespace(query=queue, **{key: Field(key) for key in names}),
+    )
+    viewer = SimpleNamespace(
+        is_active=True,
+        account_is_active=True,
+        deleted_at=None,
+        has_permission=lambda capability: capability == 'kubernetes_secrets.reveal',
+    )
+
+    class UserQuery:
+        def filter_by(self, **kwargs):
+            assert kwargs == {'id': 42}
+            return self
+
+        def first(self):
+            return viewer
+
+    monkeypatch.setattr(approval_inbox, 'User', SimpleNamespace(query=UserQuery()))
+    monkeypatch.setattr(
+        approval_inbox, 'url_for',
+        lambda endpoint, **kw: '/reveal?my_request_id=' + kw['my_request_id'],
+    )
+
+    # A committed status/expiry/ownership transition immediately removes the work item.
+    for status, owner, policy, expiry_delta_seconds, expected in (
+        ('approved', 42, 'approval_required', -60, 1),
+        ('pending', 42, 'approval_required', -60, 0),
+        ('denied', 42, 'approval_required', -60, 0),
+        ('revealed', 42, 'approval_required', -60, 0),
+        ('expired', 42, 'approval_required', -60, 0),
+        ('approved', 7, 'approval_required', -60, 0),
+        ('approved', 42, 'step_up', -60, 0),
+        ('approved', 42, 'approval_required', 60, 0),
+    ):
+        record.status = status
+        record.requester_user_id = owner
+        record.policy = policy
+        record.expires_at = now - timedelta(seconds=seconds_ago)
+        result = approval_inbox.get_secret_reveal_requester_work_inbox(user_id=42)
+        assert result['ready_count'] == expected
+        assert len(result['items']) == expected
