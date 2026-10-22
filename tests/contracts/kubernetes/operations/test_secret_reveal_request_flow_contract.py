@@ -164,7 +164,9 @@ def test_requester_approval_notification_opens_exact_owned_request_and_preserves
 
     # The notification targets one committed request; no native registry fragment.
     decision = routes.split('def decide_secret_reveal_request(', 1)[1]
-    requester_notification = decision.split('create_notification(', 1)[1].split('metadata=_reveal_request_metadata(record)', 1)[0]
+    requester_notification = decision.split('create_notification(', 1)[1].split(
+        'metadata=_reveal_request_metadata(record)', 1
+    )[0]
     assert "my_request_id=record.id" in requester_notification
     assert "_anchor='my-secret-reveal-requests'" not in requester_notification
     assert "my_request_id=request.args.get('my_request_id', '')" in routes
@@ -173,7 +175,9 @@ def test_requester_approval_notification_opens_exact_owned_request_and_preserves
     assert 'my_request_id: str = \'\'' in service
     assert 'SecretRevealRequest.query.filter_by(requester_user_id=user_id)' in service
     assert 'my_query = my_query.filter(SecretRevealRequest.id == focus_id)' in service
-    assert service.index('query.filter_by(requester_user_id=user_id)') < service.index('SecretRevealRequest.id == focus_id')
+    assert service.index('query.filter_by(requester_user_id=user_id)') < service.index(
+        'SecretRevealRequest.id == focus_id'
+    )
     assert "'my_reveal_focus_id': focus_id" in service
     assert 'my_request_id=my_reveal_focus_id' in table
 
@@ -189,5 +193,5 @@ def test_requester_approval_notification_opens_exact_owned_request_and_preserves
     assert 'value="{{ my_reveal_focus_id }}"' in step_up
     assert "linked_request_id = (request.form.get('my_request_id') or '').strip()" in routes
     assert "if len(linked_request_id) > 80:" in routes
-    assert 'return redirect(\n        return_url\n    )' in routes
+    assert 'return redirect(return_url)' in routes
     assert '**Requester decision deep links:**' in docs

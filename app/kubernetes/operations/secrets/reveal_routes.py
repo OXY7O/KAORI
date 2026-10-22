@@ -404,9 +404,7 @@ def reauthenticate_secret_reveal():
             metadata={'secret_value_recorded': False},
             queue_feedback=True,
         )
-        return redirect(
-            return_url
-        )
+        return redirect(return_url)
 
     password = request.form.get('password') or ''
     if current_user.is_external:
@@ -453,9 +451,7 @@ def reauthenticate_secret_reveal():
             },
             queue_feedback=True,
         )
-    return redirect(
-        return_url
-    )
+    return redirect(return_url)
 
 
 @permission_required('kubernetes_secrets.approve_reveal')
