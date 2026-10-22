@@ -173,7 +173,7 @@
                                     {% if delivery_overlap.controller_owner_reference_status == 'candidate_observed' %}
                                         Kubernetes reports a supported controller owner reference for a matching TLS Secret.
                                     {% elif delivery_overlap.controller_owner_reference_status == 'not_observed' %}
-                                        No supported controller owner reference was observed in the qualified source.
+                                        No supported ExternalSecret or Certificate owner reference was observed in the qualified source.
                                     {% elif delivery_overlap.controller_owner_reference_status == 'not_applicable' %}
                                         No matching TLS Secret is available for controller owner qualification.
                                     {% else %}
