@@ -44,8 +44,8 @@ class SecretProviderRepresentation(db.Model):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     secret_identity_id: Mapped[str] = mapped_column(
-        ForeignKey('secrets_pki_secret_identities.id', ondelete='RESTRICT'),
-        String(36), nullable=False, index=True,
+        String(36), ForeignKey('secrets_pki_secret_identities.id', ondelete='RESTRICT'),
+        nullable=False, index=True,
     )
     integration_instance_id: Mapped[int] = mapped_column(
         ForeignKey('integration_instances.id', ondelete='RESTRICT'),
