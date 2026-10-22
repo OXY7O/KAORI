@@ -464,7 +464,7 @@ def test_namespace_policies_use_canonical_table_geometry_and_scoped_loading() ->
     assert namespace.count('id="secret-reveal-namespace-loading"') == 1
     for primitive in ('block_classes()', 'block_header_classes()', 'block_icon_classes()',
                       'block_title_classes()', 'block_description_classes()',
-                      'loading_bar_classes()', 'filter_bar_classes()', "action_classes(size='header')"):
+                      'loading_bar_classes()', 'filter_bar_classes()', 'action_classes()'):
         assert 'table_ui.' + primitive in namespace
     assert 'registry_ui.clear_filters_action(' in namespace
     assert 'hx-target="#secret-reveal-namespace-table-content"' in namespace
@@ -544,7 +544,7 @@ def test_namespace_live_source_refresh_and_clear_filters_have_distinct_owners() 
     assert 'class="mb-4 flex min-w-0 justify-end"' in section
     assert 'refresh_namespace=1' in section[source:block]
     assert 'hx-target="#secret-reveal-cluster-workspace"' in section[source:block]
-    assert 'table_ui.action_classes(size=\'header\')' in section[source:block]
+    assert 'table_ui.action_classes()' in section[source:block]
     assert 'refresh_namespace=1' not in section[block:]
     assert "registry_ui.clear_filters_action(" in section[block:loading]
     assert "{% if namespace_filters.query or namespace_filters.policy != 'all' %}" not in section
@@ -625,4 +625,20 @@ def test_cluster_prerequisites_use_one_responsive_checklist_surface() -> None:
     assert 'hx-disabled-elt="button[type=\'submit\']"' in workspace
     assert 'Least-privilege Kubernetes RBAC remains the final authorization boundary' in workspace
     assert 'sm:grid-cols-2 xl:grid-cols-4' in workspace
+
+
+
+def test_namespace_policy_table_actions_use_public_shared_macro_signature() -> None:
+    """Regression: unsupported size kwarg in table wrapper caused workspace HTTP 500."""
+    section = (ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html').read_text()
+    shared_table = (ROOT / 'app/templates/components/table.html').read_text()
+
+    # The public table wrapper only supports destructive=..., not size=...
+    assert 'macro action_classes(destructive=false)' in shared_table
+    assert section.count('table_ui.action_classes()') == 2
+    assert 'table_ui.action_classes(size=' not in section
+    assert 'registry_ui.clear_filters_action(' in section
+    assert 'refresh_namespace=1' in section
+    assert 'id="secret-reveal-namespace-section"' in section
+    assert 'id="secret-reveal-live-source"' in section
 

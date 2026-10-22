@@ -25,7 +25,7 @@
            hx-target="#secret-reveal-cluster-workspace"
            hx-swap="outerHTML show:none"
            hx-indicator="#secret-reveal-namespace-loading"
-           class="{{ table_ui.action_classes(size='header') }} shrink-0">
+           class="{{ table_ui.action_classes() }} shrink-0">
             <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
             Refresh
         </a>
@@ -54,7 +54,7 @@
             {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
             {{ registry_ui.clear_filters_action(
                 namespace_clear_href,
-                table_ui.action_classes(size='header'),
+                table_ui.action_classes(),
                 hx_get=namespace_clear_url,
                 target='#secret-reveal-namespace-section',
                 indicator='#secret-reveal-namespace-loading',
