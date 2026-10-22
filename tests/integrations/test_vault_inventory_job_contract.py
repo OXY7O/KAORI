@@ -77,3 +77,93 @@ def test_only_ready_enabled_vaults_with_explicit_scopes_are_eligible(monkeypatch
     assert sync_jobs.build_vault_inventory_targets() == [
         {'integration_instance_id': 1}, {'integration_instance_id': 5},
     ]
+
+
+def test_malformed_mount_configuration_is_not_eligible(monkeypatch):
+    identity = SimpleNamespace(
+        id=91, integration_type='secrets_pki', provider_key='vault',
+        enabled=True, lifecycle_status='active', readiness_status='ready',
+    )
+    instance = SimpleNamespace(id=1, integration_instance=identity, kv2_mounts=['../unsafe'])
+
+    class Query:
+        def order_by(self, *_):
+            return self
+
+        def limit(self, *_):
+            return self
+
+        def all(self):
+            return [instance]
+
+    monkeypatch.setattr(sync_jobs, 'VaultInstance', SimpleNamespace(
+        id=SimpleNamespace(asc=lambda: None), query=Query(),
+    ))
+    assert sync_jobs.build_vault_inventory_targets() == []
+
+
+def test_one_successful_mount_and_one_failed_mount_is_partial(monkeypatch):
+    from app.integrations.secrets_management.secrets_pki import tasks
+
+    contexts = []
+
+    class FakeContext:
+        def __init__(self, *_):
+            contexts.append(self)
+            self.status = None
+            self.partial = False
+
+        def start(self, **kwargs):
+            return None
+
+        def checkpoint(self, **kwargs):
+            return None
+
+        def fail(self, *args, **kwargs):
+            self.status = 'failed'
+
+        def succeed(self, *, result_summary, result_type, partial):
+            self.status = 'succeeded'
+            self.partial = partial
+
+        def canceled(self):
+            self.status = 'canceled'
+
+    identity = SimpleNamespace(
+        integration_type='secrets_pki', provider_key='vault', enabled=True,
+        lifecycle_status='active', readiness_status='ready',
+    )
+    instance = SimpleNamespace(integration_instance=identity, kv2_mounts=['first', 'second'])
+    monkeypatch.setattr(tasks, 'VaultInstance', SimpleNamespace(
+        query=SimpleNamespace(
+            filter_by=lambda **kwargs: SimpleNamespace(first=lambda: instance)
+        ),
+    ))
+    monkeypatch.setattr(tasks, 'JobExecutionContext', FakeContext)
+    monkeypatch.setattr(tasks, 'build_client', lambda _instance: object())
+    monkeypatch.setattr(tasks, 'collect_kv2_metadata', lambda _client, *, mount: (
+        SimpleNamespace(mount=mount)
+        if mount == 'first'
+        else (_ for _ in ()).throw(ValueError('simulated provider failure'))
+    ))
+    monkeypatch.setattr(tasks, 'commit_kv2_inventory', lambda *_: SimpleNamespace(
+        observed_secret_count=2,
+    ))
+    failed_scopes = []
+    monkeypatch.setattr(tasks, 'mark_kv2_inventory_failed', lambda instance_id, mount: (
+        failed_scopes.append((instance_id, mount))
+    ))
+    monkeypatch.setattr(tasks, 'db', SimpleNamespace(
+        session=SimpleNamespace(rollback=lambda: None),
+    ))
+
+    result = tasks.sync_vault_inventory_task.run(
+        targets=[{'integration_instance_id': 91}],
+        requested_by_user_id=3,
+    )
+    assert result['status'] == 'partial'
+    assert result['committed_mounts'] == 1
+    assert result['observed_secrets'] == 2
+    assert failed_scopes == [(91, 'second')]
+    assert contexts[0].status == 'succeeded'
+    assert contexts[0].partial is True
