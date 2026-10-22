@@ -255,3 +255,48 @@ def test_verify_session_does_not_overscroll_kaori_main_viewport(page: Page) -> N
     assert result["y"] < 750
     assert result["bodyY"] == 0
     assert urlsplit(page.url).fragment == "reveal-session-step-up"
+
+
+
+def test_my_requests_owns_temporary_reveal_and_clears_on_tab_change(page: Page) -> None:
+    """One-time values are visible only in My Requests and cleared on leaving it."""
+    page.set_content(
+        """
+        <main data-kaori-main-scroll style="height:500px;overflow-y:auto">
+          <div data-secret-reveal-workspace>
+            <section data-secret-reveal-panel="mine">
+              <div id="reveal-session-step-up">Verified</div>
+              <div id="reveal-value-output" hx-history="false"
+                   role="region" aria-label="One-Time Secret Reveal Result"
+                   tabindex="-1"></div>
+              <section id="my-secret-reveal-requests">My Reveal Requests</section>
+            </section>
+          </div>
+        </main>
+        """
+    )
+    page.add_script_tag(path=str(ROOT / "app/static/js/secret_reveal_value.js"))
+    page.add_script_tag(path=str(ROOT / "app/static/js/secret_reveal_workspace.js"))
+    page.evaluate(
+        """() => {
+            const host = document.querySelector('#reveal-value-output');
+            host.innerHTML = '<section data-protected-value-panel data-expires-in="60">' +
+                '<span data-protected-value-countdown>60s</span>' +
+                '<pre data-protected-value>synthetic-test-value</pre>' +
+                '</section>';
+            document.dispatchEvent(new CustomEvent('htmx:afterSwap', { detail: { target: host } }));
+            document.dispatchEvent(new CustomEvent('htmx:load', { detail: { elt: host } }));
+        }"""
+    )
+    expect(page.locator("#reveal-value-output")).to_be_focused()
+    expect(page.locator("[data-protected-value]")).to_have_text("synthetic-test-value")
+    assert page.locator("#reveal-value-output").get_attribute("hx-history") == "false"
+    page.evaluate(
+        """() => window.dispatchEvent(new CustomEvent('secret-reveal:tab-changed', {
+            detail: { tab: 'new' }
+        }))"""
+    )
+    expect(page.locator("[data-protected-value]")).to_have_count(0)
+    expect(page.locator("[data-protected-value-panel]")).to_contain_text(
+        "The one-time Secret value was cleared when leaving My Requests."
+    )
