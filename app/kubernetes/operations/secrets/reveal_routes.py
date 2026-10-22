@@ -294,13 +294,9 @@ def request_secret_reveal():
             queue_feedback=True,
         )
         _notify_secret_reveal_approvers(result.request_record)
-        return redirect(
-            url_for(
-                'kubernetes_operations.reveal_secret',
-                reveal_view='mine',
-                _anchor='my-secret-reveal-requests',
-            )
-        )
+        # A native fragment jump to the full-height registry can overscroll
+        # the KAORI app shell before the content-tab controller boots.
+        return redirect(url_for('kubernetes_operations.reveal_secret', reveal_view='mine'))
     except ActiveRevealRequestExists as exc:
         rollback_secret_reveal_transaction()
         existing = exc.request_record
@@ -328,7 +324,16 @@ def request_secret_reveal():
             metadata=metadata,
             queue_feedback=True,
         )
-        return redirect(action_url)
+        return redirect(
+            url_for(
+                'kubernetes_operations.reveal_secret',
+                cluster_id=existing.cluster_id,
+                namespace=existing.namespace,
+                secret_name=existing.secret_name,
+                key_name=existing.key_name,
+                reveal_view='mine',
+            )
+        )
     except ValueError as exc:
         _record_secret_activity(
             event_type='kubernetes_secret_reveal_request_failed',
