@@ -37,6 +37,7 @@ from app.artifact_registry.presentation import (
 )
 from app.artifact_registry.presentation_common import _providers as _active_registry_sources
 from app.artifact_registry.presentation_topology import build_dependency_topology
+from app.artifact_registry.security.cve_impact import build_cve_runtime_impact
 from app.artifact_registry.security.job_adapter import (
     build_registry_security_sync_state,
     get_registry_security_sync_job,
@@ -249,6 +250,18 @@ def _security_response(kind: str) -> ResponseReturnValue:
 @permission_required('artifact_registry.view')
 def security() -> ResponseReturnValue:
     return _security_response('vulnerabilities')
+
+
+@artifact_registry_bp.get('/security/cve/<string:cve_id>/impact')
+@permission_required('artifact_registry.view')
+def security_cve_impact(cve_id: str) -> ResponseReturnValue:
+    impact = build_cve_runtime_impact(
+        cve_id,
+        finding_page=request.args.get('finding_page', 1, type=int) or 1,
+        runtime_page=request.args.get('runtime_page', 1, type=int) or 1,
+        per_page=request.args.get('per_page', 5, type=int) or 5,
+    )
+    return render_template('artifact_registry/security_cve_impact.html', impact=impact)
 
 
 @artifact_registry_bp.get('/security/supply-chain')
