@@ -75,6 +75,7 @@ from app.models.resolver import (
 )
 from app.models.runtime import IntegrationRuntimeObservation
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
+from app.models.secrets_pki_pki import PKIIssuerCollectionState, PKIIssuerIdentity, PKIPublicCertificateObservation
 from app.models.secrets_pki import (
     SecretIdentity,
     SecretInventoryCollectionState,
@@ -258,6 +259,9 @@ __all__ = [
     'ReportTemplate',
     'ReportSchedule',
     'ReportScheduleRun',
+    'PKIIssuerCollectionState',
+    'PKIIssuerIdentity',
+    'PKIPublicCertificateObservation',
     'SecretIdentity',
     'SecretInventoryCollectionState',
     'SecretProviderRepresentation',
