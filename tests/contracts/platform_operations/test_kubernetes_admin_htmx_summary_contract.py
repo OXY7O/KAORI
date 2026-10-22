@@ -924,3 +924,35 @@ def test_shared_numeric_page_links_render_valid_routes_and_filters() -> None:
             assert href_args[key] == [str(value)]
         assert int(href_args['page'][0]) in {1, 3, 4, 5}
 
+
+
+def test_numeric_pagination_renderer_keeps_canonical_link_source_on_repeated_htmx_events() -> None:
+    """Regression for inert 1–5 links after htmx:afterSwap + htmx:afterSettle."""
+    script = (ROOT / 'app/static/js/pagination.js').read_text()
+    browser_test = (ROOT / 'tests/ui/test_browser_smoke.py').read_text()
+    macro = (ROOT / 'app/templates/components/pagination.html').read_text()
+    layout = (ROOT / 'app/templates/layouts/app.html').read_text()
+
+    # The original link must survive replacement of all generated children:
+    # both lifecycle events subsequently redraw the numeric pagination.
+    assert 'const sourceLinks = new WeakMap()' in script
+    assert 'sourceLinks.set(container, original)' in script
+    assert 'return sourceLinks.get(container) || null' in script
+    assert "a[hx-get]:not([data-kaori-generated-page])" in script
+    assert "link.setAttribute('hx-get', replacePage(hxGet, page, pageParam))" in script
+    assert "'hx-select'," in script
+    assert "'hx-push-url'," in script
+    assert "document.addEventListener('htmx:afterSwap', renderAfterHtmxSwap)" in script
+    assert "document.addEventListener('htmx:afterSettle', renderAfterHtmxSwap)" in script
+    assert "window.htmx.process(root)" in script
+    assert 'data-kaori-generated-page' in script
+    assert 'data-kaori-numeric-pagination' in macro
+    assert "filename='js/pagination.js'" in layout
+
+    # Browser regression exercises two renders, a real click, and a new
+    # server pagination window; not just static href attributes.
+    assert 'test_numeric_pagination_survives_repeated_htmx_renders' in browser_test
+    assert "window.paginationTestClick" in browser_test
+    assert 'htmx:afterSwap' in browser_test
+    assert 'htmx:afterSettle' in browser_test
+
