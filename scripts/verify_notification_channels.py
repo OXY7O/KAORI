@@ -150,7 +150,7 @@ def main() -> int:
         and 'payload.delivery_pagination' in delivery_template
         and 'No Notification Deliveries Recorded' in delivery_template,
         'desktop-fit Channel Inventory and deletion guidance': "table_ui.table_classes('w-full min-w-[980px] table-fixed lg:min-w-0')" in channels_template
-        and 'Why locked?' in channels_template
+        and 'Locked' in channels_template
         and 'channel.delete_blocked' in channels_template,
         'compact native policy-dialog registry': channels_template.count('scope="col"') == 6
         and "channel.event_type_labels[0]" in channels_template
@@ -177,13 +177,20 @@ def main() -> int:
         and 'grid items-start gap-3 md:grid-cols-2' not in channel_policy_dialog
         and "table_ui.table_classes('min-w-[1100px]')" in channels_template
         and 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channels_template
-        and 'Why locked?' in channels_template
+        and 'Locked' in channels_template
         and 'flex flex-wrap justify-end gap-1.5' in channels_template
         and 'data-kaori-native-dialog' in channel_delete_blockers_dialog
         and 'for schedule_name in channel.report_schedule_names' in channel_delete_blockers_dialog
         and "'report_schedule_names': list(usage.report_schedule_names)" in service
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
         and 'credential_payload' not in channel_delete_blockers_dialog,
+        'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in channels_template
+        and 'bg-status-warning-soft' in channels_template
+        and 'Channel already disabled' in channel_delete_blockers_dialog
+        and 'both dependency counts are zero' in channel_delete_blockers_dialog
+        and 'table_label.status_label(\'Locked\', \'warning\'' in channel_delete_blockers_dialog
+        and 'Automatic delivery is already disabled.' in channel_delete_blockers_dialog
+        and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle,
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
         'platform ownership copy': 'platform delivery capability' in template.lower(),
         'delivery evidence deletion guard': 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle
