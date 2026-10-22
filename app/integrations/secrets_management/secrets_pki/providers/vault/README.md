@@ -35,7 +35,7 @@ Vault client tokens live in worker process memory for the probe and are not pers
 in IntegrationInstance, JobExecution, runtime snapshots, or logs.
 
 Test Connection checks Vault health, AppRole login and lookup-self. It does not
-mark the provider ready. Full Validation is queued through the existing
+mark the provider ready. Full Validation uses the versioned KAORI compatibility policy snapshot (2026-09-19): v2.1.x is current-qualified; v2.2+ requires a separately approved refreshed profile and is explicitly degraded/unverified rather than silently reported as ready.\n\nFull Validation is queued through the existing
 integration-validation worker; it checks the token and optional sys/mounts
 metadata capability. A missing sys/mounts permission is an independently
 qualified capability gap, not proof that Vault API is unavailable. Runtime Refresh
