@@ -70,6 +70,14 @@ def main() -> int:
         and "('overview', 'Overview', 'layout-dashboard'" in template
         and "('channels', 'Channels', 'send'" in template
         and "('delivery', 'Delivery Activity', 'history'" in template,
+        'integrated notification navigation': 'components/workspace_tabs.html' in delivery_template
+        and 'workspace_tabs.render_navigation' in delivery_template
+        and 'framed_workspace_tabs' not in delivery_template
+        and delivery_template.index('workspace_tabs.render_navigation') < delivery_template.index('page_hero.shell_classes()')
+        and "hx_target='#notification-channels-workspace'" in delivery_template
+        and "hx_select='#notification-channels-workspace'" in delivery_template
+        and delivery_template.count('section_intro.render(') == 3,
+        'delivery journal loading order': delivery_template.index("loading_bar.render('notification-delivery-loading'") < delivery_template.index("table_registry.filter_form('notification_channels.index'"),
         'delivery journal surface': 'query = NotificationDelivery.query' in delivery_registry
         and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
         and journal_order in delivery_registry

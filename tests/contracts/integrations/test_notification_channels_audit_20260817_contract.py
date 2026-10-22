@@ -15,7 +15,18 @@ def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
     assert "('overview', 'Overview', 'layout-dashboard'" in page
     assert "('channels', 'Channels', 'send'" in page
     assert "('delivery', 'Delivery Activity', 'history'" in page
-    assert 'framed_workspace_tabs.render_navigation' in page
+    assert 'components/workspace_tabs.html' in page
+    assert 'workspace_tabs.render_navigation' in page
+    assert 'framed_workspace_tabs' not in page
+    assert "hx_target='#notification-channels-workspace'" in page
+    assert "hx_select='#notification-channels-workspace'" in page
+    assert page.index('workspace_tabs.render_navigation') < page.index('page_hero.shell_classes()')
+    assert page.count('section_intro.render(') == 3
+    for heading in ('Notification Delivery Overview', 'Channel Configuration & Registry', 'Committed Delivery Evidence'):
+        assert heading in page
+    assert page.index("loading_bar.render('notification-delivery-loading'") < page.index(
+        "table_registry.filter_form('notification_channels.index'"
+    )
     assert 'id="notification-channels-workspace"' in page
 
 

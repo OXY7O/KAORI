@@ -170,3 +170,29 @@ python scripts/verify_ui_style.py
 ```
 
 Repository-wide `verify_ui_style.py` may still report explicitly tracked debt in unrelated domains such as Notifications or Reports. The Integration lock does not permit new Integration debt.
+
+## Notification Channels Workspace Navigation — scoped approval (#2662, 2026-10-22)
+
+The Notification Channels delivery capability retains its three server-owned
+workspaces (**Overview**, **Channels**, **Delivery Activity**) and all existing
+provider governance, RBAC, credential secrecy, journal, retry/deduplication,
+HTMX registry filtering and default-five pagination. The operator-approved
+page-hierarchy alignment deliberately replaces its formerly **framed tabs below
+Hero** with shared **Integrated Workspace Tabs above Hero**, matching the
+level-3 navigation pattern elsewhere in KAORI. The tab selector, Hero and active
+view share one server-rendered HTMX replacement boundary, retaining ordinary
+anchor fallback and `?tab=` deep links.
+
+Each view uses the canonical `components/section_intro.html` title and concise
+description **outside** its content cards, following the Kubernetes Inventory
+presentation contract. Delivery Activity uses the committed journal and its
+existing loading → filters → table → pagination primitives, not a live provider
+availability check. Transport acceptance must not be presented as human receipt.
+
+This is a **specific, documented exception to the prior Notification Channels
+framed-workspace presentation**, not permission to change other locked
+Integration provider details or invent a new tab/section component. Regression
+coverage lives in the existing Notification Channels contract test and verifier.
+Review branch / DevContainer UAT only until executable validation, keyboard,
+responsive light/dark checks, and operator acceptance are recorded. No release
+or production provider mutation is implied.
