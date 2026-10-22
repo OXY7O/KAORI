@@ -101,7 +101,6 @@ def test_my_reveal_requests_use_approved_header_loading_filter_and_result_count(
 
 def test_my_reveal_request_actions_preserve_approval_and_one_time_security() -> None:
     source = (ROOT / 'app/templates/kubernetes/operations/secrets/_reveal_request_status.html').read_text()
-    actions = (ROOT / 'app/templates/components/action_button.html').read_text()
     shared_table = (ROOT / 'app/templates/components/table.html').read_text()
 
     assert 'step_up_active' in source
@@ -116,9 +115,9 @@ def test_my_reveal_request_actions_preserve_approval_and_one_time_security() -> 
     assert 'hx-target="#reveal-value-output"' in source
     assert 'hx-disabled-elt="this"' in source
     assert 'name="csrf_token"' in source
-    assert 'action_button.classes(\'primary\')' in source
+    assert 'data-reveal-once-action' in source
+    assert 'class="{{ table_ui.action_classes() }}"' in source
     assert 'table_ui.action_classes()' in source
-    assert 'macro classes(' in actions
     assert 'macro action_classes(' in shared_table
     assert 'data-reveal-step-up-trigger' in source
     assert "reveal_view='mine', _anchor='reveal-session-step-up'" in source

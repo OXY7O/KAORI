@@ -2,6 +2,7 @@
     const rootSelector = '[data-secret-reveal-workspace]'
     const panelSelector = '[data-secret-reveal-panel]'
     const stepUpTriggerSelector = '[data-reveal-step-up-trigger]'
+    const approvedRequestsTriggerSelector = '[data-reveal-approved-requests-trigger]'
     let pollTimer = null
 
     const activePanel = (root) => [...root.querySelectorAll(panelSelector)].find((panel) => !panel.hidden) || null
@@ -34,6 +35,7 @@
         if (main) {
             const limit = Math.max(0, main.scrollHeight - main.clientHeight)
             const next = Math.max(0, Math.min(limit, main.scrollTop + bounds.top - viewport.top - padding))
+            if (Math.abs(main.scrollTop - next) < 1) return
             main.scrollTo({ top: next, behavior: 'auto' })
         } else {
             target.scrollIntoView({ behavior: 'auto', block: 'nearest' })
@@ -66,6 +68,36 @@
         focusTarget.focus({ preventScroll: true })
     }
 
+    // The verified-session CTA must not use the browser's native hash scroll:
+    // the table can be taller than the viewport, and native anchoring may move
+    // the surrounding shell. Focus a row-sized action within KAORI's main scroller.
+    const navigateToApprovedRequest = (event) => {
+        if (!(event.target instanceof Element) || event.defaultPrevented || event.button !== 0) return
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+
+        const link = event.target.closest(approvedRequestsTriggerSelector)
+        if (!link) return
+
+        const workspace = link.closest(rootSelector)
+        const panel = workspace?.querySelector('[data-secret-reveal-panel="mine"]')
+        if (!panel || panel.hidden) return
+
+        // Prefer a short, focusable action over the full-height registry card.
+        // If the currently filtered page has no approved row, show its header.
+        const target = panel.querySelector('[data-reveal-once-action]')
+            || panel.querySelector('#my-secret-reveal-requests')
+        if (!target) return
+
+        event.preventDefault()
+        const url = new URL(window.location.href)
+        url.searchParams.set('reveal_view', 'mine')
+        url.hash = 'my-secret-reveal-requests'
+        window.history.replaceState(window.history.state, '', url)
+
+        showWithinMainScroll(target)
+        target.focus({ preventScroll: true })
+    }
+
     // Reveal responses are ephemeral; guide the operator to the protected
     // result in My Requests without moving Secret bytes into toast/history.
     const focusRevealResult = (event) => {
@@ -95,6 +127,7 @@
         window.requestAnimationFrame(() => document.querySelectorAll(rootSelector).forEach(schedulePolling))
     })
     document.addEventListener('click', navigateToStepUp)
+    document.addEventListener('click', navigateToApprovedRequest)
     document.addEventListener('htmx:afterSwap', focusRevealResult)
     document.addEventListener('htmx:load', (event) => boot(event.detail?.elt || document))
 

@@ -300,3 +300,91 @@ def test_my_requests_owns_temporary_reveal_and_clears_on_tab_change(page: Page) 
     expect(page.locator("[data-protected-value-panel]")).to_contain_text(
         "The one-time Secret value was cleared when leaving My Requests."
     )
+
+
+
+def test_continue_to_approved_requests_scrolls_only_main_and_focuses_action(page: Page) -> None:
+    """Do not native-anchor-scroll the whole KAORI shell to the tall registry."""
+    html = """
+        <!doctype html><html><head><style>
+            html, body { margin:0; height:100%; overflow:hidden; }
+            [data-kaori-main-scroll] { height:360px; overflow-y:auto; }
+            .spacer { height:750px; }
+        </style></head><body>
+          <main data-kaori-main-scroll>
+            <div data-secret-reveal-workspace>
+              <section data-secret-reveal-panel="mine">
+                <a data-reveal-approved-requests-trigger
+                   href="#my-secret-reveal-requests">Continue to Approved Requests</a>
+                <div class="spacer"></div>
+                <section id="my-secret-reveal-requests" tabindex="-1">
+                  <button type="submit" data-reveal-once-action>Reveal Once</button>
+                </section>
+              </section>
+            </div>
+          </main>
+        </body></html>
+    """
+    page.route(
+        "http://kaori.test/**",
+        lambda route: route.fulfill(status=200, content_type="text/html", body=html),
+    )
+    page.goto("http://kaori.test/reveal?reveal_view=mine&my_page=2")
+    page.add_script_tag(path=str(ROOT / "app/static/js/secret_reveal_workspace.js"))
+    page.evaluate(
+        """() => {
+            const main = document.querySelector('[data-kaori-main-scroll]');
+            window.approvedScrollCalls = [];
+            const original = main.scrollTo.bind(main);
+            main.scrollTo = (opts) => {
+                window.approvedScrollCalls.push(opts);
+                original(opts);
+            };
+        }"""
+    )
+    page.get_by_role("link", name="Continue to Approved Requests").click()
+    expect(page.locator("[data-reveal-once-action]")).to_be_focused()
+    first = page.evaluate(
+        """() => {
+            const main = document.querySelector('[data-kaori-main-scroll]');
+            return {
+                scrollTop: main.scrollTop,
+                maxScroll: main.scrollHeight - main.clientHeight,
+                documentScroll: document.documentElement.scrollTop,
+                calls: window.approvedScrollCalls
+            };
+        }"""
+    )
+    assert len(first["calls"]) == 1
+    assert first["calls"][0]["behavior"] == "auto"
+    assert 0 < first["scrollTop"] <= first["maxScroll"]
+    assert first["documentScroll"] == 0
+    assert parse_qs(urlsplit(page.url).query)["my_page"] == ["2"]
+    assert urlsplit(page.url).fragment == "my-secret-reveal-requests"
+
+    # Clicking the CTA again while its target is visible must not scroll.
+    # Use the DOM click to avoid Playwright scrolling the link itself into view.
+    page.evaluate(
+        """() => document.querySelector('[data-reveal-approved-requests-trigger]').click()"""
+    )
+    expect(page.locator("[data-reveal-once-action]")).to_be_focused()
+    assert page.evaluate("window.approvedScrollCalls.length") == 1
+
+    # HTMX may replace My Requests and remove all approved rows. The CTA
+    # must focus the registry header instead of jumping a full-screen card.
+    page.evaluate(
+        """() => {
+            document.querySelector('[data-reveal-once-action]').remove();
+            document.querySelector('[data-reveal-approved-requests-trigger]').click();
+        }"""
+    )
+    expect(page.locator("#my-secret-reveal-requests")).to_be_focused()
+    final = page.evaluate(
+        """() => {
+            const main = document.querySelector('[data-kaori-main-scroll]');
+            return { y: main.scrollTop, maxY: main.scrollHeight - main.clientHeight,
+                     bodyY: document.documentElement.scrollTop };
+        }"""
+    )
+    assert 0 <= final["y"] <= final["maxY"]
+    assert final["bodyY"] == 0

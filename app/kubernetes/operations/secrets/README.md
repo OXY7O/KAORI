@@ -118,7 +118,14 @@ fallback; for external identity without a password field it focuses the guidance
 panel. The action is offered only with Reveal capability, and does not submit
 credentials or grant access itself. Once the session is verified, the Step-Up
 panel directs the user to an **Approved** row in **My Requests** and its
-**Reveal Once** action. The one-time Secret response is rendered in a
+**Reveal Once** action. The **Continue to Approved Requests** link delegates to
+the existing Secret Reveal workspace controller; it focuses the first visible
+approved-row action (or the My Requests registry header when there is none)
+and uses bounded main-container scroll instead of browser-native anchor
+scrolling, preventing the app-shell blank-strip/overscroll regression. The
+Reveal Once button uses the same canonical table-row action style as Verify
+Session and New Request, without changing its CSRF-protected POST or policy.
+The one-time Secret response is rendered in a
 separate `#reveal-value-output` region **inside My Requests**, above the
 request registry, never in New Request or in a toast. The result is focused
 after HTMX swaps and rendered without an automatic live announcement of the
