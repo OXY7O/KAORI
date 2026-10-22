@@ -26,7 +26,7 @@ def _active_administration_tab(value: str | None) -> str:
 def index():
     workspace_args: dict[str, Any] = {
         key: value
-        for key in ('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page')
+        for key in ('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page', 'view')
         if (value := (request.args.get(key) or '').strip())
     }
     return render_template(
