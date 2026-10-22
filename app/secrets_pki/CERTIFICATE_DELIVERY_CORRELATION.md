@@ -116,3 +116,31 @@ Focused tests authored but not executed:
 and `tests/integrations/test_certificate_delivery_read_model.py`.
 Run standard KAORI quality gates and human DevContainer Visual QA at the
 exact reviewed commit.
+
+
+## Kubernetes object UID identity bridge (#2589)
+
+The Kubernetes TLS collector now persists canonical `metadata.uid` to
+a nullable, new `TLSCertificateInventory.secret_uid` column. That UID
+distinguishes a recreated Secret from the previous object even if the
+cluster, namespace and name are reused. It is **source-owned** Kubernetes
+evidence, not a Vault provider field or user-declared mapping.
+
+The Secrets & PKI aggregate overlap page reports **matching TLS Secret
+observations with canonical object UID**, independently from matching
+certificate fingerprint and Ingress host/SAN coverage. UID values themselves
+are withheld. Legacy/unobserved/malformed UIDs yield `Not Qualified`,
+not a false successful object-identity claim. A qualified UID count
+does NOT establish Vault/controller delivery, controller activation, issuer
+identity, end-to-end TLS serving or successful rotation.
+
+Before any genuine Vault→controller→Kubernetes lineage can be `confirmed`,
+an approved source-owning controller adapter must produce a **separate**
+readback/receipt identifying the Vault source identity, controller identity,
+exact target cluster + Secret UID, public certificate fingerprint, scope,
+observation timestamp and controller synchronization status. KAORI must
+validate against both committed owner sources and effective dates;
+a controller annotation, namespace/name match, and a certificate fingerprint
+alone may only form candidates. Receiver authorization, source version,
+conflicts and Secret UID replacement require explicit admission review.
+No controller receipt or endpoint probe is implemented here.
