@@ -6,6 +6,7 @@
     <div class="space-y-6"
          x-data="{ tabs: ['overview', 'secret-reveal'], activeTab: '{{ active_tab }}', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); if (tab === 'secret-reveal') window.dispatchEvent(new CustomEvent('kubernetes:load-secret-reveal')); }, moveTab(currentTab, direction, prefix = 'kubernetes-administration') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }"
          x-init="if (activeTab === 'secret-reveal') $nextTick(() => window.dispatchEvent(new CustomEvent('kubernetes:load-secret-reveal')))">
+        {{ workspace_tabs.render([('overview', 'Overview', 'layout-dashboard'), ('secret-reveal', 'Secret Reveal', 'scan-eye')], prefix='kubernetes-administration', aria_label='Kubernetes Administration Workspaces') }}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -37,8 +38,7 @@
         <section id="kubernetes-administration-workspace-shell"
                  class="min-w-0"
                  aria-label="Kubernetes Administration Workspaces">
-            {{ workspace_tabs.render([('overview', 'Overview', 'layout-dashboard'), ('secret-reveal', 'Secret Reveal', 'scan-eye')], prefix='kubernetes-administration', aria_label='Kubernetes Administration Workspaces') }}
-            <div class="min-w-0 pt-5">
+            <div class="min-w-0">
                 <div class="min-w-0">
                     <div id="kubernetes-administration-panel-overview"
                          role="tabpanel"
