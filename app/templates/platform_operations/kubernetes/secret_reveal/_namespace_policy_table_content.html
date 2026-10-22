@@ -35,6 +35,7 @@
                                 class="{{ table_ui.action_classes() }} ml-auto"
                                 data-kaori-namespace-policy-editor
                                 aria-controls="secret-reveal-policy-editor-{{ loop.index }}"
+                                aria-label="Edit reveal policy for {{ row.namespace }}"
                                 :aria-expanded="openEditor === {{ loop.index }}"
                                 @click="openEditor = openEditor === {{ loop.index }} ? null : {{ loop.index }}">
                             <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
