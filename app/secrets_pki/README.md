@@ -90,3 +90,21 @@ Full Validation. Committed state is stored in independent collection tables
 and consumed through safe aggregate PKI readiness. This is **not** complete
 issuance, expiration governance, CRL/revocation proof or endpoint delivery
 assurance. See provider [PKI_STORED_CERTIFICATES.md](../integrations/secrets_management/secrets_pki/providers/vault/PKI_STORED_CERTIFICATES.md).
+
+
+## Cross-domain public certificate overlap — HV-05 limited slice
+
+Secrets & PKI Inventory now projects an aggregate comparison between
+approved committed Vault **stored** public certificate fingerprints and
+existing **Kubernetes TLS Governance** committed `tls.crt` fingerprints.
+It is read-only and requires both `secrets_pki.view` and the independent
+`tls_certificates.view` permission. No Kubernetes Secret name, Vault
+serial/path, CN/SAN or key material enters ordinary presentation.
+
+A fingerprint match proves only identical public certificate bytes across
+observed sources, not Vault issuance provenance, controller materialization,
+workload adoption, current endpoint TLS serving or successful rotation.
+No-match is not a failure/verdict; collection unknown/partial/stale and
+schema not migrated are explicit. The current preview is *not* a completed
+Certificate Delivery Assurance feature. See
+`CERTIFICATE_DELIVERY_CORRELATION.md` for source/coverage/UAT details.
