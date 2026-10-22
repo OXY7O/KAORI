@@ -28,13 +28,16 @@
     ) }}
 
     {% if not registry_ready %}
-        {% call section_card.render('Security Evidence Prerequisites',
-            'No eligible authorized committed Registry source is available for cross-domain correlation.',
-            'shield-alert') %}
-            <p class="text-sm text-content-secondary">
-                Review Registry integration and permission coverage. Missing evidence does not imply a clean security posture.
-            </p>
-        {% endcall %}
+        {% set empty_state_icon = 'shield-alert' %}
+        {% set empty_state_label = 'Setup Required' %}
+        {% set empty_state_variant = 'panel' %}
+        {% set empty_state_title = 'Security Evidence Prerequisites' %}
+        {% set empty_state_description = 'No authorized committed Registry source is available. Missing evidence does not imply a clean security posture.' %}
+        {% set empty_state_action_url = url_for('integrations.registry') if can_manage_integrations else none %}
+        {% set empty_state_action_label = 'Open Registry Integrations' if can_manage_integrations else none %}
+        {% set empty_state_permission_granted = can_manage_integrations %}
+        {% set empty_state_show_admin_required = not can_manage_integrations %}
+        {% include "components/states/_empty_state.html" %}
     {% else %}
     {% set scope_context %}
         <a href="{{ url_for('security_posture.findings') }}"
