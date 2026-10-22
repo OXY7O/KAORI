@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_card.html" as operational_section %}
+{% import "components/section_intro.html" as section_intro %}
 <section class="space-y-5" aria-label="Kubernetes Administration Overview">
     {% set overview_posture %}
         <span id="kubernetes-admin-overview-status">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
@@ -33,6 +34,12 @@
             {% endfor %}
         </div>
     {% endcall %}
+    <section class="space-y-4" aria-labelledby="kubernetes-admin-controls-heading">
+        {{ section_intro.render(
+            'Administration Controls',
+            'Manage available Kubernetes controls with clear readiness, policy and audit evidence.',
+            'kubernetes-admin-controls-heading'
+        ) }}
     {% set controls_badge %}
         <span id="kubernetes-admin-control-count">{{ table_label.status_label(administration_control_count ~ (' Managed Control' if administration_control_count == 1 else ' Managed Controls'), 'info') }}</span>
     {% endset %}
@@ -49,4 +56,5 @@
             {% include "platform_operations/kubernetes/_administration_control_rows.html" %}
         </div>
     {% endcall %}
+    </section>
 </section>
