@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from uuid import UUID
 from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID
 
 from kubernetes.client import V1Ingress, V1Secret
 
