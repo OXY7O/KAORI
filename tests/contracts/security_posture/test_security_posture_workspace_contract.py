@@ -29,6 +29,8 @@ def _security_sidebar(permissions: set[str], endpoint: str = 'security_posture.o
     app = Flask(__name__)
     for route, name in (
         ('/', 'welcome.index'),
+        ('/settings/general', 'settings.general'),
+        ('/settings/account', 'settings.account'),
         ('/security/', 'security_posture.overview'),
         ('/security/findings', 'security_posture.findings'),
     ):
