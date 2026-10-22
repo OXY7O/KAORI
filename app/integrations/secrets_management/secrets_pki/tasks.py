@@ -237,3 +237,121 @@ def sync_vault_pki_task(
         return {
             'status': 'canceled', 'synced_instances': succeeded, 'failed_scopes': failed,
         }
+
+
+@shared_task(
+    bind=True,
+    name='app.integrations.secrets_management.secrets_pki.tasks.sync_vault_stored_certificates',
+    acks_late=True, reject_on_worker_lost=True,
+)
+def sync_vault_stored_certificates_task(
+    self, *, targets: list[dict[str, int]], requested_by_user_id: int | None,
+    job_execution_id: int | None = None,
+) -> dict[str, int | str]:
+    """Read only stored public certs; task args/results contain no serial or PEM."""
+    from app.integrations.secrets_management.secrets_pki.commit_stored_certificates import (
+        commit_stored_pki_certificates, mark_stored_pki_certificates_failed,
+    )
+    from app.integrations.secrets_management.secrets_pki.providers.vault.pki_public_evidence import (
+        parse_approved_pki_mounts,
+    )
+    from app.integrations.secrets_management.secrets_pki.providers.vault.pki_stored_certificates import (
+        collect_pki_stored_certificates,
+    )
+
+    context = JobExecutionContext(str(self.request.id), job_execution_id)
+    count = len(targets)
+    if not 1 <= count <= 25:
+        context.fail('Stored PKI target scope is invalid.', error_code='invalid_scope')
+        return {'status': 'failed', 'synced_instances': 0, 'failed_scopes': count}
+    succeeded = 0
+    failed = 0
+    committed = 0
+    observed = 0
+    context.start(
+        message='Preparing bounded Vault stored-certificate scopes.',
+        total=count, percent=1, stage='Preparing PKI Collection', target='Secrets & PKI',
+    )
+    try:
+        for index, target in enumerate(targets, start=1):
+            context.checkpoint(
+                current=index - 1, total=count, percent=min(5 + 85 * (index - 1) // count, 90),
+                stage='Collecting Stored Public Certificates', target='Vault Instance',
+            )
+            instance_id = 0
+            current_mount: str | None = None
+            try:
+                instance_id = int(target['integration_instance_id'])
+                provider = VaultInstance.query.filter_by(integration_instance_id=instance_id).first()
+                if provider is None:
+                    raise ValueError('Stored PKI source does not exist.')
+                identity = provider.integration_instance
+                if (
+                    identity.integration_type != 'secrets_pki' or identity.provider_key != 'vault'
+                    or not identity.enabled or identity.lifecycle_status != 'active'
+                    or identity.readiness_status != 'ready'
+                ):
+                    raise ValueError('Stored PKI identity is not eligible.')
+                mounts = parse_approved_pki_mounts(','.join(provider.pki_mounts or ()))
+                if not mounts:
+                    raise ValueError('Stored PKI mount is not explicitly approved.')
+                for mount in mounts:
+                    current_mount = mount
+                    context.checkpoint(
+                        current=index - 1, total=count, stage='Reading Stored Certificates',
+                        target='Approved PKI Scope',
+                    )
+                    source = collect_pki_stored_certificates(build_client(provider), mount=mount)
+                    result = commit_stored_pki_certificates(instance_id, source)
+                    committed += 1
+                    observed += result.observed_count
+                    current_mount = None
+                succeeded += 1
+            except JobCancellationRequested:
+                db.session.rollback()
+                raise
+            except SoftTimeLimitExceeded:
+                db.session.rollback()
+                if instance_id and current_mount:
+                    mark_stored_pki_certificates_failed(instance_id, current_mount)
+                context.fail(
+                    'Stored PKI collection exceeded bounded worker time; evidence retained.',
+                    error_code='vault_stored_pki_timeout',
+                )
+                return {
+                    'status': 'failed', 'synced_instances': succeeded,
+                    'failed_scopes': failed + 1, 'committed_mounts': committed,
+                }
+            except Exception:
+                # Vault error strings may include Secret paths, certificate PEM or tokens.
+                db.session.rollback()
+                if instance_id and current_mount:
+                    mark_stored_pki_certificates_failed(instance_id, current_mount)
+                failed += 1
+            context.checkpoint(
+                current=index, total=count, percent=min(5 + 90 * index // count, 95),
+                stage='Stored Certificate Reconciliation', target='Public PKI Evidence',
+            )
+        status = 'failed' if failed and not committed else ('partial' if failed else 'success')
+        result = {
+            'status': status, 'synced_instances': succeeded,
+            'failed_scopes': failed, 'committed_mounts': committed,
+            'observed_stored_certificates': observed,
+        }
+        if failed and not committed:
+            context.fail(
+                'All stored certificate scopes failed; committed evidence retained.',
+                error_code='vault_stored_pki_collection_failed',
+            )
+        else:
+            context.succeed(
+                result_summary=result, result_type='secrets_pki_stored_certificates',
+                partial=bool(failed),
+            )
+        return result
+    except JobCancellationRequested:
+        context.canceled()
+        return {
+            'status': 'canceled', 'synced_instances': succeeded,
+            'failed_scopes': failed,
+        }
