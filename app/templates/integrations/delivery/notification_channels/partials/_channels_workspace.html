@@ -315,11 +315,11 @@
                                                     data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"
                                                     aria-haspopup="dialog"
                                                     aria-controls="notification-channel-delete-blockers-{{ channel.id }}"
-                                                    aria-label="Why deletion of {{ channel.name }} is protected"
-                                                    title="View deletion dependencies"
-                                                    class="{{ table_ui.action_classes() }}">
-                                                <i data-lucide="shield-alert" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                Why locked?
+                                                    aria-label="Locked: view deletion dependencies for {{ channel.name }}"
+                                                    title="Locked — inspect retained delivery evidence and report dependencies"
+                                                    class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2.5 text-xs font-semibold text-status-warning-text transition-colors hover:border-status-warning focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-warning">
+                                                <i data-lucide="lock-keyhole" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+                                                Locked
                                             </button>
                                         {% else %}
                                             <form method="post"

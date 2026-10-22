@@ -287,6 +287,29 @@ def test_notification_channel_delete_guard_preserves_auditable_dependencies(
     assert session.commits == 0
 
 
+def test_disabled_channel_still_cannot_delete_committed_delivery_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    channel = _validated_channel()
+    channel.enabled = False
+    session = SessionStub()
+    usage = lifecycle.NotificationChannelUsage(
+        delivery_records=26,
+        report_schedules=0,
+        report_schedule_names=(),
+    )
+    monkeypatch.setattr(lifecycle, 'get_channel_usage', lambda _channel_id: usage)
+    monkeypatch.setattr(lifecycle, 'db', SimpleNamespace(session=session))
+
+    with pytest.raises(lifecycle.NotificationChannelDeletionBlocked) as exc_info:
+        lifecycle.delete_channel(channel)  # type: ignore[arg-type]
+
+    assert exc_info.value.usage.delivery_records == 26
+    assert exc_info.value.usage.report_schedules == 0
+    assert session.deleted == []
+    assert session.commits == 0
+
+
 def test_notification_channel_delete_commits_when_no_dependency_remains(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
