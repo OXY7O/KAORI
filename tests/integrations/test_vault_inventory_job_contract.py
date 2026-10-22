@@ -17,7 +17,7 @@ def test_registered_vault_inventory_job_is_safe_by_default():
     assert job.default_enabled is False
     assert job.configure_permission == 'integrations.manage'
     assert job.execute_permission == 'jobs.execute'
-    assert job.domain_execute_permission == 'integrations.manage'
+    assert job.domain_execute_permission == 'secrets_pki.sync'
 
 
 def test_admission_never_enqueues_mount_paths_or_secret_credentials(monkeypatch):
