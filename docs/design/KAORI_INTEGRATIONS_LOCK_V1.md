@@ -372,7 +372,7 @@ when capability event counts vary. Normal narrow/mobile widths stack
 label and events without clipping.
 
 Channel Inventory removes the unconditional 1280px minimum table width
-in favor of a 1100px fixed-layout responsive baseline. Preserve six
+in favor of a 1100px responsive baseline with wrapped action controls. Preserve six
 functional columns, separate Test/Delivery evidence, and usable
 Edit/Test/Delete actions. Horizontal scrolling is allowed only where
 the available viewport cannot reasonably fit the table.
