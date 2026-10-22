@@ -15,6 +15,7 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.application
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verify_proof
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.service import save_connection, test_connection
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import VaultProviderError
+from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import enqueue_instance_validation, enqueue_runtime_health_refresh
 from app.models.integration import IntegrationInstance
@@ -141,9 +142,15 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
 @permission_required('integrations.manage')
 def detail(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
+    history, history_pagination = paginate_runtime_history(
+        'secrets_pki', str(instance.id),
+        page=request.args.get('history_page', 1, type=int) or 1,
+        per_page=request.args.get('history_per_page', 5, type=int) or 5,
+    )
     return render_template(
         'integrations/secrets_management/vault/detail.html',
         instance=instance, evidence=_evidence(instance),
+        runtime_history=history, runtime_history_pagination=history_pagination,
         notification_context=_notification(),
     )
 
