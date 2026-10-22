@@ -120,3 +120,13 @@ def test_invalid_metric_response_and_provider_errors_are_sanitized(monkeypatch):
     assert result.status == 'degraded'
     assert 'vault.example' not in result.message
     assert 'vault.example' not in repr(result.evidence)
+
+
+def test_vault_asset_uses_the_same_label_in_the_shared_binding_picker():
+    from app.integrations.consumer_assets import get_consumer_asset_definition
+
+    definition = get_consumer_asset_definition('vault_instance')
+    assert definition is not None
+    assert definition.model.__name__ == 'IntegrationInstance'
+    assert definition.integration_type == 'secrets_pki'
+    assert definition.selector_label == 'vault_instance'
