@@ -39,10 +39,11 @@ def parse_approved_pki_mounts(value: str) -> tuple[str, ...]:
         raise ValueError('Vault PKI collection allows at most four approved mounts.')
     normalized: list[str] = []
     for item in names:
-        if not item.strip() or item.strip() != item.strip('/ '):
+        candidate = item.strip()
+        if not candidate or candidate.startswith('/') or candidate.endswith('/'):
             raise ValueError('Vault PKI mounts must be explicit single segments.')
         try:
-            mount = validate_auth_mount(item.strip())
+            mount = validate_auth_mount(candidate)
         except ValueError as exc:
             raise ValueError('Vault PKI mount must be a safe single path segment.') from exc
         if mount in normalized:
