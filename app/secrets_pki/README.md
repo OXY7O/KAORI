@@ -193,3 +193,12 @@ an authoritative authorization decision is prohibited. The caller must
 independently validate the queried committed record collection rather than
 trust unscoped client arguments. Tests are located at
 `tests/contracts/secrets_pki/test_registry_scope_contract.py`.
+
+## Canonical Reporting coverage candidates — HV-15 #2694
+
+The Reporting tab now reads six **Planned** report coverage items from
+`app/definitions/catalogs/reports/coverage.yaml`, the same catalog consumed
+by central Reports Overview. The list is permission-gated by `reports.view`
+and cannot generate/schedule an artifact. No source-level Secret report
+export is admitted while #724/#2688 authorization and HV-15 datasets,
+sanitization, retained evidence and human UAT remain incomplete.

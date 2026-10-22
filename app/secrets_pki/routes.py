@@ -8,6 +8,7 @@ from flask_login import current_user
 
 from app.access.rbac.decorators import permission_required
 from app.dashboards.common.operational import normalize_operational_tab
+from app.reports.catalog import REPORT_COVERAGE_DOMAINS
 from app.secrets_pki.certificate_delivery_read_model import build_certificate_delivery_overlap
 from app.secrets_pki.kv2_version_posture import build_kv2_version_posture
 from app.secrets_pki.pki_presentation import pki_public_readiness
@@ -21,13 +22,19 @@ secrets_pki_bp = Blueprint('secrets_pki', __name__, url_prefix='/secrets-pki')
 @secrets_pki_bp.get('/')
 @permission_required('secrets_pki.view')
 def overview() -> ResponseReturnValue:
+    can_view_reports = current_user.has_permission('reports.view')
+    coverage = next(
+        (item for item in REPORT_COVERAGE_DOMAINS if item.key == 'secrets_pki'),
+        None,
+    ) if can_view_reports else None
     return render_template(
         'secrets_pki/overview.html',
         summary=build_secrets_pki_operational_summary(),
         active_tab=normalize_operational_tab(request.args.get('tab')),
         can_manage_integrations=current_user.has_permission('integrations.manage'),
         can_view_intelligence=current_user.has_permission('intelligence.view'),
-        can_view_reports=current_user.has_permission('reports.view'),
+        can_view_reports=can_view_reports,
+        report_coverage=coverage,
     )
 
 
