@@ -26,7 +26,7 @@
                     No successful refresh yet
                 {% endif %}
             </span>
-            <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page) }}"
+            <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page, refresh_namespace=1) }}"
                hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page, refresh_namespace=1) }}"
                hx-target="#secret-reveal-cluster-workspace"
                hx-swap="outerHTML show:none"
@@ -40,7 +40,7 @@
 </div>
 <section id="secret-reveal-namespace-section"
          class="{{ table_ui.block_classes() }} shadow-none"
-         x-data='{ "query": {{ namespace_filters.query | tojson }}, "policy": {{ namespace_filters.policy | tojson }} }'>
+         x-data='{ "query": {{ (namespace_filters.query or '') | tojson }}, "policy": {{ (namespace_filters.policy or 'all') | tojson }} }'>
     <header class="{{ table_ui.block_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
