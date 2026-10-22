@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, text
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
@@ -90,7 +90,7 @@ class SourceRepository(db.Model):
     )
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     full_name: Mapped[str | None] = mapped_column(String(600), nullable=True)
-    archived: Mapped[bool | None] = mapped_column(db.Boolean, nullable=True)
+    archived: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     provider_presence: Mapped[str] = mapped_column(String(30), nullable=False, default='unknown')
     last_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)

@@ -141,9 +141,11 @@ def test_duplicate_current_grant_is_rejected_but_history_is_retained(source_engi
                 last_observed_at=start + timedelta(hours=3),
             )
         )
-        assert connection.execute(
+        assert len(connection.execute(
             select(SourceRepositoryGrant.id).where(SourceRepositoryGrant.repository_id == repository)
-        ).scalars().all().__len__() == 2
+        ).scalars().all()) == 2
+        retained = connection.execute(select(SourceRepository).where(SourceRepository.id == repository)).scalar_one()
+        assert retained.provider_presence == 'observed'  # access expiry never deletes the source object
 
 
 def test_revision_and_branch_reference_are_repository_scoped(source_engine) -> None:
@@ -192,3 +194,18 @@ def test_repository_native_id_unique_per_host_not_mutable_representation(source_
                 native_repository_id='75', provider_presence='unknown',
             )
         )
+
+
+def test_identity_schema_contains_no_plaintext_git_auth_material() -> None:
+    columns = {column.name for column in SourceInstallation.__table__.columns}
+    assert 'integration_instance_id' in columns
+    assert 'native_installation_id' in columns
+    assert not any(word in column for column in columns for word in ('token', 'secret', 'private_key'))
+
+
+def test_inert_provider_has_no_configured_github_runtime() -> None:
+    from app.integrations.provider_matrix import provider_kind, provider_options
+
+    provider = provider_kind('source_control', 'github')
+    assert provider.lifecycle == 'planned'
+    assert provider_options('source_control') == []
