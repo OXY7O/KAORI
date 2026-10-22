@@ -40,21 +40,21 @@
             'Manage available Kubernetes controls with clear readiness, policy and audit evidence.',
             'kubernetes-admin-controls-heading'
         ) }}
-    {% set controls_badge %}
-        <span id="kubernetes-admin-control-count">{{ table_label.status_label(administration_control_count ~ (' Managed Control' if administration_control_count == 1 else ' Managed Controls'), 'info') }}</span>
-    {% endset %}
-    {% call operational_section.render(
-        'Managed Administration Controls',
-        'Configure implemented controls and review their security posture.',
-        'blocks',
-        id='kubernetes-admin-controls-section',
-        header_badge=controls_badge,
-        body_classes='p-0',
-        aria_label='Managed Administration Controls'
-    ) %}
-        <div id="kubernetes-admin-controls-list" class="divide-y divide-outline-subtle">
-            {% include "platform_operations/kubernetes/_administration_control_rows.html" %}
-        </div>
-    {% endcall %}
+        {% set controls_badge %}
+            <span id="kubernetes-admin-control-count">{{ table_label.status_label(administration_control_count ~ (' Managed Control' if administration_control_count == 1 else ' Managed Controls'), 'info') }}</span>
+        {% endset %}
+        {% call operational_section.render(
+            'Managed Administration Controls',
+            'Configure implemented controls and review their security posture.',
+            'blocks',
+            id='kubernetes-admin-controls-section',
+            header_badge=controls_badge,
+            body_classes='p-0',
+            aria_label='Managed Administration Controls'
+        ) %}
+            <div id="kubernetes-admin-controls-list" class="divide-y divide-outline-subtle">
+                {% include "platform_operations/kubernetes/_administration_control_rows.html" %}
+            </div>
+        {% endcall %}
     </section>
 </section>
