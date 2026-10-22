@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from cryptography import x509
+from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.primitives import hashes
 
 from app.integrations.secrets_management.secrets_pki.providers.vault.client import (
@@ -80,7 +81,7 @@ def _parse_certificate(raw: object) -> tuple[x509.Certificate, PublicCertificate
         raise VaultProviderError('Vault PKI public certificate is missing or out of bounds.')
     try:
         cert = x509.load_pem_x509_certificate(raw.encode('ascii'))
-    except (ValueError, UnicodeEncodeError) as exc:
+    except (ValueError, UnicodeEncodeError, UnsupportedAlgorithm) as exc:
         raise VaultProviderError('Vault PKI public certificate could not be decoded.') from exc
     before = getattr(cert, 'not_valid_before_utc', None)
     after = getattr(cert, 'not_valid_after_utc', None)
