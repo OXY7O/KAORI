@@ -979,6 +979,7 @@ def _channel_view(
         'delete_reason': usage.message,
         'delivery_record_count': usage.delivery_records,
         'report_schedule_count': usage.report_schedules,
+        'report_schedule_names': list(usage.report_schedule_names),
     }
 
 
