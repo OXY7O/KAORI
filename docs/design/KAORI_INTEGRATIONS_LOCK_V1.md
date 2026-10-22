@@ -236,3 +236,26 @@ explicitly opts into `lead=false` plus trailing alignment, with clear/reset
 still preserving canonical HTMX page size and URL behavior. No synthetic or
 always-active progress bar, provider delivery change or global table layout
 override is permitted.
+
+## Notification Channels Title Guide & Evidence Panel Refinement (#2685, 2026-10-22)
+
+The **Channel Inventory** title-level contextual hover is the shared
+`info_tip.render(..., variant='guide')`, not the icon-only field-level
+variant. The canonical guide trigger remains keyboard-focusable, touch-
+operable, and bound to the shared viewport-aware non-modal popover; no
+private tooltip logic is introduced.
+
+For Delivery Activity, the **Delivery Evidence Boundary** is a substantial
+shared `operational_section_card` with three responsive interpretation
+panels owned by `integrations/components/_workspace.html`:
+**Provider Acceptance**, **Committed KAORI Evidence**, and **Activity
+Audit**. Transport/provider acceptance is not a recipient read receipt;
+the committed journal documents the delivery-attempt lifecycle; governed
+Activity Audit is a separate evidence producer. The panel comes **before**
+the Delivery Journal title/description. That section introduction must
+remain immediately adjacent above the canonical **Delivery Records** table
+card without unrelated text or cards between them. This is a bounded
+layout/evidence-clarity refinement, not permission to alter routing,
+data retention, RBAC, or delivery semantics. Existing shared table header,
+HTMX loading indicator, five filters, Clear Filters and pagination remain
+unchanged.

@@ -219,7 +219,7 @@ def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
     assert "'notification-delivery-registry'" in page
     assert "'notification-delivery-loading'" in page
     assert "'delivery_event_key': payload.delivery_filter" in page
-    assert 'Provider delivery does not prove human receipt.' in page
+    assert 'not human receipt or message readership.' in page
     assert 'No Matching Deliveries' in page
     assert 'No committed delivery matches the selected filters.' in page
 
@@ -294,9 +294,18 @@ def test_notification_refinement_reuses_header_info_tip_and_trailing_clear_filte
     assert "Operational Feedback:" in channels
     assert "Activity Audit:" in channels
     assert '<section class="grid gap-4 lg:grid-cols-3">' not in channels
-    assert "operational_callout.render(" in index
-    assert "Provider delivery does not prove human receipt." in index
-    assert "Activity Audit remains separate." in index
+    assert "operational_section_card.render(" in index
+    assert "integration_ui.interpretation_panel(" in index
+    assert index.count("integration_ui.interpretation_panel(") == 3
+    for label in ("Provider Acceptance", "Committed KAORI Evidence", "Activity Audit"):
+        assert f"'{label}'" in index
+    assert "not human receipt or message readership" in index
+    assert "Provider delivery alone does not create Activity Audit evidence." in index
+    assert "variant='guide'" in channels
+    assert channels.index("info_tip.render(") < channels.index("variant='guide'")
+    assert index.index("operational_section_card.render(") < index.index(
+        "section_intro.render('Delivery Journal'"
+    ) < index.index("table_block.inventory_block_header(")
     assert "Consumers choose destinations; the Alert Source governs alert routing and receivers." in index
     assert "KAORI governs credentials, validation, delivery evidence, retries and deduplication." in index
     assert "Allow ntfy HTTPS origins via NOTIFICATION_NTFY_ALLOWED_ORIGINS (app/worker); restrict egress." in providers
