@@ -49,7 +49,8 @@ def test_protected_reveal_flow_matches_backend_policy_order() -> None:
 def test_approved_request_links_back_to_step_up_when_session_is_not_verified() -> None:
     request_status = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
 
-    assert 'href="#reveal-session-step-up"' in request_status
+    assert "url_for('kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='reveal-session-step-up')" in request_status
+    assert 'data-reveal-step-up-trigger' in request_status
     assert 'Verify Session' in request_status
     assert 'Reauthenticate first' not in request_status
 
@@ -73,3 +74,36 @@ def test_reveal_step_up_keeps_password_and_action_on_one_control_baseline() -> N
     assert 'name="password"' in step_up
     assert 'name="csrf_token"' in step_up
     assert 'current_user.is_external' in step_up
+
+
+
+def test_verify_session_action_focuses_password_after_htmx_table_replacement() -> None:
+    table = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
+    step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
+    js = read('app/static/js/secret_reveal_workspace.js')
+    browser = read('tests/ui/test_browser_smoke.py')
+
+    assert "item.status == 'approved'" in table
+    assert '{% elif can_reveal %}' in table
+    assert 'data-reveal-step-up-trigger' in table
+    assert "reveal_view='mine', _anchor='reveal-session-step-up'" in table
+    assert 'Reveal access unavailable' in table
+    assert 'id="reveal-session-step-up"' in step_up
+    assert 'tabindex="-1"' in step_up
+    assert 'data-reveal-step-up-password' in step_up
+    assert 'name="password"' in step_up
+    assert 'name="csrf_token"' in step_up
+
+    # Delegate after HTMX swaps rather than attaching handlers to replaced rows.
+    assert "document.addEventListener('click', navigateToStepUp)" in js
+    assert "event.target.closest(stepUpTriggerSelector)" in js
+    assert "link.closest(rootSelector)" in js
+    assert "querySelector('#reveal-session-step-up')" in js
+    assert "querySelector('[data-reveal-step-up-password]')" in js
+    assert "target.scrollIntoView(" in js
+    assert "focusTarget.focus({ preventScroll: true })" in js
+    assert "url.searchParams.set('reveal_view', 'mine')" in js
+    assert "window.history.replaceState(window.history.state, '', url)" in js
+    assert "if (!target || !panel || panel.hidden) return" in js
+    assert "window.htmx.ajax('GET', url, { target, swap: 'outerHTML' })" in js
+    assert "test_verify_session_link_focuses_step_up_after_htmx_replacement" in browser
