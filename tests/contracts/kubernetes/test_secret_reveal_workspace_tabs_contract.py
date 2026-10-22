@@ -148,7 +148,7 @@ def test_one_time_result_is_rendered_only_in_my_requests() -> None:
     # Navigation and reveal output remain inside the requester workspace.
     assert "document.addEventListener('htmx:afterSwap', focusRevealResult)" in workspace_js
     assert "result?.id !== 'reveal-value-output'" in workspace_js
-    assert "querySelector('[data-protected-value-panel]')" in workspace_js
+    assert "if (!result.firstElementChild) return" in workspace_js
     assert "showWithinMainScroll(result)" in workspace_js
     assert "result.focus({ preventScroll: true })" in workspace_js
     assert "window.addEventListener('secret-reveal:tab-changed'" in value_js
