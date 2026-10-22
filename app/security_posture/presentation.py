@@ -15,7 +15,7 @@ from sqlalchemy import case, func, select
 from app.artifact_registry.correlation_sync_jobs import correlation_prerequisites
 from app.artifact_registry.presentation_runtime import _runtime_snapshot_state
 from app.artifact_registry.security.contracts import SUCCESSFUL_REGISTRY_SCAN_STATUSES
-from app.artifact_registry.security.presentation import _providers
+from app.artifact_registry.security.presentation import _aware_datetime, _providers
 from app.common.pagination import paginate_query, positive_int
 from app.models.registry import (
     RegistryArtifact,
@@ -121,6 +121,7 @@ def build_security_posture(
     scanned_artifacts = 0
     artifacts_total = 0
     last_scan = None
+    oldest_scan = None
     if source_ids:
         artifacts_total = int(
             RegistryArtifact.query.join(RegistryRepository, RegistryArtifact.repository_id == RegistryRepository.id)
@@ -143,11 +144,10 @@ def build_security_posture(
         )
         scanned_artifacts = usable_scans.order_by(None).count()
         last_scan = usable_scans.with_entities(func.max(RegistryScanSnapshot.observed_at)).scalar()
+        oldest_scan = usable_scans.with_entities(func.min(RegistryScanSnapshot.observed_at)).scalar()
 
-    age = last_scan if last_scan is None or last_scan.tzinfo else (
-        last_scan.replace(tzinfo=UTC) if last_scan else None
-    )
-    recent = bool(age and age >= datetime.now(UTC) - _SCAN_WINDOW)
+    oldest_observed = _aware_datetime(oldest_scan)
+    recent = bool(oldest_observed and oldest_observed >= datetime.now(UTC) - _SCAN_WINDOW)
     if not can_view_registry:
         scan_status = {'label': 'No Authorized Sources', 'tone': 'unknown'}
     elif not sources or not last_scan:
