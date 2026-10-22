@@ -137,6 +137,19 @@ Approval, Step-Up, one-time reveal, request expiry and CSRF remain governed
 by their existing routes. Tab labels carry no count badges; table headers
 retain source-owned result counts.
 
+**Requester decision deep links:** The approved/denied notification links to the exact
+committed request in **My Requests** using `my_request_id`, never to a shared
+unfiltered registry or browser-native tall-card anchor. The SQL read is first
+scoped by `requester_user_id` and then exact request ID; this is navigation,
+not authorization. A shared contextual callout shows the current request
+state and the next eligible action (Verify Session or Reveal Once); a
+**Show All Requests** link restores the normal five-row registry. The linked
+ID survives Step-Up reauthentication through a bounded, navigation-only hidden
+field; no password or Secret content is put in the URL, client storage,
+notifications, or activity evidence. Filters intentionally return to the
+normal registry. Expired, denied, consumed or non-owned requests never receive
+a new reveal action from this link.
+
 **Assigned Work / Work Inbox:** Approval Required requests are visible to every
 currently eligible active reviewer through the existing Notification Deck
 Assigned Work view, as a read-only projection of committed

@@ -91,6 +91,7 @@ def _reveal_status_context() -> dict[str, Any]:
             my_search=request.args.get('my_search', ''),
             my_status=request.args.get('my_status', ''),
             my_sort=request.args.get('my_sort', 'newest'),
+            my_request_id=request.args.get('my_request_id', ''),
             pending_pagination=PendingRevealPagination(
                 page=request.args.get('pending_page', 1, type=int) or 1,
                 per_page=request.args.get('pending_per_page', 5, type=int) or 5,
@@ -381,6 +382,15 @@ def request_secret_reveal():
 )
 @cluster_required('Protected Secret Reveal')
 def reauthenticate_secret_reveal():
+    # Navigation-only hint; final request visibility still requires requester ownership.
+    linked_request_id = (request.form.get('my_request_id') or '').strip()
+    if len(linked_request_id) > 80:
+        linked_request_id = ''
+    return_url = url_for(
+        'kubernetes_operations.reveal_secret',
+        reveal_view='mine',
+        **({'my_request_id': linked_request_id} if linked_request_id else {}),
+    )
     try:
         _validate_secret_operation_csrf()
     except ValueError as exc:
@@ -389,15 +399,13 @@ def reauthenticate_secret_reveal():
             status='error',
             title='Reauthentication failed',
             message=str(exc),
-            action_url=url_for(
-                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
-            ),
+            action_url=return_url,
             action_label='Retry reauthentication',
             metadata={'secret_value_recorded': False},
             queue_feedback=True,
         )
         return redirect(
-            url_for('kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests')
+            return_url
         )
 
     password = request.form.get('password') or ''
@@ -407,9 +415,7 @@ def reauthenticate_secret_reveal():
             status='error',
             title='Reauthentication unavailable',
             message='External authentication step-up is not available yet. Use a database-managed break-glass account.',
-            action_url=url_for(
-                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
-            ),
+            action_url=return_url,
             action_label='Open Protected Secret Reveal',
             metadata={
                 'auth_source': current_user.auth_source,
@@ -423,9 +429,7 @@ def reauthenticate_secret_reveal():
             status='error',
             title='Reauthentication failed',
             message='The current account password is incorrect.',
-            action_url=url_for(
-                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
-            ),
+            action_url=return_url,
             action_label='Retry reauthentication',
             metadata={
                 'auth_source': current_user.auth_source,
@@ -440,9 +444,7 @@ def reauthenticate_secret_reveal():
             status='success',
             title='Protected reveal session verified',
             message='One-time Secret reveal actions are available for the configured short session window.',
-            action_url=url_for(
-                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
-            ),
+            action_url=return_url,
             action_label='Open Protected Secret Reveal',
             metadata={
                 'auth_source': current_user.auth_source,
@@ -452,7 +454,7 @@ def reauthenticate_secret_reveal():
             queue_feedback=True,
         )
     return redirect(
-        url_for('kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests')
+        return_url
     )
 
 
@@ -503,7 +505,7 @@ def decide_secret_reveal_request(request_id: str):
                 action_url=url_for(
                     'kubernetes_operations.reveal_secret',
                     reveal_view='mine',
-                    _anchor='my-secret-reveal-requests',
+                    my_request_id=record.id,
                 ),
                 metadata=_reveal_request_metadata(record),
             )
