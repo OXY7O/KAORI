@@ -225,17 +225,17 @@ feedback, and secret-safe Activity Audit behavior. The former three static
 guidance cards are not rendered; explanatory workflow information must not
 become an alternate uncontrolled UI component.
 
-The **Delivery Journal** section keeps one concise title/description and
-one shared `operational_callout` stating that provider acceptance is not
-human receipt nor Activity Audit. Its registry uses shared
-`table.inventory_block_header`, which owns the request-scoped
-`loading_bar` inside the table header, followed by shared registry filters,
-table and canonical pagination. The shared `table_registry.clear_filters_link`
-remains backward-compatible with default leading placement; this journal
-explicitly opts into `lead=false` plus trailing alignment, with clear/reset
-still preserving canonical HTMX page size and URL behavior. No synthetic or
-always-active progress bar, provider delivery change or global table layout
-override is permitted.
+The **Delivery Journal** section keeps one concise title/description
+immediately above its table card and a separate Delivery Evidence Boundary
+contextual surface before that heading. Both Channel Inventory and Delivery
+Records use shared `table.inventory_block_header` owning the title, guide
+where relevant, count, conditional Clear Filters header action, and
+request-scoped `loading_bar`. Each shared `table.inventory_filter_bar_classes`
+wrapper contains only `table_registry.filter_form` filter fields; Clear
+Filters is not an inline filter-row control. The canonical registry actions
+retain HTMX target, reset, Rows and pagination behavior. No fake progress
+indicator, page-local positional workaround, provider delivery change or
+global table layout override is permitted.
 
 ## Notification Channels Title Guide & Evidence Panel Refinement (#2685, 2026-10-22)
 
@@ -245,17 +245,33 @@ variant. The canonical guide trigger remains keyboard-focusable, touch-
 operable, and bound to the shared viewport-aware non-modal popover; no
 private tooltip logic is introduced.
 
-For Delivery Activity, the **Delivery Evidence Boundary** is a substantial
-shared `operational_section_card` with three responsive interpretation
-panels owned by `integrations/components/_workspace.html`:
-**Provider Acceptance**, **Committed KAORI Evidence**, and **Activity
-Audit**. Transport/provider acceptance is not a recipient read receipt;
-the committed journal documents the delivery-attempt lifecycle; governed
-Activity Audit is a separate evidence producer. The panel comes **before**
-the Delivery Journal title/description. That section introduction must
-remain immediately adjacent above the canonical **Delivery Records** table
-card without unrelated text or cards between them. This is a bounded
-layout/evidence-clarity refinement, not permission to alter routing,
-data retention, RBAC, or delivery semantics. Existing shared table header,
-HTMX loading indicator, five filters, Clear Filters and pagination remain
-unchanged.
+For Delivery Activity, the **Delivery Evidence Boundary** uses one
+shared `operational_section_card`. A single full-width interpretation
+panel emphasizes **provider acceptance does not prove recipient receipt or
+readership**. Two unboxed, responsive supporting facts distinguish
+**Committed Delivery Journal** from **Independent Activity Audit**; no
+three-card nesting or implied audit production from provider sends. This
+panel comes **before** the Delivery Journal title/description, which must
+remain immediately above the canonical Delivery Records table card.
+The design preserves external provider authority, existing table filters,
+loading/pagination, RBAC, security boundary and committed evidence.
+
+## Notification Channel Table Controls and Evidence Density (#2692, 2026-10-22)
+
+Kubernetes Pod and Namespace Inventory table cards are the directly adopted
+interaction and visual reference. For **Channel Inventory** and **Delivery
+Records**, reuse `table.inventory_block_header` for title, contextual Guide,
+filtered result count, conditional **Clear Filters** (in the header actions
+slot), and the shared loading bar **within the header**. The filter bar is
+the shared outer `table.inventory_filter_bar_classes` wrapper containing
+only the canonical registry filter form with active fields. This supersedes
+the earlier in-filter-row Clear Filters placement and custom `ml-auto`
+workaround. Do not put the loading bar outside the owning table header.
+
+The **Delivery Evidence Boundary** is one operational section, one
+prominent provider-acceptance guardrail and two inline unboxed facts. It
+must not become three visually competing cards. Provider acceptance
+does not prove human receipt; provider send does not automatically
+create a committed Activity Audit event. This presentation-only UAT
+refinement leaves committed journal filtering, rows, source links,
+provider delivery policy and permissions unchanged.

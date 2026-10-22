@@ -133,39 +133,63 @@
                 {% elif active_tab == 'delivery' %}
                     {% call operational_section_card.render(
                         'Delivery Evidence Boundary',
-                        'Understand provider acknowledgements, committed delivery records, and independent audit evidence.',
+                        'Interpret outbound notification outcomes against their authoritative evidence.',
                         'shield-check',
-                        body_classes='grid gap-3 p-5 md:grid-cols-3') %}
+                        body_classes='p-5') %}
                         {{ integration_ui.interpretation_panel(
-                            'Provider Acceptance',
-                            'A successful transport confirms provider acceptance, not human receipt or message readership.',
-                            'send') }}
-                        {{ integration_ui.interpretation_panel(
-                            'Committed KAORI Evidence',
-                            'KAORI records attempts, outcomes, retries and deduplication in the delivery journal.',
-                            'database') }}
-                        {{ integration_ui.interpretation_panel(
-                            'Activity Audit',
-                            'Governed activity is recorded separately. Provider delivery alone does not create Activity Audit evidence.',
-                            'scroll-text') }}
+                            'Provider Accepted ≠ Recipient Read',
+                            'A provider acknowledgement confirms transport acceptance only—not receipt or readership by a person.',
+                            'shield-alert') }}
+                        <dl class="mt-4 grid gap-4 sm:grid-cols-2 sm:gap-0 sm:divide-x sm:divide-outline-subtle">
+                            <div class="flex min-w-0 items-start gap-3 sm:pr-5">
+                                {{ integration_ui.palette_icon('database', 'brand', size='sm') }}
+                                <div class="min-w-0">
+                                    <dt class="text-sm font-semibold text-content-primary">Committed Delivery Journal</dt>
+                                    <dd class="mt-1 text-xs leading-5 text-content-secondary">KAORI records attempts, provider outcomes, retries and deduplication.</dd>
+                                </div>
+                            </div>
+                            <div class="flex min-w-0 items-start gap-3 sm:pl-5">
+                                {{ integration_ui.palette_icon('scroll-text', 'brand', size='sm') }}
+                                <div class="min-w-0">
+                                    <dt class="text-sm font-semibold text-content-primary">Independent Activity Audit</dt>
+                                    <dd class="mt-1 text-xs leading-5 text-content-secondary">Governed activity is recorded separately; sending a notification does not create an audit event.</dd>
+                                </div>
+                            </div>
+                        </dl>
                     {% endcall %}
                     {{ section_intro.render('Delivery Journal',
                             'Review committed attempts, provider outcomes and retry evidence.',
                             'notification-delivery-heading') }}
                     <section class="{{ table_ui.block_classes() }}" aria-labelledby="notification-delivery-heading">
                         <div id="notification-delivery-registry">
+                            {% set delivery_clear_action = none %}
+                            {% if payload.delivery_filters_active %}
+                                {% set delivery_clear_action %}
+                                    {{ table_registry.clear_filters_link('notification_channels.index',
+                                        'notification-delivery-registry',
+                                        'notification-delivery-loading',
+                                        payload.delivery_pagination.per_page,
+                                        table_ui.action_classes(),
+                                        label='Clear Filters',
+                                        query_params={'tab': 'delivery'},
+                                        page_param='delivery_page',
+                                        per_page_param='delivery_per_page',
+                                        lead=false) }}
+                                {% endset %}
+                            {% endif %}
                             {{ table_block.inventory_block_header(
                                 'history', 'Delivery Records',
                                 'Committed provider attempts, statuses and source evidence.',
                                 'notification-delivery-loading',
                                 'Loading notification delivery activity',
                                 none,
+                                header_actions=delivery_clear_action,
                                 result_count=payload.delivery_pagination.total_items) }}
+                            <div class="{{ table_block.inventory_filter_bar_classes() }}">
                             {% call table_registry.filter_form('notification_channels.index',
                                 'notification-delivery-registry',
                                 'notification-delivery-loading',
                                 payload.delivery_pagination.per_page,
-                                classes=table_ui.inventory_filter_bar_classes(),
                                 page_param='delivery_page',
                                 per_page_param='delivery_per_page',
                                 form_id='notification-delivery-filter-form',
@@ -212,19 +236,8 @@
                                         {% endfor %}
                                     </select>
                                 </div>
-                                {% if payload.delivery_filters_active %}
-                                    {{ table_registry.clear_filters_link('notification_channels.index',
-                                                                        'notification-delivery-registry',
-                                                                        'notification-delivery-loading',
-                                                                        payload.delivery_pagination.per_page,
-                                                                        table_ui.action_classes() ~ ' ml-auto',
-                                    label='Clear Filters',
-                                    lead=false,
-                                    query_params={'tab': 'delivery'},
-                                    page_param='delivery_page',
-                                    per_page_param='delivery_per_page') }}
-                                {% endif %}
                             {% endcall %}
+                            </div>
                             <div class="overflow-x-auto">
                                 <table class="{{ table_ui.table_classes('min-w-[1000px] xl:min-w-0') }}">
                                     <thead class="{{ table_ui.head_classes() }}">
