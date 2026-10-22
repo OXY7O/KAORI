@@ -38,6 +38,7 @@ def stored_pki_certificate_readiness(*, instance: VaultInstance | None = None) -
         scopes = {
             (row.integration_instance_id, row.namespace or '', mount)
             for row in sources
+            if row.pki_stored_certs_enabled
             for mount in parse_approved_pki_mounts(','.join(row.pki_mounts or ()))
         }
     except ValueError:
@@ -45,7 +46,7 @@ def stored_pki_certificate_readiness(*, instance: VaultInstance | None = None) -
     if len(scopes) > MAX_PKI_SCOPES:
         return _result('blocked', 'Stored Certificate Scope Exceeds Limit')
     if not scopes:
-        return _result('not_configured', 'Stored Certificate Collection Not Configured',
+        return _result('not_configured', 'Stored Certificate Collection Not Enabled',
                        approved_mounts=0)
     state_rows = PKIStoredCertificateCollectionState.query.filter(
         PKIStoredCertificateCollectionState.integration_instance_id.in_(
