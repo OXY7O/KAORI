@@ -31,6 +31,27 @@ _SCAN_WINDOW = timedelta(hours=24)
 _SEVERITY_RANK = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3, 'negligible': 4}
 
 
+def _scanner_coverage_state(
+    *,
+    source_count: int,
+    artifact_total: int,
+    scanned_artifacts: int,
+    oldest_scan: datetime | None,
+) -> dict[str, str]:
+    """Distinguish missing, partial and stale source evidence without all-clear claims."""
+    if not source_count or not oldest_scan:
+        return {'label': 'Not Collected', 'tone': 'unknown'}
+    recent = _aware_datetime(oldest_scan) >= datetime.now(UTC) - _SCAN_WINDOW
+    partial = scanned_artifacts < artifact_total
+    if partial and not recent:
+        return {'label': 'Partial / Stale', 'tone': 'warning'}
+    if partial:
+        return {'label': 'Partial', 'tone': 'warning'}
+    if not recent:
+        return {'label': 'Stale', 'tone': 'warning'}
+    return {'label': 'Observed', 'tone': 'normal'}
+
+
 def _scanner_findings(source_ids: list[int]) -> Any:
     """Latest usable successful scan, qualified by active source ownership."""
     latest_success = (
@@ -174,16 +195,12 @@ def build_security_posture(
 
     oldest_observed = _aware_datetime(oldest_scan)
     recent = bool(oldest_observed and oldest_observed >= datetime.now(UTC) - _SCAN_WINDOW)
-    if not can_view_registry:
-        scan_status = {'label': 'No Authorized Sources', 'tone': 'unknown'}
-    elif not sources or not last_scan:
-        scan_status = {'label': 'Not Collected', 'tone': 'unknown'}
-    elif not recent:
-        scan_status = {'label': 'Stale', 'tone': 'warning'}
-    elif scanned_artifacts < artifacts_total:
-        scan_status = {'label': 'Partial', 'tone': 'warning'}
-    else:
-        scan_status = {'label': 'Observed', 'tone': 'normal'}
+    scan_status = _scanner_coverage_state(
+        source_count=len(sources),
+        artifact_total=artifacts_total,
+        scanned_artifacts=scanned_artifacts,
+        oldest_scan=oldest_scan,
+    )
 
     # Read the existing signed materialization status; never reimplement its
     # signature, freshness or failure semantics.
