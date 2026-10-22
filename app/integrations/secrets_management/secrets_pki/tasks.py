@@ -5,7 +5,9 @@ from __future__ import annotations
 from celery import shared_task
 
 from app.extensions.db import db
-from app.integrations.secrets_management.secrets_pki.commit_inventory import commit_kv2_inventory
+from app.integrations.secrets_management.secrets_pki.commit_inventory import (
+    commit_kv2_inventory, mark_kv2_inventory_failed,
+)
 from app.integrations.secrets_management.secrets_pki.providers.vault.adapter import build_client
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
     collect_kv2_metadata,
@@ -44,6 +46,8 @@ def sync_vault_inventory_task(
                 current=index - 1, total=count, percent=min(5 + 85 * (index - 1) // count, 90),
                 stage='Collecting Metadata', target='Vault Instance',
             )
+            current_mount: str | None = None
+            instance_id = 0
             try:
                 instance_id = int(target['integration_instance_id'])
                 instance = VaultInstance.query.filter_by(integration_instance_id=instance_id).first()
@@ -62,6 +66,7 @@ def sync_vault_inventory_task(
                 if not mounts:
                     raise ValueError('Vault inventory mount scope is not configured.')
                 for mount in mounts:
+                    current_mount = mount
                     # Do not print/log mount names or provider response objects.
                     context.checkpoint(
                         current=index - 1, total=count, stage='Observing KV v2 Metadata',
@@ -71,6 +76,7 @@ def sync_vault_inventory_task(
                     evidence = collect_kv2_metadata(build_client(instance), mount=mount)
                     result = commit_kv2_inventory(instance_id, evidence)
                     secrets += result.observed_secret_count
+                    current_mount = None
                 succeeded += 1
             except JobCancellationRequested:
                 db.session.rollback()
@@ -79,6 +85,8 @@ def sync_vault_inventory_task(
                 # Provider exceptions may contain URLs, paths or other secrets.
                 # Never serialize, log or notify the raw exception.
                 db.session.rollback()
+                if instance_id and current_mount:
+                    mark_kv2_inventory_failed(instance_id, current_mount)
                 failed += 1
             context.checkpoint(
                 current=index, total=count, percent=min(5 + 90 * index // count, 95),
