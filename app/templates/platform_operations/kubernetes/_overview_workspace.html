@@ -3,12 +3,7 @@
 {% import "components/section_intro.html" as section_intro %}
 <section class="min-w-0 space-y-6" aria-label="Kubernetes Administration Overview">
     {# Read-only fleet posture is its own overview block, not a control footer. #}
-    <section class="space-y-4" aria-labelledby="kubernetes-admin-summary-heading">
-        {{ section_intro.render(
-            'Overview',
-            'Kubernetes administration coverage and configured security posture at a glance.',
-            'kubernetes-admin-summary-heading'
-        ) }}
+    <section class="space-y-4" aria-label="Kubernetes Administration Coverage Summary">
         {% set overview_posture %}
             <span id="kubernetes-admin-overview-status">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
         {% endset %}

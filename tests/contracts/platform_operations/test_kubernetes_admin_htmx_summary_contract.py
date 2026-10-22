@@ -218,11 +218,11 @@ def test_kubernetes_admin_controls_have_inventory_section_intro_and_operational_
     # without relocating the approved shared Operational Section Card header.
     assert 'components/section_intro.html' in inventory
     assert 'components/section_intro.html' in overview
-    overview_intro = overview.index("'Overview',")
-    operations_intro = overview.index("'Kubernetes Operations',", overview_intro)
+    summary = overview.index("'Administration Coverage',")
+    operations_intro = overview.index("'Kubernetes Operations',", summary)
     card = overview.index("'Managed Administration Controls',", operations_intro)
     contents = overview.index('id="kubernetes-admin-controls-list"', card)
-    assert overview_intro < operations_intro < card < contents
+    assert summary < operations_intro < card < contents
     assert "'Administration Coverage'," in overview
     assert 'kubernetes-admin-controls-heading' in overview
     assert "'Kubernetes Operations'," in overview
@@ -278,7 +278,7 @@ def test_managed_controls_are_a_compact_operator_brief() -> None:
     # Fleet-wide Overview summary and operational control management are two
     # separate canonical cards. The summary must not regress into a footer.
     assert overview.count('operational_section.render(') == 2
-    assert overview.count('section_intro.render(') == 2
+    assert overview.count('section_intro.render(') == 1
     assert 'components/section_intro.html' in overview
     summary = overview.index("'Administration Coverage',")
     summary_metrics = overview.index('id="kubernetes-admin-overview-metric-{{ loop.index }}"')
@@ -471,9 +471,9 @@ def test_kubernetes_overview_restores_separate_summary_and_operations_blocks() -
     overview = (ROOT / 'app/templates/platform_operations/kubernetes/_overview_workspace.html').read_text()
     summary = (ROOT / 'app/templates/platform_operations/kubernetes/_summary_oob.html').read_text()
 
-    assert "'Overview'," in overview
+    assert "'Overview'," not in overview
     assert "'Kubernetes Operations'," in overview
-    assert overview.index("'Overview',") < overview.index("'Kubernetes Operations',")
+    assert overview.index("'Administration Coverage',") < overview.index("'Kubernetes Operations',")
     assert "'Administration Coverage'," in overview
     assert "'Managed Administration Controls'," in overview
     assert overview.index("'Administration Coverage',") < overview.index("'Managed Administration Controls',")
@@ -481,6 +481,8 @@ def test_kubernetes_overview_restores_separate_summary_and_operations_blocks() -
     assert "id='kubernetes-admin-controls-section'" in overview
     assert overview.count("{% endcall %}") == 2
     assert overview.count('operational_section.render(') == 2
+    assert overview.count('section_intro.render(') == 1
+    assert 'Kubernetes administration coverage and configured security posture at a glance.' not in overview
 
     # Keep the source-owned summary metric IDs and status for every mutation.
     assert 'id="kubernetes-admin-overview-metric-{{ loop.index }}"' in overview
