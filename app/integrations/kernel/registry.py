@@ -241,6 +241,7 @@ class IntegrationRegistry:
                 'app.integrations.observability.alert_source.providers.alertmanager',
                 'app.integrations.storage.object_storage.providers.minio',
                 'app.integrations.registry.providers.harbor',
+                'app.integrations.secrets_management.secrets_pki.providers.vault',
             ):
                 import_module(module_path)
             self._builtins_loaded = True
