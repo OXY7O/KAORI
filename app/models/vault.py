@@ -39,6 +39,8 @@ class VaultInstance(db.Model):
     timeout: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
     verify_ssl: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     detected_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    compatibility_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    compatibility_profile: Mapped[str | None] = mapped_column(String(120), nullable=True)
     capability_profile: Mapped[str | None] = mapped_column(String(120), nullable=True)
     capabilities: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     validation_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
