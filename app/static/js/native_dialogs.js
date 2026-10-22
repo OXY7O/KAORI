@@ -79,13 +79,6 @@
         if (target.id === 'tenant-admin-workspace' || target.id === 'notification-channels-workspace') {
             openSelectedDialog(target)
         }
-        // An authorized HTMX Edit link replaces only the configuration dialog.
-        // Opt-in auto-open state comes from the server, never from an arbitrary resource ID.
-        if (target.id === 'notification-channel-config-dialog') {
-            const dialog = document.getElementById('notification-channel-config-dialog')
-            if (dialog instanceof HTMLDialogElement && dialog.hasAttribute('data-kaori-dialog-auto-open'))
-                showDialog(dialog)
-        }
     })
 
     const closeDialog = (control) => {
