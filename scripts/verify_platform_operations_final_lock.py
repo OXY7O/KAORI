@@ -565,7 +565,7 @@ def main() -> int:
         'section_intro.render(',
         'secret-reveal-cluster-readiness-heading',
         'operational_section.render(',
-        "        'Cluster Prerequisites',",
+        "'Cluster Prerequisites',",
         'sm:grid-cols-2 lg:grid-cols-3',
         'aria-labelledby="secret-reveal-kubernetes-boundary-heading"',
         "action_button.classes('primary')",
