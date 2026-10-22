@@ -113,7 +113,7 @@ integration registration.
 
 The source contract now dispatches through canonical **Jobs & Executions**:
 registered `secrets_pki.inventory.sync`, default schedule **disabled**, manual
-execution requiring `jobs.execute` and `integrations.manage`, scheduled
+execution requiring `jobs.execute` and `secrets_pki.sync`, scheduled
 policy editing requiring both `jobs.configure` and `integrations.manage`, inventory
 worker registration/preflight, bounded per-instance approved mount scope,
 canonical `JobExecutionContext` progress and sanitized partial/failure
@@ -126,7 +126,7 @@ not Redis task arguments. Collection error marks scoped collection
 
 It is **not yet exposed through the provider-neutral Secrets & PKI Inventory
 workspace**; sensitive reference listing/search/exports remain unimplemented
-until the #2597/#2591 scoped RBAC and UI review. Real Vault and Postgres
+until the #2591 scoped Inventory UI and full #724 source-level read authorization are reviewed. Real Vault and Postgres
 upgrade/downgrade acceptance is not yet available.
  Do not expose it as
 `Available`, call it from an HTTP read route, or persist its unredacted
@@ -152,3 +152,18 @@ run manually and review source-state freshness. The Vault API may return 403
 when list/read permissions on metadata are not granted. A successful provider
 health check does not imply inventory permissions. Do not claim a passing
 migration, worker check or Vault UAT until actually observed.
+
+
+### Secrets & PKI authorization (HV-13, #2597)
+
+The canonical Access Permission Catalog includes `secrets_pki.view` for safe
+committed operational metadata and `secrets_pki.sync` for metadata-only
+JobExecution admission. Sync depends on `secrets_pki.view` and `jobs.execute`.
+Viewer/Auditor cannot start scans; Operator/Editor/Admin receive governed sync.
+Vault registration, AppRole configuration, approved mount changes and automatic
+job-policy configuration still require `integrations.manage` (policy update
+also requires `jobs.configure`). No `secrets_pki.reveal` permission or generic
+plaintext/material access is introduced. Full path-level inventory read models
+remain blocked on bounded server-side source scope (#724) and Vault operational
+workspace acceptance (#2591); RBAC grants must not be interpreted as enabling
+a Secret value reader.
