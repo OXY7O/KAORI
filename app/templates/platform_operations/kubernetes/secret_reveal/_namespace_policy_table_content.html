@@ -214,7 +214,29 @@
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
-        {{ pagination_ui.numeric_pages(namespace_pagination.page, namespace_pagination.total_pages) }}
+        {# Numeric links must use the same route, selection, history and scope
+           as Previous/Next. The shared macro itself owns the link markup. #}
+        {% set namespace_page_query = {
+            'tab': 'secret-reveal',
+            'view': 'policies',
+            'cluster_id': selected_cluster.id,
+            'namespace_q': namespace_filters.query,
+            'namespace_policy': namespace_filters.policy,
+            'per_page': namespace_pagination.per_page
+        } %}
+        <span hx-select="#secret-reveal-namespace-table-content"
+              hx-push-url="true">
+            {{ pagination_ui.numeric_pages(
+                namespace_pagination.page,
+                namespace_pagination.total_pages,
+                endpoint='platform_operations.kubernetes.secret_reveal.workspace',
+                href_endpoint='platform_operations.kubernetes.index',
+                query_params=namespace_page_query,
+                hx_target='#secret-reveal-namespace-table-content',
+                hx_indicator='#secret-reveal-namespace-loading',
+                hx_swap='innerHTML'
+            ) }}
+        </span>
         {% if namespace_pagination.has_next %}
             {% set next_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
             {% set next_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}

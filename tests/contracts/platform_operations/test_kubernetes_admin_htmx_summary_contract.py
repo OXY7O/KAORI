@@ -826,3 +826,101 @@ def test_kubernetes_posture_cards_share_operational_section_hierarchy() -> None:
     assert 'Global Reveal Remains Disabled' in config
     assert 'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html' in config
 
+
+
+def test_namespace_numeric_pagination_uses_canonical_htmx_and_url_context() -> None:
+    """Numbered pages must match working Previous/Next controls."""
+    table = (
+        ROOT / 'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
+    ).read_text()
+    macro = (ROOT / 'app/templates/components/pagination.html').read_text()
+    workspace = (ROOT / 'app/platform_operations/kubernetes/secret_reveal/routes.py').read_text()
+
+    assert table.count('pagination_ui.numeric_pages(') == 1
+    assert 'pagination_ui.numeric_pages(namespace_pagination.page, namespace_pagination.total_pages)' not in table
+    assert "endpoint='platform_operations.kubernetes.secret_reveal.workspace'" in table
+    assert "href_endpoint='platform_operations.kubernetes.index'" in table
+    assert 'query_params=namespace_page_query' in table
+    assert "hx_target='#secret-reveal-namespace-table-content'" in table
+    assert "hx_indicator='#secret-reveal-namespace-loading'" in table
+    assert "hx_swap='innerHTML'" in table
+    assert '<span hx-select="#secret-reveal-namespace-table-content"' in table
+    assert 'hx-push-url="true"' in table
+    for param in ('tab', 'view', 'cluster_id', 'namespace_q', 'namespace_policy', 'per_page'):
+        assert f"'{param}':" in table
+    assert "'tab': 'secret-reveal'" in table
+    assert "'view': 'policies'" in table
+
+    # The existing shared macro emits live links when given a target, while
+    # the same partial selector/history pattern is already used by prev/next.
+    assert 'hx_target=None' in macro
+    assert 'hx-get="{{ page_hx_url }}"' in macro
+    assert 'hx-target="{{ hx_target }}"' in macro
+    assert 'hx-swap="{{ hx_swap }}"' in macro
+    assert 'hx-select="#secret-reveal-namespace-table-content"' in table
+    assert "response.headers['HX-Push-Url']" in workspace
+    assert 'hx-select="#secret-reveal-namespace-table-content"' in table
+    assert 'namespace_pagination.prev_page' in table
+    assert 'namespace_pagination.next_page' in table
+
+
+def test_shared_numeric_page_links_render_valid_routes_and_filters() -> None:
+    """Render the canonical macro to guard real generated links, not just source markers."""
+    from html.parser import HTMLParser
+    from types import SimpleNamespace
+    from urllib.parse import parse_qs, urlencode, urlsplit
+
+    from jinja2 import Environment, FileSystemLoader
+
+    class Links(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__()
+            self.items: list[dict[str, str | None]] = []
+
+        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+            if tag == 'a':
+                self.items.append(dict(attrs))
+
+    templates = ROOT / 'app/templates'
+    env = Environment(loader=FileSystemLoader(str(templates)), autoescape=True)
+    env.globals['request'] = SimpleNamespace(endpoint='wrong.current.endpoint', view_args={}, args={})
+    env.globals['url_for'] = (
+        lambda endpoint, **params: '/' + endpoint + '?' + urlencode(params)
+    )
+
+    params = {
+        'tab': 'secret-reveal',
+        'view': 'policies',
+        'cluster_id': 'cluster-123',
+        'namespace_q': 'kaori',
+        'namespace_policy': 'disabled',
+        'per_page': 5,
+    }
+    rendered = env.get_template('components/pagination.html').module.numeric_pages(
+        2, 5,
+        endpoint='platform_operations.kubernetes.secret_reveal.workspace',
+        href_endpoint='platform_operations.kubernetes.index',
+        query_params=params,
+        hx_target='#secret-reveal-namespace-table-content',
+        hx_indicator='#secret-reveal-namespace-loading',
+        hx_swap='innerHTML',
+    )
+    parser = Links()
+    parser.feed(str(rendered))
+    assert len(parser.items) >= 3
+    assert all('hx-get' in item for item in parser.items)
+    assert all(item.get('hx-target') == '#secret-reveal-namespace-table-content' for item in parser.items)
+    assert all(item.get('hx-indicator') == '#secret-reveal-namespace-loading' for item in parser.items)
+    assert all(item.get('hx-swap') == 'innerHTML' for item in parser.items)
+    for item in parser.items:
+        page = urlsplit(item['href'] or '')
+        partial = urlsplit(item['hx-get'] or '')
+        assert page.path == '/platform_operations.kubernetes.index'
+        assert partial.path == '/platform_operations.kubernetes.secret_reveal.workspace'
+        href_args = parse_qs(page.query)
+        hx_args = parse_qs(partial.query)
+        assert href_args == hx_args
+        for key, value in params.items():
+            assert href_args[key] == [str(value)]
+        assert int(href_args['page'][0]) in {1, 3, 4, 5}
+
