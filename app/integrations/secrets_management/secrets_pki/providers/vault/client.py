@@ -122,6 +122,26 @@ class VaultClient:
             'response_time_ms': int((perf_counter() - started) * 1000),
         }
 
+    def validate_capabilities(self) -> dict[str, Any]:
+        """One AppRole login is used for token self-inspection and optional capability discovery."""
+        started = perf_counter()
+        health = self.health()
+        if health['status'] not in {'active', 'standby', 'performance_standby'}:
+            raise VaultProviderError('Vault must be accessible and unsealed for Full Validation.')
+        token = self.login()
+        status, data = self._request('/v1/auth/token/lookup-self', token=token)
+        if status != 200 or not isinstance(data.get('data'), dict):
+            raise VaultProviderError('Vault AppRole token lookup-self is unavailable.')
+        mounts_status, mounts_data = self._request('/v1/sys/mounts', token=token)
+        mounts = 'available' if mounts_status == 200 and isinstance(mounts_data.get('data'), dict) else (
+            'permission_unavailable' if mounts_status in {403, 404} else 'unavailable'
+        )
+        return {
+            'health': health,
+            'mount_metadata': mounts,
+            'response_time_ms': int((perf_counter() - started) * 1000),
+        }
+
     def detect_capabilities(self) -> dict[str, str]:
         """Return only capability availability, never mount names or secret paths."""
         token = self.login()
