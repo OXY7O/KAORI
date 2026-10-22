@@ -526,7 +526,7 @@ def test_channel_inventory_rows_are_compact_with_native_policy_dialog() -> None:
     assert 'autofocus' in policy
     assert 'overflow-y-auto overscroll-contain' in policy
     assert 'channel.event_type_groups' in policy
-    assert 'for event_label in group.items' in policy
+    assert 'for event_label in group.events' in policy
     assert 'No Allowed Uses' in policy
     assert 'channel.report_schedule_count' in policy
     assert policy.count('data-kaori-dialog-close') == 2
