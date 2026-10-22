@@ -331,6 +331,7 @@ def get_reveal_page_context(
     my_search: str = '',
     my_status: str = '',
     my_sort: str = 'newest',
+    my_request_id: str = '',
     pending_pagination: PendingRevealPagination = PendingRevealPagination(),
     pending_search: str = '',
     pending_sort: str = 'oldest',
@@ -345,7 +346,12 @@ def get_reveal_page_context(
         state_filter = ''
     ordering = 'oldest' if my_sort == 'oldest' else 'newest'
 
+    # Exact linked-request selection is strictly scoped to the current requester.
+    # Notification IDs never convey authority or permit another user's request reads.
+    focus_id = str(my_request_id or '').strip()[:80]
     my_query = SecretRevealRequest.query.filter_by(requester_user_id=user_id)
+    if focus_id:
+        my_query = my_query.filter(SecretRevealRequest.id == focus_id)
     if search:
         search_term = search.lower()
         my_query = my_query.filter(
@@ -431,6 +437,7 @@ def get_reveal_page_context(
         'my_reveal_requests': my_requests,
         'my_reveal_pagination': my_pagination,
         'my_reveal_filters': {'search': search, 'status': state_filter, 'sort': ordering},
+        'my_reveal_focus_id': focus_id,
         'pending_reveal_requests': pending_requests,
         'pending_reveal_pagination': pending_pagination_payload,
         'pending_reveal_filters': {'search': pending_search_value, 'sort': pending_ordering},

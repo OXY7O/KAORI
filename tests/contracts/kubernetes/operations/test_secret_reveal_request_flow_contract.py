@@ -153,3 +153,47 @@ def test_approved_request_cta_uses_bounded_focused_navigation_instead_of_native_
     assert "target.focus({ preventScroll: true })" in workspace_js
     assert "window.history.replaceState(window.history.state, '', url)" in workspace_js
     assert "test_continue_to_approved_requests_scrolls_only_main_and_focuses_action" in browser
+
+
+def test_requester_approval_notification_opens_exact_owned_request_and_preserves_step_up() -> None:
+    routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
+    service = read('app/kubernetes/operations/secrets/reveal_service.py')
+    table = read('app/templates/kubernetes/operations/secrets/_reveal_request_status.html')
+    step_up = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
+    docs = read('app/kubernetes/operations/secrets/README.md')
+
+    # The notification targets one committed request; no native registry fragment.
+    decision = routes.split('def decide_secret_reveal_request(', 1)[1]
+    requester_notification = decision.split('create_notification(', 1)[1].split(
+        'metadata=_reveal_request_metadata(record)', 1
+    )[0]
+    assert "my_request_id=record.id" in requester_notification
+    assert "_anchor='my-secret-reveal-requests'" not in requester_notification
+    assert "my_request_id=request.args.get('my_request_id', '')" in routes
+
+    # Ownership is a prerequisite to exact request selection, not a fallback.
+    assert 'my_request_id: str = \'\'' in service
+    assert 'SecretRevealRequest.query.filter_by(requester_user_id=user_id)' in service
+    assert 'my_query = my_query.filter(SecretRevealRequest.id == focus_id)' in service
+    assert service.index('query.filter_by(requester_user_id=user_id)') < service.index(
+        'SecretRevealRequest.id == focus_id'
+    )
+    assert "'my_reveal_focus_id': focus_id" in service
+    assert 'my_request_id=my_reveal_focus_id' in table
+    assert "'my_request_id': my_reveal_focus_id" in table
+
+    # No extra reveal endpoint; existing guarded row action is authoritative.
+    assert 'Request Approved · Ready for Reveal' in table
+    assert 'Show All Requests' in table
+    assert 'Request Not Available' in table
+    assert 'linked_request.status' in table
+    assert 'data-reveal-once-action' in table
+    assert 'hx-target="#reveal-value-output"' in table
+    assert 'name="csrf_token"' in table
+    assert 'name="my_request_id"' in step_up
+    assert 'value="{{ my_reveal_focus_id }}"' in step_up
+    assert 'A request from your notification is selected below.' in step_up
+    assert "linked_request_id = (request.form.get('my_request_id') or '').strip()" in routes
+    assert "if len(linked_request_id) > 80:" in routes
+    assert 'return redirect(return_url)' in routes
+    assert '**Requester decision deep links:**' in docs
