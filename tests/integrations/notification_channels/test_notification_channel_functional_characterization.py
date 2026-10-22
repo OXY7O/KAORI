@@ -15,6 +15,24 @@ from app.models.notification_channel import NotificationChannel
 from app.security.credentials import EncryptedText
 
 
+def test_channel_policy_event_type_grouping_preserves_order_and_all_items() -> None:
+    labels = [
+        'Alert Intelligence · Active Alert',
+        'Alert Operations · Firing',
+        'Alert Operations · Resolved',
+        'Scheduled Reports · Report Ready',
+        'Alert Intelligence · Suppressed',
+        'Other Event',
+    ]
+    assert service._channel_event_type_groups(labels) == [
+        {'label': 'Alert Intelligence', 'events': ['Active Alert', 'Suppressed']},
+        {'label': 'Alert Operations', 'events': ['Firing', 'Resolved']},
+        {'label': 'Scheduled Reports', 'events': ['Report Ready']},
+        {'label': 'Other', 'events': ['Other Event']},
+    ]
+    assert service._channel_event_type_groups([]) == []
+
+
 class SessionStub:
     def __init__(self, *, channel: object | None = None) -> None:
         self.channel = channel

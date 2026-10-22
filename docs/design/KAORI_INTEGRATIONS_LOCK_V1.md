@@ -300,13 +300,17 @@ Delivery Evidence → Actions. Combining Last Test and Last Delivery in
 a labeled evidence cell **does not combine their statuses or timestamps**.
 
 Long event policies must not be rendered as a single unbounded
-comma-delimited paragraph in normal monitoring view. Show an allowed-use
-count and at most two single-line previews by default. For more than
-two event types, use a native, keyboard-accessible **View all uses**
-`details/summary` expansion containing the complete source-owned list;
-no custom JavaScript or new modal framework. A bounded scroll area is
-permitted within the expanded list. Empty policies and committed report
-schedule references retain explicit representations.
+comma-delimited paragraph in normal monitoring view. Following the
+operator-approved redesign #2721, the default row shows an allowed-use
+count, a single truncated event preview, and **View policy**. The former
+inline `details/summary` expansion is retired because it changes the
+height of all neighboring table cells. An accessible, shared-pattern KAORI
+native dialog lives **outside the table's horizontal scroll wrapper** and
+contains the complete source-owned list, grouped by event capability.
+The dialog provides keyboard/focus/Escape/backdrop and Close behavior,
+a scrollable body and responsive columns, without new JS or modal
+frameworks. Empty policies and committed report schedule references
+retain explicit representations.
 
 Keep the channel name as the primary identity, provider and destination
 as supporting details, and long destination/domain labels inspectable
@@ -340,3 +344,21 @@ feedback remain unchanged. HTMX mutation GET results deliver the existing
 `operation_feedback_oob` Toast with no redundant full-document refresh.
 No new provider API, transport, route policy, or modal implementation is
 introduced.
+
+## Notification Channel Inventory Controlled Row Height (#2721, 2026-10-23)
+
+The Channel Inventory table's default row is a compact operator summary
+regardless of whether Allowed Uses contains 0, 2, 13 or 50 entries.
+The read-only `event_type_groups` view is derived from existing normalized
+event labels, retaining the source event order and semantics; neither
+event policy, authorization nor delivery behavior changes. The
+`_channel_policy_dialog.html` partial uses existing KAORI native-dialog
+chrome and is rendered outside the table for each paginated, authorized
+channel. Dialog content shows allowed-use groups plus minimum severity,
+routing domains and report schedule reference evidence. No credentials.
+
+Delivery Evidence retains separate Test and Delivery statuses/timestamps;
+this redesign only improves spacing and visual hierarchy. Edit/Test/Delete,
+destructive confirmation, CSRF, RBAC, HTMX state, OOB operational feedback,
+filter/header loading and pagination contracts remain unchanged. Do not
+use inline row-expanding controls in dense operational inventory tables.
