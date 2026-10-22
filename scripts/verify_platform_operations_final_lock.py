@@ -562,13 +562,22 @@ def main() -> int:
         'Cluster Credential',
         'selected_cluster_readiness.credential_configured',
         'All three cluster prerequisites must be satisfied.',
-        'bg-surface-card shadow-sm xl:col-span-5',
+        'section_intro.render(',
+        'secret-reveal-cluster-readiness-heading',
+        'operational_section.render(',
+        "        'Cluster Prerequisites',",
+        'sm:grid-cols-2 lg:grid-cols-3',
+        'aria-labelledby="secret-reveal-kubernetes-boundary-heading"',
+        "action_button.classes('primary')",
         'Policies activate only when cluster readiness is satisfied.',
         'secret-reveal-selected-cluster-posture',
         'hx-swap-oob="outerHTML"',
     ):
         if required not in cluster_workspace:
             errors.append(f'Secret Reveal cluster-readiness contract missing: {required}')
+    for retired in ('xl:col-span-7', 'xl:col-span-5', 'lg:grid-cols-3\"'):
+        if retired in cluster_workspace:
+            errors.append(f'Secret Reveal Cluster Readiness uses retired cramped layout: {retired}')
     if '<aside class="overflow-hidden rounded-2xl border border-kaori-primary bg-kaori-primary' in cluster_workspace:
         errors.append('Secret Reveal Kubernetes Boundary must not return to a solid Violet surface')
     if (
