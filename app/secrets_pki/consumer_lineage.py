@@ -109,7 +109,7 @@ def _active(edge: LineageEdge, at: datetime) -> bool:
 def project_secret_impact(
     *, secret_identity_id: str, edges: tuple[LineageEdge, ...],
     authorized_consumer_ids: frozenset[str], source_freshness: SourceFreshness,
-    at: datetime,
+    correlation_freshness: SourceFreshness, at: datetime,
 ) -> LineageImpact:
     """Only connected confirmed, effective, authorized edges count as impact.
 
@@ -119,8 +119,11 @@ def project_secret_impact(
     """
     source_id = _uuid(secret_identity_id)
     _aware(at)
-    if source_freshness not in {'ready', 'stale', 'partial', 'not_collected'}:
-        raise ValueError('Unknown committed source freshness.')
+    if (
+        source_freshness not in {'ready', 'stale', 'partial', 'not_collected'}
+        or correlation_freshness not in {'ready', 'stale', 'partial', 'not_collected'}
+    ):
+        raise ValueError('Unknown committed source/correlation freshness.')
     if len(edges) > 500 or len(authorized_consumer_ids) > 500:
         raise ValueError('Impact projection exceeds bounded correlation scope.')
     allowed = {_uuid(value) for value in authorized_consumer_ids}
@@ -147,7 +150,7 @@ def project_secret_impact(
     })
     if not consumers:
         state = 'not_proven'
-    elif source_freshness == 'ready':
+    elif source_freshness == 'ready' and correlation_freshness == 'ready':
         state = 'qualified_current'
     else:
         state = 'historical_only'
