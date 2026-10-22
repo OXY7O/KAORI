@@ -113,7 +113,8 @@ integration registration.
 
 The source contract now dispatches through canonical **Jobs & Executions**:
 registered `secrets_pki.inventory.sync`, default schedule **disabled**, manual
-execution requiring `jobs.execute` and `integrations.manage`, inventory
+execution requiring `jobs.execute` and `integrations.manage`, scheduled
+policy editing requiring both `jobs.configure` and `integrations.manage`, inventory
 worker registration/preflight, bounded per-instance approved mount scope,
 canonical `JobExecutionContext` progress and sanitized partial/failure
 outcomes. The provider registration form exposes an explicit comma-separated
@@ -139,8 +140,8 @@ Alembic, actual Vault and security gates remain unverified until run.
 ### HV-02 focused checks (not yet attested)
 
 ```bash
-python -m pytest tests/integrations/test_vault_provider.py tests/integrations/test_vault_kv2_inventory.py tests/integrations/test_vault_kv2_committed_inventory.py -q
-python -m ruff check app/models/secrets_pki.py app/integrations/secrets_management/secrets_pki tests/integrations/test_vault_kv2_*.py
+python -m pytest tests/integrations/test_vault_provider.py tests/integrations/test_vault_kv2_inventory.py tests/integrations/test_vault_kv2_committed_inventory.py tests/integrations/test_vault_inventory_job_contract.py -q
+python -m ruff check app/models/secrets_pki.py app/integrations/secrets_management/secrets_pki tests/integrations/test_vault_kv2_*.py tests/integrations/test_vault_inventory_job_contract.py
 ```
 
 DevContainer sequence: apply Alembic migrations using the repository's standard
