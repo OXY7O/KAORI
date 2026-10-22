@@ -130,3 +130,104 @@ def test_vault_asset_uses_the_same_label_in_the_shared_binding_picker():
     assert definition.model.__name__ == 'IntegrationInstance'
     assert definition.integration_type == 'secrets_pki'
     assert definition.selector_label == 'vault_instance'
+
+def _range_client(*, variant='ready'):
+    source = _client()
+    source.range_queries = []
+
+    def query_range(expression, start, end, step):
+        source.range_queries.append((expression, start, end, step))
+        window_start, window_end = int(start), int(end)
+        points = [[ts, '1'] for ts in range(window_start, window_end + 1, 300)]
+        record = {
+            'metric': {
+                '__name__': 'vault_core_active', 'vault_instance': '42',
+                'instance': 'private-hostname-not-to-persist',
+            },
+            'values': points,
+        }
+        if variant == 'foreign':
+            record['metric']['vault_instance'] = '43'
+        if variant == 'bad_value':
+            record['values'][0][1] = 'NaN'
+        if variant == 'unsorted':
+            record['values'][2][0] = record['values'][1][0]
+        if variant == 'missing_early':
+            record['values'] = points[4:]
+        if variant == 'gap':
+            record['values'] = points[:5] + points[8:]
+        if variant == 'overbudget':
+            record['values'] += [[window_end + i, '1'] for i in range(5)]
+        if variant == 'empty':
+            return {'status': 'success', 'data': {'resultType': 'matrix', 'result': []}}
+        if variant == 'multiple':
+            return {'status': 'success', 'data': {'resultType': 'matrix', 'result': [record, record]}}
+        if variant == 'bad_type':
+            return {'status': 'success', 'data': {'resultType': 'vector', 'result': [record]}}
+        if variant == 'error':
+            raise RuntimeError('https://metrics.local/secrets/unauthorized-token')
+        return {'status': 'success', 'data': {'resultType': 'matrix', 'result': [record]}}
+
+    source.query_range = query_range
+    return source
+
+
+def test_vault_binding_validates_bounded_historical_window_without_long_term_claim(monkeypatch):
+    source = _range_client()
+    result = _run(monkeypatch, source)
+    assert result.status == 'ready'
+    assert result.evidence['historical_query_readiness'] == 'recent_hour_qualified'
+    assert result.evidence['retention_coverage'] == 'one_hour_observed_only'
+    assert result.evidence['historical_window_seconds'] == 3600
+    assert result.evidence['historical_step_seconds'] == 300
+    assert result.evidence['historical_sample_count'] == 13
+    assert len(source.range_queries) == 1
+    assert source.range_queries[0][0] == 'vault_core_active{vault_instance="42"}'
+    assert source.range_queries[0][3] == '300'
+    assert int(source.range_queries[0][2]) - int(source.range_queries[0][1]) == 3600
+    assert 'private-hostname' not in repr(result.evidence)
+    assert 'values' not in result.evidence
+
+
+def test_absent_historical_query_range_is_not_claimed(monkeypatch):
+    source = _client()
+    result = _run(monkeypatch, source)
+    assert result.status == 'ready'
+    assert result.evidence['historical_query_readiness'] == 'not_validated'
+
+
+def test_history_query_negative_results_never_change_instant_or_vault_health(monkeypatch):
+    expected = {
+        'foreign': 'ambiguous',
+        'bad_value': 'incomplete',
+        'unsorted': 'incomplete',
+        'missing_early': 'incomplete',
+        'gap': 'incomplete',
+        'overbudget': 'incomplete',
+        'empty': 'incomplete',
+        'multiple': 'ambiguous',
+        'bad_type': 'unavailable',
+        'error': 'unavailable',
+    }
+    for variant, historical_status in expected.items():
+        source = _range_client(variant=variant)
+        result = _run(monkeypatch, source)
+        assert result.status == 'ready'
+        assert result.evidence['historical_query_readiness'] == historical_status
+        assert result.evidence['retention_coverage'] == 'not_qualified'
+        assert 'provider_api_status' not in result.evidence
+        assert 'unauthorized-token' not in repr(result.evidence)
+        assert len(source.range_queries) == 1
+
+
+def test_history_query_never_runs_for_unqualified_instant_source(monkeypatch):
+    source = _range_client()
+    result = _run(monkeypatch, source, provider='openbao')
+    assert result.status == 'blocked'
+    assert source.queries == []
+    assert source.range_queries == []
+    result = _run(monkeypatch, source, _binding(
+        selector={'matchers': [{'label': 'job', 'operator': '=', 'value': 'vault'}]},
+    ))
+    assert result.status == 'blocked'
+    assert source.range_queries == []

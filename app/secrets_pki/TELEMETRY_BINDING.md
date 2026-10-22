@@ -109,3 +109,31 @@ Focused tests:
 `tests/integrations/test_vault_alert_source_binding.py`.
 
 Provider API source: https://github.com/prometheus/alertmanager/blob/main/api/v2/openapi.yaml
+
+
+## Bounded historical query-range qualification — HV-06 #2697
+
+An explicit Vault Metrics Source **Validate Binding** now first qualifies the
+existing exact single-node instant \`vault_core_active\` identity. If that succeeds,
+the same registered Prometheus-compatible client requests **one** bounded
+\`query_range\` over the most recent 60 minutes at a 300-second step.
+
+The validator checks exact \`vault_instance\` identity, one matrix series,
+finite/monotonic timestamp and 0/1 values, endpoint coverage and no gap
+exceeding ten minutes. It retains only sanitized evidence status/count/step:
+\`recent_hour_qualified\`, \`incomplete\`, \`ambiguous\`, \`unavailable\`, or
+\`not_validated\`. A qualified recent hour stores
+\`retention_coverage=one_hour_observed_only\` and **does not establish**
+historical retention beyond that hour, HA topology, continuous workload
+health, Vault API availability, service impact or time-series materialization.
+
+Range unavailable/denied/malformed/missing never upgrades retention, but
+also **does not downgrade** already-qualified instantaneous identity nor core
+Vault provider readiness. No provider tokens, host/metric label values,
+timeseries points or raw response/errors are committed. Prometheus/Thanos
+remains authoritative; no new TSDB/worker/query endpoint is introduced.
+Existing binding validation evidence ownership remains unchanged.
+
+The real Prometheus/Thanos range API, worker/network performance, HA and
+long-term retention require DevContainer/staging UAT. Test source:
+\`tests/integrations/test_vault_metrics_binding.py\`.
