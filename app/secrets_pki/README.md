@@ -141,3 +141,11 @@ material history, not verified revocation, rotation or consumer adoption.
 Tests: `tests/integrations/test_vault_kv2_version_posture.py`.
 Exact-SHA Ruff/Pyright/pytest, runtime PostgreSQL, RBAC and browser UAT still
 need Developer Check/Full Admission; a review merge is not PASS.
+
+## Integrated Vault acceptance / UAT (#2593)
+
+The exact-SHA coverage and acceptance matrix is maintained in
+[VAULT_INTEGRATED_UAT.md](VAULT_INTEGRATED_UAT.md). It separates source
+implementation from Not Tested / Not Implemented, requires existing quality
+gates and real Vault/DevContainer evidence, and prohibits calling a review
+merge a Full Admission or human UAT PASS.
