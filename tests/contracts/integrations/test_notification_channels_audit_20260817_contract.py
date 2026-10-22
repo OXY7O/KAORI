@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from jinja2 import Environment, nodes
+
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -33,8 +35,6 @@ def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
 
 
 def test_notification_tab_macro_namespace_cannot_be_shadowed_by_local_assignment() -> None:
-    from jinja2 import Environment, nodes
-
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
     parsed = Environment().parse(page)
     imported_macros = {node.target for node in parsed.find_all(nodes.Import)}
