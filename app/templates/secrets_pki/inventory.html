@@ -110,7 +110,24 @@
                     {% if can_execute_inventory %}
                         <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.sync') }}" class="inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open Public PKI Job</a>
                     {% endif %}
-                    <p class="text-xs text-content-muted">Issued certificate registry and workload certificate delivery assurance remain separate pending capabilities.</p>
+                    <div class="border-t border-outline-subtle pt-3" role="status">
+                        <p class="text-sm font-semibold text-content-primary">Stored Issued Certificates</p>
+                        <p class="mt-1 text-xs text-content-secondary">{{ stored_cert_readiness.label }}</p>
+                        <p class="mt-2 text-xs text-content-muted">
+                            Observed stored certificates:
+                            <span class="font-semibold text-content-primary">{{ stored_cert_readiness.observed_certificates if stored_cert_readiness.observed_certificates is not none else 'Not Collected' }}</span>
+                            · Committed mounts:
+                            {{ stored_cert_readiness.committed_mounts if stored_cert_readiness.committed_mounts is not none else 'Not Collected' }}.
+                        </p>
+                        <p class="mt-2 text-xs text-content-muted">
+                            Coverage limited to Vault certificates stored by approved mounts (`no_store=false`).
+                            Imported/unretained certificates and actual workload delivery are not covered.
+                            Missing certificate ≠ revoked or deleted.
+                        </p>
+                        {% if can_execute_inventory %}
+                            <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.stored_certs.sync') }}" class="mt-2 inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open Stored Certificate Job</a>
+                        {% endif %}
+                    </div>
                 </div>
             {% endcall %}
             {% call section_card.render('Consumers & Rotation Assurance',
