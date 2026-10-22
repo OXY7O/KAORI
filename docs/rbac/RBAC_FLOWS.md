@@ -9,12 +9,11 @@ flask seed-rbac
   -> mark default roles system + active
   -> converge each default role to canonical permission set
   -> commit
-
-Any historical role-id backfill belongs to the specific reviewed migration,
-not to this current idempotent seeding command.
 ```
 
 The command is idempotent and must run after migrations during bootstrap or deployment.
+Any historical role-id backfill belongs to a separately reviewed migration,
+not to this current idempotent seeding command.
 
 ## 2. Authorization request
 
