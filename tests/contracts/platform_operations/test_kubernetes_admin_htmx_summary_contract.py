@@ -665,6 +665,7 @@ def test_secret_reveal_density_uses_source_truth_and_contextual_actions() -> Non
     assert section.index('id="secret-reveal-live-source"') < section.index('id="secret-reveal-namespace-section"')
     assert 'hx-target="#secret-reveal-cluster-workspace"' in section
     assert 'refresh_namespace=1' in section
+    assert "namespace_pagination.per_page, refresh_namespace=1)" in section
     assert section.count('id="secret-reveal-namespace-loading"') == 1
     assert 'class="{{ table_ui.loading_bar_classes() }}"' in section
     assert 'relative h-2 bg-surface-card' not in section
@@ -672,8 +673,8 @@ def test_secret_reveal_density_uses_source_truth_and_contextual_actions() -> Non
     # Clear Filters uses the existing KAORI action owner and appears only
     # when either search or policy filter is actually active.
     assert "registry_ui.clear_filters_action(" in section
-    assert "namespace_filters.query | tojson" in section
-    assert "namespace_filters.policy | tojson" in section
+    assert "(namespace_filters.query or '') | tojson" in section
+    assert "(namespace_filters.policy or 'all') | tojson" in section
     assert 'x-model="query"' in section
     assert 'x-model="policy"' in section
     assert ":hidden=\"!query.trim() && policy === 'all'\"" in section
