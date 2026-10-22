@@ -63,6 +63,7 @@
                     </form>
                 </div>
                 <p class="text-sm text-content-secondary">Vault version: {{ instance.detected_version or "Not Detected" }}</p>
+                <p class="text-sm text-content-secondary">Version compatibility: {{ (instance.compatibility_status or 'Not Validated')|replace('_',' ')|title }}</p>
                 <p class="text-sm text-content-secondary">Optional mount metadata: {{ summary.get("mount_metadata", "Not Validated")|replace("_"," ")|title }}</p>
                 <div class="flex flex-wrap gap-2">
                 {% for cap in instance.capabilities or [] %}
@@ -88,6 +89,31 @@
                     <div><dt class="text-content-muted">Runtime Status</dt><dd class="mt-1 font-semibold text-content-primary">{{ instance.last_status or "Not Observed" }}</dd></div>
                 </dl>
                 <p class="text-xs text-content-secondary">Health states distinguish active, standby, performance standby, sealed, uninitialized, DR secondary and unavailable.</p>
+                <div class="border-t border-outline-subtle pt-4">
+                    <h3 class="text-sm font-semibold text-content-primary">Committed Runtime History</h3>
+                    {% for row in runtime_history %}
+                    <article class="mt-3 flex flex-wrap justify-between gap-3 rounded-lg border border-outline-subtle p-3 text-sm">
+                        <div>
+                            <p class="font-semibold text-content-primary">{{ row.health_status|replace("_", " ")|title }}</p>
+                            <p class="text-xs text-content-muted">{{ row.trigger_type|title }} · {{ row.observed_at }}</p>
+                        </div>
+                        <p class="text-content-secondary">{{ row.readiness|replace("_", " ")|title }}</p>
+                    </article>
+                    {% else %}
+                    <p class="mt-3 text-sm text-content-muted">No runtime evidence has been committed.</p>
+                    {% endfor %}
+                    {% if runtime_history_pagination.has_prev or runtime_history_pagination.has_next %}
+                    <nav class="mt-3 flex items-center gap-4 text-sm" aria-label="Vault runtime history pages">
+                        {% if runtime_history_pagination.has_prev %}
+                        <a class="text-kaori-primary" href="{{ url_for('vault.detail', instance_id=instance.id, history_page=runtime_history_pagination.prev_page, _anchor='runtime') }}">Previous</a>
+                        {% endif %}
+                        <span class="text-content-muted">Page {{ runtime_history_pagination.page }} / {{ runtime_history_pagination.total_pages }}</span>
+                        {% if runtime_history_pagination.has_next %}
+                        <a class="text-kaori-primary" href="{{ url_for('vault.detail', instance_id=instance.id, history_page=runtime_history_pagination.next_page, _anchor='runtime') }}">Next</a>
+                        {% endif %}
+                    </nav>
+                    {% endif %}
+                </div>
                 {% if evidence.runtime_job %}<p class="text-xs text-content-muted" role="status">Runtime task: {{ evidence.runtime_job.get('status', 'pending') }} · {{ evidence.runtime_job.get('task_id', '') }}</p>{% endif %}
             </div>
         </div>
