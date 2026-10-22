@@ -184,3 +184,29 @@ def commit_kv2_inventory(
         not_observed_count=len(existing),
         committed_at=committed,
     )
+
+
+def mark_kv2_inventory_failed(integration_instance_id: int, mount: str) -> None:
+    """Persist a sanitized, scope-specific failure without erasing the last commit."""
+    try:
+        instance = VaultInstance.query.filter_by(integration_instance_id=integration_instance_id).first()
+        if instance is None or mount not in parse_approved_kv2_mounts(','.join(instance.kv2_mounts or ())):
+            return
+        state = SecretInventoryCollectionState.query.filter_by(
+            integration_instance_id=integration_instance_id,
+            provider_namespace=instance.namespace or '',
+            mount=mount,
+        ).first()
+        if state is None:
+            state = SecretInventoryCollectionState(
+                integration_instance_id=integration_instance_id,
+                provider_namespace=instance.namespace or '',
+                mount=mount,
+            )
+            db.session.add(state)
+        state.status = 'stale' if state.last_committed_at else 'failed'
+        state.last_error = 'Provider KV v2 metadata collection failed; previous committed evidence retained.'
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        # Never hide original collection failure with diagnostics containing Vault data.
