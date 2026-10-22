@@ -18,6 +18,7 @@ from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_invento
     KV2CollectionEvidence,
     parse_approved_kv2_mounts,
 )
+from app.models.integration import IntegrationInstance
 from app.models.secrets_pki import (
     SecretIdentity,
     SecretInventoryCollectionState,
@@ -61,25 +62,39 @@ def commit_kv2_inventory(
     if len({row.path for row in evidence.records}) != len(evidence.records):
         raise ValueError('KV v2 metadata contains duplicate path identities.')
 
-    instance = VaultInstance.query.filter_by(integration_instance_id=integration_instance_id).first()
-    if (
-        instance is None
-        or not instance.enabled
-        or instance.provider_key != 'vault'
-        or instance.readiness_status != 'ready'
-        or evidence.mount not in parse_approved_kv2_mounts(','.join(instance.kv2_mounts or ()))
-    ):
-        raise ValueError('The Vault provider and metadata mount are not eligible for committed reconciliation.')
-
-    namespace = instance.namespace or ''
-    if len(namespace) > 255 or any(
-        len(row.path) > 1024 or row.mount != evidence.mount for row in evidence.records
-    ):
-        raise ValueError('KV v2 representation scope exceeds supported bounds.')
-
-    # All mutation happens under the source scope lock; no provider call inside
-    # a database transaction. The raw API response never crosses this boundary.
+    # Serialize provider configuration admission with concurrent Vault edits:
+    # integration identity is locked before provider row, then mount state.
+    # An approved mount revoked while the worker was reading cannot be
+    # committed under a stale pre-collection authorization decision.
     try:
+        identity = db.session.execute(
+            select(IntegrationInstance)
+            .where(IntegrationInstance.id == integration_instance_id)
+            .with_for_update()
+        ).scalar_one_or_none()
+        instance = db.session.execute(
+            select(VaultInstance)
+            .where(VaultInstance.integration_instance_id == integration_instance_id)
+            .with_for_update(of=VaultInstance)
+        ).scalar_one_or_none()
+        if (
+            identity is None
+            or instance is None
+            or identity.integration_type != 'secrets_pki'
+            or identity.provider_key != 'vault'
+            or identity.lifecycle_status != 'active'
+            or not identity.enabled
+            or identity.readiness_status != 'ready'
+            or evidence.mount not in parse_approved_kv2_mounts(','.join(instance.kv2_mounts or ()))
+        ):
+            raise ValueError('The Vault provider and metadata mount are not eligible for committed reconciliation.')
+
+        namespace = instance.namespace or ''
+        if len(namespace) > 255 or any(
+            len(row.path) > 1024 or row.mount != evidence.mount for row in evidence.records
+        ):
+            raise ValueError('KV v2 representation scope exceeds supported bounds.')
+
         state = SecretInventoryCollectionState.query.filter_by(
             integration_instance_id=integration_instance_id,
             provider_namespace=namespace,
