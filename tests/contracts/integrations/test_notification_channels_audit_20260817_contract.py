@@ -550,10 +550,11 @@ def test_notification_channel_row_actions_confirm_delete_and_refresh_via_htmx() 
     routes = read('app/integrations/delivery/notification_channels/routes.py')
 
     # Edit is a GET of current permissioned form state into the existing dialog.
-    assert 'hx-select="#notification-channel-config-dialog"' in channels
-    assert 'hx-target="#notification-channel-config-dialog"' in channels
+    assert 'hx-get="{{ url_for(' in channels
     assert 'hx-push-url="false"' in channels
-    assert "target.id === 'notification-channel-config-dialog'" in native
+    assert 'hx-target="#notification-channels-workspace"' in channels
+    assert 'hx-select="#notification-channels-workspace"' in channels
+    assert "target.id === 'notification-channels-workspace'" in native
     assert "data-kaori-dialog-auto-open" in modal
     assert 'data-kaori-dialog-close' in modal
 
