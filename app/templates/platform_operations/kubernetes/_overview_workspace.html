@@ -1,11 +1,61 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/section_intro.html" as section_intro %}
-<section class="space-y-5" aria-label="Kubernetes Administration Overview">
+<section class="min-w-0 space-y-6" aria-label="Kubernetes Administration Overview">
+    {# Read-only fleet posture is its own overview block, not a control footer. #}
+    <section class="space-y-4" aria-labelledby="kubernetes-admin-summary-heading">
+        {{ section_intro.render(
+            'Overview',
+            'Kubernetes administration coverage and configured security posture at a glance.',
+            'kubernetes-admin-summary-heading'
+        ) }}
+        {% set overview_posture %}
+            <span id="kubernetes-admin-overview-status">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
+        {% endset %}
+        {% call operational_section.render(
+            'Administration Coverage',
+            'Review registered clusters, prerequisite configuration and protected Namespace scope.',
+            'layout-dashboard',
+            id='kubernetes-admin-summary-section',
+            header_badge=overview_posture,
+            body_classes='p-0',
+            aria_label='Kubernetes Administration Coverage'
+        ) %}
+            {% set metrics = [
+                ('blocks', 'Managed Controls', administration_control_count, 'Available administrative capabilities'),
+                ('server', 'Registered Clusters', cluster_count, 'Canonical Kubernetes inventory'),
+                ('badge-check', 'Prerequisites Configured', ready_cluster_count, 'Recorded cluster security prerequisites'),
+                ('boxes', 'Protected Namespaces', enabled_namespace_count, 'Configured Namespace access policies')
+            ] %}
+            <dl class="grid min-w-0 gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                {% for icon, label, value, helper in metrics %}
+                    <div class="min-w-0 bg-surface-card px-5 py-4 sm:px-6">
+                        <dt class="flex min-w-0 items-center gap-2 text-xs font-semibold leading-5 text-content-secondary">
+                            <i data-lucide="{{ icon }}"
+                               class="h-4 w-4 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
+                            <span>{{ label }}</span>
+                        </dt>
+                        <dd id="kubernetes-admin-overview-metric-{{ loop.index }}"
+                            class="mt-2 text-2xl font-semibold tracking-tight tabular-nums text-content-primary">{{ value }}</dd>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                    </div>
+                {% endfor %}
+            </dl>
+            <p class="flex min-w-0 items-start gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5 text-content-secondary sm:px-6">
+                <i data-lucide="info"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
+                <span>Counts represent committed KAORI configuration. Live access is verified at execution.</span>
+            </p>
+        {% endcall %}
+    </section>
+
+    {# Operational capabilities have a separate destination and primary action. #}
     <section class="space-y-4" aria-labelledby="kubernetes-admin-controls-heading">
         {{ section_intro.render(
-            'Administration Controls',
-            'Review configured safeguards, select a control and inspect its execution boundary.',
+            'Kubernetes Operations',
+            'Configure protected access controls and review their execution requirements.',
             'kubernetes-admin-controls-heading'
         ) }}
         {% set controls_badge %}
@@ -13,7 +63,7 @@
         {% endset %}
         {% call operational_section.render(
             'Managed Administration Controls',
-            'Select a capability to configure its prerequisites and namespace access policies.',
+            'Manage Secret Reveal prerequisites and Namespace access policies.',
             'blocks',
             id='kubernetes-admin-controls-section',
             header_badge=controls_badge,
@@ -23,34 +73,6 @@
             <div id="kubernetes-admin-controls-list" class="divide-y divide-outline-subtle">
                 {% include "platform_operations/kubernetes/_administration_control_rows.html" %}
             </div>
-            <section class="border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6"
-                     aria-label="Administration Coverage">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-content-primary">Administration Coverage</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Committed Kubernetes prerequisites and protected policy scope. Live access is verified at execution.</p>
-                    </div>
-                    <span id="kubernetes-admin-overview-status">{{ table_label.status_indicator_label(administration_status_label, administration_status_tone) }}</span>
-                </div>
-                {% set metrics = [
-                    ('blocks', 'Managed Controls', administration_control_count),
-                    ('server', 'Registered Clusters', cluster_count),
-                    ('badge-check', 'Prerequisites Configured', ready_cluster_count),
-                    ('boxes', 'Protected Namespaces', enabled_namespace_count)
-                ] %}
-                <dl class="mt-4 grid min-w-0 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                    {% for icon, label, value in metrics %}
-                        <div class="flex min-w-0 items-center justify-between gap-3 bg-surface-card px-4 py-3">
-                            <dt class="flex min-w-0 items-center gap-2 text-xs font-medium leading-5 text-content-secondary">
-                                <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                                <span>{{ label }}</span>
-                            </dt>
-                            <dd id="kubernetes-admin-overview-metric-{{ loop.index }}"
-                                class="shrink-0 text-lg font-semibold tabular-nums text-content-primary">{{ value }}</dd>
-                        </div>
-                    {% endfor %}
-                </dl>
-            </section>
         {% endcall %}
     </section>
 </section>
