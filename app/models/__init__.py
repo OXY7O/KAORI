@@ -75,6 +75,15 @@ from app.models.resolver import (
     ResolverProductionReadinessRecord,
 )
 from app.models.runtime import IntegrationRuntimeObservation
+from app.models.source_control import (
+    SourceAccount,
+    SourceInstallation,
+    SourceReference,
+    SourceReferenceTransition,
+    SourceRepository,
+    SourceRepositoryGrant,
+    SourceRevision,
+)
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
 from app.models.secrets_pki import (
     SecretIdentity,
@@ -140,6 +149,13 @@ from app.models.tenant_policy import (
 from app.models.user import User
 
 __all__ = [
+    'SourceAccount',
+    'SourceInstallation',
+    'SourceReference',
+    'SourceReferenceTransition',
+    'SourceRepository',
+    'SourceRepositoryGrant',
+    'SourceRevision',
     'AlertSignalSnapshot',
     'AnalyticsSnapshot',
     'ArchiveArtifact',
