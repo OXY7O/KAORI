@@ -33,7 +33,7 @@ class SecretProviderRepresentation(db.Model):
     __tablename__ = 'secrets_pki_secret_representations'
     __table_args__ = (
         UniqueConstraint(
-            'integration_instance_id', 'provider_namespace', 'mount', 'path',
+            'integration_instance_id', 'provider_namespace', 'mount', 'path_sha256',
             name='uq_secrets_pki_provider_representation',
         ),
         Index(
@@ -54,7 +54,8 @@ class SecretProviderRepresentation(db.Model):
     provider_key: Mapped[str] = mapped_column(String(80), nullable=False)
     provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False, default='')
     mount: Mapped[str] = mapped_column(String(160), nullable=False)
-    path: Mapped[str] = mapped_column(String(512), nullable=False)
+    path: Mapped[str] = mapped_column(String(1024), nullable=False)
+    path_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     representation_role: Mapped[str] = mapped_column(
         String(40), nullable=False, default='material_authority',
     )
