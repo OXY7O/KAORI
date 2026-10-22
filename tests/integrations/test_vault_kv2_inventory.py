@@ -162,3 +162,14 @@ def test_invalid_provider_timestamp_rejected_without_raw_value(timestamp):
     with pytest.raises(VaultProviderError) as raised:
         _safe_metadata(mount='kv', path='secret', body=data)
     assert timestamp not in str(raised.value)
+
+
+@pytest.mark.parametrize('field', ['cas_required', 'destroyed'])
+def test_missing_security_posture_does_not_default_to_false(field):
+    data = _detail()
+    if field == 'cas_required':
+        data['data'].pop('cas_required')
+    else:
+        data['data']['versions']['1'].pop('destroyed')
+    with pytest.raises(VaultProviderError):
+        _safe_metadata(mount='kv', path='secret', body=data)
