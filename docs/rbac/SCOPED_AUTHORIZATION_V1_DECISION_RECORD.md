@@ -309,3 +309,30 @@ does **not** evaluate Secret reads, authorize Vault access, activate external
 IdP groups or replace #641 break-glass. Exact-SHA unit/integration tests,
 database role privileges, review of committed audit atomicity, safe
 notifications and real PostgreSQL/DevContainer UAT are still mandatory.
+
+## 12. Non-enforcing RBAC parity and route admission evidence (#2726)
+
+The Access-owned `compare_scope_parity` reports only whether an actual
+active user's legacy global permission and exact-scoped read would agree.
+It does not change the current HTTP/HTMX/worker response or grant policy,
+and `summarize_scope_parity` never emits user identity or Vault source
+identity. An unavailable scope evaluator is **not** accepted as parity.
+
+| Boundary | Current enforcement | Proposed cutover |
+| --- | --- | --- |
+| Existing Secrets & PKI dashboard | Existing global `secrets_pki.view` | Preserve unchanged until separate route review |
+| Existing safe capability Inventory aggregates | Existing source-owned/global permission contract | Preserve unchanged; do not silently add resource deny |
+| Existing Vault provider Integrations registry | Existing `integrations.view` / `integrations.manage` | Provider operation and Scope Policy remain independent |
+| New Vault per-Secret Registry/Detail/search | **Unpublished** | Only exact current User+Role+child-scope admission with committed sensitive audit |
+| New sensitive report, export, graph, job | **Unpublished** | Independent domain and source-scope intersection + audit |
+
+Review the *actual active* protected/custom roles, IdP/JIT mapping,
+disabled/deleted user, local Super Admin, revoked/future policy, incomplete
+Vault collection, cross-source counts, and independent endpoint denial in
+PostgreSQL before considering any flip. No bulk grant backfill and no
+environment toggle to bypass the evaluator are added in this phase.
+
+**Cutover status: NOT ADMITTED** (source-only review). Final approval requires
+Developer Check, full admission, exact SHA UAT including revocation lock
+and audit failure, visual QA, and explicit human acceptance. Rollback for
+new Secret route = disable the route; never restore an unscoped query.
