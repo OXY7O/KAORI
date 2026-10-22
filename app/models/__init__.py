@@ -75,15 +75,6 @@ from app.models.resolver import (
     ResolverProductionReadinessRecord,
 )
 from app.models.runtime import IntegrationRuntimeObservation
-from app.models.source_control import (
-    SourceAccount,
-    SourceInstallation,
-    SourceReference,
-    SourceReferenceTransition,
-    SourceRepository,
-    SourceRepositoryGrant,
-    SourceRevision,
-)
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
 from app.models.secrets_pki import (
     SecretIdentity,
@@ -93,6 +84,15 @@ from app.models.secrets_pki import (
 )
 from app.models.secrets_pki_pki import PKIIssuerCollectionState, PKIIssuerIdentity, PKIPublicCertificateObservation
 from app.models.secrets_pki_stored_certificates import PKIStoredCertificateCollectionState, PKIStoredCertificateObservation
+from app.models.source_control import (
+    SourceAccount,
+    SourceInstallation,
+    SourceReference,
+    SourceReferenceTransition,
+    SourceRepository,
+    SourceRepositoryGrant,
+    SourceRevision,
+)
 from app.models.tenant import (
     Tenant,
     TenantAccessGrant,
