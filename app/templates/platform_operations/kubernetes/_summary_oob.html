@@ -9,3 +9,8 @@
 <p id="kubernetes-admin-overview-metric-2" hx-swap-oob="innerHTML">{{ cluster_count }}</p>
 <p id="kubernetes-admin-overview-metric-3" hx-swap-oob="innerHTML">{{ ready_cluster_count }}</p>
 <p id="kubernetes-admin-overview-metric-4" hx-swap-oob="innerHTML">{{ enabled_namespace_count }}</p>
+<p id="kubernetes-admin-overview-metric-1" hx-swap-oob="innerHTML">{{ administration_control_count }}</p>
+<span id="kubernetes-admin-control-count" hx-swap-oob="innerHTML">{{ table_label.status_label(administration_control_count ~ (' Managed Control' if administration_control_count == 1 else ' Managed Controls'), 'info') }}</span>
+<div id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML">
+    {% include "platform_operations/kubernetes/_administration_control_rows.html" %}
+</div>
