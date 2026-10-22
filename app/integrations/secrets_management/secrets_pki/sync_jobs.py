@@ -33,7 +33,11 @@ def build_vault_inventory_targets() -> list[dict[str, int]]:
             or identity.readiness_status != 'ready'
         ):
             continue
-        mounts = parse_approved_kv2_mounts(','.join(instance.kv2_mounts or ()))
+        try:
+            mounts = parse_approved_kv2_mounts(','.join(instance.kv2_mounts or ()))
+        except ValueError:
+            # Invalid provider scope is ineligible; never dispatch a broad fallback.
+            continue
         if mounts:
             # Scope references only. Never enqueue paths, mount names, SecretIDs or tokens.
             targets.append({'integration_instance_id': int(identity.id)})
