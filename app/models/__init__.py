@@ -51,6 +51,7 @@ from app.models.notification_channel import NotificationChannel, NotificationDel
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.models.object_storage_analytics import ObjectStorageAnalyticsSnapshot, ObjectStorageForecastSnapshot
 from app.models.rbac import Permission, Role, RolePermission
+from app.models.scope_access import ScopeAccessPolicy, ScopeAccessPolicyRevision
 from app.models.registry import (
     RegistryAnalyticsSnapshot,
     RegistryArtifact,
