@@ -79,11 +79,17 @@ def _api_path(mount_parts: tuple[str, ...], secret_parts: tuple[str, ...]) -> st
 def _version_number(value: object) -> int:
     if isinstance(value, bool):
         raise VaultProviderError('Invalid KV v2 version evidence.')
-    try:
+    if isinstance(value, int):
+        number = value
+    elif (
+        isinstance(value, str) and value.isascii()
+        and value.isdecimal() and 1 <= len(value) <= 10
+    ):
         number = int(value)
-    except (TypeError, ValueError, OverflowError) as exc:
-        raise VaultProviderError('Invalid KV v2 version evidence.') from exc
-    if number < 0:
+    else:
+        raise VaultProviderError('Invalid KV v2 version evidence.')
+    # PostgreSQL integer columns must not overflow or truncate source facts.
+    if not 0 <= number <= 2_147_483_647:
         raise VaultProviderError('Invalid KV v2 version evidence.')
     return number
 
