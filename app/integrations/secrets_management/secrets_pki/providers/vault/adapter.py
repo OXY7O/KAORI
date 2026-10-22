@@ -40,8 +40,9 @@ class VaultRuntimeAdapter:
         now = datetime.now(UTC)
         try:
             client = build_client(instance)
-            connection = client.test_connection()
-            capability = client.detect_capabilities()
+            evidence = client.validate_capabilities()
+            connection = {'version': evidence['health']['version'], 'health_status': evidence['health']['status'], 'response_time_ms': evidence['response_time_ms']}
+            capability = {'mount_metadata': evidence['mount_metadata']}
         except VaultProviderError as exc:
             instance.readiness_status = 'blocked'
             instance.validation_message = str(exc)
