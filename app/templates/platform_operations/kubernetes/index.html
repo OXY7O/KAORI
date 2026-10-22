@@ -37,32 +37,33 @@
         <section id="kubernetes-administration-workspace-shell"
                  class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
                  aria-label="Kubernetes Administration Workspaces">
-        {{ framed_workspace_tabs.render([('overview', 'Overview', 'layout-dashboard') , ('secret-reveal', 'Secret Reveal', 'scan-eye')], prefix='kubernetes-administration', aria_label='Kubernetes Administration Workspaces') }}
+            {{ framed_workspace_tabs.render([('overview', 'Overview', 'layout-dashboard'), ('secret-reveal', 'Secret Reveal', 'scan-eye')], prefix='kubernetes-administration', aria_label='Kubernetes Administration Workspaces') }}
             <div class="p-5 lg:p-6">
-        <div class="min-w-0">
-            <div id="kubernetes-administration-panel-overview"
-                 role="tabpanel"
-                 x-show="activeTab === 'overview'"
-                 x-cloak>{% include "platform_operations/kubernetes/_overview_workspace.html" %}</div>
-            <div id="kubernetes-administration-panel-secret-reveal"
-                 role="tabpanel"
-                 x-show="activeTab === 'secret-reveal'"
-                 x-cloak
-                 hx-get="{{ secret_reveal_workspace_url }}"
-                 hx-trigger="kubernetes:load-secret-reveal from:window once"
-                 hx-swap="innerHTML">
-                <div class="flex min-h-56 items-center justify-center rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                    <div class="text-center">
-                        <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="loader-circle"
-                               class="h-5 w-5 animate-spin"
-                               aria-hidden="true"></i>
-                        </span>
-                        <p class="mt-3 text-sm font-semibold text-content-primary">Loading Secret Reveal Administration</p>
-                        <p class="mt-1 text-xs text-content-muted">Collecting cluster readiness and namespace policy context.</p>
+                <div class="min-w-0">
+                    <div id="kubernetes-administration-panel-overview"
+                         role="tabpanel"
+                         x-show="activeTab === 'overview'"
+                         x-cloak>{% include "platform_operations/kubernetes/_overview_workspace.html" %}</div>
+                    <div id="kubernetes-administration-panel-secret-reveal"
+                         role="tabpanel"
+                         x-show="activeTab === 'secret-reveal'"
+                         x-cloak
+                         hx-get="{{ secret_reveal_workspace_url }}"
+                         hx-trigger="kubernetes:load-secret-reveal from:window once"
+                         hx-swap="innerHTML">
+                        <div class="flex min-h-56 items-center justify-center rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                            <div class="text-center">
+                                <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                                    <i data-lucide="loader-circle"
+                                       class="h-5 w-5 animate-spin"
+                                       aria-hidden="true"></i>
+                                </span>
+                                <p class="mt-3 text-sm font-semibold text-content-primary">Loading Secret Reveal Administration</p>
+                                <p class="mt-1 text-xs text-content-muted">Collecting cluster readiness and namespace policy context.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
             </div>
         </section>
     </div>
