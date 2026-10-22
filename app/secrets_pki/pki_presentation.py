@@ -35,6 +35,7 @@ def pki_public_readiness(*, instance: VaultInstance | None = None) -> dict[str, 
         sources = [instance]
     if len(sources) > MAX_VAULT_SOURCES:
         return _result('blocked', 'Source Limit Exceeded')
+    any_unvalidated = any(row.integration_instance.readiness_status != 'ready' for row in sources)
 
     try:
         scopes = {
@@ -65,7 +66,9 @@ def pki_public_readiness(*, instance: VaultInstance | None = None) -> dict[str, 
     ]
     count = sum(int(item.observed_issuer_count or 0) for item in committed) if committed else None
     if not committed:
-        state, label = 'not_collected', 'Public PKI Not Collected'
+        state, label = ('blocked', 'PKI Provider Validation Required') if any_unvalidated else ('not_collected', 'Public PKI Not Collected')
+    elif any_unvalidated:
+        state, label = 'stale', 'Vault PKI Provider Validation Required'
     elif any(item.status in {'failed', 'stale'} for item in selected):
         state, label = 'stale', 'Stale Public PKI Evidence'
     elif len(committed) < len(scopes):
