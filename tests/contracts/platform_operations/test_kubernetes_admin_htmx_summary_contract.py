@@ -413,7 +413,10 @@ def test_secret_reveal_controlled_content_tabs_preserve_security_and_scope() -> 
     assert 'components/content_tabs.html' in workspace
     assert 'content_tabs.render_controlled_links(' in workspace
     assert "('prerequisites', 'Cluster Prerequisites'" in workspace
-    assert "('policies', 'Namespace Policies'" in workspace
+    assert "('policies', 'Namespace Policies', 'boxes', none," in workspace
+    assert "('policies', 'Namespace Policies', 'boxes', namespace_summary.total" not in workspace
+    # Only the tab badge is removed. Namespace totals still belong in the table header.
+    assert 'result_count=namespace_summary.total' in namespace
     assert "request.values.get('view') == 'policies'" in workspace
     assert "view='prerequisites'" in workspace
     assert "view='policies'" in workspace

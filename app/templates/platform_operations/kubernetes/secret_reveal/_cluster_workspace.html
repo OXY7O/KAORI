@@ -82,7 +82,7 @@
             'secret-reveal-management',
             [
                 ('prerequisites', 'Cluster Prerequisites', 'shield-check', none, url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='prerequisites', cluster_id=selected_cluster.id if selected_cluster else none, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, per_page=namespace_pagination.per_page)),
-                ('policies', 'Namespace Policies', 'boxes', namespace_summary.total if selected_cluster else none, url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id if selected_cluster else none, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.page, per_page=namespace_pagination.per_page))
+                ('policies', 'Namespace Policies', 'boxes', none, url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id if selected_cluster else none, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.page, per_page=namespace_pagination.per_page))
             ],
             secret_reveal_view,
             'Secret Reveal Configuration Sections',
