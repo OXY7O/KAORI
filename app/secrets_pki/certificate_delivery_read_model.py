@@ -9,8 +9,8 @@ certificate serials, Vault mount paths, SAN/CN, raw PEM or resource IDs.
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
