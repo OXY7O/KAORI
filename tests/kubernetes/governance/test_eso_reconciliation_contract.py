@@ -5,7 +5,8 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.kubernetes.governance.tls_certificates.eso_reconciliation import (
-    normalize_eso_readback, qualify_eso_reconciliation,
+    normalize_eso_readback,
+    qualify_eso_reconciliation,
 )
 
 NOW = datetime(2026, 10, 22, 12, tzinfo=UTC)
@@ -66,6 +67,7 @@ def test_crd_secret_names_paths_and_spec_never_leave_normalizer():
     lambda x: x['status'].pop('refreshTime'),
     lambda x: x['status'].update(refreshTime=(NOW + timedelta(minutes=1)).isoformat()),
     lambda x: x['status'].update(conditions=[{'type': 'Ready', 'status': 'True'}] * 2),
+    lambda x: x['status'].update(conditions=[{'type': 'Ready', 'status': 'True', 'observedGeneration': 2}]),
     lambda x: x['status'].update(conditions=[{'type': 'Synced', 'status': 'True'}]),
     lambda x: x['metadata'].update(uid='vault/../../secrets'),
     lambda x: x['metadata'].update(generation=True),

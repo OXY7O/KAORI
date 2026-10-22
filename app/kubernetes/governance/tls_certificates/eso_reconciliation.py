@@ -107,6 +107,9 @@ def normalize_eso_readback(
     ready = [item for item in conditions if isinstance(item, Mapping) and item.get('type') == 'Ready']
     if len(ready) != 1 or ready[0].get('status') not in {'True', 'False'}:
         return None
+    condition_generation = ready[0].get('observedGeneration')
+    if condition_generation is not None and _generation(condition_generation) != generation:
+        return None
     return ESOReadback(
         cluster_id, namespace, uid, generation, ready[0]['status'] == 'True', refreshed, observation,
     )
