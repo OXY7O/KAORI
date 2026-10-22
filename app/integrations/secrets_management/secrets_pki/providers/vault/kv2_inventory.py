@@ -172,6 +172,8 @@ def collect_kv2_metadata(
             if depth + 1 > MAX_DEPTH:
                 raise VaultProviderError('KV v2 inventory exceeds maximum directory depth.')
             if folder:
+                if len(stack) + len(directories) >= MAX_SECRETS:
+                    raise VaultProviderError('KV v2 directory discovery exceeds the bounded scan.')
                 stack.append((target, depth + 1))
                 continue
             if target in seen:
