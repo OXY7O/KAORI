@@ -134,7 +134,9 @@ def build_security_posture(
         {
             'cve_id': row.cve_id,
             'impact_available': bool(re.fullmatch(r'CVE-[0-9]{4}-[0-9]{4,}', row.cve_id or '')),
-            'severity': next((key.title() for key, order in _SEVERITY_RANK.items() if order == row.severity_rank), 'Unknown'),
+            'severity': next(
+                (key.title() for key, order in _SEVERITY_RANK.items() if order == row.severity_rank), 'Unknown'
+            ),
             'finding_count': int(row.finding_count or 0),
             'artifact_count': int(row.artifact_count or 0),
             'binding_count': int(row.binding_count or 0),
