@@ -12,6 +12,7 @@ from app.secrets_pki.certificate_delivery_read_model import build_certificate_de
 from app.secrets_pki.kv2_version_posture import build_kv2_version_posture
 from app.secrets_pki.pki_presentation import pki_public_readiness
 from app.secrets_pki.pki_stored_presentation import stored_pki_certificate_readiness
+from app.secrets_pki.pki_validity_posture import build_stored_pki_validity_posture
 from app.secrets_pki.presentation import build_secrets_pki_operational_summary
 
 secrets_pki_bp = Blueprint('secrets_pki', __name__, url_prefix='/secrets-pki')
@@ -39,6 +40,7 @@ def inventory() -> ResponseReturnValue:
         pki_readiness=pki_public_readiness(),
         kv2_version_posture=build_kv2_version_posture(),
         stored_cert_readiness=stored_pki_certificate_readiness(),
+        pki_validity=build_stored_pki_validity_posture(),
         delivery_overlap=build_certificate_delivery_overlap(
             authorized_to_view_kubernetes_tls=current_user.has_permission('tls_certificates.view'),
         ),
