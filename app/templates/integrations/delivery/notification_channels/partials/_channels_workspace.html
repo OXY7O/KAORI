@@ -300,9 +300,10 @@
                                                     channel_state=payload.channel_filters.state,
                                                     channel_page=payload.channel_pagination.page,
                                                     channel_per_page=payload.channel_pagination.per_page) }}"
-                                           hx-target="#notification-channel-config-dialog"
-                                           hx-select="#notification-channel-config-dialog"
+                                           hx-target="#notification-channels-workspace"
+                                           hx-select="#notification-channels-workspace"
                                            hx-swap="outerHTML"
+                                           hx-indicator="#notification-channel-loading"
                                            hx-push-url="false"
                                            class="{{ table_ui.action_classes() }}">Edit</a>
                                         <form method="post"
