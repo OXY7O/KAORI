@@ -112,3 +112,20 @@ def test_kubernetes_admin_hero_is_one_line_and_tabs_use_canonical_workspace_shel
     ):
         assert phrase in index
         assert phrase in summary
+
+def test_kubernetes_admin_framed_tabs_have_explicit_panel_labels() -> None:
+    page = (ROOT / 'app/templates/platform_operations/kubernetes/index.html').read_text()
+    shared = (ROOT / 'app/templates/components/framed_workspace_tabs.html').read_text()
+
+    # Shared tab owner supplies button IDs, ARIA selection, and keyboard behavior.
+    # The page connects each rendered panel to that exact tab ID.
+    for tab in ('overview', 'secret-reveal'):
+        assert f'id="kubernetes-administration-panel-{tab}"' in page
+        assert f'aria-labelledby="kubernetes-administration-tab-{tab}"' in page
+        assert 'role="tabpanel"' in page
+        assert 'id="{{ prefix }}-tab-{{ tab_key }}"' in shared
+        assert 'aria-controls="{{ prefix }}-panel-{{ tab_key }}"' in shared
+
+    assert 'framed_workspace_tabs.render(' in page
+    assert 'role="tablist"' not in page
+    assert 'kubernetes:load-secret-reveal from:window once' in page
