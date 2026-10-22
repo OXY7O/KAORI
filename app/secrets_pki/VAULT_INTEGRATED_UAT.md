@@ -22,17 +22,17 @@ Not Implemented must not be treated as waived acceptance.
 | --- | --- | --- |
 | HV-01 #2585 | Vault AppRole provider/TLS origin, validation and runtime | Not Tested |
 | HV-02 #2586 | KV v2 metadata-only collector, committed JobExecution | Not Tested |
-| HV-03 #2587 | Opted-in issuer and stored public certificates | Not Tested |
+| HV-03 #2587 / #2683 | Opted-in public PKI evidence + qualified aggregate validity windows | Not Tested |
 | HV-04 #2588 / #2674 | KV v2 version lifecycle aggregate; rotation contract only | Not Tested |
 | HV-05 #2589 / #2666 | Fingerprint/Ingress/UID/ESO reconciliation *candidates* only | Not Tested |
 | HV-06 #2590 | Metrics Source and Alert Source qualified bindings | Not Tested |
-| HV-07 #2591 | Committed Overview and Inventory; full detail/navigation absent | Not Tested |
+| HV-07 #2591 / #2678 / #2683 | Committed Overview/Inventory, prepared unpublished scoped Registry read model, and PKI validity aggregate; full detail/navigation absent | Not Tested |
 | HV-08 #2592 | Governed provider operation pilot | Not Implemented |
 | HV-09 #2593 | UAT protocol; live scenarios not executed | Not Tested |
 | HV-10 #2594 | Historical Secrets & PKI Analytics | Not Implemented |
 | HV-11 #2595 | Central Intelligence / Rule Catalog rule coverage | Not Implemented |
 | HV-12 #2596 | Vault-enriched AlertCase investigation | Not Implemented |
-| HV-13 #2597 | Base permission catalog; source-level grant outstanding | Not Tested |
+| HV-13 #2597 / #2678 | Base permission catalog and fail-closed internal read contract; canonical #724 policy evaluator still absent | Not Tested |
 | HV-14 #2598 | Role-aware Welcome entry | Not Tested |
 | HV-15 #2599 | Canonical Reports definitions | Not Implemented |
 
@@ -65,7 +65,9 @@ python -m pytest -q \
   tests/integrations/test_vault_kv2_inventory.py \
   tests/integrations/test_vault_kv2_committed_inventory.py \
   tests/integrations/test_vault_kv2_version_posture.py \
+  tests/integrations/test_scoped_secrets_pki_registry.py \
   tests/integrations/test_vault_pki_public_evidence.py \
+  tests/integrations/test_vault_pki_validity_posture.py \
   tests/integrations/test_vault_metrics_binding.py \
   tests/integrations/test_vault_alert_source_binding.py \
   tests/integrations/test_certificate_delivery_read_model.py \
@@ -87,12 +89,12 @@ workflow evidence as Not Tested; do not manufacture green status.
 | --- | --- |
 | Vault core | Nonroot AppRole; HTTPS/CA/approved origin; denied scopes; active/standby/sealed/uninitialized/unavailable where safe |
 | KV v2 | Known populated and empty approved mounts; no data endpoint; 403/404; partial, failed, stale; version delete/destroy |
-| PKI | Issuer and stored cert opt-in, missing/no-store cases, 403, rollover; no PEM/private-key persistence |
+| PKI | Issuer and stored cert opt-in, missing/no-store cases, 403, rollover; expired/not-yet-valid/unknown public validity, stale or opt-out counts suppressed; no PEM/private-key persistence |
 | Kubernetes | TLS Secret deletion/recreation same name different UID; stale Ingress; controller ownership candidates |
 | ESO | Actual supported CRD Ready/refresh/sync-version behavior and separate current TLS UID; never infer Vault delivery |
 | Rotation/Lease | Version increment is not verified cutover; elapsed known Lease expiry is not revocation |
 | Metrics/Alerts | Prometheus/Thanos label binding, historical retention, HA ambiguity, foreign Alert Source labels denied |
-| Scope/RBAC | Direct routes, HTMX and unauthorized cross-resource permission denials; secrets path/ID filtering |
+| Scope/RBAC | Internal read contract deny/wrong-actor/expired-grant tests; canonical persisted #724 scope evaluator not implemented; prohibit enabling per-Secret HTTP/HTMX/Detail/search/export before resource-policy enforcement; sensitive path/ID filtering |
 | UI/Audit | Violet light/dark/responsive/loading/empty/error, JobExecution outcome, safe audit and Welcome visibility |
 | Future feature | Analytics, Intelligence, AlertCases, Reports and mutation pilot remain blocked until implemented and accepted |
 
