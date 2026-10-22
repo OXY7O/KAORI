@@ -5,6 +5,7 @@
 **Canonical framework:** `app/templates/components/operational_dashboard_workspace.html`  
 **Reference consumers:** `app/templates/kubernetes/dashboard/partials/_content.html` and `app/templates/storage/object_storage/dashboard/partials/_content.html`  
 **Additional conforming consumer:** `Artifact Registry → Overview` through `app/templates/artifact_registry/partials/_overview_content.html`
+**Security Posture first-slice consumer (#2613):** `Security → Overview` at `app/templates/security_posture/overview.html` consumes the same Operational Dashboard Hero, Operational Signal Overview, independent metric cards and four-tab framework. Its limited Registry/Kubernetes source scope is explicit; without authorized committed Registry evidence, it renders the approved blocked Hero and a readiness section instead of fabricated KPIs.
 
 ## Purpose
 
