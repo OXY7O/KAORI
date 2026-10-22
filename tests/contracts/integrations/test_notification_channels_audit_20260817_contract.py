@@ -17,6 +17,8 @@ def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
     assert "('delivery', 'Delivery Activity', 'history'" in page
     assert 'components/workspace_tabs.html' in page
     assert 'workspace_tabs.render_navigation' in page
+    assert 'workspace_tabs.render_navigation(notification_tab_items,' in page
+    assert '{% set notification_tab_items = [' in page
     assert 'framed_workspace_tabs' not in page
     assert "hx_target='#notification-channels-workspace'" in page
     assert "hx_select='#notification-channels-workspace'" in page
@@ -28,6 +30,23 @@ def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
         "table_registry.filter_form('notification_channels.index'"
     )
     assert 'id="notification-channels-workspace"' in page
+
+
+def test_notification_tab_macro_namespace_cannot_be_shadowed_by_local_assignment() -> None:
+    from jinja2 import Environment, nodes
+
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    parsed = Environment().parse(page)
+    imported_macros = {node.target for node in parsed.find_all(nodes.Import)}
+    assigned_names = {
+        node.target.name
+        for node in parsed.find_all(nodes.Assign)
+        if isinstance(node.target, nodes.Name)
+    }
+
+    assert 'workspace_tabs' in imported_macros
+    assert 'workspace_tabs' not in assigned_names
+    assert 'workspace_tabs.render_navigation(notification_tab_items,' in page
 
 
 def test_notification_channel_registries_follow_kaori_rows_contract() -> None:

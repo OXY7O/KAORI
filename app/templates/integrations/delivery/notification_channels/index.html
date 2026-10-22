@@ -35,13 +35,13 @@
             ('radio-tower', 'Operational', payload.summary.operational, 'Successful automatic delivery')
         ] %}
     <div id="notification-channels-workspace" class="min-w-0 space-y-6">
-        {% set workspace_tabs = [
+        {% set notification_tab_items = [
             ('overview', 'Overview', 'layout-dashboard', payload.providers|length ~ ' Providers', url_for('notification_channels.index', tab='overview')),
             ('channels', 'Channels', 'send', payload.summary.total ~ ' Channels', url_for('notification_channels.index', tab='channels')),
             ('delivery', 'Delivery Activity', 'history', payload.delivery_pagination.total_items ~ ' Records', url_for('notification_channels.index', tab='delivery'))
         ] %}
         <div class="min-w-0">
-            {{ workspace_tabs.render_navigation(workspace_tabs,
+            {{ workspace_tabs.render_navigation(notification_tab_items,
                         active_tab,
                         prefix='notification-channels',
                         aria_label='Notification Channels Workspaces',
