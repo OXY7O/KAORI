@@ -2,7 +2,8 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_primitives.html" as table_ui %}
-{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
+{% import "components/section_intro.html" as section_intro %}
 {% import "components/table_registry.html" as table_registry %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
@@ -33,7 +34,20 @@
             ('send', 'Eligible', payload.summary.eligible, 'Validated channels'),
             ('radio-tower', 'Operational', payload.summary.operational, 'Successful automatic delivery')
         ] %}
-    <div class="space-y-6">
+    <div id="notification-channels-workspace" class="min-w-0 space-y-6">
+        {% set workspace_tabs = [
+            ('overview', 'Overview', 'layout-dashboard', payload.providers|length ~ ' Providers', url_for('notification_channels.index', tab='overview')),
+            ('channels', 'Channels', 'send', payload.summary.total ~ ' Channels', url_for('notification_channels.index', tab='channels')),
+            ('delivery', 'Delivery Activity', 'history', payload.delivery_pagination.total_items ~ ' Records', url_for('notification_channels.index', tab='delivery'))
+        ] %}
+        <div class="min-w-0">
+            {{ workspace_tabs.render_navigation(workspace_tabs,
+                        active_tab,
+                        prefix='notification-channels',
+                        aria_label='Notification Channels Workspaces',
+                        hx_target='#notification-channels-workspace',
+                        hx_select='#notification-channels-workspace') }}
+        </div>
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -61,21 +75,9 @@
                 ) }}
             </div>
         </section>
-        {% set workspace_tabs = [
-                    ('overview', 'Overview', 'layout-dashboard', url_for('notification_channels.index', tab='overview'), payload.providers|length ~ ' Providers'),
-                    ('channels', 'Channels', 'send', url_for('notification_channels.index', tab='channels'), payload.summary.total ~ ' Channels'),
-                    ('delivery', 'Delivery Activity', 'history', url_for('notification_channels.index', tab='delivery'), payload.delivery_pagination.total_items ~ ' Records')
-                ] %}
-        <section id="notification-channels-workspace"
-                 class="{{ integration_ui.section_shell_classes() }}">
-            {{ framed_workspace_tabs.render_navigation(workspace_tabs,
-                        active_tab,
-                        prefix='notification-channels',
-                        aria_label='Notification Channels Workspace',
-                        hx_target='#notification-channels-workspace',
-                        hx_select='#notification-channels-workspace') }}
-            <div class="space-y-6 p-4 sm:p-5 lg:p-6">
+        <section class="space-y-5" aria-labelledby="notification-channels-content-title">
                 {% if active_tab == 'overview' %}
+                    {{ section_intro.render('Notification Delivery Overview', 'Review available providers, delivery guarantees, and responsibility boundaries for governed platform notifications.', 'notification-channels-content-title') }}
                     {% call notification_section(
                         'Delivery Providers',
                         'Choose the transport that fits the operational audience. Provider credentials remain scoped to '
@@ -134,16 +136,17 @@
                         </div>
                     {% endcall %}
                 {% elif active_tab == 'channels' %}
+                    {{ section_intro.render('Channel Configuration & Registry', 'Configure provider destinations, run Test Delivery, and manage the routing policy for each reusable channel.', 'notification-channels-content-title') }}
                     {% include 'integrations/delivery/notification_channels/partials/_channels_workspace.html' %}
                 {% elif active_tab == 'delivery' %}
+                    {{ section_intro.render('Committed Delivery Evidence', 'Inspect delivery attempts and outcomes recorded by KAORI. Provider acceptance does not prove that a recipient read the message.', 'notification-channels-content-title') }}
                     {% call notification_section(
-                        'Delivery Activity',
-                        'Review the persisted delivery journal used for retry, deduplication, and provider-delivery evidence.',
-                        'history',
-                        payload.posture.label,
-                        payload.posture.tone
+                        'Delivery Journal',
+                        'Review persisted attempts, provider outcomes, retry state, and deduplication evidence.',
+                        'history'
                         ) %}
                         <div id="notification-delivery-registry">
+                            {{ loading_bar.render('notification-delivery-loading', label='Loading notification delivery activity') }}
                             {% call table_registry.filter_form('notification_channels.index',
                                 'notification-delivery-registry',
                                 'notification-delivery-loading',
@@ -174,7 +177,6 @@
                             <p class="border-b border-outline-subtle px-4 py-2 text-xs leading-5 text-content-muted sm:px-5">
                                 Delivery attempts and channel retries are provider-delivery evidence, not additional authored Activity Audit events.
                             </p>
-                            {{ loading_bar.render('notification-delivery-loading', label='Loading notification delivery activity') }}
                             <div class="overflow-x-auto">
                                 <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
                                     <thead class="{{ table_ui.head_classes() }}">
@@ -254,7 +256,6 @@
                         </div>
                     {% endcall %}
                 {% endif %}
-            </div>
         </section>
     </div>
 {% endblock dashboard_content %}
