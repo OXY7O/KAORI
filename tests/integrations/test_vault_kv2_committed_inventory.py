@@ -7,7 +7,9 @@ from cryptography.fernet import Fernet
 from flask import Flask
 
 from app.extensions.db import db
-from app.integrations.secrets_management.secrets_pki.commit_inventory import commit_kv2_inventory
+from app.integrations.secrets_management.secrets_pki.commit_inventory import (
+    commit_kv2_inventory, mark_kv2_inventory_failed,
+)
 from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
     KV2CollectionEvidence, KV2SecretEvidence, KV2VersionEvidence,
 )
@@ -146,3 +148,25 @@ def test_revoked_mount_config_cannot_commit_new_evidence(store):
         commit_kv2_inventory(store, _snapshot(now + timedelta(minutes=1)))
     assert SecretInventoryCollectionState.query.one().observed_count == 1
     assert SecretProviderRepresentation.query.one().observation_status == 'observed'
+
+
+def test_failed_provider_scan_keeps_history_but_marks_stale(store):
+    now = datetime(2026, 10, 22, tzinfo=UTC)
+    commit_kv2_inventory(store, _snapshot(now))
+    previous_commit = SecretInventoryCollectionState.query.one().last_committed_at
+    mark_kv2_inventory_failed(store, 'secret')
+    state = SecretInventoryCollectionState.query.one()
+    assert state.status == 'stale'
+    assert state.last_committed_at == previous_commit
+    assert state.observed_count == 1
+    assert state.last_error and 'SecretID' not in state.last_error
+    assert SecretProviderRepresentation.query.count() == 1
+    commit_kv2_inventory(store, _snapshot(now + timedelta(minutes=2)))
+    state = SecretInventoryCollectionState.query.one()
+    assert state.status == 'ready'
+    assert state.last_error is None
+
+
+def test_unapproved_mount_failure_does_not_create_collection_state(store):
+    mark_kv2_inventory_failed(store, 'unapproved')
+    assert SecretInventoryCollectionState.query.count() == 0
