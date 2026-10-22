@@ -111,7 +111,7 @@
                         <a href="{{ url_for('jobs.configuration', job_key='secrets_pki.pki.sync') }}" class="inline-flex text-sm font-semibold text-kaori-primary hover:underline">Open Public PKI Job</a>
                     {% endif %}
                     <div class="border-t border-outline-subtle pt-3" role="status">
-                        <p class="text-sm font-semibold text-content-primary">Stored Issued Certificates</p>
+                        <p class="text-sm font-semibold text-content-primary">Vault Stored Certificates</p>
                         <p class="mt-1 text-xs text-content-secondary">{{ stored_cert_readiness.label }}</p>
                         <p class="mt-2 text-xs text-content-muted">
                             Observed stored certificates:
