@@ -105,7 +105,7 @@
                         <div><dt class="text-xs text-content-muted">Committed PKI Mounts</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ stored_cert_readiness.committed_mounts if stored_cert_readiness.committed_mounts is not none else 'Not Collected' }}</dd></div>
                         <div><dt class="text-xs text-content-muted">Observed Stored Certificates</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ stored_cert_readiness.observed_certificates if stored_cert_readiness.observed_certificates is not none else 'Not Collected' }}</dd></div>
                     </dl>
-                    <p class="mt-3 text-xs text-content-muted">Last commit: {{ stored_cert_readiness.last_committed_at|user_datetime if stored_cert_readiness.last_committed_at else 'Never' }}. `no_store`/imported certificates excluded; trust, revocation and delivered endpoints are not evaluated.</p>
+                    <p class="mt-3 text-xs text-content-muted">Last commit: {{ stored_cert_readiness.last_committed_at|user_datetime if stored_cert_readiness.last_committed_at else 'Never' }}. no_store/imported certificates excluded; trust, revocation and delivered endpoints are not evaluated.</p>
                 </section>
                 <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5" aria-labelledby="vault-pki-public-status">
                     <div class="flex flex-wrap items-start justify-between gap-3">
