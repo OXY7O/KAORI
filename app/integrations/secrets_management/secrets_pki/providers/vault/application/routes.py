@@ -101,6 +101,14 @@ def new_instance() -> ResponseReturnValue:
                     logger.exception('Vault registration failed.')
                     message = 'Vault registration failed; review endpoint, encryption key and connection name.'
                 else:
+                    record_operational_activity(
+                        user_id=int(current_user.id), event_type='vault_connection_registered',
+                        status='success', title='Vault Connection Registered',
+                        message='A Vault AppRole integration connection was registered.',
+                        detail='Test Connection is not Full Validation; run provider validation next.',
+                        action_url=url_for('vault.detail', instance_id=instance.id),
+                        queue_feedback=True,
+                    )
                     return redirect(url_for('vault.detail', instance_id=instance.id))
     return render_template(
         'integrations/secrets_management/vault/form.html',
@@ -140,6 +148,14 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
                     logger.exception('Vault configuration update failed.')
                     message = 'Could not save Vault configuration; review the required encryption key.'
                 else:
+                    record_operational_activity(
+                        user_id=int(current_user.id), event_type='vault_connection_updated',
+                        status='success', title='Vault Connection Updated',
+                        message='Vault connection configuration was saved.',
+                        detail='Changed authentication or endpoint fields require a fresh Full Validation.',
+                        action_url=url_for('vault.detail', instance_id=instance.id),
+                        queue_feedback=True,
+                    )
                     return redirect(url_for('vault.detail', instance_id=instance.id))
     return render_template(
         'integrations/secrets_management/vault/form.html', form=form, instance=instance,
