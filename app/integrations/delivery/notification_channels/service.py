@@ -917,7 +917,7 @@ def _channel_event_type_groups(labels: list[str]) -> list[dict[str, Any]]:
         category, separator, event = label.partition(' · ')
         key = category if separator and category else 'Other'
         grouped.setdefault(key, []).append(event if separator and event else label)
-    return [{'label': key, 'items': values} for key, values in grouped.items()]
+    return [{'label': key, 'events': values} for key, values in grouped.items()]
 
 
 def _channel_view(
