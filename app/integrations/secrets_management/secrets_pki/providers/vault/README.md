@@ -167,3 +167,15 @@ plaintext/material access is introduced. Full path-level inventory read models
 remain blocked on bounded server-side source scope (#724) and Vault operational
 workspace acceptance (#2591); RBAC grants must not be interpreted as enabling
 a Secret value reader.
+
+## Integration landing reuse (HV-01 #2732)
+
+The existing `Integrations → Secrets Management → Secrets & PKI → HashiCorp Vault`
+landing uses the same canonical provider hero, four-metric overview and
+Coverage/Connection Registry tab macros as Harbor. The registry retains
+server-side pagination (default five). Counts describe Vault *API* readiness
+only; the Coverage tab explains independent Inventory, Metrics Source and
+Alert Source contracts without fabricated success states. The Connection
+Registry retains the existing detail and registration routes. No second Vault
+provider registration, policy-grant UI or resource metadata disclosure is
+introduced. Human light/dark/responsive Visual QA remains required.

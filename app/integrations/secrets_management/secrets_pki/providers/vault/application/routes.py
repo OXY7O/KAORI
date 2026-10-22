@@ -65,10 +65,26 @@ def index() -> ResponseReturnValue:
         query, page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
+    registered = query.count()
+    enabled = query.filter(
+        IntegrationInstance.enabled.is_(True),
+        IntegrationInstance.lifecycle_status == 'active',
+    ).count()
+    ready = query.filter(
+        IntegrationInstance.enabled.is_(True),
+        IntegrationInstance.lifecycle_status == 'active',
+        IntegrationInstance.readiness_status == 'ready',
+    ).count()
+    tab = str(request.args.get('tab', 'coverage')).strip().lower()
     return render_template(
         'integrations/secrets_management/vault/index.html',
-        instances=instances, pagination=pagination,
-        registered=query.count(), ready=query.filter(IntegrationInstance.readiness_status == 'ready').count(),
+        instances=instances,
+        pagination=pagination,
+        registered=registered,
+        ready=ready,
+        attention=max(0, enabled - ready),
+        disabled=max(0, registered - enabled),
+        active_tab=tab if tab in {'coverage', 'registry'} else 'coverage',
         notification_context=_notification(),
     )
 
