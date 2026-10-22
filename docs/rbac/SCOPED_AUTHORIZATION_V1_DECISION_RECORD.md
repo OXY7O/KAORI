@@ -1,13 +1,16 @@
 # Scoped Authorization v1 — decision and migration review record
 
-**Status: PROPOSED / architecture review only.** This document is a **draft**
-of the decisions still outstanding under #724. The user has approved the
-**direction** (retain Role → Permission; add constraining Scope Policy; default
-deny; allow-only bias; integration_instance first), **not** every proposed
-lifecycle, principal, exception, event, migration or permission design below.
-Proposals must be explicitly accepted in #724 before a policy evaluator,
-schema migration, administration UI, source-scoped Registry, worker enforcement
-or access cutover may be implemented.
+**Status: ACCEPTED DESIGN BASELINE — implementation NOT admitted.**
+Human acceptance of D1–D5 is recorded in #724 on 2026-10-23 (authority
+comment https://github.com/OXY7O/KAORI/issues/724#issuecomment-6352000999).
+The Role→Permission prerequisite, allow-only default-deny scoped layer,
+User-first principal, no implicit inheritance, audited sensitive admission,
+and RBAC-preserving migration are now **accepted architecture**. Detailed
+storage/permission keys, grant administration and approval integration,
+IdP group evidence, read-audit transaction/retention, cache/revision mechanism,
+and cutover/rollback implementation must be reviewed under bounded issues.
+No evaluator, migration, scoped grant, Vault Secret Registry route or UAT
+acceptance is implied by this document.
 
 **Authority:** #638 security, #724 scoped authorization, #641 identity and
 break-glass; #714 Secrets & PKI, #2597 RBAC, #2688 implementation blocker,
@@ -15,8 +18,8 @@ break-glass; #714 Secrets & PKI, #2597 RBAC, #2688 implementation blocker,
 (`docs/architecture/ACCESS_OWNERSHIP.md`,
 `docs/design/KAORI_ACCESS_LOCK_V1.md`), current RBAC/Authentication/Activity
 Audit authorities. Decision children: #2712 lifecycle, #2713 principals, #2714
-scope hierarchy, #2715 audit, #2716 migration. This is not the authorization
-source of truth until each decision is explicitly accepted.
+scope hierarchy, #2715 audit, #2716 migration. The #724 accepted decision comment is the governing authority for D1–D5;
+this record preserves design details and the implementation gates.
 
 ## 1. Current implementation facts (verified in review source)
 
@@ -67,7 +70,7 @@ does **not** introduce a new authorization policy.
 6. Existing effective global access is not silently revoked or elevated
    by migration. Break-glass follows #641, never an invented scoped bypass.
 
-## 3. Proposed D1 — policy identity and lifecycle (#2712)
+## 3. Accepted D1 — policy identity and lifecycle (#2712)
 
 **Candidate identity:** immutable opaque policy UUID, monotonic revision,
 unique permission key, subject selector, exact resource selector, grant
@@ -91,15 +94,17 @@ with reason and optimistic version check, not mutable grant history.
 Revocation/suspension should take effect on the **next authorization
 decision**; avoid a session-stored permit or unchecked cache.
 
-**Not decided:** which existing/new canonical permission administers
-policies, whether maker-checker is mandatory for **granting** versus
-**revoking**, explicit scheduled expiry/reinstatement behavior, semantics of
-emergency break-glass, and cache invalidation architecture. Approval/
+**Accepted:** sensitive grant creation and activation require separate
+maker-checker approval, while authorized revocation must be immediately
+effective and durably audited. **Implementation detail pending:** which
+canonical administrative permission keys and approval service implement this,
+explicit scheduled expiry/reinstatement mechanics, #641 break-glass action
+requirements and revision-safe cache invalidation. Approval/
 execution boundaries under #641 remain independent.
 
-## 4. Proposed D2 — principal and external groups (#2713)
+## 4. Accepted D2 — principal and external groups (#2713)
 
-**Stage 1 enforcement candidate:** authenticated, active, non-deleted
+**Accepted initial enforcement:** authenticated, active, non-deleted
 `User.id`, with active normalized assigned Role and actual permission.
 Do not use username, email, display name, Team ID, Vault AppRole identity
 or unvalidated request subject as a grant key.
@@ -120,14 +125,14 @@ identity instead of fabricating an authenticated User.
 group ID naming/issuer authority, cached membership lifetime and provider
 outage behavior beyond fail-closed resource admission.
 
-## 5. Proposed D3 — resource scope and inheritance (#2714)
+## 5. Accepted D3 — resource scope and inheritance (#2714)
 
 **Stage 1 scope registry:** exact `integration_instance` identity using
 canonical `IntegrationInstance.id`, not a Vault label/endpoint, namespace
 string, Secret path or permission-key suffix. Provider identity is a
 qualified attribute, never a separate product-wide authorization model.
 
-**Default proposed inheritance:** **none**.
+**Accepted inheritance for v1:** **none**.
 
 For high-sensitivity KV v2 record, Secret detail, path-sensitive search,
 graph or export: a bare instance-level permit is **not** an implicit grant
@@ -153,7 +158,7 @@ Tenant, Asset, Cluster), namespace/mount selector storage, UI for explicit
 grants, treatment of HA node/Enterprise Vault namespaces and child scope
 revocation. All must be tested rather than derived from navigation hierarchy.
 
-## 6. Proposed D4 — authorization decision and audit (#2715)
+## 6. Accepted D4 — authorization decision and audit (#2715)
 
 Reuse KAORI Access Activity Audit ownership and the existing shared committed
 notification/evidence boundary; domain operational evidence and AuditEvent
@@ -176,16 +181,17 @@ No Secret names/paths/versions/contents, provider URLs, credentials, raw
 query selectors, external-group claims or raw body/errors. Keep audit
 permission and data retention separate from domain read permission.
 
-**Event priority candidate:** persist every policy create/activate/update/
-revoke and every sensitive mutation/admission; ensure resource-scope denies
+**Accepted required event priority:** persist every sensitive policy create/activate/update/
+revoke, grant approval and sensitive mutation/admission; ensure resource-scope denies
 remain observable and correlated without enabling high-volume sensitive
 log replay. Hot audit row budget and archival policy must reuse approved
 Data Lifecycle controls. Audit sink unavailability must **never turn deny
-into allow**. Whether an allowed *read* is refused when audit persistence
-fails, and whether low-risk reads may use bounded aggregation, still need
-explicit security decision.
+into allow**. **Accepted:** sensitive scoped reads and provider mutation/admission requiring
+committed audit fail closed if audit persistence fails. Existing non-sensitive
+reads keep their prior audit contract pending separate cutover. Sampling and
+retention specifics must never waive mandatory sensitive-read evidence.
 
-## 7. Proposed D5 — RBAC-preserving migration (#2716)
+## 7. Accepted D5 — RBAC-preserving migration (#2716)
 
 | Phase | Proposed activity | Mandatory gate |
 | --- | --- | --- |
@@ -241,20 +247,19 @@ matches by inference. Enforce consistency across HTTP, HTMX, background
 jobs and future APIs, and test a policy revocation between read and
 execution with fresh admission.
 
-## 9. Preconditions before implementation issue #2688 is unblocked
+## 9. Architecture acceptance and bounded implementation gates
 
-- [ ] #2712 lifecycle and administrative ownership accepted.
-- [ ] #2713 principal, group freshness and phased rollout accepted.
-- [ ] #2714 resource registry, exact child isolation and inheritance approved.
-- [ ] #2715 event schema, retention and failure policy approved.
-- [ ] #2716 sanitized RBAC parity, backout and grant migration approved.
-- [ ] #724 authority comment locks cross-topic conflicts and any break-glass
-      exceptions with #641.
-- [ ] Implementation issues and migrations are subsequently decomposed
-      and explicitly authorized; no umbrella #724 bulk implementation.
-- [ ] Existing tests/quality gates and real PostgreSQL/Vault/IdP/security
-      UAT plans are recorded; no test or migration is asserted executed.
+- [x] #2712 lifecycle, maker-checker sensitive grant and immediate audited revocation **principles accepted** under #724.
+- [x] #2713 User-first principal, external-group staged admission and no implicit Team/service-account grant **accepted**.
+- [x] #2714 exact IntegrationInstance and explicit nested scope/no inheritance **accepted**.
+- [x] #2715 sanitized Access-owned audit and sensitive fail-closed persistence requirement **accepted**.
+- [x] #2716 preserve-access baseline, shadow, explicit grants, guarded cutover and fail-safe rollback **accepted**.
+- [x] #724 acceptance recorded by accountable human; #641 break-glass remains separate and never grants implicit scope.
+- [ ] Bounded implementation issues have reviewed field/schema/API/index/permission/revision and grant-administration contracts; #724 is not a bulk implementation issue.
+- [ ] Audit persistence transaction/failure mode, external-group freshness, and migration baseline technical designs reviewed before enabling associated execution.
+- [ ] Exact-SHA Developer Check, security negative tests, Full Admission, real PostgreSQL/Vault/IdP UAT and human acceptance are recorded for runtime work.
+- [ ] New sensitive Secret Registry, Detail, search, export, report and graph routes remain unpublished until authoritative evaluator, audited grants and scoped filtering have been admitted.
 
-This draft must not be treated as an active authorization policy, migration
-script, UI capability, new permission, accepted UAT evidence or production
-security control.
+This accepted architecture is **not** a currently active authorization system,
+permission change, provider credential, database migration or UAT PASS. Existing
+global RBAC remains in force until the approved per-route cutover.
