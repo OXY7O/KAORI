@@ -41,6 +41,28 @@ def test_notification_channels_use_three_canonical_workspace_tabs() -> None:
     assert 'id="notification-channels-workspace"' in page
 
 
+def test_notification_setup_summaries_and_ownership_remain_concise() -> None:
+    providers = read('app/integrations/delivery/notification_channels/providers/__init__.py')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+
+    summaries = (
+        'Use a dedicated Telegram bot and destination; keep its token encrypted in KAORI.',
+        'Use an approved SMTP relay, sender identity, and operational recipients.',
+        'Use a Teams Workflow webhook; legacy Office 365 connector URLs are unsupported.',
+    )
+    assert all(len(summary) <= 85 for summary in summaries)
+    for summary in summaries:
+        assert f"setup_summary='{summary}'" in providers
+
+    assert 'Encrypt Telegram bot tokens as channel secrets' in providers
+    assert 'STARTTLS, TLS/SMTPS, or an explicitly trusted relay policy.' in providers
+    assert 'The Workflow trigger configured for Anyone authentication' in providers
+    assert (
+        "'ownership': 'Consumers emit governed events; "
+        "Notification Channels handles provider delivery.'"
+    ) in service
+
+
 def test_notification_tab_macro_namespace_cannot_be_shadowed_by_local_assignment() -> None:
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
     parsed = Environment().parse(page)
