@@ -32,6 +32,7 @@ def sync_vault_inventory_task(
     count = len(targets)
     succeeded = 0
     failed = 0
+    committed_mounts = 0
     secrets = 0
     if not 1 <= count <= 25:
         context.fail('Vault inventory target scope is invalid.', error_code='invalid_scope')
@@ -75,6 +76,7 @@ def sync_vault_inventory_task(
                     # New client per mount; the AppRole token stays only in worker memory.
                     evidence = collect_kv2_metadata(build_client(instance), mount=mount)
                     result = commit_kv2_inventory(instance_id, evidence)
+                    committed_mounts += 1
                     secrets += result.observed_secret_count
                     current_mount = None
                 succeeded += 1
@@ -93,11 +95,11 @@ def sync_vault_inventory_task(
                 stage='Scope Reconciliation', target='Vault Inventory',
             )
         result = {
-            'status': 'failed' if failed == count else ('partial' if failed else 'success'),
+            'status': 'failed' if failed and not committed_mounts else ('partial' if failed else 'success'),
             'synced_instances': succeeded, 'failed_scopes': failed,
-            'observed_secrets': secrets,
+            'observed_secrets': secrets, 'committed_mounts': committed_mounts,
         }
-        if failed == count:
+        if failed and not committed_mounts:
             context.fail('All approved Vault inventory scopes failed; committed history is retained.',
                          error_code='vault_inventory_failed')
         else:
