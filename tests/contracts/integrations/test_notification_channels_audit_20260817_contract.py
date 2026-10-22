@@ -490,6 +490,56 @@ def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> No
     assert 'Test Delivery' in providers
 
 
+def test_channel_inventory_rows_are_compact_and_allowed_uses_expand_accessibly() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    service = read('app/integrations/delivery/notification_channels/service.py')
+    shared_table = read('app/templates/components/table.html')
+
+    # Table retains the canonical header/loading/filter/pagination structure.
+    assert "table_block.inventory_block_header(" in page
+    assert "table_registry.filter_form('notification_channels.index'" in page
+    assert "table_registry.footer('notification_channels.index'" in page
+    assert "header_actions=channel_clear_action" in page
+    assert 'loading_bar.render(loading_id, label=loading_label)' in shared_table
+
+    # Six balanced columns; testing and delivery evidence remain distinct.
+    assert page.count('scope="col"') == 6
+    assert 'colspan="6"' in page
+    assert '>Delivery Evidence</th>' in page
+    assert '<dt class="text-xs font-semibold leading-5 text-content-muted">Last Test</dt>' in page
+    assert '<dt class="text-xs font-semibold leading-5 text-content-muted">Last Delivery</dt>' in page
+    assert 'channel.last_tested_at|user_datetime' in page
+    assert 'channel.last_delivery_at|user_datetime' in page
+    assert 'channel.last_delivery_label, channel.last_delivery_tone' in page
+
+    # Long event policy is summarized instead of flooding the default row.
+    assert 'channel.event_type_labels|join(", ")' not in page
+    assert 'channel.event_type_labels[:2]' in page
+    assert 'allowed_use_count = channel.event_type_labels|length' in page
+    assert 'allowed_use_count > 2' in page
+    assert '<details class="group min-w-0">' in page
+    assert '<summary class="{{ table_ui.action_classes() }}' in page
+    assert 'aria-label="Show or hide all {{ allowed_use_count }} allowed uses for {{ channel.name }}"' in page
+    assert 'for event_label in channel.event_type_labels' in page
+    assert 'max-h-48' in page
+    assert 'No events allowed' in page
+    assert 'channel.report_schedule_count' in page
+
+    # Truncated destination/domain values remain inspectable, but secrets do not surface.
+    assert 'title="{{ channel.destination_label }}"' in page
+    assert 'title="{{ channel.domain_labels|join(' in page
+    assert "'event_type_labels': [event_type_label(value)" in service
+    assert 'credential_payload' not in page
+
+    # Existing permitted actions, deletion guard and CSRF remain unchanged.
+    assert 'if can_manage' in page
+    assert "url_for('notification_channels.index', tab='channels', edit=channel.id, configure=1)" in page
+    assert "url_for('notification_channels.test', channel_id=channel.id)" in page
+    assert "url_for('notification_channels.delete', channel_id=channel.id)" in page
+    assert 'channel.delete_blocked' in page
+    assert page.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
+
+
 def test_review6_channel_registry_loading_follows_header_before_filters() -> None:
     source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     registry = source.split('id="notification-channel-registry"', 1)[1]

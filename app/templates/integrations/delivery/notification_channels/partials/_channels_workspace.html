@@ -177,32 +177,33 @@
             </div>
         {% endcall %}
         </div>
-        <div class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[1120px]') }}">
+        <div class="overflow-x-auto overscroll-x-contain">
+            <table class="{{ table_ui.table_classes('min-w-[1180px]') }}">
+                <caption class="sr-only">Configured notification channels with delivery readiness, routing policy, allowed uses and provider evidence.</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th class="{{ table_ui.header_cell_classes() }}">Channel</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Readiness</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Routing Policy</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Allowed Uses</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Last Test</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Last Delivery</th>
-                        <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[21%]">Channel</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[13%]">Readiness</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Routing Policy</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[19%]">Allowed Uses</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} w-[16%]">Delivery Evidence</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }} w-[15%]">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
                     {% for channel in payload.channels %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                <div class="flex min-w-0 items-center gap-2.5">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                           aria-hidden="true">
-                                        <i data-lucide="{{ channel.provider_icon }}" class="h-3.5 w-3.5"></i>
+                                        <i data-lucide="{{ channel.provider_icon }}" class="h-4 w-4"></i>
                                     </span>
-                                    <div class="min-w-0">
-                                        <p class="font-semibold text-content-primary">{{ channel.name }}</p>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="max-w-[220px] truncate text-sm font-semibold leading-5 text-content-primary"
+                                           title="{{ channel.name }}">{{ channel.name }}</p>
                                         <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ channel.provider_label }}</p>
-                                        <p class="mt-1 max-w-[260px] break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]"
+                                        <p class="mt-0.5 max-w-[220px] truncate text-xs leading-5 text-content-secondary"
                                            title="{{ channel.destination_label }}">{{ channel.destination_label }}</p>
                                     </div>
                                 </div>
@@ -214,33 +215,75 @@
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-medium text-content-secondary">{{ channel.minimum_severity_label }}</p>
-                                <p class="mt-1 max-w-[240px] text-xs leading-5 text-content-muted">{{ channel.domain_labels|join(", ") }}</p>
+                                <p class="text-sm font-medium leading-5 text-content-primary">{{ channel.minimum_severity_label }}</p>
+                                <p class="mt-1 max-w-[170px] truncate text-xs leading-5 text-content-muted"
+                                   title="{{ channel.domain_labels|join(', ') }}">{{ channel.domain_labels|join(', ') if channel.domain_labels else 'No domains selected' }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="max-w-[260px] text-sm leading-5 text-content-secondary">{{ channel.event_type_labels|join(", ") }}</p>
-                                {% if channel.report_schedule_count %}
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ channel.report_schedule_count }} report schedule reference{{ '' if channel.report_schedule_count == 1 else 's' }}</p>
-                                {% endif %}
+                                {% set allowed_use_count = channel.event_type_labels|length %}
+                                <div class="min-w-0 space-y-1.5">
+                                    {{ table_label.metadata_label(allowed_use_count ~ ' Allowed Uses', icon='list-checks') }}
+                                    {% if allowed_use_count %}
+                                        <ul class="space-y-0.5">
+                                            {% for event_label in channel.event_type_labels[:2] %}
+                                                <li class="max-w-[210px] truncate text-xs leading-5 text-content-secondary"
+                                                    title="{{ event_label }}">{{ event_label }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                        {% if allowed_use_count > 2 %}
+                                            <details class="group min-w-0">
+                                                <summary class="{{ table_ui.action_classes() }} mt-1 list-none cursor-pointer"
+                                                         aria-label="Show or hide all {{ allowed_use_count }} allowed uses for {{ channel.name }}">
+                                                    <span class="group-open:hidden">View all {{ allowed_use_count }}</span>
+                                                    <span class="hidden group-open:inline">Hide uses</span>
+                                                    <i data-lucide="chevron-down"
+                                                       class="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                                                       aria-hidden="true"></i>
+                                                </summary>
+                                                <ul class="mt-2 max-h-48 space-y-1.5 overflow-y-auto border-l-2 border-brand-outline pl-3"
+                                                    aria-label="All allowed uses for {{ channel.name }}">
+                                                    {% for event_label in channel.event_type_labels %}
+                                                        <li class="break-words text-xs leading-5 text-content-secondary">{{ event_label }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </details>
+                                        {% endif %}
+                                    {% else %}
+                                        <p class="text-xs leading-5 text-content-muted">No events allowed</p>
+                                    {% endif %}
+                                    {% if channel.report_schedule_count %}
+                                        <p class="text-xs leading-5 text-content-muted">{{ channel.report_schedule_count }} report schedule reference{{ '' if channel.report_schedule_count == 1 else 's' }}</p>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {% set test_tone = 'normal' if channel.status in ['Ready', 'Operational'] else ('warning' if channel.status in ['Validation Failed', 'Validation Required'] else 'unknown') %}
-                                {{ table_label.status_label('Passed' if channel.status in ['Ready', 'Operational'] else ('Failed' if channel.status == 'Validation Failed' else 'Required') , test_tone, size='compact') }}
-                                <p class="mt-1 whitespace-nowrap text-xs leading-5 text-content-muted">{{ channel.last_tested_at|user_datetime("Never tested") if channel.last_tested_at else 'Never tested' }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}
-                                <p class="mt-1 whitespace-nowrap text-xs leading-5 text-content-muted">{{ channel.last_delivery_at|user_datetime("No delivery") if channel.last_delivery_at else 'No delivery yet' }}</p>
+                                <dl class="space-y-2">
+                                    <div>
+                                        <dt class="text-xs font-semibold leading-5 text-content-muted">Last Test</dt>
+                                        <dd class="mt-0.5 flex flex-wrap items-center gap-1.5">
+                                            {{ table_label.status_label('Passed' if channel.status in ['Ready', 'Operational'] else ('Failed' if channel.status == 'Validation Failed' else 'Required') , test_tone, size='compact') }}
+                                            <span class="text-xs leading-5 text-content-muted">{{ channel.last_tested_at|user_datetime("Never tested") if channel.last_tested_at else 'Never tested' }}</span>
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-xs font-semibold leading-5 text-content-muted">Last Delivery</dt>
+                                        <dd class="mt-0.5 flex flex-wrap items-center gap-1.5">
+                                            {{ table_label.status_label(channel.last_delivery_label, channel.last_delivery_tone, size='compact') }}
+                                            <span class="text-xs leading-5 text-content-muted">{{ channel.last_delivery_at|user_datetime("No delivery") if channel.last_delivery_at else 'No delivery yet' }}</span>
+                                        </dd>
+                                    </div>
+                                </dl>
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
                                 {% if can_manage %}
-                                    <div class="flex justify-end gap-2">
+                                    <div class="flex flex-nowrap justify-end gap-1.5">
                                         <a href="{{ url_for('notification_channels.index', tab='channels', edit=channel.id, configure=1) }}"
                                            class="{{ table_ui.action_classes() }}">Edit</a>
                                         <form method="post"
                                               action="{{ url_for('notification_channels.test', channel_id=channel.id) }}">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button class="{{ table_ui.action_classes() }}">Test</button>
+                                            <button type="submit" class="{{ table_ui.action_classes() }}">Test</button>
                                         </form>
                                         {% if channel.delete_blocked %}
                                             <button type="button"
@@ -253,7 +296,7 @@
                                             <form method="post"
                                                   action="{{ url_for('notification_channels.delete', channel_id=channel.id) }}">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button class="{{ table_ui.action_classes(destructive=true) }}">Delete</button>
+                                                <button type="submit" class="{{ table_ui.action_classes(destructive=true) }}">Delete</button>
                                             </form>
                                         {% endif %}
                                     </div>
@@ -262,7 +305,7 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="7" class="p-0">
+                            <td colspan="6" class="p-0">
                                 {% set empty_state_icon = "send" %}
                                 {% set empty_state_label = "Setup Required" %}
                                 {% set empty_state_tone = "warning" %}

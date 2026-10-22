@@ -289,3 +289,29 @@ recipients; Telegram retains a dedicated bot/destination and secure KAORI
 credential boundary; Teams requires a Workflow webhook rather than a
 legacy Office 365 connector; consumers still emit governed events while
 Notification Channels owns the provider-delivery responsibility.
+
+## Notification Channel Inventory Row Density (#2708, 2026-10-23)
+
+The Channel Inventory table keeps its approved shared header, loading,
+filter controls, result count, pagination, provider-secret boundary,
+and authorized Edit / Test / Delete actions. The **six-column** canonical
+row reads Channel → Readiness → Routing Policy → Allowed Uses →
+Delivery Evidence → Actions. Combining Last Test and Last Delivery in
+a labeled evidence cell **does not combine their statuses or timestamps**.
+
+Long event policies must not be rendered as a single unbounded
+comma-delimited paragraph in normal monitoring view. Show an allowed-use
+count and at most two single-line previews by default. For more than
+two event types, use a native, keyboard-accessible **View all uses**
+`details/summary` expansion containing the complete source-owned list;
+no custom JavaScript or new modal framework. A bounded scroll area is
+permitted within the expanded list. Empty policies and committed report
+schedule references retain explicit representations.
+
+Keep the channel name as the primary identity, provider and destination
+as supporting details, and long destination/domain labels inspectable
+through standard title text without wrapping the default row indefinitely.
+Actions retain CSRF and blocked-delete semantics. Wide operational
+tables may scroll horizontally on narrow viewports, using the existing
+KAORI table component; no truncation of the expanded event list or
+policy-data mutation is permitted.
