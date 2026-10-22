@@ -87,7 +87,7 @@ def test_oversized_listing_fails_before_certificate_reads(client, monkeypatch):
 
 
 def test_malformed_serial_and_duplicate_listing_fail_before_detail(client, monkeypatch):
-    for keys in (['ca'], ['crl'], ['../keys'], ['aa', 'aa'], ['AA'], ['a:1']):
+    for keys in (['ca'], ['crl'], ['../keys'], ['aa', 'aa'], ['AA'], ['a:1'], ['00:65', '65']):
         calls = []
 
         def fake_request(path, **_kwargs):
