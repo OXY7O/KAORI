@@ -82,6 +82,8 @@ def test_findings_is_bounded_read_only_and_requires_qualified_evidence() -> None
     assert "SUCCESSFUL_REGISTRY_SCAN_STATUSES" in presentation
     assert 'RegistryProject.integration_instance_id.in_(source_ids)' in presentation
     assert 'func.count(func.distinct(RegistryWorkloadBinding.id))' in presentation
+    assert "RegistryWorkloadBinding.match_type == 'digest'" in presentation
+    assert "RegistryWorkloadBinding.match_type != 'digest'" in presentation
     assert "correlation['status'] == 'Ready'" in presentation
     assert 'paginate_query(' in presentation
     assert 're.fullmatch(' in presentation
@@ -197,6 +199,8 @@ def _renderable_posture(authorized: bool = True) -> dict:
                 'finding_count': 2,
                 'artifact_count': 1,
                 'binding_count': 1,
+                'digest_binding_count': 1,
+                'reference_binding_count': 0,
                 'observed_at': None,
             }
         ] if authorized else [],
@@ -228,6 +232,9 @@ def test_security_overview_blocks_without_eligible_source_without_inventing_kpis
 def test_security_findings_renders_shared_filters_and_exact_cve_drilldown() -> None:
     html = _render_workspace_page('findings', _renderable_posture())
     assert 'CVE-2022-1586' in html
+    assert '1 digest' in html
+    assert '0 mutable/other' in html
+    assert 'not distinct applications' in html
     assert '/artifact-registry/security/cve/CVE-2022-1586/impact' in html
     assert 'data-kaori-canonical-registry-footer="security-posture-findings-registry"' in html
     assert 'name="severity"' in html

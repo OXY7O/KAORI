@@ -25,6 +25,12 @@ Both Security routes require `security_posture.view`; `flask seed-rbac` (in a co
 
 The read model consumes only active/enabled Registry integrations with committed inventory. CVE rows come from the latest usable successful scanner snapshot per artifact. Failed scan refresh preserves last-good evidence, but freshness can become stale; a newer successful scan supersedes old findings. Deduplicated artifact and runtime binding counters are *observations* and are never a normalized application owner count. The oldest usable scanner observation and missing inventory scan coverage qualify scanner readiness; mixed partial/stale evidence is **Partial / Stale**. The canonical Runtime Correlation readiness reflects input changes and failures separately. Missing, unsupported, stale or denied sources must not be described as remediated or 'no exposure'.
 
+The Findings registry differentiates **strong digest bindings** from weaker
+**mutable/reference bindings** using the same correlation identity distinction
+as Artifact Registry Runtime Usage. Binding counts reflect observed
+container-level relationships, **not** a deduplicated count of logical
+applications. No source-only 0 may be interpreted as remediated or all clear.
+
 The initial result cannot speak for all Kubernetes workloads without matching source evidence, direct-host PHP packages, standalone Docker, network reachability, Service/Team ownership or global risk posture. No provider network I/O, mutation, new migration or background scan occurs from normal GET.
 
 ## Review and UAT

@@ -39,6 +39,10 @@
             {{ section_intro.render('CVE Finding Registry',
                 'Distinct scanner CVEs, affected artifact digests, and observed runtime bindings.',
                 'security-posture-findings-heading') }}
+            <p class="mt-2 text-xs text-content-secondary">
+                Bindings represent observed containers, not distinct applications.
+                Digest matches are stronger evidence; mutable references require verification.
+            </p>
         </div>
         <span id="security-posture-findings-loading"
               class="htmx-indicator sr-only"
@@ -93,7 +97,13 @@
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ row.finding_count }}</td>
                             <td class="{{ table_ui.cell_classes() }}">{{ row.artifact_count }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ row.binding_count }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="font-semibold text-content-primary">{{ row.binding_count }}</p>
+                                <p class="mt-1 text-xs text-content-muted">
+                                    {{ row.digest_binding_count }} digest ·
+                                    {{ row.reference_binding_count }} mutable/other
+                                </p>
+                            </td>
                             <td class="{{ table_ui.cell_classes() }}">{{ row.observed_at|user_datetime }}</td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
                                 {% if posture.authorized_registry and row.impact_available %}
