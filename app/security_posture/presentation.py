@@ -39,9 +39,10 @@ def _scanner_coverage_state(
     oldest_scan: datetime | None,
 ) -> dict[str, str]:
     """Distinguish missing, partial and stale source evidence without all-clear claims."""
-    if not source_count or not oldest_scan:
+    observed = _aware_datetime(oldest_scan)
+    if not source_count or observed is None:
         return {'label': 'Not Collected', 'tone': 'unknown'}
-    recent = _aware_datetime(oldest_scan) >= datetime.now(UTC) - _SCAN_WINDOW
+    recent = observed >= datetime.now(UTC) - _SCAN_WINDOW
     partial = scanned_artifacts < artifact_total
     if partial and not recent:
         return {'label': 'Partial / Stale', 'tone': 'warning'}
