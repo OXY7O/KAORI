@@ -3,10 +3,13 @@
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 {% block title %}Kubernetes Administration{% endblock title %}
 {% block dashboard_content %}
-    <div class="space-y-6"
+    <div class="min-w-0"
          x-data="{ tabs: ['overview', 'secret-reveal'], activeTab: '{{ active_tab }}', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); if (tab === 'secret-reveal') window.dispatchEvent(new CustomEvent('kubernetes:load-secret-reveal')); }, moveTab(currentTab, direction, prefix = 'kubernetes-administration') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }"
          x-init="if (activeTab === 'secret-reveal') $nextTick(() => window.dispatchEvent(new CustomEvent('kubernetes:load-secret-reveal')))">
+        <div class="mb-4 min-w-0">
         {{ workspace_tabs.render([('overview', 'Overview', 'layout-dashboard'), ('secret-reveal', 'Secret Reveal', 'scan-eye')], prefix='kubernetes-administration', aria_label='Kubernetes Administration Workspaces') }}
+        </div>
+        <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -68,5 +71,6 @@
                 </div>
             </div>
         </section>
+        </div>
     </div>
 {% endblock dashboard_content %}
