@@ -172,9 +172,10 @@ def main() -> int:
         and channel_policy_dialog.count('data-kaori-dialog-close') == 2,
         'balanced policy and discoverable deletion': 'sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]' in channel_policy_dialog
         and 'grid items-start gap-3 md:grid-cols-2' not in channel_policy_dialog
-        and "table_ui.table_classes('min-w-[1100px] table-fixed')" in channels_template
+        and "table_ui.table_classes('min-w-[1100px]')" in channels_template
         and 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channels_template
         and 'Why locked?' in channels_template
+        and 'flex flex-wrap justify-end gap-1.5' in channels_template
         and 'data-kaori-native-dialog' in channel_delete_blockers_dialog
         and 'for schedule_name in channel.report_schedule_names' in channel_delete_blockers_dialog
         and "'report_schedule_names': list(usage.report_schedule_names)" in service
