@@ -40,7 +40,7 @@ def build_vault_pki_sync_context(policy: JobPolicy) -> dict:
         targets = []
         diagnostic = 'Too many Vault instances for bounded collection.'
     jobs = JobExecution.query.filter_by(
-        job_type='secrets_pki_public_pki', operation='sync_secrets_pki_public_pki',
+        job_type='secrets_pki_public_pki', operation='sync_secrets_pki_public_issuers',
     )
     recent = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(5).all()
     registered = VaultInstance.query.count()
@@ -64,6 +64,6 @@ def build_vault_pki_sync_context(policy: JobPolicy) -> dict:
         'active_job': present_job_execution(active) if active else None,
         'execution_state': state,
         'configuration_state': {'label': 'Execution Active' if active else ('Enabled' if policy.enabled else 'Manual Only'), 'tone': 'pending' if active else ('normal' if policy.enabled else 'unknown'), 'icon': 'loader-circle' if active else ('circle-check' if policy.enabled else 'mouse-pointer-click')},
-        'scheduler_state': {'label': 'Enabled' if policy.enabled else 'Disabled', 'tone': 'normal' if policy.enabled else 'disabled', 'icon': 'circle-check' if policy.enabled else 'circle-pause', 'description': 'Vault metadata inventory schedule.'},
-        'readiness_state': {'label': 'Sync Eligible' if eligible else 'Blocked', 'tone': 'normal' if eligible else 'warning', 'icon': 'link-2' if eligible else 'shield-alert', 'description': 'Approved Ready Vault scopes.' if eligible else 'No eligible Vault PKI public issuer PKI mounts.'},
+        'scheduler_state': {'label': 'Enabled' if policy.enabled else 'Disabled', 'tone': 'normal' if policy.enabled else 'disabled', 'icon': 'circle-check' if policy.enabled else 'circle-pause', 'description': 'Vault public PKI issuer inventory schedule.'},
+        'readiness_state': {'label': 'Sync Eligible' if eligible else 'Blocked', 'tone': 'normal' if eligible else 'warning', 'icon': 'link-2' if eligible else 'shield-alert', 'description': 'Approved Ready Vault scopes.' if eligible else 'No eligible approved Vault PKI mounts.'},
     }
