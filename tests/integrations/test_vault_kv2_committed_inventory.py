@@ -1,0 +1,136 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+
+import pytest
+from cryptography.fernet import Fernet
+from flask import Flask
+
+from app.extensions.db import db
+from app.integrations.secrets_management.secrets_pki.commit_inventory import commit_kv2_inventory
+from app.integrations.secrets_management.secrets_pki.providers.vault.kv2_inventory import (
+    KV2CollectionEvidence, KV2SecretEvidence, KV2VersionEvidence,
+)
+from app.models.integration import IntegrationInstance
+from app.models.secrets_pki import (
+    SecretIdentity, SecretInventoryCollectionState, SecretProviderRepresentation, SecretVersionObservation,
+)
+from app.models.vault import VaultInstance
+
+
+@pytest.fixture
+def store():
+    app = Flask(__name__)
+    app.config.update(
+        SECRET_KEY='only-for-test',
+        SQLALCHEMY_DATABASE_URI='sqlite://',
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        INTEGRATION_CREDENTIAL_KEY=Fernet.generate_key().decode('ascii'),
+    )
+    db.init_app(app)
+    with app.app_context():
+        tables = [
+            IntegrationInstance.__table__, VaultInstance.__table__,
+            SecretIdentity.__table__, SecretProviderRepresentation.__table__,
+            SecretVersionObservation.__table__, SecretInventoryCollectionState.__table__,
+        ]
+        db.Model.metadata.create_all(bind=db.engine, tables=tables)
+        identity = IntegrationInstance(
+            integration_type='secrets_pki', provider_key='vault', adapter_key='vault_http_v1',
+            name='test-vault', environment='testing', enabled=True, readiness_status='ready',
+        )
+        db.session.add(identity)
+        db.session.flush()
+        connection = VaultInstance(
+            integration_instance_id=identity.id, endpoint='https://vault.example.test',
+            auth_mount='approle', role_id='reader', secret_id='test-only',
+            timeout=5, verify_ssl=True,
+        )
+        db.session.add(connection)
+        db.session.commit()
+        try:
+            yield identity.id
+        finally:
+            db.session.remove()
+            db.Model.metadata.drop_all(bind=db.engine, tables=list(reversed(tables)))
+
+
+def _snapshot(at: datetime, names=('team/db',), *, version=1, complete=True):
+    return KV2CollectionEvidence(
+        mount='secret',
+        observed_at=at,
+        complete=complete,
+        records=tuple(
+            KV2SecretEvidence(
+                mount='secret', path=name,
+                current_version=version, oldest_version=1, max_versions=0,
+                cas_required=True,
+                versions=(KV2VersionEvidence(
+                    version=version,
+                    created_time='2026-10-22T00:00:00Z',
+                    deletion_time=None, destroyed=False,
+                ),),
+            )
+            for name in names
+        ),
+    )
+
+
+def test_initial_commit_and_refresh_preserve_canonical_secret_identity_and_history(store):
+    first_time = datetime(2026, 10, 22, tzinfo=UTC)
+    first = commit_kv2_inventory(store, _snapshot(first_time))
+    assert first.observed_secret_count == 1
+    row = SecretProviderRepresentation.query.one()
+    canonical_id = row.secret_identity_id
+    assert row.path == 'team/db'
+    assert row.observation_status == 'observed'
+    assert SecretVersionObservation.query.count() == 1
+
+    second = commit_kv2_inventory(store, _snapshot(first_time + timedelta(minutes=5), version=2))
+    assert second.observed_secret_count == 1
+    assert SecretProviderRepresentation.query.count() == 1
+    assert SecretProviderRepresentation.query.one().secret_identity_id == canonical_id
+    assert SecretVersionObservation.query.count() == 2
+    assert {item.version for item in SecretVersionObservation.query.all()} == {1, 2}
+    assert SecretIdentity.query.count() == 1
+
+
+def test_unexpected_empty_collection_cannot_delete_committed_evidence(store):
+    now = datetime(2026, 10, 22, tzinfo=UTC)
+    commit_kv2_inventory(store, _snapshot(now))
+    with pytest.raises(ValueError, match='empty'):
+        commit_kv2_inventory(store, _snapshot(now + timedelta(minutes=1), names=()))
+    assert SecretProviderRepresentation.query.count() == 1
+    state = SecretInventoryCollectionState.query.one()
+    assert state.status == 'ready'
+    assert state.observed_count == 1
+
+
+def test_partial_or_older_collection_is_never_promoted(store):
+    now = datetime(2026, 10, 22, tzinfo=UTC)
+    commit_kv2_inventory(store, _snapshot(now))
+    with pytest.raises(ValueError, match='Incomplete'):
+        commit_kv2_inventory(store, _snapshot(now + timedelta(minutes=1), complete=False))
+    with pytest.raises(ValueError, match='older'):
+        commit_kv2_inventory(store, _snapshot(now - timedelta(minutes=1)))
+    assert SecretProviderRepresentation.query.count() == 1
+    assert SecretInventoryCollectionState.query.one().observed_count == 1
+
+
+def test_missing_from_later_complete_snapshot_is_not_provider_deletion(store):
+    now = datetime(2026, 10, 22, tzinfo=UTC)
+    commit_kv2_inventory(store, _snapshot(now, names=('team/db', 'team/cache')))
+    result = commit_kv2_inventory(store, _snapshot(now + timedelta(minutes=1), names=('team/db',)))
+    assert result.not_observed_count == 1
+    status_by_path = {r.path: r.observation_status for r in SecretProviderRepresentation.query.all()}
+    assert status_by_path == {'team/db': 'observed', 'team/cache': 'not_observed'}
+    assert SecretIdentity.query.count() == 2
+
+
+def test_disabled_vault_connection_cannot_commit_even_with_evidence(store):
+    row = VaultInstance.query.filter_by(integration_instance_id=store).one()
+    row.enabled = False
+    db.session.commit()
+    with pytest.raises(ValueError, match='not eligible'):
+        commit_kv2_inventory(store, _snapshot(datetime(2026, 10, 22, tzinfo=UTC)))
+    assert SecretProviderRepresentation.query.count() == 0
