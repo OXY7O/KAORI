@@ -41,47 +41,40 @@
 <section id="secret-reveal-namespace-section"
          class="{{ table_ui.block_classes() }} shadow-none"
          x-data='{ "query": {{ (namespace_filters.query or '') | tojson }}, "policy": {{ (namespace_filters.policy or 'all') | tojson }} }'>
-    <header class="{{ table_ui.block_header_classes() }}">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
-                <i data-lucide="boxes" class="h-5 w-5"></i>
-            </span>
-            <div class="min-w-0">
-                <div class="flex min-w-0 flex-wrap items-center gap-2">
-                    <h2 class="{{ table_ui.block_title_classes() }}">Namespace Policies</h2>
-                    {{ table_label.result_count(namespace_summary.total) }}
-                    {{ table_label.status_label(namespace_summary.enabled ~ ' Enabled', 'normal') }}
-                    {% if namespace_summary.missing %}{{ table_label.status_label(namespace_summary.missing ~ ' Missing', 'warning') }}{% endif %}
-                    {% if namespace_summary.unknown %}{{ table_label.status_label(namespace_summary.unknown ~ ' Unknown', 'unknown') }}{% endif %}
-                </div>
-                <p class="{{ table_ui.block_description_classes() }}">Review existing access policies; edit a namespace only when a change is required.</p>
-            </div>
-        </div>
-        <div class="flex shrink-0 flex-wrap items-center gap-2" data-kaori-table-header-actions>
-            {% set namespace_clear_href = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
-            {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
-            <span :hidden="!query.trim() && policy === 'all'"
-                  {% if not namespace_filters.query and namespace_filters.policy == 'all' %}hidden{% endif %}>
-                {{ registry_ui.clear_filters_action(
-                    namespace_clear_href,
-                    table_ui.action_classes(),
-                    hx_get=namespace_clear_url,
-                    target='#secret-reveal-namespace-section',
-                    indicator='#secret-reveal-namespace-loading',
-                    select='#secret-reveal-namespace-section',
-                    push_url='true',
-                    swap='outerHTML',
-                    marker='secret-reveal-namespaces'
-                ) }}
-            </span>
-        </div>
-    </header>
-    <div id="secret-reveal-namespace-loading"
-         class="{{ table_ui.loading_bar_classes() }}"
-         role="progressbar"
-         aria-label="Loading Namespace Policies">
-        <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-    </div>
+    {% set namespace_policy_title_extra %}
+        {{ table_label.status_label(namespace_summary.enabled ~ ' Enabled', 'normal') }}
+        {% if namespace_summary.missing %}{{ table_label.status_label(namespace_summary.missing ~ ' Missing', 'warning') }}{% endif %}
+        {% if namespace_summary.unknown %}{{ table_label.status_label(namespace_summary.unknown ~ ' Unknown', 'unknown') }}{% endif %}
+    {% endset %}
+    {% set namespace_policy_header_actions %}
+        {% set namespace_clear_href = url_for('platform_operations.kubernetes.index', tab='secret-reveal', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
+        {% set namespace_clear_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', view='policies', cluster_id=selected_cluster.id, page=1, per_page=namespace_pagination.per_page) %}
+        <span :hidden="!query.trim() && policy === 'all'"
+              {% if not namespace_filters.query and namespace_filters.policy == 'all' %}hidden{% endif %}>
+            {{ registry_ui.clear_filters_action(
+                namespace_clear_href,
+                table_ui.action_classes(),
+                hx_get=namespace_clear_url,
+                target='#secret-reveal-namespace-section',
+                indicator='#secret-reveal-namespace-loading',
+                select='#secret-reveal-namespace-section',
+                push_url='true',
+                swap='outerHTML',
+                marker='secret-reveal-namespaces'
+            ) }}
+        </span>
+    {% endset %}
+    {{ table_ui.inventory_block_header(
+        'boxes',
+        'Namespace Policies',
+        'Review existing access policies; edit a namespace only when a change is required.',
+        'secret-reveal-namespace-loading',
+        'Loading Namespace Policies',
+        none,
+        header_actions=namespace_policy_header_actions,
+        title_extra=namespace_policy_title_extra,
+        result_count=namespace_summary.total
+    ) }}
     {% if not namespace_source.available %}
         <div class="border-b border-outline-default px-6 py-4">
             <div class="rounded-xl border {{ operational_callout.semantic_surface_classes('warning') }} p-4">

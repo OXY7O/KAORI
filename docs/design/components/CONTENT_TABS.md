@@ -141,9 +141,13 @@ route navigator, Integration-style framed parent card, or a new tab family.
   **Edit Policy** label, shared action geometry, and accessible `aria-controls`
   and `aria-expanded` state. The editor preserves a single-row editing
   boundary, stable default row heights, and a labeled policy selector with
-  neutral **Cancel** / **Save Policy** actions. It is Alpine-controlled like
-  the existing KAORI operational workspace; keyboard and visual behavior
-  require browser UAT.
+  neutral **Cancel** / **Save Policy** actions. The companion row is
+  **server-hidden by default** with the existing `hidden` utility class,
+  and shared `detail_rows.js` (`data-detail-toggle`/`data-detail-group`)
+  owns exclusive open/close, ARIA state and HTMX-safe delegated events. Do not
+  use Alpine `x-show` on table rows for this pattern. Cancel follows a safe
+  GET of the current filtered page, restoring the read-only table without
+  policy mutation. Keyboard and browser behavior still require UAT.
 - **Live Source** provenance and manual **Refresh** belong to a standalone
   full-width utility card above Namespace Policies. Include source authority,
   selected cluster, truthfully sourced status and last refresh (or absence
@@ -154,9 +158,12 @@ route navigator, Integration-style framed parent card, or a new tab family.
   Client-side filter state updates its visibility while table-only HTMX
   updates preserve the search field; initial server rendering preserves
   the hidden state when scripting is unavailable.
-- The table loader uses only `table_ui.loading_bar_classes()` directly
-  beneath the header, before filters. Avoid extra permanently visible
-  background/spacer tracks.
+- Namespace Policies renders its header via the approved
+  `table_ui.inventory_block_header()` macro, which owns the shared
+  `components/loading_bar.html` indicator **inside the block header below
+  its title/action row**. This reuses the Activity Audit Table pattern
+  instead of page-local `loading_bar_classes()` or always-visible tracks.
+  The indicator is hidden when idle and shows only during HTMX requests.
 - The table and companion editor use available horizontal space to explain
   live Namespace state and configured reveal policy. The editor shows
   namespace, current policy, proposed policy, eligibility context and compact
