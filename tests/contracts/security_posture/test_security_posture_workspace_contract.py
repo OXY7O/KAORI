@@ -166,7 +166,9 @@ def _render_workspace_page(name: str, posture: dict, **options: bool | str) -> s
 
 
 def _renderable_posture(authorized: bool = True) -> dict:
-    page = pagination_payload(build_pagination_window(total_items=12, page=2, per_page=5))
+    page = pagination_payload(
+        build_pagination_window(total_items=12 if authorized else 0, page=2 if authorized else 1, per_page=5)
+    )
     return {
         'authorized_registry': authorized,
         'sources': 1 if authorized else 0,
