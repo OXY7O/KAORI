@@ -28,11 +28,12 @@ def test_source_control_taxonomy_is_reserved_but_github_is_not_available() -> No
 def test_repository_native_id_not_mutable_owner_name_or_installation() -> None:
     host = SourceHost('GitHub', 'GitHub.com')
     repository = SourceRepositoryIdentity(host, '00042')
-    another_account = SourceAccountIdentity(host, 43)
+    another_account = SourceAccountIdentity(host, 42)
     installation = SourceInstallationIdentity(host, 123, 456)
-    assert repository.key == ('github', 'github.com', '42')
+    assert repository.key == ('github', 'github.com', 'repository', '42')
+    assert another_account.key == ('github', 'github.com', 'account', '42')
     assert another_account.key != repository.key
-    assert installation.key == ('github', 'github.com', '123', '456')
+    assert installation.key == ('github', 'github.com', 'installation', '123', '456')
 
 
 def test_same_numeric_id_across_hosts_is_not_same_repository() -> None:
