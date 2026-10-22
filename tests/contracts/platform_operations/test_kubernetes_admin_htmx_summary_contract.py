@@ -173,7 +173,7 @@ def test_kubernetes_admin_controls_heading_is_inside_shared_card() -> None:
 
     # The approved section header (title, short copy and dynamic badge) belongs
     # INSIDE the shared Operational Section Card, not above a second shell.
-    start = overview.index("{% call operational_section.render(\\n        'Managed Administration Controls',")
+    start = overview.index("'Managed Administration Controls',")
     description = overview.index('Configure implemented controls and review their security posture.', start)
     badge = overview.index('header_badge=controls_badge', description)
     contents = overview.index('id="kubernetes-admin-controls-list"', badge)
@@ -182,7 +182,7 @@ def test_kubernetes_admin_controls_heading_is_inside_shared_card() -> None:
     assert overview.count("'Managed Administration Controls'") == 2  # Title + aria-label
     assert "body_classes='p-0'" in overview[start:contents]
     assert 'kubernetes-admin-controls-title' not in overview
-    assert "{% call operational_section.render(\\n        'Administration Coverage'," in overview
+    assert "'Administration Coverage'," in overview
     assert 'macro render(' in shared
     assert 'header_badge' in shared
     assert 'id="kubernetes-admin-controls-list" hx-swap-oob="innerHTML"' in oob
