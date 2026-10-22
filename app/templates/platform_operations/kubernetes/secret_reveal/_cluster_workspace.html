@@ -2,6 +2,7 @@
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/content_tabs.html" as content_tabs %}
+{% import "components/section_intro.html" as section_intro %}
 {% if workspace_partial | default(false) %}
     <p id="secret-reveal-hero-cluster-name" hx-swap-oob="innerHTML">{{ selected_cluster.name if selected_cluster else 'No cluster selected' }}</p>
 {% endif %}
@@ -22,11 +23,18 @@
 {% endif %}
 {% set secret_reveal_view = 'policies' if request.values.get('view') == 'policies' else 'prerequisites' %}
 <div id="secret-reveal-cluster-workspace"
-     class="{{ operational_section.shell_classes() }}"
-     aria-labelledby="secret-reveal-cluster-readiness-heading"
+     class="min-w-0 space-y-4"
+     aria-label="Kubernetes Cluster Access Configuration"
      x-data="{ tabs: ['prerequisites', 'policies'], activeTab: '{{ secret_reveal_view }}', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('view', tab); window.history.pushState({}, '', url); }, moveTab(tab, direction, prefix = 'secret-reveal-management') { const i = this.tabs.indexOf(tab); const next = direction === 'home' ? 0 : direction === 'end' ? this.tabs.length - 1 : (i + direction + this.tabs.length) % this.tabs.length; this.setTab(this.tabs[next]); this.$nextTick(() => document.getElementById(prefix + '-tab-' + this.tabs[next])?.focus()); } }"
      @popstate.window="activeTab = new URL(window.location.href).searchParams.get('view') === 'policies' ? 'policies' : 'prerequisites'">
-    <header class="px-5 pt-4 sm:px-6">
+    {{ section_intro.render(
+        'Cluster Access',
+        'Manage readiness and protected Namespace policies for the selected cluster.',
+        'secret-reveal-cluster-access-intro-heading'
+    ) }}
+    <section class="{{ operational_section.shell_classes() }}"
+             aria-labelledby="secret-reveal-cluster-readiness-heading">
+        <header class="px-5 pt-4 sm:px-6">
         <div class="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
@@ -258,4 +266,5 @@
             </section>
         {% endif %}
     </div>
+    </section>
 </div>
