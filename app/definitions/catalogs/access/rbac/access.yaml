@@ -23,6 +23,8 @@ control_modules:
   label: Artifact Registry
 - key: security_posture
   label: Security Posture
+- key: secrets_pki
+  label: Secrets & PKI
 - key: integrations
   label: Integrations
 - key: platform_operations
@@ -280,6 +282,16 @@ permissions:
   action: view
   description: View settings pages.
   matrix_description: Browse KAORI application settings pages and review the configuration information available to the user.
+- key: secrets_pki.view
+  module: secrets_pki
+  action: view
+  description: View Secrets & PKI metadata summaries and evidence readiness without Secret values.
+  matrix_description: Review safe committed Secrets & PKI operational metadata and source freshness. Does not allow plaintext reveal, private keys, or unrestricted sensitive Secret path access.
+- key: secrets_pki.sync
+  module: secrets_pki
+  action: sync
+  description: Run approved metadata-only Secrets & PKI inventory reconciliation.
+  matrix_description: Start governed, metadata-only Vault inventory jobs for approved provider scopes through canonical JobExecution; does not configure Vault or reveal Secret material.
 - key: integrations.manage
   module: integrations
   action: manage_integrations
@@ -370,6 +382,7 @@ permission_dependencies:
   clusters.sync: [clusters.view, jobs.execute]
   storage.sync: [object_storage_inventory.view, jobs.execute]
   artifact_registry.sync: [artifact_registry.view, jobs.execute]
+  secrets_pki.sync: [secrets_pki.view, jobs.execute]
   kubernetes_configmaps.create: [kubernetes_configmaps.view]
   kubernetes_configmaps.update: [kubernetes_configmaps.view]
   kubernetes_configmaps.delete: [kubernetes_configmaps.view]
@@ -432,6 +445,7 @@ system_roles:
   - object_storage_inventory.view
   - artifact_registry.view
   - security_posture.view
+  - secrets_pki.view
   - reports.view
   - settings.view
   - tls_certificates.view
@@ -463,6 +477,8 @@ system_roles:
   - object_storage_inventory.view
   - artifact_registry.view
   - security_posture.view
+  - secrets_pki.view
+  - secrets_pki.sync
   - reports.generate
   - reports.view
   - settings.view
@@ -507,6 +523,8 @@ system_roles:
   - object_storage_inventory.view
   - artifact_registry.view
   - security_posture.view
+  - secrets_pki.view
+  - secrets_pki.sync
   - reports.generate
   - reports.manage_schedules
   - reports.manage_storage
@@ -560,6 +578,8 @@ system_roles:
   - object_storage_inventory.view
   - artifact_registry.view
   - security_posture.view
+  - secrets_pki.view
+  - secrets_pki.sync
   - platform_operations.export_data_lifecycle
   - platform_operations.manage_data_lifecycle
   - platform_operations.view_data_lifecycle
@@ -608,6 +628,7 @@ system_roles:
   - object_storage_inventory.view
   - artifact_registry.view
   - security_posture.view
+  - secrets_pki.view
   - platform_operations.export_data_lifecycle
   - platform_operations.view_data_lifecycle
   - reports.view
