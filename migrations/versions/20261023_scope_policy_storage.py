@@ -21,9 +21,18 @@ def upgrade() -> None:
     op.create_table(
         'access_scope_policies',
         sa.Column('id', sa.String(length=36), primary_key=True),
-        sa.Column('principal_user_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False),
-        sa.Column('permission_key', sa.String(length=120), sa.ForeignKey('permissions.key', ondelete='RESTRICT'), nullable=False),
-        sa.Column('integration_instance_id', sa.Integer(), sa.ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False),
+        sa.Column(
+            'principal_user_id', sa.Integer(),
+            sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False,
+        ),
+        sa.Column(
+            'permission_key', sa.String(length=120),
+            sa.ForeignKey('permissions.key', ondelete='RESTRICT'), nullable=False,
+        ),
+        sa.Column(
+            'integration_instance_id', sa.Integer(),
+            sa.ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False,
+        ),
         sa.Column('scope_level', sa.String(length=24), nullable=False),
         sa.Column('provider_namespace', sa.String(length=255), nullable=True),
         sa.Column('mount', sa.String(length=160), nullable=True),
@@ -46,13 +55,22 @@ def upgrade() -> None:
     op.create_table(
         'access_scope_policy_revisions',
         sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('policy_id', sa.String(length=36), sa.ForeignKey('access_scope_policies.id', ondelete='RESTRICT'), nullable=False),
+        sa.Column(
+            'policy_id', sa.String(length=36),
+            sa.ForeignKey('access_scope_policies.id', ondelete='RESTRICT'), nullable=False,
+        ),
         sa.Column('revision_number', sa.Integer(), nullable=False),
         sa.Column('lifecycle_status', sa.String(length=24), nullable=False),
         sa.Column('effective_from', sa.DateTime(timezone=True), nullable=False),
         sa.Column('effective_until', sa.DateTime(timezone=True), nullable=False),
-        sa.Column('requested_by_user_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False),
-        sa.Column('approved_by_user_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=True),
+        sa.Column(
+            'requested_by_user_id', sa.Integer(),
+            sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False,
+        ),
+        sa.Column(
+            'approved_by_user_id', sa.Integer(),
+            sa.ForeignKey('users.id', ondelete='RESTRICT'), nullable=True,
+        ),
         sa.Column('approved_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('change_reason', sa.String(length=160), nullable=False),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
