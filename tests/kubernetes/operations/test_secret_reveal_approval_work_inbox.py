@@ -132,16 +132,18 @@ def test_ineligible_or_inactive_user_has_no_work_and_never_queries_requests(monk
 def test_secret_reveal_inbox_uses_tenant_style_composition_and_shared_deck():
     queries = (ROOT / 'app/platform_operations/notifications/queries.py').read_text(encoding='utf-8')
     boot = (ROOT / 'app/bootstrap/blueprints.py').read_text(encoding='utf-8')
-    panel = (ROOT / 'app/templates/platform_operations/notifications/partials/_notification_deck_inbox.html').read_text(
-        encoding='utf-8'
-    )
+    panel_path = ROOT / 'app/templates/platform_operations/notifications/partials/_notification_deck_inbox.html'
+    panel = panel_path.read_text(encoding='utf-8')
     source = (ROOT / 'app/kubernetes/operations/secrets/approval_inbox.py').read_text(encoding='utf-8')
 
     assert "app.extensions['kaori_secret_reveal_approval_work_inbox'] = get_secret_reveal_approval_work_inbox" in boot
     assert "current_app.extensions.get('kaori_secret_reveal_approval_work_inbox')" in queries
     assert 'secret_reveal_inbox = secret_inbox_provider(user_id=user_id)' in queries
     assert "secret_reveal_approval_inbox_items" in queries and panel
-    assert "inbox_unread_count += tenant_approval_inbox['pending_count'] + secret_reveal_inbox['pending_count']" in queries
+    assert (
+        "inbox_unread_count += tenant_approval_inbox['pending_count'] + secret_reveal_inbox['pending_count']"
+        in queries
+    )
     assert 'Protected Secret Reveal approval requests' in panel
     assert 'Review in Protected Secret Reveal' in panel
     assert 'hx-boost="false"' in panel
