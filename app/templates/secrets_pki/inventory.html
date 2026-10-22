@@ -155,6 +155,8 @@
                                         All matching TLS Secret observations have a canonical Kubernetes object UID.
                                     {% elif delivery_overlap.object_identity_status == 'partial' %}
                                         Some matching TLS Secret observations have a canonical Kubernetes object UID.
+                                    {% elif delivery_overlap.object_identity_status == 'not_applicable' %}
+                                        No matching TLS Secret currently requires object UID qualification.
                                     {% else %}
                                         Immutable TLS Secret identity is not yet qualified.
                                     {% endif %}
