@@ -48,7 +48,7 @@ class SecretProviderRepresentation(db.Model):
         String(36), nullable=False, index=True,
     )
     integration_instance_id: Mapped[int] = mapped_column(
-        ForeignKey('integration_instances.id', ondelete='CASCADE'),
+        ForeignKey('integration_instances.id', ondelete='RESTRICT'),
         nullable=False, index=True,
     )
     provider_key: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -108,7 +108,7 @@ class SecretInventoryCollectionState(db.Model):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     integration_instance_id: Mapped[int] = mapped_column(
-        ForeignKey('integration_instances.id', ondelete='CASCADE'),
+        ForeignKey('integration_instances.id', ondelete='RESTRICT'),
         nullable=False, index=True,
     )
     provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False, default='')
