@@ -118,8 +118,8 @@ def main() -> int:
         and delivery_template.index("operational_section_card.render(") < delivery_template.index("section_intro.render('Delivery Journal'") < delivery_template.index("table_block.inventory_block_header(")
         and "table_block.inventory_block_header(" in delivery_template
         and "lead=false" in delivery_template
-        and "not human receipt or message readership." in delivery_template
-        and "Provider delivery alone does not create Activity Audit evidence." in delivery_template,
+        and "not receipt or readership by a person." in delivery_template
+        and "sending a notification does not create an audit event." in delivery_template,
         'delivery journal surface': 'query = NotificationDelivery.query' in delivery_registry
         and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
         and journal_order in delivery_registry
