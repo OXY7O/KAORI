@@ -7,6 +7,7 @@ from cryptography.fernet import Fernet
 from flask import Flask
 
 from app.extensions.db import db
+from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
 from app.integrations.secrets_management.secrets_pki.commit_inventory import (
     commit_kv2_inventory, mark_kv2_inventory_failed,
 )
@@ -170,3 +171,31 @@ def test_failed_provider_scan_keeps_history_but_marks_stale(store):
 def test_unapproved_mount_failure_does_not_create_collection_state(store):
     mark_kv2_inventory_failed(store, 'unapproved')
     assert SecretInventoryCollectionState.query.count() == 0
+
+
+def test_admin_readiness_projection_reads_committed_state_without_provider_calls(store):
+    instance = VaultInstance.query.filter_by(integration_instance_id=store).one()
+    before = vault_inventory_readiness(instance)
+    assert before['state'] == 'not_collected'
+    assert before['observed_secret_count'] is None
+    assert before['committed_mount_count'] == 0
+
+    observed = datetime(2026, 10, 22, tzinfo=UTC)
+    commit_kv2_inventory(store, _snapshot(observed))
+    ready = vault_inventory_readiness(instance)
+    assert ready['state'] == 'ready'
+    assert ready['approved_mount_count'] == 1
+    assert ready['committed_mount_count'] == 1
+    assert ready['observed_secret_count'] == 1
+    assert ready['last_committed_at'] is not None
+
+    mark_kv2_inventory_failed(store, 'secret')
+    stale = vault_inventory_readiness(instance)
+    assert stale['state'] == 'stale'
+    assert stale['observed_secret_count'] == 1
+
+    instance.kv2_mounts = []
+    db.session.commit()
+    disabled = vault_inventory_readiness(instance)
+    assert disabled['state'] == 'not_configured'
+    assert disabled['observed_secret_count'] is None
