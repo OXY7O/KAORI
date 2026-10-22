@@ -347,3 +347,22 @@ because the caller can construct a synthetic decision. No HTTP, HTMX,
 worker, Secret detail or grant-admin UI exposes either function now.
 Future #2726 and security UAT must establish trusted session identity,
 negative tests and request/job enforcement before publication.
+
+## Shadow RBAC/scoped policy parity (#2726)
+
+`app/access/scope_parity.py` provides an **internal**, read-only,
+non-enforcing comparison of the existing effective `User.has_permission`
+decision and the new exact Vault instance+mount source-policy admission.
+Every result is a sanitized classification; grouped summaries contain
+counts only (bounded to 200), never usernames, Secret paths, source
+identifiers, Vault credentials or role membership. An unavailable scoped
+decision is a **review finding**, not a permit and not a rollback to global
+RBAC.
+
+No current route, worker, report, API or permission has been changed to
+enforce scope. Safe existing global aggregate pages retain their existing
+RBAC contract, while new per-Secret Registry/Detail routes stay unpublished.
+A real cutover requires an approved role/principal parity matrix, explicit
+minimum grants, transactional audit tests, security/DevContainer UAT,
+Full Admission and human acceptance. Rolling back an unpublished sensitive
+route must not make it an unscoped read.
