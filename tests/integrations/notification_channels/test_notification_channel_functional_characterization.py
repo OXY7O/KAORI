@@ -25,10 +25,10 @@ def test_channel_policy_event_type_grouping_preserves_order_and_all_items() -> N
         'Other Event',
     ]
     assert service._channel_event_type_groups(labels) == [
-        {'label': 'Alert Intelligence', 'items': ['Active Alert', 'Suppressed']},
-        {'label': 'Alert Operations', 'items': ['Firing', 'Resolved']},
-        {'label': 'Scheduled Reports', 'items': ['Report Ready']},
-        {'label': 'Other', 'items': ['Other Event']},
+        {'label': 'Alert Intelligence', 'events': ['Active Alert', 'Suppressed']},
+        {'label': 'Alert Operations', 'events': ['Firing', 'Resolved']},
+        {'label': 'Scheduled Reports', 'events': ['Report Ready']},
+        {'label': 'Other', 'events': ['Other Event']},
     ]
     assert service._channel_event_type_groups([]) == []
 
