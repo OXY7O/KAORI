@@ -219,7 +219,7 @@ def test_delivery_registry_supports_exact_source_linked_event_filter() -> None:
     assert "'notification-delivery-registry'" in page
     assert "'notification-delivery-loading'" in page
     assert "'delivery_event_key': payload.delivery_filter" in page
-    assert 'not human receipt or message readership.' in page
+    assert 'not receipt or readership by a person.' in page
     assert 'No Matching Deliveries' in page
     assert 'No committed delivery matches the selected filters.' in page
 
@@ -265,8 +265,10 @@ def test_notification_delivery_journal_filters_use_committed_sql_and_canonical_t
         'id="notification-channel-registry"'
     )
     assert channels.index('id="notification-channel-registry"') < channels.index(
-        "loading_bar.render('notification-channel-loading'"
+        "table_block.inventory_block_header("
     )
+    assert "header_actions=channel_clear_action" in channels
+    assert "title_extra=info_tip.render(" in channels
     assert page.count("('Events', payload.delivery_contract.events") == 1
     assert "section_intro.render('Delivery Contract & Ownership'" in page
     assert "'Delivery Ownership'," not in page
@@ -284,7 +286,8 @@ def test_notification_refinement_reuses_header_info_tip_and_trailing_clear_filte
     assert "loading_bar.render(loading_id, label=loading_label)" in table
     assert "'notification-delivery-loading'" in index
     assert "lead=false" in index
-    assert "table_ui.action_classes() ~ ' ml-auto'" in index
+    assert "header_actions=delivery_clear_action" in index
+    assert "table_ui.action_classes() ~ ' ml-auto'" not in index
     assert "lead=true) -%}" in registry
     assert "lead=lead) }}" in registry
     assert "hx-indicator=\"#{{ loading_id }}\"" in registry
@@ -295,12 +298,13 @@ def test_notification_refinement_reuses_header_info_tip_and_trailing_clear_filte
     assert "Activity Audit:" in channels
     assert '<section class="grid gap-4 lg:grid-cols-3">' not in channels
     assert "operational_section_card.render(" in index
-    assert "integration_ui.interpretation_panel(" in index
-    assert index.count("integration_ui.interpretation_panel(") == 3
-    for label in ("Provider Acceptance", "Committed KAORI Evidence", "Activity Audit"):
-        assert f"'{label}'" in index
-    assert "not human receipt or message readership" in index
-    assert "Provider delivery alone does not create Activity Audit evidence." in index
+    assert index.count("integration_ui.interpretation_panel(") == 1
+    assert "'Provider Accepted ≠ Recipient Read'" in index
+    assert "not receipt or readership by a person." in index
+    assert 'sm:divide-x sm:divide-outline-subtle' in index
+    assert "Committed Delivery Journal" in index
+    assert "Independent Activity Audit" in index
+    assert "sending a notification does not create an audit event." in index
     assert "variant='guide'" in channels
     assert channels.index("info_tip.render(") < channels.index("variant='guide'")
     assert index.index("operational_section_card.render(") < index.index(
@@ -309,6 +313,46 @@ def test_notification_refinement_reuses_header_info_tip_and_trailing_clear_filte
     assert "Consumers choose destinations; the Alert Source governs alert routing and receivers." in index
     assert "KAORI governs credentials, validation, delivery evidence, retries and deduplication." in index
     assert "Allow ntfy HTTPS origins via NOTIFICATION_NTFY_ALLOWED_ORIGINS (app/worker); restrict egress." in providers
+
+
+
+def test_notification_registry_headers_follow_kubernetes_inventory_clear_filter_contract() -> None:
+    channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    delivery = read('app/templates/integrations/delivery/notification_channels/index.html')
+    shared_table = read('app/templates/components/table.html')
+    shared_registry = read('app/templates/components/table_registry.html')
+    kubernetes = read('app/templates/kubernetes/inventory/pods/partials/_table_card.html')
+
+    assert 'table_ui.inventory_block_header(' in kubernetes
+    assert 'header_actions=inventory_header_actions' in kubernetes
+    assert 'loading_bar.render(loading_id, label=loading_label)' in shared_table
+    for source, action in (
+        (channels, 'channel_clear_action'),
+        (delivery, 'delivery_clear_action'),
+    ):
+        assert f'{{% set {action} = none %}}' in source
+        assert f'{{% set {action} %}}' in source
+        assert f'header_actions={action}' in source
+        assert source.count("table_registry.clear_filters_link('notification_channels.index'") == 1
+        assert source.index("table_registry.clear_filters_link('notification_channels.index'") < source.index(
+            'table_block.inventory_block_header('
+        ) < source.index("table_registry.filter_form('notification_channels.index'")
+        assert 'table_block.inventory_filter_bar_classes()' in source
+        assert 'classes=table_ui.inventory_filter_bar_classes()' not in source
+    assert channels.index("title_extra=info_tip.render(") < channels.index(
+        "table_registry.filter_form('notification_channels.index'"
+    )
+    assert "header_actions=channel_clear_action" in channels
+    assert "header_actions=delivery_clear_action" in delivery
+    assert "table_ui.action_classes() ~ ' ml-auto'" not in delivery
+    assert 'hx-target="#{{ registry_id }}"' in shared_registry
+    assert 'hx-indicator="#{{ loading_id }}"' in shared_registry
+    assert "page_param='channel_page'" in channels
+    assert "page_param='delivery_page'" in delivery
+    assert "'tab': 'channels'" in channels
+    assert "'tab': 'delivery'" in delivery
+    assert delivery.count('integration_ui.interpretation_panel(') == 1
+    assert "md:grid-cols-3" not in delivery
 
 
 def test_report_delivery_source_link_is_exact_committed_and_permissioned() -> None:
@@ -427,13 +471,16 @@ def test_review5_add_modal_has_catalog_provider_gallery_and_clear_header() -> No
 def test_review6_channel_registry_loading_follows_header_before_filters() -> None:
     source = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     registry = source.split('id="notification-channel-registry"', 1)[1]
-    header = registry.index('<header')
-    loading = registry.index("loading_bar.render('notification-channel-loading'")
+    table_macro = read('app/templates/components/table.html')
+    header = registry.index("table_block.inventory_block_header(")
     filters = registry.index("table_registry.filter_form('notification_channels.index'")
     table = registry.index('<table')
     footer = registry.index("table_registry.footer('notification_channels.index'")
-    assert header < loading < filters < table < footer
-    assert registry.count("loading_bar.render('notification-channel-loading'") == 1
+    assert header < filters < table < footer
+    assert "loading_bar.render(loading_id, label=loading_label)" in table_macro
+    assert registry.count("'notification-channel-loading'") == 2
+    assert "header_actions=channel_clear_action" in registry
+    assert "table_block.inventory_filter_bar_classes()" in registry
 
 
 def test_review6_provider_utilities_match_header_action_geometry_with_soft_hover() -> None:
