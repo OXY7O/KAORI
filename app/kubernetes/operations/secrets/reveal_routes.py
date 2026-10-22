@@ -95,6 +95,8 @@ def _reveal_status_context() -> dict[str, Any]:
                 page=request.args.get('pending_page', 1, type=int) or 1,
                 per_page=request.args.get('pending_per_page', 5, type=int) or 5,
             ),
+            pending_search=request.args.get('pending_search', ''),
+            pending_sort=request.args.get('pending_sort', 'oldest'),
         ),
         'step_up_active': _secret_reveal_step_up_active(),
         'can_reveal': current_user.has_permission('kubernetes_secrets.reveal'),
