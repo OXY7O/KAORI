@@ -89,6 +89,7 @@ def commit_stored_pki_certificates(
             or identity.provider_key != 'vault'
             or identity.lifecycle_status != 'active'
             or not identity.enabled or identity.readiness_status != 'ready'
+            or not provider.pki_stored_certs_enabled
             or evidence.mount not in parse_approved_pki_mounts(','.join(provider.pki_mounts or ()))
         ):
             raise ValueError('Stored Vault PKI source is not eligible for committed reconciliation.')
@@ -168,7 +169,7 @@ def mark_stored_pki_certificates_failed(integration_instance_id: int, mount: str
         if len(parse_approved_pki_mounts(mount)) != 1:
             return
         provider = VaultInstance.query.filter_by(integration_instance_id=integration_instance_id).first()
-        if provider is None:
+        if provider is None or not provider.pki_stored_certs_enabled:
             return
         try:
             approved = parse_approved_pki_mounts(','.join(provider.pki_mounts or ()))
