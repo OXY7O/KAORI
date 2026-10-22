@@ -35,6 +35,7 @@
         if (main) {
             const limit = Math.max(0, main.scrollHeight - main.clientHeight)
             const next = Math.max(0, Math.min(limit, main.scrollTop + bounds.top - viewport.top - padding))
+            if (Math.abs(main.scrollTop - next) < 1) return
             main.scrollTo({ top: next, behavior: 'auto' })
         } else {
             target.scrollIntoView({ behavior: 'auto', block: 'nearest' })
