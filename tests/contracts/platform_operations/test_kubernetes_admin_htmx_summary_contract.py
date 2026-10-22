@@ -25,7 +25,7 @@ def test_administration_mutations_refresh_hero_overview_and_posture():
         'kubernetes-admin-overview-metric-1',
         'kubernetes-admin-control-count',
         'kubernetes-admin-controls-list',
-    )
+    ):
         if fragment.startswith('kubernetes-admin-overview-metric-'):
             assert 'id="kubernetes-admin-overview-metric-{{ loop.index }}"' in overview
         else:
