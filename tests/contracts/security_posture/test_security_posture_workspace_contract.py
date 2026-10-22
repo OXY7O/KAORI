@@ -96,6 +96,12 @@ def test_security_pages_use_approved_dashboard_and_registry_components() -> None
         Environment().parse(html)
         assert 'components/page_hero.html' in html
     assert 'components/operational_dashboard_workspace.html' in overview
+    assert 'page_hero.operational_dashboard(' in overview
+    assert 'components/operational_signal_overview.html' in overview
+    assert 'components/operational_metric_card.html' in overview
+    assert 'components/states/_empty_state.html' in overview
+    assert 'components/states/_empty_state.html' in findings
+    assert 'Security Evidence Prerequisites' in overview
     for tab in ('overview', 'capacity', 'signals', 'reporting'):
         assert f"dashboard_workspace.panel('{tab}'" in overview
     assert 'components/table_registry.html' in findings
