@@ -11,11 +11,11 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('workflow', 'Operations Center', 'server-cog') %}
                         <h1 class="{{ page_hero.title_classes() }}">Kubernetes Administration</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Govern protected Kubernetes access through cluster readiness, namespace policy and audit evidence.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Govern Kubernetes access with policy and audit evidence.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            <span id="kubernetes-admin-hero-registered">{{ page_hero.meta_label('server', cluster_count ~ ' Registered Clusters') }}</span>
-                            <span id="kubernetes-admin-hero-configured">{{ page_hero.meta_label('badge-check', ready_cluster_count ~ ' Prerequisites Configured') }}</span>
-                            <span id="kubernetes-admin-hero-protected">{{ page_hero.meta_label('boxes', enabled_namespace_count ~ ' Protected Namespaces') }}</span>
+                            <span id="kubernetes-admin-hero-registered">{{ page_hero.meta_label('server', cluster_count ~ (' Registered Cluster' if cluster_count == 1 else ' Registered Clusters')) }}</span>
+                            <span id="kubernetes-admin-hero-configured">{{ page_hero.meta_label('badge-check', ready_cluster_count ~ (' Configured Cluster' if ready_cluster_count == 1 else ' Configured Clusters')) }}</span>
+                            <span id="kubernetes-admin-hero-protected">{{ page_hero.meta_label('boxes', enabled_namespace_count ~ (' Protected Namespace' if enabled_namespace_count == 1 else ' Protected Namespaces')) }}</span>
                         </div>
                     {% endcall %}
                 </div>
@@ -34,7 +34,11 @@
                 </aside>
             </div>
         </section>
+        <section id="kubernetes-administration-workspace-shell"
+                 class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 aria-label="Kubernetes Administration Workspaces">
         {{ framed_workspace_tabs.render([('overview', 'Overview', 'layout-dashboard') , ('secret-reveal', 'Secret Reveal', 'scan-eye')], prefix='kubernetes-administration', aria_label='Kubernetes Administration Workspaces') }}
+            <div class="p-5 lg:p-6">
         <div class="min-w-0">
             <div id="kubernetes-administration-panel-overview"
                  role="tabpanel"
@@ -59,6 +63,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+        </section>
     </div>
 {% endblock dashboard_content %}
