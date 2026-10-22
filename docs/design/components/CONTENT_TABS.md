@@ -144,11 +144,23 @@ route navigator, Integration-style framed parent card, or a new tab family.
   neutral **Cancel** / **Save Policy** actions. It is Alpine-controlled like
   the existing KAORI operational workspace; keyboard and visual behavior
   require browser UAT.
-- **Live Source** provenance and manual source **Refresh** belong to one
-  right-aligned utility block above the canonical Namespace Policies table.
-  Table **Clear Filters** remains a visible shared registry action. The only
-  table loading bar is table-owned, immediately beneath the header and before
-  filters, within a reserved-height track.
+- **Live Source** provenance and manual **Refresh** belong to a standalone
+  full-width utility card above Namespace Policies. Include source authority,
+  selected cluster, truthfully sourced status and last refresh (or absence
+  of one); do not repeat its status in table columns.
+- Canonical **Clear Filters** is not a permanent header action: it stays
+  hidden until the Namespace search or policy filter is active. The shared
+  `registry_ui.clear_filters_action()` remains the interaction owner.
+  Client-side filter state updates its visibility while table-only HTMX
+  updates preserve the search field; initial server rendering preserves
+  the hidden state when scripting is unavailable.
+- The table loader uses only `table_ui.loading_bar_classes()` directly
+  beneath the header, before filters. Avoid extra permanently visible
+  background/spacer tracks.
+- The table and companion editor use available horizontal space to explain
+  live Namespace state and configured reveal policy. The editor shows
+  namespace, current policy, proposed policy, eligibility context and compact
+  Cancel/Save actions without a second nested card.
 - This is a presentation-only refinement. Existing CSRF, readiness and
   live-state option restrictions, HTMX mutation/update, and audit/security
   authorities remain unchanged.
