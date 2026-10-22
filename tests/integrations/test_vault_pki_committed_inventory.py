@@ -208,3 +208,18 @@ def test_pki_readiness_uses_only_committed_state_and_honest_zero(store):
     disabled = pki_public_readiness(instance=instance)
     assert disabled['state'] == 'not_configured'
     assert disabled['observed_issuers'] is None
+
+
+def test_provider_reconfiguration_rejects_ready_pki_badge_until_validation(store):
+    from app.secrets_pki.pki_presentation import pki_public_readiness
+
+    commit_pki_public_issuers(store, _snapshot())
+    vault = VaultInstance.query.filter_by(integration_instance_id=store).one()
+    identity = db.session.get(IntegrationInstance, store)
+    identity.readiness_status = 'validation_required'
+    db.session.commit()
+    readiness = pki_public_readiness(instance=vault)
+    assert readiness['state'] == 'stale'
+    assert readiness['observed_issuers'] == 1
+    with pytest.raises(ValueError, match='not eligible'):
+        commit_pki_public_issuers(store, _snapshot(DAY + timedelta(minutes=1)))
