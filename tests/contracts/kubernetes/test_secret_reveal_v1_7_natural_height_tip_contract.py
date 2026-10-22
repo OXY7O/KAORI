@@ -53,3 +53,48 @@ def test_secret_reveal_v17_keeps_neutral_dark_mode_surfaces() -> None:
         assert 'bg-white' not in source
     assert 'bg-surface-card' in protected
     assert 'bg-surface-card' in administration
+
+
+def test_review7_reveal_step_up_shows_equal_height_information_peer() -> None:
+    step = read('app/templates/kubernetes/operations/secrets/_reveal_step_up.html')
+    assert 'data-reveal-step-up-peer-grid' in step
+    assert 'grid items-stretch gap-4 lg:grid-cols-2' in step
+    assert step.count('flex h-full min-w-0 flex-col') == 2
+    assert 'Step-Up Access Guidance' in step
+    assert 'Approval First' in step
+    assert 'Verified Session' in step
+    assert 'One-Time Access' in step
+    assert 'name="password"' in step
+    assert 'name="csrf_token"' in step
+    assert 'current_user.is_external' in step
+    assert 'Protected Session Verified' in step
+
+
+def test_review7_reveal_target_empty_cluster_status_not_below_form() -> None:
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    assert 'No eligible protected cluster' in page
+    assert 'No eligible cluster. Review readiness or policy.' not in page
+    assert 'KUBERNETES_SECRET_REVEAL_ENABLED=true' in page
+    assert 'selection_error' in page
+    assert "info_id='secret-reveal-target-guidance-tip'" in page
+
+
+def test_review7_reveal_guidance_copy_stays_compact() -> None:
+    page = read('app/templates/kubernetes/operations/secrets/reveal.html')
+    # Preserve policy semantics while fitting each guidance sentence on one
+    # line where the existing context rail has sufficient width.
+    for copy in (
+        'Approval and step-up follow Namespace policy.',
+        'My Requests: track, step up, reveal once.',
+        'Safeguards apply through one-time reveal.',
+        'TLS/SSH private keys cannot be revealed.',
+        'Requesters cannot approve their own requests.',
+        'Step up before using an approved request.',
+        'Audit records context, never secret values.',
+    ):
+        assert copy in page
+
+    assert 'No eligible cluster. Review readiness or policy.' not in page
+    assert 'No eligible protected cluster' in page
+    assert "info_id='secret-reveal-target-guidance-tip'" in page
+    assert 'selection_error' in page
