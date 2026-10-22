@@ -13,6 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.rbac.decorators import permission_required
 from app.common.pagination import paginate_query
 from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
+from app.secrets_pki.pki_presentation import pki_public_readiness
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionForm
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verified_secret
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.service import save_connection, test_connection
@@ -177,6 +178,7 @@ def detail(instance_id: int) -> ResponseReturnValue:
         'integrations/secrets_management/vault/detail.html',
         instance=instance, evidence=_evidence(instance),
         inventory_readiness=vault_inventory_readiness(instance),
+        public_pki_readiness=pki_public_readiness(instance=instance),
         runtime_history=history, runtime_history_pagination=history_pagination,
         notification_context=_notification(),
     )
