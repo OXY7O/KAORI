@@ -6,7 +6,7 @@
 {% import "components/section_intro.html" as section_intro %}
 {% import "components/table_registry.html" as table_registry %}
 {% import "components/table.html" as table_block %}
-{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/operational_section_card.html" as operational_section_card %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% macro notification_section(title, description, icon='send', badge_text='', badge_tone='info') -%}
     <section class="{{ integration_ui.section_shell_classes() }}">
@@ -131,13 +131,27 @@
                 {% elif active_tab == 'channels' %}
                     {% include 'integrations/delivery/notification_channels/partials/_channels_workspace.html' %}
                 {% elif active_tab == 'delivery' %}
+                    {% call operational_section_card.render(
+                        'Delivery Evidence Boundary',
+                        'Understand provider acknowledgements, committed delivery records, and independent audit evidence.',
+                        'shield-check',
+                        body_classes='grid gap-3 p-5 md:grid-cols-3') %}
+                        {{ integration_ui.interpretation_panel(
+                            'Provider Acceptance',
+                            'A successful transport confirms provider acceptance, not human receipt or message readership.',
+                            'send') }}
+                        {{ integration_ui.interpretation_panel(
+                            'Committed KAORI Evidence',
+                            'KAORI records attempts, outcomes, retries and deduplication in the delivery journal.',
+                            'database') }}
+                        {{ integration_ui.interpretation_panel(
+                            'Activity Audit',
+                            'Governed activity is recorded separately. Provider delivery alone does not create Activity Audit evidence.',
+                            'scroll-text') }}
+                    {% endcall %}
                     {{ section_intro.render('Delivery Journal',
                             'Review committed attempts, provider outcomes and retry evidence.',
                             'notification-delivery-heading') }}
-                    {{ operational_callout.render(
-                        'Delivery Evidence Boundary',
-                        'Provider delivery does not prove human receipt. KAORI records transport attempts and outcomes; Activity Audit remains separate.',
-                        icon='info', tone='info', variant='neutral') }}
                     <section class="{{ table_ui.block_classes() }}" aria-labelledby="notification-delivery-heading">
                         <div id="notification-delivery-registry">
                             {{ table_block.inventory_block_header(

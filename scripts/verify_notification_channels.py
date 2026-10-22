@@ -105,10 +105,14 @@ def main() -> int:
         'notification guidance and canonical table': "info_tip.render(" in template
         and "Channel Inventory Guidance" in template
         and "grid gap-4 lg:grid-cols-3" not in template
-        and "operational_callout.render(" in delivery_template
+        and "operational_section_card.render(" in delivery_template
+        and delivery_template.count("integration_ui.interpretation_panel(") == 3
+        and "variant='guide'" in template
+        and delivery_template.index("operational_section_card.render(") < delivery_template.index("section_intro.render('Delivery Journal'") < delivery_template.index("table_block.inventory_block_header(")
         and "table_block.inventory_block_header(" in delivery_template
         and "lead=false" in delivery_template
-        and "Provider delivery does not prove human receipt." in delivery_template,
+        and "not human receipt or message readership." in delivery_template
+        and "Provider delivery alone does not create Activity Audit evidence." in delivery_template,
         'delivery journal surface': 'query = NotificationDelivery.query' in delivery_registry
         and 'query = query.filter(NotificationDelivery.event_key == event_key)' in delivery_registry
         and journal_order in delivery_registry
