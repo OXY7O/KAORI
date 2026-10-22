@@ -13,6 +13,17 @@ from app.platform_operations.jobs.definitions.base import RegisteredJobDispatchR
 from app.platform_operations.jobs.dispatcher import JobDispatchOptions, enqueue_canonical_job
 from app.platform_operations.jobs.policies.presentation import present_interval
 
+def build_stored_certificate_targets() -> list[dict[str, int]]:
+    """Separate operator opt-in for certificate enumeration from issuer reads."""
+    candidates = build_vault_pki_targets()
+    return [
+        item for item in candidates
+        if (provider := VaultInstance.query.filter_by(
+            integration_instance_id=item['integration_instance_id'],
+        ).first()) is not None and provider.pki_stored_certs_enabled
+    ]
+
+
 JOB_KEY = 'secrets_pki.pki.stored_certs.sync'
 OPERATION = 'sync_secrets_pki_stored_certificates'
 
@@ -20,7 +31,7 @@ OPERATION = 'sync_secrets_pki_stored_certificates'
 def enqueue_stored_certificate_sync(*, requested_by_user_id: int | None, trigger_type: str):
     from app.integrations.secrets_management.secrets_pki.tasks import sync_vault_stored_certificates_task
 
-    targets = build_vault_pki_targets()
+    targets = build_stored_certificate_targets()
     if not targets:
         raise NoEligibleVaultPKITargets('No eligible Vault instance has approved PKI mounts.')
     return enqueue_canonical_job(
@@ -66,7 +77,7 @@ def dispatch_stored_certificate_sync(
 
 def build_stored_certificate_sync_context(policy: JobPolicy) -> dict:
     try:
-        targets = build_vault_pki_targets()
+        targets = build_stored_certificate_targets()
         diagnostic = ''
     except NoEligibleVaultPKITargets:
         targets = []
