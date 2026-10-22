@@ -137,6 +137,7 @@ def test_unseen_issuer_is_unknown_not_revoked_or_deleted(store):
     assert summary.not_observed_issuer_count == 1
     previous = PKIIssuerIdentity.query.filter_by(provider_issuer_id=ISSUER_UUID).one()
     assert previous.observation_status == 'not_observed'
+    assert {cert.observation_status for cert in previous.certificates} == {'not_observed'}
     assert PKIPublicCertificateObservation.query.count() == 2
 
 
