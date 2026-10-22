@@ -114,7 +114,7 @@ jobs:
   scope_key: all
   configure_permission: integrations.manage
   execute_permission: jobs.execute
-  domain_execute_permission: integrations.manage
+  domain_execute_permission: secrets_pki.sync
   dispatcher_path: app.integrations.secrets_management.secrets_pki.job_adapter:dispatch_vault_inventory_sync
   context_builder_path: app.integrations.secrets_management.secrets_pki.job_adapter:build_vault_inventory_sync_context
   configuration_template: platform_operations/jobs/configuration/definitions/secrets_pki_inventory_sync.html
