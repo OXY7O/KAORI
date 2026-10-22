@@ -127,10 +127,10 @@ Intelligence, Dashboard, or other consumer domains.
 
 ### Vault bounded query.range verification (HV-06 #2697)
 
-The existing \`vault-telemetry-v1\` asset binding Validate can qualify a single
-recent hour of \`vault_core_active\` after the exact instant identity check.
+The existing `vault-telemetry-v1` asset binding Validate can qualify a single
+recent hour of `vault_core_active` after the exact instant identity check.
 The range result is independently graded and summarized in
-\`IntegrationBinding.validation_evidence\` without retaining label strings or
+`IntegrationBinding.validation_evidence` without retaining label strings or
 samples. Range failure does not change core provider status and cannot be
 interpreted as long-term retention or a qualified MetricsConsumer Analytics
-dataset. See \`app/secrets_pki/TELEMETRY_BINDING.md\` for bounds and UAT.
+dataset. See `app/secrets_pki/TELEMETRY_BINDING.md` for bounds and UAT.
