@@ -38,6 +38,8 @@ class VaultClient:
         self.role_id = str(role_id)
         self.secret_id = str(secret_id)
         self.namespace = (namespace or '').strip('/')
+        if any(ord(c) < 32 or ord(c) == 127 for c in self.namespace):
+            raise VaultProviderError('Vault namespace contains invalid control characters.')
         self.auth_mount = validate_auth_mount(auth_mount)
         self.timeout = max(1, min(int(timeout), 30))
         if not self.role_id or not self.secret_id:
@@ -142,12 +144,3 @@ class VaultClient:
             'response_time_ms': int((perf_counter() - started) * 1000),
         }
 
-    def detect_capabilities(self) -> dict[str, str]:
-        """Return only capability availability, never mount names or secret paths."""
-        token = self.login()
-        status, data = self._request('/v1/sys/mounts', token=token)
-        if status == 200 and isinstance(data.get('data'), dict):
-            return {'mount_metadata': 'available'}
-        if status in {403, 404}:
-            return {'mount_metadata': 'permission_unavailable'}
-        return {'mount_metadata': 'unavailable'}
