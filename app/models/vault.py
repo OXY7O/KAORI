@@ -44,6 +44,7 @@ class VaultInstance(db.Model):
     capability_profile: Mapped[str | None] = mapped_column(String(120), nullable=True)
     capabilities: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     kv2_mounts: Mapped[list[str] | None] = mapped_column(JSON, nullable=True, default=list)
+    pki_mounts: Mapped[list[str] | None] = mapped_column(JSON, nullable=True, default=list)
     validation_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     validation_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
