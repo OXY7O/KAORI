@@ -149,3 +149,12 @@ The exact-SHA coverage and acceptance matrix is maintained in
 implementation from Not Tested / Not Implemented, requires existing quality
 gates and real Vault/DevContainer evidence, and prohibits calling a review
 merge a Full Admission or human UAT PASS.
+
+## Scoped Secret Registry — prepared contract (#2678)
+
+The source-owned [Scoped Secret Registry contract](SCOPED_SECRET_REGISTRY.md)
+contains an unpublished, fail-closed committed KV v2 read model. It does
+**not** activate Secret Detail, Vault path exposure, an HTTP route, or a
+Scope Policy grant. A canonical #724 evaluator, scoped route/HTMX tests,
+Violet registry UI, and human UAT are mandatory prerequisites. Global
+`secrets_pki.view` alone does not permit per-Secret disclosure.
