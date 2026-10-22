@@ -50,3 +50,16 @@ Source checks:
 Use established KAORI Developer Check, Full Admission, authorization and
 Data Lifecycle retention policies; no custom graph engine or generic
 MegaBinding table is introduced.
+
+
+## Certificate fingerprint correlation (HV-05 extension)
+
+`certificate_delivery_read_model.py` reuses existing committed TLS
+Governance source records and optional Vault stored-public-certificate
+records. The aggregate matching fingerprint is a *certificate identity
+overlap only*. It does not create a confirmed
+`secret_to_materialization` or `materialization_to_consumer` edge:
+the missing provenance/endpoint serving readback is still a candidate.
+Full evidence requirements are in
+`CERTIFICATE_DELIVERY_CORRELATION.md`; no relationship database or
+controller source has been silently added.
