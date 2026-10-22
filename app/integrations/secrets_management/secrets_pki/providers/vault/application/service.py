@@ -58,6 +58,7 @@ def save_connection(values: VaultConnectionInput, *, existing: VaultInstance | N
         instance.timeout != values.timeout,
         list(instance.kv2_mounts or ()) != approved_mounts,
         list(instance.pki_mounts or ()) != approved_pki_mounts,
+        bool(instance.pki_stored_certs_enabled) != bool(values.pki_stored_certs_enabled),
     ))
     identity.name = values.name
     identity.description = values.description
@@ -78,6 +79,7 @@ def save_connection(values: VaultConnectionInput, *, existing: VaultInstance | N
     instance.timeout = values.timeout
     instance.kv2_mounts = approved_mounts
     instance.pki_mounts = approved_pki_mounts
+    instance.pki_stored_certs_enabled = bool(values.pki_stored_certs_enabled)
     instance.verify_ssl = True
     if changed:
         identity.readiness_status = 'validation_required'

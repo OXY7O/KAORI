@@ -29,6 +29,7 @@ class VaultConnectionInput:
     enabled: bool
     kv2_mounts: tuple[str, ...] = ()
     pki_mounts: tuple[str, ...] = ()
+    pki_stored_certs_enabled: bool = False
 
 
 class VaultConnectionForm(FlaskForm):
@@ -44,6 +45,7 @@ class VaultConnectionForm(FlaskForm):
     enabled = BooleanField('Enable Provider Connection', default=True)
     kv2_mounts = StringField('Approved KV v2 Mounts (comma-separated)', validators=[Optional(), Length(max=1500)])
     pki_mounts = StringField('Approved PKI Mounts (comma-separated)', validators=[Optional(), Length(max=650)])
+    pki_stored_certs_enabled = BooleanField('Enable Stored PKI Certificate Collection', default=False)
     connection_test_proof = StringField('Connection Test Proof', validators=[Optional()])
 
     def __init__(self, *args, existing: VaultInstance | None = None, **kwargs) -> None:
@@ -54,6 +56,7 @@ class VaultConnectionForm(FlaskForm):
             self.secret_id.data = ''
             self.kv2_mounts.data = ', '.join(existing.kv2_mounts or ()) if existing is not None else ''
             self.pki_mounts.data = ', '.join(existing.pki_mounts or ()) if existing is not None else ''
+            self.pki_stored_certs_enabled.data = bool(existing.pki_stored_certs_enabled) if existing is not None else False
 
     def validate_endpoint(self, field: StringField) -> None:
         try:
@@ -105,4 +108,5 @@ class VaultConnectionForm(FlaskForm):
             enabled=bool(self.enabled.data),
             kv2_mounts=parse_approved_kv2_mounts(str(self.kv2_mounts.data or '')),
             pki_mounts=parse_approved_pki_mounts(str(self.pki_mounts.data or '')),
+            pki_stored_certs_enabled=bool(self.pki_stored_certs_enabled.data),
         )

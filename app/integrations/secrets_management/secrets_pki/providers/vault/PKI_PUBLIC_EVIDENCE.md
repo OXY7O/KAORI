@@ -66,7 +66,9 @@ database state. A valid zero requires a successful real collection; no web
 GET calls Vault. The pages do not claim that all issued leaf certificates
 were enumerated or deployed to workloads.
 
-**Still NOT implemented:** issued leaf certificate register/purpose,
+**Complementary limited source:** Stored issued public certificates with explicit enumeration opt-in are defined in [PKI_STORED_CERTIFICATES.md](PKI_STORED_CERTIFICATES.md). This is not complete issuance coverage: no_store=true and imported certificates are not enumerable through Vault LIST /certs.
+
+**Still NOT implemented:** complete issued certificate register/purpose,
 PKI issuance/revocation, trust-chain evaluation, endpoint certificate
 delivery, generic Lease enumeration, certificate row-level browser scope,
 staging provider UAT and migration/admission proof. PKI public issuer

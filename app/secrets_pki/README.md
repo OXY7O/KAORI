@@ -78,3 +78,15 @@ Implementation and DevContainer acceptance steps:
 `app/integrations/secrets_management/secrets_pki/providers/vault/PKI_PUBLIC_EVIDENCE.md`.
 Migration: `20261022_vault_pki_evidence`. Tests must pass on real PostgreSQL
 and supported Vault PKI mounts before a staging or capability-ready claim.
+
+
+## Stored PKI certificate collection — bounded HV-03 follow-up
+
+`secrets_pki.pki.stored_certs.sync` is separately optional, manual-only by
+default and limited to 64 stored public certificates per PKI mount. Issuer
+mount approval alone does not permit enumeration; the Vault connection
+requires a separate default-off `pki_stored_certs_enabled` opt-in and a new
+Full Validation. Committed state is stored in independent collection tables
+and consumed through safe aggregate PKI readiness. This is **not** complete
+issuance, expiration governance, CRL/revocation proof or endpoint delivery
+assurance. See provider [PKI_STORED_CERTIFICATES.md](../integrations/secrets_management/secrets_pki/providers/vault/PKI_STORED_CERTIFICATES.md).
