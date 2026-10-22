@@ -13,7 +13,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.access.rbac.decorators import permission_required
 from app.common.pagination import paginate_query
 from app.integrations.secrets_management.secrets_pki.inventory_presentation import vault_inventory_readiness
-from app.secrets_pki.pki_presentation import pki_public_readiness
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.forms import VaultConnectionForm
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.registration import issue_proof, verified_secret
 from app.integrations.secrets_management.secrets_pki.providers.vault.application.service import save_connection, test_connection
@@ -25,6 +24,7 @@ from app.models.integration import IntegrationInstance
 from app.models.vault import VaultInstance
 from app.platform_operations.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.security.credentials import CredentialEncryptionError
+from app.secrets_pki.pki_presentation import pki_public_readiness
 
 logger = logging.getLogger(__name__)
 vault_bp = Blueprint('vault', __name__, url_prefix='/integrations/secrets-management/secrets-pki/vault')
