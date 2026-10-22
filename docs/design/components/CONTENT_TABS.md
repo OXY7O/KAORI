@@ -119,13 +119,13 @@ Policies**. This is a Content Tabs controller (Tab Style 4), not a second level-
 route navigator, Integration-style framed parent card, or a new tab family.
 
 - A shared selected-cluster scope control remains visible above these tabs.
-- \`render_controlled_links()\` owns tab geometry and true full-route \`href\`
+- `render_controlled_links()` owns tab geometry and true full-route `href`
   fallbacks; the page-owned Alpine controller owns instant switching, roving
-  Arrow/Home/End, URL \`view=prerequisites|policies\`, back/forward and panel
+  Arrow/Home/End, URL `view=prerequisites|policies`, back/forward and panel
   visibility/ARIA. Inactive panels must be hidden from the accessibility tree.
 - Cluster switches and readiness/policy mutations preserve the selected view
   through the existing HTMX workspace replacement. Namespace search, filter,
-  page size and navigation keep \`view=policies\`. Initial render must honor the
+  page size and navigation keep `view=policies`. Initial render must honor the
   URL so no-JavaScript navigation shows only its requested content view.
 - Credential/attestation configuration is committed KAORI state; configured
   prerequisites do **not** establish live Kubernetes RBAC or Secret access.
