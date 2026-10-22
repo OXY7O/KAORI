@@ -90,3 +90,18 @@ def test_db_schema_unavailable_is_a_blocked_state_not_a_healthy_zero(monkeypatch
     )
     assert result['status'] == 'blocked'
     assert result['matching_kubernetes_tls_secrets'] is None
+
+
+def test_correlation_limits_do_not_silently_truncate_large_sources():
+    with pytest.raises(ValueError, match='bounded'):
+        assess_certificate_overlap(
+            vault_fingerprints=(FINGERPRINT_A,) * 1501,
+            tls_fingerprints=(),
+            vault_state='ready', kubernetes_state='ready',
+        )
+    with pytest.raises(ValueError, match='bounded'):
+        assess_certificate_overlap(
+            vault_fingerprints=(FINGERPRINT_A,),
+            tls_fingerprints=(FINGERPRINT_A,) * 1501,
+            vault_state='ready', kubernetes_state='ready',
+        )
