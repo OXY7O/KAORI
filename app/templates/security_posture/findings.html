@@ -13,8 +13,7 @@
                 {% call page_hero.intro('shield-alert', 'Security', 'database') %}
                     <h1 class="{{ page_hero.title_classes() }}">Security Findings</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Qualified CVE findings across current committed Registry scans, with evidence-backed Kubernetes exposure.
-                        Logical application and owning Team correlation is not yet available.
+                        Inspect qualified committed CVEs and their Kubernetes runtime exposure.
                     </p>
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('shield-alert', posture.pagination.total_items ~ ' Matching CVEs') }}
