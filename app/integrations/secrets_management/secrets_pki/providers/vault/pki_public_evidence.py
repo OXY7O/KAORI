@@ -26,7 +26,6 @@ MAX_ISSUERS = 24
 MAX_CHAIN_CERTIFICATES = 8
 MAX_CERTIFICATE_PEM_BYTES = 32768
 MAX_DNS_NAMES = 32
-
 MAX_PKI_MOUNTS = 4
 
 
@@ -50,7 +49,6 @@ def parse_approved_pki_mounts(value: str) -> tuple[str, ...]:
             raise ValueError('Duplicate Vault PKI mounts are not allowed.')
         normalized.append(mount)
     return tuple(normalized)
-
 
 
 @dataclass(frozen=True, slots=True)
