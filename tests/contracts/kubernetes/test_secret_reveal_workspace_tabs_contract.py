@@ -218,3 +218,31 @@ def test_short_step_up_guidance_and_canonical_pending_decision_actions() -> None
     assert 'class="{{ table_ui.action_classes() }}"' in pending
     assert 'name="csrf_token"' in pending
     assert "action_button.classes('primary')" not in pending
+
+
+
+def test_secret_reveal_submit_restores_main_scroll_without_storing_sensitive_data() -> None:
+    form = read('app/templates/kubernetes/operations/secrets/_reveal_request_form.html')
+    script = read('app/static/js/secret_reveal_workspace.js')
+    routes = read('app/kubernetes/operations/secrets/reveal_routes.py')
+    inbox = read('app/kubernetes/operations/secrets/approval_inbox.py')
+    decisions = read('app/templates/kubernetes/operations/secrets/_reveal_pending_approvals.html')
+
+    assert 'data-reveal-request-submit-form' in form
+    assert "window.sessionStorage.setItem(submittedNavigationKey, 'mine')" in script
+    assert "window.sessionStorage.removeItem(submittedNavigationKey)" in script
+    assert "document.addEventListener('submit', markRequestNavigation)" in script
+    assert "view !== 'mine'" in script
+    assert "main?.scrollTo({ top: 0, behavior: 'auto' })" in script
+    assert "window.requestAnimationFrame(() => window.requestAnimationFrame(" in script
+    assert 'request.form' not in script
+    assert "return redirect(url_for('kubernetes_operations.reveal_secret', reveal_view='mine'))" in routes
+    assert "_notify_secret_reveal_approvers(result.request_record)" in routes
+    assert "get_secret_reveal_approvers(exclude_user_id=record.requester_user_id)" in routes
+    assert "viewer.has_permission('kubernetes_secrets.approve_reveal')" in inbox
+    assert "SecretRevealRequest.requester_user_id != user_id" in inbox
+    assert "SecretRevealRequest.status == 'pending'" in inbox
+    assert 'value="deny"' in decisions
+    assert 'value="approve"' in decisions
+    assert "table_ui.action_classes(destructive=true)" in decisions
+    assert 'class="{{ table_ui.action_classes() }}"' in decisions
