@@ -275,3 +275,17 @@ does not prove human receipt; provider send does not automatically
 create a committed Activity Audit event. This presentation-only UAT
 refinement leaves committed journal filtering, rows, source links,
 provider delivery policy and permissions unchanged.
+
+## Notification Channel Setup Summary Copy (#2699, 2026-10-23)
+
+Email, Telegram, and Microsoft Teams setup summaries and the delivery
+ownership label use concise one-sentence desktop-line targets. This affects
+display copy only: provider prerequisites, adapter authorization, webhook
+restrictions, credentials, transport TLS, routing, retry and evidence
+boundaries remain unchanged. Smaller viewports may wrap naturally.
+
+Email retains approved SMTP transport, sender identity and operational
+recipients; Telegram retains a dedicated bot/destination and secure KAORI
+credential boundary; Teams requires a Workflow webhook rather than a
+legacy Office 365 connector; consumers still emit governed events while
+Notification Channels owns the provider-delivery responsibility.
