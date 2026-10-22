@@ -207,7 +207,8 @@ def test_pending_decision_editor_preserves_security_and_prevents_poll_loss() -> 
     assert 'name="decision"' in template
     assert 'value="deny"' in template and 'value="approve"' in template
     assert "table_ui.action_classes(destructive=true)" in template
-    assert "action_button.classes('primary')" in template
+    assert "table_ui.action_classes()" in template
+    assert "action_button.classes('primary')" not in template
     assert "url_for('kubernetes_operations.decide_secret_reveal_request', request_id=item.id)" in template
     assert "def decide_secret_reveal_request(request_id: str)" in routes
     assert "_validate_secret_operation_csrf()" in routes
