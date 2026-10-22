@@ -180,6 +180,7 @@ def test_requester_approval_notification_opens_exact_owned_request_and_preserves
     )
     assert "'my_reveal_focus_id': focus_id" in service
     assert 'my_request_id=my_reveal_focus_id' in table
+    assert "'my_request_id': my_reveal_focus_id" in table
 
     # No extra reveal endpoint; existing guarded row action is authoritative.
     assert 'Request Approved · Ready for Reveal' in table
