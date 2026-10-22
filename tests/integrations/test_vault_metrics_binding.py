@@ -154,6 +154,16 @@ def _range_client(*, variant='ready'):
             record['values'][2][0] = record['values'][1][0]
         if variant == 'missing_early':
             record['values'] = points[4:]
+        if variant == 'missing_late':
+            record['values'] = points[:-4]
+        if variant == 'future':
+            record['values'][-1][0] = window_end + 120
+        if variant == 'outside_start':
+            record['values'][0][0] = window_start - 120
+        if variant == 'bad_timestamp':
+            record['values'][0][0] = 'NaN'
+        if variant == 'wrong_metric':
+            record['metric']['__name__'] = 'unrelated_metric'
         if variant == 'gap':
             record['values'] = points[:5] + points[8:]
         if variant == 'overbudget':
@@ -202,6 +212,11 @@ def test_history_query_negative_results_never_change_instant_or_vault_health(mon
         'bad_value': 'incomplete',
         'unsorted': 'incomplete',
         'missing_early': 'incomplete',
+        'missing_late': 'incomplete',
+        'future': 'incomplete',
+        'outside_start': 'incomplete',
+        'bad_timestamp': 'incomplete',
+        'wrong_metric': 'ambiguous',
         'gap': 'incomplete',
         'overbudget': 'incomplete',
         'empty': 'incomplete',

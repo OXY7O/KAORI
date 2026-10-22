@@ -56,8 +56,8 @@ proof of Vault availability or active leadership.
 source-owned metrics history/materialization, Vault-specific Analytics queries,
 HA/federation profiles, AlertCase enrichment/routing and real Prometheus/Thanos
 UAT. The independently validated recent-hour source probe described below
-must not be mistaken for a materialized historical dataset. None of these optional telemetry gaps can downgrade
-core Vault API readiness. The Vault operational Overview continues to show
+must not be mistaken for a materialized historical dataset. None of these
+optional telemetry gaps can downgrade core Vault API readiness. The Vault operational Overview continues to show
 missing metrics as **not bound/not materialized** until approved read models
 exist.
 

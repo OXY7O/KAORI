@@ -27,7 +27,11 @@ _HISTORY_MAX_SAMPLES = 16
 
 
 def _historical_window_assessment(
-    *, client: Any, expression: str, integration_id: int, now_epoch: float,
+    *,
+    client: Any,
+    expression: str,
+    integration_id: int,
+    now_epoch: float,
 ) -> dict[str, Any]:
     """Bounded one-hour query_range; only sanitized summaries are persisted.
 
