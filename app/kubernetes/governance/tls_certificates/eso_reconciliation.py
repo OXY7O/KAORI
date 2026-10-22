@@ -79,8 +79,10 @@ def normalize_eso_readback(
 ) -> ESOReadback | None:
     """Normalize only typed ExternalSecret identity and coherent Ready status.
 
-    Some ESO versions do not expose observedGeneration. Those remain unknown,
-    not a misleading confirmed reconciliation or failed TLS collection.
+    ESO status ordinarily contains refreshTime, syncedResourceVersion and
+    conditions rather than observedGeneration. A bounded sync marker admits
+    status-only candidates; it cannot prove current spec generation or target
+    Secret delivery. If optional generation is present it must be coherent.
     """
     observation = _time(observed_at)
     if not isinstance(resource, Mapping) or not _scope(cluster_id) or observation is None:
@@ -97,9 +99,13 @@ def normalize_eso_readback(
     generation = _generation(metadata.get('generation'))
     refreshed = _time(status.get('refreshTime'))
     conditions = status.get('conditions')
+    observed_generation = status.get('observedGeneration')
+    synced_version = status.get('syncedResourceVersion')
     if (
         uid is None or namespace is None or generation is None
-        or _generation(status.get('observedGeneration')) != generation
+        or (observed_generation is not None and _generation(observed_generation) != generation)
+        or not isinstance(synced_version, str) or not 0 < len(synced_version) <= 128
+        or synced_version != synced_version.strip()
         or refreshed is None or refreshed > observation
         or not isinstance(conditions, list) or not 1 <= len(conditions) <= 16
     ):

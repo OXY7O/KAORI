@@ -16,17 +16,20 @@ REPLACED_UID = '12345678-1234-4234-8234-123456789abe'
 OWNER = [{'kind': 'ExternalSecret', 'api_group': 'external-secrets.io', 'uid': ESO_UID}]
 
 
-def resource(*, ready='True', generation=3, observed_generation=3):
-    return {
+def resource(*, ready='True', generation=3, observed_generation=None):
+    payload = {
         'apiVersion': 'external-secrets.io/v1beta1', 'kind': 'ExternalSecret',
         'metadata': {'uid': ESO_UID, 'namespace': 'private-team', 'generation': generation, 'name': 'hidden'},
         'spec': {'target': {'name': 'reusable'}, 'data': [{'remoteRef': {'key': 'vault/private/path'}}]},
         'status': {
-            'observedGeneration': observed_generation,
+            'syncedResourceVersion': '1042',
             'refreshTime': (NOW - timedelta(minutes=10)).isoformat(),
             'conditions': [{'type': 'Ready', 'status': ready}],
         },
     }
+    if observed_generation is not None:
+        payload['status']['observedGeneration'] = observed_generation
+    return payload
 
 
 def evaluate(raw=None, **overrides):
@@ -52,6 +55,11 @@ def test_current_controller_candidate_never_proves_vault_or_materialization():
     assert not result.endpoint_serving_verified
 
 
+def test_optional_observed_generation_must_match_when_present():
+    assert evaluate(resource(observed_generation=3)).status == 'reconciled_candidate'
+    assert evaluate(resource(observed_generation=2)).status == 'unknown'
+
+
 def test_crd_secret_names_paths_and_spec_never_leave_normalizer():
     receipt = normalize_eso_readback(resource(), cluster_id='cluster-a', observed_at=NOW)
     assert receipt is not None
@@ -63,7 +71,9 @@ def test_crd_secret_names_paths_and_spec_never_leave_normalizer():
 
 @pytest.mark.parametrize('mutation', [
     lambda x: x['status'].update(observedGeneration=2),
-    lambda x: x['status'].pop('observedGeneration'),
+    lambda x: x['status'].pop('syncedResourceVersion'),
+    lambda x: x['status'].update(syncedResourceVersion=''),
+    lambda x: x['status'].update(syncedResourceVersion=' untrusted '),
     lambda x: x['status'].pop('refreshTime'),
     lambda x: x['status'].update(refreshTime=(NOW + timedelta(minutes=1)).isoformat()),
     lambda x: x['status'].update(conditions=[{'type': 'Ready', 'status': 'True'}] * 2),
