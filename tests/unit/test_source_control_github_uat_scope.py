@@ -108,3 +108,32 @@ def test_uat_templates_keep_committed_unknown_vs_zero_and_htmx_pagination():
     assert 'action_form.hidden_tag()' in detail
     assert 'integrations/components/_workspace.html' in detail
     assert '<style' not in inventory and '<style' not in detail
+
+
+
+def test_live_registration_is_restricted_before_credentials_are_read():
+    root = Path(__file__).resolve().parents[2]
+    source = root.joinpath(
+        'app/integrations/source_control/source_control/providers/github/application/routes.py'
+    ).read_text()
+    view = source.split('def new_connection()')[1].split('@github_source_bp.post')[0]
+    assert 'if available:' in view
+    assert 'require_uat_access()' in view
+    assert view.index('require_uat_access()') < view.index('form = GitHubAppConnectionForm()')
+
+
+def test_github_uat_detail_exposes_only_committed_delivery_job_links():
+    root = Path(__file__).resolve().parents[2]
+    routes = root.joinpath(
+        'app/integrations/source_control/source_control/providers/github/application/uat_routes.py'
+    ).read_text()
+    detail = root.joinpath(
+        'app/templates/integrations/source_control/github/uat_detail.html'
+    ).read_text()
+    assert 'filter_by(installation_id=installation.id)' in routes
+    assert 'SourceWebhookDelivery.received_at.desc()' in routes
+    assert 'delivery.dispatched_job_execution_id' in detail
+    assert 'delivery.processing_state' in detail
+    assert 'delivery.payload_sha256' not in detail
+    assert 'delivery.repository_native_id_hint' not in detail
+    assert 'page_hero.context_card(' in detail
