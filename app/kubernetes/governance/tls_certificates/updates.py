@@ -30,13 +30,13 @@ from app.kubernetes.governance.tls_certificates.sync_state import (
     tls_sync_evidence_is_current,
     tls_sync_stale_after,
 )
-from app.platform_operations.jobs.policies.service import get_or_create_job_policy
 from app.models import (
     TLSCertificateCollectionState,
     TLSCertificateInventory,
     TLSCertificateUpdateEvent,
     User,
 )
+from app.platform_operations.jobs.policies.service import get_or_create_job_policy
 
 
 @dataclass(frozen=True)
@@ -153,9 +153,7 @@ def _coverage_evidence_window() -> timedelta:
     return tls_sync_stale_after(policy.interval_minutes)
 
 
-def _coverage_blocker(
-    record: TLSCertificateInventory, parsed: Any, *, stale_after: timedelta
-) -> str | None:
+def _coverage_blocker(record: TLSCertificateInventory, parsed: Any, *, stale_after: timedelta) -> str | None:
     """Require complete, current committed Ingress mapping before PATCH."""
     state = db.session.get(TLSCertificateCollectionState, record.cluster_id)
     if (
