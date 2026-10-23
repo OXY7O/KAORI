@@ -214,7 +214,7 @@ def test_interface_distinguishes_paused_and_manual_archive_ready_with_no_other_a
     source = (ROOT / 'app/platform_operations/data_lifecycle/retention/presentation.py').read_text(
         encoding='utf-8',
     )
-    assert "'audit_event': 'Source-owned administrative AuditEvent evidence; manual Archive Only.'" in source
+    assert "'audit_event': 'Source-owned AuditEvent evidence; manual Archive Only.'" in source
     assert 'Manual Archive Only. Separate from Activity Register' in source
     assert 'retention and access restricted.' in source
 
