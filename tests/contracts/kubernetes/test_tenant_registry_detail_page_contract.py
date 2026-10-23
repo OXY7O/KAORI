@@ -1551,3 +1551,25 @@ def test_native_execution_uses_full_width_governed_action_strip() -> None:
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23
     assert detail.count('hx-post=') == 23
+
+
+def test_independent_reviewer_eligibility_uses_semantic_info_not_success() -> None:
+    detail = read(DETAIL)
+    approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
+        "{% elif tenant_release_step == 'finalize' %}", 1
+    )[0]
+    Environment().parse(detail)
+
+    assert 'data-release-independent-review-status' in approval
+    assert "operational_callout.semantic_surface_classes('info')" in approval
+    assert 'Independent review available.' in approval
+    assert 'Eligible independent reviewer (Tenant + Integrations Manage).' in approval
+    assert 'Verify the plan SHA and provider evidence before approval.' in approval
+    assert 'approval_active_dependencies > 0' in approval
+    assert "operational_callout.semantic_border_classes('warning')" in approval
+    assert 'handoff_plan.requested_by != current_user.id' in approval
+    assert 'name="confirm_handoff_approval"' in approval
+    assert 'value="approved"' in approval
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23
