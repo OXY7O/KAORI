@@ -37,7 +37,7 @@
     {% set metrics = [
         {"label": "Registered Connections", "value": registered if registered is not none else "Not Observed", "description": "Canonical GitHub App connections", "icon": "plug"},
         {"label": "Ready Connections", "value": ready if ready is not none else "Not Observed", "description": "Full Validation required", "icon": "shield-check"},
-        {"label": "Repository Inventory", "value": "Not Admitted", "description": "SC-03 committed reconciliation pending", "icon": "database"},
+        {"label": "Repository Inventory", "value": "UAT Workspace" if available and uat_workspace_enabled else "Not Admitted", "description": "Committed installation-scoped evidence" if available and uat_workspace_enabled else "SC-03 admission pending", "icon": "database"},
         {"label": "Provider Lifecycle", "value": "Available" if available else "Planned", "description": "Controlled by KAORI provider matrix", "icon": "shield"}
     ] %}
     {{ provider_front.overview("git-branch", "Source Control Provider Overview",
@@ -45,7 +45,7 @@
         metrics, "GitHub App Installation",
         "App, installation, organization/account and repository are distinct identities.",
         "Committed Source Evidence",
-        "KAORI will normalize scoped repository and revision observations after SC-03 admission.",
+        "KAORI reads committed, installation-scoped repository and exact revision observations.",
         "GitHub Remains Authoritative",
         "GitHub owns permissions, repositories and workflow runs; KAORI correlates committed evidence.") }}
     {% if available and uat_workspace_enabled %}
