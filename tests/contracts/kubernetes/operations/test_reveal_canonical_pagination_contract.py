@@ -3,6 +3,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[4]
 
 
+def read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
+
+
 def test_reveal_registries_use_one_canonical_sql_paging_policy() -> None:
     source = (ROOT / 'app/kubernetes/operations/secrets/reveal_service.py').read_text()
     body = source.split('def get_reveal_page_context(', 1)[1].split('def create_reveal_request(', 1)[0]
@@ -33,7 +37,7 @@ def test_review7_my_requests_uses_sql_filters_with_requester_isolation() -> None
     assert 'my_sort: str' in block
     assert 'SecretRevealRequest.query.filter_by(requester_user_id=user_id)' in block
     assert 'autoescape=True' in block
-    assert 'SecretRevealRequest.status == state_filter' in block
+    assert 'effective_status == state_filter' in block
     assert 'SecretRevealRequest.requested_at.asc()' in block
     assert 'SecretRevealRequest.requested_at.desc()' in block
     assert 'if state_filter not in allowed_statuses' in block
@@ -104,11 +108,11 @@ def test_my_reveal_request_actions_preserve_approval_and_one_time_security() -> 
     shared_table = (ROOT / 'app/templates/components/table.html').read_text()
 
     assert 'step_up_active' in source
-    assert "item.status == 'approved'" in source
-    assert "item.status == 'expired'" in source
-    assert "item.status == 'pending'" in source
-    assert "item.status == 'revealed'" in source
-    assert "item.status == 'denied'" in source
+    assert "item.effective_status == 'approved'" in source
+    assert "item.effective_status == 'expired'" in source
+    assert "item.effective_status == 'pending'" in source
+    assert "item.effective_status == 'revealed'" in source
+    assert "item.effective_status == 'denied'" in source
     assert "url_for('kubernetes_operations.reveal_secret_value', request_id=item.id)" in source
     assert "url_for('kubernetes_operations.reveal_secret', cluster_id=item.cluster_id" in source
     assert 'hx-post="{{ url_for(' in source
