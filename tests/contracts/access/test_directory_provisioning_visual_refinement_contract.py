@@ -119,7 +119,7 @@ def test_provision_button_matches_role_input_baseline_and_mobile_order() -> None
     assert 'sm:col-start-1 sm:row-start-2' in source
     role_pos = source.index('name="role_id"')
     active_pos = source.index('name="is_active"')
-    provision_pos = source.index('>Provision', active_pos)
+    provision_pos = source.index('Provision\n', active_pos)
     assert role_pos < active_pos < provision_pos
     assert 'Back to Users' not in source
     assert "url_for('users.index')" not in source
