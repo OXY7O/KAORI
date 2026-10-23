@@ -154,3 +154,48 @@ no committed repository inventory (SC-03), so the overview intentionally
 uses `Not Observed` / `Not Admitted` instead of invented zero counts.
 It reuses existing Violet, Hero, domain cards, Flask-WTF, accessibility,
 responsive and light/dark classes; no provider-specific stylesheet.
+
+
+## SC-02 canonical JobExecution admission and committed refresh intents
+
+`job_admission.enqueue_github_app_job` reuses KAORI's existing
+`enqueue_instance_validation` and `enqueue_runtime_health_refresh` entry
+points. The shared Integration validation subsystem owns JobExecution
+durability, Redis resource locks, Celery queue dispatch, status snapshots,
+progress, cancellation and existing notifications. No GitHub-specific
+Celery worker or job scheduler is created. The bridge fails closed unless:
+
+- The provider matrix is `available` through an approved admission step.
+- Canonical `IntegrationInstance`, `SourceInstallation`, App credential,
+  host, and account identities match and are enabled/active.
+- Integration Kernel resolves the correct registered GitHub provider record.
+- An authenticated actor ID and an approved Full Validation or Runtime
+  Refresh operation were requested.
+
+Job kwargs contain only the canonical integration type, instance ID and
+requester ID; **no App PEM, token, webhook secret or raw delivery payload**.
+
+`reconciliation_intent.resolve_reconciliation_intent` is a second inert
+boundary: it qualifies an authenticated, already-committed delivery against
+the current committed installation-to-repository grant. Installation grant
+changes and unknown/revoked repository hints produce an **installation-grant
+refresh intent**, not a repository-targeted mutation. Only a current
+committed `granted` relationship qualifies a repository target.
+
+**Handoff is deliberately incomplete while #2742 (SC-03) is pending.**
+Neither an intent nor a staged webhook row starts a task, proves it was
+queued, or publishes delivery/source/notification evidence. The future
+inbox consumer must operate after the delivery DB transaction commits;
+it must atomically claim work, use KAORI's registered JobExecution
+dispatcher with a bounded SC-03 provider reconciliation task, persist
+receipt/status and recover interrupted dispatches. Do not introduce
+a parallel task broker, trust payload repository IDs or call GitHub from
+a template/render path. The actual after-commit dispatch cannot be
+claimed operational until that SC-03 collector and its worker are admitted.
+
+For focused local test execution on the issue branch, add the following
+existing pytest modules to the Dev Container validation suite:
+
+```bash
+pytest -q --tb=short tests/unit/test_source_control_github_app_job_admission.py tests/unit/test_source_control_github_app_reconciliation_intent.py
+```
