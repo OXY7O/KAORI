@@ -147,3 +147,43 @@ def test_template_replaces_static_unbound_claims():
     assert "binding_coverage.alerts.label" in source
     assert "Metrics Source Not Bound" not in source
     assert "Alert Evidence Not Bound" not in source
+
+
+def test_partial_fleet_coverage_is_not_full_qualification(coverage_store):
+    first, _second = _instance(), _instance()
+    metrics = _instance(kind='metrics_source')
+    _binding(metrics, first)
+    posture = build_vault_binding_coverage(now=AT)
+    assert posture['metrics']['status'] == 'partial'
+    assert posture['metrics']['coverage'] == '1 / 2'
+
+
+def test_two_ready_metrics_sources_do_not_count_as_unambiguous_binding(coverage_store):
+    vault = _instance()
+    first = _instance(kind='metrics_source')
+    second = _instance(kind='metrics_source')
+    _binding(first, vault)
+    _binding(second, vault)
+    posture = build_vault_binding_coverage(now=AT)
+    assert posture['metrics']['status'] == 'needs_validation'
+    assert posture['metrics']['qualified_vault_sources'] == 0
+
+
+def test_excessive_source_bindings_fail_closed(coverage_store):
+    vault = _instance()
+    for _ in range(101):
+        metrics = _instance(kind='metrics_source')
+        db.session.add(IntegrationBinding(
+            integration_instance_id=metrics.id,
+            asset_type='vault_instance',
+            asset_key=str(vault.id),
+            binding_role='primary',
+            enabled=True,
+            validation_profile='vault-telemetry-v1',
+            validation_status='ready',
+            last_validated_at=AT,
+        ))
+    db.session.commit()
+    posture = build_vault_binding_coverage(now=AT)
+    assert posture['metrics']['status'] == 'blocked'
+    assert posture['metrics']['qualified_vault_sources'] is None
