@@ -241,7 +241,7 @@ def test_capsule_allocation_scope_guide_between_registries_and_wide_modals() -> 
         assert 'max-w-5xl overflow-hidden rounded-2xl' in source
         assert 'max-w-3xl overflow-hidden rounded-2xl' not in source
         assert 'mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3' in source
-        assert 'mt-3 grid gap-4 lg:grid-cols-2' in source
+        assert 'mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2' in source
         assert source.count('data-kaori-native-dialog') == 1
         assert source.count('<form method="post"') == 2
         assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
