@@ -398,14 +398,16 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'data-release-accepted-handoff-workspace' in approval
     assert 'data-release-accepted-handoff-actions' in approval
     assert 'data-release-accepted-handoff-evidence' in approval
-    assert 'lg:grid-cols-5' in approval
+    assert 'lg:grid-cols-2' in approval
     assert 'lg:col-span-3' in approval
     assert 'lg:col-span-2' in approval
     assert 'aria-label="External handoff and provider read-back"' in approval
     assert 'External Handoff &amp; Read-Back' in approval
     assert 'Evidence Boundaries' in approval
+    assert 'data-release-evidence-boundaries' in approval
+    assert '<summary class="cursor-pointer text-xs font-semibold text-content-primary' in approval
     # Actions and evidence must be peer surfaces, not stacked bordered cards.
-    assert 'items-start gap-4 lg:grid-cols-5' in approval
+    assert 'items-start gap-4 lg:grid-cols-2' in approval
     assert 'Handoff Actions' in approval
     assert 'Complete governed actions only when eligible.' in approval
     assert 'class="w-full mt-3 space-y-3"' in approval
@@ -1283,13 +1285,14 @@ def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
     final = detail.split('id="tenant-release-stage-finalize"', 1)[1]
 
     # Content hierarchy: concise status rows, unstretched peers, aligned actions.
-    assert 'items-start gap-4 lg:grid-cols-5' in approval
+    assert 'items-start gap-4 lg:grid-cols-2' in approval
     assert 'data-release-accepted-handoff-actions' in approval
     assert 'data-release-accepted-handoff-evidence' in approval
     assert 'sm:grid-cols-[auto_minmax(0,1fr)]' in approval
     assert 'Kubeconfig and scoped access verified through' in approval
     assert 'provider ownership remains unchanged.' in approval
-    assert 'lg:w-3/5' in approval
+    assert 'lg:flex-row lg:items-center lg:justify-between' in approval
+    assert 'name="confirm_native_handoff_dry_run"' in approval
     assert 'External Handoff Inspection Unavailable' in approval
 
     # A visual redesign never weakens native dry-run, mutation or finalization.
