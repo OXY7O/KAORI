@@ -3,6 +3,7 @@
 Pure snapshots/mocks ensure no real PostgreSQL row, worker or archive object
 is modified. DevContainer end-to-end and human Visual QA are separate gates.
 """
+from contextlib import nullcontext
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,6 +14,7 @@ from flask import Flask
 from jinja2 import Environment
 
 from app.platform_operations.data_lifecycle.retention.domains import analytics_snapshot as adapter
+from app.platform_operations.data_lifecycle.retention.service import run_retention_archive
 from app.platform_operations.data_lifecycle.service import queue_lifecycle_execution, update_lifecycle_policy
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 
@@ -152,6 +154,34 @@ def test_analytics_manual_archive_buttons_create_canonical_job_with_info_toast(m
     assert feedback['metadata']['job_execution_id'] == 27
     assert feedback['delivery_policy'] is OperationalDeliveryPolicy.DECK_ON_FAILURE
     assert feedback['delivery_policy'].deck_visible('info') is False
+
+
+@pytest.mark.parametrize('cleanup', [False, True])
+def test_analytics_manual_engine_with_no_eligible_data_creates_no_archive(cleanup: bool) -> None:
+    domain = SimpleNamespace(
+        name='analytics_snapshot', cleanup_supported=True,
+        build_policy=lambda: _fake_policy(enabled=True),
+        inspect_boundary=lambda _policy: SimpleNamespace(record_count=0, maximum_record_id=None),
+    )
+    with (
+        patch('app.platform_operations.data_lifecycle.retention.service.get_archive_domain', return_value=domain),
+        patch(
+            'app.platform_operations.data_lifecycle.retention.service.get_policy',
+            return_value=SimpleNamespace(enabled=True),
+        ),
+        patch(
+            'app.platform_operations.data_lifecycle.retention.service.retention_lock',
+            return_value=nullcontext(),
+        ),
+        patch('app.platform_operations.data_lifecycle.retention.service.ArchiveArtifact') as artifact,
+    ):
+        result = run_retention_archive(
+            domain_name='analytics_snapshot', trigger_type='manual', cleanup=cleanup,
+        )
+    assert result['status'] == 'no_data'
+    assert result['record_count'] == 0
+    assert result['cleanup_requested'] is cleanup
+    artifact.assert_not_called()
 
 
 def test_disabled_analytics_policy_does_not_queue_job_and_warns_in_deck() -> None:
