@@ -83,3 +83,9 @@ def test_lifecycle_template_only_shows_qualified_metrics_and_safe_analytics_link
     assert 'url_for(\'secrets_pki.inventory\')' in source
     assert "vault.secret_value" not in source
     assert "delivery_proven" not in source
+
+def test_lifecycle_navigation_is_reachable_from_existing_capability_pages():
+    root = Path(__file__).resolve().parents[3]
+    for file in ('overview.html', 'inventory.html'):
+        source = (root / 'app/templates/secrets_pki' / file).read_text(encoding='utf-8')
+        assert "url_for('secrets_pki.lifecycle')" in source

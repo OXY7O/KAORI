@@ -38,8 +38,12 @@
             {% include "components/states/_empty_state.html" %}
         {% else %}
             {% set scope_context %}
-                <a href="{{ url_for('secrets_pki.inventory') }}"
-                   class="text-sm font-semibold text-kaori-primary hover:underline">Inventory Evidence</a>
+                <span class="inline-flex flex-wrap items-center gap-3">
+                    <a href="{{ url_for('secrets_pki.inventory') }}"
+                       class="text-sm font-semibold text-kaori-primary hover:underline">Inventory Evidence</a>
+                    <a href="{{ url_for('secrets_pki.lifecycle') }}"
+                       class="text-sm font-semibold text-kaori-primary hover:underline">Lifecycle &amp; Assurance</a>
+                </span>
             {% endset %}
             {% call dashboard_workspace.controller(active_tab, 'secrets-pki-overview') %}
                 {% call signal_overview.render(
