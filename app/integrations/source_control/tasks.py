@@ -11,9 +11,6 @@ from billiard.exceptions import SoftTimeLimitExceeded
 from celery import shared_task
 
 from app.extensions.db import db
-from app.integrations.source_control.source_control.providers.github.repository_commit import (
-    record_generation_failure,
-)
 from app.integrations.source_control.source_control.providers.github.repository_sync import (
     synchronize_installation,
 )

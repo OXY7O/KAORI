@@ -44,7 +44,7 @@ def synchronize_installation(
     generation = reserve_generation(session, installation)
     try:
         evidence = collect_installation_repositories(installation)
-    except GitHubProviderError:
+    except Exception:
         session.rollback()
         record_generation_failure(session, installation, generation)
         raise

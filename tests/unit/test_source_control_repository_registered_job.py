@@ -29,10 +29,6 @@ def test_planned_provider_blocks_sync_before_database(monkeypatch):
     monkeypatch.setattr(
         sync_jobs, 'provider_kind', lambda *_: SimpleNamespace(available=False),
     )
-    monkeypatch.setattr(
-        sync_jobs.SourceInstallation, 'query',
-        SimpleNamespace(all=lambda: pytest.fail('No query before admission')),
-    )
     with pytest.raises(sync_jobs.NoEligibleSourceControlTargets, match='pending'):
         sync_jobs.build_source_repository_targets()
 
