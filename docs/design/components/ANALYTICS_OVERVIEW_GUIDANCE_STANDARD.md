@@ -54,7 +54,9 @@ Canonical composition:
 
 ## Cross-domain unified access guidance
 
-The Access Denied (403) view is a second consumer of the **presentation-only** Analytics guidance primitives. It requires one calm `guidance_card_classes()` shell and one `snapshot_header_classes()` header; within the same outer border, `interpretation_grid_classes()` places two `interpretation_callout(..., role=...)` areas separated by subtle neutral dividers. These utility macros render no analytics data and carry no authentication policy. The Access domain continues to own RBAC, 403 response and Activity Audit.
+The Access Denied (403) view consumes the **presentation-only** Analytics guidance primitives. Use one neutral `guidance_card_classes()` outer surface, one `snapshot_header_classes()` header, and one `interpretation_grid_classes()` with two `interpretation_callout(..., role=...)` regions. A compact `boundary_zone_classes()` footer may contain safe account-navigation and escalation instructions. The page owns authorization-specific wording and role state; shared presentation macros must not implement security policy.
+
+The **reason** must distinguish an absent/inactive KAORI role from a general denied page/action; never invent an unknown permission key or imply a particular resource-level denial. The **next step** must name a real destination: the KAORI Access Administrator (or internal IT helpdesk) responsible for role/permission review in **Access → Users**. If KAORI has no live access-request feature or known helpdesk link, do not render a fake “Request Access” action. A `View My Account` link may point to `settings.account` but must be labeled as an account view, **not** a ticket submission or direct support channel.
 
 ```jinja
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
@@ -62,29 +64,32 @@ The Access Denied (403) view is a second consumer of the **presentation-only** A
 <section class="{{ analysis_surface.guidance_card_classes() }}"
          aria-labelledby="access-guidance-title">
     <header class="{{ analysis_surface.snapshot_header_classes() }}">
-        <h2 id="access-guidance-title">Access Resolution Guidance</h2>
+        <h2 id="access-guidance-title">Why You Can't Access This Page</h2>
     </header>
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
         {{ analysis_surface.interpretation_callout(
-            'Required Action',
-            'Request Access Review',
-            'Ask an administrator to review your role and permissions.',
-            icon='user-cog', role='brand'
+            'Access Reason',
+            'No Active Role' if role_unavailable else 'Permission Not Granted',
+            reason_description,
+            icon='lock-keyhole', role='evidence'
         ) }}
         {{ analysis_surface.interpretation_callout(
-            'Security Boundary',
-            'Server-Side Authorization',
-            'Navigation is guidance; server-side permissions enforce access.',
-            icon='shield-check', role='insight'
+            'Who To Contact',
+            'KAORI Access Administrator',
+            'Contact your KAORI access administrator or internal IT helpdesk. They can review role assignments in Access → Users.',
+            icon='user-round-cog', role='brand'
         ) }}
+    </div>
+    <div class="{{ analysis_surface.boundary_zone_classes() }}">
+        <p>Share your KAORI username, the page URL, and the action you need; never share your password.</p>
     </div>
 </section>
 ```
 
-- This is **one surface**, not two separate cards or a new one-off component.
-- Role-color is limited to icon/eyebrow; security permission denial is not represented as a fake operational severity.
-- Single-column narrow layout and two-column desktop layout are owned by the shared grid. Heading remains accessible; no clipping of copy or long content.
-- Do not place authentication logic or provider calls into the visual macros.
+- The layout is **one surface**, not separate cards. Shared role colors stay on icons/eyebrows, not on large backgrounds.
+- Put the reason before instructions and keep the administrator route explicit; do not create a link to restricted Access → Users for the denied viewer.
+- Keep account links accurate, accessible, and keyboard focusable. Do not claim an access request was submitted.
+- Do not disclose internal RBAC policy identifiers or any credentials. Server-side authorization and audit remain authoritative.
 
 ## Role selection
 

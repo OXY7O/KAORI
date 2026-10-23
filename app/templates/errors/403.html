@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/action_button.html" as action_button %}
 {% block title %}Access Denied{% endblock title %}
 {% block dashboard_content %}
     {% set assigned_role = current_user.role_record if current_user.is_authenticated else none %}
@@ -33,8 +34,7 @@
                         <div class="{{ page_hero.context_actions_classes() }}">
                             <a href="{{ url_for('welcome.index') }}"
                                class="{{ page_hero.context_action_classes() }}"><i data-lucide="house" class="h-4 w-4"></i>Welcome</a>
-                            <a href="{{ url_for('settings.account') }}"
-                               class="{{ page_hero.context_action_classes() }}"><i data-lucide="user-round-cog" class="h-4 w-4"></i>Review Access</a>
+
                         </div>
                     </div>
                 </aside>
@@ -47,32 +47,43 @@
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="{{ analysis_surface.role_icon_classes('brand') }}"
                           aria-hidden="true">
-                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                        <i data-lucide="shield-question" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
                         <h2 id="access-guidance-title"
-                            class="{{ analysis_surface.section_title_classes() }}">Access Resolution Guidance</h2>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">
-                            Review the next step and the server-side access boundary.
+                            class="{{ analysis_surface.section_title_classes() }}">Why You Can't Access This Page</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">
+                            KAORI restricts pages and actions using server-side permissions.
                         </p>
                     </div>
                 </div>
             </header>
             <div class="{{ analysis_surface.interpretation_grid_classes() }}">
                 {{ analysis_surface.interpretation_callout(
-                    'Required Action',
-                    'Request Access Review',
-                    'Ask an administrator to review your role and permissions.',
-                    icon='user-cog',
-                    role='brand'
+                    'Access Reason',
+                    'No Active Role' if role_unavailable else 'Permission Not Granted',
+                    'Your KAORI account has no active role. An administrator must assign or reactivate one.' if role_unavailable else 'Your current access (' ~ role_label ~ ') does not permit this page or action.',
+                    icon='lock-keyhole',
+                    role='evidence'
                 ) }}
                 {{ analysis_surface.interpretation_callout(
-                    'Security Boundary',
-                    'Server-Side Authorization',
-                    'Navigation is guidance; server-side permissions enforce access.',
-                    icon='shield-check',
-                    role='insight'
+                    'Who To Contact',
+                    'KAORI Access Administrator',
+                    'Contact your KAORI access administrator or internal IT helpdesk. They can review role assignments in Access → Users.',
+                    icon='user-round-cog',
+                    role='brand'
                 ) }}
+            </div>
+            <div class="{{ analysis_surface.boundary_zone_classes('flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between') }}">
+                <p class="min-w-0 text-xs leading-5 text-content-secondary">
+                    <span class="font-semibold text-content-primary">When asking for access:</span>
+                    Share your KAORI username, the page URL, and what you need to do. Never share your password.
+                </p>
+                <a href="{{ url_for('settings.account') }}"
+                   class="{{ action_button.classes('secondary') }} shrink-0">
+                    <i data-lucide="user-round" class="h-4 w-4" aria-hidden="true"></i>
+                    View My Account
+                </a>
             </div>
         </section>
     </div>
