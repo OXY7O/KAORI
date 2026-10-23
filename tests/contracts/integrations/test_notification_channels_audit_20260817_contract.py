@@ -503,6 +503,33 @@ def test_channel_inventory_responsive_width_retains_lifecycle_guidance() -> None
     assert 'Channel already disabled' in blockers
 
 
+def test_channel_lifecycle_tabs_use_activity_audit_framed_navigation() -> None:
+    channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    audit = read('app/templates/access/activity_audit/partials/_audit_records_workspace.html')
+    shared = read('app/templates/components/framed_workspace_tabs.html')
+
+    assert '{% import "components/framed_workspace_tabs.html" as framed_tabs %}' in channels
+    assert 'framed_tabs.render_navigation(' in channels
+    assert 'framed_tabs.render_navigation(' in audit
+    assert "data-kaori-tab-variant=\"framed-workspace-v2-server\"" in shared
+    assert "channel_lifecycle_tabs," in channels
+    assert "payload.channel_lifecycle," in channels
+    assert "prefix='notification-channel-lifecycle'" in channels
+    assert "aria_label='Channel lifecycle views'" in channels
+    assert "hx_target='#notification-channel-registry'" in channels
+    assert "hx_select='#notification-channel-registry'" in channels
+    assert 'hx-indicator="#notification-channel-loading"' in channels
+    assert "('active', 'Active', 'radio-tower', url_for(" in channels
+    assert "('retired', 'Archived', 'archive', url_for(" in channels
+    assert "channel_per_page=payload.channel_pagination.per_page" in channels
+    assert "channel_page=1" in channels
+    assert 'hx-swap="{{ hx_swap }}" hx-push-url="{{ hx_push_url }}"' in shared
+    assert '{% if active_key == tab_key %}aria-current="page"{% endif %}' in shared
+    assert 'min-h-10 shrink-0 items-center gap-2 rounded-t-xl' in shared
+    assert 'flex flex-wrap items-center gap-2 border-b border-outline-subtle bg-surface-card px-4 py-3' not in channels
+    assert "'channel_lifecycle': payload.channel_lifecycle" in channels
+
+
 def test_channel_retirement_registry_filters_and_read_only_dialog() -> None:
     channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     retire = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
@@ -514,8 +541,9 @@ def test_channel_retirement_registry_filters_and_read_only_dialog() -> None:
     assert "'channel_lifecycle': normalized_lifecycle" in service
     assert "channel_lifecycle=request.args.get('channel_lifecycle', 'active')" in routes
     assert "query['channel_lifecycle'] = 'retired'" in routes
-    assert 'aria-label="Channel lifecycle views"' in channels
-    assert "('retired', 'Archived', 'archive')" in channels
+    assert "framed_tabs.render_navigation(" in channels
+    assert "aria_label='Channel lifecycle views'" in channels
+    assert "('retired', 'Archived', 'archive', url_for(" in channels
     assert 'name="channel_lifecycle" value="{{ payload.channel_lifecycle }}"' in channels
     assert "'channel_lifecycle': payload.channel_lifecycle" in channels
     assert "payload.channel_lifecycle == 'retired'" in channels

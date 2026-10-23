@@ -445,7 +445,12 @@ accessible. A retired channel is not reinstated by setting `enabled`.
 ## Archived Channels Inventory & Confirmation (#2751)
 
 Channels workspace provides **Active** (default) and **Archived** lifecycle
-views using the existing registry filter/loading/Rows/pagination patterns.
+views using the canonical **Framed Workspace Tabs / Style 2** server
+navigation (`components/framed_workspace_tabs.html::render_navigation`),
+identical to Activity Audit's Activity Register / Administrative Evidence
+visual contract. The owning registry remains URL/HTMX-backed and inherits
+the shared loading indicator, filter/Rows/pagination behavior. Do not
+substitute page-local pill or segmented tab markup.
 Archived channels remain read-only and display retirement timestamp,
 operator ID, reason, source-owned policy and committed delivery count
 through the existing native policy dialog. Archive view excludes

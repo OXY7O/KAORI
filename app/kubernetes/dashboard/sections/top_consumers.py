@@ -176,7 +176,7 @@ def _build_top_consumers_insight(
     if missing_request_limit:
         description = (
             f'{len(missing_request_limit)} CPU/memory consumer rows lack request or limit context. '
-            'Usage-only bars remain muted to avoid misleading risk signals.'
+            'Usage-only bars stay muted to avoid false risk signals.'
         )
     elif high_usage:
         description = (
