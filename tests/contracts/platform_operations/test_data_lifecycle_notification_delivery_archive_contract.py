@@ -63,9 +63,9 @@ def test_policy_queue_schedule_and_ui_refuse_unadmitted_cleanup() -> None:
     ui = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
     assert "not getattr(domain, 'cleanup_supported', True)" in admission
     assert "'cleanup_not_admitted'" in admission
-    assert "domain_name != 'notification_delivery'" in admission
-    assert "if domain_name == 'notification_delivery':" in presentation
-    assert 'selected.name != \'notification_delivery\'' in ui
+    assert "domain_name not in {'notification_delivery', 'audit_event'}" in admission
+    assert "if domain_name in {'notification_delivery', 'audit_event'}:" in presentation
+    assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
     assert 'Manual archive-only' in ui
     assert 'Archive Only:' in ui
     assert "data_lifecycle.run" in ui
