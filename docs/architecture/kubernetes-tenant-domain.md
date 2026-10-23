@@ -2074,3 +2074,36 @@ Dry-Run, provider mutation or Release gating. It needs Dev Container
 Visual QA in light/dark, narrow/wide and keyboard/touch paths, including
 long names, stale evidence and false/true confirmation. All official
 Developer Check / Full Admission / promotion gates stay HOLD.
+
+## Native Handoff Step 3 compact desktop actions — 2026-10-23
+
+Human Dev Container review of the acknowledged Native Release step revealed
+unnecessary nested borders and long two-line explanatory copy. The existing
+two-column Handoff Actions / External Handoff & Read-Back layout now reserves
+slightly more desktop width for read-back content while preserving natural
+wrapping on mobile. This is a presentation choice, not a new layout system.
+
+External reference and Platform Admin evidence remain divider-separated
+committed rows with concise status text. The External Handoff inspection
+form loses its extra rounded bordered card and uses a simple inline
+divider. Its required confirmation still asserts **external operator handoff
+has completed**, requests **read-only Kubernetes marker inspection**, and
+cannot itself record successor consent, write provider resources, or Release.
+The existing governed Native Handoff executor remains the KAORI-controlled
+transfer path; no external provider authority is adopted by KAORI.
+
+Native Transfer Preview remains a required checkbox plus a secondary
+action, displayed in a thin full-width border/divider row rather than
+an inset filled card. Its text explicitly states that the server-side
+dry-run does not persist provider metadata, quota, or limits. The HTMX POST,
+CSRF, fingerprint/SHA correlation, provider checks and eventual execution
+and finalization gates are all unchanged.
+
+Desktop copy is shortened to fit normal available line widths where
+practical; text deliberately retains responsive wrapping and overflow
+protection on smaller windows and with browser zoom. Accessibility,
+light/dark contrast, keyboard checkbox focus, pending/expired/blocked
+branches, and Native/Capsule boundaries require Dev Container Visual QA.
+Previous Native Adopt → Resource Profile change → Release UAT acceptance
+does not cover this newly revised visual state. Official CI/CD admission,
+staging/main promotion and release remain HOLD.
