@@ -76,10 +76,13 @@ def index() -> ResponseReturnValue:
 @bp.get('/preview')
 @permission_required('platform_operations.view_data_lifecycle')
 def preview() -> ResponseReturnValue:
-    return render_template(
-        'platform_operations/data_lifecycle/partials/_domain_workspace.html',
-        lifecycle=_context(preview=True),
-    )
+    context = _context(preview=True)
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'platform_operations/data_lifecycle/partials/_domain_workspace.html',
+            lifecycle=context,
+        )
+    return render_template('platform_operations/data_lifecycle/index.html', lifecycle=context)
 
 
 @bp.post('/policy')
@@ -103,10 +106,13 @@ def run() -> ResponseReturnValue:
         mode=str(request.form.get('mode') or 'archive_only'),
         user_id=current_user.id,
     )
-    return render_template(
-        'platform_operations/data_lifecycle/partials/_domain_workspace.html',
-        lifecycle=_context(feedback=feedback),
-    )
+    context = _context(feedback=feedback)
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'platform_operations/data_lifecycle/partials/_domain_workspace.html',
+            lifecycle=context,
+        )
+    return render_template('platform_operations/data_lifecycle/index.html', lifecycle=context)
 
 
 @bp.post('/archives/<archive_id>/verify')
