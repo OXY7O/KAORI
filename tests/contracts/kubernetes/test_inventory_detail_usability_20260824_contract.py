@@ -97,45 +97,42 @@ def test_kubernetes_inventory_modal_values_keep_identifiers_without_copy_control
     assert "{'label': 'Cluster IP', 'value': service.cluster_ip}" in read(sources['services'])
 
 
-def test_shared_inventory_copy_is_opt_in_and_other_renderers_ignore_legacy_copy_flags() -> None:
+def test_shared_inventory_renderers_ignore_legacy_copy_flags() -> None:
     from jinja2 import Environment, FileSystemLoader
 
     source = read('app/templates/components/details/_detail_content.html')
-    technical = source.split('{% macro inventory_technical_row(', 1)[1].split('{%- endmacro %}', 1)[0]
-    assert '{% if copyable %}data-kaori-copy-root{% endif %}' in technical
-    assert '{% if copyable %}data-kaori-copy-source{% endif %}' in technical
-    assert '{% if copyable %}{{ inventory_copy_button(label) }}{% endif %}' in technical
-
-    for macro in ('inspector_technical_row', 'inventory_fact_grid'):
+    for macro in ('inventory_technical_row', 'inspector_technical_row', 'inventory_fact_grid'):
         body = source.split('{% macro ' + macro + '(', 1)[1].split('{%- endmacro %}', 1)[0]
         assert 'data-kaori-copy-' not in body, macro
         assert 'inventory_copy_button(' not in body, macro
-        assert 'can_copy' not in body, macro
+        assert 'data-lucide="copy"' not in body, macro
+
+    # Retain the signature for existing callers without re-enabling Inventory clipboard.
+    assert (
+        "macro inventory_technical_row(label, value='-', break_all=false, "
+        "nowrap=false, class_name='', copyable=false)"
+    ) in source
 
     env = Environment(loader=FileSystemLoader(str(ROOT / 'app/templates')), autoescape=True)
     module = env.get_template('components/details/_detail_content.html').module
     uid = '7f1769e7-f7a7-42e1-82f0-2898557100e3'
     ip = '10.21.18.8'
-
-    opt_in = str(module.inventory_technical_row('UID', uid, copyable=True))
-    assert uid in opt_in
-    assert 'data-kaori-copy-root' in opt_in
-    assert 'data-kaori-copy-source' in opt_in
-    assert 'data-kaori-copy-button' in opt_in
-    assert 'aria-label="Copy UID"' in opt_in
-
-    non_copyable = (
+    renderings = (
         str(module.inventory_technical_row('UID', uid)),
+        str(module.inventory_technical_row('UID', uid, copyable=True)),
+        str(module.inventory_technical_row('UID', uid, copyable=False)),
         str(module.inspector_technical_row('System UUID', uid, copyable=True)),
         str(module.inventory_fact_grid([{'label': 'Pod IP', 'value': ip, 'copyable': True}], columns=2)),
     )
-    for rendered, expected_value in zip(non_copyable, (uid, uid, ip), strict=True):
-        assert expected_value in rendered
+    for rendered, value in zip(renderings, (uid, uid, uid, uid, ip), strict=True):
+        assert value in rendered
         assert 'data-kaori-copy-' not in rendered
         assert 'data-lucide="copy"' not in rendered
         assert 'aria-label="Copy ' not in rendered
         assert '<button' not in rendered
 
+    # The named helper is kept for compatibility; none of the Inventory fact
+    # renderers above may invoke it. Global clipboard support is untouched.
     assert 'macro inventory_copy_button(label)' in source
     assert 'data-kaori-copy-button' in source
 
