@@ -28,6 +28,7 @@ from app.kubernetes.governance.tls_certificates.constants import (
 from app.kubernetes.governance.tls_certificates.mutation import (
     TLSSecretIdentityError,
     patch_tls_secret,
+    preflight_tls_secret,
     read_uploaded_pair,
 )
 from app.kubernetes.governance.tls_certificates.sync_state import (
@@ -406,6 +407,25 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
             'TLS coverage admission blocked this bulk operation. No Secret was updated.',
             errors=coverage_blockers,
         )
+    # Verify the immutable live identity of the entire group before the
+    # first provider PATCH. A race after this point is still stopped by
+    # resourceVersion preconditions on dry-run and the actual PATCH.
+    prevalidated_versions: dict[int, str] = {}
+    for target in targets:
+        try:
+            prevalidated_versions[int(target.id)] = preflight_tls_secret(target)
+        except Exception as exc:
+            if isinstance(exc, TLSSecretIdentityError):
+                current_app.logger.warning('Bulk TLS rotation preflight rejected a stale target identity.')
+                reason = str(exc)
+            else:
+                current_app.logger.warning('Bulk TLS rotation preflight could not verify a live target.')
+                reason = 'Live Secret identity verification failed. Synchronize TLS inventory and retry.'
+            return _bulk_failure_result(
+                'TLS target identity admission blocked this bulk operation. No Secret was updated.',
+                errors=[f'{target.cluster_id}/{target.namespace}/{target.secret_name}: {reason}'],
+            )
+
     bulk_job_id = uuid.uuid4().hex[:16]
     actor = cast(User, current_user)
     actor_user_id = getattr(actor, 'id', None)
@@ -416,7 +436,12 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
         old_fingerprint = target.fingerprint_sha256
         old_not_after = target.not_after
         try:
-            patch_tls_secret(target, cert_bytes, key_bytes)
+            patch_tls_secret(
+                target,
+                cert_bytes,
+                key_bytes,
+                prevalidated_resource_version=prevalidated_versions[int(target.id)],
+            )
         except Exception as exc:
             identity_rejected = isinstance(exc, TLSSecretIdentityError)
             if identity_rejected:
