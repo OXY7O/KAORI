@@ -11,6 +11,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.access.scope_policy import evaluate_exact_vault_instance_case_scope
 from app.extensions.db import db
 from app.intelligence.alert_intelligence.vault_provider_plan import (
     _CASE_KEY_RE,
@@ -49,10 +50,14 @@ def _actor_authorized(actor_id: int) -> bool:
     if type(actor_id) is not int or actor_id < 1:
         return False
     actor = db.session.get(User, actor_id)
+    # Global Super Admin permissions are NOT source-scoped authority.
+    # Require an explicit active Role with every normalized capability.
     return bool(
         actor is not None
         and actor.is_active
-        and all(actor.has_permission(permission) for permission in _REQUIRED_PERMISSIONS)
+        and actor.role_record is not None
+        and actor.role_record.is_active
+        and set(_REQUIRED_PERMISSIONS).issubset(actor.role_record.permission_keys())
     )
 
 
@@ -168,6 +173,17 @@ def admit_vault_provider_cases(
             db.session.rollback()
             return _result('unavailable')
         binding, source = eligible
+        # Scope is a separate mandatory, row-locked authorization decision.
+        # Neither global RBAC, Super Admin nor a Vault mount grant admits
+        # writes to a different Vault instance.
+        scope = evaluate_exact_vault_instance_case_scope(
+            actor_user_id=actor_user_id,
+            instance_id=int(binding.asset_key),
+            now=instant,
+        )
+        if not scope.allowed:
+            db.session.rollback()
+            return _result('forbidden')
         # Lock the exact source generation while the planner and case writes
         # operate. A concurrent producer updating the snapshot must wait.
         snapshot = db.session.execute(
