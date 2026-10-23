@@ -253,15 +253,24 @@ def run_vault_alert_observation_job(
         or job.operation != OPERATION or job.scope_type != 'secrets_pki_alert_fleet'
         or job.scope_key != 'all' or job.status not in {'queued', 'retrying'}
         or job.integration_type != 'secrets_pki'
+        or job.requested_by_user_id is None
+        or not isinstance(job.payload_json, dict)
+        or job.payload_json.get('trigger_type') != 'manual'
     ):
         return {'status': 'blocked', 'observed_sources': 0, 'failed_sources': 0}
     ctx = JobExecutionContext(task_id, job_execution_id)
+    try:
+        current_targets = build_vault_alert_observation_targets()
+    except Exception:
+        # Do not surface source/database exception details through JobExecution.
+        db.session.rollback()
+        current_targets = []
     if (
         not isinstance(binding_ids, list)
         or not 1 <= len(binding_ids) <= _MAX_VAULT_SOURCES
         or any(type(item) is not int or item < 1 for item in binding_ids)
         or len(set(binding_ids)) != len(binding_ids)
-        or binding_ids != build_vault_alert_observation_targets()
+        or binding_ids != current_targets
     ):
         ctx.fail('Vault Alert Source target admission changed.', error_code='invalid_source_scope')
         failed_count = len(binding_ids) if isinstance(binding_ids, list) else 0
