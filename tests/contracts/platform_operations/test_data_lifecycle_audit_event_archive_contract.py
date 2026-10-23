@@ -143,7 +143,8 @@ def test_audit_event_scope_and_hot_history_counts_are_super_admin_only() -> None
     assert "ArchiveArtifact.domain.notin_(exclude_domains)" in engine
     assert "if value == 'audit_event' and not (" in routes
     assert "def _check_audit_event_governance(domain_name: str, user_id: int)" in service
-    assert "if user is None or not user.is_active or not user.is_super_admin or user.auth_source != 'database':" in service
+    assert "user is None or not user.is_active" in service
+    assert "not user.is_super_admin or user.auth_source != 'database':" in service
     assert service.count("_check_audit_event_governance(domain_name, user_id)") == 2
     assert "is_super_admin: Mapped[bool]" in model
 
