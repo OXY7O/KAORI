@@ -39,6 +39,12 @@
               class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start"
               data-provider-form>
             {{ form.hidden_tag() }}
+            {% if not provider %}
+                <input type="hidden"
+                       name="connection_test_proof"
+                       data-registration-proof
+                       value="{{ registration_proof|default('') }}">
+            {% endif %}
             <main class="min-w-0 space-y-5">
                 {% include "access/identity_providers/partials/_provider_selector.html" %}
                 <section class="{{ operational_section_card.shell_classes() }}">
@@ -86,7 +92,14 @@
                 {% include "access/identity_providers/partials/_ldap_configuration.html" %}
                 {% include "access/identity_providers/partials/_sso_configuration.html" %}
                 <footer class="flex flex-col gap-4 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:px-5 lg:flex-row lg:items-center lg:justify-between">
-                    <p class="min-w-0 text-xs leading-5 text-content-muted lg:flex-1">Test the adapter contract before saving; enable only after the expected authentication flow succeeds.</p>
+                    {% if provider %}
+                        <p class="min-w-0 text-xs leading-5 text-content-muted lg:flex-1">Update provider configuration; validate before enabling authentication.</p>
+                    {% else %}
+                        <p class="min-w-0 text-xs leading-5 text-content-muted lg:flex-1"
+                           data-connection-test-state
+                           role="status"
+                           aria-live="polite">{{ 'Connection Verified — configuration ready to save.' if registration_proof else 'Connection Test Required — test this configuration before saving.' }}</p>
+                    {% endif %}
                     <div class="flex flex-wrap justify-end gap-2 lg:shrink-0">
                         <a href="{{ url_for('identity_providers.index', tab='providers') }}"
                            class="{{ action_button.classes('secondary') }}">Cancel</a>
@@ -94,7 +107,10 @@
                                 formaction="{{ url_for('identity_providers.test_configuration', provider_id=provider.id) if provider else url_for('identity_providers.test_configuration') }}"
                                 formmethod="post"
                                 class="{{ action_button.classes('secondary') }}"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button>
-                        <button type="submit" class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4"></i>Save Provider</button>
+                        <button type="submit"
+                                {% if not provider %}data-registration-save {% if not registration_proof %}disabled{% endif %}{% endif %}
+                                class="{{ action_button.classes('primary') }} disabled:cursor-not-allowed disabled:opacity-50"
+                                {% if not provider and not registration_proof %}title="Complete Test Connection before saving" aria-disabled="true"{% endif %}><i data-lucide="save" class="h-4 w-4"></i>Save Provider</button>
                     </div>
                 </footer>
             </main>
