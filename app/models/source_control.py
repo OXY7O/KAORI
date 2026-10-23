@@ -14,6 +14,7 @@ from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, In
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
+from app.models.integration import IntegrationInstance
 from app.security.credentials import EncryptedText
 
 
