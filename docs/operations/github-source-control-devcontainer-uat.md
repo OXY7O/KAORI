@@ -2,15 +2,15 @@
 
 Status: **Candidate only — not human accepted or released**.
 Authority: #559, SC-01 #2740, SC-02 #2741, SC-03 #2742; authorization #724.
-Branch: `kaori/review/github-source-control-uat`. Official CI/CD remains **HOLD**.
+Branch: `kaori/review/staging-uat`. Official CI/CD remains **HOLD**.
 
 ## 1. Local-only admission
 
-This isolated review branch contains the stacked workstreams and makes the GitHub provider `available` for Dev Container testing only. SC-01/SC-02/SC-03 issue work branches and official Draft PRs retain the `planned` lifecycle.
+The shared temporary UAT aggregation branch now includes the reviewed SC-01/SC-02/SC-03 workstreams and makes the GitHub provider `available` for Dev Container testing. Other Vault/Notification Channels workstreams on this holding branch remain intact. SC-01/SC-02/SC-03 issue work branches and official Draft PRs retain the `planned` lifecycle until formal admission.
 
 Use ignored local APP_ENV=development configuration, never a committed secret file:
 
-- No UAT enable environment variable is required. The isolated UAT branch's `available` provider matrix enables GitHub directly. Credential registration and installation-specific operations still require an active local super-admin with `integrations.manage` until #724 is admitted.
+- No UAT enable environment variable is required. The shared holding branch's `available` provider matrix enables GitHub directly. Credential registration and installation-specific operations still require an active local super-admin with `integrations.manage` until #724 is admitted.
 - `SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED=false` — leave HTTP webhook disabled until authenticated signature/replay negatives are reviewed.
 - `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED=false` — leave maintenance inbox consumer disabled until worker/crash recovery is reviewed.
 
@@ -20,9 +20,21 @@ Restart Flask, Celery workers and Beat after local flag changes. Register the Gi
 
 In the Dev Container running this UAT branch, sign in as an active local super-admin and open **Integrations → Source Control → GitHub**. The primary sidebar catalog and active-page/breadcrumb ownership reuse KAORI's existing Integrations navigation; no custom menu was added. GitHub is immediately available for registration and review without `SOURCE_CONTROL_GITHUB_UAT_ENABLED`.
 
-If the new entry is not visible, verify that the running web container uses branch `kaori/review/github-source-control-uat`, restart the Flask web process after checkout, and verify the user has `integrations.manage`. Branch `kaori/review/staging-uat` has **not** been updated as part of this isolated review workstream.
+If the new entry is not visible, verify that the running web container uses branch `kaori/review/staging-uat`, restart the Flask web process after checkout, and verify the user has `integrations.manage`. Source Control has now been integrated into `kaori/review/staging-uat` using a reviewed conflict-resolved merge commit. No branch named `kaori/staging` or `main` was changed.
 
 ## 2. Existing Developer Check — commands to run
+
+To update the shared holding branch without discarding other reviewed UAT workstreams:
+
+```bash
+git fetch origin
+git switch kaori/review/staging-uat
+git pull --ff-only origin kaori/review/staging-uat
+```
+
+GitHub App review does **not** require `SOURCE_CONTROL_GITHUB_UAT_ENABLED`; continue keeping the webhook ingress and consumer disabled during initial testing.
+
+
 
 ```bash
 git branch --show-current
@@ -52,7 +64,7 @@ docker compose -f compose.yml -f .devcontainer/compose.devcontainer.yml run --rm
 
 Expected revision chain: `20261023_scope_policy_storage → 20261023_channel_retire → 20261023_sc_identity → 20261023_sc_app_credential → 20261023_sc_webhook_delivery → 20261023_sc_repo_collection → 20261023_sc_webhook_job_link`.
 
-The `20261023_channel_retire` parent was restored byte-identically from `kaori/review/staging-uat` because it was missing in the SC-03 stacked work branch. Verify upgrade/downgrade on an explicitly disposable PostgreSQL database, not user data.
+The pre-existing `20261023_channel_retire` Alembic parent is retained byte-identically from this holding branch. The Source Control migration children were added after this approved parent. Verify upgrade/downgrade on an explicitly disposable PostgreSQL database, not user data.
 
 ## 4. Worker preflight
 
@@ -89,4 +101,4 @@ Only after worker/recovery review, opt into `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENA
 
 Collect SHA, migration graph and DB upgrade/downgrade, `ruff`/`pytest`/`pyright`/`djlint`/verifiers, queue registration, two redacted real installation scopes, JobExecution IDs/status, HMAC negative results and UI screenshots in both themes. Record FAIL and remediation separately. **Human acceptance is mandatory** for this user-visible and security-sensitive integration.
 
-No merge to `kaori/staging` or `main`, no official CI/CD admission and no production flags until explicit authorization.
+The code is assembled on the shared **temporary** `kaori/review/staging-uat` holding branch for Dev Container UAT. No merge to official `kaori/staging` or `main`, no official CI/CD admission and no production flags until explicit authorization.
