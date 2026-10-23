@@ -1,4 +1,10 @@
-<div id="source-control-inventory" class="space-y-4 p-5 sm:p-6" aria-live="polite">
+<div id="source-control-inventory"
+     class="space-y-4 p-5 sm:p-6"
+     aria-live="polite"
+     hx-get="{{ url_for('github_source_uat.inventory_table', installation_id=installation.id, page=inventory.page, per_page=inventory.per_page) }}"
+     hx-trigger="every 15s"
+     hx-target="#source-control-inventory"
+     hx-swap="outerHTML">
     <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-content-secondary">
         <div>
             <span class="font-semibold text-content-primary">Coverage: {{ inventory.coverage|replace('_', ' ')|title }}</span>
