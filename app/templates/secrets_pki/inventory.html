@@ -126,6 +126,18 @@
                 </a>
             {% endcall %}
         {% endif %}
+        {% call section_card.render('Certificate & PKI Workspaces',
+            'Review evidence-qualified public certificates, issuer coverage and expiration windows.',
+            'certificate') %}
+            <nav class="flex flex-wrap gap-3" aria-label="PKI evidence navigation">
+                <a class="text-sm font-semibold text-kaori-primary hover:underline"
+                   href="{{ url_for('secrets_pki.certificates') }}">Certificates</a>
+                <a class="text-sm font-semibold text-kaori-primary hover:underline"
+                   href="{{ url_for('secrets_pki.pki') }}">PKI</a>
+                <a class="text-sm font-semibold text-kaori-primary hover:underline"
+                   href="{{ url_for('secrets_pki.expiration') }}">Expiration</a>
+            </nav>
+        {% endcall %}
         {{ section_intro.render(
             'Additional Evidence Domains',
             'PKI issuers, issued certificates, leases and consumer mappings require independent committed-source contracts.',

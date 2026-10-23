@@ -90,6 +90,42 @@ def scoped_registry() -> ResponseReturnValue:
     return scoped_registry_response()
 
 
+@secrets_pki_bp.get('/certificates')
+@permission_required('secrets_pki.view')
+def certificates() -> ResponseReturnValue:
+    from app.secrets_pki.evidence_workspaces import build_pki_evidence_workspace
+
+    return render_template(
+        'secrets_pki/evidence_workspace.html',
+        **build_pki_evidence_workspace(
+            kind='certificates',
+            can_view_kubernetes_tls=current_user.has_permission('tls_certificates.view'),
+        ),
+    )
+
+
+@secrets_pki_bp.get('/pki')
+@permission_required('secrets_pki.view')
+def pki() -> ResponseReturnValue:
+    from app.secrets_pki.evidence_workspaces import build_pki_evidence_workspace
+
+    return render_template(
+        'secrets_pki/evidence_workspace.html',
+        **build_pki_evidence_workspace(kind='pki'),
+    )
+
+
+@secrets_pki_bp.get('/expiration')
+@permission_required('secrets_pki.view')
+def expiration() -> ResponseReturnValue:
+    from app.secrets_pki.evidence_workspaces import build_pki_evidence_workspace
+
+    return render_template(
+        'secrets_pki/evidence_workspace.html',
+        **build_pki_evidence_workspace(kind='expiration'),
+    )
+
+
 @secrets_pki_bp.get('/lifecycle')
 @permission_required('secrets_pki.view')
 def lifecycle() -> ResponseReturnValue:
