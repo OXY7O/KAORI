@@ -324,3 +324,27 @@ def test_foreign_alertmanager_binding_profile_and_routing_fail_closed(store):
     case.routing_override_reason = None
     db.session.commit()
     assert workspace._read_cases(instance_id=ids.vault, page='1')['status'] == 'unavailable'
+
+
+def test_full_pages_use_existing_kaori_app_layout():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    for name in ('vault_provider_cases.html', 'vault_provider_case_details.html'):
+        code = (root / 'app/templates/intelligence' / name).read_text(encoding='utf-8')
+        assert '{% extends "layouts/app.html" %}' in code
+        assert "{% include 'intelligence/partials/" in code
+
+
+def test_case_audit_must_commit_after_case_query_not_before():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    code = (
+        root / 'app/intelligence/alert_intelligence/vault_case_workspace.py'
+    ).read_text(encoding='utf-8')
+    section = code.split('def _admit_read(', 1)[1].split('def _safe_case(', 1)[0]
+    assert 'stage_operational_activity(' in section
+    assert 'db.session.commit()' not in section
+    page = code.split('def vault_cases_response(', 1)[1].split('def vault_case_details_response(', 1)[0]
+    assert page.index('_read_cases(') < page.index('db.session.commit()')

@@ -152,7 +152,7 @@ def vault_cases_response() -> ResponseReturnValue:
     instance_id = _instance_id()
     if instance_id is None:
         return render_template(
-            'intelligence/partials/_vault_provider_cases.html',
+            'intelligence/vault_provider_cases.html',
             instance_id=None, page_data=None,
         )
     if not _admit_read(instance_id):
@@ -167,7 +167,7 @@ def vault_cases_response() -> ResponseReturnValue:
             db.session.rollback()
             abort(404)
     return render_template(
-        'intelligence/partials/_vault_provider_cases.html',
+        'intelligence/vault_provider_cases.html',
         instance_id=instance_id, page_data=result,
     )
 
@@ -189,7 +189,7 @@ def vault_case_details_response(public_id: str) -> ResponseReturnValue:
             abort(404)
         db.session.commit()
         return render_template(
-            'intelligence/partials/_vault_provider_case_details.html',
+            'intelligence/vault_provider_case_details.html',
             case=_safe_case(row), instance_id=instance_id,
         )
     except SQLAlchemyError:
