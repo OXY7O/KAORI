@@ -101,3 +101,24 @@ def test_no_custom_celery_or_webhook_dispatcher():
     assert 'apply_async' not in src
     assert 'send_task' not in src
     assert 'enqueue_canonical_job' not in src
+
+
+
+def test_unexpected_publish_db_error_rolls_back_and_preserves_prior_snapshot(monkeypatch):
+    lease = RepositoryGeneration(installation_id=9, generation=6)
+    session = FakeSession()
+    calls = []
+    monkeypatch.setattr(repository_sync, 'reserve_generation', lambda *_: lease)
+    monkeypatch.setattr(repository_sync, 'collect_installation_repositories', lambda *_: object())
+    monkeypatch.setattr(
+        repository_sync, 'publish_generation',
+        lambda *_: (_ for _ in ()).throw(RuntimeError('database unavailable')),
+    )
+    monkeypatch.setattr(
+        repository_sync, 'record_generation_failure',
+        lambda *_: calls.append('mark-degraded'),
+    )
+    with pytest.raises(RuntimeError, match='database unavailable'):
+        repository_sync.synchronize_installation(session, _installation())
+    assert session.rollbacks == 1
+    assert calls == ['mark-degraded']

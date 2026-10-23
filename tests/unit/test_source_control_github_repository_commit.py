@@ -236,3 +236,25 @@ def test_no_provider_authority_no_reservation(state, monkeypatch):
     with pytest.raises(RepositoryGenerationError, match='not admitted'):
         reserve_generation(session, installation)
     assert session.get(SourceRepositoryCollectionState, installation.id) is None
+
+
+
+def test_mid_scan_provider_revocation_can_mark_degraded_without_removing_grants(
+    state, monkeypatch,
+):
+    session, installation = state
+    publish_generation(
+        session, installation, reserve_generation(session, installation),
+        _evidence(_item()),
+    )
+    later = reserve_generation(session, installation)
+    monkeypatch.setattr(
+        repository_commit, '_admitted',
+        lambda _: (_ for _ in ()).throw(RepositoryGenerationError('App revoked')),
+    )
+    assert record_generation_failure(session, installation, later)
+    row = session.get(SourceRepositoryCollectionState, installation.id)
+    assert row.status == 'degraded'
+    assert row.committed_generation == 1
+    assert row.observed_count == 1
+    assert _current(session, installation)[0].access_status == 'granted'
