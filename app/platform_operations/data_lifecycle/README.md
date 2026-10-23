@@ -34,6 +34,28 @@ The page contains three controlled, server-owned workspaces. Only the active wor
 
 Only registered archive adapters are displayed. Retention Policies remain preview-first and manual execution is fail-closed when the persisted policy is missing, while a policy is paused, or while another lifecycle execution for that domain is active. Archive History preserves filters, pagination, and Rows context when an operator re-verifies evidence. Archive Storage reports the newest verified evidence that matches the currently configured storage profile across all managed domains, rather than inheriting the selected policy domain. Future domains are not advertised as placeholders before their adapter and safety contract exist. The policy workspace also exposes **Lifecycle Coverage** so operators can see which product surfaces share each source model: Activity Audit and persistent Notification Center rows share `operational_activity`, while Kubernetes, MinIO Object Storage, Metrics Source, and Alertmanager Recent Runtime Observations share `runtime_observation`. Reusable Analytics and Forecast materializations are governed by the `analytics_snapshot` adapter with explicit stale-serve protection. Generated report metadata and retained PDF/XLSX/CSV artifacts are governed by the `generated_report` adapter with active-generation protection and binary checksum verification. Closed Alert Operations evidence is governed by `alert_incident` with a searchable retained case index; normalized Tenant/Kubernetes audit correlation is governed by `tenant_audit_evidence` without copying raw provider audit logs. The current registered adapter catalog contains nine domains (including paused Notification Delivery and AuditEvent archive-only extensions); the v1.3 Final Lock is the earlier four-domain admission record. The Generated Reports policy is seeded paused and must be explicitly enabled after archive-storage readiness and Preview are reviewed.
 
+## Retention Policies domain navigation (#2915)
+
+The approved 4:8 desktop **Master–Detail** workspace keeps its server-owned
+policy panel. The nine-domain left navigation is now a compact Data Domains
+selector with persistent search/header, source status labels, hot/archive
+summaries and a scrollable **list only** on `xl` screens. The capped
+`min(65dvh, 36rem)` list height avoids stretching the sidebar to the
+variable-length right-hand policy form. It does not create a fixed-height
+policy panel or a global page scroll trap.
+
+On smaller screens, a disclosure reveals the full domain list, with ordinary
+href links retained for no-JavaScript navigation. Selecting a domain keeps
+the existing URL-pushing HTMX detail swap, active Violet selection, and
+read-only RBAC. A no-match search produces an accessible empty state.
+Execution Boundary remains a fixed section **outside the scrolling list**,
+with detailed ownership text in the existing KAORI Info Tip and permission-
+scoped link to canonical Jobs & Executions.
+
+No policy execution, retention setting, archive evidence, storage, API,
+permission or domain ownership semantics changed. Keyboard, mobile,
+light/dark, HTMX and visual QA still require DevContainer human UAT.
+
 ## RBAC
 
 - `platform_operations.view_data_lifecycle`
