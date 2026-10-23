@@ -63,6 +63,11 @@ bundle distribution.
   direct CLI/task invocation without an authorized requester and workers
   running after role revocation, deletion or a policy change. Queue admission
   by itself is not durable authorization.
+- **Verification boundary:** a known archive UUID does not grant permission.
+  Even a general Data Lifecycle manager must pass the AuditEvent Local
+  Database Super Admin authorization **before** archive verification reads
+  storage or updates archive integrity state; unauthorized Verify-by-ID is
+  HTTP 403.
 - **Current DENY:** all archive data/manifest download even with
   `platform_operations.export_data_lifecycle`, all automatic scheduling,
   all hot cleanup, all archive-object purge, all per-record archive search.
