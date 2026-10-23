@@ -223,9 +223,9 @@ ambiguous and denies. Revoked, expired, pending, foreign, unavailable or
 inactive-instance policies deny without existence disclosure.
 
 Only an explicitly supplied canonical Vault instance ID can be viewed.
-The server locks the existing scope policy/revision for evaluation and
-persists generic sensitive-read Activity Audit before projecting case
-records. Audit failure denies the read. The query is capped at 100 records,
+The server locks the existing scope policy/revision, reads qualifying
+case records, and commits generic Activity Audit evidence in the same
+transaction before rendering. Audit persistence failure denies case access. Audit failure denies the read. The query is capped at 100 records,
 uses existing pagination default five, and rejects any unqualified case
 rather than silently showing a partial trusted population. Case details
 re-evaluate the policy and exact asset before revealing safe, generic

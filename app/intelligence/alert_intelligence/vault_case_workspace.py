@@ -43,7 +43,8 @@ def _admit_read(instance_id: int) -> bool:
         db.session.rollback()
         return False
     try:
-        # Mandatory audit is persisted before issuing any scoped response.
+        # Stage mandatory audit inside the same scope-lock transaction as
+        # the ensuing case query. Commit only after source rows qualify.
         # Never include case identity, Vault path, source payload or tokens.
         stage_operational_activity(
             user_id=actor_id,
@@ -59,7 +60,6 @@ def _admit_read(instance_id: int) -> bool:
                 'policy_revision': decision.revision,
             },
         )
-        db.session.commit()
         return True
     except Exception:
         db.session.rollback()
@@ -157,10 +157,18 @@ def vault_cases_response() -> ResponseReturnValue:
         )
     if not _admit_read(instance_id):
         abort(404)
+    result = _read_cases(instance_id=instance_id, page=request.args.get('page', '1'))
+    if result['status'] != 'ready':
+        db.session.rollback()
+    else:
+        try:
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            abort(404)
     return render_template(
         'intelligence/partials/_vault_provider_cases.html',
-        instance_id=instance_id,
-        page_data=_read_cases(instance_id=instance_id, page=request.args.get('page', '1')),
+        instance_id=instance_id, page_data=result,
     )
 
 
@@ -177,7 +185,9 @@ def vault_case_details_response(public_id: str) -> ResponseReturnValue:
             AlertCase.asset_key == str(instance_id),
         ).first()
         if row is None or not _case_qualified(row, instance_id=instance_id):
+            db.session.rollback()
             abort(404)
+        db.session.commit()
         return render_template(
             'intelligence/partials/_vault_provider_case_details.html',
             case=_safe_case(row), instance_id=instance_id,
