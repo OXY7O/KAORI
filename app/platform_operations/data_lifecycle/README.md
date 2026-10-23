@@ -55,6 +55,28 @@ aggregate and channel dependency continuity plus compaction
 for DL-E2E-01–20 (#2907). UI acceptance does not close these issues or
 authorize official deployment gates.
 
+## Archive Storage evidence-first UI composition (#2977)
+
+The Archive Storage workspace uses the shared KAORI header, four KPI
+cards and semantic status labels. **Reachable** means only that the web
+container can reach the configured S3 endpoint; **Ready** may indicate a
+writable local directory. Neither proves verified data/manifest
+checksums. The status label and Storage Interpretation use an
+informational, non-success tone until a profile-matching archive has
+verified evidence. Only authoritative `last_verified_at` plus a
+verified/ready profile can show the success evidence tone. Inaccessible
+or incomplete targets display warning. The UI must not imply that a
+healthy worker or an accepted TCP connection is archive verification.
+
+Archive Target Contract and Execution Contract use balanced 6:6
+responsive columns. The execution details share compact 2-column
+cards at `sm` and wider; all provider/location/endpoint/bucket/queue,
+dispatcher/retry/purge-limit/worker-isolation fields remain accessible.
+The archive-first flow is still four steps, but cleanup is explicitly
+**conditional on source-specific admission** (particularly Notification
+Delivery #2868–#2870 and AuditEvent #2891/#2892). This change is
+presentation-only and does not alter lifecycle/storage provider behavior.
+
 ## Workspace contract
 
 The page contains three controlled, server-owned workspaces. Only the active workspace is built on a request, so Archive History queries and Archive Storage probes do not run while an operator is editing Retention Policies:
