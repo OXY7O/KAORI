@@ -59,3 +59,39 @@ delete `NotificationDelivery` rows. Only a separately admitted
 cumulative evidence could safely compact or delete the hot journal.
 The present adapter remains archive-only and paused. This guard does not
 claim that the full #2850 cleanup foundation or runtime UAT has passed.
+
+## AuditEvent — paused manual archive-only boundary (#2890, 2026-10-23)
+
+The **ninth** registered Data Lifecycle adapter `audit_event` governs the
+`audit_events` table independently from `operational_activity` (shared
+Notification-backed Activity Register), `job_execution`, and
+`tenant_audit_evidence`. Access → Activity Audit Administrative Source
+Evidence is only a **permission-scoped hot projection** of selected
+`AuditEvent` producers; the archive domain is broader. Never treat these
+sources as one store or duplicate committed rows in the Access UI.
+
+This first implementation provides bounded ID/cutoff Preview, immutable
+JSONL.GZ + manifest and shared checksum verification, but is **paused by
+default** (no database policy row created by ordinary GET), manual only,
+and **archive-only**. Fallback defaults 365 hot / 3650 archive days and
+batch 250 are **proposals for operator review**, not an approved legal
+retention policy. Source record count and hot evidence remain unchanged
+after archive-only processing. Archive serialization stores only record
+identity, nullable actor FK and sanitized target/action/summary/timestamp.
+It intentionally omits free-form metadata, IP, user agent and any fabricated
+immutable actor snapshot; such minimally redacted bundles **are not
+sufficient evidence for hot cleanup**. Export/download of the bundles is
+blocked until #2891 verifies producer-by-producer source permissions and
+privacy. The Archive History view is artifact-level; no per-record cold
+search is provided.
+
+Server policy admission, queue admission, scheduled task, archive engine,
+and domain adapter **all fail closed** on hot cleanup/scheduling. The
+archive engine also rejects destructive archive-object purge for this
+domain pending legal-hold/retention governance; the scheduled worker does
+not auto-purge it during manual archive operation. This extension does
+not modify the historical v1.3 baseline or the existing admitted domain
+behavior. Related authority: foundation #2889, archive child #2890,
+source-security and retention policy #2891, verified compaction and
+permissioned archive lookup #2892. DevContainer functional/security UAT
+and official gates remain pending.
