@@ -1,0 +1,119 @@
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_primitives.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<div id="vault-provider-case-workspace" class="space-y-5">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('shield-alert', 'Central Alert Intelligence', 'key-round') %}
+                    <h1 class="{{ page_hero.title_classes() }}">Vault Provider AlertCases</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">
+                        Read-only committed AlertCases for an explicitly approved Vault instance.
+                        Missing source observations do not prove recovery.
+                    </p>
+                {% endcall %}
+            </div>
+        </div>
+    </section>
+    <section class="{{ table_ui.block_classes() }}">
+        <header class="{{ table_ui.block_header_classes() }}">
+            <div>
+                <h2 class="{{ table_ui.block_title_classes() }}">Authorized Vault Scope</h2>
+                <p class="{{ table_ui.block_description_classes() }}">
+                    Exact instance grant required; mount grants do not inherit case access.
+                </p>
+            </div>
+            <a href="{{ url_for('alert_intelligence.index') }}" class="{{ table_ui.action_classes() }}">
+                <i data-lucide="arrow-left" class="h-4 w-4"></i>Alert Intelligence
+            </a>
+        </header>
+        <form method="get" action="{{ url_for('alert_intelligence.vault_cases') }}"
+              class="{{ table_ui.filter_bar_classes() }}">
+            <label class="min-w-0 flex-1">
+                <span class="{{ table_ui.filter_label_classes() }}">Canonical Vault Instance ID</span>
+                <input name="instance_id" inputmode="numeric" pattern="[1-9][0-9]*"
+                       value="{{ instance_id if instance_id else '' }}"
+                       class="{{ table_ui.filter_input_classes() }}" required>
+            </label>
+            <button type="submit" class="{{ table_ui.action_classes() }}">Review Scope</button>
+        </form>
+        {% if page_data is none %}
+            <div class="p-5">
+                {% set blocked_state_label = "Instance Scope Required" %}
+                {% set blocked_state_title = "Select an Approved Vault Instance" %}
+                {% set blocked_state_description = "No fleet-wide access. Enter an exact authorized instance ID." %}
+                {% set blocked_state_tone = "unknown" %}
+                {% include 'components/states/_blocked_state.html' %}
+            </div>
+        {% elif page_data.status != 'ready' %}
+            <div class="p-5">
+                {% set blocked_state_label = "Evidence Unavailable" %}
+                {% set blocked_state_title = "Unable to Qualify Case Records" %}
+                {% set blocked_state_description = "Case evidence requires review; do not infer recovery." %}
+                {% include 'components/states/_blocked_state.html' %}
+            </div>
+        {% else %}
+            <div class="overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[760px]') }}">
+                    <caption class="sr-only">Read-only scoped Vault provider AlertCases</caption>
+                    <thead class="{{ table_ui.head_classes() }}">
+                        <tr>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Case</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Severity</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Source</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Workflow</th>
+                            <th scope="col" class="{{ table_ui.header_cell_classes() }}">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% for row in page_data.rows %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <p class="font-semibold text-content-primary">{{ row.title }}</p>
+                                    <p class="text-xs font-mono text-content-muted">{{ row.public_id }}</p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_label.status_label(row.severity|title, row.severity, size='compact') }}
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_label.status_label(row.source_state|title, 'warning' if row.source_state == 'unknown' else 'info', size='compact') }}
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ row.workflow_state|replace('_', ' ')|title }}
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <a class="{{ table_ui.action_classes() }}"
+                                       href="{{ url_for('alert_intelligence.vault_case_details', public_id=row.public_id, instance_id=instance_id) }}">
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="5" class="px-5 py-8 text-center text-content-muted">
+                                No admitted provider cases in this scope. This is not proof of source health.
+                            </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if page_data.pagination and page_data.pagination.total_pages > 1 %}
+                <nav aria-label="Vault case pagination"
+                     class="flex items-center justify-between border-t border-outline-subtle px-5 py-4">
+                    <span class="text-xs text-content-muted">
+                        Page {{ page_data.pagination.page }} of {{ page_data.pagination.total_pages }}
+                    </span>
+                    <div class="flex gap-3">
+                        {% if page_data.pagination.has_prev %}
+                            <a class="{{ table_ui.action_classes() }}"
+                               href="{{ url_for('alert_intelligence.vault_cases', instance_id=instance_id, page=page_data.pagination.prev_page) }}">Previous</a>
+                        {% endif %}
+                        {% if page_data.pagination.has_next %}
+                            <a class="{{ table_ui.action_classes() }}"
+                               href="{{ url_for('alert_intelligence.vault_cases', instance_id=instance_id, page=page_data.pagination.next_page) }}">Next</a>
+                        {% endif %}
+                    </div>
+                </nav>
+            {% endif %}
+        {% endif %}
+    </section>
+</div>
