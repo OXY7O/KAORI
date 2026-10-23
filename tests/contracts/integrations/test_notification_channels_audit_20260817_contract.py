@@ -47,6 +47,25 @@ def test_notification_overview_summarizes_committed_workspaces_not_provider_cata
     assert 'credential_payload' not in overview
 
 
+def test_delivery_activity_declares_hot_scope_and_authorized_lifecycle_handoff() -> None:
+    page = read('app/templates/integrations/delivery/notification_channels/index.html')
+    delivery = page.split("{% elif active_tab == 'delivery' %}", 1)[1]
+    assert "section_intro.render('Delivery Journal'," in delivery
+    assert 'Review hot committed attempts and retry evidence.' in delivery
+    assert 'archive bundles are governed separately in Data Lifecycle.' in delivery
+    assert 'Hot committed attempts and source evidence; archive history is artifact-level.' in delivery
+    assert "current_user.has_permission('platform_operations.view_data_lifecycle')" in delivery
+    assert "url_for('data_lifecycle.index', tab='policies', domain='notification_delivery')" in delivery
+    assert 'aria-label="Open Notification Delivery retention policy in Data Lifecycle"' in delivery
+    assert "header_actions=delivery_clear_action" in delivery
+    assert "table_registry.clear_filters_link('notification_channels.index'" in delivery
+    assert "table_registry.filter_form('notification_channels.index'" in delivery
+    assert "table_registry.footer('notification_channels.index'" in delivery
+    assert 'payload.delivery_pagination.allowed_per_page' in delivery
+    assert 'per_record_archive' not in delivery
+    assert "url_for('data_lifecycle.download'" not in delivery
+
+
 def test_notification_overview_uses_one_card_below_shared_section_intro() -> None:
     page = read('app/templates/integrations/delivery/notification_channels/index.html')
     overview = page.split("{% if active_tab == 'overview' %}", 1)[1].split(
