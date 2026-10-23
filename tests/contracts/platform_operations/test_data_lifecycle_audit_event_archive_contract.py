@@ -83,7 +83,7 @@ def test_policy_schedule_cleanup_and_archive_export_fail_closed_for_audit_event(
     assert "'cleanup_not_admitted'" in admission
     assert "if domain_name in {'notification_delivery', 'audit_event'}:" in presentation
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
-    assert 'Archive Only: administrative AuditEvent evidence stays in PostgreSQL' in ui
+    assert "data-lifecycle-audit-event-safety" in ui
     assert "if domain_name in {'audit_event', 'notification_delivery'}:" in worker
     assert "'scheduling_not_admitted'" in worker
     assert "'archive_purge'] = {'status': 'not_admitted'" in worker
@@ -96,15 +96,15 @@ def test_policy_schedule_cleanup_and_archive_export_fail_closed_for_audit_event(
 
 
 
-def test_disabled_audit_event_policy_explains_manual_safe_uat_without_enabling_cleanup() -> None:
+def test_audit_event_policy_has_normal_operational_pause_and_manual_archive_states() -> None:
     ui = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
     service = read('app/platform_operations/data_lifecycle/service.py')
     adapter = read('app/platform_operations/data_lifecycle/retention/domains/audit_event.py')
     assert "if selected.name == 'audit_event'" in ui
-    assert 'AuditEvent archive policy paused by default.' in ui
-    assert 'Preview remains read-only.' in ui
-    assert 'Policy enabled and Save Policy, then run Archive Only manually.' in ui
-    assert 'Saving does not start a job; scheduling, hot cleanup, archive download, and purge stay blocked.' in ui
+    assert 'Policy paused' in ui
+    assert 'Preview is available. Enable and save the policy' in ui
+    assert 'Manual Archive Only enabled' in ui
+    assert 'Archived bundles contain a limited redacted projection' in ui
     assert 'name="enabled"' in ui
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
     assert "'archive_only'" in service
