@@ -67,7 +67,7 @@ def test_policy_queue_schedule_and_ui_refuse_unadmitted_cleanup() -> None:
     assert "if domain_name in {'notification_delivery', 'audit_event'}:" in presentation
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
     assert 'Manual archive-only' in ui
-    assert 'Archive Only:' in ui
+    assert '<span class="font-semibold text-kaori-primary dark:text-kaori-accent">Archive Only</span>' in ui
     assert "data_lifecycle.run" in ui
     assert 'name="mode" value="archive_only"' in ui
 
@@ -76,7 +76,7 @@ def test_owner_and_coverage_are_truthful() -> None:
     presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
     assert "'notification_delivery': 'Notification Delivery'" in presentation
     assert "'notification_delivery': 'send'" in presentation
-    assert 'Hot records remain authoritative for deduplication' in presentation
+    assert 'Hot records retain deduplication, channel dependencies and lifetime counts' in presentation
     assert 'per-record archive search' in presentation
 
 
