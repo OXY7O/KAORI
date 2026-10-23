@@ -238,6 +238,30 @@ toast HTML in a response. User acceptance of Alert Incidents is **not**
 a pass for this Analytics UAT; keep Analytics cases NOT RUN until
 DevContainer evidence and human review.
 
+### Administrative Audit Events manual activation UAT (#2939)
+
+**Paused by default is expected.** Source authorization remains limited
+to active Local Database Super Admin; this temporary route is not a
+general audit export entitlement. The shorter domain description is
+"Source-owned administrative AuditEvent evidence; manual Archive Only."
+The coverage note remains explicit about separate Activity Register,
+Jobs, Tenant Audit Evidence, and pending retention/RBAC review.
+
+| Case | Expected result | UAT |
+| --- | --- | --- |
+| Disabled/absent persisted policy | Preview remains read-only; Archive Only disabled, no jobs | NOT RUN |
+| Authorized manual enable/save | Success toast + Activity Audit, no routine Deck; committed policy enabled/Archive Only/unscheduled; no job starts on Save | NOT RUN |
+| Enabled state refresh | Manual Archive Only enabled message, Archive Only available, no scheduler/cleanup/export controls unlocked | NOT RUN |
+| Manual Archive Only with synthetic eligible records | Info toast + canonical maintenance JobExecution; immutable verified archive/manifest, hot AuditEvent row preserved | NOT RUN |
+| Scheduled spoof/LDAP/non-admin/inactive requester, cleanup/download/purge | Authorization fails closed before mutation, actionable warning/error Deck | NOT RUN |
+| Disable/save after UAT | Success toast, disabled state restored; worker refuses new archive | NOT RUN |
+
+Execute with disposable UAT source/storage and record exact holding
+commit; the synthetic contract
+`tests/contracts/platform_operations/test_data_lifecycle_audit_event_manual_uat_contract.py`
+covers the toggles and safety boundaries but **does not** substitute for
+actual PostgreSQL, Celery, Archive Storage, negative RBAC, or operator UAT.
+
 ## 4. Execution / failure-injection matrix
 
 Every row starts **NOT RUN**; mark PASS only with exact SHA and inspected
