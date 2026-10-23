@@ -252,6 +252,20 @@ def test_capacity_decision_modal_uses_single_evidence_surface_and_quiet_traceabi
     )
     assert 'group-open:rotate-180' in dialog
     assert 'px-4 py-3 text-left focus-visible:' in dialog
+
+    # The fixed footer follows the scrollable evidence body and reuses the
+    # native dialog Close action, independent of committed Allow/Block state.
+    assert 'min-h-0 flex-1 overflow-y-auto bg-surface-page' in dialog
+    assert 'aria-label="Admission Evidence dialog actions"' in dialog
+    assert dialog.index('</header>') < dialog.index('min-h-0 flex-1 overflow-y-auto') < dialog.index('<footer')
+    footer = dialog.split('<footer', 1)[1].split('</footer>', 1)[0]
+    assert 'border-t border-outline-subtle bg-surface-card' in footer
+    assert 'justify-end' in footer
+    assert 'data-kaori-dialog-close' in footer
+    assert 'type="button"' in footer
+    assert 'class="{{ table_ui.action_classes() }}"' in footer
+    assert re.search(r'>\s*Close\s*</button>', footer)
+    assert dialog.count('data-kaori-dialog-close') == 2
     assert 'hx-post' not in dialog
     assert '<form' not in dialog
 

@@ -320,7 +320,7 @@ Recorded/Cutoff and capacity dataset/snapshot state use a compact two-column
 definition list. Traceability is a quiet, default-closed native disclosure
 within the same surface; correlation and snapshot IDs retain selectable
 monospace values and are never hidden from keyboard users. No extra cards,
-new components, action footer, provider calls, data mutation or admission
+new components, provider calls, data mutation or admission
 recalculation were introduced. The modal explicitly resets `text-left` from
 the registry Action cell, matching the #1053 alignment correction.
 
@@ -333,6 +333,28 @@ Allow/Block and Healthy/Unknown/Overcommitted cases; duplicate/long names,
 full reasons, nullable legacy evidence, screen width and dark mode,
 keyboard/focus and HTMX pagination. CI/CD, Full Admission, staging deployment
 and main promotion remain **HOLD** until explicitly authorized.
+
+### Admission Evidence native Close footer (#775 DevContainer UAT)
+
+DevContainer UAT for adopted Capsule `GlobalResourceQuota` shared allocation
+verified a committed `Allow / Healthy` admission decision, and requested a
+dedicated footer Close control on the **Namespace Provisioning → Capacity
+Decisions → View More → Admission Evidence** read-only modal. Reuse the
+existing KAORI native dialog button and `data-kaori-dialog-close` controller:
+a secondary Close action at the right side of a fixed, bordered footer;
+the existing header X remains available. The evidence body uses
+`min-h-0 flex-1 overflow-y-auto` so it alone scrolls for long reasons,
+profile identity and expanded Traceability. The footer remains reachable at
+narrow/short viewport heights without shifting the parent table.
+This action only closes the dialog, with no POST, capacity admission
+recalculation or provider mutation. Native keyboard Escape/focus-restoration,
+light/dark and reduced-motion behavior remain owned by shared dialog logic.
+
+Human Visual QA remains pending: allow/block and healthy/unknown cases,
+Traceability open/closed, short-height desktop and 360/390 mobile, focus and
+Escape, close from either header or footer, no unintended page-level scroll.
+Executable contract test, Jinja rendering, styling checks and official gates
+remain separate from this source-only review integration.
 
 ## Tenant Allocation Overview (#1034)
 

@@ -200,7 +200,7 @@
                                             <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                                         </button>
                                     </header>
-                                    <div class="min-h-0 overflow-y-auto bg-surface-page p-4 text-left sm:p-5">
+                                    <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page p-4 text-left sm:p-5">
                                         <div class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                                             <section aria-labelledby="{{ dialog_id }}-admission-title"
                                                      class="px-4 py-4 sm:px-5">
@@ -313,6 +313,14 @@
                                             </details>
                                         </div>
                                     </div>
+                                    <footer class="flex shrink-0 items-center justify-end border-t border-outline-subtle bg-surface-card px-4 py-3 text-left sm:px-6"
+                                            aria-label="Admission Evidence dialog actions">
+                                        <button type="button"
+                                                data-kaori-dialog-close
+                                                class="{{ table_ui.action_classes() }}">
+                                            Close
+                                        </button>
+                                    </footer>
                                 </section>
                             </dialog>
                         </td>
