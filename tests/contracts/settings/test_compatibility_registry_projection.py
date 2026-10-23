@@ -92,3 +92,32 @@ def test_selected_product_qualification_pagination_preserves_independent_evidenc
     assert no_profiles['profiles'] == ()
     assert no_profiles['profile_start'] == 0
     assert no_profiles['profile_end'] == 0
+
+
+def test_registry_filter_reset_empty_and_untrusted_query_inputs_remain_bounded() -> None:
+    catalog = [_sample(1), _sample(2, support='Extended · Upstream Archived')]
+    filtered = build_compatibility_registry(
+        catalog, search='Provider 2', support='extended-only', page='999',
+    )
+    assert filtered['total'] == 1
+    assert filtered['page'] == 1
+    assert filtered['selected']['key'] == 'provider-2'
+
+    # Reset restores canonical unfiltered source; no shadow copy is mutated.
+    reset = build_compatibility_registry(catalog)
+    assert reset['total'] == len(catalog)
+    assert reset['selected'] is catalog[0]
+    assert len(catalog) == 2
+
+    long_query = build_compatibility_registry(catalog, search='X' * 10000)
+    assert len(long_query['search']) == 100
+    assert long_query['total'] == 0
+    assert long_query['profiles'] == ()
+    assert long_query['profile_total'] == 0
+    assert long_query['pages'] == 1
+    assert long_query['page'] == 1
+
+    invalid = build_compatibility_registry(catalog, support='unknown', page='not-a-number')
+    assert invalid['support'] == 'all'
+    assert invalid['page'] == 1
+    assert invalid['total'] == 2
