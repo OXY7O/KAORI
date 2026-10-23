@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/operational_callout.html" as operational_callout %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% block title %}Access Denied{% endblock title %}
 {% block dashboard_content %}
     {% set assigned_role = current_user.role_record if current_user.is_authenticated else none %}
@@ -40,25 +40,40 @@
                 </aside>
             </div>
         </section>
-        <section class="grid items-stretch gap-3 lg:grid-cols-2"
-                 aria-label="Access resolution guidance"
+        <section class="{{ analysis_surface.guidance_card_classes() }}"
+                 aria-labelledby="access-guidance-title"
                  data-kaori-access-resolution-guidance>
-            {{ operational_callout.render(
-                'Access Administrator Action',
-                'Ask an administrator to review your role and permissions.',
-                icon='user-cog',
-                tone='info',
-                variant='neutral',
-                extra_classes='h-full'
-            ) }}
-            {{ operational_callout.render(
-                'Security Boundary',
-                'Navigation is guidance; server-side permissions enforce access.',
-                icon='shield-check',
-                tone='info',
-                variant='neutral',
-                extra_classes='h-full'
-            ) }}
+            <header class="{{ analysis_surface.snapshot_header_classes() }}">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.role_icon_classes('brand') }}"
+                          aria-hidden="true">
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 id="access-guidance-title"
+                            class="{{ analysis_surface.section_title_classes() }}">Access Resolution Guidance</h2>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">
+                            Review the next step and the server-side access boundary.
+                        </p>
+                    </div>
+                </div>
+            </header>
+            <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+                {{ analysis_surface.interpretation_callout(
+                    'Required Action',
+                    'Request Access Review',
+                    'Ask an administrator to review your role and permissions.',
+                    icon='user-cog',
+                    role='brand'
+                ) }}
+                {{ analysis_surface.interpretation_callout(
+                    'Security Boundary',
+                    'Server-Side Authorization',
+                    'Navigation is guidance; server-side permissions enforce access.',
+                    icon='shield-check',
+                    role='insight'
+                ) }}
+            </div>
         </section>
     </div>
 {% endblock dashboard_content %}
