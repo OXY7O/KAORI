@@ -22,7 +22,7 @@ def test_navigator_template_has_valid_jinja_and_keeps_shared_workspace() -> None
     assert 'framed_workspace_tabs.render_navigation(' in source
     assert 'components/table_label.html' in source
     assert 'components/info_tip.html' in source
-    assert 'xl:grid-cols-12 xl:items-start' in source
+    assert 'xl:grid-cols-12 xl:items-stretch' in source
     assert 'xl:col-span-4' in source
     assert '<main class="min-w-0 xl:col-span-8">' in source
     assert 'platform_operations/data_lifecycle/partials/_domain_workspace.html' in source
@@ -35,9 +35,8 @@ def test_search_header_and_execution_footer_stay_outside_scroll_region() -> None
     list_start = source.index('x-ref="domainList"')
     footer = source.index('<footer class="flex flex-wrap items-center')
     assert search < list_start < footer
-    assert 'xl:max-h-[min(65dvh,36rem)]' in source
-    assert 'xl:overflow-y-auto xl:overscroll-contain' in source
-    assert 'xl:!block' in source
+    assert 'xl:h-full xl:overflow-y-auto xl:overscroll-contain' in source
+    assert 'xl:!flex xl:min-h-0 xl:flex-1 xl:flex-col' in source
     assert 'Search Data Domains' in source
     assert 'visibleDomainCount' in source
     assert 'No matching domains' in source
@@ -68,7 +67,7 @@ def test_mobile_disclosure_has_readable_no_js_fallback() -> None:
     assert 'id="data-lifecycle-domain-picker"' in source
     assert ':aria-expanded="String(domainPickerOpen)"' in source
     assert 'x-show="domainPickerOpen"' in source
-    assert 'xl:!block' in source
+    assert 'xl:!flex xl:min-h-0 xl:flex-1 xl:flex-col' in source
     assert '@click="domainPickerOpen = !domainPickerOpen"' in source
     # Do not use x-cloak: absent JS must leave direct href navigation usable.
     assert 'x-cloak' not in source
@@ -82,3 +81,50 @@ def test_execution_boundary_uses_canonical_guide_and_permission_scoped_jobs_link
     assert "{% if current_user.has_permission('jobs.view') %}" in source
     assert "url_for('jobs.executions')" in source
     assert 'Open Jobs &amp; Executions' in source
+
+
+def test_desktop_nav_is_height_matched_to_policy_without_scroll_driving_grid_height() -> None:
+    source = read()
+    assert 'xl:grid-cols-12 xl:items-stretch' in source
+    assert 'xl:relative xl:col-span-4 xl:min-h-[25rem]' in source
+    assert 'xl:absolute xl:inset-0 xl:flex xl:flex-col' in source
+    assert 'xl:!flex xl:min-h-0 xl:flex-1 xl:flex-col' in source
+    assert 'xl:min-h-0 xl:flex-1 xl:overflow-hidden' in source
+    assert 'xl:h-full xl:overflow-y-auto xl:overscroll-contain' in source
+    assert 'xl:shrink-0' in source
+    assert 'xl:max-h-[min(65dvh,36rem)]' not in source
+    assert 'xl:col-span-8' in source
+    assert '<main class="min-w-0 xl:col-span-8">' in source
+
+
+def test_current_domain_scroll_restoration_does_not_scroll_outer_document() -> None:
+    source = read()
+    assert 'x-init="ensureActiveVisible()"' in source
+    assert '@popstate.window=' in source
+    assert "new URLSearchParams(window.location.search).get('domain')" in source
+    assert 'data-domain-id="{{ domain.name }}"' in source
+    assert 'ensureActiveVisible() {' in source
+    assert 'if (!list || list.scrollHeight <= list.clientHeight) return;' in source
+    assert "item.dataset.domainId === this.activeDomain" in source
+    assert 'list.getBoundingClientRect()' in source
+    assert 'active.getBoundingClientRect()' in source
+    assert 'list.scrollTop +=' in source
+    assert 'window.scrollTo' not in source
+    assert 'scrollIntoView' not in source
+    assert '@click="activeDomain =' in source
+
+
+def test_compact_footer_and_search_are_anchored_above_and_below_only_list() -> None:
+    source = read()
+    left = source.split('<aside class="min-w-0 xl:relative', 1)[1].split(
+        '</aside>', 1,
+    )[0]
+    search = left.index('id="data-lifecycle-domain-search"')
+    list_start = left.index('x-ref="domainList"')
+    list_end = left.index('</nav>')
+    footer = left.index('<footer class="flex flex-wrap items-center')
+    assert search < list_start < list_end < footer
+    assert "info_tip.render('data-lifecycle-execution-boundary'," in left
+    assert "current_user.has_permission('jobs.view')" in left
+    assert 'xl:overflow-y-auto' not in left[:list_start]
+    assert 'xl:overflow-y-auto' not in left[list_end:]
