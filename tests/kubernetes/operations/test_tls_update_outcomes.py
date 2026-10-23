@@ -350,6 +350,7 @@ def test_bulk_tls_rejects_duplicate_target_ids_without_provider_calls(
     assert calls == []
     assert result['status'] == 'failed'
 
+
 def test_single_tls_rejects_old_but_collected_ingress_mapping_without_patch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
