@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from types import SimpleNamespace
+
 import pytest
 
 from app.integrations.source_control.source_control.providers.github import registration, readiness
@@ -113,6 +115,9 @@ def test_registration_is_blocked_while_provider_is_only_planned(monkeypatch):
         raise AssertionError('planned provider must fail before network or database')
 
     monkeypatch.setattr(registration, 'test_connection', reject_network)
+    monkeypatch.setattr(
+        registration, 'provider_kind', lambda *_: SimpleNamespace(available=False),
+    )
     with pytest.raises(GitHubProviderError, match='admission is pending'):
         registration.save_tested_connection(_input())
 

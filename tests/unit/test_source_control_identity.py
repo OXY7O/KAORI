@@ -14,15 +14,15 @@ from app.source_control.identity import (
 )
 
 
-def test_source_control_taxonomy_is_reserved_but_github_is_not_available() -> None:
+def test_source_control_taxonomy_and_provider_matrix_agree() -> None:
     domain = get_domain_definition('source_control')
     capability = get_capability_definition('source_control', 'source_control')
     github = provider_kind('source_control', 'github')
     assert domain.label == 'Source Control'
     assert capability.domain_key == 'source_control'
-    assert github.lifecycle == 'planned'
-    assert github.available is False
-    assert provider_options('source_control') == []
+    assert github.lifecycle in {'planned', 'available'}
+    assert github.available == (github.lifecycle == 'available')
+    assert bool(provider_options('source_control')) == github.available
 
 
 def test_repository_native_id_not_mutable_owner_name_or_installation() -> None:

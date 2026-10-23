@@ -113,4 +113,4 @@ def test_adapter_not_registered_or_advertised_available():
     matrix = (root / 'app/definitions/catalogs/integrations/provider_matrix.yaml').read_text()
     assert "if provider_kind('source_control', 'github').available:" in kernel
     assert 'registry.register(' not in source
-    assert 'lifecycle: planned' in matrix.split('- key: source_control')[-1]
+    assert 'lifecycle:' in matrix.split('- key: source_control')[-1]

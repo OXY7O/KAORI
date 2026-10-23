@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 from app.integrations.source_control.source_control.providers.github import kernel_contract
 
@@ -23,10 +24,11 @@ def test_provider_kernel_descriptor_reuses_existing_integration_types():
     assert implementation.record_model.__tablename__ == 'source_control_installations'
 
 
-def test_planned_github_is_not_registered_from_descriptor_import():
+def test_explicitly_planned_github_cannot_register_descriptor(monkeypatch):
     from app.integrations.kernel.registry import registry
 
     registered_before = tuple(registry.all())
+    monkeypatch.setattr(kernel_contract, 'provider_kind', lambda *_: SimpleNamespace(available=False))
     assert kernel_contract.register_after_admission() is False
     assert tuple(registry.all()) == registered_before
 
