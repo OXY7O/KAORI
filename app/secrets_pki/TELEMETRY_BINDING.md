@@ -219,3 +219,50 @@ or delivery/notification success. Normal operational GET does not contact
 Vault/Alertmanager. Tests:
 `tests/integrations/test_vault_alert_source_sample_summary.py`.
 Exact-SHA DevContainer and human UAT remain pending.
+
+## HV-12 per-alert committed correlation seam (#2798)
+
+The existing `AlertSignalSnapshot` model now supports an internal-only,
+source-qualified `secrets_pki.vault_alertmanager_observations` signal.
+`commit_vault_alert_observations` accepts one **trusted worker-provided**
+Alertmanager payload (it does not query the provider or create a job).
+A real worker/JobExecution invocation is **not wired by this child**:
+no data is collected automatically and no operational UI reads these
+per-alert observations.
+
+Admission requires an active canonical Vault instance, exactly one active
+Alertmanager binding, exact `vault_instance` equality selector, the
+`vault-alerts-v1` ready validation profile and validation no older
+than 24 hours. Maximum 100 alert rows. Every row requires an exact Vault
+identity, allowlisted Alertmanager state/severity, native 16-character
+hex fingerprint, and timezone-qualified startsAt. Missing, foreign,
+duplicate, malformed or over-budget source responses fail closed.
+
+The caller supplies a **dedicated stable secret key >=32 bytes**, retained
+only in process memory. Use an approved secret manager for this key when
+the worker is wired; NEVER use a hardcoded/demo secret or pass key material
+through HTTP, job metadata, logs or committed evidence. KAORI uses Python
+stdlib `hmac` with SHA-256 and source/Vault/occurrence domain separation
+to commit **opaque correlation handles**, not native fingerprints, alert
+names, path/namespace/role labels, annotations, URLs or tokens. Source
+identity and occurrence startsAt are also required: matching hostnames,
+alert names, timestamps or paths are never used as join evidence.
+Key rotation invalidates handle continuity unless an explicitly reviewed
+key-version migration/correlation strategy is provided.
+
+A successful observation has five-minute TTL and records only
+allowlisted handle/state/severity/starts_at plus internal source binding
+provenance. A failed trusted observation invalidates prior ready payload
+with a generic error. Replayed observations cannot overwrite a newer
+generation. An empty result is `unobserved`, not zero healthy alerts;
+expired/failed/unauthorized/unobserved evidence **never** establishes
+resolution. `read_vault_alert_observations` is internal-only. Calling
+code must enforce the approved #724 resource-scope authorization before
+any user-facing view; no HTTP route or AlertCase promotion is provided.
+
+Before UAT acceptance: register the approved provider-owning worker
+JobExecution and stable correlation secret, verify the actual Alertmanager
+query/source/binding identity, replay and failure paths, scoped RBAC,
+retention and lifecycle against the exact source SHA. Do not claim live
+AlertCase firing, resolution, notification or recovery.
+Focused tests: `tests/intelligence/test_vault_alert_observation_snapshot.py`.
