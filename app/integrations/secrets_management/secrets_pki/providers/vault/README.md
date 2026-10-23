@@ -179,3 +179,13 @@ Alert Source contracts without fabricated success states. The Connection
 Registry retains the existing detail and registration routes. No second Vault
 provider registration, policy-grant UI or resource metadata disclosure is
 introduced. Human light/dark/responsive Visual QA remains required.
+
+## Capability workspace links (HV-07 #2775)
+
+Vault Integration instance detail uses the existing Violet shell and links to
+Secrets & PKI Overview, Inventory and Lifecycle & Assurance only for a user
+with independent `secrets_pki.view`. Certificate Analytics also requires
+`analytics.view`. These are aggregate, capability-level routes; no Vault
+instance selector, scope grant or Secret path is propagated. A manager with
+only `integrations.manage` receives a safe permission-required explanation,
+not an operational evidence link. Visual QA and exact-SHA UAT remain required.
