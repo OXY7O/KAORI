@@ -1306,7 +1306,7 @@
                                                                     <div class="min-w-0 flex-1">
                                                                         <p class="text-xs font-semibold text-content-primary">External Handoff Inspection Unavailable</p>
                                                                         {% if readback_status.approval_expired %}
-                                                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Approval expired. Original requester must restart with a new SHA and independent review. Prior references and dry-runs are invalid.</p>
+                                                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Approval expired. Original requester must restart with a new SHA and independent review. Old evidence is invalid.</p>
                                                                             <a href="{{ tenant_release_step_urls['finalize'] }}"
                                                                                hx-get="{{ tenant_release_step_urls['finalize'] }}"
                                                                                hx-target="#tenant-release-governance"
