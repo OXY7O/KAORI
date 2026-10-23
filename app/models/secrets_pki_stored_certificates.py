@@ -38,11 +38,12 @@ class PKIStoredCertificateCollectionState(db.Model):
     __table_args__ = (
         UniqueConstraint('integration_instance_id', 'provider_namespace', 'mount',
                          name='uq_secrets_pki_stored_cert_collection_scope'),
+        Index('ix_spki_stored_cert_state_instance', 'integration_instance_id'),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     integration_instance_id: Mapped[int] = mapped_column(
-        ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False, index=True,
+        ForeignKey('integration_instances.id', ondelete='RESTRICT'), nullable=False,
     )
     provider_namespace: Mapped[str] = mapped_column(String(255), nullable=False, default='')
     mount: Mapped[str] = mapped_column(String(160), nullable=False)

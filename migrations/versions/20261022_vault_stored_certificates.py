@@ -50,13 +50,13 @@ def upgrade() -> None:
         sa.UniqueConstraint('integration_instance_id', 'provider_namespace', 'mount',
                             name='uq_secrets_pki_stored_cert_collection_scope'),
     )
-    op.create_index('ix_secrets_pki_stored_cert_collection_states_integration_instance_id',
+    op.create_index('ix_spki_stored_cert_state_instance',
                     'secrets_pki_stored_cert_collection_states', ['integration_instance_id'])
 
 
 def downgrade() -> None:
     op.drop_column('vault_instances', 'pki_stored_certs_enabled')
-    op.drop_index('ix_secrets_pki_stored_cert_collection_states_integration_instance_id',
+    op.drop_index('ix_spki_stored_cert_state_instance',
                   table_name='secrets_pki_stored_cert_collection_states')
     op.drop_table('secrets_pki_stored_cert_collection_states')
     op.drop_index('ix_secrets_pki_stored_cert_scope', table_name='secrets_pki_stored_cert_observations')
