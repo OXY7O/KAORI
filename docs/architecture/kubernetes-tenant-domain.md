@@ -2253,3 +2253,21 @@ checkboxes, audits or provider evidence.
 Visual QA requires light/dark, keyboard and touch Guide behavior, small
 viewports, long change references, and verified/blocked recovery states.
 Official CI/CD admission remains HOLD.
+
+## Tenant Namespace Allocation Lineage contextual Guide — 2026-10-23
+
+Existing #1136 Namespace/Profile mapping now supplies a canonical
+`components/info_tip.html` Guide through the shared
+`operational_section_card.render(header_badge=...)` slot. This is
+title-adjacent contextual help, not a new UI component or navigation
+mode. It distinguishes committed pinned quota/limit snapshots from
+live Kubernetes utilization and requires verified provider UID plus
+committed Release/Re-adopt predecessor lineage before displaying history.
+Allocation Change, Release, Handback and Re-adopt remain separate
+provider-governed workflow actions. The existing five-row tenant-scoped
+read model and rendered resource cards are unchanged, and no provider
+request or mutation is introduced.
+
+Human Dev Container Visual QA should check desktop/mobile wrapping,
+light/dark contrast and hover/focus/touch tooltip behavior. Runtime
+Jinja/pytest and official CI/CD admission remain HOLD.
