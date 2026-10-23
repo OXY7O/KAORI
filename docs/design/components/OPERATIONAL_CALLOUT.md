@@ -42,6 +42,6 @@ Page templates must not copy the semantic class bundle inline. Standard compact 
 
 ## Access-denied guidance ownership
 
-For **Access Denied / Access Role Unavailable**, the approved design is **one** neutral guidance surface with two interpretation areas, not two independent callout cards. It reuses the already-approved Analytics presentation primitives from `analytics/components/_analysis_surfaces.html` (see `ANALYTICS_OVERVIEW_GUIDANCE_STANDARD.md`) for the single shell, header, internal divider and brand/insight guidance roles.
+**Access Denied / Access Role Unavailable** uses a **single, two-area recovery panel**, not a pair of standalone callouts or a compressed Analytics interpretation grid. This panel reuses the neutral `guidance_card_classes()` shell and `role_icon_classes()` from `analytics/components/_analysis_surfaces.html`, with an asymmetric responsive body dedicated to **reason first** and **administrator next step second**. Its behavior and accessibility rules are documented in `ANALYTICS_OVERVIEW_GUIDANCE_STANDARD.md`.
 
-Continue to use `operational_callout.render` for standalone informational or semantic notices in operational views. Do not introduce page-local style bundles or a second wrapper just to simulate the unified Analytics presentation. Server-side permission checks remain authoritative.
+Continue to use `operational_callout.render` for standalone informational or semantic notices in operational views. Do not substitute a series of small notices for an actionable 403 recovery workflow. All authorization and audit checks remain server-owned.
