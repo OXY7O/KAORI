@@ -78,47 +78,106 @@ def test_each_registry_keeps_primary_tab_through_pagination_filter_and_clear() -
             assert f"query_params={{'tab': '{tab}'}}" in source
 
 
-def test_capsule_tenant_quota_drift_populated_compact_geometry_keeps_governed_actions() -> None:
-    """Real Capsule UAT #2925: readable drift + full authority, without a 1450px desktop table."""
-    source = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_drift.html')
+def test_both_capsule_drift_registries_use_full_kaori_table_contract() -> None:
+    """#2931: canonical header/filter/columns/detail/empty/footer for both Capsule authorities."""
     from jinja2 import Environment
 
-    Environment().parse(source)
-    assert "min-w-[840px] !table-fixed' if capsule_tenant_quota_drifted else '!table-fixed'" in source
-    assert 'min-w-[1450px]' not in source
-    assert source.count('<th scope="col"') == 3
-    for header in ('Tenant / Authority', 'Allocation Drift', 'Actions'):
-        assert header in source
-    assert 'colspan="3"' in source
-    assert 'overflow-x-auto' in source
-    assert "table_ui.title_cell(tenant.name" in source
-    assert "table_label.special_label('Capsule Tenant Resource Quotas'" in source
-    assert "table_label.special_label('Drifted'" in source
+    specs = (
+        (
+            '_capsule_tenant_quota_drift.html',
+            'capsule-tenant-quota-drift',
+            'capsule_tenant_quota_drifted',
+            'capsule_tenant_quota_filters',
+            'ops_capsule_tenant_quota',
+            'tenant.reapply_capsule_tenant_quota_route',
+            'tenant.accept_capsule_tenant_provider_state_route',
+        ),
+        (
+            '_capsule_shared_allocation_drift.html',
+            'capsule-shared-allocation-drift',
+            'capsule_shared_drift_intents',
+            'capsule_shared_drift_filters',
+            'ops_capsule_shared',
+            'tenant.reapply_capsule_shared_allocation_route',
+            'tenant.accept_capsule_shared_provider_allocation_route',
+        ),
+    )
+    for filename, registry_id, rows, filters, query_key, reapply, accept in specs:
+        source = read('app/templates/kubernetes/tenant/partials/' + filename)
+        Environment().parse(source)
+        assert 'components/table.html' in source
+        assert 'components/table_registry.html' in source
+        assert "table_ui.inventory_block_header(" in source
+        assert 'result_count=' in source
+        assert "header_actions=header_actions" in source
+        assert 'registry_ui.clear_filters_link(' in source
+        assert 'registry_ui.filter_form(' in source
+        assert "aria_label='Filter " in source
+        assert 'table_ui.inventory_filter_bar_classes()' in source
+        assert 'table_ui.filter_select_classes()' in source
+        assert 'table_ui.search_field(' in source
+        assert query_key + '_tenant_id' in source
+        assert query_key + '_search' in source
+        assert filters + '.tenant_id' in source
+        assert filters + '.search' in source
+        assert "name=\"tab\" value=\"allocation-drift\"" in source
+        assert "min-w-[880px] !table-fixed' if " + rows + " else '!table-fixed'" in source
+        assert 'min-w-[1450px]' not in source
+        assert 'min-w-[840px]' not in source
+        for header in ('Tenant', 'Provider / Authority', 'Status', 'Allocation Difference', 'Details'):
+            assert '>' + header + '</th>' in source
+        assert 'colspan="5"' in source
+        assert "table_label.status_label('Drifted', 'warning')" in source
+        assert 'first.kaori_value' in source and 'first.provider_value' in source
+        assert 'data-kaori-native-dialog' in source
+        assert 'data-kaori-dialog-open' in source
+        assert 'data-dialog-target="{{ dialog_id }}"' in source
+        assert 'aria-haspopup="dialog"' in source
+        assert 'data-kaori-dialog-close' in source
+        assert 'View More' in source
+        assert 'Provider Evidence' in source
+        assert 'Reconciliation Decision' in source
+        assert 'difference.kaori_value' in source
+        assert 'difference.provider_value' in source
+        assert "source.get('uid')" in source
+        assert "source.get('resource_version')" in source
+        assert "drift.get('observed_at')" in source
+        assert "state.get('blocked_reason')" in source
+        assert "table_label.special_label('Control Unavailable'" in source
+        assert "can_manage and state.get('reapply_supported') and state.get('accept_supported')" in source
+        assert source.count('<form method="post"') == 2
+        assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
+        assert "url_for('" + reapply + "'" in source
+        assert "url_for('" + accept + "'" in source
+        assert source.count('data-kaori-dialog-close') == 2
+        assert "registry_ui.footer('tenant.operations'" in source
+        assert "'tab': 'allocation-drift'" in source
+        assert 'components/states/_empty_state.html' in source
+        assert '§rid§' not in source
 
-    # Provider evidence is exact, not discarded or clipped to fit the list.
-    assert '<details class="group mt-2 min-w-0">' in source
-    assert 'Provider Evidence' in source
-    assert '<summary class="inline-flex cursor-pointer' in source
-    assert 'focus-visible:ring-2' in source
-    assert 'source.get("name")' in source
-    assert 'source.get("uid")' in source
-    assert 'source.get("resource_version")' in source
-    assert 'break-all font-mono' in source
-    assert "drift.get('differences')" in source
-    assert 'difference.kaori_value' in source
-    assert 'difference.provider_value' in source
-    assert "state.get('blocked_reason')" in source
-    assert "table_label.special_label('Control Unavailable'" in source
 
-    # The two independent mutation controls keep their original permissions,
-    # per-form CSRF tokens, exact route identities and server-side gates.
-    assert "can_manage and state.get('reapply_supported') and state.get('accept_supported')" in source
-    assert "url_for('tenant.reapply_capsule_tenant_quota_route'" in source
-    assert "url_for('tenant.accept_capsule_tenant_provider_state_route'" in source
-    assert source.count('<form method="post"') == 2
-    assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
-    assert 'Reapply KAORI Intent' in source
-    assert 'Accept Provider State' in source
-    assert "registry_ui.footer('tenant.operations'" in source
-    assert "'tab': 'allocation-drift'" in source
-    assert 'components/states/_empty_state.html' in source
+def test_capsule_drift_filters_are_committed_and_independently_paginated() -> None:
+    routes = read('app/kubernetes/tenant/routes.py')
+    quota = read('app/kubernetes/tenant/capsule_tenant_quota_governance.py')
+    shared = read('app/kubernetes/tenant/capsule_allocation_governance.py')
+    for name in (
+        'ops_capsule_tenant_quota_tenant_id',
+        'ops_capsule_tenant_quota_search',
+        'ops_capsule_shared_tenant_id',
+        'ops_capsule_shared_search',
+    ):
+        assert "request.args.get('" + name + "')" in routes
+    assert "'capsule_tenant_quota_filters':" in quota
+    assert "'capsule_shared_drift_filters':" in shared
+    for source in (quota, shared):
+        assert "str(drift_tenant_id or '').strip()" in source
+        assert "str(drift_search or '').strip()[:160]" in source
+        assert "normalized_search.casefold()" in source
+        assert "paginate_sequence(" in source
+    assert "tenant.provider_reference" in quota
+    assert "intent.resource_name" in shared
+    # UI gets already-committed rows, no new request-time direct provider read.
+    for template in ('_capsule_tenant_quota_drift.html', '_capsule_shared_allocation_drift.html'):
+        source = read('app/templates/kubernetes/tenant/partials/' + template)
+        assert 'build_client(' not in source
+        assert 'requests.get(' not in source
