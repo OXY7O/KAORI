@@ -158,3 +158,22 @@ An enabled channel is not eligible for automatic delivery until Test Delivery su
 ### Rule Catalog detail bounded read model (#1523)
 
 Definition listing remains source-controlled and read-only. Opening one exception-enabled rule evaluates only its canonical rule/domain, and Tenant Governance evaluation is skipped for unrelated Kubernetes rule families. Exception history is limited to 12 newest rows in SQL; active/expiring totals use scoped SQL aggregates and only current finding assets require active-row hydration. Owner options are read only for authorized create workflows. Partial evaluator evidence must be disclosed, not silently represented as recovered or eligible for Accepted Risk creation. This path performs no live infrastructure-provider requests.
+
+## Vault source-qualified provider AlertCase correlation (#2807)
+
+Central Alert Intelligence owns the **internal-only candidate plan** for a
+Vault `provider_alert` AlertCase sourced from committed Alertmanager
+observations. This is a read-only correlation contract, not case
+creation/resolution. See `app/intelligence/alert_intelligence/vault_provider_plan.py`
+and `app/secrets_pki/TELEMETRY_BINDING.md`.
+
+The case key is scoped opaque HMAC source/occurrence identity; no provider
+alert name/path, raw fingerprint, arbitrary labels or annotations are used
+to join. Prior cases must have exact provider/source identity, minimal
+allowlisted provenance, and `routing_state=suppressed`; ambiguous, legacy,
+sensitive or cross-domain matches block rather than merging. Case absence
+in a recent but bounded source response **never** proves recovery.
+The existing Alert Intelligence user-facing workspace remains explicitly
+recommendation-scoped; no provider-origin cases are projected to it.
+Activation requires separate #724 authorization, governed policy, source
+recovery validation and real DevContainer/human UAT.

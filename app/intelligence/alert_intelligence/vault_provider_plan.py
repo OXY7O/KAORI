@@ -21,7 +21,7 @@ from app.models.alert_ops import AlertCase
 _CASE_PREFIX = 'vault-alert:'
 _PROFILE = 'vault-alert-hmac-v1'
 _MAX_CASES = 100
-_CASE_KEY_RE = re.compile(r'vault-alert:[0-9a-f]{64}\\Z')
+_CASE_KEY_RE = re.compile(r'vault-alert:[0-9a-f]{64}\Z')
 _SAFE_PROVENANCE_KEYS = frozenset({
     'correlation_profile', 'source_binding_id', 'source_integration_id',
 })
