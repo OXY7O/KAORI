@@ -13,7 +13,8 @@ def test_operations_overview_is_permission_scoped_navigation() -> None:
     page = read('app/templates/kubernetes/operations/overview.html')
     assert '@any_permission_required(' in routes
     assert "endpoint='overview'" in routes
-    assert "render_template('kubernetes/operations/overview.html')" in routes
+    assert "'kubernetes/operations/overview.html'," in routes
+    assert 'cluster_posture=get_operations_cluster_posture()' in routes
     assert 'from app.kubernetes.operations.operation_flow import cluster_required' in routes
     overview_decorators = routes.split('def kubernetes_operations_overview():', 1)[0]
     assert "@cluster_required(\n    'Kubernetes Operations'," in overview_decorators
@@ -100,3 +101,21 @@ def test_operations_catalog_headings_use_canonical_title_guide() -> None:
         assert title in page
         assert f"info_id='{guide_id}'" in page
         assert 'info_items=[' in page
+
+
+def test_operations_overview_uses_committed_cluster_connection_evidence() -> None:
+    flow = read('app/kubernetes/operations/operation_flow.py')
+    routes = read('app/kubernetes/operations/routes.py')
+    page = read('app/templates/kubernetes/operations/overview.html')
+    assert 'def get_operations_cluster_posture()' in flow
+    assert 'Cluster.status == ClusterStatus.CONNECTED.value' in flow
+    assert 'Cluster.last_check.is_not(None)' in flow
+    assert 'except SQLAlchemyError:' in flow
+    assert 'cluster_posture=get_operations_cluster_posture()' in routes
+    assert "cluster_posture['connection_label']" in page
+    assert "cluster_posture['needs_attention']" in page
+    assert "cluster_posture['status_detail']" in page
+    assert 'components/operational_callout.html' in page
+    assert 'Open Cluster Integrations' in page
+    assert 'core_api(' not in flow
+    assert 'kubernetes_client(' not in flow
