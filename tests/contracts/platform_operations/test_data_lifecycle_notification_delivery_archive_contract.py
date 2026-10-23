@@ -98,3 +98,14 @@ def test_notification_identity_schema_stays_inert_until_rollout_is_admitted() ->
     assert 'NotificationDeliveryIdentity' not in service
     assert 'cleanup_supported = False' in adapter
 
+
+def test_notification_delivery_cold_archive_is_protected_until_durable_retention_approval() -> None:
+    engine = read('app/platform_operations/data_lifecycle/retention/service.py')
+    worker = read('app/platform_operations/data_lifecycle/retention/tasks.py')
+    assert "if domain_name == 'notification_delivery' and not dry_run:" in engine
+    assert "if domain.name == 'notification_delivery':" in engine
+    assert "trigger_type not in {'manual', 'cli'}" in engine
+    assert "stored_policy.operation_mode != 'archive_only'" in engine
+    assert "if domain_name in {'audit_event', 'notification_delivery'}:" in worker
+    assert "'scheduling_not_admitted'" in worker
+    assert "'archive_purge'] = {'status': 'not_admitted'" in worker
