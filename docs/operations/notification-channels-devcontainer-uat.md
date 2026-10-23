@@ -111,3 +111,21 @@ Keep `NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false` by default.
 exact branch and SHA, schema revision, job/provider readiness and human
 approval. Only then may the relevant issue be marked accepted; official
 Developer Check/Full Admission remains a separately authorized next step.
+
+### Ledger backfill candidate (separate safety workstream)
+
+`app/integrations/delivery/notification_channels/identity_backfill.py`
+contains an internal, preview-first bounded ID reconciliation helper for
+#2868. It is intentionally **not** registered as a callable UI/API/Celery
+job and should not be invoked against real data until the JobExecution
+cursor/restart contract and PostgreSQL concurrent mutation tests are
+reviewed. The high-watermark/cursor are external to this helper and do
+**not** constitute a completed backfill certificate. An
+`apply=True` call can commit database writes; use only approved disposable
+DevContainer data and explicit authorization. The existing hot source
+journal remains authoritative; no dedup cutover or cleanup is admitted.
+
+Add an evidence record for preview counts, conflict/missing status,
+duplicate insert/rollback, batch-size protection, concurrent writers,
+resumption, and verification against the source identity on a disposable
+PostgreSQL test database before progressing the issue.

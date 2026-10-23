@@ -144,3 +144,21 @@ cleanup has been implemented or admitted. The delivery journal remains
 authoritative. This document alone does not admit the schema migration. This document defines
 a reviewable and testable boundary, not authorization for migration, purge
 or scheduled recovery.
+
+### Bounded backfill helper — source candidate (#2868)
+
+An internal, unscheduled `identity_backfill.py` provides bounded
+high-watermark/cursor pagination and a **preview-by-default** reconciliation
+against existing event/channel identities. It never assumes that scanning up
+to a captured high-watermark proves a complete migration while new deliveries
+may still be arriving. An explicitly invoked `apply=True` operation is
+PostgreSQL-only and uses a unique-conflict-safe insert, post-insert source
+verification, and transactional rollback on mismatch. It does not store
+provider credentials or payload, and it is not wired to any API, worker,
+route, scheduler, CLI or dispatch path.
+
+The helper is **not an admitted production backfill workflow**. Persisted
+canonical JobExecution cursor/generation and human-approved execution,
+dual-write/cutover fences, snapshot retry, testing on real PostgreSQL, and
+concurrency verification are required before actual operational use.
+`cleanup_supported=False` remains unchanged. This workstream is still OPEN.
