@@ -51,7 +51,7 @@ def test_alert_incidents_coverage_is_two_by_two_without_changing_other_domains()
 
 def test_recovery_copy_shortened_without_changing_retry_contract() -> None:
     source = read(WORKSPACE_PATH)
-    assert 'Cleanup stays blocked; transient failures retry once, then need manual retry.' in source
+    assert 'Cleanup blocked; transient failures retry once, then need manual retry.' in source
     assert 'Cleanup stays blocked; transient failures retry once, then require manual retry.' not in source
     assert 'Failure Recovery' in source
 

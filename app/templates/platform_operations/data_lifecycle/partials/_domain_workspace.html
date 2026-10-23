@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/info_tip.html" as info_tip %}
 {% set selected = lifecycle.domains|selectattr('name','equalto',lifecycle.selected_domain)|first %}
 {% set can_manage = current_user.has_permission('platform_operations.manage_data_lifecycle') %}
 {% set execution_blocked = (not selected.enabled) or lifecycle.active_lifecycle_jobs %}
@@ -11,8 +12,22 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="{{ selected.icon }}" class="h-5 w-5"></i></span>
-                <div>
-                    <h2 class="{{ table_ui.block_title_classes() }}">{{ selected.label }} Policy</h2>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="{{ table_ui.block_title_classes() }}">{{ selected.label }} Policy</h2>
+                        {% if selected.name == 'alert_incident' %}
+                            {{ info_tip.render('data-lifecycle-alert-incident-policy-guide',
+                                'Alert Incidents Policy',
+                                'Archive-first lifecycle governance for closed Alert Operations cases.',
+                                items=[
+                                    'Only Closed cases can enter the archive boundary; active and verification-pending cases remain protected.',
+                                    'Incident timeline, delivery outcomes and postmortem evidence stay with the governed case archive.',
+                                    'A verified manifest and archive must precede cleanup; the searchable case index stays in PostgreSQL and the delivery journal has its own lifecycle.'
+                                ],
+                                placement='right',
+                                variant='guide') }}
+                        {% endif %}
+                    </div>
                     <p class="{{ table_ui.block_description_classes() }}">{{ selected.description }}</p>
                 </div>
             </div>
@@ -146,6 +161,7 @@
               hx-select="#data-lifecycle-page"
               hx-swap="outerHTML"
               hx-indicator="#data-lifecycle-policy-loading"
+              hx-disabled-elt="find button[type='submit']"
               class="space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="domain" value="{{ selected.name }}">
@@ -306,7 +322,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Failure Recovery</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Cleanup stays blocked; transient failures retry once, then need manual retry.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Cleanup blocked; transient failures retry once, then need manual retry.</p>
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Execution Worker</p>
@@ -333,7 +349,8 @@
                         {% endif %}
                     </div>
                     {% if can_manage %}
-                        <button class="inline-flex min-h-10 items-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>
+                        <button type="submit"
+                                class="inline-flex min-h-10 items-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>
                     {% else %}
                         <span class="text-xs font-medium text-content-muted">Read-only policy access</span>
                     {% endif %}
@@ -384,12 +401,14 @@
                       hx-post="{{ url_for('platform_operations.data_lifecycle.run') }}"
                       hx-target="#data-lifecycle-domain-workspace"
                       hx-swap="outerHTML"
-                      hx-indicator="#data-lifecycle-policy-loading">
+                      hx-indicator="#data-lifecycle-policy-loading"
+                      hx-disabled-elt="find button[type='submit']">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="domain" value="{{ selected.name }}">
                     <input type="hidden" name="tab" value="policies">
                     <input type="hidden" name="mode" value="archive_only">
-                    <button class="{{ table_ui.action_classes() }} disabled:cursor-not-allowed disabled:opacity-50"
+                    <button type="submit"
+                            class="{{ table_ui.action_classes() }} disabled:cursor-not-allowed disabled:opacity-50"
                             {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive" class="h-4 w-4"></i>Archive Only</button>
                 </form>
                 {% if selected.name not in ('notification_delivery', 'audit_event') %}
@@ -398,12 +417,14 @@
                       hx-post="{{ url_for('platform_operations.data_lifecycle.run') }}"
                       hx-target="#data-lifecycle-domain-workspace"
                       hx-swap="outerHTML"
-                      hx-indicator="#data-lifecycle-policy-loading">
+                      hx-indicator="#data-lifecycle-policy-loading"
+                      hx-disabled-elt="find button[type='submit']">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="domain" value="{{ selected.name }}">
                     <input type="hidden" name="tab" value="policies">
                     <input type="hidden" name="mode" value="archive_and_cleanup">
-                    <button class="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                    <button type="submit"
+                            class="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
                             {% if execution_blocked %}disabled{% endif %}><i data-lucide="archive-restore" class="h-4 w-4"></i>Archive & Cleanup</button>
                 </form>
                 {% endif %}

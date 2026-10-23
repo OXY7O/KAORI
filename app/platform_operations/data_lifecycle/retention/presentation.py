@@ -438,7 +438,7 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
             {
                 'icon': 'list-tree',
                 'label': 'Incident Timeline',
-                'description': 'Case lifecycle evidence from detection through closure.',
+                'description': 'Case lifecycle evidence from initial detection through final closure.',
             },
             {
                 'icon': 'send',
