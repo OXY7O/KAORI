@@ -48,3 +48,14 @@ Follow-up #2850 must reconcile existing Alert Incident cleanup cross-domain
 deletes before enabling hot cleanup, while separately governing permanent
 deduplication and historical cumulative evidence. Manual DevContainer UAT,
 security review and official admission gates remain pending.
+
+### Source ownership refinement — Alert Incident / Notification Delivery (#2850 partial)
+
+An Alert Incident archive may include a verified snapshot of its related
+delivery outcomes, but that does **not** confer delete authority over the
+shared `notification_deliveries` table. Alert Incident compaction must not
+delete `NotificationDelivery` rows. Only a separately admitted
+`notification_delivery` lifecycle with durable deduplication and retained
+cumulative evidence could safely compact or delete the hot journal.
+The present adapter remains archive-only and paused. This guard does not
+claim that the full #2850 cleanup foundation or runtime UAT has passed.

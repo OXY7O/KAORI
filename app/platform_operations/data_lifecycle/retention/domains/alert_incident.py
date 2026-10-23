@@ -106,9 +106,10 @@ class AlertIncidentArchiveDomain:
                     continue
                 AlertCaseEvent.query.filter_by(case_id=case.id).delete(synchronize_session=False)
                 AlertSilence.query.filter_by(case_id=case.id).delete(synchronize_session=False)
-                NotificationDelivery.query.filter(
-                    NotificationDelivery.event_key.like(f'alert-case:{case.public_id}:%')
-                ).delete(synchronize_session=False)
+                # Delivery evidence belongs to Notification Channels, not incident
+                # compaction. Removing it here breaks event-key deduplication,
+                # channel dependencies and all-time delivery metrics.
+                # The separate notification_delivery lifecycle controls this source.
                 case.labels_json = {}
                 case.evidence_json = {}
                 case.postmortem_json = {}
