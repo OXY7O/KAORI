@@ -173,9 +173,14 @@ record the exact holding SHA. Confirm:
   Execution details are unboxed text pairs separated by subtle rules,
   not a nested grid of five bordered cards. Confirm no clipped
   provider/location/bucket/endpoint or lost details on mobile.
-- Archive-First uses one unboxed ordered four-step flow, readable at
-  mobile and desktop widths. The final cleanup step is **if admitted**
-  and cannot bypass independently approved source governance.
+- Archive-First uses one unboxed ordered four-step flow. At XL widths,
+  thin vertical separators distinguish the four steps without restoring
+  boxed cards; first/last padding stays aligned to the section edges.
+  Mobile/tablet keep the responsive unboxed flow without vertical
+  dividers. The final cleanup step is **if admitted** and cannot bypass
+  independently approved source governance.
+- Purge Batch Limit copy stays concise and preserves the configured
+  batch limit and retry semantics. Check text wrapping at narrow widths.
 - Storage Interpretation is a single compact status line, not an
   additional framed callout. Check light/dark contrast, semantic
   evidence state, responsive wrapping and keyboard reading order.
