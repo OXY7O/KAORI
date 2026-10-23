@@ -8,6 +8,7 @@ Missing alerts, unobserved samples and failed snapshots NEVER prove recovery.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import re
 from typing import Any
 
 from app.intelligence.alert_signals.vault_source import (
@@ -20,6 +21,10 @@ from app.models.alert_ops import AlertCase
 _CASE_PREFIX = 'vault-alert:'
 _PROFILE = 'vault-alert-hmac-v1'
 _MAX_CASES = 100
+_CASE_KEY_RE = re.compile(r'vault-alert:[0-9a-f]{64}\\Z')
+_SAFE_PROVENANCE_KEYS = frozenset({
+    'correlation_profile', 'source_binding_id', 'source_integration_id',
+})
 _ACTIONS = frozenset({
     'create_candidate',
     'refresh_candidate',
@@ -46,9 +51,12 @@ def _provenance_matches(case: AlertCase, *, source_id: int, binding_id: int) -> 
         and case.domain == 'secrets_pki'
         and case.asset_type == 'vault_instance'
         and case.source_ref == case.case_key
-        and case.case_key.startswith(_CASE_PREFIX)
+        and _CASE_KEY_RE.fullmatch(case.case_key) is not None
         and case.routing_state == 'suppressed'
+        and isinstance(case.labels_json, dict)
+        and not case.labels_json
         and isinstance(evidence, dict)
+        and set(evidence) == _SAFE_PROVENANCE_KEYS
         and evidence.get('correlation_profile') == _PROFILE
         and type(evidence.get('source_binding_id')) is int
         and evidence['source_binding_id'] == binding_id

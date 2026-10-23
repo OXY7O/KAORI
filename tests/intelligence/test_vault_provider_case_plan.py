@@ -306,3 +306,37 @@ def test_planner_does_not_integrate_with_alertcase_mutation_or_provider_network(
     assert 'mark_case_source_resolved(' not in content
     assert 'mark_case_source_unknown(' not in content
     assert 'create_notification(' not in content
+
+
+def test_legacy_secret_bearing_case_key_and_unapproved_labels_block(store):
+    vault, source, binding = _source()
+    _commit(binding, [_alert(vault)])
+    canonical = _plan(binding)['candidates'][0]['case_key']
+    case = _case(vault, source, binding, canonical)
+    case.case_key = 'vault-alert:/v1/secret/legacy-path'
+    db.session.commit()
+    assert _plan(binding)['status'] == 'blocked'
+    case.case_key = canonical
+    case.labels_json = {'vault_path': 'SECRET/PATH'}
+    db.session.commit()
+    assert _plan(binding)['status'] == 'blocked'
+
+
+def test_prior_case_with_extra_sensitive_evidence_is_not_reused(store):
+    vault, source, binding = _source()
+    _commit(binding, [_alert(vault)])
+    key = _plan(binding)['candidates'][0]['case_key']
+    case = _case(vault, source, binding, key)
+    case.evidence_json = {**case.evidence_json, 'raw_provider_annotations': 'PRIVATE/PATH'}
+    db.session.commit()
+    assert _plan(binding)['status'] == 'blocked'
+
+
+def test_preexisting_provider_case_cannot_be_reenabled_for_routing(store):
+    vault, source, binding = _source()
+    _commit(binding, [_alert(vault)])
+    key = _plan(binding)['candidates'][0]['case_key']
+    case = _case(vault, source, binding, key)
+    case.routing_state = 'enabled'
+    db.session.commit()
+    assert _plan(binding)['status'] == 'blocked'
