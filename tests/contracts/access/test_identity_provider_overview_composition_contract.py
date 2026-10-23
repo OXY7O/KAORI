@@ -162,3 +162,26 @@ def test_directory_tab_is_read_only_summary_with_scoped_workflow_launch() -> Non
     assert 'provider-owned' in directory
     assert 'credentials remain external' in directory.lower()
     assert '<form ' not in directory
+
+def test_identity_provider_workspace_guides_own_title_context_only() -> None:
+    registry = read('app/templates/access/identity_providers/partials/_registry.html')
+    directory = read('app/templates/access/identity_providers/partials/_directory_provisioning_strip.html')
+
+    for template in (registry, directory):
+        Environment().parse(template)
+        assert '{% import "components/info_tip.html" as info_tip %}' in template
+        assert "placement='right'" in template
+        assert "variant='guide'" in template
+
+    assert registry.index('>Provider Registry</h2>') < registry.index(
+        "info_tip.render('identity-provider-registry-guide'"
+    ) < registry.index('table_label.result_count(summary.matching)')
+    assert 'registry_ui.clear_filters_link(' in registry
+    assert 'registry_ui.footer(' in registry
+
+    assert directory.index('>Directory Provisioning</h2>') < directory.index(
+        "info_tip.render('identity-provider-directory-provisioning-guide'"
+    ) < directory.index('Review directory projection evidence')
+    assert "current_user.has_permission('identity_providers.provision')" in directory
+    assert "table_label.status_indicator_label('Read Only', 'unknown')" in directory
+    assert 'data-kaori-idp-directory-launch' in directory
