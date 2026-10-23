@@ -155,3 +155,18 @@ and concurrency tests, **before** hot cleanup can be admitted. The operational
 journal and Overview remain truthful only for committed hot state in this
 phase (currently the complete delivery history). Archive History lists
 artifact-level bundles only; it does not provide individual delivery lookup.
+
+### Alert Incident compaction ownership guard (#2850 partial)
+
+Alert Incident archive serialization retains a snapshot of firing/resolved
+delivery outcomes in its verified case bundle. **Compaction must not delete
+the canonical `NotificationDelivery` rows**, even for closed archived cases.
+Those shared rows remain hot-owned by Notification Channels for replay
+idempotency, retained evidence and channel deletion dependencies. Incident
+compaction still clears incident-local case events, silences and heavy case
+fields after archive verification; this is not a change to incident closure.
+
+This source-ownership correction is only the first safety slice of #2850.
+Durable post-hot-cleanup deduplication, historical aggregates, channel
+dependency indexing and source record-level archive lookup are not admitted.
+`notification_delivery` remains paused/manual archive-only.
