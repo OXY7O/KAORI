@@ -1925,3 +1925,31 @@ design; Native PATCH is never reused blindly for Capsule. This change is
 merged only into the local DevContainer review branch. Unit/contract gates,
 Kubernetes UAT, security/visual review, staging promotion and deployment
 remain HOLD until expressly authorized.
+
+## Release Step 3 Dev Container visual refinement (2026-10-23)
+
+The accepted functional Native lifecycle UAT covered externally adopted Namespace,
+managed Resource Profile changes, and provider-preserving Release. The next
+presentation increment under #2401 rebalances **Independent Approval and Handoff**
+without changing the governing transaction. Pending/acknowledged/expired plan
+state, successor/change record and full Plan SHA remain committed evidence. The
+acknowledged Native step uses two equal-width responsive peer surfaces for
+Handoff Actions and External Handoff & Read-Back instead of a 3:2 desktop split.
+On narrow screens the peers stack without clipping identifiers.
+
+**Evidence Boundaries** is a native keyboard-accessible disclosure within the
+read-back surface, keeping all three original boundaries available without an
+oversized always-open nested information block. The Native Transfer Preview
+retains its required checkbox, original CSRF/HTMX POST target and non-mutating
+server-side dry-run semantics, but places the explanation and compact CTA
+adjacent at desktop widths while stacking them on mobile. Provider identity,
+read-back and Release admission gates are unchanged. Nothing in the redesigned
+presentation confers independent review, verified successor consent, provider
+transfer or a Released state.
+
+Visual QA for this increment must capture Native acknowledged state (including
+unverified external reference and verified Platform Admin), pending/expired
+and blocked alternatives, optional Capsule paths, long exact SHA/UID/RV,
+keyboard disclosure/focus, light/dark and responsive breakpoints. Jinja parse,
+focused Tenant contract tests, and the existing lint/quality checks remain
+required; official staging admission and provider mutation remain HOLD.
