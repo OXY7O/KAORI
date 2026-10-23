@@ -13,7 +13,7 @@ Use PASS / FAIL / Not Tested / Not Implemented explicitly. Never log, export
 or screenshot plaintext Secret values, Vault paths/names where sensitive,
 SecretIDs, tokens, private keys, dynamic credentials or value hashes.
 
-## Source / verification status (as of 2026-10-22)
+## Source / verification status (as of 2026-10-23)
 
 Every source row below is **Not Tested**, not a PASS. Workstreams marked
 Not Implemented must not be treated as waived acceptance.
@@ -31,7 +31,7 @@ Not Implemented must not be treated as waived acceptance.
 | HV-09 #2593 | UAT protocol; live scenarios not executed | Not Tested |
 | HV-10 #2594 / #2702 | Current-generation public PKI expiration horizon workspace; historical MetricsConsumer datasets/pages absent | Not Tested |
 | HV-11 #2595 / #2778 | Review candidate: one population-level qualified PKI public expiry-pressure Intelligence rule; per-asset rules remain unimplemented | Not Tested |
-| HV-12 #2596 / #2786 / #2791 / #2798 / #2802 / #2807 / #2813 / #2817 | Review candidate: manual Alert Source worker, committed correlation, disabled case admission and exact-instance scoped read-only provider case workspace; provider mutation/routing/notifications disabled | Not Tested |
+| HV-12 #2596 / #2786 / #2791 / #2798 / #2802 / #2807 / #2813 / #2817 / #2821 | Review candidate: manual Alert Source worker, committed correlation, opt-in admission now requires approved exact-instance scope and normalized role, read-only case workspace rejects unsupported resolved; provider mutation/routing/notifications disabled | Not Tested |
 | HV-13 #2597 / #2678 | Base permission catalog and fail-closed internal read contract; canonical #724 policy evaluator still absent | Not Tested |
 | HV-14 #2598 | Role-aware Welcome entry | Not Tested |
 | HV-15 #2599 | Canonical Reports definitions | Not Implemented |
@@ -143,3 +143,74 @@ historical materialization, lease, authentication or cross-domain analytics.
 - Check source permission/aggregation boundary, responsive light/dark/empty
   states, Developer Check, Full Admission, and real Prometheus/Alertmanager
   DevContainer UAT. No result is marked PASS by this document.
+
+
+## HV-12 #2821 — Integrated Alert Source / AlertCase security UAT (Not Tested)
+
+**Review target:** `kaori/review/staging-uat` at the *actual SHA you pull*.
+Do not mistake this test protocol, earlier PR merges or static review for UAT PASS.
+Do not run official Developer Check / Full Admission or promote the temporary
+holding branch before explicit authorization.
+
+### Preflight and focused quality gates
+
+Execute **inside the approved DevContainer** with an initialized, reviewed
+PostgreSQL schema and separate inventory worker; record exact SHA, DB
+Alembic revision, Celery task registration, actor ID and sanitized JobExecution
+public ID. Do not print the HMAC key or provider credentials.
+
+~~~bash
+git rev-parse HEAD
+python -m ruff check \
+  app/access/scope_policy.py \
+  app/intelligence/alert_signals/vault_source.py \
+  app/intelligence/alert_signals/vault_jobs.py \
+  app/intelligence/alert_intelligence/vault_provider_plan.py \
+  app/intelligence/alert_intelligence/vault_provider_admission.py \
+  app/intelligence/alert_intelligence/vault_case_workspace.py \
+  tests/intelligence/test_vault_alert_observation_snapshot.py \
+  tests/intelligence/test_vault_alert_job_producer.py \
+  tests/intelligence/test_vault_provider_case_plan.py \
+  tests/intelligence/test_vault_provider_case_admission.py \
+  tests/intelligence/test_vault_provider_case_workspace.py
+python -m pytest -q \
+  tests/integrations/test_vault_alert_source_binding.py \
+  tests/integrations/test_vault_alert_source_qualification.py \
+  tests/integrations/test_vault_alert_source_sample_summary.py \
+  tests/intelligence/test_vault_alert_observation_snapshot.py \
+  tests/intelligence/test_vault_alert_job_producer.py \
+  tests/intelligence/test_vault_provider_case_plan.py \
+  tests/intelligence/test_vault_provider_case_admission.py \
+  tests/intelligence/test_vault_provider_case_workspace.py
+python -m pyright --project pyrightconfig.json
+~~~
+
+### Source-specific test cases — ALL Not Tested
+
+| Scenario | Expected safe outcome | Status |
+| --- | --- | --- |
+| Exact Vault Alertmanager source | `vault_instance=<canonical ID>` selector, qualified binding, bounded GET and safe committed snapshot; record JobExecution and generation | Not Tested |
+| Missing/disabled/foreign/ambiguous Alert Source | No qualified observation, no unauthorized provider fallback or case changes | Not Tested |
+| Missing malformed HMAC key | Manual worker fails closed with generic error; no key in job/audit/log | Not Tested |
+| Replayed, duplicate, late, malformed/future or foreign alert | No duplicate case or false recovery; provider failure invalidates previous source evidence | Not Tested |
+| **Role only** with all four relevant permissions but no instance grant | Admission `forbidden`; zero AlertCase/Event/AuditEvent writes | Not Tested |
+| **Local Super Admin shortcut** without normalized role / exact instance grant | Admission `forbidden`, no inherited scope | Not Tested |
+| Exact approved **instance** grant | Only matching Vault ID eligible, no mount inheritance; create max 10 firing cases per invocation; routing suppressed | Not Tested |
+| Mount-only, foreign instance, expired, revoked or ambiguous grant | Admission denied, no partial case commit or existence disclosure | Not Tested |
+| Same source generation / new severity generation | Replay idempotent; newer severity refresh only with case event and audit | Not Tested |
+| Unobserved, suppressed, partial, stale, source 403/503 | Unknown/incomplete, never auto-resolved, auto-closed or notification delivered | Not Tested |
+| Tampered `source_state=resolved` in Vault provider case | Entire scoped list unavailable; direct guessed detail URL denied | Not Tested |
+| Scoped case list/detail unauthorized, foreign Vault or audit store unavailable | 404/denied; no case data or HMAC provenance leakage | Not Tested |
+| Violet light/dark, phone/tablet/desktop, keyboard and HTMX navigation | Read-only UI accessible; paginator defaults to 5; no unsafe mutation controls | Not Tested |
+| PostgreSQL concurrent write + grant revocation/read-lock race | Transactional serializability and denial confirmed with real DB, not SQLite alone | Not Tested |
+
+**Security decision gate:** keep
+`KAORI_VAULT_PROVIDER_CASE_ADMISSION_ENABLED` **unset/false** outside
+approved controlled UAT. No runtime caller currently invokes the writer;
+do not add one or enable case routing as part of this review. Independent
+#724 scope-policy approval and human acceptance are prerequisites.
+
+For every scenario, capture actual method, expected/actual behavior,
+PASS/FAIL/Not Tested, exact SHA, test ID/job reference and sanitized
+screenshot or logs. Record genuine FAIL in bounded remediation issues;
+do not silently mark skipped tests as PASS.

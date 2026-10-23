@@ -383,3 +383,19 @@ is included; operator access to provider-origin cases remains **unapproved**
 pending separate source-scoped RBAC/route/HTML workstream. This command is
 for contract testing and controlled review only, not production activation.
 Tests: `tests/intelligence/test_vault_provider_case_admission.py`.
+
+
+## HV-12 #2821 scope and recovery security finding closure (source change, not UAT)
+
+Review identified two blockers in the earlier holding implementation:
+(1) provider-origin case admission checked only global role/Super Admin
+permission without an approved target Vault-instance resource grant;
+(2) the scoped provider-case view accepted an unsupported `resolved`
+source state. The internal writer now checks an active normalized role
+and the existing #724 approved exact-instance grant under the canonical
+binding transaction lock, with no mount inheritance or global Super Admin
+shortcut. The workspace now blocks `resolved` source rows pending future
+provider recovery evidence. The writer is still default-disabled and
+disconnected from runtime callers; routing/notifications remain suppressed.
+These source remediations **do not constitute DevContainer UAT PASS**.
+See the HV-12 #2821 scenario matrix in `VAULT_INTEGRATED_UAT.md`.
