@@ -240,6 +240,23 @@ selected target **before** the first PATCH and aborts the entire batch
 without partial writes if any target is blocked. There is no silent
 override; exceptional rotation requires separately reviewed policy.
 The server repeats the check even if the UI validation trigger was bypassed.
+Before any Kubernetes PATCH, the server also verifies immutable Secret UID
+continuity between the committed TLS inventory and current live Kubernetes
+readback. Missing, malformed, or changed UID evidence blocks rotation and
+requires resynchronization; namespace/name and resourceVersion alone are not
+proof of object continuity. Live type/resourceVersion checks, dry-run, payload
+redaction, and provider-authoritative mutation remain mandatory.
+
+A Collected Ingress status alone does not qualify old coverage. Both the
+cluster's successful collection timestamp and the selected certificate row's
+collected_at must be inside the existing TLS Job Policy synchronization
+window plus its approved freshness grace. Missing, future, or stale timestamps
+and failed Secret/Ingress status block preview and final single/bulk admission.
+There is no implicit break-glass override. Bulk rotation also rereads and
+qualifies **every** selected live Secret UID/type/resourceVersion before its
+first PATCH; a single failed identity preflight rejects the entire batch.
+The approved resourceVersion precondition still protects each dry-run and
+final PATCH against a later concurrent change.
 
 
 Bulk TLS requests must resolve **every** unique selected certificate ID at

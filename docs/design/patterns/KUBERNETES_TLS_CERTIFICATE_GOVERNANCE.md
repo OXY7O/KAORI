@@ -297,6 +297,23 @@ No page-local fourth Hero accessory type is permitted.
 The release boundary requires Static Quality, Contract, Unit, Functional, Integration, Security Regression, Rendering/UI Contract, and End-to-End Smoke evidence. Kubernetes/provider reachability remains an Integration/worker responsibility; the E2E smoke validates Flask/session/templates/application shell deterministically without requiring a live cluster.
 
 
+## TLS rotation target identity and freshness admission (#1306)
+
+An approved rotation must preserve the selected committed target identity:
+the Kubernetes TLS Secret UID collected with its namespace/name must match
+the live UID read before PATCH. Unknown or malformed UID evidence, or
+deletion/recreation at the same namespace/name, fails closed until TLS
+synchronization refreshes inventory. Live Secret type, resourceVersion,
+dry-run and Secret-value scrubbing remain mandatory.
+
+Ingress coverage admission requires both Secret and Ingress source status
+Collected. Both cluster collection-state collected_at and certificate-row
+collected_at must fall within the existing TLS sync job-policy interval plus
+its established freshness grace. This proves qualified recent committed
+evidence, not live Ingress reachability. Preview and server-side single/bulk
+apply use the same fail-closed policy; any blocked bulk target prevents every
+provider PATCH. No new UI state or break-glass override is introduced.
+
 ## Provenance-safe TLS collection freshness (#1327)
 
 `TLSCertificateCollectionState.updated_at` means the latest collection attempt;

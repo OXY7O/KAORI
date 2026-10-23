@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from flask import current_app
@@ -25,13 +25,23 @@ from app.kubernetes.governance.tls_certificates.constants import (
     TLS_COVERAGE_PARTIAL,
     TLS_COVERAGE_UNCOVERED,
 )
-from app.kubernetes.governance.tls_certificates.mutation import patch_tls_secret, read_uploaded_pair
+from app.kubernetes.governance.tls_certificates.mutation import (
+    TLSSecretIdentityError,
+    patch_tls_secret,
+    preflight_tls_secret,
+    read_uploaded_pair,
+)
+from app.kubernetes.governance.tls_certificates.sync_state import (
+    tls_sync_evidence_is_current,
+    tls_sync_stale_after,
+)
 from app.models import (
     TLSCertificateCollectionState,
     TLSCertificateInventory,
     TLSCertificateUpdateEvent,
     User,
 )
+from app.platform_operations.jobs.policies.service import get_or_create_job_policy
 
 
 @dataclass(frozen=True)
@@ -143,11 +153,26 @@ def _persist_failure_event(event: TLSCertificateUpdateEvent) -> bool:
         return False
 
 
-def _coverage_blocker(record: TLSCertificateInventory, parsed: Any) -> str | None:
-    """Require complete committed Ingress mapping and SAN coverage before PATCH."""
+def _coverage_evidence_window() -> timedelta:
+    policy = get_or_create_job_policy('governance.tls_certificates.sync')
+    return tls_sync_stale_after(policy.interval_minutes)
+
+
+def _coverage_blocker(record: TLSCertificateInventory, parsed: Any, *, stale_after: timedelta) -> str | None:
+    """Require complete, current committed Ingress mapping before PATCH."""
     state = db.session.get(TLSCertificateCollectionState, record.cluster_id)
-    if state is None or state.ingress_mapping_status != TLS_COLLECTION_COLLECTED:
+    if (
+        state is None
+        or state.secret_collection_status != TLS_COLLECTION_COLLECTED
+        or state.ingress_mapping_status != TLS_COLLECTION_COLLECTED
+    ):
         return 'Ingress host coverage is Not Reported. Synchronize TLS evidence before rotating this Secret.'
+    now = datetime.now(UTC)
+    if not (
+        tls_sync_evidence_is_current(state.collected_at, stale_after=stale_after, now=now)
+        and tls_sync_evidence_is_current(record.collected_at, stale_after=stale_after, now=now)
+    ):
+        return 'Ingress coverage evidence is stale or unavailable. Synchronize TLS inventory before rotation.'
     uncovered = find_uncovered_hosts(record.ingress_hosts or [], parsed)
     if uncovered:
         return 'Certificate SAN does not cover mapped Ingress hosts: ' + ', '.join(sorted(uncovered))
@@ -169,13 +194,14 @@ def preview_uploaded_pair(files: Any, target_ids: Iterable[int] | None = None) -
         targets = TLSCertificateInventory.query.filter(TLSCertificateInventory.id.in_(requested_ids)).all()
 
     if validation.parsed_certificate and targets:
+        stale_after = _coverage_evidence_window()
         for target in targets:
             target_view = _target_view(target)
             uncovered_hosts = find_uncovered_hosts(
                 target.ingress_hosts or [],
                 validation.parsed_certificate,
             )
-            blocker = _coverage_blocker(target, validation.parsed_certificate)
+            blocker = _coverage_blocker(target, validation.parsed_certificate, stale_after=stale_after)
             status = 'blocked' if blocker else 'ready'
             message = blocker or 'Ready to update.'
             target_previews.append(
@@ -223,7 +249,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         }
 
     parsed = validation.parsed_certificate
-    coverage_blocker = _coverage_blocker(record, parsed)
+    coverage_blocker = _coverage_blocker(record, parsed, stale_after=_coverage_evidence_window())
     if coverage_blocker:
         return {
             'status': 'failed',
@@ -238,8 +264,15 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
 
     try:
         patch_tls_secret(record, cert_bytes, key_bytes)
-    except Exception:
-        current_app.logger.exception('Kubernetes TLS Secret mutation failed.')
+    except Exception as exc:
+        identity_rejected = isinstance(exc, TLSSecretIdentityError)
+        if identity_rejected:
+            current_app.logger.warning('TLS Secret rotation rejected due to stale target identity.')
+        else:
+            current_app.logger.exception('Kubernetes TLS Secret mutation failed.')
+        safe_message = (
+            str(exc) if identity_rejected else 'The Kubernetes TLS Secret could not be updated.'
+        )
         failure_event_saved = _persist_failure_event(
             _new_tls_update_event(
                 TLSUpdateEventSpec(
@@ -251,7 +284,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
                     old_not_after=old_not_after,
                     new_not_after=parsed.not_after,
                     status='failed',
-                    message='The Kubernetes TLS Secret could not be updated.',
+                    message=safe_message,
                     actor_user_id=actor_user_id,
                 )
             )
@@ -259,8 +292,12 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         return {
             'status': 'failed',
             'message': (
-                'The Kubernetes TLS Secret could not be updated. Review the cluster connection, '
-                'access permissions, and uploaded certificate pair, then retry.'
+                safe_message
+                if identity_rejected
+                else (
+                    'The Kubernetes TLS Secret could not be updated. Review the cluster connection, '
+                    'access permissions, and uploaded certificate pair, then retry.'
+                )
             ),
             'provider_updated': False,
             'persistence_confirmed': failure_event_saved,
@@ -359,16 +396,36 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
 
     parsed = validation.parsed_certificate
     # Admit the entire selected group before the first provider write.
+    stale_after = _coverage_evidence_window()
     coverage_blockers = [
         f'{target.cluster_id}/{target.namespace}/{target.secret_name}: {blocker}'
         for target in targets
-        if (blocker := _coverage_blocker(target, parsed))
+        if (blocker := _coverage_blocker(target, parsed, stale_after=stale_after))
     ]
     if coverage_blockers:
         return _bulk_failure_result(
             'TLS coverage admission blocked this bulk operation. No Secret was updated.',
             errors=coverage_blockers,
         )
+    # Verify the immutable live identity of the entire group before the
+    # first provider PATCH. A race after this point is still stopped by
+    # resourceVersion preconditions on dry-run and the actual PATCH.
+    prevalidated_versions: dict[int, str] = {}
+    for target in targets:
+        try:
+            prevalidated_versions[int(target.id)] = preflight_tls_secret(target)
+        except Exception as exc:
+            if isinstance(exc, TLSSecretIdentityError):
+                current_app.logger.warning('Bulk TLS rotation preflight rejected a stale target identity.')
+                reason = str(exc)
+            else:
+                current_app.logger.warning('Bulk TLS rotation preflight could not verify a live target.')
+                reason = 'Live Secret identity verification failed. Synchronize TLS inventory and retry.'
+            return _bulk_failure_result(
+                'TLS target identity admission blocked this bulk operation. No Secret was updated.',
+                errors=[f'{target.cluster_id}/{target.namespace}/{target.secret_name}: {reason}'],
+            )
+
     bulk_job_id = uuid.uuid4().hex[:16]
     actor = cast(User, current_user)
     actor_user_id = getattr(actor, 'id', None)
@@ -379,12 +436,28 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
         old_fingerprint = target.fingerprint_sha256
         old_not_after = target.not_after
         try:
-            patch_tls_secret(target, cert_bytes, key_bytes)
-        except Exception:
-            current_app.logger.exception(
-                'Bulk Kubernetes TLS Secret mutation failed for %s/%s.',
-                target.namespace,
-                target.secret_name,
+            patch_tls_secret(
+                target,
+                cert_bytes,
+                key_bytes,
+                prevalidated_resource_version=prevalidated_versions[int(target.id)],
+            )
+        except Exception as exc:
+            identity_rejected = isinstance(exc, TLSSecretIdentityError)
+            if identity_rejected:
+                current_app.logger.warning(
+                    'Bulk TLS rotation rejected due to stale target identity for %s/%s.',
+                    target.namespace,
+                    target.secret_name,
+                )
+            else:
+                current_app.logger.exception(
+                    'Bulk Kubernetes TLS Secret mutation failed for %s/%s.',
+                    target.namespace,
+                    target.secret_name,
+                )
+            safe_message = (
+                str(exc) if identity_rejected else 'The Kubernetes TLS Secret could not be updated.'
             )
             db.session.add(
                 _new_tls_update_event(
@@ -397,7 +470,7 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
                         old_not_after=old_not_after,
                         new_not_after=parsed.not_after,
                         status='failed',
-                        message='The Kubernetes TLS Secret could not be updated.',
+                        message=safe_message,
                         actor_user_id=actor_user_id,
                         bulk_job_id=bulk_job_id,
                     )
@@ -407,7 +480,11 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
                 {
                     'target': target_view,
                     'status': 'failed',
-                    'message': ('Kubernetes update failed. Review the cluster connection and access permissions.'),
+                    'message': (
+                        safe_message
+                        if identity_rejected
+                        else 'Kubernetes update failed. Review the cluster connection and access permissions.'
+                    ),
                     'provider_updated': False,
                     'persistence_confirmed': True,
                 }

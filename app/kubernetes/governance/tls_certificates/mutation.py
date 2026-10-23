@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 from typing import Any
+from uuid import UUID
 
 from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload
 from app.common.sensitive_uploads import read_required_upload_bytes
@@ -9,6 +10,10 @@ from app.extensions.db import db
 from app.kubernetes.governance.tls_certificates.collector import build_kubernetes_client
 from app.kubernetes.governance.tls_certificates.constants import TLS_CRT_KEY, TLS_KEY_KEY, TLS_SECRET_TYPE
 from app.models import Cluster
+
+
+class TLSSecretIdentityError(ValueError):
+    """An immutable Secret target could not be proven safe for rotation."""
 
 
 def read_uploaded_pair(files: Any) -> tuple[bytes, bytes]:
@@ -24,12 +29,8 @@ def read_uploaded_pair(files: Any) -> tuple[bytes, bytes]:
     )
 
 
-def patch_tls_secret(record: Any, cert_bytes: bytes, key_bytes: bytes) -> str:
-    cluster = db.session.get(Cluster, record.cluster_id)
-    if cluster is None:
-        raise ValueError('Cluster record no longer exists.')
-
-    api = build_kubernetes_client(cluster).core_api()
+def _verify_tls_secret_preconditions(api: Any, record: Any) -> str:
+    """Read live Kubernetes identity, retaining only safe resource metadata."""
     live_secret = api.read_namespaced_secret(
         name=record.secret_name,
         namespace=record.namespace,
@@ -39,13 +40,48 @@ def patch_tls_secret(record: Any, cert_bytes: bytes, key_bytes: bytes) -> str:
         secret_type = str(getattr(live_secret, 'type', None) or '')
         metadata = getattr(live_secret, 'metadata', None)
         resource_version = str(getattr(metadata, 'resource_version', None) or '')
+        live_uid = str(getattr(metadata, 'uid', None) or '')
     finally:
         scrub_secret_payload(live_secret)
 
     if secret_type != TLS_SECRET_TYPE:
         raise ValueError('The live Kubernetes Secret is no longer a TLS Secret.')
+    expected_uid = str(getattr(record, 'secret_uid', None) or '')
+    if not expected_uid or not live_uid:
+        raise TLSSecretIdentityError('TLS Secret identity evidence is missing. Synchronize TLS inventory before rotation.')
+    try:
+        expected_object_uid = str(UUID(expected_uid))
+        live_object_uid = str(UUID(live_uid))
+    except (TypeError, ValueError) as exc:
+        raise TLSSecretIdentityError('TLS Secret identity evidence is invalid. Synchronize TLS inventory before rotation.') from exc
+    if expected_object_uid != live_object_uid:
+        raise TLSSecretIdentityError('The TLS Secret was recreated since collection. Synchronize TLS inventory and select again.')
     if not resource_version:
         raise ValueError('Kubernetes did not return a Secret resource version. Refresh TLS inventory and retry.')
+    return resource_version
+
+
+def preflight_tls_secret(record: Any) -> str:
+    """Admit one immutable live target without sending provider PATCH."""
+    cluster = db.session.get(Cluster, record.cluster_id)
+    if cluster is None:
+        raise ValueError('Cluster record no longer exists.')
+    return _verify_tls_secret_preconditions(build_kubernetes_client(cluster).core_api(), record)
+
+
+def patch_tls_secret(
+    record: Any,
+    cert_bytes: bytes,
+    key_bytes: bytes,
+    *,
+    prevalidated_resource_version: str | None = None,
+) -> str:
+    cluster = db.session.get(Cluster, record.cluster_id)
+    if cluster is None:
+        raise ValueError('Cluster record no longer exists.')
+
+    api = build_kubernetes_client(cluster).core_api()
+    resource_version = prevalidated_resource_version or _verify_tls_secret_preconditions(api, record)
 
     encoded_data = {
         TLS_CRT_KEY: base64.b64encode(cert_bytes).decode('ascii'),
