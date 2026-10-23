@@ -9,8 +9,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.integrations.source_control.source_control.providers.github.default_branch import (
+    collect_default_branch_revision,
+)
+from app.integrations.source_control.source_control.providers.github.reference_commit import (
+    publish_default_branch_revision,
+)
 from app.integrations.source_control.source_control.providers.github.repository_commit import (
     RepositoryGenerationError,
     publish_generation,
@@ -21,7 +28,9 @@ from app.integrations.source_control.source_control.providers.github.repository_
     collect_installation_repositories,
 )
 from app.integrations.source_control.source_control.providers.github.transport import GitHubProviderError
-from app.models.source_control import SourceInstallation
+from app.models.source_control import (
+    SourceInstallation, SourceRepository, SourceRepositoryGrant,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +39,9 @@ class CollectionOutcome:
     generation: int
     status: str
     observed_count: int | None
+    committed_revisions: int = 0
+    revision_failures: int = 0
+    unchecked_revisions: int = 0
 
 
 def synchronize_installation(
@@ -56,9 +68,41 @@ def synchronize_installation(
         # pending generation can be marked degraded; committed rows stay intact.
         record_generation_failure(session, installation, generation)
         raise
+    # Each branch observation is independently authoritative and best-effort.
+    # Exact SHA collection never backdates or revokes an exhaustive repository
+    # grant scan. Bound calls to avoid external API storms on large tenants.
+    target_ids = list(session.scalars(
+        select(SourceRepository.id)
+        .join(SourceRepositoryGrant, SourceRepositoryGrant.repository_id == SourceRepository.id)
+        .where(
+            SourceRepositoryGrant.installation_id == installation.id,
+            SourceRepositoryGrant.access_status == 'granted',
+            SourceRepositoryGrant.valid_until.is_(None),
+            SourceRepository.default_branch.is_not(None),
+        )
+        .order_by(SourceRepository.id)
+        .limit(21),
+    ))
+    committed_revisions = 0
+    revision_failures = 0
+    for repository_id in target_ids[:20]:
+        try:
+            branch = collect_default_branch_revision(
+                session, installation=installation, repository_id=repository_id,
+            )
+            publish_default_branch_revision(
+                session, installation=installation, evidence=branch,
+            )
+            committed_revisions += 1
+        except (GitHubProviderError, RepositoryGenerationError):
+            session.rollback()
+            revision_failures += 1
     return CollectionOutcome(
         installation_id=generation.installation_id,
         generation=generation.generation,
         status='committed',
         observed_count=count,
+        committed_revisions=committed_revisions,
+        revision_failures=revision_failures,
+        unchecked_revisions=max(len(target_ids) - 20, 0),
     )
