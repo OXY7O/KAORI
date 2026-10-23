@@ -26,6 +26,17 @@
                                 ],
                                 placement='right',
                                 variant='guide') }}
+                        {% elif selected.name == 'audit_event' %}
+                            {{ info_tip.render('data-lifecycle-audit-event-policy-guide',
+                                'Administrative Audit Events Policy',
+                                'Manual, source-restricted archival of committed administrative audit evidence.',
+                                items=[
+                                    'An active Local Database Super Admin can save the policy and request Archive Only; saving does not start an archive job.',
+                                    'Archived bundles contain a limited redacted projection; the original audit events remain in PostgreSQL.',
+                                    'Automatic scheduling, source cleanup, archive downloads, individual-record lookup and object purge remain unavailable until security and retention governance approves them.'
+                                ],
+                                placement='right',
+                                variant='guide') }}
                         {% endif %}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">{{ selected.description }}</p>
@@ -55,7 +66,7 @@
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="layers-3" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <h3 class="text-base font-semibold leading-6 text-content-primary">Lifecycle Coverage</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Records covered by this retention, archive, and cleanup policy.</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">{% if selected.name == 'audit_event' %}Source-owned records covered by manual, non-destructive archival.{% else %}Records covered by this retention, archive, and cleanup policy.{% endif %}</p>
                 </div>
             </header>
             <div class="grid gap-3 p-4 sm:grid-cols-2 {% if lifecycle.coverage|length >= 3 and selected.name != 'alert_incident' %}xl:grid-cols-3{% endif %}">
@@ -283,6 +294,7 @@
                         </label>
                     </div>
                 {% endif %}
+                {% if selected.name != 'audit_event' %}
                 <div class="grid gap-4 sm:grid-cols-2">
                     <label class="text-xs font-semibold text-content-secondary">
                         Schedule hour
@@ -311,18 +323,23 @@
                         <span class="font-semibold text-status-warning-text">The global Data Lifecycle dispatcher is disabled; saved schedules will not run automatically.</span>
                     {% endif %}
                 </p>
-                <div class="grid gap-3 rounded-xl border border-outline-default bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4">
+                {% endif %}
+                <div class="grid gap-3 rounded-xl border border-outline-subtle bg-surface-subtle p-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Retention Boundary</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Retention changes eligibility only; no job runs immediately.</p>
                     </div>
                     <div>
-                        <p class="text-xs font-semibold text-content-primary">Automatic Run</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Requires Policy enabled + Scheduled execution. {{ lifecycle.next_schedule_label or 'No scheduled run.' }}</p>
+                        <p class="text-xs font-semibold text-content-primary">{{ 'Execution Mode' if selected.name == 'audit_event' else 'Automatic Run' }}</p>
+                        {% if selected.name == 'audit_event' %}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Manual Archive Only. Enable and save the policy before starting a job.</p>
+                        {% else %}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Requires Policy enabled + Scheduled execution. {{ lifecycle.next_schedule_label or 'No scheduled run.' }}</p>
+                        {% endif %}
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Failure Recovery</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Cleanup blocked; transient failures retry once, then need manual retry.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{% if selected.name == 'audit_event' %}Archive failures retry once, then require manual retry. Source records stay intact.{% else %}Cleanup blocked; transient failures retry once, then need manual retry.{% endif %}</p>
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Execution Worker</p>
@@ -345,7 +362,7 @@
                                 Scheduled execution
                             </label>
                         {% else %}
-                            <span class="text-xs leading-5 text-content-muted">Manual archive-only · scheduling not admitted</span>
+                            <span class="text-xs leading-5 text-content-muted">{{ 'Manual Archive Only · No schedule' if selected.name == 'audit_event' else 'Manual archive-only · scheduling not admitted' }}</span>
                         {% endif %}
                     </div>
                     {% if can_manage %}
@@ -365,35 +382,47 @@
             </p>
         {% endif %}
         {% if selected.name == 'audit_event' %}
-            <p class="rounded-lg border border-outline-subtle bg-surface-subtle p-3 text-xs text-content-secondary">
-                Archive Only: administrative AuditEvent evidence stays in PostgreSQL. Manual archives contain
-                a redacted summary, not unrestricted source metadata. Scheduled cleanup, historical record
-                lookup, archive download, and archive-object purge are not admitted until source-specific
-                permissions and retention governance are approved.
-            </p>
-        {% endif %}
-        {% if not selected.enabled %}
+            <div class="flex flex-wrap items-center gap-3 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2.5"
+                 role="status">
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-content-primary">
+                    <i data-lucide="{{ 'activity' if lifecycle.active_lifecycle_jobs else ('check-circle-2' if selected.enabled else 'pause-circle') }}"
+                       class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"
+                       aria-hidden="true"></i>
+                    {% if lifecycle.active_lifecycle_jobs %}
+                        Archive in progress
+                    {% elif selected.enabled %}
+                        Manual Archive Only enabled
+                    {% else %}
+                        Policy paused
+                    {% endif %}
+                </span>
+                <span class="min-w-0 flex-1 text-xs leading-5 text-content-secondary">
+                    {% if lifecycle.active_lifecycle_jobs %}
+                        Follow the execution in Jobs &amp; Executions. Another run is unavailable until completion.
+                    {% elif selected.enabled %}
+                        Preview the eligible records, then run Archive Only. Original audit events remain in PostgreSQL.
+                    {% else %}
+                        Preview is available. Enable and save the policy to allow manual archival.
+                    {% endif %}
+                </span>
+                {{ info_tip.render('data-lifecycle-audit-event-safety',
+                    'Archive Evidence Boundary',
+                    'AuditEvent archive bundles contain a limited redacted summary; original committed events remain in PostgreSQL.',
+                    items=[
+                        'Only an active Local Database Super Admin may operate this policy.',
+                        'Scheduling and hot cleanup are disabled for this source.',
+                        'Archive download, per-record historical lookup and object purge are restricted pending source security and retention authorization.'
+                    ],
+                    placement='right',
+                    variant='guide') }}
+            </div>
+        {% elif not selected.enabled %}
             <div class="rounded-lg border border-outline-default bg-status-warning-soft p-3 text-xs leading-5 text-content-secondary">
-                {% if selected.name == 'audit_event' %}
-                    <span class="font-semibold text-status-warning-text">AuditEvent archive policy paused by default.</span>
-                    Preview remains read-only. For approved disposable UAT evidence, an authorized Local Database Super Admin
-                    can select Policy enabled and Save Policy, then run Archive Only manually.
-                    Saving does not start a job; scheduling, hot cleanup, archive download, and purge stay blocked.
-                {% else %}
-                    <span class="font-semibold text-status-warning-text">Policy paused.</span> Preview remains available, but archive execution is blocked until the policy is enabled and saved.
-                {% endif %}
+                <span class="font-semibold text-status-warning-text">Policy paused.</span> Preview remains available, but archive execution is blocked until the policy is enabled and saved.
             </div>
         {% elif lifecycle.active_lifecycle_jobs %}
             <div class="rounded-lg border border-outline-default bg-surface-subtle p-3 text-xs leading-5 text-content-secondary">
                 <span class="font-semibold text-content-primary">Lifecycle execution already active.</span> Wait for the canonical JobExecution to reach a terminal state before queuing another archive operation.
-            </div>
-        {% elif selected.name == 'audit_event' %}
-            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3 text-xs leading-5 text-content-secondary"
-                 role="status">
-                <span class="font-semibold text-content-primary">Manual Archive Only enabled.</span>
-                Run Preview, then Archive Only for approved synthetic evidence. Saving the policy never queues a job.
-                Scheduling, hot cleanup, archive download, record lookup, and purge remain blocked.
-                Disable the policy after UAT.
             </div>
         {% endif %}
         <div class="flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-5">
