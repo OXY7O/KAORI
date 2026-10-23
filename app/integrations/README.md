@@ -605,3 +605,28 @@ not guaranteed human reading. The long ntfy origin instruction is shortened
 without losing its required environment variable or app/worker scope.
 Actual two-line text wrapping depends on browser/viewport; real Firefox
 Visual QA and human acceptance remain pending, with no forced line clamp.
+
+## Notification Delivery — provider 429 retry deadline (#1475, review holding)
+
+Slack and Discord HTTP 429 responses now carry a **sanitized, bounded**
+`Retry-After` delay (delta seconds or HTTP-date) through the existing typed
+`DeliveryResult` without persisting raw response headers, webhook URLs,
+provider error bodies or credentials. The limit is 24 hours; malformed/past
+headers fall back to KAORI's normal global retry floor. Both limits apply via
+`max(global_retry_delay, provider_retry_after)` rather than early retry.
+
+A nullable, indexed `notification_deliveries.next_retry_at` stores the
+provider-specific due time independently from `updated_at` (actual attempt
+time) and immutable encrypted replay snapshot. Existing legacy NULL rows
+keep original global backoff. The worker's PostgreSQL `SKIP LOCKED` scan
+excludes not-yet-due rows, and direct event redispatch also enforces future
+deadlines. Claiming a new attempt resets this scheduling hint, and successful
+outcomes clear it. The stored hint does not make provider delivery exactly-once.
+
+**UAT and operational boundary:** the schema migration must be applied in
+an authorized DevContainer database before loading the updated model.
+`NOTIFICATION_DELIVERY_RECOVERY_ENABLED=false` remains authoritative; no
+automatic worker activation is permitted in this source-only review. Run
+PostgreSQL concurrency/crash, 429 burst, old NULL-row, disabled/retired
+channel, credential rotation, and mock-provider negative tests before
+requesting human acceptance. Never use production endpoints for these tests.

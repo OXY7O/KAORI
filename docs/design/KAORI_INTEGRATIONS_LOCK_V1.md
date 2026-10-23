@@ -704,3 +704,21 @@ visibility, archived read-only behavior, Edit GET + HTMX, Test CSRF POST,
 Retire reason/confirmation, deletion dependency guard, or focus ownership.
 DevContainer light/dark, narrow/desktop, keyboard and modal UAT required
 before acceptance.
+
+## Provider-aware Retry-After admitted source contract (#1475, 2026-10-23)
+
+Notification Channels uses one immutable journal/replay contract. Slack and
+Discord 429 response `Retry-After` (delta-seconds / HTTP-date) is classified
+into a **bounded and sanitized** typed delay only; no raw response body,
+secret URL, or unvalidated headers enter committed evidence. Invalid values
+fall back to existing global retry minimum, while valid delays extend
+the minimum up to 24 hours. `NotificationDelivery.next_retry_at` is an
+indexed nullable due-time hint distinct from `updated_at` attempt time,
+and NULL legacy rows retain the existing schedule contract. Both direct
+re-dispatch and `SKIP LOCKED` recovery must reject early attempts.
+
+No application UAT acceptance, provider-specific failure injection, Alembic
+upgrade, worker/concurrent DB test or official admission has been inferred
+from source implementation; retain disabled-by-default recovery and explicit
+at-least-once / remote-acknowledgment limitations. Never conflate provider
+Retry-After, channel validation status or human receipt.

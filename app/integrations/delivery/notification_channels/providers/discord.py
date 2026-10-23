@@ -19,6 +19,7 @@ from app.integrations.delivery.notification_channels.providers.form_support impo
     credential_map,
 )
 from app.models.notification_channel import NotificationChannel
+from app.integrations.delivery.notification_channels.retry_after import parse_retry_after
 
 _WEBHOOK_PATH = re.compile(r'/api/(?:v[0-9]+/)?webhooks/[0-9]{10,22}/[A-Za-z0-9._-]+\Z')
 _DISCORD_LIMIT = 2000
@@ -83,7 +84,12 @@ def send_discord_message(
             raw = response.read(8192) if status == 200 else b''
     except HTTPError as exc:
         if exc.code == 429:
-            return DeliveryResult(False, 'Discord webhook rate limited the delivery (HTTP 429).')
+            delay = parse_retry_after(exc.headers.get('Retry-After') if exc.headers else None)
+            return DeliveryResult(
+                False,
+                'Discord webhook rate limited the delivery (HTTP 429).',
+                retry_after_seconds=delay,
+            )
         return DeliveryResult(False, f'Discord webhook rejected delivery with HTTP {exc.code}.')
     except (URLError, TimeoutError, OSError, ValueError):
         return DeliveryResult(False, 'Discord webhook is unreachable or TLS verification failed.')
