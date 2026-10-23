@@ -64,6 +64,24 @@ No policy execution, retention setting, archive evidence, storage, API,
 permission or domain ownership semantics changed. Keyboard, mobile,
 light/dark, HTMX and visual QA still require DevContainer human UAT.
 
+## Alert Incidents Policy visual composition (#2923)
+
+The shared policy workspace keeps the canonical KAORI table block shell,
+but uses the **subtle outline without its table shadow** to avoid a
+visually doubled perimeter when stacked with the Data Lifecycle frame.
+Lifecycle Coverage item cards use the existing subtle outline/surface
+tokens. For the four `alert_incident` sources, a responsive two-column
+grid at `sm` and above produces an even **2 × 2** composition; on mobile,
+cards stack vertically. Other domain coverage layouts are unchanged.
+
+Failure Recovery text remains a concise statement of the existing
+single transient retry and subsequent manual intervention; Execution
+Worker only appends an availability claim when committed queue readiness
+reports `queue_ready=True`. This is presentation-only and does not
+change Celery retries, cleanup, policy, or archive semantics. Review
+light/dark, focus, responsive, varied-domain layouts, and status-aware
+wording in DevContainer before human Visual QA acceptance.
+
 ## RBAC
 
 - `platform_operations.view_data_lifecycle`
