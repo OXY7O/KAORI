@@ -164,10 +164,10 @@ def main() -> int:
         'compact native policy-dialog registry': channels_template.count('scope="col"') == 5
         and 'colspan="5"' in channels_template
         and 'View policy' not in channels_template
-        and 'aria-controls="notification-channel-actions-{{ channel.id }}"' in channels_template
+        and 'aria-label="View details for {{ channel.name }}"' in channels_template
         and 'detailChannel = {{ channel.id }}' in channels_template
         and '_channel_details_drawer.html' in channels_template
-        and '_channel_details_drawer.html' in channels_template
+        and '_channel_actions_dialog.html' not in channels_template
         and "channel.event_type_labels|length" in channels_template
         and 'channel.last_delivery_at|user_datetime' in channels_template
         and "def _channel_event_type_groups(" in service
@@ -180,7 +180,6 @@ def main() -> int:
         and 'channel.report_schedule_count' in channel_details_drawer
         and 'channel.last_tested_at|user_datetime' in channel_details_drawer
         and 'channel.last_delivery_at|user_datetime' in channel_details_drawer
-        and 'credential_payload' not in channel_details_drawer
         and 'credential_payload' not in channel_details_drawer,
         'balanced policy and discoverable deletion': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in channels_template
         and 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channel_details_drawer
@@ -191,7 +190,7 @@ def main() -> int:
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
         and 'data-destructive-modal-open' in channel_details_drawer,
         'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in channel_details_drawer
-        and 'hover:bg-status-warning-soft' in channel_details_drawer
+        and 'Delete Locked' in channel_details_drawer
         and 'Channel already disabled' in channel_delete_blockers_dialog
         and 'zero records and zero report references' in channel_delete_blockers_dialog
         and "table_label.status_label('Locked', 'warning'" in channel_delete_blockers_dialog
@@ -213,9 +212,9 @@ def main() -> int:
         and "channel.lifecycle_state == 'retired'" in channel_details_drawer
         and 'channel.retirement_reason' in channel_details_drawer,
         'compact notification lifecycle copy and row anatomy': 'table_ui.title_cell(channel.name' in channels_template
-        and 'role="group" aria-label="Actions for {{ channel.name }}"' in channels_template
+        and 'aria-label="View details for {{ channel.name }}"' in channels_template
         and 'side_drawer.render(' in channel_details_drawer
-        and 'data-kaori-native-dialog' in channel_details_drawer
+        and 'data-kaori-dialog-open' in channel_details_drawer
         and "channel.test_status == 'success'" in channel_details_drawer
         and 'Turn off Enabled in Edit to stop delivery.' in channel_delete_blockers_dialog
         and 'zero records and zero report references' in channel_delete_blockers_dialog
