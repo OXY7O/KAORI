@@ -48,17 +48,19 @@ complete committed zero snapshot.
 
 ## Remaining requirements before operational acceptance
 
-1. Implement canonical persisted resource-policy evaluation under #724;
-   do not infer scope from integrations.manage or a Vault administrator role.
-2. Wire server-side permission and exact policy enforcement to direct
-   route, HTMX, Registry, Detail, search, export, report and graph reads.
-   Ensure policy checks happen before SQL counts or row materialization.
-3. Adopt existing Violet table_registry macros, Fast Shell/lazy HTMX,
-   default page size five, canonical loading/clear filter/empty/error,
-   responsive light/dark and accessible action patterns.
+1. The canonical persisted #724 mount evaluator and mandatory-audited
+   governed Registry GET are implemented. Verify the actual approved policy
+   creation/revocation/expiry workflow, SQL locking and evidence on PostgreSQL
+   before acceptance. A global integration/admin role still gives no access.
+2. Direct Registry GET is restricted to one exact actor, instance and opaque
+   policy UUID. Secret Detail, search, graph, export and report-level reads
+   remain unavailable until separately approved scoped routes/authorization.
+3. Confirm the existing Violet app shell, shared Hero/table/blocked states,
+   default pagination five, clear empty/error behavior, accessibility and
+   light/dark/mobile Visual QA with real committed metadata in DevContainer.
 4. Run exact-SHA pytest/Ruff/Pyright, PostgreSQL, RBAC-negative,
-   DevContainer supported Vault metadata/403 and human Visual QA/UAT.
-   Review source merge is not an acceptance result.
+   supported Vault metadata/403 and human Visual QA/UAT. Code merge is not
+   UAT evidence, and an unavailable grant provisioner is a BLOCKER.
 
 No raw Secret, SecretID, token, path, private key, value hash, dynamic
 credential, sensitive provider error or raw response may be rendered,
