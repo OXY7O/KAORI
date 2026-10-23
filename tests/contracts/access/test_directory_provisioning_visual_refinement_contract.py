@@ -31,7 +31,7 @@ def test_hero_matches_existing_roles_and_provider_form_reference() -> None:
     assert 'Directory Boundary' not in source
     assert 'Provider Configuration Controls Discovery' not in source
     assert "url_for('identity_providers.index')" in source
-    assert "url_for('users.index')" in source
+    assert "url_for('users.index')" not in source  # No redundant bottom navigation.
 
 
 def test_primary_and_right_guidance_use_shared_8_4_layout() -> None:
