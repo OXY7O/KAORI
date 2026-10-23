@@ -350,6 +350,20 @@ WORKSPACES: tuple[WorkspaceDefinition, ...] = (
                 ('integrations.manage',),
             ),
             WorkspaceCapabilityDefinition(
+                'secrets_management',
+                'Secrets Management',
+                'key-round',
+                'integrations.secrets_management',
+                ('integrations.manage',),
+            ),
+            WorkspaceCapabilityDefinition(
+                'source_control',
+                'Source Control',
+                'git-branch',
+                'integrations.source_control',
+                ('integrations.manage',),
+            ),
+            WorkspaceCapabilityDefinition(
                 'notifications',
                 'Notification Channels',
                 'send',
