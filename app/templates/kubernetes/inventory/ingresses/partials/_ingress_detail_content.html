@@ -12,12 +12,14 @@
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         {% set detail_description = "Host, publication, TLS Secret, and backend route evidence from the committed snapshot." %}
-        {% call detail.workspace_header(detail_description, 'route') %}
+        {% call detail.workspace_header(detail_description, 'route',
+            context_items=[
+                {'label': ingress.cluster_name, 'icon': 'building-2'},
+                {'label': ingress.namespace, 'icon': 'folder-tree'},
+                {'label': ingress.class, 'icon': 'route'}
+            ], compact=true) %}
             {% call detail.header_identity_row() %}
-                {{ detail.inventory_title(ingress.name) }}
-                {{ table_label.metadata_label(ingress.cluster_name, 'building-2') }}
-                {{ table_label.metadata_label(ingress.namespace, 'folder-tree') }}
-                {{ table_label.metadata_label(ingress.class) }}
+                {{ detail.inventory_title(ingress.name, compact=true) }}
                 {{ table_label.status_indicator_label(ingress.detail_posture_label, ingress.detail_posture_tone, size='detail') }}
             {% endcall %}
         {% endcall %}
