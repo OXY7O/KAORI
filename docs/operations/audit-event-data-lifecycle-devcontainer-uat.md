@@ -7,6 +7,12 @@ The operator has already accepted **Access → Activity Audit** functionality.
 This UAT concerns the **new** `audit_event` policy/archive boundary, not
 a redesign of either register.
 
+This source-specific AuditEvent worksheet is a subset of the canonical
+[nine-domain Data Lifecycle UAT](data-lifecycle-nine-domain-devcontainer-uat.md).
+The complete matrix includes source-owner validation across all nine
+registered adapters; Archive Only success here is not an approval to purge,
+compact or expose individual archived records.
+
 ## Exact candidate and checks
 
 Record exact `git rev-parse HEAD`, Alembic revision, user/role,

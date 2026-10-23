@@ -10,6 +10,20 @@ Ownership is intentionally split:
 
 The former `/settings/data-lifecycle/` route is compatibility-only and redirects to this workspace. Settings no longer owns lifecycle policy UI or mutation logic.
 
+## End-to-end nine-domain DevContainer UAT
+
+The review holding qualification guide
+[`docs/operations/data-lifecycle-nine-domain-devcontainer-uat.md`](../../../docs/operations/data-lifecycle-nine-domain-devcontainer-uat.md)
+covers **all nine** registered domains, persisted policy and Preview,
+canonical JobExecution, verified archive artifacts, bounded source cleanup
+only where admitted, cold-object expiry, storage recovery, RBAC,
+cross-domain references and KAORI Violet browser/HTMX validation.
+Each scenario starts NOT RUN until executable synthetic runtime and human
+acceptance evidence exists. The dedicated AuditEvent guide remains
+source-specific; Notification Delivery's pending source-safety backlog
+remains separate. Archive Only acceptance must not be extrapolated to
+destructive cleanup or historical individual-record lookup.
+
 ## Workspace contract
 
 The page contains three controlled, server-owned workspaces. Only the active workspace is built on a request, so Archive History queries and Archive Storage probes do not run while an operator is editing Retention Policies:
