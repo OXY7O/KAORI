@@ -1096,13 +1096,25 @@ holding branch remain gated separately.
 ### Allocation Drift contextual bridge and modal density (#2931 DevContainer feedback)
 
 The approved primary `Allocation Drift` Operations tab shows two distinct
-Capsule registries. Between them, a compact read-only **Allocation Scope Guide**
-reuses the existing KAORI table block/icon/typography primitives: Tenant
-`spec.resourceQuotas` is authoritative for Capsule-generated Namespace
-ResourceQuota, while Capsule `GlobalResourceQuota` governs Tenant-level shared
-allocation separately. Tenant Sync records divergence only; Reapply or Accept
-remains an explicit, user-triggered decision. The guide is a semantic bridge,
-not a new drift queue, source-of-truth record, metrics widget or navigation.
+Capsule registries. Between them, a compact read-only **Capsule Allocation Authority**
+comparison replaces the human-rejected flat three-text-column **Allocation
+Scope Guide**. The bridge reuses the existing KAORI table block and balanced
+Violet-soft peer-card treatments; two equal responsive visual lanes make the
+authoritative effect explicit:
+
+- **Tenant Resource Quotas:** `Tenant CR → Namespace ResourceQuota`;
+  Capsule reconciles the generated namespaced constraints.
+- **Shared Allocation:** `GlobalResourceQuota → Shared Tenant allocation`;
+  Capsule separately owns Tenant-wide shared limits.
+
+The comparison is a source/target authority diagram, **not** a procedural
+timeline or a new component family. Its concise header states that Tenant Sync
+only observes drift; Reapply or Accept remains an explicit decision. It is a
+semantic distinction between two real quota scopes, not a new drift queue,
+source-of-truth record, metrics widget or navigation. At desktop widths it uses
+two equal peers; on mobile it stacks the peers with normal page flow and no
+forced horizontal scroll. It preserves `data-capsule-allocation-scope-guide`
+and the existing accessibility heading and links to the adjacent registries.
 
 The two existing `View More` native evidence dialogs use a wider bounded
 `max-w-5xl` desktop workspace (previously `max-w-3xl`) and progressive
