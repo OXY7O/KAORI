@@ -178,6 +178,8 @@ a complete source-level audit export.
 
 The operator panel uses the shared KAORI policy components and one compact status row for paused, enabled or active manual archiving. The schedule controls are not shown for this manual-only domain. Source access, retention and archival permissions remain governed by #2891, and compaction plus historical lookup remain blocked by #2892. The default policy is unchanged. No test-environment wording is shown to operators.
 
+The status row deliberately has no redundant Guide: it shows committed state and the next action. Source-owned retention and archive restrictions remain accessible through the canonical title-adjacent KAORI Guide on the Administrative Audit Events Policy header. Do not add contextual popovers to the status row.
+
 ## RBAC
 
 - `platform_operations.view_data_lifecycle`
