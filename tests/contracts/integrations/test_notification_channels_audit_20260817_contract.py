@@ -552,7 +552,8 @@ def test_channel_inventory_rows_are_compact_with_native_policy_dialog() -> None:
     # The default row never grows when an operator inspects 13+ allowed event types.
     row = page.split('<tbody class="{{ table_ui.body_classes() }}">', 1)[1].split('</tbody>', 1)[0]
     assert '<details' not in row and '<dialog' not in row
-    assert "channel.event_type_labels[0]" in row
+    assert "channel.event_type_labels[0]" not in row
+    assert "table_ui.title_cell(channel.name" in row
     assert 'channel.event_type_labels[:2]' not in row
     assert 'channel.event_type_labels|join(", ")' not in row
     assert 'data-kaori-dialog-open' in row
@@ -594,6 +595,43 @@ def test_channel_inventory_rows_are_compact_with_native_policy_dialog() -> None:
 
 
 
+def test_notification_channel_compact_copy_and_actions_follow_kaori_primitives() -> None:
+    inventory = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
+    deletion = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
+    retirement = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
+
+    assert "table_ui.title_cell(channel.name, channel.provider_label ~ ' · ' ~ channel.destination_label, channel.provider_icon)" in inventory
+    assert 'table_ui.action_grid_classes()' in inventory
+    assert 'role="group" aria-label="Actions for {{ channel.name }}"' in inventory
+    assert "table_ui.action_classes() }} w-full\">Edit" in inventory
+    assert "table_ui.action_classes() }} w-full\">Test" in inventory
+    assert "table_ui.action_classes() }} w-full" in inventory
+    assert 'data-destructive-modal-open' in inventory
+    assert 'data-dialog-target="notification-channel-retire-{{ channel.id }}"' in inventory
+    assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in inventory
+    assert 'divide-y divide-outline-subtle' in inventory
+    assert "channel.test_status == 'success'" in inventory
+    assert "channel.last_delivery_label, channel.last_delivery_tone" in inventory
+    assert 'channel.event_type_labels[0]' not in inventory
+
+    assert 'KAORI retains delivery history and report references.' in deletion
+    assert 'Turn off Enabled in Edit to stop delivery.' in deletion
+    assert 'Automatic delivery is already disabled.' in deletion
+    assert 'both dependency counts are zero' in deletion
+    assert 'Never erase delivery evidence.' in deletion
+    assert 'data-kaori-native-dialog' in deletion
+
+    assert 'aria-label="Retirement consequences"' in retirement
+    assert '<ul class="mt-2 list-disc' in retirement
+    assert 'Stops future channel delivery.' in retirement
+    assert 'Moves this channel to Archived (read-only).' in retirement
+    assert '{{ channel.delivery_record_count }}' in retirement
+    assert 'committed delivery records.' in retirement
+    assert 'name="retirement_reason" required minlength="8" maxlength="500"' in retirement
+    assert 'channel.report_schedule_count' in retirement
+    assert 'name="csrf_token" value="{{ csrf_token() }}"' in retirement
+
+
 def test_notification_channel_layout_and_protected_delete_are_discoverable() -> None:
     channels = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     policy = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
@@ -601,11 +639,11 @@ def test_notification_channel_layout_and_protected_delete_are_discoverable() -> 
     service = read('app/integrations/delivery/notification_channels/service.py')
     lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
 
-    assert "table_ui.table_classes('min-w-[1100px]')" in channels
+    assert "table_ui.table_classes('w-full min-w-[980px] table-fixed lg:min-w-0')" in channels
     assert 'min-w-[1280px]' not in channels
-    assert 'flex flex-wrap justify-end gap-1.5' in channels
+    assert 'table_ui.action_grid_classes()' in channels
     assert channels.count('scope="col"') == 6
-    for width in ('w-[21%]', 'w-[12%]', 'w-[14%]', 'w-[18%]', 'w-[19%]', 'w-[16%]'):
+    for width in ('w-[20%]', 'w-[10%]', 'w-[12%]', 'w-[18%]'):
         assert width in channels
 
     # Full-width capability rows prevent mismatched masonry/card heights.
@@ -649,7 +687,7 @@ def test_notification_locked_action_and_dialog_explain_disabled_lifecycle() -> N
     assert 'Channel already disabled' in dialog
     assert 'Automatic delivery is already disabled.' in dialog
     assert 'hard delete stays locked' in dialog.lower()
-    assert 'Delete becomes available only when' in dialog
+    assert 'Delete unlocks only when' in dialog
     assert 'both dependency counts are zero' in dialog
     assert 'for schedule_name in channel.report_schedule_names' in dialog
     assert 'credential_payload' not in dialog

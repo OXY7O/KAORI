@@ -35,7 +35,7 @@
             <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
                 <p class="text-sm font-semibold leading-5 text-status-warning-text">Hard delete is unavailable</p>
                 <p class="mt-1.5 text-xs leading-5 text-content-secondary">
-                    KAORI retains committed delivery history and protects referenced report schedules. Disabling a channel stops future eligible automatic deliveries but does not remove these dependencies.
+                    KAORI retains delivery history and report references. Disabling stops delivery, not these dependencies.
                 </p>
             </div>
 
@@ -70,9 +70,9 @@
                             <p class="text-sm font-semibold text-content-primary">{{ 'Disable future delivery' if channel.enabled else 'Channel already disabled' }}</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">
                                 {% if channel.enabled %}
-                                    Use Edit to turn off Enabled. The channel will stop automatic delivery, but its committed history will keep hard delete locked.
+                                    Turn off Enabled in Edit to stop delivery. Retained evidence still locks Delete.
                                 {% else %}
-                                    Automatic delivery is already disabled. Hard delete stays locked because committed delivery records must remain auditable.
+                                    Automatic delivery is already disabled. Hard delete stays locked while evidence remains.
                                 {% endif %}
                             </p>
                         </div>
@@ -83,7 +83,7 @@
                         <i data-lucide="link-2-off" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-content-primary">Remove report references</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Detach this channel from referencing Report Schedules. This clears only the schedule blocker, not retained delivery history.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Remove report references first. Delivery history remains protected.</p>
                             {% if channel.report_schedule_names %}
                                 <ul class="mt-2 max-h-28 list-disc space-y-1 overflow-y-auto pl-5 text-xs text-content-secondary">
                                     {% for schedule_name in channel.report_schedule_names %}
@@ -96,7 +96,7 @@
                 {% endif %}
             </section>
             <p class="text-xs leading-5 text-content-muted">
-                Delete becomes available only when <strong>both dependency counts are zero</strong>. Do not erase delivery evidence to unlock deletion.
+                Delete unlocks only when <strong>both dependency counts are zero</strong>. Never erase delivery evidence.
             </p>
         </div>
 

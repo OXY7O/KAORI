@@ -28,11 +28,13 @@
             {{ channel_return_fields() }}
             <div class="min-h-0 flex-1 space-y-4 overflow-y-auto bg-surface-page p-5">
                 <div class="rounded-xl border border-outline-default bg-surface-card p-4">
-                    <p class="text-sm font-semibold text-content-primary">Terminal retirement — no automatic Restore</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">
-                        Retiring disables provider delivery and moves this channel to the read-only Archived view.
-                        {{ channel.delivery_record_count }} delivery records stay committed and auditable.
-                    </p>
+                    <h3 class="text-sm font-semibold text-content-primary">Retirement is permanent</h3>
+                    <ul class="mt-2 list-disc space-y-1.5 pl-5 text-xs leading-5 text-content-secondary"
+                        aria-label="Retirement consequences">
+                        <li>Stops future channel delivery.</li>
+                        <li>Moves this channel to Archived (read-only).</li>
+                        <li>Retains <span class="font-semibold tabular-nums">{{ channel.delivery_record_count }}</span> committed delivery records.</li>
+                    </ul>
                 </div>
                 {% if channel.report_schedule_count %}
                     <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
