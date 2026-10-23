@@ -664,7 +664,7 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert 'Expired approval is audit-only; it cannot authorize acceptance or Release.' in expired_action
     assert 'divide-y divide-outline-subtle border-y border-outline-subtle' in expired_action
     assert 'border-t border-outline-subtle' not in expired_action
-    assert 'class="w-full mt-3 space-y-3"' in expired_action
+    assert 'class="mt-3 flex w-full min-w-0 flex-col items-start gap-3"' in expired_action
     for role_message in (
         'native_cycle.restart_blocked_by_readback',
         'row.release_handoff_plan.requested_by == current_user.id',
@@ -689,8 +689,12 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert expired_action.count('<form ') == 1
     assert 'native_cycle.restart_required' in step
     assert 'native_cycle.restart_zero_transfer_recheck_required' in step
-    assert 'Last committed read-back classified zero transferred resources' in step
-    assert 'fresh authoritative provider verification' in step
+    assert 'Read-back: 0 transferred.' in step
+    assert 'Restart rechecks UID/resourceVersion, ownership and dependencies;' in step
+    assert 'no automatic clearance.' in step
+    assert 'data-release-restart-recheck-note' in step
+    assert 'data-release-restart-confirmation' in step
+    assert 'I verified provider ownership is unchanged before restarting.' in step
     assert 'row.release_handoff_plan.requested_by == current_user.id' in step
     assert "current_user.has_permission('tenant.manage')" in step
     assert "current_user.has_permission('integrations.manage')" in step
@@ -1475,6 +1479,37 @@ def test_accepted_native_handoff_uses_compact_nonmutating_workspace_rows() -> No
     assert 'tenant.dry_run_native_release_handoff_route' in approval
     assert 'external_readback_prerequisites_current' in approval
     assert 'provider ownership unchanged.' in approval
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23
+
+
+def test_expired_native_restart_action_has_compact_readonly_evidence_and_required_consent() -> None:
+    detail = read(DETAIL)
+    step = detail.split('id="tenant-release-stage-finalize"', 1)[1]
+    expired = step.split('{% elif native_cycle.approval_expired %}', 1)[1].split(
+        '{% elif native_cycle.review_expired %}', 1
+    )[0]
+    form = expired.split('restart_expired_tenant_release_handoff_route', 1)[1].split(
+        '</form>', 1
+    )[0]
+    Environment().parse(detail)
+
+    assert 'data-release-restart-recheck-note' in form
+    assert 'Read-back: 0 transferred.' in form
+    assert 'UID/resourceVersion, ownership and dependencies; no automatic clearance.' in form
+    assert 'native_cycle.restart_zero_transfer_recheck_required' in expired
+    assert 'data-release-restart-confirmation' in form
+    assert 'I verified provider ownership is unchanged before restarting.' in form
+    assert re.search(r'name="confirm_handoff_restart"\s+value="restart"\s+required', form)
+    assert 'name="plan_sha256"' in form
+    assert 'name="csrf_token"' in form
+    assert 'hx-post=' in form
+    assert 'min-w-0 flex-col items-start gap-3' in form
+    assert 'self-start rounded-lg border border-outline-default' in form
+    assert 'native_cycle.restart_required' in expired
+    assert 'row.release_handoff_plan.requested_by == current_user.id' in expired
+    assert 'native_cycle.restart_blocked_by_readback' in expired
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23
     assert detail.count('hx-post=') == 23
