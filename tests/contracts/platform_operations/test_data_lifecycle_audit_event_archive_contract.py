@@ -213,8 +213,6 @@ def test_audit_event_source_security_matrix_remains_incomplete_and_export_fail_c
     assert "if domain_name == 'audit_event' and not dry_run:" in engine
 
 
-
-
 def test_audit_event_engine_rechecks_authorization_before_lock_or_archive_write() -> None:
     from app.platform_operations.data_lifecycle.retention.service import run_retention_archive
 
@@ -326,6 +324,7 @@ def test_audit_event_worker_missing_policy_or_deleted_requester_fails_closed() -
             _require_audit_event_manual_admission(
                 trigger_type='manual', triggered_by_user_id=27,
             )
+
 
 def test_direct_archive_verify_rejects_unapproved_audit_event_before_integrity_io() -> None:
     from app.platform_operations.data_lifecycle.service import verify_lifecycle_archive
