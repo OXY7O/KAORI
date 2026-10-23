@@ -166,3 +166,29 @@ Source IDs, selectors, raw alerts, Secret names, paths, Vault credentials
 and provider response payloads never enter this fleet-level view.
 Source-specific drilldown continues to require each Integration capability's
 existing authorization. Exact-SHA DevContainer tests/UAT remain required.
+
+## HV-12 bounded Vault source alert evidence (#2786)
+
+During the existing **explicit Alert Source Validate Binding**, the canonical
+Alertmanager provider now evaluates up to 100 returned Vault alert rows. Each
+must carry the exact approved `vault_instance` identity. The only committed
+additional metadata is a safe, allowlisted `vault_alert_sample` evidence
+record: sample state and counts grouped by Alertmanager active/suppressed/
+unprocessed status and critical/warning/info severity.
+
+An empty response is `unobserved`, with unknown counts; an invalid source
+identity, unexpected response shape or over-budget row population is `blocked`.
+Missing/unrecognized lifecycle or severity evidence is `incomplete` and
+downgrades only consumer binding validation. Partial counts are discarded.
+Sensitive alert names, paths, labels, annotations, fingerprints, URLs,
+credentials and source responses are never committed by this new summary.
+Previous evidence is cleared on blocked validation.
+
+This is a **point-in-time binding-validation sample**, never a live AlertCase,
+current firing/silence count, confirmed health, root cause, service impact,
+recovery, escalation or successful notification. There is no polling, new
+runtime read path, AlertCase promotion, alert routing, provider mutation or
+implicit cross-tenant authorization. Later HV-12 work requires separate
+governed committed source snapshots, case ownership and access controls.
+Focused tests: `tests/integrations/test_vault_alert_source_qualification.py`.
+Exact-SHA local and provider DevContainer UAT remain required.
