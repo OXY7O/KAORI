@@ -58,7 +58,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
             archive_retention_days=_int_value(values, 'archive_retention_days', fallback.archive_retention_days),
             batch_size=batch_size,
             operation_mode=str(values.get('operation_mode') or 'archive_and_cleanup'),
-            schedule_enabled=values.get('schedule_enabled') == 'on',
+            schedule_enabled=(values.get('schedule_enabled') == 'on' and domain_name != 'notification_delivery'),
             schedule_hour=_int_value(values, 'schedule_hour', 2),
             schedule_minute=_int_value(values, 'schedule_minute', 0),
             protect_unreviewed=values.get('protect_unreviewed') == 'on',
