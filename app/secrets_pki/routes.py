@@ -81,6 +81,15 @@ def certificate_analytics() -> ResponseReturnValue:
     )
 
 
+@secrets_pki_bp.get('/registry')
+@permission_required('secrets_pki.view')
+def scoped_registry() -> ResponseReturnValue:
+    """Exact resource grant, audited committed KV v2 metadata only."""
+    from app.secrets_pki.scoped_registry_web import scoped_registry_response
+
+    return scoped_registry_response()
+
+
 @secrets_pki_bp.get('/lifecycle')
 @permission_required('secrets_pki.view')
 def lifecycle() -> ResponseReturnValue:

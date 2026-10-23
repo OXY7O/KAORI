@@ -111,6 +111,21 @@
                 </p>
             </div>
         {% endcall %}
+        {% if current_user.has_permission('secrets_pki.view') %}
+            {% call section_card.render('Scoped Secret Registry',
+                'Inspect committed metadata only under a separately approved exact Vault mount grant.',
+                'lock-keyhole') %}
+                <p class="text-sm leading-6 text-content-secondary">
+                    The Registry requires a canonical Vault instance ID and an approved opaque
+                    scope policy reference. No Secret names, paths or values are displayed.
+                    Viewing Registry metadata is recorded in the Activity Audit.
+                </p>
+                <a href="{{ url_for('secrets_pki.scoped_registry') }}"
+                   class="mt-3 inline-flex text-sm font-semibold text-kaori-primary hover:underline">
+                    Open Scoped Registry
+                </a>
+            {% endcall %}
+        {% endif %}
         {{ section_intro.render(
             'Additional Evidence Domains',
             'PKI issuers, issued certificates, leases and consumer mappings require independent committed-source contracts.',
