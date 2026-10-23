@@ -112,7 +112,10 @@ def test_fixed_https_origin_no_proxy_no_redirect_and_bounded_response():
     assert args['headers']['X-GitHub-Api-Version']
 
 
-@pytest.mark.parametrize('path', ['https://evil.example', '//evil.example', '/a//b', '/a?evil=1', '/a#x'])
+@pytest.mark.parametrize('path', [
+    'https://evil.example', '//evil.example', '/a//b', '/a?evil=1', '/a#x',
+    '/repos/owner/repo', '/app/installations/123/access_tokens',
+])
 def test_arbitrary_endpoint_or_query_not_accepted(path):
     with pytest.raises(GitHubProviderError):
         _safe_json_request('GET', path, bearer='token')

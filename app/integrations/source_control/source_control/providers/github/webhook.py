@@ -58,7 +58,8 @@ def verify_webhook(
     expected = hmac.new(webhook_secret.encode('utf-8'), payload, hashlib.sha256).hexdigest()
     if not hmac.compare_digest(expected, supplied_hex):
         raise GitHubWebhookError('GitHub webhook signature verification failed.')
-    if not str(headers.get('Content-Type') or '').lower().startswith('application/json'):
+    content_type = str(headers.get('Content-Type') or '').split(';', 1)[0].strip().lower()
+    if content_type != 'application/json':
         raise GitHubWebhookError('GitHub webhook content type is unsupported.')
     event = str(headers.get('X-GitHub-Event') or '')
     if event not in _SUPPORTED_EVENTS:
@@ -78,7 +79,12 @@ def verify_webhook(
     native_id = installation.get('id') if isinstance(installation, dict) else None
     if isinstance(native_id, bool) or not isinstance(native_id, int) or native_id <= 0:
         raise GitHubWebhookError('GitHub webhook installation identity is missing.')
-    if native_id != expected_installation_id:
+    if (
+        isinstance(expected_installation_id, bool)
+        or not isinstance(expected_installation_id, int)
+        or expected_installation_id <= 0
+        or native_id != expected_installation_id
+    ):
         raise GitHubWebhookError('GitHub webhook installation does not match the authorized target.')
     repo = data.get('repository')
     repo_id = repo.get('id') if isinstance(repo, dict) else None
