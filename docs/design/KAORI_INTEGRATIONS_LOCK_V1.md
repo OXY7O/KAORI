@@ -597,3 +597,43 @@ the separate all-time total. No synthetic health percentage, provider live
 query, new endpoint, transport behavior, credential display, or evidence
 mutation is permitted. DevContainer/browser light/dark, narrow viewport and
 keyboard UAT is required before operator acceptance.
+
+## Notification Channels — Details-first Channel Actions (#2823, 2026-10-23)
+
+Human-approved refinement supersedes the **two-row-action** and teleported
+**View More** prescriptions in #2774, #2787 and #2792 **for Notification
+Channels only**. Keep the same five-column compact Channel Inventory but
+show exactly one row action, **Details**, for active and archived channels.
+Do not reintroduce an action dropdown, inline row mutation controls, or
+bespoke JavaScript positioning.
+
+Use the existing canonical `components/side_drawer.html` for
+**Summary → Inspect → Act**. The drawer presents Operational Status,
+independent committed Last Test and Last Delivery, then **Channel Actions**,
+followed by complete Delivery Policy and Lifecycle & Governance evidence.
+Only `lifecycle_state == 'active'` channels under authorized
+`integrations.manage` can see Edit Channel (existing GET/HTMX),
+Test Delivery (existing CSRF POST/HTMX), Retire Channel (existing native
+confirmation), and Delete Locked / Delete Channel (existing dependency
+explanation or shared destructive confirmation). Archived channels remain
+read-only; no secret values are rendered.
+
+Keep the hidden, CSRF-protected Delete submit **outside the drawer and table
+scroll**, tied to the existing confirmation modal's stable
+`data-destructive-submit-button-id`. Never loosen
+`NotificationChannelDeletionBlocked` or lifecycle scheduling constraints.
+A nested native or destructive confirmation temporarily owns focus; the
+shared side-drawer focus trap must not steal Tab while such a confirmation
+is active, and Escape within it must not close the underlying drawer.
+Since native and destructive confirmation openers use document-delegated
+click handlers, this specific drawer opts into
+`side_drawer.render(..., delegate_clicks=true)`. The shared drawer retains
+its original `@click.stop` default elsewhere. Do not use custom, duplicated
+dialog-open JavaScript or weaken focus management.
+After cancellation, focus returns to the opener in the drawer. The shared destructive confirmation stops Escape propagation so cancellation cannot dismiss the underlying drawer. Existing
+focus/keyboard/HTMX, mobile, light/dark and authorized negative-scenario
+UAT are mandatory before acceptance.
+
+This is a UAT holding refinement only; provider delivery transports,
+persistent committed evidence, RBAC, routes, schema and official admission
+remain unchanged.

@@ -31,7 +31,7 @@ def main() -> int:
     channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     channel_retire = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
     channel_details_drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
-    channel_actions_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_actions_dialog.html')
+    shared_side_drawer_js = read('app/static/js/side_drawer.js')
     shared_side_drawer = read('app/templates/components/side_drawer.html')
     channel_policy_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
     channel_delete_blockers_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
@@ -131,15 +131,16 @@ def main() -> int:
         and "lead=false" in delivery_template
         and "not receipt or readership by a person." in delivery_template
         and "sending a notification does not create an audit event." in delivery_template,
-        'confirmed HTMX channel actions': "data-destructive-modal-open" in channel_actions_dialog
-        and 'x-teleport="body"' in channel_actions_dialog
-        and '@click.outside=' in channel_actions_dialog
-        and channel_actions_dialog.index('</template>') < channel_actions_dialog.rfind('id="notification-channel-delete-submit-{{ channel.id }}"')
-        and 'hx-post="{{ url_for(' in channel_actions_dialog
+        'confirmed HTMX channel actions': "data-destructive-modal-open" in channel_details_drawer
+        and "side_drawer.section('Channel Actions'" in channel_details_drawer
+        and 'data-kaori-dialog-open' in channel_details_drawer
+        and channels_template.index('</table>') < channels_template.index('id="notification-channel-delete-submit-{{ channel.id }}"')
+        and 'hx-post="{{ url_for(' in channel_details_drawer
         and "destructive_confirmation_modal.render(" in template
-        and "data-destructive-submit-button-id=" in template
+        and "data-destructive-submit-button-id=" in channel_details_drawer
         and "data-destructive-modal-confirm" in confirmation
         and "submit?.click()" in confirmation_script
+        and 'event.stopPropagation()' in confirmation_script
         and 'hx-target="#notification-channels-workspace"' in template
         and 'hx-select="#notification-channels-workspace"' in template
         and 'hx-get="{{ url_for(' in template
@@ -159,15 +160,15 @@ def main() -> int:
         and 'No Notification Deliveries Recorded' in delivery_template,
         'desktop-fit Channel Inventory and deletion guidance': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in channels_template
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template
-        and 'Locked' in channel_actions_dialog
-        and 'channel.delete_blocked' in channel_actions_dialog,
+        and 'Locked' in channel_details_drawer
+        and 'channel.delete_blocked' in channel_details_drawer,
         'compact native policy-dialog registry': channels_template.count('scope="col"') == 5
         and 'colspan="5"' in channels_template
         and 'View policy' not in channels_template
-        and 'aria-controls="notification-channel-actions-{{ channel.id }}"' in channels_template
+        and 'aria-label="View details for {{ channel.name }}"' in channels_template
         and 'detailChannel = {{ channel.id }}' in channels_template
         and '_channel_details_drawer.html' in channels_template
-        and '_channel_actions_dialog.html' in channels_template
+        and '_channel_actions_dialog.html' not in channels_template
         and "channel.event_type_labels|length" in channels_template
         and 'channel.last_delivery_at|user_datetime' in channels_template
         and "def _channel_event_type_groups(" in service
@@ -180,18 +181,17 @@ def main() -> int:
         and 'channel.report_schedule_count' in channel_details_drawer
         and 'channel.last_tested_at|user_datetime' in channel_details_drawer
         and 'channel.last_delivery_at|user_datetime' in channel_details_drawer
-        and 'credential_payload' not in channel_details_drawer
-        and 'credential_payload' not in channel_actions_dialog,
+        and 'credential_payload' not in channel_details_drawer,
         'balanced policy and discoverable deletion': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in channels_template
-        and 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channel_actions_dialog
-        and 'Locked' in channel_actions_dialog
+        and 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channel_details_drawer
+        and 'Locked' in channel_details_drawer
         and 'data-kaori-native-dialog' in channel_delete_blockers_dialog
         and 'for schedule_name in channel.report_schedule_names' in channel_delete_blockers_dialog
         and "'report_schedule_names': list(usage.report_schedule_names)" in service
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
-        and 'data-destructive-modal-open' in channel_actions_dialog,
-        'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in channel_actions_dialog
-        and 'hover:bg-status-warning-soft' in channel_actions_dialog
+        and 'data-destructive-modal-open' in channel_details_drawer,
+        'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in channel_details_drawer
+        and 'Delete Locked' in channel_details_drawer
         and 'Channel already disabled' in channel_delete_blockers_dialog
         and 'zero records and zero report references' in channel_delete_blockers_dialog
         and "table_label.status_label('Locked', 'warning'" in channel_delete_blockers_dialog
@@ -213,9 +213,9 @@ def main() -> int:
         and "channel.lifecycle_state == 'retired'" in channel_details_drawer
         and 'channel.retirement_reason' in channel_details_drawer,
         'compact notification lifecycle copy and row anatomy': 'table_ui.title_cell(channel.name' in channels_template
-        and 'role="group" aria-label="Actions for {{ channel.name }}"' in channels_template
+        and 'aria-label="View details for {{ channel.name }}"' in channels_template
         and 'side_drawer.render(' in channel_details_drawer
-        and 'data-kaori-native-dialog' in channel_actions_dialog
+        and 'data-kaori-dialog-open' in channel_details_drawer
         and "channel.test_status == 'success'" in channel_details_drawer
         and 'Turn off Enabled in Edit to stop delivery.' in channel_delete_blockers_dialog
         and 'zero records and zero report references' in channel_delete_blockers_dialog
@@ -224,30 +224,27 @@ def main() -> int:
         and 'Moves this channel to Archived (read-only).' in channel_retire
         and 'Stops future channel delivery.' in channel_retire,
         'summary inspect act channel UX': channels_template.count('scope="col"') == 5
-        and 'Details' in channels_template and 'More' in channels_template
-        and 'x-teleport="body"' in channel_actions_dialog
-        and 'View More' in channels_template
-        and 'name="csrf_token" value="{{ csrf_token() }}"' in channel_actions_dialog
-        and 'hx-target="#notification-channels-workspace"' in channel_actions_dialog
+        and 'Details' in channels_template and 'View More' not in channels_template
+        and "side_drawer.section('Channel Actions'" in channel_details_drawer
+        and 'openActionMenu' not in channels_template
+        and 'name="csrf_token" value="{{ csrf_token() }}"' in channel_details_drawer
+        and 'hx-target="#notification-channels-workspace"' in channel_details_drawer
         and 'detailChannel === ' in channel_details_drawer
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template,
-        'KAORI View More dropdown': 'View More' in channels_template
-        and '@click.stop="openActionMenu({{ channel.id }}, $el)"' in channels_template
-        and ':aria-expanded="(actionMenuId === {{ channel.id }}).toString()"' in channels_template
-        and '@scroll.capture="actionMenuId = null"' in channels_template
-        and 'getBoundingClientRect()' in channels_template
-        and 'const menuHeight = 214' not in channels_template
-        and 'const menuHeight = menu.getBoundingClientRect().height' in channels_template
-        and 'const desiredTop = openAbove ? rect.top - visibleHeight - gap : rect.bottom + gap' in channels_template
-        and "maxHeight: availableHeight + 'px'" in channels_template
-        and "visibility: 'hidden'" in channels_template
-        and "?.focus({ preventScroll: true })" in channels_template
-        and 'x-teleport="body"' in channel_actions_dialog
-        and 'x-show="actionMenuId === {{ channel.id }}"' in channel_actions_dialog
-        and '@click.outside=' in channel_actions_dialog
-        and '@keydown.escape.stop.prevent=' in channel_actions_dialog
-        and 'data-kaori-native-dialog' not in channel_actions_dialog
-        and 'data-kaori-dialog-open' in channel_actions_dialog,
+        'delegated dialog ownership within Details': 'delegate_clicks=true' in channel_details_drawer
+        and 'delegate_clicks=false' in shared_side_drawer
+        and '{% if not delegate_clicks %}@click.stop{% endif %}' in shared_side_drawer
+        and 'data-kaori-dialog-open' in channel_details_drawer
+        and 'data-destructive-modal-open' in channel_details_drawer,
+        'Details replaces View More': 'View More' not in channels_template
+        and 'openActionMenu' not in channels_template
+        and 'actionMenuId' not in channels_template
+        and 'x-teleport="body"' not in channels_template
+        and 'aria-label="View details for {{ channel.name }}"' in channels_template
+        and "side_drawer.section('Channel Actions'" in channel_details_drawer
+        and 'data-kaori-dialog-open' in channel_details_drawer
+        and 'data-destructive-modal-open' in channel_details_drawer
+        and "document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')" in shared_side_drawer_js,
         'committed notification overview': "'Delivery Overview'," in template
         and "'Channel Readiness'," in template
         and "'Delivery Outcomes'," in template
