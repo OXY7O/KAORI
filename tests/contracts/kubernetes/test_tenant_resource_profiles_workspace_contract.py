@@ -2054,7 +2054,7 @@ def test_capsule_tenant_quota_comparison_discloses_all_ten_managed_dimensions() 
     assert source.count('data-tenant-quota-change-summary') == 2
     assert "tenant.change_capsule_tenant_quota_route" in source
     assert 'data-tenant-quota-managed-form' in source
-    assert 'data-tenant-quota-cutover-form' in source
+    assert 'data-tenant-quota-allocation-form' in source
     assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
     macro = source.split('{% macro quota_technical_details()', 1)[1].split('{%- endmacro %}', 1)[0]
     assert '<form' not in macro and 'hx-post' not in macro
@@ -2076,8 +2076,11 @@ def test_capsule_quota_highlights_compare_ten_dimensions_not_just_six() -> None:
     assert "form.querySelectorAll('[data-tenant-quota-metric-side]')" in preview
     assert 'cell.dataset.tenantQuotaMetricKey' in preview
     assert "form.querySelector('[data-tenant-quota-change-detail]')" in preview
-    assert 'changed = dimensions.filter(([key]) => !equivalent(key, current, proposed))' in preview
+    assert 'changed = comparisonDimensions.filter(([key]) => !equivalent(key, current, proposed))' in preview
     assert 'quota dimensions differ · Read only' in preview
+    assert "form.hasAttribute('data-tenant-shared-allocation-form')" in preview
+    assert 'dimensions.slice(0, 6)' in preview
+    assert 'comparisonDimensions.length' in preview
     assert 'of 6 quota dimensions differ' not in preview
     assert "a === 'Unbounded' || b === 'Unbounded'" in preview
     assert 'const numericQuantity = (key, value) =>' in preview
