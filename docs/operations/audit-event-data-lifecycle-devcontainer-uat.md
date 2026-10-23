@@ -94,6 +94,10 @@ test evidence**. Do not inject actual private user data, secrets, session
 tokens, production AuditEvent, Kubernetes audit logs, or personal IP data.
 For no eligible rows, Archive Only must not create false evidence.
 
+## AuditEvent producer governance checkpoint (#2891)
+
+Review `docs/architecture/audit-event-producer-security-retention-matrix.md` before considering archive export or enabling deletion. The matrix names **confirmed examples**, not a complete codebase census or a legal-retention approval. It distinguishes source-scoped read permissions, actor FK limitations and currently omitted metadata, as well as unknown producers. Until all producers are classified and their source owners approve access, archive download and per-record archive search remain **DENIED** even for Super Admin. The default Disabled policy is intentional; see the preview-first UAT flow above.
+
 ## Safety and non-admission boundary
 
 `audit_event` archives minimal sanitized summary fields only. The
