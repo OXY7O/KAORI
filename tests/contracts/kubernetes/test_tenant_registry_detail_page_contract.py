@@ -689,8 +689,8 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert expired_action.count('<form ') == 1
     assert 'native_cycle.restart_required' in step
     assert 'native_cycle.restart_zero_transfer_recheck_required' in step
-    assert 'Read-back: 0 transferred.' in step
-    assert 'Restart rechecks UID/resourceVersion, ownership and dependencies;' in step
+    assert 'Read-back reports 0 transferred.' in step
+    assert 'Restart rechecks UID/version, ownership and dependencies;' in step
     assert 'no automatic clearance.' in step
     assert 'data-release-restart-recheck-note' in step
     assert 'data-release-restart-confirmation' in step
@@ -1496,8 +1496,11 @@ def test_expired_native_restart_action_has_compact_readonly_evidence_and_require
     Environment().parse(detail)
 
     assert 'data-release-restart-recheck-note' in form
-    assert 'Read-back: 0 transferred.' in form
-    assert 'UID/resourceVersion, ownership and dependencies; no automatic clearance.' in form
+    assert "operational_callout.semantic_surface_classes('info')" in form
+    assert 'rounded-lg border' in form
+    assert 'text-status-info-text' in form
+    assert 'Read-back reports 0 transferred.' in form
+    assert 'UID/version, ownership and dependencies; no automatic clearance.' in form
     assert 'native_cycle.restart_zero_transfer_recheck_required' in expired
     assert 'data-release-restart-confirmation' in form
     assert 'I verified provider ownership is unchanged before restarting.' in form

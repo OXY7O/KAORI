@@ -2129,3 +2129,7 @@ The button still does not bypass blocked read-back or provider recovery.
 Dev Container visual QA must cover normal desktop, mobile, light/dark,
 keyboard focus, expired and blocked cases and non-mutation semantics.
 Official Developer Check, Full Admission and staging/main remain HOLD.
+
+## Expired Native restart semantic info strip — 2026-10-23
+
+Screenshot feedback for #1091 shortens the zero-transfer read-back note and presents it with existing KAORI semantic info colors, without promoting evidence to approval. The note explicitly says the committed read-back **reports** zero transferred objects, while restart still rechecks UID/resourceVersion, ownership and dependencies; there is no automatic clearance. In its compact UI copy, `UID/version` represents the exact UID/resourceVersion verification already enforced by provider authority. The note is visual guidance only; original requester, required checkbox, SHA-bound POST/CSRF, recovery blocks and provider checks remain unchanged. Local browser Visual QA for themes, narrow width and accessibility remains PENDING. Official admission remains HOLD.
