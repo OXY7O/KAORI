@@ -38,6 +38,15 @@ These are execution constraints, not an approval of source retention,
 recovery, legal holds, scheduled execution or data deletion. Do not mistake
 verified archive history for verified individual-record lookup or restore.
 
+## Complete end-to-end UAT authority
+
+Before promoting any Data Lifecycle change, use
+[`docs/operations/data-lifecycle-nine-domain-devcontainer-uat.md`](../../../../docs/operations/data-lifecycle-nine-domain-devcontainer-uat.md)
+for all registered adapters, then execute source-specific negative checks
+from the existing AuditEvent and Delivery authorities. A successful source
+contract or verified bundle is not runtime checksum, PostgreSQL cleanup,
+archive restore or human acceptance proof.
+
 ## Safety invariants
 
 1. Cleanup never starts until data and manifest artifacts are uploaded and independently verified by size and SHA-256 checksum.
