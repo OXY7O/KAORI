@@ -689,9 +689,9 @@ def test_step_four_has_compact_readiness_and_role_scoped_recovery():
     assert expired_action.count('<form ') == 1
     assert 'native_cycle.restart_required' in step
     assert 'native_cycle.restart_zero_transfer_recheck_required' in step
-    assert 'Read-back reports 0 transferred.' in step
+    assert '0 transfers reported.' in step
     assert 'Restart rechecks UID/version, ownership and dependencies;' in step
-    assert 'no automatic clearance.' in step
+    assert 'not cleared.' in step
     assert 'data-release-restart-recheck-note' in step
     assert 'data-release-restart-confirmation' in step
     assert 'I verified provider ownership is unchanged before restarting.' in step
@@ -1342,12 +1342,13 @@ def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
 
     release = final.split('tenant.finalize_verified_native_release_route', 1)[1]
     release = release.split('</form>', 1)[0]
-    assert 'mx-auto mt-5 w-full max-w-4xl' in release
-    assert 'Verified Native Transfer · Ready for Governance Release' in release
+    assert 'data-release-native-finalize-workspace' in release
+    assert 'Verified Native Transfer' in release
+    assert "table_label.status_label('Ready for Governance Release', 'success')" in release
     assert 'confirm_native_release_finalization' in release
-    assert 'Fresh provider read-back must preserve every Namespace' in release
+    assert 'Fresh provider read-back preserves Namespace, ResourceQuota, LimitRange' in release
     assert 'zero dependencies' in release
-    assert 'Preserve all external Kubernetes resources.' in release
+    assert 'preservation of all external Kubernetes resources.' in release
 
     # Entire page retains its existing privilege-gated mutation contracts.
     assert detail.count('<form method="post"') == 23
@@ -1499,8 +1500,8 @@ def test_expired_native_restart_action_has_compact_readonly_evidence_and_require
     assert "operational_callout.semantic_surface_classes('info')" in form
     assert 'rounded-lg border' in form
     assert 'text-status-info-text' in form
-    assert 'Read-back reports 0 transferred.' in form
-    assert 'UID/version, ownership and dependencies; no automatic clearance.' in form
+    assert '0 transfers reported.' in form
+    assert 'UID/version, ownership and dependencies; not cleared.' in form
     assert 'native_cycle.restart_zero_transfer_recheck_required' in expired
     assert 'data-release-restart-confirmation' in form
     assert 'I verified provider ownership is unchanged before restarting.' in form
@@ -1570,6 +1571,39 @@ def test_independent_reviewer_eligibility_uses_semantic_info_not_success() -> No
     assert 'handoff_plan.requested_by != current_user.id' in approval
     assert 'name="confirm_handoff_approval"' in approval
     assert 'value="approved"' in approval
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23
+
+
+def test_verified_native_release_finalization_uses_full_width_action_sheet() -> None:
+    detail = read(DETAIL)
+    final = detail.split('id="tenant-release-stage-finalize"', 1)[1]
+    execution = next(
+        form for form in re.findall(r'<form\b.*?</form>', final, flags=re.DOTALL)
+        if 'data-release-native-finalize-workspace' in form
+    )
+    Environment().parse(detail)
+
+    assert 'mx-auto mt-5 w-full max-w-4xl' not in execution
+    assert 'lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center' in execution
+    assert 'border-y border-outline-subtle bg-surface-elevated/35' in execution
+    assert 'Verified Native Transfer' in execution
+    assert "table_label.status_label('Ready for Governance Release', 'success')" in execution
+    assert 'Fresh provider read-back preserves Namespace, ResourceQuota, LimitRange' in execution
+    assert 'CPU/memory values.' in execution
+    assert 'I confirm verified provider handoff, zero dependencies,' in execution
+    assert 'preservation of all external Kubernetes resources.' in execution
+    assert 'name="confirm_native_release_finalization"' in execution
+    assert re.search(
+        r'name="confirm_native_release_finalization"\s+type="checkbox"\s+value="release"\s+required',
+        execution,
+    )
+    assert 'lg:justify-self-end' in execution
+    assert 'name="plan_sha256"' in execution
+    assert 'name="csrf_token"' in execution
+    assert 'hx-post=' in execution
+    assert 'Finalize Verified Native Release' in execution
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23
     assert detail.count('hx-post=') == 23
