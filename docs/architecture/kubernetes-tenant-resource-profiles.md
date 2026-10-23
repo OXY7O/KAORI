@@ -1041,38 +1041,54 @@ For auto-imported Native adoption profiles, Accept Provider State also advances 
 
 Adoption origin remains retained as audit evidence even when operational ownership becomes Managed.
 
-## Capsule Tenant quota drift populated layout (#2925; DevContainer UAT)
+## Capsule drift registry UI — complete KAORI operational table (#2931)
 
-The current approved Operations primary **Allocation Drift** tab (#960) and the
-shared KAORI table/empty/pagination contracts (#959, #572) remain authoritative.
-Real Capsule Tenant `kaori-capsule-uat-01` UAT confirmed managed allocation
-change, explicit quota drift (CPU request 1 → 1500m), and **Reapply KAORI
-Intent** restoring the authoritative Tenant CR and generated Namespace quota.
-That provider-level functional proof does not imply acceptance of the original
-populated registry geometry: `min-w-[1450px]` forced unnecessary desktop
-horizontal scrolling, obscured Actions and broke long source identifiers.
+The DevContainer screenshot after the earlier #2925 three-column quota-only change
+was **rejected** by human UI review on 2026-10-23. It stacked Tenant, authority,
+provider, scope and evidence disclosure in one tall cell, placed two mutation
+actions beside one short status row, and did not bring Capsule Shared Allocation
+Drift into the canonical table family. The initial 1450px-wide shared table
+remained difficult to use. The former three-column contract is superseded here.
 
-The populated **Capsule Tenant Quota Drift** registry now uses a compact
-three-column KAORI table: **Tenant / Authority**, **Allocation Drift**,
-**Actions**. The shared table and status primitives are unchanged. Tenant scope,
-Capsule authority, dimension-level divergence and both governed explicit
-actions remain visible in the primary row. Long canonical Tenant API/resource
-identity, full UID and resourceVersion are still available in a keyboard-usable
-native **Provider Evidence** disclosure within the identity column; they are
-not truncated, invented or fetched live by a normal GET. A bounded `840px`
-minimum permits table-only horizontal scroll on narrow mobile screens without
-forcing it on ordinary desktop. No second table, custom modal or duplicate
-provider evidence query is introduced.
+Both **Capsule Tenant Quota Drift** and **Capsule Shared Allocation Drift**
+under the approved Tenant Operations **Allocation Drift** first-level tab
+(#960) now adopt the shared KAORI operational table standard:
+- canonical block header/loading state and **filtered result count**;
+- independent committed-data **Tenant + Search** filters, `Clear Filters`,
+  HTMX owning-section refresh, scoped query parameters and stable pagination;
+- one compact five-column result row: **Tenant**, **Provider / Authority**,
+  **Status**, **Allocation Difference**, **Details**;
+- only a concise first changed dimension and `+N more differences` in the row;
+- **View More** opens the existing native KAORI modal pattern, displaying
+  all committed differences, authority, identity, exact UID and
+  resourceVersion, observed timestamp, limitations and explicit human
+  reconciliation decision explanations;
+- the original two distinct permission/CSRF-governed endpoints for Reapply
+  KAORI Intent and Accept Provider State remain in the modal's action footer,
+  with their exact server-side capability, stale-evidence and read-back gates.
+  The registry and modal GET do not execute either operation.
 
-Both preexisting CSRF POSTs, RBAC checks and reapply/accept capability gates,
-committed Drifted evidence, Control Unavailable path, HTMX tab scope and
-five-row pagination persist. The zero-row registry remains compact with no
-minimum width or unnecessary column headings and keeps its canonical
-`0–0 of 0` footer. This is UI presentation only: no Kubernetes writes, new
-provider mutation flow, allocation semantics, database migration or job behavior.
+The table no longer forces a 1450px minimum; a bounded 840px minimum allows
+**table-only** horizontal scrolling on mobile, without page-level overflow.
+Shared `table_ui` text/action primitives, statuses, canonical 5-row
+pagination (options 5/10/25/50), compact zero-data state and existing
+`registry_ui.footer` remain authoritative per
+`docs/design/components/TABLE_AND_LABEL.md` and
+`docs/design/components/PAGINATION.md`. Neither the old filter-free table
+nor the rejected three-column design should be used as a future reference.
 
-Local human Visual QA must cover populated 1/5 rows and 0-row states;
-desktop 1024/1280, 360/390 mobile, light/dark, long UID/name/blocked reasons,
-open/closed disclosure with keyboard, Action visibility and CSRF submission
-behavior. Runtime pytest/djlint/Prettier, Developer Check, Full Admission,
-formal staging UAT and promotion remain HOLD until separately authorized.
+Filtering is strictly over already committed KAORI Tenant/advanced-intent
+evidence and is applied **before pagination**. Search is bounded to 160
+characters and scoped to Tenant/resource identities, not to external live
+provider queries. These filters do not change authority, allocation values,
+provider writes, drift detector behavior, or persisted governance decisions.
+They preserve Capsule Tenant CR versus GlobalResourceQuota distinction.
+
+DevContainer UAT must verify 0, 1 and 5+ drift rows, independently scoped
+filter/search/clear and numeric pagination, 1024/1280 desktop and
+360/390 mobile, light/dark, keyboard modal focus/close, every committed
+dimension and long provider IDs, no mutation on GET, and the original
+fail-closed blocked actions. User-visible and governance-sensitive changes
+remain **human acceptance pending**. Runtime pytest, formatter, visual QA,
+official Developer Check, Full Admission and promotion beyond the temporary
+holding branch remain gated separately.
