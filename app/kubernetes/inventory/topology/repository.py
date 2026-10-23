@@ -7,7 +7,7 @@ from app.extensions.db import db
 
 from app.common.inventory_generation import filter_current_generation
 from app.kubernetes.inventory.topology.contracts import TopologyRecords, TopologySelection
-from app.kubernetes.inventory.topology.presentation import iso_datetime
+from app.kubernetes.inventory.topology.presentation import iso_datetime, selector_matches
 from app.models import (
     Cluster,
     ClusterInventory,
@@ -79,26 +79,41 @@ def load_topology_records(
 ) -> TopologyRecords:
     cluster_ids = [cluster.id for cluster in clusters]
     source_totals: dict[str, int] = {}
-    # A deep graph may be bounded per family only when every parent Namespace
-    # fits in the same established graph budget.
+    # Parents always take priority in limit_graph. If the committed parent
+    # cohort exhausts the graph budget, no resource can be displayed, so
+    # count its eligible rows in SQL without materializing any resource ORM.
     shallow_budget = max_nodes if selection.depth == '1' else None
-    namespaces = _load_namespaces(cluster_ids, namespace, max_nodes=shallow_budget, totals=source_totals)
+    parent_budget = (
+        max(max_nodes - len(clusters), 0)
+        if max_nodes is not None and selection.depth != '1'
+        else shallow_budget
+    )
+    namespaces = _load_namespaces(cluster_ids, namespace, max_nodes=parent_budget, totals=source_totals)
+    parent_total = source_totals.get('namespace', len(namespaces))
     if selection.depth == '1':
         family_budget = shallow_budget
-    elif max_nodes is not None and len(clusters) + len(namespaces) <= max_nodes:
-        family_budget = max_nodes
-        source_totals['namespace'] = len(namespaces)
-    else:
-        # Preserve the existing full-candidate/limit_graph behavior when
-        # there are too many parents for a relationship-safe candidate window.
+    elif max_nodes is None:
         family_budget = None
+    elif len(clusters) + parent_total >= max_nodes:
+        family_budget = 0
+    else:
+        family_budget = max_nodes
 
+    # Networking Pod relevance is determined by *every* committed Service
+    # selector, not merely the 350-or-fewer rendered Service nodes. Stream
+    # scalar selectors instead of loading the entire Service ORM family.
+    service_selectors = (
+        _load_service_selector_index(cluster_ids, namespace)
+        if family_budget is not None and selection.scope == 'networking' and selection.include_pods
+        else None
+    )
     pods = _load_pods(
         cluster_ids,
         namespace,
         selection,
-        max_nodes=family_budget if selection.scope in {'all', 'compute'} else None,
+        max_nodes=family_budget,
         totals=source_totals,
+        service_selectors=service_selectors,
     )
     return TopologyRecords(
         clusters=clusters,
@@ -111,9 +126,7 @@ def load_topology_records(
             cluster_ids,
             namespace,
             selection,
-            # Networking Pods are selected against all committed Service
-            # selectors, including Services omitted by the visible graph.
-            max_nodes=(None if selection.scope == 'networking' and selection.include_pods else family_budget),
+            max_nodes=family_budget,
             totals=source_totals,
         ),
         ingresses=_load_ingresses(cluster_ids, namespace, selection, max_nodes=family_budget, totals=source_totals),
@@ -129,6 +142,7 @@ def load_topology_records(
         ),
         pods=pods,
         source_totals=source_totals,
+        service_selectors=service_selectors,
     )
 
 
@@ -177,6 +191,29 @@ def _load_namespaces(
     return query.all()
 
 
+def _load_service_selector_index(
+    cluster_ids: list[str],
+    namespace: str,
+) -> dict[tuple[str, str], list[dict[str, str]]]:
+    """Stream complete selector *scalars* for networking relevance.
+
+    Only distinct nonempty selectors are held, not Service ORM instances.
+    Truncating this source before Pod matching would silently drop relations.
+    """
+    query = _visible_namespace_query(
+        _namespaced_query(ServiceInventory, cluster_ids, namespace),
+        ServiceInventory,
+        cluster_ids,
+    )
+    selectors: dict[tuple[str, str], dict[tuple[tuple[str, str], ...], dict[str, str]]] = {}
+    for cluster_id, scope, selector in query.with_entities(
+        ServiceInventory.cluster_id, ServiceInventory.namespace, ServiceInventory.selector
+    ).yield_per(256):
+        if selector:
+            selectors.setdefault((cluster_id, scope), {})[tuple(sorted(selector.items()))] = selector
+    return {key: list(values.values()) for key, values in selectors.items()}
+
+
 def _load_pods(
     cluster_ids: list[str],
     namespace: str,
@@ -184,15 +221,50 @@ def _load_pods(
     *,
     max_nodes: int | None = None,
     totals: dict[str, int] | None = None,
+    service_selectors: dict[tuple[str, str], list[dict[str, str]]] | None = None,
 ) -> list[PodInventory]:
     if not selection.include_pods:
         return []
     query = _namespaced_query(PodInventory, cluster_ids, namespace)
-    # Non-compute scopes depend on selector/JSON references. Their Pod family
-    # stays unbounded until a semantically equivalent SQL predicate is proven.
     if max_nodes is not None:
         query = _visible_namespace_query(query, PodInventory, cluster_ids)
-    query = query.order_by(PodInventory.cluster_id.asc(), PodInventory.namespace.asc(), PodInventory.pod_name.asc())
+    ordering = (
+        PodInventory.cluster_id.asc(), PodInventory.namespace.asc(), PodInventory.pod_name.asc()
+    )
+    query = query.order_by(*ordering)
+    if max_nodes is None or selection.scope in {'all', 'compute'}:
+        return _materialize_family(query, kind='pod', max_nodes=max_nodes, totals=totals)
+
+    if selection.scope == 'configuration':
+        eligible = query.filter(func.json_array_length(PodInventory.configuration_references) > 0)
+        return _materialize_family(eligible, kind='pod', max_nodes=max_nodes, totals=totals)
+    if selection.scope == 'storage':
+        eligible = query.filter(func.json_array_length(PodInventory.persistent_volume_claims) > 0)
+        return _materialize_family(eligible, kind='pod', max_nodes=max_nodes, totals=totals)
+
+    if selection.scope == 'networking':
+        selectors = service_selectors or {}
+        selected_ids: list[int] = []
+        matching_total = 0
+        # Scan cheap, generation-scoped scalar rows in bounded fetch batches;
+        # materialize only the first graph-budget Pod ORM candidates.
+        for pod_id, cluster_id, scope, labels in query.with_entities(
+            PodInventory.id, PodInventory.cluster_id, PodInventory.namespace, PodInventory.labels
+        ).yield_per(256):
+            if not any(
+                selector_matches(selector, labels or {})
+                for selector in selectors.get((cluster_id, scope), ())
+            ):
+                continue
+            matching_total += 1
+            if len(selected_ids) < max_nodes:
+                selected_ids.append(pod_id)
+        if totals is not None:
+            totals['pod'] = matching_total
+        if not selected_ids:
+            return []
+        return query.filter(PodInventory.id.in_(selected_ids)).all()
+
     return _materialize_family(query, kind='pod', max_nodes=max_nodes, totals=totals)
 
 
