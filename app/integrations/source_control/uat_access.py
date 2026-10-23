@@ -1,8 +1,8 @@
-"""Fail-closed temporary Dev Container Source Control UAT admission (#2742).
+"""Scoped Dev Container Source Control UAT authorization (#2742).
 
 Not a substitute for #724 resource-scoped authorization. No ordinary RBAC
 user can browse or manually refresh arbitrary GitHub App installations.
-The authorized production policy must replace this temporary UAT boundary.
+This restricted UAT boundary follows provider admission without an environment toggle; the production policy must replace it.
 """
 
 from __future__ import annotations

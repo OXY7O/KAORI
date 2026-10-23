@@ -1,6 +1,6 @@
-"""Opt-in GitHub Source Control Dev Container UAT workspace (#2742).
+"""GitHub Source Control Dev Container review workspace (#2742).
 
-Intentional privilege boundary: only explicitly enabled local super-admin
+Intentional privilege boundary: only admitted GitHub provider and local super-admin
 until KAORI #724 supplies native resource-scoped installation authorization.
 No API calls during GET; committed KAORI state is the only read source.
 """

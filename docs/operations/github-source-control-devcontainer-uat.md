@@ -16,6 +16,12 @@ Use ignored local APP_ENV=development configuration, never a committed secret fi
 
 Restart Flask, Celery workers and Beat after local flag changes. Register the GitHub App PEM and webhook secret exclusively via KAORI's encrypted form; never place bearer tokens, PEM or raw payloads in JobExecution, logs, committed files or reports.
 
+## Navigation for review
+
+In the Dev Container running this UAT branch, sign in as an active local super-admin and open **Integrations → Source Control → GitHub**. The primary sidebar catalog and active-page/breadcrumb ownership reuse KAORI's existing Integrations navigation; no custom menu was added. GitHub is immediately available for registration and review without `SOURCE_CONTROL_GITHUB_UAT_ENABLED`.
+
+If the new entry is not visible, verify that the running web container uses branch `kaori/review/github-source-control-uat`, restart the Flask web process after checkout, and verify the user has `integrations.manage`. Branch `kaori/review/staging-uat` has **not** been updated as part of this isolated review workstream.
+
 ## 2. Existing Developer Check — commands to run
 
 ```bash
