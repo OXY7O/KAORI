@@ -136,7 +136,11 @@ adapter, and shared archive verification; **no custom mutation framework**.
 Store exact SHAs, schema revision, SQL row-count/digest parity, source
 coverage, failure-injection evidence and reviewer decision per workstream.
 
-As of this design note, **no new ledger, aggregate schema, archive index
-or hot cleanup has been implemented or admitted**. This document defines
+**Implementation checkpoint:** #2868 now includes an **inert identity-table
+schema candidate** (nullable historical source reference; unique
+channel/event identity; on-delete RESTRICT channel FK). No backfill,
+dual-write, production cutover, aggregate schema, archive index or hot
+cleanup has been implemented or admitted. The delivery journal remains
+authoritative. This document alone does not admit the schema migration. This document defines
 a reviewable and testable boundary, not authorization for migration, purge
 or scheduled recovery.
