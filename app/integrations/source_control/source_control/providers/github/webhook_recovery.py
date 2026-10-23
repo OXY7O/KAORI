@@ -26,6 +26,25 @@ from app.platform_operations.jobs.constants import TERMINAL_JOB_STATUSES
 
 
 
+
+def _record_preclaim_failure(session: Session, delivery_id: int, now: datetime) -> None:
+    """Back off validation failures that occurred before any dispatch claim.
+
+    Once dispatching, webhook_handoff owns retry/uncertainty; do not override
+    that independent state when a worker or database transaction fails.
+    """
+    row = session.execute(
+        select(SourceWebhookDelivery)
+        .where(SourceWebhookDelivery.id == delivery_id)
+        .with_for_update(),
+    ).scalar_one_or_none()
+    if row is None or row.processing_state not in {'received', 'retry_pending'}:
+        return
+    row.attempt_count += 1
+    row.last_attempt_at = now
+    row.processing_state = 'requires_review' if row.attempt_count >= 3 else 'retry_pending'
+    session.commit()
+
 def recover_webhook_inbox(session: Session, *, limit: int = 25) -> dict[str, int | str]:
     """Sweep at most 25 transport envelopes; no unbounded provider lookups.
 
@@ -95,6 +114,10 @@ def recover_webhook_inbox(session: Session, *, limit: int = 25) -> dict[str, int
             # Do not log raw provider/broker exceptions: some may contain
             # installation tokens, endpoint URLs or webhook credentials.
             session.rollback()
+            try:
+                _record_preclaim_failure(session, delivery_id, now)
+            except Exception:
+                session.rollback()
             failed += 1
     return {
         'status': 'processed', 'examined': len(ids),
