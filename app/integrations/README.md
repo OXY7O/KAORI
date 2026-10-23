@@ -94,13 +94,23 @@ Integrations
 ├── Overview
 ├── Orchestration
 ├── Observability
-└── Storage
+├── Storage
+├── Registry
+├── Secrets Management
+└── Notification Channels
 ```
 
 Product-specific pages remain provider workspaces beneath those domains. Each registered
 `IntegrationModule` declares `navigation_endpoint_prefixes`, allowing deep routes such as
-`cluster.*`, `metrics.*`, and `alertmanager.*` to retain the correct domain active state
-without provider-name branching in the sidebar template.
+`cluster.*`, `metrics.*`, `alertmanager.*`, and `vault.*` to retain
+the correct domain active state without provider-name branching in the
+sidebar template. The rendered sidebar uses
+`app/common/workspace_navigation_catalog.py` and
+`app/common/workspace_navigation.py`, not the older
+`components/navigation/integrations_menu.html` partial. New taxonomy
+domains need a permission-aware workspace capability there until the
+separate #624 navigation redesign is accepted; provider products do not
+become top-level sidebar entries.
 
 ## Binding model
 
