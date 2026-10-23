@@ -52,6 +52,40 @@ Canonical composition:
 </div>
 ```
 
+## Cross-domain unified access guidance
+
+The Access Denied (403) view is a second consumer of the **presentation-only** Analytics guidance primitives. It requires one calm `guidance_card_classes()` shell and one `snapshot_header_classes()` header; within the same outer border, `interpretation_grid_classes()` places two `interpretation_callout(..., role=...)` areas separated by subtle neutral dividers. These utility macros render no analytics data and carry no authentication policy. The Access domain continues to own RBAC, 403 response and Activity Audit.
+
+```jinja
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+
+<section class="{{ analysis_surface.guidance_card_classes() }}"
+         aria-labelledby="access-guidance-title">
+    <header class="{{ analysis_surface.snapshot_header_classes() }}">
+        <h2 id="access-guidance-title">Access Resolution Guidance</h2>
+    </header>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout(
+            'Required Action',
+            'Request Access Review',
+            'Ask an administrator to review your role and permissions.',
+            icon='user-cog', role='brand'
+        ) }}
+        {{ analysis_surface.interpretation_callout(
+            'Security Boundary',
+            'Server-Side Authorization',
+            'Navigation is guidance; server-side permissions enforce access.',
+            icon='shield-check', role='insight'
+        ) }}
+    </div>
+</section>
+```
+
+- This is **one surface**, not two separate cards or a new one-off component.
+- Role-color is limited to icon/eyebrow; security permission denial is not represented as a fake operational severity.
+- Single-column narrow layout and two-column desktop layout are owned by the shared grid. Heading remains accessible; no clipping of copy or long content.
+- Do not place authentication logic or provider calls into the visual macros.
+
 ## Role selection
 
 ### Insight
