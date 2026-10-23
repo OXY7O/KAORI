@@ -1,0 +1,134 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/operational_section_card.html" as section_card %}
+{% import "components/operational_metric_card.html" as metric_card %}
+{% block title %}{{ title }} · Secrets &amp; PKI · KAORI{% endblock title %}
+{% block dashboard_content %}
+<div id="secrets-pki-{{ workspace }}" class="min-w-0 space-y-6">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro(icon, 'Secrets & PKI', 'key-round') %}
+                    <h1 class="{{ page_hero.title_classes() }}">{{ title }}</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">{{ description }}</p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {{ page_hero.meta_label('database-zap', 'Committed KAORI State') }}
+                        {{ page_hero.meta_label('shield-check', 'Public Evidence Only') }}
+                        {{ page_hero.meta_label('lock-keyhole', 'No Secret Material') }}
+                    </div>
+                {% endcall %}
+            </div>
+        </div>
+    </section>
+    <nav class="flex flex-wrap gap-2" aria-label="Secrets and PKI evidence workspaces">
+        {% for slug, label in (('certificates', 'Certificates'), ('pki', 'PKI'), ('expiration', 'Expiration')) %}
+            <a href="{{ url_for('secrets_pki.' ~ slug) }}"
+               {% if workspace == slug %}aria-current="page"{% endif %}
+               class="inline-flex min-h-9 items-center rounded-md border px-3 py-2 text-sm font-semibold
+                      {{ 'border-kaori-primary bg-kaori-soft text-kaori-primary-dark' if workspace == slug else
+                         'border-outline-default bg-surface-card text-content-secondary hover:bg-kaori-soft' }}">
+                {{ label }}
+            </a>
+        {% endfor %}
+        <a href="{{ url_for('secrets_pki.inventory') }}"
+           class="inline-flex min-h-9 items-center rounded-md border border-outline-default px-3 py-2
+                  text-sm font-semibold text-content-secondary hover:bg-kaori-soft">
+            Inventory
+        </a>
+    </nav>
+    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {% for metric in metrics %}
+            {{ metric_card.render(
+                metric.label,
+                metric.value if metric.value is not none else 'Not Qualified',
+                metric.description,
+                metric.icon,
+                source_label='Committed PKI Evidence'
+            ) }}
+        {% endfor %}
+    </div>
+    {% call section_card.render('Current Source Qualification',
+        'Provider readiness, collection coverage and snapshot validity are independent.',
+        'shield-check') %}
+        <dl class="grid gap-4 text-sm sm:grid-cols-2">
+            <div>
+                <dt class="text-xs font-semibold text-content-muted">Certificate Validity</dt>
+                <dd class="mt-1 font-semibold text-content-primary">{{ validity.label }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs font-semibold text-content-muted">Last Qualified Observation</dt>
+                <dd class="mt-1 text-content-primary">
+                    {{ validity.last_observed_at|user_datetime if validity.status == 'ready' else 'Not Qualified' }}
+                </dd>
+            </div>
+            {% if public is not none %}
+                <div>
+                    <dt class="text-xs font-semibold text-content-muted">Public Issuers</dt>
+                    <dd class="mt-1 font-semibold text-content-primary">{{ public.label }}</dd>
+                </div>
+            {% endif %}
+            {% if stored is not none %}
+                <div>
+                    <dt class="text-xs font-semibold text-content-muted">Stored Certificate Collection</dt>
+                    <dd class="mt-1 font-semibold text-content-primary">{{ stored.label }}</dd>
+                </div>
+            {% endif %}
+            {% if delivery is not none %}
+                <div>
+                    <dt class="text-xs font-semibold text-content-muted">Kubernetes TLS Correlation</dt>
+                    <dd class="mt-1 font-semibold text-content-primary">{{ delivery.label }}</dd>
+                </div>
+            {% endif %}
+        </dl>
+        {% if validity.status != 'ready' %}
+            <div class="mt-4">
+                {% set blocked_state_label = 'Evidence Not Qualified' %}
+                {% set blocked_state_title = 'Current Public Certificate Evidence Required' %}
+                {% set blocked_state_description = 'Partial, stale, absent or unsupported sources do not establish a zero count, valid certificate, trust or recovery.' %}
+                {% set blocked_state_tone = 'unknown' %}
+                {% include 'components/states/_blocked_state.html' %}
+            </div>
+        {% endif %}
+    {% endcall %}
+    {% if workspace == 'certificates' %}
+        {% call section_card.render('Consumer Assurance',
+            'TLS object correlation and actual endpoint serving require independent evidence.',
+            'waypoints') %}
+            <p class="text-sm leading-6 text-content-secondary">
+                Vault PKI validity does not verify certificate trust, revocation or deployment.
+                Kubernetes TLS comparison is shown only to actors with TLS Certificate permission.
+                An overlap or reference is not proof of controller delivery or endpoint serving.
+            </p>
+            {% if can_view_kubernetes_tls and delivery is not none %}
+                <p class="mt-3 text-xs font-semibold text-content-primary">
+                    {{ delivery.label }} — {{ delivery.status }}
+                </p>
+            {% else %}
+                <p class="mt-3 text-xs text-content-muted">
+                    Kubernetes TLS context requires separate permission.
+                </p>
+            {% endif %}
+        {% endcall %}
+    {% elif workspace == 'expiration' %}
+        {% call section_card.render('Expiration Boundary',
+            'Source-qualified windows only; no Lease or credential lifetime inference.',
+            'calendar-clock') %}
+            <p class="text-sm leading-6 text-content-secondary">
+                Public X.509 validity windows use UTC observation time. They do not establish
+                renewal completion, certificate revocation, consumer cutover, Vault Lease state,
+                runtime TLS serving or recommended rotation approval.
+            </p>
+        {% endcall %}
+    {% else %}
+        {% call section_card.render('Issuer & Issuance Boundary',
+            'Issuer metadata coverage is not a complete issued-certificate inventory.',
+            'shield-check') %}
+            <p class="text-sm leading-6 text-content-secondary">
+                PKI issuers and opted-in stored public certificates are separate committed
+                populations. Vault remains authoritative for PKI issuance and revocation;
+                failed, disabled or stale sources never imply healthy PKI.
+            </p>
+        {% endcall %}
+    {% endif %}
+</div>
+{% endblock dashboard_content %}

@@ -272,3 +272,25 @@ metadata-only GET page with an opaque policy-reference selector and default
 five-item pagination. See `SCOPED_SECRET_REGISTRY.md` for strict access,
 unsupported Detail/export and UAT boundaries. Never infer Secret read
 privileges from `integrations.manage` or a provider admin role.
+
+
+## HV-07 #2836 public PKI evidence workspaces
+
+Three capability-level read-only pages now reuse the existing safe,
+bounded, committed PKI presentation contracts and Violet shared components:
+
+- `/secrets-pki/certificates`: stored public X.509 certificate validity
+  and optional cross-domain TLS overlap only with `tls_certificates.view`.
+- `/secrets-pki/pki`: independently qualified public issuer and stored
+  public certificate collection coverage.
+- `/secrets-pki/expiration`: expiry windows from current-generation opted-in
+  stored public X.509 evidence, not Vault Lease/rotation/revocation proof.
+
+All routes require `secrets_pki.view`. The parent Operational Dashboard
+retains its canonical four tabs, and new pages reuse existing Hero, section,
+metric, blocked state, light/dark/responsive tokens. Numbers are shown only
+for independently qualified source states, never default-zero when partial,
+stale, uncollected, or malformed. There is no provider API request on GET,
+item-level certificate identity/PEM/serial/path/CN/SAN, source mutation,
+new table or security bypass. Granular PKI detail needs additional approved
+#724 scopes and evidence contracts. Browser/real-provider UAT is NOT TESTED.

@@ -26,7 +26,7 @@ Not Implemented must not be treated as waived acceptance.
 | HV-04 #2588 / #2674 | KV v2 version lifecycle aggregate; rotation contract only | Not Tested |
 | HV-05 #2589 / #2666 | Fingerprint/Ingress/UID/ESO reconciliation *candidates* only | Not Tested |
 | HV-06 #2590 / #2697 | Metrics/Alert Source bindings; bounded recent-hour Vault query-range qualification | Not Tested |
-| HV-07 #2591 / #2678 / #2683 / #2761 / #2826 | Review candidate: committed Overview/Inventory/Lifecycle, exact mount-grant audited KV v2 Registry page, PKI validity aggregate; sensitive Detail, other workspaces and live Vault UAT pending | Not Tested |
+| HV-07 #2591 / #2678 / #2683 / #2761 / #2826 / #2836 | Review candidate: Overview/Inventory/Lifecycle, audited scoped KV v2 Registry, evidence-backed Certificates/PKI/Expiration workspaces; Secret Detail, Lease/Consumers/Governance specifics and real UAT pending | Not Tested |
 | HV-08 #2592 | Governed provider operation pilot | Not Implemented |
 | HV-09 #2593 | UAT protocol; live scenarios not executed | Not Tested |
 | HV-10 #2594 / #2702 | Current-generation public PKI expiration horizon workspace; historical MetricsConsumer datasets/pages absent | Not Tested |
@@ -234,3 +234,22 @@ do not silently mark skipped tests as PASS.
 6. Run existing Ruff, pytest, pyright, djlint and light/dark/responsive,
    keyboard and screen-reader Visual QA, capture sanitized evidence.
    Maintain NOT TESTED until executed; no official workflows without approval.
+
+
+## HV-07 #2836 public PKI evidence workspaces — Not Tested
+
+On an approved real Vault PKI test source, run actual issuer and opted-in
+stored public certificate jobs and retain exact-SHA sanitized JobExecution
+evidence. Open Certificates, PKI, and Expiration with an allowed
+`secrets_pki.view` actor. Verify zero only after a qualified complete
+collection; for failed, disabled, stale, partial or missing sources, assert
+`Not Qualified` (never inferred healthy), for 7-day and 30-day boundaries
+compare against known, non-sensitive test certificate validity dates.
+
+Verify denied `secrets_pki.view` direct GET, separate
+`tls_certificates.view` grant/no-grant on the Certificates page,
+no source path/issuer identity/serial/subject/PEM/key in HTML,
+and no provider request during page rendering. Complete light/dark,
+responsive, keyboard/screen-reader and empty/error-state Visual QA.
+Execute existing Ruff, djlint, pytest and pyright checks and record
+PASS/FAIL per source; all presently Not Tested.
