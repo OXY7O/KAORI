@@ -56,6 +56,13 @@ bundle distribution.
   Admin can enumerate, preview, save policy or manually run `audit_event`
   archive-only. These operations still require the canonical Data Lifecycle
   RBAC permission.
+- **Execution-time reauthorization:** the archive engine independently
+  verifies `trigger_type=manual`, a non-null requester, **fresh committed**
+  User state (`is_active`, local database source, Super Admin), and a saved
+  policy that remains enabled, unscheduled and `archive_only`. This rejects
+  direct CLI/task invocation without an authorized requester and workers
+  running after role revocation, deletion or a policy change. Queue admission
+  by itself is not durable authorization.
 - **Current DENY:** all archive data/manifest download even with
   `platform_operations.export_data_lifecycle`, all automatic scheduling,
   all hot cleanup, all archive-object purge, all per-record archive search.
@@ -86,7 +93,11 @@ bundle distribution.
    archive expiry and restored/deleted principals.
 6. Pass real PostgreSQL, checksum/manifest, permission, failure-injection
    and high-volume tests, followed by explicit human acceptance.
-7. Only after #2891 acceptance can #2892 propose indexable cold
+7. Prove worker/CLI bypass and delayed-job revocation fail closed using
+   synthetic test identity, no archive created on rejection, and policy
+   disabled after UAT. Source contract coverage alone does not establish
+   actual runtime acceptance.
+8. Only after #2891 acceptance can #2892 propose indexable cold
    record lookup and verified hot compaction. Keep `cleanup_supported=False`
    and the global export/purge blocks until that later admission.
 
