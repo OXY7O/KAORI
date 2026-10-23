@@ -167,3 +167,29 @@ def test_audit_event_post_domain_rejects_non_super_admin_before_queueing() -> No
             SimpleNamespace(is_super_admin=True, auth_source='database'),
         ):
             assert _mutation_domain() == 'audit_event'
+
+
+def test_audit_event_source_security_matrix_remains_incomplete_and_export_fail_closed() -> None:
+    matrix = read('docs/architecture/audit-event-producer-security-retention-matrix.md')
+    index = read('docs/architecture/README.md')
+    uat = read('docs/operations/audit-event-data-lifecycle-devcontainer-uat.md')
+    archive = read('app/platform_operations/data_lifecycle/retention/domains/audit_event.py')
+    engine = read('app/platform_operations/data_lifecycle/retention/service.py')
+    for confirmed_source in (
+        'app/common/admin_audit.py',
+        'app/platform_operations/jobs/audit.py',
+        'app/kubernetes/tenant/audit.py',
+        'app/kubernetes/governance/tls_certificates/audit.py',
+    ):
+        assert confirmed_source in matrix
+    assert 'not exhaustive' in matrix
+    assert 'retention' in matrix
+    assert 'legal holds' in matrix
+    assert 'unknown producer' in matrix
+    assert 'audit-event-producer-security-retention-matrix.md' in index
+    assert 'audit-event-producer-security-retention-matrix.md' in uat
+    assert 'cleanup_supported = False' in archive
+    assert "if artifact.domain == 'audit_event':" in engine
+    assert "if domain_name == 'audit_event' and not dry_run:" in engine
+
+
