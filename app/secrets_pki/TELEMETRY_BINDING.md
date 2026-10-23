@@ -266,3 +266,50 @@ query/source/binding identity, replay and failure paths, scoped RBAC,
 retention and lifecycle against the exact source SHA. Do not claim live
 AlertCase firing, resolution, notification or recovery.
 Focused tests: `tests/intelligence/test_vault_alert_observation_snapshot.py`.
+
+## HV-12 manually registered JobExecution source producer (#2802)
+
+Jobs & Executions now registers `secrets_pki.vault_alerts.observe` as a
+**manual-only** definition. The database policy defaults disabled and
+`schedule_supported=false`; no Celery Beat or automatic polling is added.
+Only an actor with `jobs.execute` and `secrets_pki.sync` can trigger
+`Run Now`; existing `jobs.view` governs Job Configuration access.
+
+The job dispatcher selects at most 25 active canonical Vault identities and
+only their **single currently qualified Alertmanager source binding**.
+It enqueues numeric binding IDs and sanitized source-count metadata through
+`enqueue_canonical_job` on `inventory`. A registered-worker preflight
+prevents dispatch to workers missing the new task. The worker verifies its
+canonical JobExecution ID, task ID and active status, and rechecks the exact
+Vault instance/source binding at execution. It uses existing Alertmanager
+API v2 client credentials and requests `GET /api/v2/alerts` with the
+equality filter `vault_instance="<canonical ID>"`. A missing, disabled,
+invalid, expired or ambiguous binding is rejected without a fallback query.
+There is no request-time polling from Secrets & PKI operational dashboards.
+
+**Worker-only secret:** before DevContainer UAT, provision a stable,
+random, independent HMAC key as a hex-encoded environment secret named
+`KAORI_VAULT_ALERT_CORRELATION_HMAC_KEY_HEX` (32-64 bytes, 64-128 hex chars)
+**only to the trusted worker runtime** using approved secret custody.
+There is no default/demo key or fallback to integration credentials.
+Never place the value in Git, `.env.example`, JobPolicy, JobExecution,
+Celery args/results, logs, tickets, screenshots or user-visible errors.
+The worker fails closed if the key is not configured or malformed.
+Rotating that key requires a separately reviewed correlation migration;
+blind rotation breaks handle continuity.
+
+The bounded provider result is passed only in worker memory to the existing
+source-qualified snapshot writer: max 100 alerts, strict identity and
+occurrence validation, opaque HMAC handles, five-minute TTL. Error paths
+retain generic JobExecution/AlertSignalSnapshot failure state without provider
+response text. A valid empty sample is **unobserved**, not all-clear.
+Missing or stale samples cannot resolve AlertCases. No alerts are created,
+promoted, routed, sent or resolved by this job; no privileged Vault operation
+exists. Source provider readiness remains independently authoritative.
+
+Tests authored: `tests/intelligence/test_vault_alert_job_producer.py`.
+At UAT, verify selected Alertmanager API source, worker task registration,
+queue routing, denied actor, real filtered response, malformed/foreign
+response, provider outage, last-known snapshot invalidation, HMAC key custody
+and no AlertCase/routing side effects. Real DevContainer tests, PostgreSQL
+integration and human acceptance remain **Not Tested**.

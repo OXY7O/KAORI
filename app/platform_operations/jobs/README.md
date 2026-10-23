@@ -139,3 +139,20 @@ Jobs & Executions is intentionally server-backed and demand-loaded. The page mus
 - Active Work OOB counter fragments are emitted only by HTMX fragment responses. The initial full-page render must never append those response helpers as visible inline content.
 - Active Work, Registry, and Queues use the canonical KAORI empty-state component so healthy zero work, filtered no-results, and initial no-data conditions keep one visual grammar.
 - Terminal JobExecution history remains bounded by **Platform Operations → Data Lifecycle**. The Jobs page is the hot operational registry, not a replacement archive browser.
+
+## Vault Alert Source Observation (HV-12, #2802)
+
+`secrets_pki.vault_alerts.observe` is a source-owned **manual-only**
+registered job for approved Vault/Alertmanager evidence. It reuses canonical
+Jobs & Executions admission, `inventory` Celery queue, current shared
+Execution & Recent Activity UX and operator audit. `default_enabled=false`
+and `schedule_supported=false` mean no persisted policy edit or Celery
+Beat scheduler can activate automatic polling. Run Now requires `jobs.execute`
+and `secrets_pki.sync`. Validation, worker-only stable HMAC custody and real
+DevContainer UAT are prerequisites to declaring the job operational.
+
+Only opaque, five-minute correlation snapshots are committed; the result
+summary contains sanitized source counters. This job does **not** create,
+recover, resolve, route or send AlertCases. See
+`app/secrets_pki/TELEMETRY_BINDING.md` for exact source-identity,
+redaction and replay restrictions.
