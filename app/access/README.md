@@ -366,3 +366,22 @@ A real cutover requires an approved role/principal parity matrix, explicit
 minimum grants, transactional audit tests, security/DevContainer UAT,
 Full Admission and human acceptance. Rolling back an unpublished sensitive
 route must not make it an unscoped read.
+
+## Activity Audit register source hover info (#2885, 2026-10-23)
+
+Functional **Access → Activity Audit UAT is operator-approved**; the
+follow-up enhances only the two register headers. Activity Register and
+Administrative Source Evidence each use the existing icon-only
+`components/info_tip.html::render` anchored help next to the existing
+title/result-count pair. One tooltip describes Notification-backed hot
+activity with immutable actor snapshots and separately owned Data
+Lifecycle archive artifacts; the other describes source-permissioned hot
+`AuditEvent` records from Automatic Jobs/Tenant Inventory Sync, actor FK
+limitations, and Job Archive **bundle-level only** navigation.
+
+The two sources and their counts remain independent; no storage union,
+cross-source permission, archive record resolver, mutation, loading,
+pagination, HTMX behavior or existing modal is changed. Shared Info Tip
+owns keyboard/pointer/touch activation and viewport positioning.
+Human hover/mobile/light-dark acceptance is pending separately from the
+accepted overall Activity Audit functionality.
