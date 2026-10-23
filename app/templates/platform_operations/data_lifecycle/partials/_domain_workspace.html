@@ -66,10 +66,10 @@
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="layers-3" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <h3 class="text-base font-semibold leading-6 text-content-primary">Lifecycle Coverage</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">{% if selected.name == 'audit_event' %}Source-owned records covered by manual, non-destructive archival.{% else %}Records covered by this retention, archive, and cleanup policy.{% endif %}</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">{% if selected.name in ('notification_delivery', 'audit_event') %}Source-owned records covered by manual, non-destructive archival.{% else %}Records covered by this retention, archive, and cleanup policy.{% endif %}</p>
                 </div>
             </header>
-            <div class="grid gap-3 p-4 sm:grid-cols-2 {% if lifecycle.coverage|length >= 3 and selected.name not in ('alert_incident', 'runtime_observation') %}xl:grid-cols-3{% endif %}">
+            <div class="grid gap-3 p-4 {% if lifecycle.coverage|length > 1 %}sm:grid-cols-2{% endif %} {% if lifecycle.coverage|length == 3 %}xl:grid-cols-3{% endif %}">
                 {% for item in lifecycle.coverage %}
                     <article class="h-full rounded-lg border border-outline-subtle bg-surface-subtle p-3.5">
                         <div class="flex items-start gap-2.5">

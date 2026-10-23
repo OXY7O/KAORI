@@ -24,6 +24,37 @@ source-specific; Notification Delivery's pending source-safety backlog
 remains separate. Archive Only acceptance must not be extrapolated to
 destructive cleanup or historical individual-record lookup.
 
+## Retention Policies nine-domain UI conformance (#2961)
+
+The operator accepted **Retention Policies UI across all nine registered
+domains on 2026-10-24**. This is a shared-page visual/navigation acceptance,
+not the full PostgreSQL/Celery/Archive Storage, RBAC or cleanup lifecycle
+admission. The exact pending execution cases remain in the nine-domain
+DevContainer UAT guide under #2907.
+
+All policies share the same Hero/workspace shell, 4:8 navigation grid,
+metrics, Lifecycle Coverage, Storage Boundary, policy controls,
+Preview/manual archive actions, feedback and loading states. The
+**Execution Boundary** footer has a single title-adjacent Violet
+`ⓘ Guide` using the existing shared Info Tip component, rather than
+the old field-level circle-help. The Jobs & Executions link is
+permission-gated and independently actionable.
+
+Coverage layout is data-driven: **one** card uses full width, **two**
+cards share two columns, **three** cards use three columns at XL and
+**four** cards form a 2 × 2 grid. Shared geometry and Violet tokens are
+retained; source-specific policy sections reflect real capabilities,
+not alternative design systems. Notification Delivery and AuditEvent
+remain manual-only with no scheduler/cleanup controls. Archive Only
+cannot imply searchable per-record history or release authority.
+
+Remaining **operational** gates: source review and retention admission
+for AuditEvent (#2891/#2892), durable Notification Delivery identity,
+aggregate and channel dependency continuity plus compaction
+(#2868/#2869/#2870), and actual recorded runtime/Visual QA evidence
+for DL-E2E-01–20 (#2907). UI acceptance does not close these issues or
+authorize official deployment gates.
+
 ## Workspace contract
 
 The page contains three controlled, server-owned workspaces. Only the active workspace is built on a request, so Archive History queries and Archive Storage probes do not run while an operator is editing Retention Policies:

@@ -36,6 +36,8 @@ def test_delivery_notice_is_one_accessible_inline_row_with_violet_and_warning_em
     assert "{% if selected.name not in ('notification_delivery', 'audit_event') %}" in ui
     assert "selected.name in ('notification_delivery', 'audit_event') else 'Automatic Run'" in ui
     assert 'Manual Archive Only · No schedule' in ui
+    assert "selected.name in ('notification_delivery', 'audit_event')" in ui
+    assert 'Source-owned records covered by manual, non-destructive archival.' in ui
     assert 'name="mode" value="archive_only"' in ui
     assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
 
@@ -44,7 +46,8 @@ def test_four_runtime_coverage_sources_are_compact_and_balanced_in_two_columns()
     ui = read(UI)
     presentation = read(PRESENTATION)
     assert 'sm:grid-cols-2' in ui
-    assert "selected.name not in ('alert_incident', 'runtime_observation')" in ui
+    assert "lifecycle.coverage|length == 3" in ui
+    assert "selected.name not in ('alert_incident', 'runtime_observation')" not in ui
     assert 'xl:grid-cols-3' in ui  # Other eligible domains preserve existing layout.
     assert 'class="h-full rounded-lg border border-outline-subtle' in ui
     assert '{% for item in lifecycle.coverage %}' in ui

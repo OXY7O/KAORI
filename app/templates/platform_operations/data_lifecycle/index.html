@@ -177,7 +177,8 @@
                                             {{ info_tip.render('data-lifecycle-execution-boundary',
                                                 'Execution Boundary',
                                                 'Lifecycle policy and archive evidence stay in Data Lifecycle. Worker runtime, retries, and cancellation remain canonical in Jobs & Executions.',
-                                                placement='right') }}
+                                                placement='right',
+                                                variant='guide') }}
                                         </div>
                                         {% if current_user.has_permission('jobs.view') %}
                                             <a href="{{ url_for('jobs.executions') }}"
