@@ -313,3 +313,39 @@ queue routing, denied actor, real filtered response, malformed/foreign
 response, provider outage, last-known snapshot invalidation, HMAC key custody
 and no AlertCase/routing side effects. Real DevContainer tests, PostgreSQL
 integration and human acceptance remain **Not Tested**.
+
+## HV-12 internal provider AlertCase correlation plan (#2807)
+
+The Central Alert Intelligence layer now has
+`build_vault_provider_case_plan(binding_id=...)`, an **internal, read-only**
+correlation planner. It consumes only the qualified, five-minute
+`AlertSignalSnapshot` from the canonical Vault Alertmanager binding.
+No web endpoint or JobExecution producer calls it yet. It never writes
+`AlertCase`, `AlertCaseEvent`, routing policy, notifications or audit.
+The provider remains authoritative.
+
+The prospective identity is `vault-alert:<opaque HMAC handle>` and is exact
+across Vault/Alert Source/occurrence. Matching is limited to provider-origin
+cases under canonical `secrets_pki` / `vault_instance` scope with exact
+source binding and source integration provenance. It rejects duplicate
+case keys, historical replay ambiguity, foreign/cross-scope case-key
+collisions, unrecognized prior provenance, enabled routing, and >100 scoped
+case records. There are no path/name/hostname/time-only joins.
+
+Only fresh committed `firing` observations qualify as create candidates.
+Existing exact firing cases can qualify as refresh candidates.
+Suppressed/unprocessed observations and previous cases missing from the
+latest snapshot are `retain_unverified` / `review_source` only, never
+resolved. Closed historical cases are held for explicit review, not reopened.
+Unobserved, failed, expired or disabled source observations result in no
+per-case plan and no inference that Vault, consumers or alerts recovered.
+Plan rows propose `routing_state=suppressed` for a future separately
+approved write path. All correlation handles and case IDs are internal
+security-sensitive metadata and are not exposed through a route/UI/API.
+
+**Not implemented:** actual provider-origin case admission, case writes,
+audited lifecycle transitions, scoped case UI, routing/notification policies,
+confirmed source-resolved semantics or automatic source polling. These must
+be a separately owned child issue after #724 authorization and real
+Alertmanager/DevContainer UAT.
+Focused tests: `tests/intelligence/test_vault_provider_case_plan.py`.
