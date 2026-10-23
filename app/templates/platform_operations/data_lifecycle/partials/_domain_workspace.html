@@ -339,7 +339,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Failure Recovery</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{% if selected.name == 'audit_event' %}Archive failures retry once; retry manually if needed. Hot records remain.{% else %}Cleanup blocked; transient failures retry once, then need manual retry.{% endif %}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{% if selected.name == 'audit_event' %}Archive retries once; manual retry if needed. Hot records remain.{% else %}Cleanup blocked; transient failures retry once, then need manual retry.{% endif %}</p>
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Execution Worker</p>
@@ -384,7 +384,7 @@
         {% if selected.name == 'audit_event' %}
             <div class="flex flex-wrap items-center gap-3 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2.5"
                  role="status">
-                <span class="inline-flex flex-wrap items-center gap-2 text-xs font-semibold text-content-primary">
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-content-primary">
                     <i data-lucide="{{ 'activity' if lifecycle.active_lifecycle_jobs else ('check-circle-2' if selected.enabled else 'pause-circle') }}"
                        class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"
                        aria-hidden="true"></i>
@@ -395,17 +395,7 @@
                     {% else %}
                         Policy paused
                     {% endif %}
-                    {{ info_tip.render('data-lifecycle-audit-event-safety',
-                        'Archive Evidence Boundary',
-                        'AuditEvent archive bundles contain a limited redacted summary; original committed events remain in PostgreSQL.',
-                        items=[
-                            'Only an active Local Database Super Admin may operate this policy.',
-                            'Confirm source retention authorization before archiving sensitive events.',
-                            'Scheduling and hot cleanup are disabled for this source.',
-                            'Archive download, per-record historical lookup and object purge are restricted pending source security and retention authorization.'
-                        ],
-                        placement='right',
-                        variant='guide') }}
+
                 </span>
                 <span class="min-w-0 flex-1 text-xs leading-5 text-content-secondary">
                     {% if lifecycle.active_lifecycle_jobs %}
