@@ -244,6 +244,15 @@ class IntegrationRegistry:
                 'app.integrations.secrets_management.secrets_pki.providers.vault',
             ):
                 import_module(module_path)
+            # GitHub App remains inert while provider_matrix is planned.
+            # Once an explicitly admitted UAT/provider matrix is deployed,
+            # register the existing SC-02 Kernel descriptor on web and workers.
+            if provider_kind('source_control', 'github').available:
+                from app.integrations.source_control.source_control.providers.github.kernel_contract import (
+                    register_after_admission,
+                )
+
+                register_after_admission()
             self._builtins_loaded = True
 
     def get(self, integration_type: str) -> IntegrationModule:

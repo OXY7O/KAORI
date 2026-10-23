@@ -44,12 +44,15 @@ def assess_installation_readiness(evidence: InstallationReadiness) -> GitHubRead
     if states['repository_inventory'] != 'permission_verified':
         status = 'blocked'
         reason = 'GitHub metadata access is missing.'
-    elif all(state == 'permission_verified' for state in states.values()):
+    elif states['source_revision'] != 'permission_verified':
         status = 'validation_required'
-        reason = 'Permissions observed; full provider admission and committed sync still required.'
+        reason = 'Metadata access is confirmed; Contents:read is required for repository SHA evidence.'
     else:
-        status = 'validation_required'
-        reason = 'Metadata access observed; additional provider capabilities have partial permission coverage.'
+        # Ready means installation *connection* readiness for a subsequent
+        # authoritative repository sync. It never asserts that collection
+        # coverage, history or downstream GitHub capabilities are ready.
+        status = 'ready'
+        reason = 'GitHub App installation metadata and source-revision permissions validated.'
     return GitHubReadinessAssessment(
         status=status,
         capability_states=states,
