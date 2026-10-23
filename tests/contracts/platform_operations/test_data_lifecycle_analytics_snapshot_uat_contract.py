@@ -6,7 +6,7 @@ is modified. DevContainer end-to-end and human Visual QA are separate gates.
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from flask import Flask
