@@ -1523,7 +1523,11 @@ def test_native_execution_uses_full_width_governed_action_strip() -> None:
     approval = detail.split('id="tenant-release-stage-approval"', 1)[1].split(
         "{% elif tenant_release_step == 'finalize' %}", 1
     )[0]
-    execution = approval.split('data-release-native-execution-panel', 1)[1].split('</form>', 1)[0]
+    execution = next(
+        form
+        for form in re.findall(r'<form\b.*?</form>', approval, flags=re.DOTALL)
+        if 'data-release-native-execution-panel' in form
+    )
     Environment().parse(detail)
 
     assert 'lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center' in approval
