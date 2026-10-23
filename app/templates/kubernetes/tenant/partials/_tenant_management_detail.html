@@ -2394,7 +2394,7 @@
                                                     {% set verify_steps = [('Preview Native Transfer', 'Run a fresh governed dry-run for this plan.'), ('Execute Accepted Handoff', 'The accepting Platform Admin executes the transfer.'), ('Verify Read-Back', 'Confirm every provider resource before Release.')] %}
                                                 {% else %}
                                                     {% set verify_title = "Complete Release Finalization" %}
-                                                    {% set verify_message = "Provider handoff is verified. Complete the required checks before the authorized Release action." %}
+                                                    {% set verify_message = "Handoff verified. Complete checks before authorized Release." %}
                                                     {% set verify_steps = [('Review Committed Evidence', 'Confirm handoff proof and admission checks.'), ('Finalize Authorized Release', 'Use the existing guarded Release action when eligible.')] %}
                                                 {% endif %}
                                                 <div class="mt-3 flex min-w-0 flex-1 flex-col justify-between gap-3"
