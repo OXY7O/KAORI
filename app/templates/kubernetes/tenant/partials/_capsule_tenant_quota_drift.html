@@ -59,7 +59,7 @@
         {% endcall %}
     </div>
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[880px] !table-fixed' if capsule_tenant_quota_drifted else '!table-fixed') }}">
+        <table class="{{ table_ui.table_classes('min-w-[840px] !table-fixed' if capsule_tenant_quota_drifted else '!table-fixed') }}">
             <caption class="sr-only">Capsule Tenant resource quota allocation drift.</caption>
             {% if capsule_tenant_quota_drifted %}
                 <thead class="{{ table_ui.head_classes() }}">
