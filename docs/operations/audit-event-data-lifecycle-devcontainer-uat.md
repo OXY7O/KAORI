@@ -65,6 +65,16 @@ Database Super Admin can test manual Archive Only:
 6. Re-disable **Policy enabled**, then **Save Policy** after UAT, and
    verify archive execution is blocked while Preview remains available.
 
+The worker rechecks the requester against committed User state (including
+activation, deletion, Super Admin and local database authentication source)
+and confirms that the persisted policy is still **enabled, Archive Only
+and unscheduled**. A job already queued before a permission or policy
+change must be rejected before it acquires the archive lock or creates
+an artifact. CLI direct run and spoofed scheduled/worker requests are
+not permitted for this domain. Use a disposable synthetic test
+identity for the revoke/disable scenarios; do not revoke your own
+administrative access.
+
 Scheduled execution, Archive & Cleanup, archive bundle export/download
 and object purge remain **denied in source and server-side admission**,
 even while the manual policy is enabled. This procedure does not approve
@@ -88,6 +98,9 @@ or staging/production operation is authorized.
 | AE-LC-10 | Verify archive checksum, missing/corrupted object, partial storage | Integrity failure surfaced, no false downloaded/cleanup-complete evidence | NOT RUN |
 | AE-LC-11 | Unauthorized jobs / tenant user in Administrative Evidence | Existing source tabs hidden/403, no cross-source record disclosure | NOT RUN |
 | AE-LC-12 | Long source labels, permission states, narrow UI and light/dark | Existing shared Violet Data Lifecycle UX, 5-item pagination, focus, no broken HTMX state | NOT RUN |
+| AE-LC-13 | Execute `flask archive-retention run --domain audit_event --archive-only` after enabling only the disposable synthetic UAT policy | DENY before archive creation: CLI has no authenticated Local Database Super Admin requester | NOT RUN |
+| AE-LC-14 | Worker request with missing user, inactive/deleted user, LDAP or revoked Super Admin | DENY at execution time, including jobs queued before revocation; no new archive artifact | NOT RUN |
+| AE-LC-15 | Worker request with saved policy disabled, schedule enabled, or operation mode changed after queue | DENY at execution time even if the initial queue request succeeded; no archive artifact | NOT RUN |
 
 Inspect actual rendered UI and storage only with **approved disposable
 test evidence**. Do not inject actual private user data, secrets, session
@@ -111,6 +124,23 @@ not activate hot cleanup. No archive bundle download or archive-object
 purge is allowed until #2891 source-owner permission and retention
 authority is accepted, followed by #2892 cleanup/index admission.
 `job_execution` and `tenant_audit_evidence` remain independent domains.
+
+## Execution-time admission evidence after #2891 worker hardening
+
+For AE-LC-13 through AE-LC-15, capture the exact holding commit and
+job/requester identity, relevant persisted policy flags, the rejection
+type, and **absence of a newly created** `archive_artifacts` row.
+A source-only unit test does not prove the task was rejected in a real
+Celery worker. The UAT operator must use disposable accounts and test
+storage, compare before/after database counts, and avoid production
+records or unapproved scheduling. The AuditEvent archive policy must
+be disabled again after the safe manual archive-only test.
+
+Run the existing focused contract with other Data Lifecycle tests.
+The additional checks cover rejected CLI, scheduled/spoofed worker
+triggers, missing/disabled/changed policy, and deleted, deactivated,
+revoked or external-source requester. No source-specific bundle export
+or hot compaction becomes allowed by this worker hardening.
 
 Operator acceptance of the new archive-only behavior requires recorded
 test output, exact SHA, source/role-negative screenshots, and explicit
