@@ -503,3 +503,11 @@ This replaces the older Channel Inventory six-column and 2×2 action-grid
 recommendations while preserving historical change traceability. Do not
 alter notification delivery, evidence retention, RBAC, or lifecycle
 authority merely to simplify the UI.
+
+### Destructive confirmation from the More action sheet (#2774)
+
+The eligible Delete button in the More native action dialog triggers the
+existing shared destructive confirmation. Its CSRF-protected hidden POST
+form must stay **outside** that native dialog; closing the action sheet
+must not make the eventual confirmed submit target inert or inaccessible.
+Server-side dependency denial remains authoritative.
