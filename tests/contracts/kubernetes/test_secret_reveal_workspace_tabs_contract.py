@@ -159,7 +159,7 @@ def test_one_time_result_is_rendered_only_in_my_requests() -> None:
     assert 'hx-target="#reveal-value-output"' in registry
     assert 'hx-post="{{ url_for(' in registry
     assert 'name="csrf_token"' in registry
-    assert "item.status == 'approved'" in registry
+    assert "item.effective_status == 'approved'" in registry
     assert 'step_up_active' in registry
     assert "Continue to Approved Requests" in step_up
     assert 'href="#my-secret-reveal-requests"' in step_up

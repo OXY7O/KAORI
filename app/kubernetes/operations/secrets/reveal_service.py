@@ -9,7 +9,7 @@ from typing import Any
 from flask import current_app
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
-from sqlalchemy import func, or_, text
+from sqlalchemy import and_, case, func, or_, select, text
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload
@@ -30,6 +30,7 @@ from app.kubernetes.operations.secrets.reveal_policy import (
     get_namespace_policy,
 )
 from app.models import Cluster, SecretRevealNamespacePolicy, SecretRevealRequest, User
+from app.models.rbac import Permission, Role, RolePermission
 from app.platform_operations.notifications.feedback import OperationalDeliveryPolicy
 from app.platform_operations.notifications.service import stage_operational_activity
 
@@ -155,26 +156,30 @@ def _cluster_ready(cluster: Cluster) -> bool:
     return cluster_reveal_readiness(cluster)
 
 
-def _expire_stale_requests() -> None:
-    now = _now()
-    candidates = SecretRevealRequest.query.filter(
-        SecretRevealRequest.status.in_(('pending', 'approved')),
-        SecretRevealRequest.expires_at <= now,
-    ).all()
-    if not candidates:
-        return
-    for item in candidates:
-        item.status = 'expired'
-    db.session.commit()
-
-
 def get_secret_reveal_approvers(*, exclude_user_id: int) -> list[User]:
-    candidates = User.query.filter(
-        User.account_is_active.is_(True),
-        User.deleted_at.is_(None),
-        User.id != exclude_user_id,
-    ).all()
-    return [user for user in candidates if user.has_permission('kubernetes_secrets.approve_reveal')]
+    """Filter current, active permission holders in SQL before loading recipients."""
+    authorized_roles = (
+        select(Role.id)
+        .join(RolePermission, RolePermission.role_id == Role.id)
+        .join(Permission, Permission.id == RolePermission.permission_id)
+        .where(
+            Role.is_active.is_(True),
+            Permission.key == 'kubernetes_secrets.approve_reveal',
+        )
+    )
+    return (
+        User.query.filter(
+            User.account_is_active.is_(True),
+            User.deleted_at.is_(None),
+            User.id != exclude_user_id,
+            or_(
+                and_(User.is_super_admin.is_(True), User.auth_source == 'database'),
+                User.role_id.in_(authorized_roles),
+            ),
+        )
+        .order_by(User.id.asc())
+        .all()
+    )
 
 
 def rollback_secret_reveal_transaction() -> None:
@@ -339,8 +344,18 @@ def get_reveal_page_context(
     pending_search: str = '',
     pending_sort: str = 'oldest',
 ) -> dict[str, Any]:
-    _expire_stale_requests()
 
+    now = _now()
+    effective_status = case(
+        (
+            and_(
+                SecretRevealRequest.status.in_(('pending', 'approved')),
+                SecretRevealRequest.expires_at <= now,
+            ),
+            'expired',
+        ),
+        else_=SecretRevealRequest.status,
+    )
     # Restrict to the requester first; filtering is SQL-backed and never reads Secret values.
     search = str(my_search or '').strip()[:120]
     allowed_statuses = {'pending', 'approved', 'revealed', 'denied', 'expired'}
@@ -366,7 +381,7 @@ def get_reveal_page_context(
             )
         )
     if state_filter:
-        my_query = my_query.filter(SecretRevealRequest.status == state_filter)
+        my_query = my_query.filter(effective_status == state_filter)
     if ordering == 'oldest':
         my_query = my_query.order_by(SecretRevealRequest.requested_at.asc(), SecretRevealRequest.id.asc())
     else:
@@ -389,7 +404,10 @@ def get_reveal_page_context(
     pending_ordering = 'newest' if pending_sort == 'newest' else 'oldest'
     pending_requests: list[SecretRevealRequest] = []
     if can_approve:
-        pending_query = SecretRevealRequest.query.filter_by(status='pending')
+        pending_query = SecretRevealRequest.query.filter(
+            SecretRevealRequest.status == 'pending',
+            SecretRevealRequest.expires_at > now,
+        )
         if pending_search_value:
             pending_term = pending_search_value.lower()
             pending_query = pending_query.filter(
@@ -584,7 +602,6 @@ def decide_reveal_request(
     approve: bool,
     decision_note: str | None,
 ) -> SecretRevealRequest:
-    _expire_stale_requests()
     # Lock only the request table; joined eager relations can trigger an
     # invalid FOR UPDATE on nullable outer joins in PostgreSQL.
     record = (
@@ -668,7 +685,6 @@ def get_reveal_request_for_user(
     user_id: int,
     lock_for_update: bool = False,
 ) -> SecretRevealRequest:
-    _expire_stale_requests()
     query = SecretRevealRequest.query.filter_by(id=request_id)
     if lock_for_update:
         # Serialize one-time consumption on the request row only. SecretRevealRequest
@@ -690,8 +706,6 @@ def get_reveal_request_for_user(
         raise ValueError('This Secret reveal request is not approved.')
     expires_at = _as_aware(record.expires_at)
     if expires_at is None or expires_at <= _now():
-        record.status = 'expired'
-        db.session.commit()
         raise ValueError('This Secret reveal request has expired.')
     return record
 
