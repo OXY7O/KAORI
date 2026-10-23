@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 from typing import Any
+from uuid import UUID
 
 from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload
 from app.common.sensitive_uploads import read_required_upload_bytes
@@ -39,11 +40,22 @@ def patch_tls_secret(record: Any, cert_bytes: bytes, key_bytes: bytes) -> str:
         secret_type = str(getattr(live_secret, 'type', None) or '')
         metadata = getattr(live_secret, 'metadata', None)
         resource_version = str(getattr(metadata, 'resource_version', None) or '')
+        live_uid = str(getattr(metadata, 'uid', None) or '')
     finally:
         scrub_secret_payload(live_secret)
 
     if secret_type != TLS_SECRET_TYPE:
         raise ValueError('The live Kubernetes Secret is no longer a TLS Secret.')
+    expected_uid = str(getattr(record, 'secret_uid', None) or '')
+    if not expected_uid or not live_uid:
+        raise ValueError('TLS Secret identity evidence is missing. Synchronize TLS inventory before rotation.')
+    try:
+        expected_object_uid = str(UUID(expected_uid))
+        live_object_uid = str(UUID(live_uid))
+    except (TypeError, ValueError) as exc:
+        raise ValueError('TLS Secret identity evidence is invalid. Synchronize TLS inventory before rotation.') from exc
+    if expected_object_uid != live_object_uid:
+        raise ValueError('The TLS Secret was recreated since collection. Synchronize TLS inventory and select again.')
     if not resource_version:
         raise ValueError('Kubernetes did not return a Secret resource version. Refresh TLS inventory and retry.')
 
