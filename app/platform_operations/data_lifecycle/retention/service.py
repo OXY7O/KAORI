@@ -68,7 +68,9 @@ def preview_retention(domain_name: str) -> dict[str, Any]:
 
 
 def _require_audit_event_manual_admission(
-    *, trigger_type: str, triggered_by_user_id: int | None,
+    *,
+    trigger_type: str,
+    triggered_by_user_id: int | None,
 ) -> None:
     """Recheck the persisted policy and caller identity at execution time.
 
