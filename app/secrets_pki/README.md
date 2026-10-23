@@ -294,3 +294,31 @@ stale, uncollected, or malformed. There is no provider API request on GET,
 item-level certificate identity/PEM/serial/path/CN/SAN, source mutation,
 new table or security bypass. Granular PKI detail needs additional approved
 #724 scopes and evidence contracts. Browser/real-provider UAT is NOT TESTED.
+
+
+## HV-07 #2839 read-only Leases / Consumers / Governance
+
+These three capability workspaces now exist as GET-only,
+`secrets_pki.view` guarded, shared Violet pages:
+
+- `/secrets-pki/leases`: known-Lease counts, renewal, revocation and
+  rotation verification remain **Not Materialized**. Fresh committed KV v2
+  version totals are shown as **independent version metadata**, never as
+  Lease/rotation results.
+- `/secrets-pki/consumers`: confirmed consumers/cutovers remain Not
+  Materialized. Independently observed public Vault PKI/Kubernetes TLS
+  overlap may be displayed **only** with `tls_certificates.view` and
+  qualified owning source evidence, without claiming delivery.
+- `/secrets-pki/governance`: four independently qualified safe
+  collections/bindings: committed KV v2 mounts, Metrics Source binding,
+  Alert Source binding, stored public certificate validity. Source
+  approval / policy coverage remains a separate exact #724 read, not a
+  fleet-level Secret/role listing.
+
+All pages reuse shared Hero, section cards, metric cards, app shell and
+blocked/not qualified values. Zero only from a qualified committed source;
+no default-zero, no Secret paths/values, Vault API request, Lease mutation
+or RBAC expansion. This fills navigation/read-only UAT surface **but
+does not implement** an authoritative Lease history dataset, Secret to
+consumer materialization, verified rotation cutover or privileged Vault
+operation. Status for these remains Not Implemented / Not Tested.

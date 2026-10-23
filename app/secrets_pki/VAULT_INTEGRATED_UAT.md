@@ -26,7 +26,7 @@ Not Implemented must not be treated as waived acceptance.
 | HV-04 #2588 / #2674 | KV v2 version lifecycle aggregate; rotation contract only | Not Tested |
 | HV-05 #2589 / #2666 | Fingerprint/Ingress/UID/ESO reconciliation *candidates* only | Not Tested |
 | HV-06 #2590 / #2697 | Metrics/Alert Source bindings; bounded recent-hour Vault query-range qualification | Not Tested |
-| HV-07 #2591 / #2678 / #2683 / #2761 / #2826 / #2836 | Review candidate: Overview/Inventory/Lifecycle, audited scoped KV v2 Registry, evidence-backed Certificates/PKI/Expiration workspaces; Secret Detail, Lease/Consumers/Governance specifics and real UAT pending | Not Tested |
+| HV-07 #2591 / #2678 / #2683 / #2761 / #2826 / #2836 / #2839 | Review candidate: Overview/Inventory/Lifecycle, audited KV v2 Registry, Certificates/PKI/Expiration and evidence-qualified Leases/Consumers/Governance read-only workspaces; authoritative Lease/consumer collectors and Secret Detail remain unavailable | Not Tested |
 | HV-08 #2592 | Governed provider operation pilot | Not Implemented |
 | HV-09 #2593 | UAT protocol; live scenarios not executed | Not Tested |
 | HV-10 #2594 / #2702 | Current-generation public PKI expiration horizon workspace; historical MetricsConsumer datasets/pages absent | Not Tested |
@@ -253,3 +253,25 @@ and no provider request during page rendering. Complete light/dark,
 responsive, keyboard/screen-reader and empty/error-state Visual QA.
 Execute existing Ruff, djlint, pytest and pyright checks and record
 PASS/FAIL per source; all presently Not Tested.
+
+
+## HV-07 #2839 Operational Leases, Consumers and Governance UAT (Not Tested)
+
+- Verify all three endpoints render with `secrets_pki.view`, direct GET
+  denies without permission, and no provider request occurs on page load.
+- With no persisted Lease collector, Lease/renewal/revocation counts show
+  Not Qualified; actual committed KV v2 versions appear only under clearly
+  separate version context, never imply Lease state or successful rotation.
+- Without `tls_certificates.view`, Consumers does not query or render TLS
+  correlation. With approved permission and fresh current sources, only
+  public certificate overlap appears; no confirmed consumer/cutover counts.
+  Stale/partial/403 must show Not Qualified rather than zero.
+- Governance source populations have independently verified statuses;
+  missing Metrics/Alert binding, stale provider, incomplete KV2/PKI and
+  ambiguous validation suppress stale counts. No path/policy target identity.
+- Validate Violet light/dark/responsive/keyboard/loading/empty states in
+  browser and confirm no unapproved mutation action or routing control.
+- Execute focused existing check:
+  `python -m pytest -q tests/integrations/test_secrets_pki_operational_evidence_workspaces.py`
+  plus Ruff/djlint/Pyright and relevant Vault regressions, record exact SHA.
+  Human UAT acceptance is still Not Tested, not PASS.
