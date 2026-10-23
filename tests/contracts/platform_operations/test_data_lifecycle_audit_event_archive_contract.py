@@ -6,6 +6,11 @@ PostgreSQL/worker/Archive Storage UAT is independently required.
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
+
+import pytest
+from flask import Flask
+from werkzeug.exceptions import Forbidden
 
 from app.platform_operations.data_lifecycle.retention.domains.audit_event import AuditEventArchiveDomain
 
@@ -122,3 +127,43 @@ def test_audit_event_scope_and_hot_history_counts_are_super_admin_only() -> None
     assert "if user is None or not user.is_super_admin or user.auth_source != 'database':" in service
     assert service.count("_check_audit_event_governance(domain_name, user_id)") == 2
     assert "is_super_admin: Mapped[bool]" in model
+
+
+@pytest.mark.parametrize(
+    ('super_admin', 'source', 'expected'),
+    [
+        (False, 'database', False),
+        (True, 'ldap', False),
+        (True, 'database', True),
+    ],
+)
+def test_audit_event_access_requires_authorized_local_super_admin(
+    super_admin: bool, source: str, expected: bool,
+) -> None:
+    from app.platform_operations.data_lifecycle.retention.presentation import _can_govern_audit_event
+
+    user = SimpleNamespace(is_authenticated=True, is_super_admin=super_admin, auth_source=source)
+    with patch('app.platform_operations.data_lifecycle.retention.presentation.current_user', user):
+        assert _can_govern_audit_event() is expected
+
+
+def test_audit_event_post_domain_rejects_non_super_admin_before_queueing() -> None:
+    from app.platform_operations.data_lifecycle.routes import _mutation_domain
+
+    app = Flask(__name__)
+    with app.test_request_context(
+        '/platform-operations/data-lifecycle/run',
+        method='POST',
+        data={'domain': 'audit_event'},
+    ):
+        with patch(
+            'app.platform_operations.data_lifecycle.routes.current_user',
+            SimpleNamespace(is_super_admin=False, auth_source='database'),
+        ):
+            with pytest.raises(Forbidden):
+                _mutation_domain()
+        with patch(
+            'app.platform_operations.data_lifecycle.routes.current_user',
+            SimpleNamespace(is_super_admin=True, auth_source='database'),
+        ):
+            assert _mutation_domain() == 'audit_event'
