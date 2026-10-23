@@ -269,7 +269,18 @@ def _workspace_key(endpoint: str) -> str | None:
     if endpoint.startswith(('jobs.', 'platform_operations.')):
         return 'operations_center'
     if endpoint.startswith(
-        ('integrations.', 'notification_channels.', 'metrics.', 'alertmanager.', 'minio.', 'harbor.', 'cluster.', 'vault.', 'github_source.', 'github_source_uat.')
+        (
+            'integrations.',
+            'notification_channels.',
+            'metrics.',
+            'alertmanager.',
+            'minio.',
+            'harbor.',
+            'cluster.',
+            'vault.',
+            'github_source.',
+            'github_source_uat.',
+        )
     ):
         return 'integrations'
     if endpoint.startswith(('access.', 'users.', 'identity_providers.')):
