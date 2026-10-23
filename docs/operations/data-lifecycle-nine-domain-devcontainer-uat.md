@@ -204,6 +204,40 @@ every successful action. Verify keyboard and light/dark behavior of the
 shared KAORI Guide. Keep DL-E2E-03, -05, -07, -10, -11 and -14/-15
 source-specific safety checks independent of this visual/feedback UAT.
 
+### Analytics Snapshots Policy actions and serve-window UAT (#2935)
+
+Retain the approved v1.3 Analytics materialization source and 30-day
+default hot policy. Use **synthetic fixtures only** with known frozen UTC
+boundaries and separately approved disposable Archive Storage/worker;
+do not edit live snapshot timestamps. The shorter Serve Window Protection
+description reads: "Pending and still-serveable snapshots stay hot.
+Archiving requires both stale grace and hot retention to have elapsed."
+
+| Case | Expected result | UAT |
+| --- | --- | --- |
+| Pending snapshot older than cutoff | Excluded from preview, archive and cleanup | NOT RUN |
+| Current materialization / recently refreshed row | Protected, never cleanup-selected | NOT RUN |
+| Expired but still in stale-grace window | Kept hot; no archive or cleanup | NOT RUN |
+| Stale deadline exactly at frozen cutoff | Still protected by strict comparison | NOT RUN |
+| Expired and outside stale grace + frozen hot cutoff | Eligible in Preview and Archive Only | NOT RUN |
+| Concurrently refreshed between selection and cleanup | Rechecked against current row, not deleted; truthful partial cleanup evidence | NOT RUN |
+| Save Policy (success / invalid) | Committed policy + success toast, or error toast and actionable Deck; Activity Audit evidence, no routine success Deck | NOT RUN |
+| Preview (zero/eligible) | Read-only inline boundary; no created JobExecution or success notification | NOT RUN |
+| Archive Only (enabled persisted policy) | Info toast + canonical maintenance JobExecution in Active Work, no duplicate queued Deck notification; verified archive artifact, source row retained | NOT RUN |
+| Archive & Cleanup (approved synthetic only) | Info toast + canonical JobExecution; delete only after archive checksum and per-row recheck | NOT RUN |
+| Disabled policy / failed dispatch / RBAC-negative | Correct blocked action, warning/error toast and Deck when actionable, no unauthorized artifact or delete | NOT RUN |
+| Light/dark/mobile, HTMX/full-page fallback, multiple submits | Shared UI controls remain accessible, toast/OOB appears once, no duplicate job from in-flight submission | NOT RUN |
+
+Focused source/unit tests:
+`tests/contracts/platform_operations/test_data_lifecycle_v1_3_analytics_snapshot_contract.py`
+and
+`tests/contracts/platform_operations/test_data_lifecycle_analytics_snapshot_uat_contract.py`.
+Also run the existing shared lifecycle action/feedback contract. Record
+actual event statuses and Notification Deck visibility, not merely
+toast HTML in a response. User acceptance of Alert Incidents is **not**
+a pass for this Analytics UAT; keep Analytics cases NOT RUN until
+DevContainer evidence and human review.
+
 ## 4. Execution / failure-injection matrix
 
 Every row starts **NOT RUN**; mark PASS only with exact SHA and inspected
@@ -242,7 +276,7 @@ runtime evidence. If a scenario is intentionally denied, PASS means
 | `runtime_observation` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 | `analytics_snapshot` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 | `generated_report` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
-| `alert_incident` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
+| `alert_incident` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — operator review 2026-10-23 |
 | `tenant_audit_evidence` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 | `notification_delivery` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 | `audit_event` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
@@ -251,6 +285,11 @@ The audit-only contracts of `notification_delivery` / `audit_event`
 mean that rejected destructive operations are expected **PASS** on
 negative tests. Mark actual hot cleanup/cold purge as **NOT ADMITTED**,
 not a runtime failure in the accepted Archive Only scope.
+
+The Alert Incidents UI/actions operator review was accepted on 2026-10-23
+(#2923 and #2929 completed); the three separate runtime evidence columns
+remain NOT RUN here because their underlying outputs were not provided in
+this UAT register. Acceptance does not transfer to Analytics Snapshots.
 
 ## 6. Blockers and stop/go criteria
 
