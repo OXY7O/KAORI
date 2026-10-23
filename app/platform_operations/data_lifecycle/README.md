@@ -145,6 +145,35 @@ approved disposable PostgreSQL, worker and archive storage, including
 checksum, notification surface and human acceptance, is tracked under #2907
 and #2935. No schedule, source Analytics, or provider logic changed.
 
+## Administrative Audit Events manual Archive Only readiness (#2939)
+
+Administrative Audit Events remains **paused by default** under the
+source-owner/privacy/retention security matrix #2891, not because the
+button or data-domain adapter is unimplemented. Read-only Preview is
+available to an authenticated **active Local Database Super Admin** with
+Data Lifecycle view permission. For *approved disposable synthetic UAT*
+only, that user may check **Policy enabled → Save Policy**, then run
+**Archive Only** manually using a separately saved, unscheduled policy.
+The source and worker recheck authority; a policy toggle does not
+immediately dispatch a job or retroactively authorize source export.
+
+UI now distinguishes paused policy from **Manual Archive Only enabled**
+on the committed state. Disabled Archive Only is an intentional guard
+until enable/save; while a canonical lifecycle JobExecution is active,
+duplicate runs stay blocked. After UAT the operator must disable/save
+the policy again. A successful save creates a foreground toast and
+Activity Audit; accepted queueing shows info toast and canonical Active
+Work/Jobs & Executions rather than a duplicate notification row.
+Warning/error outcomes remain Deck-visible under the existing
+`DECK_ON_FAILURE` policy. Preview remains silent/read-only.
+
+**Never** auto-enable or reconfigure production audit retention. AuditEvent
+source census/privacy/legal retention decision #2891 is incomplete, so
+automatic scheduling, hot cleanup, archive download, per-record lookup,
+and archive object purge remain denied until separate authority #2892.
+Archive Only provides only a minimal, bounded redacted projection, not
+a complete source-level audit export.
+
 ## RBAC
 
 - `platform_operations.view_data_lifecycle`
