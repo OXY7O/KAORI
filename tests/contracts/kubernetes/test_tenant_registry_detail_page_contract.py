@@ -1621,3 +1621,39 @@ def test_verified_handoff_next_action_copy_preserves_release_gate() -> None:
     assert detail.count('<form method="post"') == 23
     assert detail.count('name="csrf_token"') == 23
     assert detail.count('hx-post=') == 23
+
+
+def test_released_native_handback_uses_shared_embedded_action_footer() -> None:
+    detail = read(DETAIL)
+    handback = detail.split('id="tenant-native-handback"', 1)[1].split(
+        'id="tenant-capsule-handback"', 1
+    )[0]
+    form = next(
+        element for element in re.findall(r'<form\b.*?</form>', handback, flags=re.DOTALL)
+        if 'tenant.verify_native_successor_handback_route' in element
+    )
+    shared = read('app/templates/components/form_action_bar.html')
+    Environment().parse(detail)
+
+    assert 'data-native-platform-handback-form' in form
+    assert 'rounded-lg border border-outline-subtle bg-surface-elevated p-3' not in form
+    assert 'data-native-platform-handback-consent' in form
+    assert 'Registered Kubernetes X.509 verifies Platform Admin identity' in form
+    assert 'scoped get/patch access; no successor credentials.' in form
+    assert 'I authorize KAORI metadata handback for these exact Released resources.' in form
+    assert 'Names, specs, CPU, memory and quotas stay unchanged.' in form
+    assert re.search(r'name="confirm_successor_handback"\s+value="handback"\s+required', form)
+    assert 'name="release_plan_sha256"' in form
+    assert 'name="csrf_token"' in form
+    assert 'hx-post=' in form
+    assert "form_action_bar.render('Verify provider scope before metadata handback.'" in form
+    assert "aria_label='Native Platform Admin Handback Actions'" in form
+    assert 'embedded=true' in form
+    assert 'aria-label="Verify Provider and Hand Back as Platform Admin"' in form
+    assert 'Verify &amp; Hand Back' in form
+    assert 'bg-kaori-primary' in form
+    assert 'border-t border-outline-subtle bg-surface-subtle' in shared
+    assert 'Authorized Platform Admin handback is required before re-adoption.' in handback
+    assert detail.count('<form method="post"') == 23
+    assert detail.count('name="csrf_token"') == 23
+    assert detail.count('hx-post=') == 23
