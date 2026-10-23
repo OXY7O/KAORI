@@ -84,3 +84,44 @@ accepted as provider evidence, and no event is sent to Notification Channels.
 Webhook ingress is disabled while the GitHub provider is `planned`; SC-03
 must implement the follow-up authoritative refresh and committed provider
 state, including all/selected repository grant coverage.
+
+## Integration Kernel admission handoff
+
+`kernel_contract.py` holds a typed `IntegrationModule` and
+`IntegrationImplementation` constructed from the existing KAORI Kernel
+types and the SC-01 `SourceInstallation` record. It maps Test Connection
+to inline execution, Full Validation to the existing
+`integration-validation` queue and Runtime Refresh to the existing
+`integration-runtime` queue. The shared Source Control domain page remains
+the detail location; no new provider-specific component is needed here.
+
+The descriptor is **not imported by the Kernel builtin loader**. Its
+`register_after_admission()` refuses registration while the canonical GitHub
+matrix entry is `planned`. Following reviewed SC-01/SC-02 UAT, a separately
+approved workstream must enable the provider, connect the canonical worker
+lifecycle, install the reusable forms/HTMX views, prove the webhook ingress
+transaction-to-dispatch transition and perform security/visual acceptance.
+Draft PR #2766 is not that approval.
+
+The webhook inbox cannot be interpreted as a source event or a notification
+event. Only the SC-03 provider collector can commit repository/workflow state
+after sufficient scoped GitHub evidence. CDEvents Delivery Intelligence
+(#440/#536/#537) consumes those admitted committed records, not raw webhook
+JSON or successful API pings.
+
+### Dev Container verification commands (existing KAORI gates)
+
+```bash
+python -m ruff check app/models/source_control.py app/integrations/source_control tests/unit/test_source_control_github* migrations/versions/20261023_source_control_*.py
+python -m ruff format --check app/models/source_control.py app/integrations/source_control tests/unit/test_source_control_github* migrations/versions/20261023_source_control_*.py
+python scripts/verify_migration_graph.py
+python scripts/verify_definition_registry.py
+python scripts/verify_integration_domain_navigation.py
+pytest -q --tb=short tests/unit/test_source_control_identity.py tests/unit/test_source_control_persistence.py tests/unit/test_source_control_github_app_*.py tests/unit/test_source_control_github_kernel_contract.py
+python -m pyright --project pyrightconfig.json
+```
+
+These are proposed **existing** local quality commands, not evidence they have
+run. Run Alembic upgrade/downgrade against the approved disposable Dev Container
+database with the project's standard migrations procedure; no live database
+changes are authorized by this documentation.
