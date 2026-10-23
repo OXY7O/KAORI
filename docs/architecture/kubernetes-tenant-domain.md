@@ -2107,3 +2107,25 @@ branches, and Native/Capsule boundaries require Dev Container Visual QA.
 Previous Native Adopt → Resource Profile change → Release UAT acceptance
 does not cover this newly revised visual state. Official CI/CD admission,
 staging/main promotion and release remain HOLD.
+
+## Native Release Step 4 expired restart evidence row — 2026-10-23
+
+A targeted Dev Container visual refinement under #1091 shortens only
+the original-requester Restart Expired Handoff Plan confirmation area.
+The UI displays a compact read-only note: committed read-back reported
+zero transferred resources, but any restart still checks the current
+authoritative provider state (exact UID/resourceVersion, ownership,
+and dependencies) and grants no automatic clearance. A small Info icon
+uses existing Violet tokens without adding a nested warning card.
+
+The required confirmation remains an explicit, separately readable
+checkbox acknowledging unchanged provider ownership, followed by the
+existing Restart Expired Handoff Plan secondary action. Spacing and
+responsive button width are unified with the KAORI form-action grammar.
+No label, handler, POST/HTMX/CSRF, plan SHA, requester-only/RBAC gate,
+read-back freshness condition, or audit evidence semantics changed.
+The button still does not bypass blocked read-back or provider recovery.
+
+Dev Container visual QA must cover normal desktop, mobile, light/dark,
+keyboard focus, expired and blocked cases and non-mutation semantics.
+Official Developer Check, Full Admission and staging/main remain HOLD.
