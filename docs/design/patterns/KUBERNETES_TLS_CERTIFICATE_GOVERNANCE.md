@@ -314,6 +314,24 @@ evidence, not live Ingress reachability. Preview and server-side single/bulk
 apply use the same fail-closed policy; any blocked bulk target prevents every
 provider PATCH. No new UI state or break-glass override is introduced.
 
+## Bounded TLS inventory reconciliation (#1325)
+
+Worker-side collection is bounded and payload-scrubbed before reconciliation.
+A completed Secret scan reconciles existing TLS inventory in 100-identity ORM
+batches instead of loading all historical cluster rows into application memory.
+Each successfully collected record receives one committed scan-generation
+timestamp; stale records from **only that cluster** are pruned by a scoped SQL
+DELETE where their generation does not match. Collection-state and inventory
+changes share the same database transaction/commit, including successful
+zero-certificate scans. Duplicate Secret identities abort and roll back the
+reconciliation rather than silently replacing or pruning evidence. Fatal or
+incomplete Secret collection never enters reconciliation or prunes existing
+rows. Preserve immutable Secret UID/source provenance across updates.
+
+This reduces ORM materialization but is **not** a benchmark PASS. Verify
+bounded per-batch memory, PostgreSQL query plan/latency and transactional
+no-prune failure paths in Dev Container before official admission.
+
 ## Provenance-safe TLS collection freshness (#1327)
 
 `TLSCertificateCollectionState.updated_at` means the latest collection attempt;
