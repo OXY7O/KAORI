@@ -221,14 +221,24 @@ def test_capsule_allocation_scope_guide_between_registries_and_wide_modals() -> 
     scope = page.split(primary, 1)[1].split(shared, 1)[0]
     assert 'data-capsule-allocation-scope-guide' in scope
     assert '{{ table_ui.block_classes() }}' in scope
-    assert '{{ table_ui.block_icon_classes() }}' in scope
-    assert '{{ table_ui.block_title_classes() }}' in scope
-    assert 'Allocation Scope Guide' in scope
+    assert 'Capsule Allocation Authority' in scope
+    assert 'Two distinct quota scopes, one provider authority.' in scope
+    assert 'Sync observes drift; recovery requires a decision.' in scope
     assert 'Tenant Resource Quotas' in scope
     assert 'Shared Allocation' in scope
+    assert 'Tenant CR' in scope
+    assert 'Namespace ResourceQuota' in scope
+    assert 'GlobalResourceQuota' in scope
+    assert 'Shared Tenant allocation' in scope
     assert 'Capsule reconciles generated Namespace ResourceQuota' in scope
     assert 'GlobalResourceQuota governs shared Tenant allocation' in scope
-    assert 'recovery needs an explicit decision' in scope
+    # The scopes use two equal peer cards, not the rejected flat 3-column text strip.
+    assert scope.count('<article class="min-w-0 rounded-lg border border-brand-outline bg-kaori-soft') == 2
+    assert scope.count('bg-surface-card px-3 py-2 text-xs') == 2
+    assert scope.count('data-lucide="arrow-right"') == 2
+    assert 'grid gap-3 p-3 sm:grid-cols-2 sm:p-4' in scope
+    assert 'lg:grid-cols-3' not in scope
+    assert 'aria-labelledby="capsule-allocation-scope-guide-title"' in scope
     # Read-only guidance is not a third reconciliation registry.
     assert '<table' not in scope
     assert 'method="post"' not in scope
