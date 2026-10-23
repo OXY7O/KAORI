@@ -124,7 +124,9 @@ def verify(archive_id: str) -> ResponseReturnValue:
         abort(403, description='AuditEvent source verification access is not admitted.')
     context = _context(feedback=feedback)
     context['active_tab'] = 'history'
-    return render_template('platform_operations/data_lifecycle/partials/_history.html', lifecycle=context)
+    if request.headers.get('HX-Request') == 'true':
+        return render_template('platform_operations/data_lifecycle/partials/_history.html', lifecycle=context)
+    return render_template('platform_operations/data_lifecycle/index.html', lifecycle=context)
 
 
 @bp.get('/archives/<archive_id>/download')
