@@ -317,3 +317,30 @@ def test_trusted_payload_failure_does_not_write_fingerprint_on_initial_failure(a
     snapshot = AlertSignalSnapshot.query.one()
     assert snapshot.payload_json is None
     assert 'PRIVATE-PATH-RAW-VALUE' not in str(snapshot.last_error)
+
+
+def test_corrupt_or_foreign_source_provenance_cannot_be_read(accepted_source):
+    vault, source, binding = accepted_source
+    _commit(binding.id, [_alert(vault.id)])
+    row = AlertSignalSnapshot.query.one()
+    for fake in (
+        {**row.payload_json, 'source_integration_id': source.id + 100},
+        {**row.payload_json, 'source_binding_id': True},
+        {**row.payload_json, 'schema_version': True},
+        {**row.payload_json, 'status': ['qualified']},
+    ):
+        row.payload_json = fake
+        db.session.commit()
+        assert read_vault_alert_observations(
+            binding_id=binding.id, now=AT,
+        )['state'] == 'unavailable'
+
+
+def test_untrusted_validation_sample_shape_is_not_a_valid_source(accepted_source):
+    vault, _source, binding = accepted_source
+    binding.validation_evidence = {
+        'profile_key': 'vault-alerts-v1',
+        'vault_alert_sample': {'status': ['qualified']},
+    }
+    db.session.commit()
+    assert _commit(binding.id, [_alert(vault.id)])['state'] == 'blocked'

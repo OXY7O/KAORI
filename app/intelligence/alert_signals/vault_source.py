@@ -96,7 +96,10 @@ def _validated_binding(binding_id: int, *, now: datetime) -> tuple[IntegrationBi
     if not isinstance(evidence, dict) or evidence.get('profile_key') != _PROFILE:
         return None
     sample = evidence.get('vault_alert_sample')
-    if not isinstance(sample, dict) or sample.get('status') not in {'qualified', 'unobserved'}:
+    if (
+        not isinstance(sample, dict) or not isinstance(sample.get('status'), str)
+        or sample['status'] not in {'qualified', 'unobserved'}
+    ):
         return None
 
     # Ambiguous source precedence cannot silently establish per-Vault identity.
@@ -284,10 +287,14 @@ def read_vault_alert_observations(
         return {'state': 'stale', 'entries': None}
     payload = snapshot.payload_json
     if (
-        not isinstance(payload, dict) or payload.get('schema_version') != 1
-        or payload.get('source_binding_id') != binding.id
-        or payload.get('source_integration_id') != source.id
-        or payload.get('status') not in {'qualified', 'unobserved'}
+        not isinstance(payload, dict)
+        or type(payload.get('schema_version')) is not int or payload['schema_version'] != 1
+        or type(payload.get('source_binding_id')) is not int
+        or payload['source_binding_id'] != binding.id
+        or type(payload.get('source_integration_id')) is not int
+        or payload['source_integration_id'] != source.id
+        or not isinstance(payload.get('status'), str)
+        or payload['status'] not in {'qualified', 'unobserved'}
     ):
         return {'state': 'unavailable', 'entries': None}
     entries = payload.get('entries')
