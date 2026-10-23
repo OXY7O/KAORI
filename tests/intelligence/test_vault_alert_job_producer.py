@@ -273,3 +273,131 @@ def test_no_automatic_or_alertcase_mutation_path_in_registered_job():
     assert 'get_alerts(filters=' in content
     assert 'get_alerts(' in content
     assert 'get_job_definition' not in content
+
+
+def _fake_canonical_job(*, payload=None, status='queued', actor=9):
+    return SimpleNamespace(
+        celery_task_id='task-id-1',
+        job_type=vault_jobs.JOB_TYPE,
+        operation=vault_jobs.OPERATION,
+        scope_type='secrets_pki_alert_fleet',
+        scope_key='all',
+        integration_type='secrets_pki',
+        status=status,
+        requested_by_user_id=actor,
+        payload_json={'trigger_type': 'manual'} if payload is None else payload,
+    )
+
+
+def _patch_job_boundary(monkeypatch, job):
+    results = []
+
+    class FakeContext:
+        def __init__(self, task_id, job_id):
+            assert task_id == 'task-id-1'
+            assert job_id == 31
+
+        def start(self, **kw):
+            results.append(('start', kw))
+
+        def checkpoint(self, **kw):
+            results.append(('checkpoint', kw))
+
+        def fail(self, message, **kw):
+            results.append(('fail', message))
+
+        def succeed(self, **kw):
+            results.append(('succeed', kw))
+
+        def canceled(self):
+            results.append(('canceled', None))
+
+    monkeypatch.setattr(vault_jobs, 'JobExecutionContext', FakeContext)
+    monkeypatch.setattr(
+        vault_jobs, 'db',
+        SimpleNamespace(session=SimpleNamespace(
+            get=lambda _cls, _id: job,
+            rollback=lambda: None,
+        )),
+    )
+    return results
+
+
+def test_manual_job_worker_rejects_scheduler_actor_and_cancel_requested(monkeypatch):
+    for job in (
+        _fake_canonical_job(payload={'trigger_type': 'scheduled'}),
+        _fake_canonical_job(status='cancel_requested'),
+        _fake_canonical_job(actor=None),
+    ):
+        _patch_job_boundary(monkeypatch, job)
+        monkeypatch.setattr(
+            vault_jobs, 'build_vault_alert_observation_targets',
+            lambda: pytest.fail('Unauthorized source must not be selected'),
+        )
+        output = vault_jobs.run_vault_alert_observation_job(
+            task_id='task-id-1', job_execution_id=31, binding_ids=[41],
+        )
+        assert output['status'] == 'blocked'
+
+
+def test_changed_target_is_terminal_failure_without_provider_call(monkeypatch):
+    records = _patch_job_boundary(monkeypatch, _fake_canonical_job())
+    monkeypatch.setattr(
+        vault_jobs, 'build_vault_alert_observation_targets',
+        lambda: (_ for _ in ()).throw(vault_jobs.NoEligibleVaultAlertSources('no valid scope')),
+    )
+    monkeypatch.setattr(
+        vault_jobs, 'observe_vault_alert_binding',
+        lambda *_a, **_kw: pytest.fail('Invalid target must not query provider'),
+    )
+    output = vault_jobs.run_vault_alert_observation_job(
+        task_id='task-id-1', job_execution_id=31, binding_ids=[41],
+    )
+    assert output['status'] == 'failed'
+    assert records == [('fail', 'Vault Alert Source target admission changed.')]
+
+
+def test_missing_worker_key_fails_job_without_polling(monkeypatch):
+    records = _patch_job_boundary(monkeypatch, _fake_canonical_job())
+    monkeypatch.setattr(vault_jobs, 'build_vault_alert_observation_targets', lambda: [41])
+    monkeypatch.setattr(vault_jobs, '_worker_key', lambda: None)
+    monkeypatch.setattr(
+        vault_jobs, 'observe_vault_alert_binding',
+        lambda *_a, **_kw: pytest.fail('Missing worker key must not query provider'),
+    )
+    output = vault_jobs.run_vault_alert_observation_job(
+        task_id='task-id-1', job_execution_id=31, binding_ids=[41],
+    )
+    assert output['status'] == 'failed'
+    assert records == [('fail', 'Vault alert correlation secret is unavailable.')]
+
+
+def test_admitted_job_returns_only_sanitized_counts(monkeypatch):
+    records = _patch_job_boundary(monkeypatch, _fake_canonical_job())
+    monkeypatch.setattr(vault_jobs, 'build_vault_alert_observation_targets', lambda: [41])
+    monkeypatch.setattr(vault_jobs, '_worker_key', lambda: KEY)
+    monkeypatch.setattr(vault_jobs, 'observe_vault_alert_binding', lambda _id, *, key: 'qualified')
+    output = vault_jobs.run_vault_alert_observation_job(
+        task_id='task-id-1', job_execution_id=31, binding_ids=[41],
+    )
+    assert output == {
+        'status': 'success',
+        'observed_sources': 1,
+        'unobserved_sources': 0,
+        'failed_sources': 0,
+    }
+    assert records[-1][0] == 'succeed'
+    assert 'PRIVATE' not in repr(records)
+
+
+def test_manual_only_config_is_in_jobs_registry_not_celery_beat():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    path = root / 'app/templates/platform_operations/jobs/configuration/definitions/vault_alert_observation.html'
+    content = path.read_text(encoding='utf-8')
+    assert '_job_overview.html' in content
+    assert '_execution_activity.html' in content
+    assert 'Automatic policy is unsupported' in content
+    assert 'update_policy' not in content
+    assert 'policy_form.enabled' not in content
