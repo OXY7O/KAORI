@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from sqlalchemy import create_engine
+from datetime import UTC, datetime
+
+import pytest
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from app.integrations.source_control.repository_inventory import read_installation_inventory
@@ -10,9 +13,8 @@ from app.models.integration import IntegrationInstance
 from app.models.source_control import (
     SourceAccount, SourceInstallation, SourceRepository,
     SourceRepositoryCollectionState, SourceRepositoryGrant,
+    SourceReference, SourceRevision,
 )
-from datetime import UTC, datetime
-import pytest
 
 
 @pytest.fixture
@@ -25,6 +27,8 @@ def read_db():
         SourceRepository.__table__,
         SourceRepositoryGrant.__table__,
         SourceRepositoryCollectionState.__table__,
+        SourceRevision.__table__,
+        SourceReference.__table__,
     ])
     with Session(engine) as session:
         account = SourceAccount(
@@ -118,3 +122,52 @@ def test_no_live_provider_request_in_read_projection():
     assert 'GitHubAppClient' not in source
     assert 'access_tokens' not in source
     assert 'integration_instance_id' not in source.split('def read_installation_inventory(')[1]
+
+
+
+def test_exact_sha_is_a_committed_optional_projection_not_a_live_lookup(read_db):
+    session, installations = read_db
+    before = read_installation_inventory(session, authorized_installation_id=installations[0])
+    assert before.rows[0].exact_default_branch_sha is None
+    assert before.rows[0].revision_observed_at is None
+
+    repository = session.execute(select(SourceRepository)).scalar_one()
+    now = datetime.now(UTC)
+    revision = SourceRevision(
+        repository_id=repository.id, commit_sha='a' * 40, last_observed_at=now,
+    )
+    session.add(revision)
+    session.flush()
+    session.add(SourceReference(
+        repository_id=repository.id, full_ref='refs/heads/main',
+        current_revision_id=revision.id, state='observed', last_observed_at=now,
+    ))
+    session.commit()
+
+    after = read_installation_inventory(session, authorized_installation_id=installations[0])
+    assert after.rows[0].exact_default_branch_sha == 'a' * 40
+    assert after.rows[0].revision_observed_at is not None
+
+    # The other installation has never received a successful inventory generation.
+    other = read_installation_inventory(session, authorized_installation_id=installations[1])
+    assert other.rows == () and other.total is None
+
+
+def test_branch_change_does_not_fabricate_latest_sha_for_unobserved_ref(read_db):
+    session, installations = read_db
+    repository = session.execute(select(SourceRepository)).scalar_one()
+    revision = SourceRevision(
+        repository_id=repository.id, commit_sha='b' * 40,
+        last_observed_at=datetime.now(UTC),
+    )
+    session.add(revision)
+    session.flush()
+    session.add(SourceReference(
+        repository_id=repository.id, full_ref='refs/heads/old-main',
+        current_revision_id=revision.id, state='observed',
+        last_observed_at=datetime.now(UTC),
+    ))
+    session.commit()
+    page = read_installation_inventory(session, authorized_installation_id=installations[0])
+    assert page.rows[0].default_branch == 'main'
+    assert page.rows[0].exact_default_branch_sha is None

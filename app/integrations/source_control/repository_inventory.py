@@ -10,13 +10,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from app.models.source_control import (
     SourceRepository,
     SourceRepositoryCollectionState,
     SourceRepositoryGrant,
+    SourceReference,
+    SourceRevision,
 )
 
 _ALLOWED_PAGE_SIZES = (5, 10, 25, 50)
@@ -32,6 +34,8 @@ class InventoryRow:
     archived: bool | None
     access_status: str
     observed_at: datetime | None
+    exact_default_branch_sha: str | None
+    revision_observed_at: datetime | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,10 +87,27 @@ def read_installation_inventory(
         )
 
     scoped = (
-        select(SourceRepository, SourceRepositoryGrant.access_status)
+        select(
+            SourceRepository, SourceRepositoryGrant.access_status,
+            SourceRevision.commit_sha, SourceReference.last_observed_at,
+        )
         .join(
             SourceRepositoryGrant,
             SourceRepositoryGrant.repository_id == SourceRepository.id,
+        )
+        .outerjoin(
+            SourceReference,
+            and_(
+                SourceReference.repository_id == SourceRepository.id,
+                SourceReference.full_ref == ('refs/heads/' + SourceRepository.default_branch),
+            ),
+        )
+        .outerjoin(
+            SourceRevision,
+            and_(
+                SourceRevision.id == SourceReference.current_revision_id,
+                SourceRevision.repository_id == SourceRepository.id,
+            ),
         )
         .where(
             SourceRepositoryGrant.installation_id == authorized_installation_id,
@@ -124,8 +145,10 @@ def read_installation_inventory(
                 archived=repository.archived,
                 access_status=str(status),
                 observed_at=repository.last_observed_at,
+                exact_default_branch_sha=sha,
+                revision_observed_at=tip_observed_at,
             )
-            for repository, status in data
+            for repository, status, sha, tip_observed_at in data
         ),
         page=page, per_page=per_page,
     )
