@@ -34,6 +34,7 @@ from app.access.identity_providers.provisioning import (
     assign_provider_choices,
     provision_external_identity,
 )
+from app.access.identity_providers.registration_proof import issue_registration_proof, verify_registration_proof
 from app.access.identity_providers.provisioning_proof import (
     ProjectionProofError,
     issue_projection_proof,
@@ -102,6 +103,20 @@ def create():
         )
         if role_error:
             form.default_role_id.errors = [*form.default_role_id.errors, role_error]
+            return render_template('access/identity_providers/form.html', **_form_context(form, None))
+        verified, verification_message = verify_registration_proof(
+            token=request.form.get('connection_test_proof'), form=form, user_id=actor.id
+        )
+        if not verified:
+            identity_provider_feedback(
+                actor=actor,
+                event_type='identity_provider_registration_blocked',
+                status='error',
+                title='Connection Test Required',
+                message=verification_message,
+                provider_key=str(form.provider_key.data or ''),
+                delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
+            )
             return render_template('access/identity_providers/form.html', **_form_context(form, None))
         try:
             provider = create_identity_provider(configuration_from_form(form))
@@ -199,6 +214,7 @@ def test_configuration(provider_id: int | None = None):
     status = 'error'
     title = 'Connection Test Blocked'
     message = 'Complete the required provider fields before testing the current configuration.'
+    registration_proof = ''
     if form.validate_on_submit():
         role_error = provider_default_role_assignment_error(
             actor, form.default_role_id.data, jit_enabled=bool(form.jit_enabled.data)
@@ -214,6 +230,8 @@ def test_configuration(provider_id: int | None = None):
                 title, message = 'Connection Test Failed', str(exc)
             else:
                 status, title = 'success', 'Connection Test Passed'
+                if provider is None:
+                    registration_proof = issue_registration_proof(form=form, user_id=actor.id)
 
     # Connection tests use canonical feedback while preserving unsaved form values.
     # Only failures enter the Notification Deck; both outcomes retain Activity Audit.
@@ -227,7 +245,10 @@ def test_configuration(provider_id: int | None = None):
         provider_key=str(form.provider_key.data or ''),
         delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
     )
-    return render_template('access/identity_providers/form.html', **_form_context(form, provider))
+    return render_template(
+        'access/identity_providers/form.html',
+        **_form_context(form, provider, registration_proof=registration_proof),
+    )
 
 
 @bp.post('/<int:provider_id>/validate')
