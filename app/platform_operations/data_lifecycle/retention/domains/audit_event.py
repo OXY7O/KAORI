@@ -121,7 +121,7 @@ class AuditEventArchiveDomain:
                 'summary': redact_operational_text(event.summary, limit=255),
                 'created_at': _isoformat(event.created_at),
                 'freeform_metadata_included': False,
-                'source_permissions_preserved': True,
+                'source_permission_admission_pending': True,
             },
         }
 
