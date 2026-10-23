@@ -9,7 +9,6 @@ from unittest.mock import patch
 
 import pytest
 from flask import Flask
-from werkzeug.exceptions import Forbidden
 
 from app.platform_operations.data_lifecycle.retention.service import _require_audit_event_manual_admission
 from app.platform_operations.data_lifecycle.service import queue_lifecycle_execution, update_lifecycle_policy
