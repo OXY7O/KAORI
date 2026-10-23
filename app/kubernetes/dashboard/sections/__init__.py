@@ -7,7 +7,7 @@ from app.kubernetes.dashboard.sections.forecast import build_forecast_snapshot
 from app.kubernetes.dashboard.sections.freshness import build_data_freshness
 from app.kubernetes.dashboard.sections.kpis import build_kpis
 from app.kubernetes.dashboard.sections.recommendations import build_recommendations
-from app.kubernetes.dashboard.sections.reporting import build_reporting_snapshot
+from app.kubernetes.dashboard.sections.reporting import build_reporting_snapshot, count_kubernetes_reports
 from app.kubernetes.dashboard.sections.top_consumers import build_top_consumers_snapshot
 
 __all__ = [
@@ -19,5 +19,6 @@ __all__ = [
     'build_kpis',
     'build_recommendations',
     'build_reporting_snapshot',
+    'count_kubernetes_reports',
     'build_top_consumers_snapshot',
 ]
