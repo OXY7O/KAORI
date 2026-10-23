@@ -151,6 +151,7 @@ class NotificationDelivery(db.Model):
 
     channel: Mapped[NotificationChannel] = relationship('NotificationChannel', back_populates='deliveries')
 
+
 class NotificationDeliveryIdentity(db.Model):
     """Inert durable event/channel reservation identity for future archive safety.
 
@@ -162,6 +163,7 @@ class NotificationDeliveryIdentity(db.Model):
     __tablename__ = 'notification_delivery_identities'
     __table_args__ = (
         UniqueConstraint('channel_id', 'event_key', name='uq_notification_delivery_identity_event'),
+        UniqueConstraint('source_delivery_id', name='uq_notification_delivery_identities_source_delivery_id'),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -172,5 +174,5 @@ class NotificationDeliveryIdentity(db.Model):
     )
     event_key: Mapped[str] = mapped_column(db.String(255), nullable=False)
     # Historical source reference, deliberately not an FK to removable hot data.
-    source_delivery_id: Mapped[int | None] = mapped_column(db.Integer, nullable=True, unique=True)
+    source_delivery_id: Mapped[int | None] = mapped_column(db.Integer, nullable=True)
     first_seen_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
