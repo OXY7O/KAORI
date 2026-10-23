@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.integrations.source_control.source_control.providers.github import webhook_handoff
+from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
 from app.integrations.source_control.source_control.providers.github.webhook import GitHubWebhookError
 
 
@@ -107,10 +108,10 @@ def test_failure_before_job_creation_allows_bounded_retry(monkeypatch):
     session = FakeSession()
 
     def fail(**_kwargs):
-        raise RuntimeError('queue unavailable')
+        raise JobWorkerUnavailable('queue unavailable')
 
     monkeypatch.setattr(webhook_handoff, 'enqueue_source_repository_sync', fail)
-    with pytest.raises(RuntimeError, match='queue unavailable'):
+    with pytest.raises(JobWorkerUnavailable, match='queue unavailable'):
         webhook_handoff.dispatch_committed_delivery(session, delivery_record_id=11)
     assert session.commits == ['dispatching', 'retry_pending']
     assert session.rollbacks == 1
@@ -171,3 +172,16 @@ def test_abandoned_claim_becomes_uncertain_not_automatically_retried():
 def test_invalid_delivery_id_does_not_broaden_scope():
     with pytest.raises(GitHubWebhookError):
         webhook_handoff.dispatch_committed_delivery(FakeSession(), delivery_record_id=0)
+
+
+
+def test_unknown_dispatch_failure_is_held_for_review_not_reenqueued(monkeypatch):
+    session = FakeSession()
+    monkeypatch.setattr(
+        webhook_handoff, 'enqueue_source_repository_sync',
+        lambda **_: (_ for _ in ()).throw(RuntimeError('broker acknowledgment unknown')),
+    )
+    with pytest.raises(RuntimeError):
+        webhook_handoff.dispatch_committed_delivery(session, delivery_record_id=11)
+    assert session.row.processing_state == 'dispatch_uncertain'
+    assert session.commits == ['dispatching', 'dispatch_uncertain']

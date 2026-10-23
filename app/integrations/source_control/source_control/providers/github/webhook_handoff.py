@@ -17,7 +17,11 @@ from app.integrations.source_control.source_control.providers.github.reconciliat
     resolve_reconciliation_intent,
 )
 from app.integrations.source_control.source_control.providers.github.webhook import GitHubWebhookError
-from app.integrations.source_control.sync_jobs import enqueue_source_repository_sync
+from app.integrations.source_control.sync_jobs import (
+    NoEligibleSourceControlTargets,
+    enqueue_source_repository_sync,
+)
+from app.platform_operations.jobs.dispatcher import JobWorkerUnavailable
 from app.models.source_control import SourceInstallation, SourceWebhookDelivery
 
 _MAX_DISPATCH_ATTEMPTS = 3
@@ -108,7 +112,6 @@ def dispatch_committed_delivery(
     installation_id = installation.id
     session.commit()  # The only safe boundary for any JobExecution dispatch.
 
-    dispatched = False
     try:
         # Installation-wide refresh is a safe superset of a targeted intent.
         # GitHub is always re-read through the installation-authorized
@@ -118,7 +121,6 @@ def dispatch_committed_delivery(
             trigger_type='on_demand',
             installation_record_id=installation_id,
         )
-        dispatched = True
         job_id = int(job.id)
         current = _lock_delivery(session, delivery_record_id)
         if current is None or current.processing_state != 'dispatching' or current.attempt_count != attempt:
@@ -127,12 +129,20 @@ def dispatch_committed_delivery(
         current.processing_state = 'queued'
         session.commit()
         return DeliveryHandoff(delivery_record_id, installation_id, 'queued', job_id, created)
+    except (NoEligibleSourceControlTargets, JobWorkerUnavailable):
+        # Both errors are guaranteed to occur before canonical job creation:
+        # provider target admission and registered-worker preflight.
+        session.rollback()
+        _mark_uncertain_or_retry(
+            session, delivery_record_id, attempt_count=attempt, unknown_dispatch=False,
+        )
+        raise
     except Exception:
         session.rollback()
-        # An exception AFTER creating/attaching a canonical job is ambiguous.
-        # No optimistic retry, invented completion, or notification event.
+        # Even when enqueue raises without returning, the broker may already
+        # have accepted it. Treat every other exception as indeterminate.
         _mark_uncertain_or_retry(
-            session, delivery_record_id, attempt_count=attempt, unknown_dispatch=dispatched,
+            session, delivery_record_id, attempt_count=attempt, unknown_dispatch=True,
         )
         raise
 
