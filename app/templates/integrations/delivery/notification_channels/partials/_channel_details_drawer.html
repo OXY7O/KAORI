@@ -6,7 +6,7 @@
     description=channel.name ~ ' · ' ~ channel.provider_label,
     x_show='detailChannel === ' ~ channel.id,
     close_expression="if (!document.querySelector('dialog[data-kaori-native-dialog][open], [data-destructive-confirmation-modal]:not(.hidden)')) detailChannel = null",
-    width='xl') %}
+    width='xl', delegate_clicks=true) %}
     <div class="space-y-4">
         {% call side_drawer.section('Operational Status', icon='activity',
             badge=table_label.status_label(channel.status, channel.tone, size='compact'), density='compact') %}
