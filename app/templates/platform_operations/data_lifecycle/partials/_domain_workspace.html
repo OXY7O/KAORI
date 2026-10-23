@@ -33,7 +33,7 @@
                                 items=[
                                     'An active Local Database Super Admin can save the policy and request Archive Only; saving does not start an archive job.',
                                     'Archived bundles contain a limited redacted projection; the original audit events remain in PostgreSQL.',
-                                    'Automatic scheduling, source cleanup, archive downloads, individual-record lookup and object purge remain unavailable until security and retention governance approves them.'
+                                    'Confirm source retention approval before archiving. Automatic scheduling, cleanup, archive downloads, individual-record lookup and object purge remain unavailable until security governance approves them.'
                                 ],
                                 placement='right',
                                 variant='guide') }}
@@ -410,6 +410,7 @@
                     'AuditEvent archive bundles contain a limited redacted summary; original committed events remain in PostgreSQL.',
                     items=[
                         'Only an active Local Database Super Admin may operate this policy.',
+                        'Confirm source retention authorization before archiving sensitive events.',
                         'Scheduling and hot cleanup are disabled for this source.',
                         'Archive download, per-record historical lookup and object purge are restricted pending source security and retention authorization.'
                     ],
