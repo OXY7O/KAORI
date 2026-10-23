@@ -166,17 +166,19 @@ record the exact holding SHA. Confirm:
   timestamp exists. For a local writable `Ready` directory without
   checksums, status remains informational. Unavailable/incomplete
   states must show warning and truthful provider error details.
-- Top four cards retain Storage Readiness, Worker Readiness,
-  Last Verified and Archive Format. Check independent maintenance
-  worker and dispatcher labels against the actual DevContainer.
-- Two main panels balance at 6:6 on large screens; execution details
-  form compact paired items at tablet/desktop and stack on mobile.
-  Confirm no clipped location/bucket/endpoint or loss of fields
-  in light/dark, long endpoint or narrow widths.
-- Four-step Archive-First Safety Boundary remains visible; the
-  final cleanup stage is shown as **if admitted** and its action
-  still requires an independently authorized source. Do not
-  run purge or hot cleanup for restricted domains.
+- A single segmented strip retains four unboxed metrics: Storage
+  Readiness, Worker Readiness, Last Verified and Archive Format.
+  Confirm independent maintenance worker and dispatcher evidence.
+- Two outlined primary panels remain balanced 6:6 on wide screens.
+  Execution details are unboxed text pairs separated by subtle rules,
+  not a nested grid of five bordered cards. Confirm no clipped
+  provider/location/bucket/endpoint or lost details on mobile.
+- Archive-First uses one unboxed ordered four-step flow, readable at
+  mobile and desktop widths. The final cleanup step is **if admitted**
+  and cannot bypass independently approved source governance.
+- Storage Interpretation is a single compact status line, not an
+  additional framed callout. Check light/dark contrast, semantic
+  evidence state, responsive wrapping and keyboard reading order.
 
 Record browser screenshot and **observed** storage/worker state.
 Source/Jinja contract checks are not proof of actual Archive Storage
