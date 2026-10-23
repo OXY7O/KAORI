@@ -5,7 +5,7 @@
 {% set can_manage = current_user.has_permission('platform_operations.manage_data_lifecycle') %}
 {% set execution_blocked = (not selected.enabled) or lifecycle.active_lifecycle_jobs %}
 <section id="data-lifecycle-domain-workspace"
-         class="{{ table_ui.block_classes() }}"
+         class="{{ table_ui.block_classes() }} !border-outline-subtle !shadow-none"
          {% if lifecycle.active_lifecycle_jobs %}hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain) }}" hx-trigger="every 10s" hx-target="this" hx-swap="outerHTML" hx-on::before-request="if (document.hidden) event.preventDefault()"{% endif %}>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -43,9 +43,9 @@
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Records covered by this retention, archive, and cleanup policy.</p>
                 </div>
             </header>
-            <div class="grid gap-3 p-4 sm:grid-cols-2 {% if lifecycle.coverage|length >= 3 %}xl:grid-cols-3{% endif %}">
+            <div class="grid gap-3 p-4 sm:grid-cols-2 {% if lifecycle.coverage|length >= 3 and selected.name != 'alert_incident' %}xl:grid-cols-3{% endif %}">
                 {% for item in lifecycle.coverage %}
-                    <article class="rounded-lg border border-outline-default bg-surface-subtle p-3.5">
+                    <article class="rounded-lg border border-outline-subtle bg-surface-subtle p-3.5">
                         <div class="flex items-start gap-2.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary dark:text-kaori-accent"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
@@ -306,11 +306,11 @@
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Failure Recovery</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Cleanup stays blocked; transient failures retry once, then require manual retry.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Cleanup stays blocked; transient failures retry once, then need manual retry.</p>
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Execution Worker</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}{% if lifecycle.worker.queue_ready %} and ready for lifecycle jobs{% endif %}.</p>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle pt-4">
