@@ -34,6 +34,7 @@ TITLE_GUIDE_TEMPLATES = (
     'access/identity_providers/partials/_ldap_configuration.html',
     'artifact_registry/partials/_security_workspace.html',
     'integrations/partials/_domain_workspace.html',
+    'platform_operations/data_lifecycle/index.html',
     'kubernetes/tenant/partials/_tenant_discovery.html',
     'kubernetes/tenant/partials/_tenant_form.html',
     'kubernetes/tenant/partials/_tenant_memberships_workspace.html',
