@@ -42,7 +42,7 @@ def test_recovery_is_scoped_to_verified_native_handback_in_tenant_detail():
     assert 'Pending Independent Review' in partial
     assert 'Recovery Check · If Blocked' in partial
     assert 'Check Discovery First' in partial
-    assert 'If your Namespace is already eligible' in partial
+    assert 'If eligible, use Review Adoption.' in partial
 
 
 def test_recovery_forms_use_existing_htmx_csrf_loading_and_independent_actor_guard():
@@ -129,6 +129,7 @@ def test_recovery_redesign_uses_readable_steps_and_distinct_assessment_plan_sect
     assert 'Assessment Actions' in partial
     assert 'Prepare Recovery Plan' in partial
     assert 'sm:grid-cols-2' in partial
+    assert 'data-native-residual-prepare-form' in partial
     assert 'hover:bg-kaori-soft/30' in partial
     assert 'bg-kaori-primary' in partial
     assert 'No retry or automatic cleanup is available' in partial
@@ -159,3 +160,45 @@ def test_recovery_redesign_preserves_distinct_sensitive_workflow_forms():
     assert 'if recovery_execution' in partial
     assert 'if recovery_verified' in partial
     assert 'This link does not adopt automatically.' in partial
+
+
+def test_recovery_prepare_form_is_compact_with_unchanged_governed_inputs():
+    partial = source(PARTIAL)
+    detail = source(DETAIL)
+    Environment().parse(partial)
+    Environment().parse(detail)
+    form = next(
+        item for item in re.findall(r'<form\b.*?</form>', partial, flags=re.DOTALL)
+        if 'data-native-residual-prepare-form' in item
+    )
+    assert 'max-w-2xl' in form
+    assert 'items-start gap-3' in form
+    assert 'name="change_reference"' in form
+    assert 'minlength="3"' in form and 'maxlength="120"' in form
+    assert 'name="confirm_native_residual_prepare"' in form
+    assert re.search(r'name="confirm_native_residual_prepare"\s+value="prepare"\s+required', form)
+    assert 'name="csrf_token"' in form and 'hx-post=' in form
+    assert 'no Kubernetes changes.' in form
+    assert 'Prepare Recovery Plan' in form
+    assert 'Prepare Governed Recovery Plan' not in form
+    assert 'Another Platform Admin approves the exact plan SHA' in partial
+    assert 'Conditional label-only PATCH with verified read-back' in partial
+    assert 'Check fresh Discovery first. If eligible, use Review Adoption.' in partial
+    assert 'recovery_plan.requested_by != current_user.id' in partial
+    assert 'row.native_residual_approval_current' in partial
+    assert partial.count('name="csrf_token"') == 4
+
+
+def test_native_handback_title_uses_existing_kaori_guide_without_extra_provider_action():
+    detail = source(DETAIL)
+    handback = detail.split('id="tenant-native-handback"', 1)[1].split(
+        'id="tenant-capsule-handback"', 1
+    )[0]
+    assert handback.count("info_tip.render('tenant-native-platform-handback-guide'") == 1
+    assert "'Platform Admin Handback & Re-adopt'" in handback
+    assert "variant='guide'" in handback
+    assert 'Fresh Discovery and explicit Review Adoption are separate from handback.' in handback
+    assert "tenant.verify_native_successor_handback_route" in handback
+    assert handback.count('name="confirm_successor_handback"') == 1
+    assert 'name="release_plan_sha256"' in handback
+    assert detail.count('<form method="post"') == 23
