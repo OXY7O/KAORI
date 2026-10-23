@@ -104,7 +104,8 @@ def _load_updates(monkeypatch: pytest.MonkeyPatch, *, commit_error: bool = False
         pass
 
     mutation.TLSSecretIdentityError = TLSSecretIdentityError
-    mutation.patch_tls_secret = lambda record, cert, key: None
+    mutation.preflight_tls_secret = lambda record: '701'
+    mutation.patch_tls_secret = lambda record, cert, key, **kwargs: None
     mutation.read_uploaded_pair = lambda files: (b'certificate', b'private-key')
 
     class Event:
@@ -178,7 +179,7 @@ def test_single_tls_update_reports_provider_failure_separately(
     monkeypatch.setattr(
         updates,
         'patch_tls_secret',
-        lambda target, cert, key: (_ for _ in ()).throw(RuntimeError('forbidden')),
+        lambda target, cert, key, **kwargs: (_ for _ in ()).throw(RuntimeError('forbidden')),
     )
 
     result = updates.apply_certificate_update(1, {})
@@ -204,7 +205,7 @@ def test_single_tls_provider_failure_reports_unconfirmed_failure_event_when_data
     monkeypatch.setattr(
         updates,
         'patch_tls_secret',
-        lambda target, cert, key: (_ for _ in ()).throw(RuntimeError('forbidden')),
+        lambda target, cert, key, **kwargs: (_ for _ in ()).throw(RuntimeError('forbidden')),
     )
 
     result = updates.apply_certificate_update(1, {})
@@ -231,7 +232,7 @@ def test_single_tls_update_warns_when_provider_succeeds_but_persistence_fails(
     monkeypatch.setattr(
         updates,
         'patch_tls_secret',
-        lambda target, cert, key: provider_calls.append(target.id),
+        lambda target, cert, key, **kwargs: provider_calls.append(target.id),
     )
 
     result = updates.apply_certificate_update(1, {})
@@ -257,7 +258,7 @@ def test_bulk_tls_update_converts_provider_successes_to_persistence_warnings(
     monkeypatch.setattr(
         updates,
         'patch_tls_secret',
-        lambda target, cert, key: provider_calls.append(target.id),
+        lambda target, cert, key, **kwargs: provider_calls.append(target.id),
     )
 
     result = updates.apply_bulk_update({}, [1, 2])
@@ -281,7 +282,7 @@ def test_single_tls_update_blocks_uncovered_host_before_provider_patch(
     )
     monkeypatch.setattr(updates, 'find_uncovered_hosts', lambda hosts, cert: hosts)
     calls: list[int] = []
-    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key, **kwargs: calls.append(target.id))
 
     result = updates.apply_certificate_update(record.id, {})
 
@@ -303,7 +304,7 @@ def test_bulk_tls_coverage_blocker_aborts_before_any_provider_patch(
     )
     monkeypatch.setattr(updates, 'find_uncovered_hosts', lambda hosts, cert: hosts)
     calls: list[int] = []
-    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key, **kwargs: calls.append(target.id))
 
     result = updates.apply_bulk_update({}, [1, 2])
 
@@ -320,7 +321,7 @@ def test_tls_update_blocks_unknown_ingress_mapping_without_provider_patch(
     record = _record()
     updates.db.session.get = lambda model, identifier: record if model is updates.TLSCertificateInventory else None
     calls: list[int] = []
-    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key, **kwargs: calls.append(target.id))
     result = updates.apply_certificate_update(record.id, {})
     assert calls == []
     assert result['status'] == 'failed'
@@ -337,7 +338,7 @@ def test_bulk_tls_rejects_missing_target_without_partial_mutation(
         get=lambda certificate_id: None,
     )
     calls: list[int] = []
-    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key, **kwargs: calls.append(target.id))
     result = updates.apply_bulk_update({}, [1, 2])
     assert calls == []
     assert result['status'] == 'failed'
@@ -349,7 +350,7 @@ def test_bulk_tls_rejects_duplicate_target_ids_without_provider_calls(
 ) -> None:
     updates = _load_updates(monkeypatch)
     calls: list[int] = []
-    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key, **kwargs: calls.append(target.id))
     result = updates.apply_bulk_update({}, [1, 1])
     assert calls == []
     assert result['status'] == 'failed'
@@ -365,7 +366,7 @@ def test_single_tls_rejects_old_but_collected_ingress_mapping_without_patch(
         record if model is updates.TLSCertificateInventory else _collected_state(at=stale)
     )
     calls: list[int] = []
-    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key, **kwargs: calls.append(target.id))
     result = updates.apply_certificate_update(record.id, {})
     assert calls == []
     assert result['provider_updated'] is False
@@ -383,7 +384,7 @@ def test_bulk_tls_rejects_old_certificate_row_before_any_patch(
         get=lambda certificate_id: None,
     )
     calls: list[int] = []
-    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key: calls.append(target.id))
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key, **kwargs: calls.append(target.id))
     result = updates.apply_bulk_update({}, [1, 2])
     assert calls == []
     assert result['status'] == 'failed'
@@ -418,7 +419,7 @@ def test_single_tls_identity_rejection_reports_safe_resync_guidance(
         record if model is updates.TLSCertificateInventory else _collected_state()
     )
 
-    def reject_identity(target, cert, key):
+    def reject_identity(target, cert, key, **kwargs):
         raise updates.TLSSecretIdentityError('TLS Secret identity evidence is missing. Synchronize TLS inventory.')
 
     monkeypatch.setattr(updates, 'patch_tls_secret', reject_identity)
@@ -427,3 +428,30 @@ def test_single_tls_identity_rejection_reports_safe_resync_guidance(
     assert result['provider_updated'] is False
     assert 'Synchronize TLS inventory' in result['message']
     assert updates._test_session.added[0].message == result['message']
+
+
+def test_bulk_tls_preflight_recreated_uid_aborts_before_any_patch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    updates = _load_updates(monkeypatch)
+    first, second = _record(1), _record(2)
+    updates.TLSCertificateInventory.query = SimpleNamespace(
+        filter=lambda expression: SimpleNamespace(all=lambda: [first, second]),
+        get=lambda certificate_id: None,
+    )
+    calls: list[int] = []
+    monkeypatch.setattr(updates, 'patch_tls_secret', lambda target, cert, key, **kwargs: calls.append(target.id))
+
+    def preflight(target):
+        if target.id == second.id:
+            raise updates.TLSSecretIdentityError(
+                'The TLS Secret was recreated since collection. Synchronize TLS inventory and select again.'
+            )
+        return '701'
+
+    monkeypatch.setattr(updates, 'preflight_tls_secret', preflight)
+    result = updates.apply_bulk_update({}, [1, 2])
+    assert calls == []
+    assert result['provider_updated_count'] == 0
+    assert result['status'] == 'failed'
+    assert 'recreated' in result['errors'][0]
