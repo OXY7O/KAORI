@@ -50,8 +50,10 @@ reset, force-head or modify another branch.
 
 ### Controlled database upgrade — Dev Container only
 
-The persisted `next_retry_at` field from #1475 requires the versioned
-migration `20261023_notify_retry_after`. Reuse the approved separate
+The persisted `next_retry_at` field from #1475 requires revision
+`20261023_notify_retry_after`, followed by the **inert**
+`20261023_delivery_identity` schema (#2868). The second revision does not
+backfill identity rows or activate any new runtime path. Reuse the approved separate
 migration identity from `docs/operations/github-source-control-devcontainer-uat.md`
 and `docs/DEVELOPMENT.md`:
 
