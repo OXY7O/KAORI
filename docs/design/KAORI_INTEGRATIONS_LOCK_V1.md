@@ -637,3 +637,21 @@ UAT are mandatory before acceptance.
 This is a UAT holding refinement only; provider delivery transports,
 persistent committed evidence, RBAC, routes, schema and official admission
 remain unchanged.
+
+## Notification Channel Inventory — Balanced Column Density (#2832, 2026-10-23)
+
+The approved **Details-only** Channel Inventory (#2823) keeps five columns with
+a full-width responsive shared table. The previous 25% Actions column wasted
+space after removal of View More. Allocate **Channel 30%**, **Readiness 14%**,
+**Routing 23%**, **Last Delivery 20%**, and **Actions 13%**, summing to 100%.
+This restores scanning balance while reserving sufficient width for the
+existing right-aligned Details control at the approved 860px minimum
+horizontal-scroll width.
+
+Use the existing `table_ui.header_cell_classes(...)` and
+`table_ui.cell_classes(...)` macros, `table-fixed`, truncation with full
+`title` attributes, and approved status labels. Keep a single Details action,
+five-column semantics, table responsiveness, filters, and default five-row
+pagination. Do not add actions, denser hidden data, new CSS/JS, or overwrite
+committed evidence. Validate narrow-screen scrolling and light/dark alignment
+in Dev Container before operator acceptance.

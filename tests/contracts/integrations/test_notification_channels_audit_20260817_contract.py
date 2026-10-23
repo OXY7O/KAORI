@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from jinja2 import Environment, nodes
@@ -767,8 +768,13 @@ def test_channel_summary_fits_responsive_layout_and_keeps_blocked_delete_visible
     lifecycle = read('app/integrations/delivery/notification_channels/lifecycle.py')
     assert "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in inventory
     assert inventory.count('scope="col"') == 5
-    for width in ('w-[25%]', 'w-[12%]', 'w-[20%]', 'w-[18%]'):
-        assert width in inventory
+    table_header = inventory.split('<thead', 1)[1].split('</thead>', 1)[0]
+    widths = [int(value) for value in re.findall(r'w-\[(\d+)%\]', table_header)]
+    assert widths == [30, 14, 23, 20, 13]
+    assert sum(widths) == 100
+    assert 'header_cell_classes(action=true)' in table_header
+    assert 'aria-label="View details for {{ channel.name }}"' in inventory
+    assert 'View More' not in inventory
     assert 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in drawer
     assert 'Delete Locked' in drawer
     assert 'data-kaori-native-dialog' in blockers

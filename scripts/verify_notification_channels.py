@@ -162,6 +162,14 @@ def main() -> int:
         and "channel.lifecycle_state == 'active' and can_manage" in channels_template
         and 'Locked' in channel_details_drawer
         and 'channel.delete_blocked' in channel_details_drawer,
+        'balanced Channel Inventory width allocation': 'w-[30%]">Channel</th>' in channels_template
+        and 'w-[14%]">Readiness</th>' in channels_template
+        and 'w-[23%]">Routing</th>' in channels_template
+        and 'w-[20%]">Last Delivery</th>' in channels_template
+        and 'w-[13%]">Actions</th>' in channels_template
+        and "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in channels_template
+        and 'aria-label="View details for {{ channel.name }}"' in channels_template
+        and 'View More' not in channels_template,
         'compact native policy-dialog registry': channels_template.count('scope="col"') == 5
         and 'colspan="5"' in channels_template
         and 'View policy' not in channels_template
