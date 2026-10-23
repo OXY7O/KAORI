@@ -138,5 +138,5 @@ integration_types:
   - key: github
     label: GitHub
     adapter_key: github_rest_v3
-    lifecycle: planned
+    lifecycle: available
     protocol: github_rest_v3
