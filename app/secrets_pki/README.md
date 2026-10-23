@@ -264,3 +264,11 @@ a resolved alert or collection success. There is no automatic AlertCase,
 outbound notification, Accepted Risk policy override or per-asset assessment.
 The other HV-11 rules remain unimplemented. Source code alone is not DevContainer
 UAT acceptance; follow `VAULT_INTEGRATED_UAT.md` on exact tested SHA.
+
+## HV-07 #2826 scoped KV v2 Registry browser admission
+
+The previously internal-only Registry now has an explicitly scoped, audited
+metadata-only GET page with an opaque policy-reference selector and default
+five-item pagination. See `SCOPED_SECRET_REGISTRY.md` for strict access,
+unsupported Detail/export and UAT boundaries. Never infer Secret read
+privileges from `integrations.manage` or a provider admin role.

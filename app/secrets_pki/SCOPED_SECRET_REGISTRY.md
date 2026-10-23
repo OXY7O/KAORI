@@ -65,3 +65,42 @@ cutover, Kubernetes materialization or delivered endpoint TLS.
 
 Focused contract tests:
 tests/integrations/test_scoped_secrets_pki_registry.py.
+
+## HV-07 #2826 read-only scoped UI review candidate
+
+The canonical #724 exact Vault mount evaluator is now used through
+`read_governed_scoped_secret_registry` by
+`GET /secrets-pki/registry`. The operator must have `secrets_pki.view`
+and explicitly select a **positive canonical instance ID** plus an **opaque
+approved policy UUID** owned by their active identity. The browser never
+accepts or transmits a Vault namespace, mount name, Secret name/path or
+provider credential as a parameter. Scope reference IDs are not bearer
+tokens; exact actor/permission/instance/grant revision/freshness checks,
+locked source reads and mandatory committed Activity Audit are enforced
+by the already-approved reader, and all denied outcomes hide records.
+
+This page uses KAORI Violet app layout/shared Hero/tables/blocked states,
+fixed pagination of five and a hard 200-record cap. Results only include
+canonical Secret UUID, current metadata version, observed version count,
+logical lifecycle, CAS requirement and observation timestamp. No Secret
+detail, search, report/export, provider GET, write or material reveal
+exists in this slice. `GET /secrets-pki/inventory` now offers an
+entrypoint; the operator obtains the policy reference from Access governance,
+not from Vault path guessing or automatic fleet discovery.
+
+**Admission boundaries:** default-deny for missing/unknown/expired/revoked/
+ambiguous grants, wrong actor/instance and incomplete/stale source;
+only a complete committed empty source may display a qualified zero.
+The underlying mount evaluator now rejects ambiguous concurrent active
+grants instead of selecting the first matching row. The two routes
+share approved `secrets_pki.view` permission but a global RBAC allowance
+alone never passes the Registry resource gate.
+
+**Not Tested:** execute
+`tests/integrations/test_scoped_secrets_pki_registry_web.py`,
+`tests/integrations/test_scoped_secrets_pki_registry.py` and the existing
+Access scoped-policy tests on real PostgreSQL and DevContainer at exact
+SHA; review missing/foreign/expired/ambiguous grants and failures of the
+Activity Audit, source worker and Vault API. Complete light/dark/responsive,
+keyboard/HTMX/error/empty UAT. No human acceptance or official admission
+is implied by GitHub merge.
