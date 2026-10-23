@@ -14,15 +14,17 @@ Local Database authentication remains enabled as the independent break-glass rec
 
 Use the same activation sequence for every provider:
 
-1. Create the provider while **Enabled** is off.
+1. Begin Add Provider with **Enabled** off.
 2. Complete only the fields displayed for the selected provider type.
 3. Provide the referenced secret environment variable to every KAORI web application instance.
-4. Save the provider.
-5. Run **Validate** from **Identity Providers**.
-6. Resolve connection, callback, secret, or admission-policy errors.
-7. Enable the provider.
-8. Test with a non-administrative identity.
-9. Confirm login/logout events appear in **Activity Audit Log**.
+4. Run **Test Connection** against the unsaved form. **Save Provider** remains disabled until it passes.
+5. A successful test produces an actor-bound, signed, short-lived proof for that exact configuration. Changing any form field revokes the local proof and disables Save; re-test before saving.
+6. Save the provider while disabled, then run **Validate** from **Identity Providers** when additional validation is required. Test Connection is reachability/adapter evidence, **not** committed operational readiness.
+7. Resolve connection, callback, secret, or admission-policy errors.
+8. Enable the provider after the expected authentication flow is confirmed.
+9. Test with a non-administrative identity; confirm login/logout events in **Activity Audit Log**.
+
+The 10-minute connection proof is verified again server-side on Create; missing, changed, expired or cross-user proof is rejected without saving. Edit Provider intentionally remains saveable without a fresh registration proof so an administrator can disable or repair a broken integration, matching the canonical Integrations edit exception.
 
 Provider records store secret **environment-variable names**, never secret values.
 
@@ -124,10 +126,10 @@ KAORI_LDAP_BIND_PASSWORD
 
 ## Validation and provisioning
 
-1. Save the LDAP provider while disabled.
-2. Ensure the bind secret is present in the running KAORI container.
-3. Run **Test Connection** on the unsaved form, or **Validate** on an existing provider. Both test encrypted transport and service bind; the test result uses the canonical Operational Toast. Failed tests appear in Notification Deck and both outcomes have audit evidence; no password values are persisted in provider fields.
-4. Enable the provider.
+1. Ensure the bind secret is present in the running KAORI web process.
+2. On **Add Provider**, leave Enabled off and run **Test Connection** before Save; a successful test unlocks Save only for the tested configuration for up to 10 minutes. Failed tests and subsequent field changes keep Save disabled; server-side proof checks prevent bypass.
+3. Save the LDAP provider while disabled; on an existing provider, use **Validate** to recheck service bind. The test result uses canonical Operational Toast. Failed tests appear in Notification Deck and both outcomes have audit evidence; no password values are persisted in provider fields.
+4. Enable the provider after validation.
 5. Open **LDAP Directory Provisioning**.
 6. Search by username, email, or display name.
 7. Select the identity, choose a non-administrative or explicitly approved role, and provision the user.
