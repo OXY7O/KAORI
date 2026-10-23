@@ -370,6 +370,10 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     # An acknowledged plan is locked without inventing approval or provider transfer.
     assert re.search(r'role="status"\s+aria-label="Active handoff plan"', approval)
     assert 'data-release-plan-review-cards' in approval
+    assert 'md:border-r md:border-outline-subtle md:pr-5' in approval
+    assert 'aria-label="Planned Handoff Record"' in approval
+    assert 'gap-x-5 gap-y-2 sm:grid-cols-2' in approval
+    assert 'gap-x-2 gap-y-0.5 border-b border-outline-subtle pb-3' in approval
     # A previous two-card redesign dropped the enclosing Jinja endif and
     # broke every Tenant detail GET with TemplateSyntaxError on the next elif.
     # Environment().parse(detail) above must compile the complete template.
@@ -397,6 +401,9 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     # forced equal-height whitespace; Capsule retains full-width approval.
     assert 'data-release-accepted-handoff-workspace' in approval
     assert 'data-release-accepted-handoff-actions' in approval
+    assert 'lg:border-r lg:border-outline-subtle lg:pr-6' in approval
+    assert 'border-b border-outline-subtle py-3' in approval
+    assert 'rounded-xl border border-outline-subtle bg-surface-card p-4 sm:p-5 lg:col-span-1' not in approval
     assert 'data-release-accepted-handoff-evidence' in approval
     assert 'lg:grid-cols-2' in approval
     assert 'lg:col-span-3' in approval
@@ -405,9 +412,10 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'External Handoff &amp; Read-Back' in approval
     assert 'Evidence Boundaries' in approval
     assert 'data-release-evidence-boundaries' in approval
+    assert 'mt-4 border-t border-outline-subtle py-3' in approval
     assert '<summary class="cursor-pointer text-xs font-semibold text-content-primary' in approval
     # Actions and evidence must be peer surfaces, not stacked bordered cards.
-    assert 'items-start gap-4 lg:grid-cols-2' in approval
+    assert 'items-start gap-x-8 gap-y-5 lg:grid-cols-2' in approval
     assert 'Handoff Actions' in approval
     assert 'Complete governed actions only when eligible.' in approval
     assert 'class="w-full mt-3 space-y-3"' in approval
@@ -415,7 +423,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert 'aria-label="Independent Platform Admin required"' in approval
     assert 'You prepared this plan. A different authorized Platform Admin must verify and accept it.' in approval
     assert 'aria-label="External read-back prerequisites"' in approval
-    assert 'mt-4 flex min-w-0 items-start gap-2.5 rounded-lg bg-surface-elevated/50 p-3' in approval
+    assert 'mt-4 flex min-w-0 items-start gap-2.5 py-2' in approval
     assert 'External Handoff &amp; Read-Back' in approval
     assert approval.count('data-release-accepted-handoff-evidence') == 1
     assert approval.count('External Handoff Inspection Unavailable') == 1
@@ -440,6 +448,7 @@ def test_release_step_three_separates_plan_review_external_claim_and_platform_ad
     assert re.search(r'role="status"\s+aria-label="External successor evidence"', approval)
     assert 'successor_claim.plan_sha256 == handoff_plan.plan_sha256' in approval
     assert 'External Reference Unverified' in approval
+    assert '<span class="text-xs font-semibold text-content-primary">External Reference</span>' in approval
     assert '{{ successor_claim.successor_reference }}' in approval
     assert 'not an additional approval' in approval
     assert 'provider ownership remains unchanged' in approval
@@ -1285,13 +1294,14 @@ def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
     final = detail.split('id="tenant-release-stage-finalize"', 1)[1]
 
     # Content hierarchy: concise status rows, unstretched peers, aligned actions.
-    assert 'items-start gap-4 lg:grid-cols-2' in approval
+    assert 'items-start gap-x-8 gap-y-5 lg:grid-cols-2' in approval
     assert 'data-release-accepted-handoff-actions' in approval
     assert 'data-release-accepted-handoff-evidence' in approval
     assert 'sm:grid-cols-[auto_minmax(0,1fr)]' in approval
     assert 'Kubeconfig and scoped access verified through' in approval
     assert 'provider ownership remains unchanged.' in approval
     assert 'lg:flex-row lg:items-center lg:justify-between' in approval
+    assert 'mt-4 border-y border-outline-subtle py-3' in approval
     assert 'name="confirm_native_handoff_dry_run"' in approval
     assert 'External Handoff Inspection Unavailable' in approval
 
