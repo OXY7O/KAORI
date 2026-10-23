@@ -2023,3 +2023,71 @@ def test_tenant_allocation_guidance_has_single_title_tip_and_budget_formula() ->
     assert 'allocation_overview.bars' in overview
     assert "exposure.display[field ~ '_committed']" in overview
     assert "exposure.display[field ~ '_threshold']" in overview
+
+
+def test_capsule_tenant_quota_comparison_discloses_all_ten_managed_dimensions() -> None:
+    """#2980: adopted cutover and managed change expose the complete quota contract."""
+    from jinja2 import Environment
+
+    source = read('app/templates/kubernetes/tenant/partials/_capsule_tenant_quota_cutover.html')
+    Environment(autoescape=True).parse(source)
+    assert 'components/view_more_content.html' in source
+    assert source.count('{{ quota_technical_details() }}') == 2
+    assert 'Technical Details' in source
+    assert "aria_label='Capsule Tenant quota technical details'" in source
+    assert 'compact_action=true' in source
+    assert 'Unbounded means this profile does not govern the dimension' in source
+    assert 'Preview only · Not admission approval.' in source
+    assert 'ResourceQuota Dimension' in source
+    assert 'Current · Baseline' in source
+    assert 'Proposed · Profile' in source
+
+    for key in (
+        'requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory',
+        'pods', 'requests.storage', 'persistentvolumeclaims', 'services',
+        'configmaps', 'secrets',
+    ):
+        assert f"'{key}'" in source
+    assert 'data-tenant-quota-metric-side="{{ side }}"' in source
+    assert 'data-tenant-quota-metric-key="{{ key }}"' in source
+    assert source.count('data-tenant-quota-change-detail') == 2
+    assert source.count('data-tenant-quota-change-summary') == 2
+    assert "tenant.change_capsule_tenant_quota_route" in source
+    assert 'data-tenant-quota-managed-form' in source
+    assert 'data-tenant-quota-allocation-form' in source
+    assert source.count('name="csrf_token" value="{{ csrf_token() }}"') == 2
+    macro = source.split('{% macro quota_technical_details()', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert '<form' not in macro and 'hx-post' not in macro
+    assert 'requests.get(' not in source
+
+
+def test_capsule_quota_highlights_compare_ten_dimensions_not_just_six() -> None:
+    """#2980: committed-vs-profile PVC/object changes and absent quota remain visible."""
+    js = read('app/static/js/tenant_resource_profile_presets.js')
+    start = js.index('const renderCapsuleQuotaPreview = (form, current, proposed) => {')
+    end = js.index('const initSharedAllocationForm = (form) => {', start)
+    preview = js[start:end]
+    entries = re.findall(r"^\s*\['([^']+)', '([^']+)'\],?$", preview, re.MULTILINE)
+    assert [key for key, _label in entries] == [
+        'requests.cpu', 'limits.cpu', 'requests.memory', 'limits.memory',
+        'pods', 'requests.storage', 'persistentvolumeclaims', 'services',
+        'configmaps', 'secrets',
+    ]
+    assert "form.querySelectorAll('[data-tenant-quota-metric-side]')" in preview
+    assert 'cell.dataset.tenantQuotaMetricKey' in preview
+    assert "form.querySelector('[data-tenant-quota-change-detail]')" in preview
+    assert 'changed = comparisonDimensions.filter(([key]) => !equivalent(key, current, proposed))' in preview
+    assert 'quota dimensions differ · Read only' in preview
+    assert "form.hasAttribute('data-tenant-shared-allocation-form')" in preview
+    assert 'dimensions.slice(0, 6)' in preview
+    assert 'comparisonDimensions.length' in preview
+    assert 'of 6 quota dimensions differ' not in preview
+    assert "a === 'Unbounded' || b === 'Unbounded'" in preview
+    assert 'const numericQuantity = (key, value) =>' in preview
+    assert 'Number.isFinite(result)' in preview
+    assert '.slice(0, 3)' in preview
+    assert 'changed.length - 3' in preview
+    assert 'highlights.hidden = true' in preview
+    assert "highlights.textContent = ''" in preview
+    assert 'fetch(' not in preview
+    assert '.submit(' not in preview

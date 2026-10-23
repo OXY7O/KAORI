@@ -2,6 +2,48 @@
 {% import "components/form_field.html" as form_field %}
 {% import "components/info_tip.html" as info_tip %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/view_more_content.html" as view_more_content %}
+{% macro quota_technical_details() -%}
+    {% call view_more_content.render(
+        'Technical Details',
+        'Compare PVC count and object limits in the complete Tenant quota contract.',
+        icon='sliders-horizontal',
+        aria_label='Capsule Tenant quota technical details',
+        compact_action=true,
+        extra_classes='rounded-none border-x-0 border-b-0 shadow-none'
+        ) %}
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[28rem] text-left text-xs">
+                <thead class="border-b border-outline-subtle bg-surface-hover text-content-secondary">
+                    <tr>
+                        <th scope="col" class="px-3 py-2 font-semibold">ResourceQuota Dimension</th>
+                        <th scope="col" class="px-3 py-2 font-semibold">Current · Baseline</th>
+                        <th scope="col" class="px-3 py-2 font-semibold">Proposed · Profile</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-subtle">
+                    {% for label, key in [
+                        ('PVCs', 'persistentvolumeclaims'),
+                        ('Services', 'services'),
+                        ('ConfigMaps', 'configmaps'),
+                        ('Secrets', 'secrets')
+                        ] %}
+                        <tr>
+                            <th scope="row" class="px-3 py-2 font-medium text-content-secondary">{{ label }}</th>
+                            {% for side in ('current', 'proposed') %}
+                                <td class="break-words px-3 py-2 font-medium {{ 'text-kaori-primary' if side == 'proposed' else 'text-content-primary' }}"
+                                    data-tenant-quota-metric-side="{{ side }}"
+                                    data-tenant-quota-metric-key="{{ key }}">—</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="mt-2 text-xs text-content-muted">Unbounded means this profile does not govern the dimension. Preview only · Not admission approval.</p>
+    {% endcall %}
+{%- endmacro %}
+
 <section class="overflow-visible rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="capsule-tenant-quota-heading">
     <header class="flex min-w-0 items-start gap-4 border-b border-outline-subtle px-5 py-4">
@@ -140,6 +182,7 @@
                             </section>
                         {% endfor %}
                     </div>
+                    {{ quota_technical_details() }}
                     <div class="flex items-center justify-between gap-2 border-t border-outline-subtle bg-surface-elevated px-4 py-3">
                         <span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary"><i data-lucide="chart-no-axes-column-increasing"
    class="h-4 w-4 text-kaori-primary"
@@ -148,6 +191,9 @@
                               aria-live="polite"
                               class="text-xs text-content-secondary">Choose contracts</span>
                     </div>
+                    <p data-tenant-quota-change-detail
+                       hidden
+                       class="border-t border-outline-subtle bg-surface-elevated px-4 pb-3 text-xs leading-5 text-content-secondary"></p>
                 </section>
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -263,6 +309,7 @@
                             </section>
                         {% endfor %}
                     </div>
+                    {{ quota_technical_details() }}
                     <div class="flex items-center justify-between gap-2 border-t border-outline-subtle bg-surface-elevated px-4 py-3">
                         <span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary"><i data-lucide="chart-no-axes-column-increasing"
    class="h-4 w-4 text-kaori-primary"
@@ -271,6 +318,9 @@
                               aria-live="polite"
                               class="text-xs text-content-secondary">Choose contracts</span>
                     </div>
+                    <p data-tenant-quota-change-detail
+                       hidden
+                       class="border-t border-outline-subtle bg-surface-elevated px-4 pb-3 text-xs leading-5 text-content-secondary"></p>
                 </section>
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-elevated px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

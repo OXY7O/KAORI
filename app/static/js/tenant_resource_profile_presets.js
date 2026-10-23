@@ -532,18 +532,60 @@
     // capacity approval or Native ResourceQuota ownership from this diff.
     const renderCapsuleQuotaPreview = (form, current, proposed) => {
         const dimensions = [
-            'requests.cpu',
-            'limits.cpu',
-            'requests.memory',
-            'limits.memory',
-            'pods',
-            'requests.storage',
+            ['requests.cpu', 'CPU Requests'],
+            ['limits.cpu', 'CPU Limits'],
+            ['requests.memory', 'Memory Requests'],
+            ['limits.memory', 'Memory Limits'],
+            ['pods', 'Pods'],
+            ['requests.storage', 'Total Storage'],
+            ['persistentvolumeclaims', 'PVCs'],
+            ['services', 'Services'],
+            ['configmaps', 'ConfigMaps'],
+            ['secrets', 'Secrets'],
         ]
-        const value = (quota, key) => quota?.[key] ?? null
+        // GlobalResourceQuota cutover still exposes the six headline metrics;
+        // the two Tenant CR forms disclose all ten supported quota dimensions.
+        const comparisonDimensions = form.hasAttribute('data-tenant-shared-allocation-form')
+            ? dimensions.slice(0, 6)
+            : dimensions
+        const countDimensions = new Set(['pods', 'persistentvolumeclaims', 'services', 'configmaps', 'secrets'])
+        const factors = {
+            '': 1,
+            m: 0.001,
+            k: 1000,
+            M: 1000000,
+            G: 1000000000,
+            T: 1000000000000,
+            Ki: 1024,
+            Mi: 1024 ** 2,
+            Gi: 1024 ** 3,
+            Ti: 1024 ** 4,
+            Pi: 1024 ** 5,
+        }
         const formatted = (quota, key) => {
-            if (!quota) return 'Unbounded'
-            const raw = value(quota, key)
-            return raw === null || raw === '' ? 'Unbounded' : String(raw)
+            const raw = quota?.[key]
+            return raw === null || raw === undefined || raw === '' ? 'Unbounded' : String(raw)
+        }
+        const numericQuantity = (key, value) => {
+            const match = /^([0-9]+(?:\.[0-9]+)?|\.[0-9]+)(m|k|M|G|T|Ki|Mi|Gi|Ti|Pi)?$/.exec(value.trim())
+            if (!match) return null
+            const suffix = match[2] || ''
+            if (countDimensions.has(key) && suffix) return null
+            const result = Number(match[1]) * factors[suffix]
+            return Number.isFinite(result) ? result : null
+        }
+        const equivalent = (key, left, right) => {
+            const a = formatted(left, key)
+            const b = formatted(right, key)
+            if (a === b) return true
+            if (a === 'Unbounded' || b === 'Unbounded') return false
+            const aNumber = numericQuantity(key, a)
+            const bNumber = numericQuantity(key, b)
+            return (
+                aNumber !== null &&
+                bNumber !== null &&
+                Math.abs(aNumber - bNumber) <= Number.EPSILON * Math.max(1, Math.abs(aNumber), Math.abs(bNumber))
+            )
         }
         form.querySelectorAll('[data-tenant-quota-metric-side]').forEach((cell) => {
             const source = cell.dataset.tenantQuotaMetricSide === 'current' ? current : proposed
@@ -551,17 +593,34 @@
             cell.textContent = present ? formatted(source, cell.dataset.tenantQuotaMetricKey) : '—'
         })
         const summary = form.querySelector('[data-tenant-quota-change-summary]')
-        if (!summary) return
+        const highlights = form.querySelector('[data-tenant-quota-change-detail]')
         if (current === null || proposed === null) {
-            summary.textContent = 'Choose contracts'
+            if (summary) summary.textContent = 'Choose contracts'
+            if (highlights) {
+                highlights.hidden = true
+                highlights.textContent = ''
+            }
             return
         }
-        const changed = dimensions.filter((key) => formatted(current, key) !== formatted(proposed, key)).length
-        summary.textContent =
-            changed === 0 ? 'No quota differences' : `${changed} of 6 quota dimensions differ · Read only`
+        const changed = comparisonDimensions.filter(([key]) => !equivalent(key, current, proposed))
+        if (summary) {
+            summary.textContent =
+                changed.length === 0
+                    ? 'No quota differences'
+                    : `${changed.length} of ${comparisonDimensions.length} quota dimensions differ · Read only`
+        }
+        if (highlights) {
+            highlights.hidden = changed.length === 0
+            highlights.textContent = changed.length
+                ? changed
+                      .slice(0, 3)
+                      .map(([key, label]) => `${label}: ${formatted(current, key)} → ${formatted(proposed, key)}`)
+                      .join(' · ') + (changed.length > 3 ? ` · +${changed.length - 3} more` : '')
+                : ''
+        }
     }
 
-    const initSharedAllocationForm = (form) => {
+        const initSharedAllocationForm = (form) => {
         if (!(form instanceof HTMLFormElement) || form.dataset.kaoriInitialized === 'true') return
         form.dataset.kaoriInitialized = 'true'
 
