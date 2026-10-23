@@ -1,7 +1,8 @@
 """Source Control persisted native identities; GitHub remains the source authority.
 
-#559 and SC-01 #2740. These tables hold source identities and grant
-relationships, NOT Git repositories, code, App private keys, or OAuth tokens.
+#559, SC-01 #2740 and SC-02 #2741. Identity tables hold provider facts and
+grants, NOT repositories/code/OAuth tokens. GitHub App PEM and webhook secret
+reside only in the dedicated EncryptedText credential table.
 The IntegrationInstance remains the canonical connection lifecycle record.
 """
 
@@ -13,6 +14,8 @@ from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, In
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
+from app.models.integration import IntegrationInstance
+from app.security.credentials import EncryptedText
 
 
 def _utcnow() -> datetime:
@@ -35,6 +38,29 @@ class SourceAccount(db.Model):
     login: Mapped[str | None] = mapped_column(String(255), nullable=True)
     last_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+
+
+class GitHubAppCredential(db.Model):
+    """Shared App-level encrypted credential; never normalized source inventory."""
+
+    __tablename__ = 'source_control_github_app_credentials'
+    __table_args__ = (
+        UniqueConstraint('host_key', 'native_app_id', name='uq_sc_github_app_credential'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    host_key: Mapped[str] = mapped_column(String(255), nullable=False, default='github.com')
+    native_app_id: Mapped[str] = mapped_column(String(80), nullable=False)
+    private_key_pem: Mapped[str] = mapped_column(EncryptedText(), nullable=False)
+    webhook_secret: Mapped[str] = mapped_column(EncryptedText(), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
+    )
+
+    def __repr__(self) -> str:
+        return f'<GitHubAppCredential id={self.id} status=protected>'
 
 
 class SourceInstallation(db.Model):
@@ -60,12 +86,17 @@ class SourceInstallation(db.Model):
     account_id: Mapped[int | None] = mapped_column(
         ForeignKey('source_control_accounts.id', ondelete='RESTRICT'), nullable=True
     )
+    github_app_credential_id: Mapped[int | None] = mapped_column(
+        ForeignKey('source_control_github_app_credentials.id', ondelete='RESTRICT'), nullable=True
+    )
     repository_scope: Mapped[str] = mapped_column(String(16), nullable=False, default='unknown')
     grant_status: Mapped[str] = mapped_column(String(30), nullable=False, default='unknown')
     last_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
 
     account: Mapped[SourceAccount | None] = relationship('SourceAccount')
+    integration_instance: Mapped['IntegrationInstance'] = relationship('IntegrationInstance')
+    github_app_credential: Mapped[GitHubAppCredential | None] = relationship('GitHubAppCredential')
     grants: Mapped[list[SourceRepositoryGrant]] = relationship(
         'SourceRepositoryGrant', back_populates='installation',
         order_by='SourceRepositoryGrant.valid_from.desc()',
@@ -197,3 +228,33 @@ class SourceReferenceTransition(db.Model):
 
     reference: Mapped[SourceReference] = relationship('SourceReference')
     target_revision: Mapped[SourceRevision | None] = relationship('SourceRevision')
+
+class SourceWebhookDelivery(db.Model):
+    """Trusted transport dedup only; never committed GitHub workflow evidence.
+
+    An authenticated delivery is eligible for a separate, authorized provider
+    reconciliation job. Raw webhook bodies and short-lived tokens are not kept.
+    """
+
+    __tablename__ = 'source_control_webhook_deliveries'
+    __table_args__ = (
+        UniqueConstraint('installation_id', 'delivery_id', name='uq_sc_webhook_installation_delivery'),
+        Index('ix_sc_webhook_processing', 'processing_state', 'received_at'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    installation_id: Mapped[int] = mapped_column(
+        ForeignKey('source_control_installations.id', ondelete='RESTRICT'), nullable=False
+    )
+    delivery_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    payload_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    action: Mapped[str] = mapped_column(String(80), nullable=False, default='')
+    repository_native_id_hint: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    processing_state: Mapped[str] = mapped_column(String(30), nullable=False, default='received')
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    installation: Mapped[SourceInstallation] = relationship('SourceInstallation')

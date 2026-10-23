@@ -1,0 +1,84 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_provider_registration_hero.html" as registration_hero %}
+{% block title %}Register GitHub App · KAORI{% endblock title %}
+{% block dashboard_content %}
+<div class="kaori-integration-semantic space-y-6">
+    {{ registration_hero.render(
+        "git-branch", "Source Control", "key-round", "Register GitHub App Connection",
+        "Configure an installation-scoped, read-only GitHub App without mixing it with browser SSO.",
+        "shield-check", "GitHub REST API",
+        url_for("github_source.index"), "GitHub App registration workflow",
+        binding_label="GitHub.com App Installation", after_save_description="Run Full Validation after saving"
+    ) }}
+    <form method="post" class="grid gap-5 xl:grid-cols-12 xl:items-start" autocomplete="off">
+        {{ form.hidden_tag() }}
+        <section class="{{ integration_ui.section_shell_classes() }} xl:col-span-8">
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <h2 class="text-base font-semibold text-content-primary">Connection Configuration</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                    App credentials use KAORI encrypted credential storage. Installation tokens remain transient.
+                </p>
+            </header>
+            <fieldset class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6" {% if not available %}disabled{% endif %}>
+                {% if message %}
+                <p role="status" class="rounded-lg border border-outline-default bg-surface-elevated p-3 text-sm text-content-secondary sm:col-span-2">{{ message }}</p>
+                {% endif %}
+                {% for field in [form.name, form.environment, form.app_id, form.installation_id, form.account_id] %}
+                <div>
+                    <label for="{{ field.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
+                    {{ field(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
+                    {% for error in field.errors %}<p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+                {% for field in [form.private_key_pem, form.webhook_secret, form.description] %}
+                <div class="sm:col-span-2">
+                    <label for="{{ field.id }}" class="mb-1.5 block text-sm font-semibold text-content-primary">{{ field.label.text }}</label>
+                    {{ field(class_="min-h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
+                    {% for error in field.errors %}<p class="mt-1 text-xs text-status-critical-text">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+                <label class="flex items-center gap-2 text-sm text-content-primary sm:col-span-2">
+                    {{ form.enabled(class_="h-4 w-4 accent-kaori-primary") }}
+                    Allow KAORI to Use This Connection
+                </label>
+            </fieldset>
+        </section>
+        <aside class="{{ integration_ui.section_shell_classes() }} p-5 xl:col-span-4">
+            <h2 class="text-base font-semibold text-content-primary">Validation &amp; Safety</h2>
+            <ul class="mt-3 list-inside list-disc space-y-2 text-xs leading-5 text-content-secondary">
+                <li>GitHub.com API and installation permission grants remain authoritative.</li>
+                <li>Private keys and webhook secrets are encrypted at rest and never displayed after submission.</li>
+                <li>Test Connection verifies identity and scope, not complete repository inventory.</li>
+                <li>Saving rechecks installation identity before recording a non-ready connection.</li>
+                <li>GitHub OAuth SSO is separate from GitHub App integration credentials.</li>
+            </ul>
+            {% if not available %}
+            <p class="mt-4 text-sm leading-6 text-content-secondary" role="status">
+                Provider admission pending. This form is available for design review only;
+                credential submission and registration are disabled.
+            </p>
+            {% endif %}
+            {% if verified_scope %}
+            <p class="mt-4 text-xs font-semibold text-content-primary" role="status">
+                Connection verified · {{ verified_scope|title }} repository access
+            </p>
+            {% endif %}
+            <div class="mt-5 flex flex-wrap gap-2">
+                <a href="{{ url_for('github_source.index') }}"
+                   class="rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover">
+                    Cancel
+                </a>
+                <button type="submit" name="action" value="test" {% if not available %}disabled{% endif %}
+                        class="rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-primary hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50">
+                    Test Connection
+                </button>
+                <button type="submit" name="action" value="save" {% if not available %}disabled{% endif %}
+                        class="rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+                    Register Connection
+                </button>
+            </div>
+        </aside>
+    </form>
+</div>
+{% endblock dashboard_content %}

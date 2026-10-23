@@ -13,6 +13,7 @@ from sqlalchemy import create_engine, insert, select
 from sqlalchemy.exc import IntegrityError
 
 from app.models.integration import IntegrationInstance
+from app.models.source_control import GitHubAppCredential
 from app.models.source_control import (
     SourceAccount,
     SourceInstallation,
@@ -32,6 +33,7 @@ def source_engine():
     tables = (
         IntegrationInstance.__table__,
         SourceAccount.__table__,
+        GitHubAppCredential.__table__,
         SourceInstallation.__table__,
         SourceRepository.__table__,
         SourceRepositoryGrant.__table__,
