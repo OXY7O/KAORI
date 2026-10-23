@@ -1,4 +1,5 @@
-{% macro toggle_button(group, item_id, detail_url, target_id, row_id, class_name='', open_label='View Details', close_label='Close Details', compact=false) -%}
+{% import "components/table_primitives.html" as table_primitives %}
+{% macro toggle_button(group, item_id, detail_url, target_id, row_id, class_name='', open_label='View Details', close_label='Close Details', compact=false, table_action=false) -%}
     <button type="button"
             data-detail-toggle
             data-detail-group="{{ group }}"
@@ -11,8 +12,8 @@
             data-detail-state="closed"
             aria-controls="{{ row_id }}"
             aria-expanded="false"
-            class="{{ 'group inline-flex min-h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus' if compact else 'group inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-outline-default bg-surface-card px-3.5 text-xs font-semibold text-content-secondary shadow-sm transition-all hover:-translate-y-px hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1' }} {{ class_name }}">
-        <span class="{{ 'hidden' if compact else 'flex h-6 w-6 items-center justify-center rounded-lg bg-surface-hover text-content-muted transition-colors group-hover:bg-surface-card group-hover:text-kaori-primary' }}"
+            class="{{ ('group ' ~ table_primitives.action_classes()) if table_action else ('group inline-flex min-h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus' if compact else 'group inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-outline-default bg-surface-card px-3.5 text-xs font-semibold text-content-secondary shadow-sm transition-all hover:-translate-y-px hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1') }} {{ class_name }}">
+        <span class="{{ 'hidden' if compact or table_action else 'flex h-6 w-6 items-center justify-center rounded-lg bg-surface-hover text-content-muted transition-colors group-hover:bg-surface-card group-hover:text-kaori-primary' }}"
               data-detail-leading-icon>
             <i data-lucide="eye" class="h-3.5 w-3.5"></i>
         </span>
