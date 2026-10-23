@@ -132,6 +132,44 @@ purge is allowed until #2891 source-owner permission and retention
 authority is accepted, followed by #2892 cleanup/index admission.
 `job_execution` and `tenant_audit_evidence` remain independent domains.
 
+## AuditEvent operator activation clarity and notifications (#2939)
+
+A **Disabled** checkbox represents the deliberate paused default, not a
+missing adapter or broken button. The page must show the paused guidance,
+a read-only Preview, and a disabled Archive Only while the persisted
+policy is absent/disabled. **Do not change defaults or enable in
+production** to clear this visual status.
+
+With disposable database and archive storage positively verified, an
+authorized **Local Database Super Admin** may check **Policy enabled**
+and select **Save Policy**. Confirm immediate success toast, persistent
+policy.enabled=true and operation_mode=archive_only with
+schedule_enabled=false (even for a crafted schedule POST), Activity
+Audit event, no routine Notification Deck success record, and no job
+started merely by saving. After the HTMX refresh the page should show
+**Manual Archive Only enabled** and unlock its button unless a canonical
+job is already active. The source read/Preview may still show zero
+eligible data, which is not a failure.
+
+Run **Archive Only** explicitly with synthetic eligible data; expect an
+immediate information toast and one canonical maintenance JobExecution
+in **Active Work / Jobs & Executions**, without a duplicate successful
+queued notification. Capture the archive manifest/hash, storage locator,
+protected hot source records and execution outcome. Verify negative
+attempts: LDAP user, inactive/revoked Local Super Admin, generic
+lifecycle manager, CLI without requester, scheduled worker, invalid mode,
+hot cleanup, archive export and cold purge all fail closed. Expected
+warning/errors use the canonical toast and persistent Notification Deck.
+No authorization permits real-data archival without source/security
+review approval.
+
+Afterward uncheck **Policy enabled** and Save Policy again; assert an
+ordinary success toast and that Archive Only becomes disabled, with
+scheduler/cleanup still blocked. For this source, save/enable/queue and
+archive verification **must be tested separately**, not inferred from
+contract source or a preview count. Collect screenshot, redacted audit
+event, worker output and explicit operator acceptance for each step.
+
 ## Execution-time admission evidence after #2891 worker hardening
 
 For AE-LC-13 through AE-LC-16, capture the exact holding commit and

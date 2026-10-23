@@ -387,6 +387,14 @@
             <div class="rounded-lg border border-outline-default bg-surface-subtle p-3 text-xs leading-5 text-content-secondary">
                 <span class="font-semibold text-content-primary">Lifecycle execution already active.</span> Wait for the canonical JobExecution to reach a terminal state before queuing another archive operation.
             </div>
+        {% elif selected.name == 'audit_event' %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3 text-xs leading-5 text-content-secondary"
+                 role="status">
+                <span class="font-semibold text-content-primary">Manual Archive Only enabled.</span>
+                Run Preview, then Archive Only for approved synthetic evidence. Saving the policy never queues a job.
+                Scheduling, hot cleanup, archive download, record lookup, and purge remain blocked.
+                Disable the policy after UAT.
+            </div>
         {% endif %}
         <div class="flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-5">
             <a href="{{ url_for('platform_operations.data_lifecycle.preview', domain=selected.name, tab='policies') }}"

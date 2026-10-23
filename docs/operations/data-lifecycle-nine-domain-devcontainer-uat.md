@@ -238,6 +238,30 @@ toast HTML in a response. User acceptance of Alert Incidents is **not**
 a pass for this Analytics UAT; keep Analytics cases NOT RUN until
 DevContainer evidence and human review.
 
+### Administrative Audit Events manual activation UAT (#2939)
+
+**Paused by default is expected.** Source authorization remains limited
+to active Local Database Super Admin; this temporary route is not a
+general audit export entitlement. The shorter domain description is
+"Source-owned administrative AuditEvent evidence; manual Archive Only."
+The coverage note remains explicit about separate Activity Register,
+Jobs, Tenant Audit Evidence, and pending retention/RBAC review.
+
+| Case | Expected result | UAT |
+| --- | --- | --- |
+| Disabled/absent persisted policy | Preview remains read-only; Archive Only disabled, no jobs | NOT RUN |
+| Authorized manual enable/save | Success toast + Activity Audit, no routine Deck; committed policy enabled/Archive Only/unscheduled; no job starts on Save | NOT RUN |
+| Enabled state refresh | Manual Archive Only enabled message, Archive Only available, no scheduler/cleanup/export controls unlocked | NOT RUN |
+| Manual Archive Only with synthetic eligible records | Info toast + canonical maintenance JobExecution; immutable verified archive/manifest, hot AuditEvent row preserved | NOT RUN |
+| Scheduled spoof/LDAP/non-admin/inactive requester, cleanup/download/purge | Authorization fails closed before mutation, actionable warning/error Deck | NOT RUN |
+| Disable/save after UAT | Success toast, disabled state restored; worker refuses new archive | NOT RUN |
+
+Execute with disposable UAT source/storage and record exact holding
+commit; the synthetic contract
+`tests/contracts/platform_operations/test_data_lifecycle_audit_event_manual_uat_contract.py`
+covers the toggles and safety boundaries but **does not** substitute for
+actual PostgreSQL, Celery, Archive Storage, negative RBAC, or operator UAT.
+
 ## 4. Execution / failure-injection matrix
 
 Every row starts **NOT RUN**; mark PASS only with exact SHA and inspected
@@ -274,7 +298,7 @@ runtime evidence. If a scenario is intentionally denied, PASS means
 | `operational_activity` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 | `job_execution` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 | `runtime_observation` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
-| `analytics_snapshot` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
+| `analytics_snapshot` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — operator review 2026-10-24 |
 | `generated_report` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 | `alert_incident` | NOT RUN | NOT RUN | NOT RUN | ACCEPTED — operator review 2026-10-23 |
 | `tenant_audit_evidence` | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
@@ -285,6 +309,11 @@ The audit-only contracts of `notification_delivery` / `audit_event`
 mean that rejected destructive operations are expected **PASS** on
 negative tests. Mark actual hot cleanup/cold purge as **NOT ADMITTED**,
 not a runtime failure in the accepted Archive Only scope.
+
+The Analytics Snapshots policy UI/actions were accepted by the operator on
+2026-10-24 (#2935 completed). Its three separate runtime evidence columns
+remain NOT RUN here because raw infrastructure execution evidence was not
+supplied to this ledger; acceptance does not transfer to AuditEvent.
 
 The Alert Incidents UI/actions operator review was accepted on 2026-10-23
 (#2923 and #2929 completed); the three separate runtime evidence columns
