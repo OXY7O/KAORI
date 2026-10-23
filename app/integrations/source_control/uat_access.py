@@ -2,7 +2,8 @@
 
 Not a substitute for #724 resource-scoped authorization. No ordinary RBAC
 user can browse or manually refresh arbitrary GitHub App installations.
-This restricted UAT boundary follows provider admission without an environment toggle; the production policy must replace it.
+This UAT boundary follows provider admission without a separate toggle.
+The production resource-scope policy must eventually replace it.
 """
 
 from __future__ import annotations
