@@ -1,0 +1,43 @@
+{% extends "layouts/app.html" %}
+{% import "integrations/components/_provider_frontpage.html" as provider_front %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% block title %}GitHub Source Control · KAORI{% endblock title %}
+{% block dashboard_content %}
+<div class="kaori-integration-semantic space-y-6">
+    {{ provider_front.hero("git-branch", "code", "GitHub Source Control",
+        "Govern GitHub App installation access without duplicating source-control evidence.",
+        registered, ready, 0, "Attention" if available else "Not Configured",
+        url_for("github_source.new_connection"),
+        register_label="Review GitHub App Setup") }}
+    {% set metrics = [
+        {"label": "Registered Connections", "value": registered, "description": "Canonical GitHub App connections", "icon": "plug"},
+        {"label": "Ready Connections", "value": ready, "description": "Full Validation required", "icon": "shield-check"},
+        {"label": "Repository Inventory", "value": "Not Admitted", "description": "SC-03 committed reconciliation pending", "icon": "database"},
+        {"label": "Provider Lifecycle", "value": "Available" if available else "Planned", "description": "Controlled by KAORI provider matrix", "icon": "shield"}
+    ] %}
+    {{ provider_front.overview("git-branch", "Source Control Provider Overview",
+        "A GitHub App installation grants access only to the repositories authorized by GitHub.",
+        metrics, "GitHub App Installation", "App, installation, organization/account and repository are distinct identities.",
+        "Committed Source Evidence", "KAORI will normalize scoped repository and revision observations after SC-03 admission.",
+        "GitHub Remains Authoritative", "GitHub owns permissions, repositories and workflow runs; KAORI correlates committed evidence.") }}
+    <section class="{{ integration_ui.section_shell_classes() }} p-5 sm:p-6">
+        <h2 class="text-base font-semibold text-content-primary">Onboarding Status</h2>
+        {% if not available %}
+            <p class="mt-2 text-sm leading-6 text-content-secondary" role="status">
+                GitHub is planned. Review the standard setup form, but credential submission, connection
+                registration and operational refresh remain disabled until provider admission.
+            </p>
+        {% else %}
+            <p class="mt-2 text-sm leading-6 text-content-secondary">
+                Register an approved GitHub App installation, then run Full Validation.
+                Test Connection alone does not confirm source inventory readiness.
+            </p>
+        {% endif %}
+        <a href="{{ url_for('integrations.source_control') }}"
+           class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-kaori-primary hover:underline">
+            <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+            Source Control Integrations
+        </a>
+    </section>
+</div>
+{% endblock dashboard_content %}
