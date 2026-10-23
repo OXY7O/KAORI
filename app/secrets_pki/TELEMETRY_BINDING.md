@@ -138,3 +138,31 @@ Existing binding validation evidence ownership remains unchanged.
 The real Prometheus/Thanos range API, worker/network performance, HA and
 long-term retention require DevContainer/staging UAT. Test source:
 `tests/integrations/test_vault_metrics_binding.py`.
+
+## Committed binding-coverage projection (HV-06 #2767)
+
+The Secrets & PKI **Operational Overview** no longer unconditionally labels
+Vault Metrics and Alert sources as `Not Bound`. The bounded read-only
+`build_vault_binding_coverage` reads canonical `IntegrationInstance` and
+`IntegrationBinding` records, never calls Prometheus/Thanos or Alertmanager
+during HTTP rendering, and emits only source-neutral summary labels/counts.
+
+For active approved Vault instances (max 25, binding rows max 100), it
+qualifies **one** source binding per instance only when:
+- `asset_type=vault_instance` and `asset_key` exactly equals the canonical
+  `IntegrationInstance.id` decimal string;
+- the source IntegrationInstance is active, enabled and in its own
+  `metrics_source` / `alert_source` integration family;
+- validation profile is `vault-telemetry-v1` / `vault-alerts-v1`;
+- validation status is `ready`, timestamp is not in the future and no older
+  than 24 hours; multiple independently ready bindings are not counted as
+  single-source qualification.
+
+Stale/disabled/incomplete/unbound/error states are **not qualified**.
+Qualification here means **committed identity binding validation**, NOT
+live health, complete HA/federation coverage, historical Metrics Source
+retention, observed alert absence, AlertCases, routing or delivery success.
+Source IDs, selectors, raw alerts, Secret names, paths, Vault credentials
+and provider response payloads never enter this fleet-level view.
+Source-specific drilldown continues to require each Integration capability's
+existing authorization. Exact-SHA DevContainer tests/UAT remain required.

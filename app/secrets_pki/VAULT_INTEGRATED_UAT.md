@@ -130,3 +130,16 @@ opt-out, missing schema, count mismatch and generation mismatch display
 Not Qualified rather than zero. Execute Violet light/dark/responsive,
 screen-reader label and error-state Visual QA. This does not complete HV-10
 historical materialization, lease, authentication or cross-domain analytics.
+
+### HV-06 #2767 — Committed binding coverage UAT (Not Tested)
+
+- Verify Vault Operational Overview reflects separate Metrics Source and
+  Alert Source identity validation without changing Vault provider readiness.
+- Exercise no binding, configured-but-unverified, stale/future, disabled
+  source, invalid profile, wrong canonical identity, multiple qualified
+  candidates, partial fleet and over-budget cases. No false healthy zero.
+- Verify a qualified binding is not presented as historical retention,
+  uptime/HA coverage, active AlertCase, recovery or notification delivery.
+- Check source permission/aggregation boundary, responsive light/dark/empty
+  states, Developer Check, Full Admission, and real Prometheus/Alertmanager
+  DevContainer UAT. No result is marked PASS by this document.

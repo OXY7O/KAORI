@@ -15,8 +15,8 @@
             'Review source readiness and safe committed Secret lifecycle evidence without reading credential material.',
             [
                 ('key-round', 'KV v2 Inventory Evidence'),
-                ('chart-no-axes-combined', 'Metrics Source Not Bound'),
-                ('bell-ring', 'Alert Evidence Not Bound')
+                ('chart-no-axes-combined', binding_coverage.metrics.label),
+                ('bell-ring', binding_coverage.alerts.label)
             ],
             active_scope, action_label, action_href,
             data_authority='Committed KAORI State',
@@ -95,7 +95,19 @@
                         {% call section_card.render('Capacity & Demand',
                             'Historical Vault demand requires a qualified Metrics Source binding and materialized Analytics.',
                             'gauge') %}
-                            <p class="text-sm text-content-secondary">
+                            <div role="status" class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                <p class="text-sm font-semibold text-content-primary">{{ binding_coverage.metrics.label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    {% if binding_coverage.metrics.status in ('qualified', 'partial') %}
+                                        {{ binding_coverage.metrics.coverage }} active Vault identities with one recently validated Metrics Source identity binding.
+                                    {% else %}
+                                        Metrics binding evidence is not qualified for current operational coverage.
+                                    {% endif %}
+                                    This is committed binding validation, not observed Vault HA,
+                                    query history, capacity demand or an availability SLO.
+                                </p>
+                            </div>
+                            <p class="mt-3 text-sm text-content-secondary">
                                 Vault API health and KV v2 metadata do not provide reliable historical request volumes.
                                 No capacity forecasts, lease pressure or per-Service reliability are inferred here.
                             </p>
@@ -112,8 +124,20 @@
                         {% call section_card.render('Signals & Actions',
                             'Central Intelligence owns qualified Recommendations and AlertCases; this dashboard does not create a second alert engine.',
                             'bell-ring') %}
-                            <p class="text-sm text-content-secondary">
-                                Vault Alert Source and Secrets & PKI rule eligibility are not yet materialized.
+                            <div role="status" class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                <p class="text-sm font-semibold text-content-primary">{{ binding_coverage.alerts.label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    {% if binding_coverage.alerts.status in ('qualified', 'partial') %}
+                                        {{ binding_coverage.alerts.coverage }} active Vault identities with one recently validated Alert Source identity binding.
+                                    {% else %}
+                                        Alert Source identity binding evidence is not qualified.
+                                    {% endif %}
+                                    Validation does not prove a matching active alert,
+                                    AlertCase, escalation, recovery or notification delivery.
+                                </p>
+                            </div>
+                            <p class="mt-3 text-sm text-content-secondary">
+                                Central Intelligence and AlertCase evidence have not been qualified for Vault.
                                 Missing alert evidence does not imply that Vault or its consumers are healthy.
                             </p>
                             {% if can_view_intelligence %}

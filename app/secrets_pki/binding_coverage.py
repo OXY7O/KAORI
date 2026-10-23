@@ -7,7 +7,7 @@ No provider calls, raw selectors, instance labels or Secret details.
 
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
