@@ -30,6 +30,9 @@ def main() -> int:
     channels_template = read('app/templates/integrations/delivery/notification_channels/partials/_channels_workspace.html')
     channel_modals = read('app/templates/integrations/delivery/notification_channels/partials/_channel_modals.html')
     channel_retire = read('app/templates/integrations/delivery/notification_channels/partials/_channel_retire_dialog.html')
+    channel_details_drawer = read('app/templates/integrations/delivery/notification_channels/partials/_channel_details_drawer.html')
+    channel_actions_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_actions_dialog.html')
+    shared_side_drawer = read('app/templates/components/side_drawer.html')
     channel_policy_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html')
     channel_delete_blockers_dialog = read('app/templates/integrations/delivery/notification_channels/partials/_channel_deletion_blockers_dialog.html')
     native_dialogs = read('app/static/js/native_dialogs.js')
@@ -150,46 +153,44 @@ def main() -> int:
         and "'delivery_pagination': delivery_window" in service
         and 'payload.delivery_pagination' in delivery_template
         and 'No Notification Deliveries Recorded' in delivery_template,
-        'desktop-fit Channel Inventory and deletion guidance': "table_ui.table_classes('w-full min-w-[980px] table-fixed lg:min-w-0')" in channels_template
-        and 'Locked' in channels_template
-        and 'channel.delete_blocked' in channels_template,
-        'compact native policy-dialog registry': channels_template.count('scope="col"') == 6
-        and "channel.event_type_labels[0]" not in channels_template
-        and '<details' not in channels_template
-        and 'data-dialog-target="notification-channel-policy-{{ channel.id }}"' in channels_template
-        and "table_label.metadata_label(channel.event_type_labels|length ~ ' Allowed Uses'" in channels_template
-        and 'channel.event_type_labels|join(", ")' not in channels_template
-        and "partials/_channel_policy_dialog.html' %}" in channels_template
-        and 'Delivery Evidence</th>' in channels_template
-        and 'channel.last_tested_at|user_datetime' in channels_template
+        'desktop-fit Channel Inventory and deletion guidance': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in channels_template
+        and "channel.lifecycle_state == 'active' and can_manage" in channels_template
+        and 'Locked' in channel_actions_dialog
+        and 'channel.delete_blocked' in channel_actions_dialog,
+        'compact native policy-dialog registry': channels_template.count('scope="col"') == 5
+        and 'colspan="5"' in channels_template
+        and 'View policy' not in channels_template
+        and 'data-dialog-target="notification-channel-actions-{{ channel.id }}"' in channels_template
+        and 'detailChannel = {{ channel.id }}' in channels_template
+        and '_channel_details_drawer.html' in channels_template
+        and '_channel_actions_dialog.html' in channels_template
+        and "channel.event_type_labels|length" in channels_template
         and 'channel.last_delivery_at|user_datetime' in channels_template
-        and 'channel.delete_blocked' in channels_template
-        and 'colspan="6"' in channels_template
         and "def _channel_event_type_groups(" in service
         and "'event_type_groups': _channel_event_type_groups(event_type_labels)" in service,
-        'policy dialog native and secret-safe': 'data-kaori-native-dialog' in channel_policy_dialog
-        and 'overflow-y-auto overscroll-contain' in channel_policy_dialog
-        and 'channel.event_type_groups' in channel_policy_dialog
-        and 'for event_label in group.events' in channel_policy_dialog
-        and 'No Allowed Uses' in channel_policy_dialog
-        and 'credential_payload' not in channel_policy_dialog
-        and channel_policy_dialog.count('data-kaori-dialog-close') == 2,
-        'balanced policy and discoverable deletion': 'sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]' in channel_policy_dialog
-        and 'grid items-start gap-3 md:grid-cols-2' not in channel_policy_dialog
-        and "table_ui.table_classes('w-full min-w-[980px] table-fixed lg:min-w-0')" in channels_template
-        and 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channels_template
-        and 'Locked' in channels_template
-        and 'table_ui.action_grid_classes()' in channels_template
+        'policy dialog native and secret-safe': 'side_drawer.render(' in channel_details_drawer
+        and 'data-side-drawer-dialog' in shared_side_drawer
+        and 'channel.event_type_groups' in channel_details_drawer
+        and 'for event_label in group.events' in channel_details_drawer
+        and 'channel.delivery_record_count' in channel_details_drawer
+        and 'channel.report_schedule_count' in channel_details_drawer
+        and 'channel.last_tested_at|user_datetime' in channel_details_drawer
+        and 'channel.last_delivery_at|user_datetime' in channel_details_drawer
+        and 'credential_payload' not in channel_details_drawer
+        and 'credential_payload' not in channel_actions_dialog,
+        'balanced policy and discoverable deletion': "table_ui.table_classes('w-full min-w-[860px] table-fixed lg:min-w-0')" in channels_template
+        and 'data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"' in channel_actions_dialog
+        and 'Locked' in channel_actions_dialog
         and 'data-kaori-native-dialog' in channel_delete_blockers_dialog
         and 'for schedule_name in channel.report_schedule_names' in channel_delete_blockers_dialog
         and "'report_schedule_names': list(usage.report_schedule_names)" in service
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle
-        and 'credential_payload' not in channel_delete_blockers_dialog,
-        'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in channels_template
-        and 'bg-status-warning-soft' in channels_template
+        and 'data-destructive-modal-open' in channel_actions_dialog,
+        'locked deletion lifecycle clarity': 'aria-label="Locked: view deletion dependencies for {{ channel.name }}"' in channel_actions_dialog
+        and 'bg-status-warning-soft' in channel_actions_dialog
         and 'Channel already disabled' in channel_delete_blockers_dialog
         and 'both dependency counts are zero' in channel_delete_blockers_dialog
-        and 'table_label.status_label(\'Locked\', \'warning\'' in channel_delete_blockers_dialog
+        and "table_label.status_label('Locked', 'warning'" in channel_delete_blockers_dialog
         and 'Automatic delivery is already disabled.' in channel_delete_blockers_dialog
         and 'raise NotificationChannelDeletionBlocked(usage)' in lifecycle,
         'retired channel lifecycle UI': 'framed_tabs.render_navigation(' in channels_template
@@ -205,17 +206,26 @@ def main() -> int:
         and "notification_channels.retire" in channel_retire
         and "NotificationChannel.query.filter_by(lifecycle_state=lifecycle)" in service
         and "'channel_lifecycle': normalized_lifecycle" in service
-        and 'Retirement Evidence' in read('app/templates/integrations/delivery/notification_channels/partials/_channel_policy_dialog.html'),
+        and "channel.lifecycle_state == 'retired'" in channel_details_drawer
+        and 'channel.retirement_reason' in channel_details_drawer,
         'compact notification lifecycle copy and row anatomy': 'table_ui.title_cell(channel.name' in channels_template
-        and 'table_ui.action_grid_classes()' in channels_template
-        and 'divide-y divide-outline-subtle' in channels_template
-        and "channel.test_status == 'success'" in channels_template
+        and 'role="group" aria-label="Actions for {{ channel.name }}"' in channels_template
+        and 'side_drawer.render(' in channel_details_drawer
+        and 'data-kaori-native-dialog' in channel_actions_dialog
+        and "channel.test_status == 'success'" in channel_details_drawer
         and 'Turn off Enabled in Edit to stop delivery.' in channel_delete_blockers_dialog
         and 'both dependency counts are zero' in channel_delete_blockers_dialog
         and 'Never erase delivery evidence.' in channel_delete_blockers_dialog
         and 'aria-label="Retirement consequences"' in channel_retire
         and 'Moves this channel to Archived (read-only).' in channel_retire
         and 'Stops future channel delivery.' in channel_retire,
+        'summary inspect act channel UX': channels_template.count('scope="col"') == 5
+        and 'Details' in channels_template and 'More' in channels_template
+        and 'data-kaori-dialog-transition' in channel_actions_dialog
+        and 'name="csrf_token" value="{{ csrf_token() }}"' in channel_actions_dialog
+        and 'hx-target="#notification-channels-workspace"' in channel_actions_dialog
+        and 'detailChannel === ' in channel_details_drawer
+        and "channel.lifecycle_state == 'active' and can_manage" in channels_template,
         'allowed uses UI': 'Allowed Uses' in template and 'event_types' in template,
         'platform ownership copy': 'platform delivery capability' in template.lower(),
         'delivery evidence deletion guard': 'class NotificationChannelDeletionBlocked(ValueError):' in lifecycle
