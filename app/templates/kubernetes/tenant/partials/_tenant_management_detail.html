@@ -2209,7 +2209,7 @@
                                                                    role="note"
                                                                    data-release-restart-recheck-note>
                                                                     <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-info-text" aria-hidden="true"></i>
-                                                                    <span>Read-back reports 0 transferred. Restart rechecks UID/version, ownership and dependencies; no automatic clearance.</span>
+                                                                    <span>0 transfers reported. Restart rechecks UID/version, ownership and dependencies; not cleared.</span>
                                                                 </p>
                                                             {% endif %}
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -2443,10 +2443,10 @@
                                            class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
                                            aria-hidden="true"></i>
                                         <span>
-                                            {% if native_cycle.dry_run_passed %}Dry-run passed; no live handoff occurred. {% endif %}
-                                            {% if native_cycle.reference_recorded %}External reference recorded; not successor consent. {% endif %}
-                                            {% if native_cycle.readback_observed_unverified %}Provider changes observed; successor acceptance unverified. {% endif %}
-                                            Handoff requires successor consent, conditional mutation, and provider read-back. Security/UAT admission remains required; Kubernetes stays authoritative.
+                                            {% if native_cycle.dry_run_passed %}Dry-run passed; no live transfer. {% endif %}
+                                            {% if native_cycle.reference_recorded %}External reference is not consent. {% endif %}
+                                            {% if native_cycle.readback_observed_unverified %}Provider changes observed; acceptance unverified. {% endif %}
+                                            Handoff requires consent, provider transfer and verified read-back; security/UAT gates remain. Kubernetes is authoritative.
                                         </span>
                                     </p>
                                 {% endif %}
@@ -2499,7 +2499,7 @@
                                           hx-swap="outerHTML show:none focus-scroll:false"
                                           hx-indicator="#tenant-management-loading"
                                           hx-disabled-elt="find button[type='submit']"
-                                          class="mx-auto mt-5 w-full max-w-4xl space-y-4 rounded-xl border border-outline-subtle bg-surface-card p-4 shadow-sm sm:p-6">
+                                          class="mt-4 grid min-w-0 gap-4 border-y border-outline-subtle bg-surface-elevated/35 px-3 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center" data-release-native-finalize-workspace>
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="tenant_detail_id" value="{{ tenant.id }}">
                                         <input type="hidden" name="tenant_detail_section" value="release">
@@ -2512,24 +2512,29 @@
                                         <input type="hidden"
                                                name="plan_sha256"
                                                value="{{ row.release_handoff_plan.plan_sha256 }}">
-                                        <div class="flex min-w-0 items-start gap-3">
-                                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                                                  aria-hidden="true"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
-                                            <div class="min-w-0">
-                                                <h5 class="text-sm font-semibold leading-6 text-content-primary">Verified Native Transfer · Ready for Governance Release</h5>
-                                                <p class="mt-1 text-sm leading-6 text-content-secondary">Fresh provider read-back must preserve every Namespace, ResourceQuota, LimitRange and CPU/memory value before Release.</p>
+                                        <div class="min-w-0 space-y-3">
+                                            <div class="flex min-w-0 items-start gap-3">
+                                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                                      aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                                                <div class="min-w-0">
+                                                    <div class="flex min-w-0 flex-wrap items-center gap-2">
+                                                        <h5 class="text-sm font-semibold leading-5 text-content-primary">Verified Native Transfer</h5>
+                                                        {{ table_label.status_label('Ready for Governance Release', 'success') }}
+                                                    </div>
+                                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Fresh provider read-back preserves Namespace, ResourceQuota, LimitRange and CPU/memory values.</p>
+                                                </div>
                                             </div>
+                                            <label class="flex min-w-0 items-start gap-2.5 text-xs leading-5 text-content-secondary">
+                                                <input name="confirm_native_release_finalization"
+                                                       type="checkbox"
+                                                       value="release"
+                                                       required
+                                                       class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
+                                                <span>I confirm verified provider handoff, zero dependencies, and preservation of all external Kubernetes resources.</span>
+                                            </label>
                                         </div>
-                                        <label class="flex items-start gap-3 rounded-lg bg-surface-elevated/50 p-3 text-sm leading-6 text-content-secondary sm:p-4">
-                                            <input name="confirm_native_release_finalization"
-                                                   type="checkbox"
-                                                   value="release"
-                                                   required
-                                                   class="mt-0.5 h-4 w-4 shrink-0 accent-kaori-primary">
-                                            <span>Finalize governance Release only after verified provider handoff and zero dependencies. Preserve all external Kubernetes resources.</span>
-                                        </label>
                                         <button type="submit"
-                                                class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto">
+                                                class="inline-flex min-h-10 w-full shrink-0 items-center justify-center gap-2 justify-self-start rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-progress disabled:opacity-60 sm:w-auto lg:justify-self-end">
                                             <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                             Finalize Verified Native Release
                                         </button>

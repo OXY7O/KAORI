@@ -2163,3 +2163,35 @@ Official Developer Check, Full Admission and staging/main remain HOLD.
 ## Independent reviewer eligibility Info state — Dev Container review (2026-10-23)
 
 The Step 3 pending-plan notice for a different authorized reviewer uses the existing KAORI semantic Info surface rather than an unaccented neutral border. Concise visible copy states reviewer eligibility (Tenant and Integrations Manage), plan SHA and provider evidence review. This is **available to review**, not an approval or Release state. When committed dependency evidence blocks the reviewer, the existing warning branch remains warning-colored and unchanged. The independent requester-versus-reviewer condition, required checkbox, active-plan fingerprint and authority gates remain exactly as before. No new UI component or provider call is introduced. Responsive wrap, light/dark contrast and actual approval/blocked provider behaviors require Dev Container human Visual QA; official CI/CD remains HOLD.
+
+## Native verified Release full-width action sheet — Dev Container review (2026-10-23)
+
+Step 4 screenshot feedback rejected the centered `max-w-4xl` bordered
+Finalize card and its awkward blank surrounding width. The existing
+verified Native Release POST is now a full-width, compact governance
+action sheet using the standard KAORI surface and divider hierarchy.
+The provider-readback title and readiness status sit together; a
+required exact-scope Release confirmation remains adjacent to the
+provider-evidence context. On desktop the finalization action is
+right-aligned. On narrow viewports the button stacks with readable
+text, without fixed line length, forced nowrap or horizontal clipping.
+
+Only the browser-facing explanation has been condensed. This branch
+still requires a committed handoff, fresh whole-scope read-back, no
+dependencies, unchanged Namespace/ResourceQuota/LimitRange and
+CPU/memory values, the original scoped plan SHA and the existing
+authorized governance actor. The confirmation still explicitly
+preserves all external Kubernetes resources. No mutation occurs until
+the original guarded POST; the button is not a substitute for CI/UAT.
+
+The expired-plan informational note now reads `0 transfers reported`
+rather than implying zero mutation was proven. Restart still verifies
+UID/resourceVersion, ownership and dependencies and is not cleared
+automatically. The original conditional check, provider queries,
+role restrictions, CSRF/HTMX and audit semantics are unchanged.
+
+Visual QA needed before human acceptance: desktop/mobile, both
+themes, readiness vs expired/blocked branches, checkbox keyboard
+focus, long plan SHA, provider rejection and finalization safety.
+Official Developer Check, Full Admission, staging/main admission and
+release remain HOLD.
