@@ -170,9 +170,9 @@ archive verification **must be tested separately**, not inferred from
 contract source or a preview count. Collect screenshot, redacted audit
 event, worker output and explicit operator acceptance for each step.
 
-## Status Guide and concise wording (#2947)
+## Compact status without duplicate Guide (#2947)
 
-Verify the compact AuditEvent status shows the canonical Violet info + Guide directly beside its status title, not a detached right-aligned question-mark icon. Compare paused, enabled and active states with hover, keyboard, touch, Escape and responsive light/dark. Confirm the shortened Coverage and Failure Recovery text retains the restricted retention and non-destructive evidence semantics.
+The status row displays its committed state and next action only: Paused, Manual Archive Only enabled, or Archive in progress. It must **not** include a second contextual Guide or a trailing question-mark icon. Source retention, permissions and archive restrictions remain in the existing canonical Violet Guide beside the **Administrative Audit Events Policy** title. Validate that title Guide with hover, keyboard, touch, Escape, HTMX replacement and responsive light/dark, and check the shortened Failure Recovery copy: "Archive retries once; manual retry if needed. Hot records remain." This presentation adjustment must not alter archive safety or job behavior.
 
 ## Permanent policy workspace visual checks (#2943)
 
