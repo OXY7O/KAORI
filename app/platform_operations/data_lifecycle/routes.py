@@ -116,5 +116,8 @@ def verify(archive_id: str) -> ResponseReturnValue:
 @bp.get('/archives/<archive_id>/download')
 @permission_required('platform_operations.export_data_lifecycle')
 def download(archive_id: str) -> ResponseReturnValue:
-    _artifact, path = lifecycle_archive_download(archive_id, kind=request.args.get('kind', 'data'))
+    try:
+        _artifact, path = lifecycle_archive_download(archive_id, kind=request.args.get('kind', 'data'))
+    except PermissionError:
+        abort(403, description='Source-specific archive export has not been admitted.')
     return send_file(path, as_attachment=True, download_name=path.name)
