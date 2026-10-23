@@ -30,7 +30,7 @@ from app.integrations.source_control.source_control.providers.github.webhook imp
 from app.integrations.source_control.source_control.providers.github.webhook_inbox import (
     claim_verified_delivery,
 )
-from app.integrations.source_control.uat_access import local_super_admin, uat_enabled
+from app.integrations.source_control.uat_access import local_super_admin, require_uat_access, uat_enabled
 from app.models.source_control import SourceInstallation
 from app.platform_operations.notifications.service import (
     get_navigation_notification_context,
@@ -88,6 +88,10 @@ def index() -> ResponseReturnValue:
 def new_connection() -> ResponseReturnValue:
     """A public POST cannot bypass the planned provider gate."""
     available = _available()
+    if available:
+        # Until #724, provider activation is restricted to the explicit
+        # Dev Container UAT boundary; integr.manage alone is insufficient.
+        require_uat_access()
     if request.method == 'POST' and not available:
         abort(409)
     form = GitHubAppConnectionForm()
