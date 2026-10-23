@@ -255,6 +255,9 @@ affected source, Secret or certificate: an authorized operator must investigate
 the provider directly before remediation. No Vault HTTP, Secret path, public
 fingerprint, certificate serial, private material, provider ID or new engine.
 
+Only a request actor with both `intelligence.view` and `secrets_pki.view`
+can see the aggregate. Actorless evaluation is fail-closed until governed
+worker-side scoped evaluation has its own implementation authority.
 Only status `ready` and internally consistent complete counts can emit a
 finding. Missing/stale/partial/disabled evidence does not imply a safe zero,
 a resolved alert or collection success. There is no automatic AlertCase,

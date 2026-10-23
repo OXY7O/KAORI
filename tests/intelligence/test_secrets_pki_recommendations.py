@@ -101,3 +101,37 @@ def test_absent_rule_skips_source_read(monkeypatch):
 
     monkeypatch.setattr(evaluator, 'build_stored_pki_validity_posture', denied)
     assert evaluator.build_secrets_pki_recommendation_findings({}) == []
+
+
+def test_intelligence_gate_denies_actorless_context(monkeypatch):
+    from app.intelligence import service
+
+    monkeypatch.setattr(service, 'has_request_context', lambda: False)
+    assert service._can_view_secrets_pki_intelligence() is False
+
+
+@pytest.mark.parametrize(
+    ('intelligence', 'secrets', 'allowed'),
+    [
+        (True, True, True),
+        (False, True, False),
+        (True, False, False),
+        (False, False, False),
+    ],
+)
+def test_intelligence_gate_requires_both_permissions(monkeypatch, intelligence, secrets, allowed):
+    from types import SimpleNamespace
+
+    from app.intelligence import service
+
+    monkeypatch.setattr(service, 'has_request_context', lambda: True)
+    monkeypatch.setattr(
+        service, 'current_user',
+        SimpleNamespace(
+            is_authenticated=True,
+            has_permission=lambda permission: (
+                intelligence if permission == 'intelligence.view' else secrets
+            ),
+        ),
+    )
+    assert service._can_view_secrets_pki_intelligence() is allowed
