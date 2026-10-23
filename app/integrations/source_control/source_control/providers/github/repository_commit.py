@@ -19,7 +19,6 @@ from app.integrations.source_control.source_control.providers.github.repository_
 )
 from app.integrations.source_control.source_control.providers.github.transport import GitHubProviderError
 from app.models.source_control import (
-    SourceAccount,
     SourceInstallation,
     SourceRepository,
     SourceRepositoryCollectionState,
@@ -192,9 +191,14 @@ def publish_generation(
             repo.account_id = account.id
             repo.name = item.name
             repo.full_name = item.full_name
-            repo.default_branch = item.default_branch
-            repo.visibility = item.visibility
-            repo.archived = item.archived
+            # Optional evidence absent from a provider page is UNKNOWN,
+            # not proof an already-observed value should be erased.
+            if item.default_branch is not None:
+                repo.default_branch = item.default_branch
+            if item.visibility is not None:
+                repo.visibility = item.visibility
+            if item.archived is not None:
+                repo.archived = item.archived
             repo.provider_presence = 'observed'
             repo.last_observed_at = observation_time
         repository_ids.add(repo.id)

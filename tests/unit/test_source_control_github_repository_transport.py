@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace
-
 import pytest
 
 from app.integrations.source_control.source_control.providers.github import transport

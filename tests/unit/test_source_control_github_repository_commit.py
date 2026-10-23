@@ -6,7 +6,7 @@ mutation is performed.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import create_engine, select
@@ -145,7 +145,7 @@ def test_exhaustive_missing_grant_marks_access_lost_without_deleting_repository(
         session, installation, reserve_generation(session, installation),
         _evidence(_item('10')),
     )
-    assert session.execute(select(SourceRepository)).scalars().all().__len__() == 2
+    assert len(session.execute(select(SourceRepository)).scalars().all()) == 2
     current = _current(session, installation)
     assert len(current) == 2
     assert {g.access_status for g in current} == {'granted', 'access_lost'}

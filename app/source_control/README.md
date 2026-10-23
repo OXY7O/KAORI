@@ -48,3 +48,58 @@ authorization or observation evidence.
 Hero, cards, tables, modals, pagination, HTMX and semantic state components.
 No GitHub-specific page or duplicated Violet styles are introduced by SC-01.
 The provider remains `planned` until qualified SC-02 readiness/UAT.
+
+
+## SC-03 — GitHub committed Repository Inventory (#2742, in implementation)
+
+This section is a **candidate on issue-scoped branch**, not an admitted
+capability. It depends on SC-01 #2740 and SC-02 #2741, whose Draft PRs
+remain unmerged. GitHub is still `planned`; no connection, JobExecution
+or repository inventory may be advertised Ready in live UI.
+
+- `repository_discovery.py` asks GitHub.com for the installation's exact
+  granted repository pages (20 per page, bounded to 200 pages). It verifies
+  installation App/account/scope before and after collection; token scope,
+  native owner identity, stable `total_count`, unique native IDs and
+  exhaustive pagination. A rate limit, malformed page, revoked installation,
+  unexpected scope, token expiry or bound exceeded must **fail closed** with
+  no committed inventory changes.
+- `SourceRepositoryCollectionState` provides per-installation fencing:
+  reserve a generation and commit that reservation before network reads.
+  A later reservation makes an older scan stale; only the current complete
+  generation can commit. Collection state, scope, prior successful coverage,
+  last-committed timestamp and count remain distinct.
+- `repository_commit.py` updates SourceAccount/SourceRepository by their
+  immutable provider+host+native IDs, preserving rename continuity and
+  optional previously observed values. Access is separately effective-dated
+  per installation. Only a complete grant inventory may close a granted
+  relationship into `access_lost`. A repository is **never labeled deleted**
+  because its selected installation grant disappeared; other installations
+  retain their own access evidence.
+- `repository_sync.py` is a candidate service callable by a future worker:
+  reserve -> collect -> publish, or record a sanitized degraded generation.
+  It does not register a new Celery task or dispatch a job. The approved
+  worker must reuse canonical KAORI JobExecution and SC-02 installation
+  identity, implementing scheduling, retries, recovery and webhook-triggered
+  reconciliation only after security/CI/UAT admission.
+- `repository_inventory.py` is a **committed-state-only** page projection,
+  with KAORI pagination 5/10/25/50. It requires an installation ID that
+  has already passed #724 resource-scoped authorization; it has no route
+  until that constraint is enforced. If no complete generation was committed,
+  count and coverage are UNKNOWN rather than zero.
+- This increment does not implement a Git clone, file blobs, PR/Actions,
+  committed default-branch SHA, ref transition collection, branch/tag
+  history, full repository timeline, global Source Control inventory route,
+  provider kernel activation, new UI primitives, or production GitHub calls.
+  Exact source revision/ref evidence requires independently verified
+  GitHub API reads before being committed.
+
+**Migration:** `20261023_sc_repo_collection`, downstream of
+`20261023_sc_webhook_delivery` on the stacked review branch. It adds
+`default_branch`, `visibility`, and a new collection-state table; no
+provider identities or repository rows are seeded. Run existing KAORI
+`verify_migration_graph.py`, migration upgrade/downgrade, `ruff`,
+`pyright`, and focused `pytest` through Developer Check in the
+Dev Container. Evidence must include cross-organization/installation
+negative tests and live All/Selected grant reconciliation. No official
+staging/main CI is authorized yet.
