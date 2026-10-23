@@ -15,12 +15,12 @@ def _installation():
         adapter_key='github_rest_v3', enabled=True, lifecycle_status='active',
         readiness_status='ready',
     )
-    account = SimpleNamespace(provider_key='github', host_key='github.com')
+    account = SimpleNamespace(id=6, provider_key='github', host_key='github.com')
     app = SimpleNamespace(id=5, enabled=True, host_key='github.com', native_app_id='42')
     return SimpleNamespace(
         id=8, integration_instance=identity, integration_instance_id=7,
         provider_key='github', host_key='github.com', native_app_id='42',
-        repository_scope='selected', account=account,
+        repository_scope='selected', account=account, account_id=6,
         github_app_credential=app, github_app_credential_id=5,
     )
 
@@ -58,7 +58,7 @@ def test_job_dispatcher_gates_before_canonical_job_creation(monkeypatch):
         lambda **_kwargs: pytest.fail('planned provider may not enqueue job'),
     )
     result = job_adapter.dispatch_source_repositories(
-        requested_by_user_id=9, trigger_type='manual',
+        requested_by_user_id=9, trigger_type='scheduled',
     )
     assert result.status == 'blocked'
     assert not result.accepted
@@ -104,7 +104,25 @@ def test_registered_job_starts_disabled_without_new_queue():
 
     definition = get_job_definition('source_control.repository.sync')
     assert definition.default_enabled is False
+    assert definition.manual_execution_supported is False
     assert definition.queue_name == 'inventory'
     assert definition.domain_execute_permission == 'integrations.manage'
     assert definition.operation == 'sync_source_control_repositories'
     assert definition.configuration_template.endswith('source_control_repository_sync.html')
+
+
+
+def test_manual_job_execution_is_blocked_until_724_scoped_policy():
+    result = job_adapter.dispatch_source_repositories(
+        requested_by_user_id=11, trigger_type='manual',
+    )
+    assert result.status == 'blocked'
+    assert not result.accepted
+
+
+def test_on_demand_refresh_rejects_actor_scope_bypass():
+    with pytest.raises(sync_jobs.NoEligibleSourceControlTargets, match='end-user'):
+        sync_jobs.enqueue_source_repository_sync(
+            requested_by_user_id=10, trigger_type='on_demand',
+            installation_record_id=8,
+        )

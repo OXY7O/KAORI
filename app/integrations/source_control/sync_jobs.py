@@ -39,6 +39,7 @@ def _eligible(installation: SourceInstallation) -> bool:
         and account is not None
         and account.provider_key == 'github'
         and account.host_key == installation.host_key
+        and installation.account_id == account.id
         and app is not None
         and app.enabled
         and app.host_key == installation.host_key
@@ -81,8 +82,16 @@ def enqueue_source_repository_sync(
 ):
     from app.integrations.source_control.tasks import sync_source_repositories_task
 
-    if trigger_type not in {'manual', 'scheduled', 'on_demand', 'recovery'}:
+    if trigger_type == 'manual':
+        raise NoEligibleSourceControlTargets(
+            'Manual Source Control job dispatch requires resource-scoped admission (#724).'
+        )
+    if trigger_type not in {'scheduled', 'on_demand', 'recovery'}:
         raise ValueError('Unsupported Source Control inventory trigger.')
+    if trigger_type in {'on_demand', 'recovery'} and requested_by_user_id is not None:
+        raise NoEligibleSourceControlTargets(
+            'Provider-triggered refresh does not accept an end-user actor bypass.'
+        )
     targets = build_source_repository_targets(installation_record_id=installation_record_id)
     if not targets:
         raise NoEligibleSourceControlTargets(

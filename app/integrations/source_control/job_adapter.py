@@ -23,6 +23,11 @@ def dispatch_source_repositories(
     trigger_type: str,
     parameters: dict[str, Any] | None = None,
 ) -> RegisteredJobDispatchResult:
+    if trigger_type == 'manual':
+        return RegisteredJobDispatchResult(
+            status='blocked',
+            message='Source Control manual reconciliation awaits resource-scoped authorization.',
+        )
     raw = (parameters or {}).get('installation_record_id')
     installation_id: int | None = None
     if raw is not None:
