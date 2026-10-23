@@ -41,3 +41,18 @@ def test_tls_certificate_detail_keeps_governance_boundary_and_technical_evidence
     assert 'Ingress Consumer Evidence Not Reported' in detail
     assert 'Governance Snapshot Boundary' in detail
     assert 'break-all font-mono' not in detail
+
+
+def test_tls_detail_shared_inventory_macro_compiles_with_jinja() -> None:
+    """Guard the shared import used by TLS Detail and Kubernetes Inventory."""
+    from jinja2 import Environment, FileSystemLoader
+
+    environment = Environment(loader=FileSystemLoader(ROOT / 'app/templates'), autoescape=True)
+    shared = environment.get_template('components/details/_detail_content.html')
+    assert 'bg-surface-card' in shared.module.expanded_workspace_header_classes()
+    for path in (
+        'kubernetes/governance/tls_certificates/partials/_detail_content.html',
+        'kubernetes/inventory/pods/partials/_pod_detail_content.html',
+        'kubernetes/inventory/nodes/partials/_node_detail_content.html',
+    ):
+        assert environment.get_template(path) is not None, path

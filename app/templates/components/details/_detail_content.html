@@ -191,7 +191,7 @@
             <span class="min-w-0">{{ technical_value.render(display_value, align='left', break_all=break_all, class_name=technical_classes, monospace=false, size='body') }}</span>
         </span>
     </div>
-{%- endmacro %>
+{%- endmacro %}
 {% macro inventory_status_row(label, value, tone='unknown', icon=None, size='compact', class_name='') -%}
     {% set dot_classes = 'bg-status-normal' if tone == 'normal' else ('bg-status-warning' if tone == 'warning' else ('bg-status-critical' if tone == 'critical' else 'bg-status-unknown')) %}
     <div class="grid min-w-0 gap-1 border-b border-outline-subtle py-2.5 sm:grid-cols-[minmax(10rem,0.3fr)_minmax(0,1fr)] sm:items-baseline sm:gap-5 {{ class_name }}">
