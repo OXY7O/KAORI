@@ -143,7 +143,7 @@ def test_audit_event_scope_and_hot_history_counts_are_super_admin_only() -> None
     assert "ArchiveArtifact.domain.notin_(exclude_domains)" in engine
     assert "if value == 'audit_event' and not (" in routes
     assert "def _check_audit_event_governance(domain_name: str, user_id: int)" in service
-    assert "if user is None or not user.is_super_admin or user.auth_source != 'database':" in service
+    assert "if user is None or not user.is_active or not user.is_super_admin or user.auth_source != 'database':" in service
     assert service.count("_check_audit_event_governance(domain_name, user_id)") == 2
     assert "is_super_admin: Mapped[bool]" in model
 
@@ -325,3 +325,31 @@ def test_audit_event_worker_missing_policy_or_deleted_requester_fails_closed() -
             _require_audit_event_manual_admission(
                 trigger_type='manual', triggered_by_user_id=27,
             )
+
+def test_direct_archive_verify_rejects_unapproved_audit_event_before_integrity_io() -> None:
+    from app.platform_operations.data_lifecycle.service import verify_lifecycle_archive
+
+    archive = SimpleNamespace(domain='audit_event')
+    with (
+        patch('app.platform_operations.data_lifecycle.service.db.session.get', return_value=archive),
+        patch(
+            'app.platform_operations.data_lifecycle.service._check_audit_event_governance',
+            side_effect=PermissionError('source denied'),
+        ) as governance,
+        patch('app.platform_operations.data_lifecycle.service.verify_archive_artifact') as verify,
+    ):
+        with pytest.raises(PermissionError, match='source denied'):
+            verify_lifecycle_archive(archive_id='synthetic-archive-uuid', user_id=27)
+        governance.assert_called_once_with('audit_event', 27)
+        verify.assert_not_called()
+
+
+def test_direct_audit_archive_verify_route_returns_403_instead_of_leaking_details() -> None:
+    routes = read('app/platform_operations/data_lifecycle/routes.py')
+    service = read('app/platform_operations/data_lifecycle/service.py')
+    assert "except PermissionError:" in routes.split('def verify(archive_id:', 1)[1].split(
+        "def download(archive_id:", 1,
+    )[0]
+    assert "abort(403, description='AuditEvent source verification access is not admitted.')" in routes
+    assert 'artifact = db.session.get(ArchiveArtifact, archive_id)' in service
+    assert '_check_audit_event_governance(artifact.domain, user_id)' in service
