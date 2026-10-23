@@ -41,3 +41,13 @@ Expired cold archives are purged in a bounded batch (`ARCHIVE_PURGE_BATCH_SIZE`,
 ### Storage ownership
 
 Lifecycle domains do not configure independent archive buckets. Hot source storage remains domain-owned (for example, Runtime Observations live in PostgreSQL table `integration_runtime_observations`), while every domain writes verified cold evidence to the shared **Archive Storage** profile. Runtime Observations archive structured provider-neutral evidence as JSONL.GZ + manifest JSON and do not carry supplemental binary artifacts. Generated Reports are the exception at the payload level: their PDF/XLSX/CSV files are copied as supplemental evidence into the same shared archive target. The Retention Policies workspace exposes this boundary without probing the backend; readiness and verification stay demand-loaded in **Archive Storage**.
+
+## Notification Delivery archive boundary (#2848)
+
+The registered `notification_delivery` domain uses the existing Retention
+Policies and Archive History workspaces for operator-driven **archive-only**
+verification. It is paused by default and excludes scheduled/cleanup
+mutations. Unlike the Notification Center's `operational_activity` lifecycle,
+this domain concerns outbound provider delivery attempts. Its hot journal,
+deduplication and channel dependencies remain committed in PostgreSQL; no
+claim of reduced database footprint is made before #2850.

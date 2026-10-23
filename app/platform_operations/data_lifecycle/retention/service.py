@@ -75,6 +75,10 @@ def run_retention_archive(
 ) -> dict[str, Any]:
     domain = get_archive_domain(domain_name)
     policy = domain.build_policy()
+    # Do not begin an archive job that would later attempt an unsafe cleanup.
+    # This opt-in capability defaults to True for existing admitted domains.
+    if cleanup and not getattr(domain, 'cleanup_supported', True):
+        raise RuntimeError(f'Hot cleanup is not admitted for {domain.name}; use archive-only.')
     if not policy.enabled:
         raise RuntimeError(f'Retention is disabled for {domain.name}.')
 
