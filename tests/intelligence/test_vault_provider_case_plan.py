@@ -103,6 +103,7 @@ def _case(vault, source, binding, case_key, *, closed=False, **updates):
         severity='warning', source_state='firing',
         workflow_state='closed' if closed else 'open',
         routing_state='suppressed',
+        routing_override_reason='policy_ineligible',
         labels_json={},
         evidence_json={
             'correlation_profile': 'vault-alert-hmac-v1',
@@ -340,3 +341,16 @@ def test_preexisting_provider_case_cannot_be_reenabled_for_routing(store):
     case.routing_state = 'enabled'
     db.session.commit()
     assert _plan(binding)['status'] == 'blocked'
+
+
+def test_policy_ineligible_routing_marker_is_required_for_prior_vault_case(store):
+    vault, source, binding = _source()
+    _commit(binding, [_alert(vault)])
+    key = _plan(binding)['candidates'][0]['case_key']
+    case = _case(vault, source, binding, key)
+    case.routing_override_reason = 'manual'
+    db.session.commit()
+    assert _plan(binding)['status'] == 'blocked'
+    case.routing_override_reason = 'policy_ineligible'
+    db.session.commit()
+    assert _plan(binding)['candidates'][0]['action'] == 'refresh_candidate'

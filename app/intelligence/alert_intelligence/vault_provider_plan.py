@@ -53,6 +53,7 @@ def _provenance_matches(case: AlertCase, *, source_id: int, binding_id: int) -> 
         and case.source_ref == case.case_key
         and _CASE_KEY_RE.fullmatch(case.case_key) is not None
         and case.routing_state == 'suppressed'
+        and case.routing_override_reason == 'policy_ineligible'
         and isinstance(case.labels_json, dict)
         and not case.labels_json
         and isinstance(evidence, dict)
