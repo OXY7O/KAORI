@@ -33,7 +33,7 @@
         {% endcall %}
         {% if channel.lifecycle_state == 'active' and can_manage %}
             {% call side_drawer.section('Channel Actions', 'Manage the active channel after reviewing its status and evidence.', icon='settings-2', density='compact') %}
-                <div class="grid gap-2 sm:grid-cols-2">
+                <div class="grid gap-2.5 sm:grid-cols-2">
                     <a href="{{ url_for('notification_channels.index',
                                     tab='channels', edit=channel.id, configure=1,
                                     channel_search=payload.channel_filters.search,
@@ -50,7 +50,7 @@
                                     channel_per_page=payload.channel_pagination.per_page) }}"
                        hx-target="#notification-channels-workspace" hx-select="#notification-channels-workspace"
                        hx-swap="outerHTML" hx-indicator="#notification-channel-loading" hx-push-url="false"
-                       class="{{ action_button.classes('secondary', full=true) }}">
+                       class="{{ action_button.classes('soft', full=true) }}">
                         <i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>
                         Edit Channel
                     </a>
@@ -61,19 +61,18 @@
                           hx-disabled-elt="button[type='submit']">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         {{ channel_return_fields() }}
-                        <button type="submit" class="{{ action_button.classes('secondary', full=true) }}">
+                        <button type="submit" class="{{ action_button.classes('soft', full=true) }}">
                             <i data-lucide="send" class="h-4 w-4" aria-hidden="true"></i>
                             Test Delivery
                         </button>
                     </form>
                 </div>
                 <div class="mt-3 border-t border-outline-subtle pt-3">
-                    <p class="mb-2 text-xs font-semibold text-content-muted">Lifecycle Actions</p>
-                    <div class="grid gap-2 sm:grid-cols-2">
+                    <div class="grid gap-2.5 sm:grid-cols-2" role="group" aria-label="Channel lifecycle actions">
                         <button type="button" data-kaori-dialog-open
                                 data-dialog-target="notification-channel-retire-{{ channel.id }}"
                                 aria-haspopup="dialog" aria-controls="notification-channel-retire-{{ channel.id }}"
-                                class="{{ action_button.classes('secondary', full=true) }}">
+                                class="{{ action_button.classes('warning', full=true) }}">
                             <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
                             Retire Channel
                         </button>
@@ -82,8 +81,9 @@
                                     data-dialog-target="notification-channel-delete-blockers-{{ channel.id }}"
                                     aria-haspopup="dialog" aria-controls="notification-channel-delete-blockers-{{ channel.id }}"
                                     aria-label="Locked: view deletion dependencies for {{ channel.name }}"
-                                    class="{{ action_button.classes('secondary', full=true) }}">
-                                <i data-lucide="lock-keyhole" class="h-4 w-4 text-status-warning-text" aria-hidden="true"></i>
+                                    title="View deletion dependencies for {{ channel.name }}"
+                                    class="{{ action_button.classes('locked-info', full=true) }}">
+                                <i data-lucide="lock-keyhole" class="h-4 w-4" aria-hidden="true"></i>
                                 Delete Locked
                             </button>
                         {% else %}
