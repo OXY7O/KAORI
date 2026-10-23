@@ -88,6 +88,9 @@ def test_single_shared_policy_surface_has_no_new_domain_specific_card_designs() 
     assert '{% if lifecycle.coverage|length > 1 %}sm:grid-cols-2{% endif %}' in ui
     assert '{% if lifecycle.coverage|length == 3 %}xl:grid-cols-3{% endif %}' in ui
     assert "selected.name not in ('alert_incident', 'runtime_observation')" not in ui
+    assert "selected.name in ('notification_delivery', 'audit_event')" in ui
+    assert 'Source-owned records covered by manual, non-destructive archival.' in ui
+    assert 'Records covered by this retention, archive, and cleanup policy.' in ui
     assert 'hx-indicator="#data-lifecycle-policy-loading"' in ui
     assert "components/operation_feedback_oob.html" in ui
 
