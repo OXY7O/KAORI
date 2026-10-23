@@ -1,5 +1,6 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% set can_provision = current_user.has_permission('identity_providers.provision') %}
 <section class="min-w-0"
          aria-label="Directory Provisioning overview"
@@ -11,7 +12,19 @@
                     <i data-lucide="contact-round" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="{{ table_ui.block_title_classes() }}">Directory Provisioning</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="{{ table_ui.block_title_classes() }}">Directory Provisioning</h2>
+                        {{ info_tip.render('identity-provider-directory-provisioning-guide',
+                                            'Directory Provisioning',
+                                            'This tab summarizes committed directory evidence. Account provisioning occurs in the separate authorized workflow.',
+                                            items=[
+                                                'Directory Providers counts configured directory sources; Identity Links counts their committed KAORI account projections.',
+                                                'Only actors with provisioning permission may open the workflow to search an enabled directory and assign a KAORI role and initial account state.',
+                                                'Directory credentials stay provider-managed. KAORI stores the linked account projection and governs access through local roles and lifecycle state.'
+                                            ],
+                                            placement='right',
+                                            variant='guide') }}
+                    </div>
                     <p class="{{ table_ui.block_description_classes() }}">
                         Review directory projection evidence and launch the controlled provisioning workflow.
                     </p>

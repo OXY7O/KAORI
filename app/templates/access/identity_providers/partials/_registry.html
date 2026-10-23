@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/info_tip.html" as info_tip %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/details/_expandable_row.html" as expandable %}
 <section id="identity-provider-registry"
@@ -14,6 +15,16 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="{{ table_ui.block_title_classes() }}">Provider Registry</h2>
+                        {{ info_tip.render('identity-provider-registry-guide',
+                                            'Provider Registry',
+                                            'Review registered authentication sources and their KAORI governance state.',
+                                            items=[
+                                                'Configuration shows whether the adapter contract is complete; it is not a successful external connection test.',
+                                                'Enabled controls authentication eligibility. Identity Links counts committed external identities linked to KAORI accounts.',
+                                                'The external provider owns identity and credentials. KAORI governs local account state, role authorization, and administrative actions.'
+                                            ],
+                                            placement='right',
+                                            variant='guide') }}
                         {{ table_label.result_count(summary.matching) }}
                     </div>
                     <p class="{{ table_ui.block_description_classes() }}">Review configuration, enablement, identity links, and provider-owned actions.</p>

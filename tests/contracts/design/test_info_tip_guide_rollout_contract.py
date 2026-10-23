@@ -28,6 +28,8 @@ TITLE_GUIDE_TEMPLATES = (
     'access/activity_audit/partials/_activity_table_card.html',
     'access/activity_audit/partials/_administrative_evidence.html',
     'access/identity_providers/form.html',
+    'access/identity_providers/partials/_registry.html',
+    'access/identity_providers/partials/_directory_provisioning_strip.html',
     'access/identity_providers/partials/_sso_configuration.html',
     'access/identity_providers/partials/_ldap_configuration.html',
     'artifact_registry/partials/_security_workspace.html',
