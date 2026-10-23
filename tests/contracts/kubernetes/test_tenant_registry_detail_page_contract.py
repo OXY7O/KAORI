@@ -1297,7 +1297,7 @@ def test_native_handoff_visual_density_remediation_preserves_safety() -> None:
     assert 'items-start gap-x-8 gap-y-5 lg:grid-cols-2' in approval
     assert 'data-release-accepted-handoff-actions' in approval
     assert 'data-release-accepted-handoff-evidence' in approval
-    assert 'sm:grid-cols-[auto_minmax(0,1fr)]' in approval
+    assert 'flex min-w-0 flex-col gap-1 border-b border-outline-subtle py-3' in approval
     assert 'Kubeconfig and scoped access verified through' in approval
     assert 'provider ownership remains unchanged.' in approval
     assert 'lg:flex-row lg:items-center lg:justify-between' in approval
