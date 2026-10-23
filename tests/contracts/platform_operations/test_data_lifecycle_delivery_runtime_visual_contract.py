@@ -32,6 +32,12 @@ def test_delivery_notice_is_one_accessible_inline_row_with_violet_and_warning_em
     assert '<div' not in notice
     assert 'whitespace-nowrap' not in notice
     assert "hx-target=\"#data-lifecycle-domain-workspace\"" in ui
+    # This domain has no scheduled execution; the UI must not offer dead controls.
+    assert "{% if selected.name not in ('notification_delivery', 'audit_event') %}" in ui
+    assert "selected.name in ('notification_delivery', 'audit_event') else 'Automatic Run'" in ui
+    assert 'Manual Archive Only · No schedule' in ui
+    assert 'name="mode" value="archive_only"' in ui
+    assert "selected.name not in ('notification_delivery', 'audit_event')" in ui
 
 
 def test_four_runtime_coverage_sources_are_compact_and_balanced_in_two_columns() -> None:
