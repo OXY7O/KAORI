@@ -105,7 +105,7 @@ def test_data_lifecycle_ui_explains_generated_report_evidence_and_status_windows
     assert 'failed_retention_days' in workspace
     assert 'archived_retention_days' in workspace
     assert 'max="{{ 2500 if selected.name == \'generated_report\' else 25000 }}"' in workspace
-    assert 'verify SHA-256 before the source artifact or database row can be cleaned' in workspace
+    assert 'verifying SHA-256 before source-file or row cleanup' in workspace
     assert 'generated_report_ui.GENERATED_REPORT_COVERAGE_NOTE' in presentation
 
 
