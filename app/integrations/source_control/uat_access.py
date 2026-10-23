@@ -7,17 +7,14 @@ The authorized production policy must replace this temporary UAT boundary.
 
 from __future__ import annotations
 
-from flask import abort, current_app
+from flask import abort
 from flask_login import current_user
 
 from app.integrations.provider_matrix import provider_kind
 
 
 def uat_enabled() -> bool:
-    return bool(
-        current_app.config.get('SOURCE_CONTROL_GITHUB_UAT_ENABLED', False)
-        and provider_kind('source_control', 'github').available
-    )
+    return provider_kind('source_control', 'github').available
 
 
 def local_super_admin(user: object) -> bool:

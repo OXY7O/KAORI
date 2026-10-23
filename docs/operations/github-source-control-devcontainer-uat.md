@@ -10,7 +10,7 @@ This isolated review branch contains the stacked workstreams and makes the GitHu
 
 Use ignored local APP_ENV=development configuration, never a committed secret file:
 
-- `SOURCE_CONTROL_GITHUB_UAT_ENABLED=true` — local active super-admin with integrations.manage may inspect a specific installation, run Full Validation, run manual UAT sync and view committed inventory. This is a temporary restrictive UAT boundary, **not** final #724 resource-scoped authorization.
+- No UAT enable environment variable is required. The isolated UAT branch's `available` provider matrix enables GitHub directly. Credential registration and installation-specific operations still require an active local super-admin with `integrations.manage` until #724 is admitted.
 - `SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED=false` — leave HTTP webhook disabled until authenticated signature/replay negatives are reviewed.
 - `SOURCE_CONTROL_WEBHOOK_CONSUMER_ENABLED=false` — leave maintenance inbox consumer disabled until worker/crash recovery is reviewed.
 

@@ -19,20 +19,18 @@ def _actor(*, admin=True, source='database', permitted=True):
     )
 
 
-def test_uat_disabled_without_flag(monkeypatch):
+def test_available_provider_needs_no_uat_env_flag(monkeypatch):
     app = Flask(__name__)
     monkeypatch.setattr(
         uat_access, 'provider_kind',
         lambda *_: SimpleNamespace(available=True),
     )
-    app.config['SOURCE_CONTROL_GITHUB_UAT_ENABLED'] = False
     with app.app_context():
-        assert not uat_access.uat_enabled()
+        assert uat_access.uat_enabled()
 
 
-def test_provider_planned_disables_uat_even_with_flag(monkeypatch):
+def test_planned_provider_blocks_uat(monkeypatch):
     app = Flask(__name__)
-    app.config['SOURCE_CONTROL_GITHUB_UAT_ENABLED'] = True
     monkeypatch.setattr(
         uat_access, 'provider_kind',
         lambda *_: SimpleNamespace(available=False),
@@ -51,10 +49,9 @@ def test_only_local_authorized_super_admin_can_access_uat(user):
 
 def test_fails_closed_before_resource_discovery(monkeypatch):
     app = Flask(__name__)
-    app.config['SOURCE_CONTROL_GITHUB_UAT_ENABLED'] = False
     monkeypatch.setattr(
         uat_access, 'provider_kind',
-        lambda *_: SimpleNamespace(available=True),
+        lambda *_: SimpleNamespace(available=False),
     )
     with app.app_context():
         with pytest.raises(NotFound):
@@ -63,7 +60,6 @@ def test_fails_closed_before_resource_discovery(monkeypatch):
 
 def test_fails_closed_for_non_admin_when_enabled(monkeypatch):
     app = Flask(__name__)
-    app.config['SOURCE_CONTROL_GITHUB_UAT_ENABLED'] = True
     monkeypatch.setattr(
         uat_access, 'provider_kind',
         lambda *_: SimpleNamespace(available=True),
