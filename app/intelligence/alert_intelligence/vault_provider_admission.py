@@ -8,13 +8,12 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime
-from typing import Any
-
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.intelligence.alert_intelligence.vault_provider_plan import (
+    _CASE_KEY_RE,
     _CASE_PREFIX,
     _MAX_CASES,
     _PROFILE,
@@ -214,8 +213,7 @@ def admit_vault_provider_cases(
             severity = candidate.get('severity')
             if (
                 not isinstance(case_key, str)
-                or not case_key.startswith(_CASE_PREFIX)
-                or len(case_key) != len(_CASE_PREFIX) + 64
+                or _CASE_KEY_RE.fullmatch(case_key) is None
                 or not isinstance(severity, str)
                 or severity not in {'critical', 'warning', 'info'}
             ):
@@ -272,8 +270,11 @@ def admit_vault_provider_cases(
             db.session.commit()
         else:
             db.session.rollback()
-        return _result('committed' if changed_create or changed_refresh else 'unchanged',
-                       created=changed_create, refreshed=changed_refresh)
+        return _result(
+            'committed' if changed_create or changed_refresh else 'unchanged',
+            created=changed_create,
+            refreshed=changed_refresh,
+        )
     except SQLAlchemyError:
         db.session.rollback()
         return _result('unavailable')
