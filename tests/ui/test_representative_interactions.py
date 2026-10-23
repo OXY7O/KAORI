@@ -725,7 +725,7 @@ def test_settings_account_profile_activity_credentials_visual_qa(
                     assert response is not None and response.ok
                 else:
                     page.locator(f'#account-authentication-page a[href*="tab={tab}"]').first.click()
-                    expect(page).to_have_url(re.compile(rf'/settings/account\\?tab={tab}(?:&|$)'))
+                    expect(page).to_have_url(re.compile(rf'/settings/account[?]tab={tab}(?:&|$)'))
                 expect(page.locator('#account-authentication-page')).to_be_visible()
                 workspace = page.locator(selector)
                 expect(workspace).to_be_visible()
