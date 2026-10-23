@@ -103,3 +103,20 @@ provider identities or repository rows are seeded. Run existing KAORI
 Dev Container. Evidence must include cross-organization/installation
 negative tests and live All/Selected grant reconciliation. No official
 staging/main CI is authorized yet.
+
+### Exact default-branch revision evidence (SC-03 incremental)
+
+- `default_branch.collect_default_branch_revision` requires a committed, currently `granted` installation-to-repository relationship. It uses GitHub App installation tokens with `metadata:read` and `contents:read`; the latter is required for GitHub's Get a branch endpoint.
+- `GitHubAppClient.default_branch_tip` checks GET `/repos/{owner}/{repo}` before and after the allowlisted GET `/repos/{owner}/{repo}/branches/{branch}` call to prove the mutable owner/name resolves to the same native repository ID. Redirects, network failures, token expiry and ambiguous refs fail closed.
+- `reference_commit.publish_default_branch_revision` independently rechecks current grants, canonical repository native ID and default branch; SourceRevision uses Repository + exact 40-hex SHA, SourceReference is mutable, and SourceReferenceTransition retains observed pointer movements. Out-of-order observation cannot revert a later tip.
+- The installation-scoped read projection now includes `exact_default_branch_sha` and `revision_observed_at`, only where the matching committed current default-branch pointer is known. Missing evidence stays Unknown; an old branch's revision is not misrepresented as the current branch SHA.
+
+This does not mirror Git history, collect branch/tag catalogs or file blobs, guarantee the observed tip is still live, or activate provider runtime. Future UI must show the observation time alongside SHA. Resource-scope authority #724 remains a blocker for public inventory routes.
+
+Additional focused Dev Container checks (authored, not executed):
+
+```bash
+pytest -q --tb=short tests/unit/test_source_control_github_default_branch.py tests/unit/test_source_control_github_default_branch_collection.py tests/unit/test_source_control_github_reference_commit.py tests/unit/test_source_control_repository_inventory_read.py
+```
+
+No extra schema migration is required for refs: this increment reuses SC-01 SourceRevision, SourceReference and SourceReferenceTransition. Keep existing migration graph, ruff, pyright, pytest and Visual QA gates.

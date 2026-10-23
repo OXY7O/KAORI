@@ -74,3 +74,28 @@ def test_unsafe_ref_rejected_before_provider_request(ref):
 def test_transport_denies_nonallowlisted_branch_paths(path):
     with pytest.raises(GitHubProviderError, match='Unsupported'):
         transport._safe_json_request('GET', path, bearer='token')
+
+
+def test_repository_can_change_after_tip_lookup_and_must_fail(monkeypatch):
+    client = GitHubAppClient(app_id=4, private_key_pem='unused')
+    records = iter([
+        {'id': 991, 'owner': {'login': 'org'}, 'name': 'repo', 'default_branch': 'main'},
+        {'name': 'main', 'commit': {'sha': 'a' * 40}},
+        {'id': 992, 'owner': {'login': 'org'}, 'name': 'repo', 'default_branch': 'main'},
+    ])
+    monkeypatch.setattr(client, '_request', lambda *_args, **_kwargs: (200, next(records)))
+    with pytest.raises(GitHubProviderError, match='native repository'):
+        client.default_branch_tip(_token(), 'org', 'repo', 'main', '991')
+
+
+def test_expiring_token_never_requests_branch(monkeypatch):
+    client = GitHubAppClient(app_id=4, private_key_pem='unused')
+    token = InstallationToken(
+        'expired', datetime.now(UTC) + timedelta(seconds=10),
+        {'metadata': 'read', 'contents': 'read'}, 'selected',
+    )
+    monkeypatch.setattr(
+        client, '_request', lambda *_args, **_kwargs: pytest.fail('No API call should occur'),
+    )
+    with pytest.raises(GitHubProviderError, match='expired'):
+        client.default_branch_tip(token, 'org', 'repo', 'main', '991')
