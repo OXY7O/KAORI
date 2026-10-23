@@ -689,6 +689,9 @@ def test_channel_inventory_uses_compact_summary_and_shared_details_drawer() -> N
     assert inventory.index('_channel_details_drawer.html') < inventory.index("table_registry.footer('notification_channels.index'")
 
     assert 'side_drawer.render(' in drawer and 'side_drawer.section(' in drawer
+    assert 'delegate_clicks=true' in drawer
+    assert 'delegate_clicks=false' in shared_drawer
+    assert '{% if not delegate_clicks %}@click.stop{% endif %}' in shared_drawer
     assert 'data-side-drawer-dialog' in shared_drawer
     assert 'detailChannel === ' in drawer
     assert 'for group in channel.event_type_groups' in drawer
