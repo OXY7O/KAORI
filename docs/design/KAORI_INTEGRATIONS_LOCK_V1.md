@@ -655,3 +655,23 @@ five-column semantics, table responsiveness, filters, and default five-row
 pagination. Do not add actions, denser hidden data, new CSS/JS, or overwrite
 committed evidence. Validate narrow-screen scrolling and light/dark alignment
 in Dev Container before operator acceptance.
+
+## Notification Delivery — Hot Journal and Data Lifecycle Handoff (#2849, 2026-10-23)
+
+Notification Channels → Delivery Activity is an operational **hot committed
+journal**, not a second archive system. Its existing table, status and
+source-link filters, pagination, activity-audit separation and HTMX behavior
+remain unchanged. The section introduction now identifies verified archive
+bundles as owned by Platform Operations → Data Lifecycle. The shared Delivery
+Records header offers **Retention Policy** only to operators authorized for
+`platform_operations.view_data_lifecycle`, linking to the existing
+`notification_delivery` policy workspace. Clear Filters stays in the same
+shared header action slot.
+
+Archive History currently exposes **verified artifact bundles only**, not
+record-level search, archived delivery details or automatic backfill into the
+operational journal. First admission #2848 is paused, manual and archive-only
+with no hot deletion. Current all-time Delivery Outcomes remain hot committed
+SQL outcomes and have not been retroactively converted into archive-inclusive
+aggregates. Cleanup and source-linked archive browsing remain deferred to
+the governed safety boundary #2850. No provider or permission changes.
