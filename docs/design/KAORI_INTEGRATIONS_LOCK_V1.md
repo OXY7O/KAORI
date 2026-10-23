@@ -462,17 +462,44 @@ redirects to archived view via the existing HTMX workspace contract.
 
 ## Notification Channel Compact Row and Lifecycle Copy (#2760, 2026-10-23)
 
-Approved Channel Inventory anatomy: shared `title_cell` for channel identity
-(provider/destination in one truncatable supporting line), Readiness,
-severity/domain, **Allowed Uses count + View policy** (no redundant inline
-preview), a compact `Last Test` / `Last Delivery` evidence stack based on
-committed timestamps/status, and the shared `action_grid_classes()` for
-Edit, Test, Retire, Locked/Delete in a stable 2×2 right-aligned grid.
-Archived rows stay read-only. Preserve existing six-column responsive
-width, loading/filter/Rows/pagination and native dialogs.
+Historical note: #2760 used a six-column table with inline policy metadata
+and a two-by-two action grid. This is **superseded** by #2774 for the
+Channel Inventory row. Refer to the current Summary → Inspect → Act
+contract below.
 
 Deletion Protection uses three concise statements for dependencies,
 Disable guidance and the zero-evidence/zero-schedule hard-delete rule.
 Terminal Retire confirmation uses a three-item semantic list: delivery
 stops, channel becomes Archived/read-only, committed evidence is retained.
 Do not soften server-side deletion/retirement governance to simplify copy.
+
+## Notification Channels — Summary → Inspect → Act (#2774, 2026-10-23)
+
+The Channel Inventory is a **five-column compact operational summary**:
+Channel (shared title/provider+destination), Readiness (posture and
+enabled/archived), Routing (minimum severity and counts of domains/allowed
+uses), Last Delivery (committed outcome and timestamp), and Actions.
+The normal table row exposes at most **two** controls: **Details** and,
+only for authorized active channels, **More**. Do not put Edit/Test/Retire/
+Locked/Delete, complete event lists, Test Delivery evidence, or dependency
+records directly in the row.
+
+**Details** uses the canonical `components/side_drawer.html` and its
+focus-contained Alpine controller. The drawer shows independently committed
+Last Test and Last Delivery, severity/domains, all source-owned event
+capabilities, record/schedule counts, lifecycle status and (when archived)
+retirement operator/time/reason. No credentials or provider live calls.
+Archived rows expose Details only, never a mutation affordance.
+
+**More** opens a compact native action sheet outside the horizontally
+scrollable table wrapper. It delegates to existing permissioned Edit,
+CSRF-protected Test, native Retire and Locked dependency dialogs, or
+existing destructive Delete confirmation. Native modal transitions use
+`data-kaori-dialog-transition`; no browser `confirm()` or custom JS.
+The archive/current state and existing URL/HTMX filters, loading, Toast,
+pagination and default Rows=5 retain their owners.
+
+This replaces the older Channel Inventory six-column and 2×2 action-grid
+recommendations while preserving historical change traceability. Do not
+alter notification delivery, evidence retention, RBAC, or lifecycle
+authority merely to simplify the UI.
