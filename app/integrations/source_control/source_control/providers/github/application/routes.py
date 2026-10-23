@@ -7,11 +7,20 @@ written until full provider admission is approved.
 
 from __future__ import annotations
 
-from flask import Blueprint, abort, make_response, redirect, render_template, request, url_for
+import json
+
+from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.extensions.db import db
+from app.extensions.limiter import limiter
+from app.models.source_control import SourceInstallation
+from app.integrations.source_control.source_control.providers.github.webhook import GitHubWebhookError
+from app.integrations.source_control.source_control.providers.github.webhook_inbox import (
+    claim_verified_delivery,
+)
 from app.access.rbac.decorators import permission_required
 from app.integrations.provider_matrix import provider_kind
 from app.integrations.source_control.source_control.providers.github.application.forms import (
@@ -120,3 +129,65 @@ def new_connection() -> ResponseReturnValue:
         form=form, available=available, message=message,
         verified_scope=verified_scope, notification_context=_notification(),
     )
+
+
+@github_source_bp.post('/webhook')
+@limiter.limit('30 per minute')
+def receive_signed_webhook() -> ResponseReturnValue:
+    """Disabled-by-default signed GitHub App transport, never source evidence.
+
+    This externally callable route is deliberately unavailable while either
+    independent admission gate is closed. It stores only authenticated,
+    deduplicated envelope metadata; it NEVER enqueues a job on request.
+    """
+    if not current_app.config.get('SOURCE_CONTROL_WEBHOOK_INGRESS_ENABLED', False) or not _available():
+        abort(404)
+
+    # Reject oversized and lengthless deliveries before parsing/decryption.
+    if request.content_length is None:
+        abort(411)
+    if request.content_length > 262_144:
+        abort(413)
+    request.max_content_length = 262_144
+    payload = request.get_data(cache=False)
+    if not payload or len(payload) > 262_144:
+        abort(413)
+    if request.mimetype != 'application/json':
+        abort(415)
+
+    # The installation ID is an untrusted lookup hint only. Its App-specific
+    # shared HMAC secret independently proves provider authenticity later.
+    try:
+        envelope = json.loads(payload)
+        native_installation = envelope.get('installation')
+        native_id = native_installation.get('id') if isinstance(native_installation, dict) else None
+    except (ValueError, UnicodeDecodeError, AttributeError):
+        abort(400)
+    if not isinstance(native_id, int) or isinstance(native_id, bool) or native_id <= 0:
+        abort(400)
+
+    candidates = SourceInstallation.query.filter_by(
+        host_key='github.com', provider_key='github',
+        native_installation_id=str(native_id),
+    ).limit(2).all()
+    if len(candidates) != 1:
+        abort(401)
+    try:
+        claim_verified_delivery(
+            installation=candidates[0],
+            payload=payload, headers=request.headers,
+            session=db.session,
+        )
+        db.session.commit()
+    except GitHubWebhookError:
+        db.session.rollback()
+        abort(401)
+    except Exception:
+        db.session.rollback()
+        # The response cannot include DB diagnostics, signatures or PEM.
+        abort(503)
+
+    response = make_response('', 202)
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    return response
