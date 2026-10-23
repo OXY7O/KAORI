@@ -6,6 +6,7 @@ from typing import Any
 from flask import current_app, url_for
 
 from app.extensions.db import db
+from app.models.user import User
 from app.platform_operations.data_lifecycle.retention.domains import get_archive_domain
 from app.platform_operations.data_lifecycle.retention.policy_service import get_policy, update_policy
 from app.platform_operations.data_lifecycle.retention.service import get_archive_download_path, verify_archive_artifact
@@ -21,13 +22,22 @@ def _int_value(values: Mapping[str, Any], name: str, default: int) -> int:
         return default
 
 
+def _check_audit_event_governance(domain_name: str, user_id: int) -> None:
+    if domain_name != 'audit_event':
+        return
+    user = db.session.get(User, user_id)
+    if user is None or not user.is_super_admin or user.auth_source != 'database':
+        raise PermissionError('AuditEvent lifecycle requires authorized local Super Admin.')
+
+
 def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user_id: int) -> dict[str, Any]:
+    _check_audit_event_governance(domain_name, user_id)
     domain = get_archive_domain(domain_name)
     fallback = domain.build_policy()
     try:
         settings = dict(fallback.settings or {})
         if not getattr(domain, 'cleanup_supported', True) and str(values.get('operation_mode') or '') != 'archive_only':
-            raise ValueError('Notification Delivery supports archive-only; hot cleanup is not admitted.')
+            raise ValueError('This domain supports Archive Only; hot cleanup is not admitted.')
         batch_size = _int_value(values, 'batch_size', fallback.batch_size)
         if domain_name == 'job_execution':
             settings['workload_retention_days'] = {
@@ -58,7 +68,10 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
             archive_retention_days=_int_value(values, 'archive_retention_days', fallback.archive_retention_days),
             batch_size=batch_size,
             operation_mode=str(values.get('operation_mode') or 'archive_and_cleanup'),
-            schedule_enabled=(values.get('schedule_enabled') == 'on' and domain_name != 'notification_delivery'),
+            schedule_enabled=(
+                values.get('schedule_enabled') == 'on'
+                and domain_name not in {'notification_delivery', 'audit_event'}
+            ),
             schedule_hour=_int_value(values, 'schedule_hour', 2),
             schedule_minute=_int_value(values, 'schedule_minute', 0),
             protect_unreviewed=values.get('protect_unreviewed') == 'on',
@@ -97,6 +110,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
 
 
 def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> dict[str, Any]:
+    _check_audit_event_governance(domain_name, user_id)
     normalized_mode = str(mode or '').strip().lower()
     if normalized_mode not in {'archive_only', 'archive_and_cleanup'}:
         return record_operational_activity(
@@ -119,8 +133,8 @@ def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> d
                 event_type='data_lifecycle_execution_rejected',
                 status='warning',
                 title='Archive-only safety boundary',
-                message='Hot cleanup is not admitted for this delivery evidence domain.',
-                detail='Use Archive Only. Deduplication and historical evidence still depend on committed hot records.',
+                message='Hot cleanup is not admitted for this evidence domain.',
+                detail='Use Archive Only. Verified archives do not authorize deletion of the committed hot records.',
                 action_url=url_for('platform_operations.data_lifecycle.index', domain=domain_name),
                 metadata={'domain': domain_name, 'mode': normalized_mode, 'reason': 'cleanup_not_admitted'},
             )

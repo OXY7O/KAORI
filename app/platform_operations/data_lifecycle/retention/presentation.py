@@ -6,7 +6,8 @@ from time import monotonic
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from flask import current_app
+from flask import abort, current_app
+from flask_login import current_user
 from sqlalchemy import case, func
 
 from app.artifact_storage.service import StorageProfile, build_storage_profile
@@ -50,6 +51,15 @@ _ARCHIVE_STORAGE_OPTIONS = ('local', 's3')
 _STATUS_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 
 
+def _can_govern_audit_event() -> bool:
+    """Temporary strict boundary until source-specific archive RBAC is admitted."""
+    return bool(
+        getattr(current_user, 'is_authenticated', False)
+        and getattr(current_user, 'is_super_admin', False)
+        and getattr(current_user, 'auth_source', None) == 'database'
+    )
+
+
 def build_domain_retention_context(
     domain_name: str,
     *,
@@ -59,6 +69,8 @@ def build_domain_retention_context(
     policy: RetentionPolicy | None = None,
     stored_policy: DataLifecyclePolicy | None = None,
 ) -> dict[str, Any]:
+    if domain_name == 'audit_event' and not _can_govern_audit_event():
+        abort(403, description='AuditEvent source governance access is not admitted.')
     domain = get_archive_domain(domain_name)
     effective_policy = policy or domain.build_policy()
     stored = stored_policy if stored_policy is not None else get_policy(domain.name)
@@ -136,7 +148,14 @@ def build_data_lifecycle_context(
     feedback: dict[str, Any] | None = None,
     poll_once: bool = False,
 ) -> dict[str, Any]:
-    supported = tuple(sorted(DOMAIN_FACTORIES))
+    allowed_audit_event = _can_govern_audit_event()
+    supported = tuple(sorted(
+        name for name in DOMAIN_FACTORIES if name != 'audit_event' or allowed_audit_event
+    ))
+    if selected_domain == 'audit_event' and not allowed_audit_event:
+        abort(403, description='AuditEvent source governance access is not admitted.')
+    if archive_domain == 'audit_event' and not allowed_audit_event:
+        abort(403, description='AuditEvent archive history access is not admitted.')
     selected = selected_domain if selected_domain in supported else supported[0]
     active = active_tab if active_tab in {'policies', 'history', 'storage'} else 'policies'
     stored_map = {
@@ -223,6 +242,7 @@ def build_data_lifecycle_context(
             operation_mode=history_filters['operation_mode'],
             storage_backend=history_filters['storage_backend'],
             search=history_filters['search'],
+            exclude_domains=() if allowed_audit_event else ('audit_event',),
         )
         total = int(history_pagination.total or 0)
         context.update(
@@ -283,7 +303,7 @@ def _policy_execution_settings(
     policy: RetentionPolicy,
     stored: DataLifecyclePolicy | None,
 ) -> tuple[bool, int, int, str]:
-    if domain_name == 'notification_delivery':
+    if domain_name in {'notification_delivery', 'audit_event'}:
         # Manual archive-only admission; no scheduled or destructive mode yet.
         return (False, default_schedule_hour(domain_name), default_schedule_minute(domain_name), 'archive_only')
     if stored is not None:
@@ -328,6 +348,7 @@ def _domain_label(name: str) -> str:
         'alert_incident': 'Alert Incidents',
         'tenant_audit_evidence': 'Tenant Audit Evidence',
         'notification_delivery': 'Notification Delivery',
+        'audit_event': 'Administrative Audit Events', 
     }.get(name, name.replace('_', ' ').title())
 
 
@@ -341,6 +362,7 @@ def _domain_icon(name: str) -> str:
         'alert_incident': 'siren',
         'tenant_audit_evidence': 'shield-check',
         'notification_delivery': 'send',
+        'audit_event': 'file-clock',
     }.get(name, 'database')
 
 
@@ -354,6 +376,7 @@ def _domain_description(name: str) -> str:
         'alert_incident': 'Closed Alert Operations cases, operator evidence, notification delivery, and postmortem records.',
         'tenant_audit_evidence': 'Normalized Tenant audit correlation and operation evidence.',
         'notification_delivery': 'Provider-neutral outbound delivery evidence; archive-only safety admission.',
+        'audit_event': 'Separate source-owned administrative AuditEvent evidence; manual archive-only.',
     }.get(name, 'KAORI operational data domain.')
 
 
@@ -428,6 +451,24 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
                 'description': 'Required or completed postmortem context and action-item evidence remain part of the case record.',
             },
         ),
+        'audit_event': (
+            {
+                'icon': 'file-clock',
+                'label': 'Administrative Source Evidence',
+                'description': (
+                    'Committed hot AuditEvent records, including allowlisted Automatic Job '
+                    'and Tenant Inventory Sync sources.'
+                ),
+            },
+            {
+                'icon': 'shield-check',
+                'label': 'Source Permission Boundary',
+                'description': (
+                    'Other AuditEvent producers remain authoritative; archive export is held '
+                    'for security review.'
+                ),
+            },
+        ),
         'notification_delivery': (
             {
                 'icon': 'send',
@@ -482,6 +523,10 @@ def _domain_coverage_note(name: str) -> str | None:
         'alert_incident': 'Only Closed cases are archive-eligible. KAORI preserves the case index in PostgreSQL for History search after evidence compaction.',
         'tenant_audit_evidence': 'Committed Tenant audit correlation; Kubernetes remains authoritative for raw logs.',
         'notification_delivery': 'Archive-only and paused by default. Hot records remain authoritative for deduplication, channel dependencies and all-time metrics; schedule and cleanup not yet admitted.',
+        'audit_event': (
+            'Paused, manual archive-only. AuditEvent is separate from Activity Register, '
+            'JobExecution and Tenant Audit Evidence. Source-specific retention/RBAC review is pending.'
+        ),
     }.get(name)
 
 
@@ -495,6 +540,10 @@ def _domain_exclusion_note(name: str) -> str | None:
         'alert_incident': 'Open, acknowledged, mitigating, and verification-pending cases are never selected for archive cleanup.',
         'tenant_audit_evidence': 'Raw Kubernetes audit logs and provider request/response bodies stay external.',
         'notification_delivery': 'Queued and failed/retry-eligible records, payload content, credential replay envelope and per-record archive search are excluded.',
+        'audit_event': (
+            'Raw metadata, IP/user agent, actor reconstruction, bundle downloads, '
+            'scheduling, cleanup and individual historical lookup are not admitted.'
+        ),
     }.get(name)
 
 

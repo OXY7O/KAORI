@@ -11,8 +11,9 @@ This package provides the shared archive-first lifecycle used by **Platform Oper
 - `generated_report`: terminal Generated Reports metadata from `reports`; Ready and Archived rows archive their binary PDF/XLSX/CSV evidence with SHA-256 verification before source cleanup, while active generation remains protected.
 - `alert_incident`: closed Alert Operations case evidence (timeline, notification delivery, postmortem) with compacted hot case index preserved for History.
 - `tenant_audit_evidence`: committed normalized Tenant/Kubernetes audit correlation evidence; the Kubernetes API audit provider remains authoritative for raw event logs.
+- `audit_event`: separate source-owned administrative `audit_events` across KAORI producers; paused manual archive-only, summary/redaction only. Raw metadata and archive export are not admitted.
 
-The registered adapter catalog now contains **eight** managed domains after the paused, archive-only Notification Delivery extension (historical seven-domain catalog before #2848). The Data Lifecycle Final Lock v1.3 documents the four-domain historical admission baseline; later registered adapters follow the same approved archive-first engine and do not rewrite that historical lock. Adapter registration alone does not enable unattended execution: persisted policy and scheduler domain configuration still govern automation.
+The registered adapter catalog now contains **nine** managed domains after paused, archive-only Notification Delivery and AuditEvent extensions (historical seven-domain catalog before #2848). The Data Lifecycle Final Lock v1.3 documents the four-domain historical admission baseline; later registered adapters follow the same approved archive-first engine and do not rewrite that historical lock. Adapter registration alone does not enable unattended execution: persisted policy and scheduler domain configuration still govern automation.
 
 Future domains such as Intelligence execution evidence should be added as adapters rather than separate retention subsystems.
 
@@ -181,3 +182,44 @@ This source-ownership correction is only the first safety slice of #2850.
 Durable post-hot-cleanup deduplication, historical aggregates, channel
 dependency indexing and source record-level archive lookup are not admitted.
 `notification_delivery` remains paused/manual archive-only.
+
+## AuditEvent — paused manual archive-only boundary (#2890, 2026-10-23)
+
+The **ninth** registered Data Lifecycle adapter `audit_event` governs the
+`audit_events` table independently from `operational_activity` (shared
+Notification-backed Activity Register), `job_execution`, and
+`tenant_audit_evidence`. Access → Activity Audit Administrative Source
+Evidence is only a **permission-scoped hot projection** of selected
+`AuditEvent` producers; the archive domain is broader. Never treat these
+sources as one store or duplicate committed rows in the Access UI.
+
+This first implementation provides bounded ID/cutoff Preview, immutable
+JSONL.GZ + manifest and shared checksum verification, but is **paused by
+default** (no database policy row created by ordinary GET), manual only,
+and **archive-only**. Fallback defaults 365 hot / 3650 archive days and
+batch 250 are **proposals for operator review**, not an approved legal
+retention policy. Source record count and hot evidence remain unchanged
+after archive-only processing. Archive serialization stores only record
+identity, nullable actor FK and sanitized target/action/summary/timestamp.
+It intentionally omits free-form metadata, IP, user agent and any fabricated
+immutable actor snapshot; such minimally redacted bundles **are not
+sufficient evidence for hot cleanup**.
+
+For this interim security admission, the domain, aggregate counts, Preview,
+Archive History entries and mutation calls are restricted to an authorized
+**Local Database Super Admin**; ordinary lifecycle readers/managers cannot
+bypass source-level permissions. Export/download of the bundles remains
+blocked even for Super Admin until #2891 verifies producer-by-producer
+source permissions and privacy. The Archive History view is artifact-level; no per-record cold
+search is provided.
+
+Server policy admission, queue admission, scheduled task, archive engine,
+and domain adapter **all fail closed** on hot cleanup/scheduling. The
+archive engine also rejects destructive archive-object purge for this
+domain pending legal-hold/retention governance; the scheduled worker does
+not auto-purge it during manual archive operation. This extension does
+not modify the historical v1.3 baseline or the existing admitted domain
+behavior. Related authority: foundation #2889, archive child #2890,
+source-security and retention policy #2891, verified compaction and
+permissioned archive lookup #2892. DevContainer functional/security UAT
+and official gates remain pending.

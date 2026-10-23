@@ -22,14 +22,15 @@ def test_registered_tenant_audit_domain_has_operator_coverage_and_exclusion() ->
         assert value in presentation
 
 
-def test_current_docs_reconcile_eight_adapters_without_rewriting_lock() -> None:
+def test_current_docs_reconcile_nine_adapters_without_rewriting_lock() -> None:
     root = ROOT / 'app/platform_operations/data_lifecycle'
     foundation = (root / 'retention/README.md').read_text(encoding='utf-8')
     workspace = (root / 'README.md').read_text(encoding='utf-8')
     for key in ('alert_incident', 'tenant_audit_evidence'):
         assert key in foundation
         assert key in workspace
-    assert 'eight' in foundation.lower()
+    assert 'nine' in foundation.lower()
+    assert 'audit_event' in foundation
     assert 'notification_delivery' in foundation
     assert 'v1.3' in foundation
     assert 'raw provider audit logs' in workspace

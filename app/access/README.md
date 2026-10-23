@@ -394,3 +394,24 @@ pagination, HTMX behavior or existing modal is changed. Shared Info Tip
 owns keyboard/pointer/touch activation and viewport positioning.
 Human hover/mobile/light-dark acceptance is pending separately from the
 accepted overall Activity Audit functionality.
+
+## Administrative AuditEvent Data Lifecycle boundary (#2889/#2890)
+
+Access → Activity Audit contains two independent committed source views:
+**Activity Register** reads `notifications` and uses
+`operational_activity` retention; **Administrative Source Evidence**
+selects allowed hot `audit_events` from Automatic Jobs/Tenant Inventory
+Sync according to their source permissions. The new registered
+`audit_event` Data Lifecycle domain is a separate, **paused, manual
+archive-only** adapter for the underlying AuditEvent table (which contains
+other producers too); it does not union the displays or grant additional
+source access. It archives minimal redacted summaries and preserves all
+hot records. Hot cleanup, automated schedules, archive-object purge,
+individual-record lookup and bundle download are blocked pending
+source-specific retention/privacy/legal-hold and RBAC authority (#2891).
+Until that admission, the domain, aggregate counts, Preview and archive history
+are **Local Database Super Admin-only**, and mutations enforce the same
+boundary independent of UI; even Super Admin cannot download these bundles.
+Verified compaction remains a separate workstream (#2892). Archive History is artifact-level,
+not a verified lookup for the selected administrative event or a missing
+JobExecution. Do not infer immutable actor identity from AuditEvent FK.

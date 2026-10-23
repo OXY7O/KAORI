@@ -79,6 +79,8 @@ def run_retention_archive(
     # This opt-in capability defaults to True for existing admitted domains.
     if cleanup and not getattr(domain, 'cleanup_supported', True):
         raise RuntimeError(f'Hot cleanup is not admitted for {domain.name}; use archive-only.')
+    if domain.name == 'audit_event' and trigger_type == 'scheduled':
+        raise RuntimeError('Scheduled AuditEvent archival is not admitted pending retention governance.')
     if not policy.enabled:
         raise RuntimeError(f'Retention is disabled for {domain.name}.')
 
@@ -206,6 +208,8 @@ def get_archive_download_path(
     artifact = db.session.get(ArchiveArtifact, archive_id)
     if artifact is None:
         raise LookupError('Archive record was not found.')
+    if artifact.domain == 'audit_event':
+        raise PermissionError('AuditEvent archive bundle export is not admitted pending source authorization.')
     if not artifact.is_downloadable:
         raise RuntimeError('Archive is not ready for download.')
     if not artifact.storage_backend:
@@ -253,6 +257,7 @@ def paginate_archives(
     operation_mode: str = 'all',
     storage_backend: str = 'all',
     search: str = '',
+    exclude_domains: tuple[str, ...] = (),
 ):
     normalized_page = max(int(page or 1), 1)
     normalized_per_page = int(per_page or 5)
@@ -260,6 +265,8 @@ def paginate_archives(
         normalized_per_page = 5
 
     query = ArchiveArtifact.query
+    if exclude_domains:
+        query = query.filter(ArchiveArtifact.domain.notin_(exclude_domains))
     if domain_name:
         query = query.filter(ArchiveArtifact.domain == domain_name)
 
@@ -315,6 +322,8 @@ def purge_expired_archives(
     retention_days: int,
     dry_run: bool = False,
 ) -> dict[str, Any]:
+    if domain_name == 'audit_event' and not dry_run:
+        raise RuntimeError('AuditEvent archive-object purge is not admitted pending retention governance.')
     cutoff = datetime.now(UTC) - timedelta(days=max(retention_days, 1))
     candidate_query = ArchiveArtifact.query.filter(
         ArchiveArtifact.domain == domain_name,

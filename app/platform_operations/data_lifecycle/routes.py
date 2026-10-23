@@ -34,6 +34,10 @@ def _mutation_domain() -> str:
     value = str(request.form.get('domain') or '').strip().lower().replace('-', '_')
     if value not in DOMAIN_FACTORIES:
         abort(400, description='A registered Data Lifecycle domain is required.')
+    if value == 'audit_event' and not (
+        current_user.is_super_admin and current_user.auth_source == 'database'
+    ):
+        abort(403, description='AuditEvent source governance access is not admitted.')
     return value
 
 
@@ -116,5 +120,8 @@ def verify(archive_id: str) -> ResponseReturnValue:
 @bp.get('/archives/<archive_id>/download')
 @permission_required('platform_operations.export_data_lifecycle')
 def download(archive_id: str) -> ResponseReturnValue:
-    _artifact, path = lifecycle_archive_download(archive_id, kind=request.args.get('kind', 'data'))
+    try:
+        _artifact, path = lifecycle_archive_download(archive_id, kind=request.args.get('kind', 'data'))
+    except PermissionError:
+        abort(403, description='Source-specific archive export has not been admitted.')
     return send_file(path, as_attachment=True, download_name=path.name)
