@@ -114,6 +114,24 @@ before any policy mutation, archive, Verify or negative-test fixtures.
 Do not classify any affected page PASS from source or Jinja syntax tests
 alone. Record exact SHA and server/browser HTTP results.
 
+### Archive History filter size and empty-state consistency (#2974)
+
+The History filter form now carries its selected `archive_per_page`
+value on every Domain, Status, Trigger, Mode, Storage or Search request.
+Changing a filter intentionally resets to **page 1** without resetting
+Rows 10/25/50 to default 5; Clear Filters/Refresh/Previous/Next already
+retain the page-size value. For no archive artifacts, the empty state
+correctly explains that executions create history, whereas read-only
+Preview does not.
+
+**Wave A browser check:** set Rows=25 (with enough synthetic archives,
+where available), select another Domain/Status, then search; confirm
+the selected page size stays 25, page resets to 1, URL/row count align,
+and Clear Filters retains 25. Also inspect empty-state wording with
+approved empty synthetic archive storage. A source contract is not
+evidence of passing real HTMX/browser pagination; record actual observed
+results and exact DevContainer SHA.
+
 ### Archive History Verify browser fallback (#2972)
 
 The current UAT source audit found a functional progressive-enhancement
