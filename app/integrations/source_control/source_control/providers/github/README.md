@@ -125,3 +125,32 @@ These are proposed **existing** local quality commands, not evidence they have
 run. Run Alembic upgrade/downgrade against the approved disposable Dev Container
 database with the project's standard migrations procedure; no live database
 changes are authorized by this documentation.
+
+
+## Shared GitHub App onboarding preview
+
+The application bootstrap registers `github_source_bp` and the existing
+`Integrations → Source Control` shared workspace links to it. Routes:
+
+- `GET /integrations/source-control/github/`: provider overview based on the
+  existing KAORI Page Hero and Integration overview components.
+- `GET /integrations/source-control/github/connections/new`: shared
+  registration hero and form for visual/UX review.
+- `POST /integrations/source-control/github/connections/new`: server-side
+  **HTTP 409** while GitHub remains `planned`, before the submitted form or
+  credentials are processed.
+
+Every route uses server RBAC `integrations.manage`, Flask-WTF CSRF for
+admitted POSTs, no-store response headers, canonical environment choices,
+no secret rehydration and sanitized errors. Once admitted by a future
+provider-matrix/Kernel change, Test Connection performs a read-only
+identity/scope probe and Save revalidates the grant before committing a
+non-ready canonical connection. Live validation, JobExecution/status
+presentation, provider promotion and production webhook ingress remain blocked.
+
+This is a UI review shell with **disabled actions**, not evidence of
+successfully connected GitHub installations. Source Control currently has
+no committed repository inventory (SC-03), so the overview intentionally
+uses `Not Observed` / `Not Admitted` instead of invented zero counts.
+It reuses existing Violet, Hero, domain cards, Flask-WTF, accessibility,
+responsive and light/dark classes; no provider-specific stylesheet.
