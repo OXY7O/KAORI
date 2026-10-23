@@ -543,6 +543,11 @@
             ['configmaps', 'ConfigMaps'],
             ['secrets', 'Secrets'],
         ]
+        // GlobalResourceQuota cutover still exposes the six headline metrics;
+        // the two Tenant CR forms disclose all ten supported quota dimensions.
+        const comparisonDimensions = form.hasAttribute('data-tenant-shared-allocation-form')
+            ? dimensions.slice(0, 6)
+            : dimensions
         const countDimensions = new Set(['pods', 'persistentvolumeclaims', 'services', 'configmaps', 'secrets'])
         const factors = {
             '': 1,
@@ -597,12 +602,12 @@
             }
             return
         }
-        const changed = dimensions.filter(([key]) => !equivalent(key, current, proposed))
+        const changed = comparisonDimensions.filter(([key]) => !equivalent(key, current, proposed))
         if (summary) {
             summary.textContent =
                 changed.length === 0
                     ? 'No quota differences'
-                    : `${changed.length} of ${dimensions.length} quota dimensions differ · Read only`
+                    : `${changed.length} of ${comparisonDimensions.length} quota dimensions differ · Read only`
         }
         if (highlights) {
             highlights.hidden = changed.length === 0
