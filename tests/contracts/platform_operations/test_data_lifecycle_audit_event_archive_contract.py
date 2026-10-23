@@ -101,3 +101,24 @@ def test_audit_events_are_not_conflated_with_notifications_or_tenant_audit_evide
     assert "'operational_activity': 'Activity Audit'" in policy
     assert "'tenant_audit_evidence': 'Tenant Audit Evidence'" in policy
     assert 'source-owned' in docs
+
+
+def test_audit_event_scope_and_hot_history_counts_are_super_admin_only() -> None:
+    presentation = read('app/platform_operations/data_lifecycle/retention/presentation.py')
+    service = read('app/platform_operations/data_lifecycle/service.py')
+    routes = read('app/platform_operations/data_lifecycle/routes.py')
+    engine = read('app/platform_operations/data_lifecycle/retention/service.py')
+    model = read('app/models/user.py')
+
+    assert "getattr(current_user, 'is_super_admin', False)" in presentation
+    assert "getattr(current_user, 'auth_source', None) == 'database'" in presentation
+    assert "name for name in DOMAIN_FACTORIES if name != 'audit_event' or allowed_audit_event" in presentation
+    assert "if selected_domain == 'audit_event' and not allowed_audit_event:" in presentation
+    assert "if archive_domain == 'audit_event' and not allowed_audit_event:" in presentation
+    assert "exclude_domains=() if allowed_audit_event else ('audit_event',)" in presentation
+    assert "ArchiveArtifact.domain.notin_(exclude_domains)" in engine
+    assert "if value == 'audit_event' and not (" in routes
+    assert "def _check_audit_event_governance(domain_name: str, user_id: int)" in service
+    assert "if user is None or not user.is_super_admin or user.auth_source != 'database':" in service
+    assert service.count("_check_audit_event_governance(domain_name, user_id)") == 2
+    assert "is_super_admin: Mapped[bool]" in model
