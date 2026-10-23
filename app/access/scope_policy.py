@@ -1,8 +1,9 @@
 """Canonical, source-qualified human scoped policy admission (#724, #2725).
 
-This module never grants a capability through global RBAC alone. No public
-Secret Registry API/route is enabled. Read-only decisions MUST NOT be treated
-as read authorization without the audited, locking caller transaction.
+This module never grants a capability through global RBAC alone. Read-only
+scope decisions MUST NOT be treated as read authorization without the
+audited, locking caller transaction. The governed Registry route uses
+exact-policy admission under that transaction.
 """
 
 from __future__ import annotations

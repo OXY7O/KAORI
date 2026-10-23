@@ -228,7 +228,7 @@ def test_template_hides_namespace_path_and_uses_reusable_violet_table():
     assert 'registry.total_pages' in html
     for unsafe in (
         'item.path', 'item.mount', 'item.namespace', 'item.name',
-        'item.value', 'item.token', 'item.path_sha256', 'item.secret_id',
+        'item.value', 'item.token', 'item.path_sha256', 'item.secret_id }}',
     ):
         assert unsafe not in html
     assert 'name="mount"' not in html

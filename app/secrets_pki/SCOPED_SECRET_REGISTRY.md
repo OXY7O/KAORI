@@ -8,17 +8,19 @@ allowed; the #724 policy must decide which IntegrationInstance, namespace
 and mount the actor can see. Ownership, Team membership, similarly named
 Secret paths, and provider Vault ACLs never grant KAORI rights implicitly.
 
-## Status: prepared, not exposed
+## Status: read-only route review candidate (#2826)
 
-The new app/secrets_pki/scoped_registry.py is a server-internal SQL read
-model. No HTTP route, UI link, new scope-policy engine/table, JobExecution,
-migration, provider call, Secret value access or permission is added.
-Until #724 supplies an admitted persisted policy evaluator, no real user
-can browse rows through KAORI. The ScopedRegistryDecision passed to
-the function is *not* itself an authorization system, policy grant or
-cryptographic evidence. Test fixtures may construct synthetic decisions;
-production must never construct them from request params, cookies,
-Vault paths, provider data, user preferences or role alone.
+`app/secrets_pki/scoped_registry.py` remains an internal SQL read model.
+The approved #724 persisted policy evaluator is used exclusively via its
+mandatory-audited governed wrapper from `GET /secrets-pki/registry`.
+No new authorization engine, database table, provider API call,
+secret-value access, privileged operation or export has been added.
+The caller may supply only an opaque UUID policy reference and canonical
+instance ID; the Vault namespace/mount are resolved server-side and the
+actual approval revision re-verified and locked. The intermediate
+ScopedRegistryDecision is *not* an authorization system, policy grant
+or cryptographic evidence and cannot be synthesized from user parameters.
+Real DevContainer/UAT acceptance is still Not Tested.
 
 ## Query safety
 
@@ -44,7 +46,7 @@ server-side page sizes are 5/10/25/50, with 100 observed versions per row
 as a supported upper bound. Qualified empty is allowed only after a
 complete committed zero snapshot.
 
-## Remaining requirements before UI
+## Remaining requirements before operational acceptance
 
 1. Implement canonical persisted resource-policy evaluation under #724;
    do not infer scope from integrations.manage or a Vault administrator role.
