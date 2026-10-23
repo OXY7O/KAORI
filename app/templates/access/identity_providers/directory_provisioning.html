@@ -40,8 +40,8 @@
         </section>
         <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
             <main class="space-y-6 xl:col-span-8">
-                <section class="{{ surface_ui.block_classes() }}">
-                    <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
+                <section class="{{ surface_ui.block_classes(allow_overflow=true) }}">
+                    <header class="flex items-start gap-3 rounded-t-xl border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="search" class="h-5 w-5"></i>
                         </span>
@@ -62,7 +62,7 @@
                         </div>
                     </header>
                     <form method="post"
-                          class="grid gap-5 p-5 sm:p-6 lg:grid-cols-2 lg:items-end">
+                          class="grid gap-5 rounded-b-xl p-5 sm:p-6 lg:grid-cols-2 lg:items-end">
                         {{ search_form.hidden_tag() }}
                         <label class="block min-w-0">
                             <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ search_form.provider_id.label.text }}</span>
