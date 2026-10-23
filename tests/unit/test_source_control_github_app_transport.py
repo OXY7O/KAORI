@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 import json
 from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace
 
 import pytest
 from cryptography.hazmat.primitives import hashes, serialization
