@@ -2199,3 +2199,29 @@ release remain HOLD.
 ## Verified handoff next-action copy — Dev Container review (2026-10-23)
 
 The Step 4 Next Required Action summary now reads `Handoff verified. Complete checks before authorized Release.` This is presentation-only; the committed provider handoff and fresh admission evidence remain separate from the guarded Release POST. No provider verification, permissions, data model, or other action path changes. Browser Visual QA and local runtime tests remain PENDING; official CI/CD admission remains HOLD.
+
+## Native Platform Admin Handback form-action redesign — 2026-10-23
+
+Screenshot-led visual follow-up to #1132 reuses the approved KAORI
+`components/form_action_bar.html` (embedded mode) inside the existing
+released Native Tenant Handback & Re-adopt disclosure. This is not a new
+action pattern or a new adoption path: the previous nested border/card
+and full-width secondary-looking submit button are removed in favor of
+an unboxed verification and mandatory consent area, plus the shared
+footer with a short helper and one clearly labeled primary action.
+
+The compact operator text explains that KAORI checks Platform Admin
+identity and scoped Kubernetes get/patch access through its registered
+X.509 connection without requesting successor credentials. The operator
+still explicitly authorizes removal of KAORI governance metadata from
+the exact Released resources; names, specs, CPU, memory and quotas must
+remain unchanged. The original required checkbox, `release_plan_sha256`,
+server route, HTMX/CSRF, current-user permissions, provider source of
+truth and recovery state remain authoritative. Handback does not re-adopt
+resources by itself; clean Discovery and new-generation adoption still
+require their distinct governed flow.
+
+Dev Container Visual QA must cover unchecked/checked confirmation,
+desktop/mobile, light/dark, keyboard focus, blocked provider identity,
+partial/verified handback receipts and residual cleanup transitions.
+Runtime pytest/Jinja rendering and official CI/CD admission remain HOLD.
